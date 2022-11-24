@@ -13,8 +13,9 @@ namespace UnityEditor.UIElements
         static EditorDelegateRegistration()
         {
             DefaultEventSystem.IsEditorRemoteConnected = () => EditorApplication.isRemoteConnected;
-            PanelTextSettings.EditorGUIUtilityLoad = path => EditorGUIUtility.Load(path);
-            PanelTextSettings.GetCurrentLanguage = () => LocalizationDatabase.currentEditorLanguage;
+
+            TextUtilities.getEditorTextSettings = () => EditorTextSettings.defaultTextSettings;
+            TextUtilities.getEditorTextSharpness = (string fontAssetName) => EditorPrefs.GetFloat($"EditorTextSharpness_{fontAssetName}", 0.0f);
 
             UIDocument.IsEditorPlaying = () => EditorApplication.isPlaying;
             UIDocument.IsEditorPlayingOrWillChangePlaymode = () => EditorApplication.isPlayingOrWillChangePlaymode;

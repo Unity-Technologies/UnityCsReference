@@ -9,42 +9,27 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor.Rendering
 {
-    [AttributeUsage(AttributeTargets.Class)]
-    public class ScriptableRenderPipelineExtensionAttribute : Attribute
-    {
-        internal Type renderPipelineType;
-
-        public ScriptableRenderPipelineExtensionAttribute(Type renderPipelineAsset)
-        {
-            if (!(renderPipelineAsset?.IsSubclassOf(typeof(RenderPipelineAsset)) ?? false))
-                throw new ArgumentException("Given renderPipelineAsset must derive from RenderPipelineAsset");
-            renderPipelineType = renderPipelineAsset;
-        }
-
-        public bool inUse
-            => GraphicsSettings.currentRenderPipeline?.GetType() == renderPipelineType;
-    }
-
     public static class RenderPipelineEditorUtility
     {
         public static Type[] GetDerivedTypesSupportedOnCurrentPipeline<T>()
         {
-            return TypeCache.GetTypesDerivedFrom<T>().Where(t =>
-            {
-                var attribute = t.GetCustomAttribute<SupportedOnRenderPipelineAttribute>();
-                return attribute != null && attribute.isSupportedOnCurrentPipeline;
-
-            }).ToArray();
+            return TypeCache.GetTypesDerivedFrom<T>()
+                .Where(t => t.GetCustomAttribute<SupportedOnRenderPipelineAttribute>() is { isSupportedOnCurrentPipeline: true })
+                .ToArray();
         }
 
+        [Obsolete($"{nameof(FetchFirstCompatibleTypeUsingScriptableRenderPipelineExtension)} is deprecated. Use {nameof(GetDerivedTypesSupportedOnCurrentPipeline)} instead. #from(2023.1)", false)]
         public static Type FetchFirstCompatibleTypeUsingScriptableRenderPipelineExtension<TBaseClass>()
         {
             var extensionTypes = TypeCache.GetTypesDerivedFrom<TBaseClass>();
 
             foreach (Type extensionType in extensionTypes)
             {
+#pragma warning disable CS0618
                 if (Attribute.GetCustomAttribute(extensionType, typeof(ScriptableRenderPipelineExtensionAttribute)) is ScriptableRenderPipelineExtensionAttribute { inUse: true })
                     return extensionType;
+#pragma warning restore CS0618
+
             }
 
             return null;

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using System;
 using System.Text;
 
@@ -14,7 +15,8 @@ namespace UnityEngine.TextCore.Text
             textGenerationSettings = new TextGenerationSettings();
         }
 
-        Vector2 m_PreferredSize;
+        internal Vector2 preferredSize { get; private set; }
+
         /// <summary>
         /// DO NOT USE m_TextInfo directly, use textInfo to guarantee lazy allocation.
         /// </summary>
@@ -29,7 +31,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (m_TextInfo == null)
                 {
-                    m_TextInfo = new TextInfo();
+                    m_TextInfo = new TextInfo(VertexDataLayout.VBO);
                 }
 
                 return m_TextInfo;
@@ -56,7 +58,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (m_LayoutTextInfo == null)
                 {
-                    m_LayoutTextInfo = new TextInfo();
+                    m_LayoutTextInfo = new TextInfo(VertexDataLayout.VBO);
                 }
 
                 return m_LayoutTextInfo;
@@ -86,6 +88,8 @@ namespace UnityEngine.TextCore.Text
             return true;
         }
 
+        internal float lastTimeUsed;
+
         public Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
             if (textGenerationSettings == null)
@@ -94,7 +98,7 @@ namespace UnityEngine.TextCore.Text
             var screenRect = textGenerationSettings.screenRect;
             var result = screenRect.position;
             if (textInfo.characterCount == 0)
-                return result;
+                return inverseYAxis ? new Vector2(0, GetLineHeightDefault(textGenerationSettings)) : result;
 
             var validIndex = index >= textInfo.characterCount ? textInfo.characterCount - 1 : index;
             var character = textInfo.textElementInfo[validIndex];
@@ -116,7 +120,7 @@ namespace UnityEngine.TextCore.Text
             var screenRect = textGenerationSettings.screenRect;
             var result = screenRect.position;
             if (textInfo.characterCount == 0)
-                return result;
+                return inverseYAxis ? new Vector2(0, GetLineHeightDefault(textGenerationSettings)) : result;
 
             if (index >= textInfo.characterCount)
                 index = textInfo.characterCount - 1;
@@ -454,6 +458,46 @@ namespace UnityEngine.TextCore.Text
             return -1;
         }
 
+//
+        public float ComputeTextWidth(TextGenerationSettings tgs)
+        {
+            UpdatePreferredValues(tgs);
+            return preferredSize.x;
+        }
+
+        public float ComputeTextHeight(TextGenerationSettings tgs)
+        {
+            UpdatePreferredValues(tgs);
+            return preferredSize.y;
+        }
+
+        public int GetCorrespondingStringIndex(int index)
+        {
+            if (index <= 0)
+                return 0;
+            return textInfo.textElementInfo[index - 1].index + textInfo.textElementInfo[index - 1].stringLength;
+        }
+
+        public int GetCorrespondingCodePointIndex(int stringIndex)
+        {
+            if (stringIndex <= 0)
+                return 0;
+
+            for (int i = 0; i < textInfo.characterCount; i++)
+            {
+                var character = textInfo.textElementInfo[i];
+                if (character.index + character.stringLength >= stringIndex)
+                    return i + 1;
+            }
+
+            return textInfo.characterCount;
+        }
+
+        public LineInfo GetLineInfoFromCharacterIndex(int index)
+        {
+            return textInfo.lineInfo[GetLineNumber(index)];
+        }
+
         private static bool PointIntersectRectangle(Vector3 m, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
         {
             Vector3 ab = b - a;
@@ -610,21 +654,9 @@ namespace UnityEngine.TextCore.Text
             return -1;
         }
 
-        protected float ComputeTextWidth(TextGenerationSettings tgs)
-        {
-            UpdatePreferredValues(tgs);
-            return m_PreferredSize.x;
-        }
-
-        protected float ComputeTextHeight(TextGenerationSettings tgs)
-        {
-            UpdatePreferredValues(tgs);
-            return m_PreferredSize.y;
-        }
-
         protected void UpdatePreferredValues(TextGenerationSettings tgs)
         {
-            m_PreferredSize = TextGenerator.GetPreferredValues(tgs, layoutTextInfo);
+            preferredSize = TextGenerator.GetPreferredValues(tgs, layoutTextInfo);
         }
 
         internal TextInfo Update(string newText)
@@ -642,6 +674,75 @@ namespace UnityEngine.TextCore.Text
             TextGenerator.GenerateText(tgs, textInfo);
             textGenerationSettings = tgs;
             return textInfo;
+        }
+
+        internal void UpdatePreferredSize(TextGenerationSettings generationSettings)
+        {
+            if (textInfo.characterCount <= 0)
+                return;
+            var maxAscender = 0f;
+            var maxDescender = textInfo.textElementInfo[textInfo.characterCount - 1].descender;
+            var renderedWidth = 0f;
+            var renderedHeight = 0f;
+
+            for (var i = 0; i < textInfo.lineCount; i++)
+            {
+                var lineInfo = textInfo.lineInfo[i];
+                maxAscender = Mathf.Max(maxAscender, textInfo.textElementInfo[lineInfo.firstVisibleCharacterIndex].ascender);
+                maxDescender = Mathf.Min(maxDescender, textInfo.textElementInfo[lineInfo.firstVisibleCharacterIndex].descender);
+
+                renderedWidth = Mathf.Max(preferredSize.x, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
+            }
+            renderedHeight = maxAscender - maxDescender;
+
+            // Adjust Preferred Width and Height to account for Margins.
+            renderedWidth += generationSettings.margins.x > 0 ? generationSettings.margins.x : 0;
+            renderedWidth += generationSettings.margins.z > 0 ? generationSettings.margins.z : 0;
+            renderedHeight += generationSettings.margins.y > 0 ? generationSettings.margins.y : 0;
+            renderedHeight += generationSettings.margins.w > 0 ? generationSettings.margins.w : 0;
+
+            // Round Preferred Values to nearest 5/100.
+            renderedWidth = (int)(renderedWidth * 100 + 1f) / 100f;
+            renderedHeight = (int)(renderedHeight * 100 + 1f) / 100f;
+
+            preferredSize = new Vector2(renderedWidth, renderedHeight);
+        }
+
+        internal static float GetLineHeightDefault(TextGenerationSettings settings)
+        {
+            if (settings != null && settings.fontAsset != null)
+            {
+                return settings.fontAsset.faceInfo.lineHeight / settings.fontAsset.faceInfo.pointSize * settings.fontSize;
+            }
+            return 0.0f;
+        }
+
+        public Rect[] GetHyperlinkRects(Rect content)
+        {
+            List<Rect> rects = new List<Rect>();
+
+            for (int i = 0; i < textInfo.linkCount; i++)
+            {
+                var minPos = GetCursorPositionFromStringIndexUsingLineHeight(textInfo.linkInfo[i].linkTextfirstCharacterIndex) + new Vector2(content.x, content.y);
+                var maxPos = GetCursorPositionFromStringIndexUsingLineHeight(textInfo.linkInfo[i].linkTextLength + textInfo.linkInfo[i].linkTextfirstCharacterIndex) + new Vector2(content.x, content.y);
+                var lineHeight = textInfo.lineInfo[0].lineHeight;
+
+                if (minPos.y == maxPos.y)
+                {
+                    rects.Add(new Rect(minPos.x, minPos.y - lineHeight, maxPos.x - minPos.x, lineHeight));
+                }
+                else
+                {
+                    // Rect for the first line - including end part
+                    rects.Add(new Rect(minPos.x, minPos.y - lineHeight, textInfo.lineInfo[0].width - minPos.x, lineHeight));
+                    // Rect for the middle part
+                    rects.Add(new Rect(content.x, minPos.y, textInfo.lineInfo[0].width, maxPos.y - minPos.y - lineHeight));
+                    // Rect for the bottom line - up to selection
+                    if (maxPos.x != 0f)
+                        rects.Add(new Rect(content.x, maxPos.y - lineHeight, maxPos.x, lineHeight));
+                }
+            }
+            return rects.ToArray();
         }
     }
 }

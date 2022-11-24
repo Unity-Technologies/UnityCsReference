@@ -46,7 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Versions = new List<AssetStorePackageVersion>();
         }
 
-        public AssetStoreVersionList(IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null, AssetStoreUpdateInfo updateInfo = null)
+        public AssetStoreVersionList(IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null, AssetStoreUpdateInfo updateInfo = null, AssetStoreImportedPackage importedPackage = null)
         {
             m_Versions = new List<AssetStorePackageVersion>();
 
@@ -59,18 +59,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             // result in a case where localInfo and productInfo have different version numbers but no update is available
             // Because of this, we prefer showing version from the server (even when localInfo version is different)
             // and we only want to show the localInfo version when `localInfo.canUpdate` is set to true
-            var latestVersion = new AssetStorePackageVersion(ioProxy, productInfo);
-            if (localInfo != null)
+            if (localInfo != null && updateInfo?.canUpdate == true)
             {
-                if (updateInfo?.canUpdate == true)
-                    m_Versions.Add(new AssetStorePackageVersion(ioProxy, productInfo, localInfo));
-                else
-                {
-                    latestVersion.SetLocalPath(ioProxy, localInfo.packagePath);
-                    latestVersion.AddDowngradeWarningIfApplicable(localInfo, updateInfo);
-                }
+                m_Versions.Add(new AssetStorePackageVersion(ioProxy, productInfo, localInfo, importedPackage));
+                m_Versions.Add(new AssetStorePackageVersion(ioProxy, productInfo));
             }
-            m_Versions.Add(latestVersion);
+            else
+            {
+                var version = new AssetStorePackageVersion(ioProxy, productInfo, importedPackage: importedPackage);
+                if (localInfo != null)
+                {
+                    version.SetLocalPath(ioProxy, localInfo.packagePath);
+                    version.AddDowngradeWarningIfApplicable(localInfo, updateInfo);
+                }
+                m_Versions.Add(version);
+            }
         }
 
         public IEnumerator<IPackageVersion> GetEnumerator()

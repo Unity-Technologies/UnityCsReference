@@ -138,7 +138,7 @@ namespace UnityEditor
             m_IsBeingDestroyed = true;
 
             if (hasFocus)
-                m_OnLostFocus?.Invoke();
+                OnLostFocus();
 
             actualView = null;
 
@@ -248,8 +248,14 @@ namespace UnityEditor
 
         private static void UpdateWindowTitle(EditorWindow w)
         {
-            if (w && w.m_Parent && w.m_Parent.window && w.titleContent != null)
+            if (w &&
+                w.m_Parent &&
+                w.m_Parent.window &&
+                w.m_Parent.window.m_UpdateTitleFromChildWindow &&
+                w.titleContent != null)
+            {
                 w.m_Parent.window.title = w.titleContent.text;
+            }
         }
 
         private static void UpdateWindowHasUnsavedChanges(EditorWindow w)
@@ -855,8 +861,8 @@ namespace UnityEditor
 
                     if (ModeService.HasCapability(ModeCapability.StaticTabs, false))
                     {
-						break;
-					}
+                        break;
+                    }
                     if (evt.pointerType == PointerType.Pen && !evt.penStatus.HasFlag(PenStatus.Contact))
                         break;
 

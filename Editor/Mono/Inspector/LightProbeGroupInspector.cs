@@ -255,7 +255,7 @@ namespace UnityEditor
 
         public static void TetrahedralizeSceneProbes(out Vector3[] positions, out int[] indices)
         {
-            var probeGroups = Object.FindObjectsOfType(typeof(LightProbeGroup)) as LightProbeGroup[];
+            var probeGroups = Object.FindObjectsByType<LightProbeGroup>(FindObjectsSortMode.None);
 
             if (probeGroups == null)
             {

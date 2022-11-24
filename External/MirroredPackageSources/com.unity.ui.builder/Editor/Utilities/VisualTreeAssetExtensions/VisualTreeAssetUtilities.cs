@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
@@ -7,6 +8,14 @@ namespace Unity.UI.Builder
 {
     internal static class VisualTreeAssetUtilities
     {
+        public struct ElementsInfo
+        {
+            public int elements { get; set; }
+            public int editorElements { get; set; }
+            public int customElements { get; set; }
+            public int hierarchyDepth { get; set; }
+        }
+        
         public static VisualTreeAsset CreateInstance()
         {
             var vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
@@ -201,6 +210,66 @@ namespace Unity.UI.Builder
             ReOrderDocument(vta);
 
             return vea;
+        }
+        
+        static void GetElementsInfoRecursively(List<VisualElementAsset> rootAssets,
+            Dictionary<int, List<VisualElementAsset>> idToChildren, ref ElementsInfo elementsInfo)
+        {
+            if (rootAssets == null || rootAssets.Count == 0)
+            {
+                return;
+            }
+            
+            elementsInfo.hierarchyDepth++;
+
+            rootAssets.Sort(CompareForOrder);
+            foreach (var rootElement in rootAssets)
+            {
+                Assert.IsNotNull(rootElement);
+
+                // Editor elements
+                if (rootElement.fullTypeName.Contains("UnityEditor") 
+                    || BuilderLibraryContent.IsEditorOnlyControl(rootElement.fullTypeName))
+                {
+                    elementsInfo.editorElements++;
+                }
+                // Custom controls
+                // i.e. everything that is not a template and is not in the Standard library tab
+                else if (rootElement.fullTypeName != BuilderConstants.UxmlInstanceTypeName 
+                         && !BuilderLibraryContent.IsStandardControl(rootElement.fullTypeName))
+                {
+                    elementsInfo.customElements++;
+                }
+
+                // All elements
+                elementsInfo.elements++;
+                
+                idToChildren.TryGetValue(rootElement.id, out var rootChildAssets);
+                rootChildAssets?.Sort(CompareForOrder);
+                GetElementsInfoRecursively(rootChildAssets, idToChildren, ref elementsInfo);
+            }
+        }
+
+        /// <summary>
+        /// It gathers the data needed to fill <see cref="ElementsInfo"/>
+        /// </summary>
+        internal static ElementsInfo GetElementsInfo(Dictionary<int, List<VisualElementAsset>> idToChildren)
+        {
+            ElementsInfo elementsInfo = new ElementsInfo();
+
+            // Tree root have a parentId == 0
+            idToChildren.TryGetValue(0, out var rootAssets);
+            if (rootAssets == null || rootAssets.Count == 0) 
+                return elementsInfo;
+            
+            var root = rootAssets[0];
+            rootAssets.Clear();
+            idToChildren.TryGetValue(root.id, out rootAssets);
+            rootAssets?.Sort(CompareForOrder);
+
+            GetElementsInfoRecursively(rootAssets, idToChildren, ref elementsInfo);
+
+            return elementsInfo;
         }
     }
 }

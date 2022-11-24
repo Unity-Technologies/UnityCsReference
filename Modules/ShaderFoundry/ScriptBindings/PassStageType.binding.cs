@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Bindings;
-using PassIdentifier = UnityEngine.Rendering.PassIdentifier;
 
 namespace UnityEditor.ShaderFoundry
 {

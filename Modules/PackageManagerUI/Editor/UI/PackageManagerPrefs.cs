@@ -18,8 +18,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_SplitterFlexGrowPrefs = "PackageManager.SplitterFlexGrowPrefs";
         private const string k_LastUsedFilterPrefsPrefix = "PackageManager.Filter_";
 
-        public virtual event Action<PackageFilterTab> onFilterTabChanged = delegate { };
-        public virtual event Action<string> onTrimmedSearchTextChanged = delegate { };
+        public virtual event Action<PackageFilterTab> onFilterTabChanged = delegate {};
+        public virtual event Action<string> onTrimmedSearchTextChanged = delegate {};
 
         public const PackageFilterTab k_DefaultFilterTab = PackageFilterTab.InProject;
         public const int k_DefaultPageSize = 25;
@@ -187,6 +187,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get =>  m_SelectedPackageDetailsTabIdentifier;
             set => m_SelectedPackageDetailsTabIdentifier = value;
+        }
+
+        [SerializeField]
+        private SortedColumn[] m_ImportedAssetsSortedColumns = Array.Empty<SortedColumn>();
+
+        public virtual SortedColumn[] importedAssetsSortedColumns
+        {
+            get => m_ImportedAssetsSortedColumns;
+            set => m_ImportedAssetsSortedColumns = value ?? Array.Empty<SortedColumn>();
         }
 
         [SerializeField]

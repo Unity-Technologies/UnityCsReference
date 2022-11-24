@@ -117,7 +117,7 @@ namespace UnityEditor.Search.Providers
                 var obj = ObjectFromItem(item);
                 if (obj == null)
                     return item.thumbnail;
-                return Utils.GetSceneObjectPreview(obj, size, options, item.thumbnail);
+                return Utils.GetSceneObjectPreview(context, obj, size, options, item.thumbnail);
             };
 
             startDrag = (item, context) =>
@@ -309,7 +309,7 @@ namespace UnityEditor.Search.Providers
             }
             else if (context.filterType != null && string.IsNullOrEmpty(context.searchQuery))
             {
-                yield return UnityEngine.Object.FindObjectsOfType(context.filterType)
+                yield return UnityEngine.Object.FindObjectsByType(context.filterType, UnityEngine.FindObjectsSortMode.None)
                     .Select(obj =>
                     {
                         if (obj is Component c)

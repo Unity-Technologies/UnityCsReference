@@ -133,6 +133,7 @@ namespace UnityEngine
         }
 
         //*undocumented For terrain engine only
+        [Obsolete("Light.GetLights has been deprecated, use FindObjectsOfType in combination with light.cullingmask/light.type", false)]
         [FreeFunction("Light_Bindings::GetLights")]
         extern public static Light[] GetLights(LightType type, int layer);
 

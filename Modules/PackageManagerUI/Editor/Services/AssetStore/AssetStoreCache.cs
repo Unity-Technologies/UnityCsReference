@@ -22,6 +22,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private Dictionary<long, AssetStoreUpdateInfo> m_UpdateInfos = new Dictionary<long, AssetStoreUpdateInfo>();
 
+        // We use the guid string as the key for each imported asset
+        private Dictionary<string, Asset> m_ImportedAssets = new Dictionary<string, Asset>();
+        private Dictionary<long, AssetStoreImportedPackage> m_ImportedPackages = new Dictionary<long, AssetStoreImportedPackage>();
+
         [SerializeField]
         private string[] m_SerializedCategories = new string[0];
 
@@ -40,12 +44,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private AssetStoreUpdateInfo[] m_SerializedUpdateInfos = new AssetStoreUpdateInfo[0];
 
+        [SerializeField]
+        private Asset[] m_SerializedImportedAssets = new Asset[0];
+
         public virtual event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
         public virtual event Action<AssetStoreProductInfo> onProductInfoChanged;
         public virtual event Action<IEnumerable<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
         public virtual event Action<IEnumerable<AssetStoreUpdateInfo>> onUpdateInfosChanged;
+        public virtual event Action<IEnumerable<AssetStoreImportedPackage> /*addedOrUpdated*/, IEnumerable<AssetStoreImportedPackage> /*removed*/> onImportedPackagesChanged;
 
         public virtual IEnumerable<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
+
+        public virtual IEnumerable<AssetStoreImportedPackage> importedPackages => m_ImportedPackages.Values;
 
         [NonSerialized]
         private ApplicationProxy m_Application;
@@ -75,6 +85,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedProductInfos = m_ProductInfos.Values.ToArray();
             m_SerializedLocalInfos = m_LocalInfos.Values.ToArray();
             m_SerializedUpdateInfos = m_UpdateInfos.Values.ToArray();
+
+            m_SerializedImportedAssets = m_ImportedAssets.Values.ToArray();
         }
 
         public void OnAfterDeserialize()
@@ -86,6 +98,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ProductInfos = m_SerializedProductInfos.ToDictionary(info => info.productId, info => info);
             m_LocalInfos = m_SerializedLocalInfos.ToDictionary(info => info.productId, info => info);
             m_UpdateInfos = m_SerializedUpdateInfos.ToDictionary(info => info.productId, info => info);
+
+            m_ImportedAssets = m_SerializedImportedAssets.ToDictionary(asset => asset.guid, asset => asset);
+
+            // We don't serialize imported packages, because the list of imported packages can be constructed from imported assets
+            foreach (var asset in m_SerializedImportedAssets)
+            {
+                if (m_ImportedPackages.TryGetValue(asset.origin.productId, out var importedPackage))
+                {
+                    importedPackage.AddImportedAsset(asset);
+                    continue;
+                }
+
+                m_ImportedPackages[asset.origin.productId] = new AssetStoreImportedPackage(new List<Asset>() { asset });
+            }
         }
 
         public virtual void SetCategory(string category, long count)
@@ -192,6 +218,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             return productId > 0 ? m_UpdateInfos.Get(productId.Value) : null;
         }
 
+        public virtual AssetStoreImportedPackage GetImportedPackage(long? productId)
+        {
+            return productId > 0 ? m_ImportedPackages.Get(productId.Value) : null;
+        }
+
         public virtual void SetPurchaseInfos(IEnumerable<AssetStorePurchaseInfo> purchaseInfos)
         {
             var updatedPurcahseInfos = new List<AssetStorePurchaseInfo>();
@@ -277,6 +308,65 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (updateInfosChanged.Any())
                 onUpdateInfosChanged?.Invoke(updateInfosChanged);
+        }
+
+        public virtual void SetImportedAssets(IEnumerable<Asset> importedAssets)
+        {
+            var oldImportedAssets = m_ImportedAssets;
+            m_ImportedAssets = importedAssets.ToDictionary(asset => asset.guid, asset => asset);
+
+            var modifiedProductIds = new HashSet<long>();
+            foreach (var asset in m_ImportedAssets.Values)
+            {
+                var oldAsset = oldImportedAssets.Get(asset.guid);
+                if (oldAsset != null)
+                    oldImportedAssets.Remove(asset.guid);
+                if (oldAsset == null || !oldAsset.Equals(asset))
+                    modifiedProductIds.Add(asset.origin.productId);
+            }
+
+            foreach (var asset in oldImportedAssets.Values)
+                modifiedProductIds.Add(asset.origin.productId);
+
+            if (modifiedProductIds.Any())
+                RefreshImportedPackageList(modifiedProductIds);
+        }
+
+        private void RefreshImportedPackageList(HashSet<long> modifiedProductIds)
+        {
+            var addedOrUpdatedPackages = new Dictionary<long, AssetStoreImportedPackage>();
+            foreach (var asset in m_ImportedAssets.Values)
+            {
+                var productId = asset.origin.productId;
+                if (!modifiedProductIds.Contains(productId))
+                    continue;
+
+                if (addedOrUpdatedPackages.TryGetValue(asset.origin.productId, out var package))
+                {
+                    package.AddImportedAsset(asset);
+                    continue;
+                }
+                addedOrUpdatedPackages[asset.origin.productId] = new AssetStoreImportedPackage(new List<Asset>() { asset });
+            }
+
+            var removedPackages = new List<AssetStoreImportedPackage>();
+            foreach (var productId in modifiedProductIds)
+            {
+                if (addedOrUpdatedPackages.TryGetValue(productId, out var package))
+                {
+                    m_ImportedPackages[productId] = package;
+                    continue;
+                }
+
+                if (m_ImportedPackages.TryGetValue(productId, out var removedPackage))
+                {
+                    m_ImportedPackages.Remove(productId);
+                    removedPackages.Add(removedPackage);
+                }
+            }
+
+            if (addedOrUpdatedPackages.Any() || removedPackages.Any())
+                onImportedPackagesChanged?.Invoke(addedOrUpdatedPackages.Values, removedPackages);
         }
     }
 }

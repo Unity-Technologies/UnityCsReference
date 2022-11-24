@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
+using System.Linq;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -23,6 +24,9 @@ namespace UnityEditor.ShaderFoundry
         internal extern bool IsValid();
         internal extern string GetName(ShaderContainer container);
         internal extern string GetValue(ShaderContainer container);
+
+        internal extern bool ValueIsString(ShaderContainer container);
+        internal extern bool ValueIsArray(ShaderContainer container);
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
 
@@ -53,7 +57,31 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null) && (param.IsValid());
         public string Name => param.GetName(container);
-        public string Value => param.GetValue(container);
+        public string Value
+        {
+            get
+            {
+                if (container == null || !ValueIsString)
+                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParam.Value'. Value is not a string. Check ValueIsString before calling.");
+                return container.GetString(param.m_ValueHandle);
+            }
+        }
+        public IEnumerable<ShaderAttributeParam> Values
+        {
+            get
+            {
+                if (container == null || !ValueIsArray)
+                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParam.Values'. Values is not a List. Check ValueIsArray before calling.");
+
+                var handleType = container.GetDataTypeFromHandle(param.m_ValueHandle);
+                var localContainer = Container;
+                var list = new FixedHandleListInternal(param.m_ValueHandle);
+                return list.Select<ShaderAttributeParam>(localContainer, (handle) => (new ShaderAttributeParam(localContainer, handle)));
+            }
+        }
+        public bool ValueIsString => param.ValueIsString(container);
+        // The value is an array of sub attributes. This is equivalent to "param = [value, value]".
+        public bool ValueIsArray => param.ValueIsArray(container);
         public static ShaderAttributeParam Invalid => new ShaderAttributeParam(null, FoundryHandle.Invalid());
 
         // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
@@ -73,6 +101,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             internal string m_Name;
             internal string m_Value;
+            internal List<ShaderAttributeParam> m_Values;
 
             public ShaderContainer Container => container;
 
@@ -81,12 +110,27 @@ namespace UnityEditor.ShaderFoundry
                 this.container = container;
                 m_Name = name;
                 m_Value = value;
+                m_Values = null;
+            }
+
+            public Builder(ShaderContainer container, string name, List<ShaderAttributeParam> values)
+            {
+                this.container = container;
+                m_Name = name;
+                m_Value = null;
+                m_Values = values;
             }
 
             public ShaderAttributeParam Build()
             {
                 var paramInternal = new ShaderAttributeParamInternal();
-                paramInternal.Setup(container, m_Name, m_Value);
+                if (m_Values == null)
+                    paramInternal.Setup(container, m_Name, m_Value);
+                else
+                {
+                    paramInternal.m_NameHandle = container.AddString(m_Name);
+                    paramInternal.m_ValueHandle = FixedHandleListInternal.Build(container, m_Values, (v) => v.handle);
+                }
 
                 var returnHandle = container.Add(paramInternal);
                 return new ShaderAttributeParam(container, returnHandle);

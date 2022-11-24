@@ -14,7 +14,7 @@ namespace UnityEngine
     /* Awaitable Coroutines are async/await compatible types specially tailored for running in Unity. (they can be awaited, and they can be used as return type
      * of an async method)
      * Compared to System.Threading.Tasks it is much less smart and takes shortcuts to improve performance based on
-     * Unity specific assumption. 
+     * Unity specific assumption.
      * Main differences compared to .net tasks:
     - Can be awaited only once: a given Awaitable object can't be awaited by multiple async functions. This is considered undefined behaviour
     (considering it undefined behaviour allows for optimizations non-achievable otherwise)

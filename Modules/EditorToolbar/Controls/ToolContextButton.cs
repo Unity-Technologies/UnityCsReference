@@ -117,6 +117,8 @@ namespace UnityEditor.Toolbars
             }
 
             var content = EditorToolUtility.GetIcon(activeContextType, true);
+            if (content.image == null)
+                content.image = EditorGUIUtility.IconContent("CustomTool").image;
             icon = content.image as Texture2D;
             var activeContextName = EditorToolUtility.GetToolName(ToolManager.activeContextType)
                                     + (isGOToolContext ? " (Default)" : "");

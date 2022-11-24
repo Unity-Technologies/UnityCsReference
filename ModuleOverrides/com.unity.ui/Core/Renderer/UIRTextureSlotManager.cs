@@ -47,7 +47,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 m_Textures[i] = TextureId.invalid;
                 m_Tickets[i] = -1;
-                SetGpuData(i, TextureId.invalid, 1, 1, 0);
+                SetGpuData(i, TextureId.invalid, 1, 1, 0, 0);
             }
         }
 
@@ -96,7 +96,7 @@ namespace UnityEngine.UIElements.UIR
             return slot;
         }
 
-        public void Bind(TextureId id, float sdfScale, int slot, MaterialPropertyBlock mat)
+        public void Bind(TextureId id, float sdfScale, float sharpness, int slot, MaterialPropertyBlock mat)
         {
             Texture tex = textureRegistry.GetTexture(id);
             if (tex == null) // Case 1364578: Texture may have been destroyed
@@ -104,18 +104,18 @@ namespace UnityEngine.UIElements.UIR
 
             m_Textures[slot] = id;
             MarkUsed(slot);
-            SetGpuData(slot, id, tex.width, tex.height, sdfScale);
+            SetGpuData(slot, id, tex.width, tex.height, sdfScale, sharpness);
             mat.SetTexture(slotIds[slot], tex);
             mat.SetVectorArray(textureTableId, m_GpuTextures);
         }
 
-        public void SetGpuData(int slotIndex, TextureId id, int textureWidth, int textureHeight, float sdfScale)
+        public void SetGpuData(int slotIndex, TextureId id, int textureWidth, int textureHeight, float sdfScale, float sharpness)
         {
             int offset = slotIndex * k_SlotSize;
             float texelWidth = 1f / textureWidth;
             float texelHeight = 1f / textureHeight;
             m_GpuTextures[offset + 0] = new Vector4(id.ConvertToGpu(), texelWidth, texelHeight, sdfScale);
-            m_GpuTextures[offset + 1] = new Vector4(textureWidth, textureHeight, 0, 0);
+            m_GpuTextures[offset + 1] = new Vector4(textureWidth, textureHeight, sharpness, 0);
         }
 
         // Overridable for tests

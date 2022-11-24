@@ -33,7 +33,7 @@ namespace UnityEditor.Search
             ObjectField obj = new ObjectField()
             {
                 name = kVisualElementName,
-                label = prop.localizedDisplayName,
+                label = preferredLabel,
                 bindingPath = prop.propertyPath,
                 objectType = fieldInfo.FieldType,
                 searchViewFlags = searchContextAttribute.flags,

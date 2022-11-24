@@ -70,6 +70,15 @@ namespace UnityEditor.Search
             Add(m_GridView);
         }
 
+
+        int IResultView.ComputeVisibleItemCapacity(float width, float height)
+        {
+            // Approximation of how many we can fit.
+            width /= m_ViewModel.itemIconSize;
+            height /= m_ViewModel.itemIconSize;
+            return (int)(width * height);
+        }
+
         private float GetItemSize()
         {
             if (m_ViewModel.itemIconSize == 0)

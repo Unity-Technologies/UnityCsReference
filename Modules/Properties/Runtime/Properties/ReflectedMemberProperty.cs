@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Unity.Collections;
 
 using System.Reflection.Emit;
 
@@ -174,7 +173,13 @@ namespace Unity.Properties
             m_IsStructContainerType = TypeTraits<TContainer>.IsValueType;
 
             AddAttributes(info.GetCustomAttributes());
-            var isReadOnly = m_Info.IsReadOnly || HasAttribute<ReadOnlyAttribute>();
+            var isReadOnly = m_Info.IsReadOnly;
+            if (HasAttribute<CreatePropertyAttribute>())
+            {
+                var createProperty = GetAttribute<CreatePropertyAttribute>();
+                isReadOnly |= createProperty.ReadOnly;
+            }
+
             IsReadOnly = isReadOnly;
 
             if (m_Info is FieldMember fieldMember)
@@ -198,7 +203,7 @@ namespace Unity.Properties
                 else
                     m_GetClassValueAction = (GetClassValueAction)dynamicMethod.CreateDelegate(typeof(GetClassValueAction));
 
-                // settter
+                // setter
                 if (!isReadOnly)
                 {
                     dynamicMethod = new DynamicMethod(string.Empty, typeof(void), new Type[]

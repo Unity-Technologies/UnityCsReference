@@ -18,7 +18,7 @@ using RayTracingMode = UnityEngine.Experimental.Rendering.RayTracingMode;
 namespace UnityEngine.Rendering
 {
     [UsedByNativeCode]
-    [NativeHeader("Runtime/Shaders/RayTracingAccelerationStructure.h")]
+    [NativeHeader("Runtime/Shaders/RayTracing/RayTracingAccelerationStructure.h")]
     [NativeHeader("Runtime/Export/Graphics/RayTracingAccelerationStructure.bindings.h")]
 
     [MovedFrom("UnityEngine.Experimental.Rendering")]

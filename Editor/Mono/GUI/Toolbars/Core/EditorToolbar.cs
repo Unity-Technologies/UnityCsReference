@@ -16,6 +16,7 @@ namespace UnityEditor.Toolbars
         public const string elementClassName = "unity-editor-toolbar-element";
         public const string elementIconClassName = elementClassName + "__icon";
         public const string elementLabelClassName = elementClassName + "__label";
+        public const string elementTextIconClassName = elementClassName + "__text-icon";
 
         string[] m_ToolbarElements;
         readonly EditorWindow m_Context;

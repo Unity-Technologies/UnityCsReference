@@ -42,7 +42,7 @@ namespace UnityEditor.Search
             var newViewState = new SearchViewState();
             newViewState.Assign(query.GetViewState());
             newViewState.flags |= UnityEngine.Search.SearchViewFlags.DisableQueryHelpers;
-            m_ResultView = new SearchView(newViewState);
+            m_ResultView = new SearchView(newViewState, GetInstanceID());
         }
 
         public override VisualElement CreateInspectorGUI()
@@ -57,7 +57,14 @@ namespace UnityEditor.Search
 
             m_HeaderElement.Add(new UIElements.PropertyField(m_IsSearchTemplateProperty));
             m_HeaderElement.Add(new UIElements.PropertyField(m_IconProperty));
-            m_HeaderElement.Add(new UIElements.PropertyField(m_TextProperty));
+
+            var searchQueryTextEditor = new UIElements.PropertyField(m_TextProperty);
+            searchQueryTextEditor.RegisterValueChangeCallback(evt => {
+                m_ResultView.context.searchText = evt.changedProperty.stringValue;
+                m_ResultView.Refresh();
+            });
+
+            m_HeaderElement.Add(searchQueryTextEditor);
             m_HeaderElement.Add(new UIElements.PropertyField(m_DescriptionProperty));
 
             if (Unsupported.IsSourceBuild())

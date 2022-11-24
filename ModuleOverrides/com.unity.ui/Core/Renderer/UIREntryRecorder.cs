@@ -44,6 +44,7 @@ namespace UnityEngine.UIElements.UIR
 
         public Texture texture;
         public float textScale;
+        public float fontSharpness;
         public VectorImage gradientsOwner;
         public Material material;
         public Action immediateCallback;
@@ -106,7 +107,7 @@ namespace UnityEngine.UIElements.UIR
             AppendMeshEntry(entry);
         }
 
-        public void DrawSdfText(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale)
+        public void DrawSdfText(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale, float sharpness)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.DrawSdfTextMesh;
@@ -114,6 +115,7 @@ namespace UnityEngine.UIElements.UIR
             entry.indices = indices;
             entry.texture = texture;
             entry.textScale = scale;
+            entry.fontSharpness = sharpness;
             AppendMeshEntry(entry);
         }
 

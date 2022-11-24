@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using UnityEditor.Overlays;
 using UnityEngine;
 using UObject = UnityEngine.Object;
 
@@ -249,13 +250,8 @@ namespace UnityEditor.EditorTools
             if(( res.image = EditorGUIUtility.FindTexture(editorToolType) ) != null)
                 goto ReturnToolbarIcon;
 
-            // If it's a custom editor tool, try to get an icon for the tool's target type
-            var attrib = GetEditorToolAttribute(editorToolType);
-            if(attrib?.targetType != null && ( res.image = AssetPreview.GetMiniTypeThumbnailFromType(attrib.targetType) ) != null)
-                goto ReturnToolbarIcon;
-
-            // And finally fall back to the default Custom Tool icon
-            res.image = EditorGUIUtility.IconContent("CustomTool").image;
+            // And finally fall back to the significant letters of the tool's typename
+            res.text = OverlayUtilities.GetSignificantLettersForIcon(editorToolType.Name);
 
         ReturnToolbarIcon:
             if (string.IsNullOrEmpty(res.tooltip))

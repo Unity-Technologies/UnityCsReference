@@ -258,7 +258,7 @@ namespace UnityEditor
         DXT5nm = 1
     }
 
-    internal enum TextureCompressionFormat
+    public enum TextureCompressionFormat
     {
         Unknown = 0,
         ETC = 1,
@@ -1679,6 +1679,14 @@ namespace UnityEditor
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         internal static extern void SetDefaultTextureCompressionFormat(BuildTargetGroup platform, TextureCompressionFormat format);
+
+        [NativeMethod("GetTextureCompressionFormats")]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        internal static extern TextureCompressionFormat[] GetTextureCompressionFormatsImpl(BuildTargetGroup platform);
+
+        [NativeMethod("SetTextureCompressionFormats")]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        internal static extern void SetTextureCompressionFormatsImpl(BuildTargetGroup platform, TextureCompressionFormat[] formats);
 
         [FreeFunction("GetPlayerSettings().GetEditorOnly().RecompileScripts")]
         internal static extern void RecompileScripts(string reason, bool refreshProject = true);

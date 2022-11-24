@@ -324,6 +324,7 @@ namespace UnityEngine.Android
     {
         public static bool coreUnityAssetPacksDownloaded { get { return CoreUnityAssetPacksDownloaded(); } }
 
+        internal static string textureCompressionsPackName { get { return GetTextureCompressionsPackName(); } }
         internal static string dataPackName { get { return GetDataPackName(); } }
         internal static string streamingAssetsPackName { get { return GetStreamingAssetsPackName(); } }
 
@@ -343,6 +344,7 @@ namespace UnityEngine.Android
 
         // These values must match constants in AndroidAssetPacks.h
         // We can't directly access them since all code in PlatformDependent gets stripped when building source code delivery
+        private static string GetTextureCompressionsPackName() { return "UnityTextureCompressionsAssetPack"; }
         private static string GetDataPackName() { return "UnityDataAssetPack"; }
         private static string GetStreamingAssetsPackName() { return "UnityStreamingAssetsPack"; }
     }

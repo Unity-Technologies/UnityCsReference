@@ -1937,6 +1937,9 @@
     <Compile Include="..\..\Modules\IMGUI\GUIUtility.cs">
       <Link>Modules\IMGUI\GUIUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\IMGUI\IMGUITextHandle.cs">
+      <Link>Modules\IMGUI\IMGUITextHandle.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\IMGUI\LayoutEntry.cs">
       <Link>Modules\IMGUI\LayoutEntry.cs</Link>
     </Compile>
@@ -1945,6 +1948,9 @@
     </Compile>
     <Compile Include="..\..\Modules\IMGUI\ObjectGUIState.bindings.cs">
       <Link>Modules\IMGUI\ObjectGUIState.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\IMGUI\RuntimeTextSettings.cs">
+      <Link>Modules\IMGUI\RuntimeTextSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\IMGUI\ScrollViewState.cs">
       <Link>Modules\IMGUI\ScrollViewState.cs</Link>
@@ -2458,6 +2464,12 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\UnicodeLineBreakingRules.cs">
       <Link>Modules\TextCoreTextEngine\Managed\UnicodeLineBreakingRules.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\MeshInfo.bindings.cs">
+      <Link>Modules\TextCoreTextEngine\MeshInfo.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\TextCoreVertex.bindings.cs">
+      <Link>Modules\TextCoreTextEngine\TextCoreVertex.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextRendering\FontStyle.cs">
       <Link>Modules\TextRendering\FontStyle.cs</Link>
@@ -3103,6 +3115,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\GraphicsSettings.bindings.cs">
       <Link>Runtime\Export\Graphics\GraphicsSettings.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsTexture.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsTexture.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Graphics_BindingsOverloads.cs">
       <Link>Runtime\Export\Graphics\Graphics_BindingsOverloads.cs</Link>

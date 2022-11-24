@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore.LowLevel;
@@ -12,6 +13,10 @@ namespace UnityEngine.TextCore.Text
     [System.Serializable][ExcludeFromPresetAttribute][ExcludeFromObjectFactory]
     public class TextSettings : ScriptableObject
     {
+        internal string k_SystemFontName =
+            "Lucida Grande"
+        ;
+
         /// <summary>
         /// The version of the TextSettings class.
         /// Version 1.2.0 was introduced with the TextCore package
@@ -259,7 +264,7 @@ namespace UnityEngine.TextCore.Text
                 // Validate fontRef data
                 if (fontRef.font == null || fontRef.fontAsset == null)
                 {
-                    Debug.Log("Deleting invalid font reference.");
+                    Debug.LogWarning("Deleting invalid font reference.");
                     m_FontReferences.RemoveAt(i);
                     i -= 1;
                     continue;
@@ -289,7 +294,13 @@ namespace UnityEngine.TextCore.Text
         internal Dictionary<int, FontAsset> m_FontLookup;
         private List<FontReferenceMap> m_FontReferences = new List<FontReferenceMap>();
 
+
         protected FontAsset GetCachedFontAssetInternal(Font font)
+        {
+            return GetCachedFontAsset(font, TextShaderUtilities.ShaderRef_MobileSDF);
+        }
+
+        internal FontAsset GetCachedFontAsset(Font font, Shader shader)
         {
             if (m_FontLookup == null)
             {
@@ -297,20 +308,23 @@ namespace UnityEngine.TextCore.Text
                 InitializeFontReferenceLookup();
             }
 
-            int id = font.GetInstanceID();
+            int id = font.GetInstanceID() + shader.GetInstanceID().GetHashCode();
 
             if (m_FontLookup.ContainsKey(id))
                 return m_FontLookup[id];
 
             FontAsset fontAsset;
-            if (font.name == "System Normal")
+            if (font.name == "System Normal" || font.name == "System Small" || font.name == "System Big" || font.name == "System Warning")
             {
-                fontAsset = FontAsset.CreateFontAsset("Lucida Grande", "Regular");
+                fontAsset = FontAsset.CreateFontAsset(k_SystemFontName, "Regular", 90);
+            }
+            else if (font.name == "System Normal Bold" || font.name == "System Small Bold")
+            {
+                fontAsset = FontAsset.CreateFontAsset(k_SystemFontName, "Bold", 90);
             }
             else
             {
-                //Debug.Log("Creating new Dynamic Runtime Font Asset for [" + font.name + "].");
-                fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic);
+                fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
             }
 
             if (fontAsset != null)
@@ -319,6 +333,7 @@ namespace UnityEngine.TextCore.Text
                 fontAsset.atlasTextures[0].hideFlags = HideFlags.DontSave;
                 fontAsset.material.hideFlags = HideFlags.DontSave;
                 fontAsset.isMultiAtlasTexturesEnabled = true;
+                fontAsset.material.shader = shader;
 
                 m_FontReferences.Add(new FontReferenceMap(font, fontAsset));
                 m_FontLookup.Add(id, fontAsset);

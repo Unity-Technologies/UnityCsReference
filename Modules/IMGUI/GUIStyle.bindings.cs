@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine
 {
@@ -60,9 +62,6 @@ namespace UnityEngine
         [FreeFunction(Name = "GUIStyle_Bindings::AssignRectOffset", HasExplicitThis = true)]
         private extern void AssignRectOffset(int idx, IntPtr srcRectOffset);
 
-        [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetLineHeight")]
-        private static extern float Internal_GetLineHeight(IntPtr target);
-
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_Draw", HasExplicitThis = true)]
         private extern void Internal_Draw(Rect screenRect, GUIContent content, bool isHover, bool isActive, bool on, bool hasKeyboardFocus);
 
@@ -70,28 +69,12 @@ namespace UnityEngine
         private extern void Internal_Draw2(Rect position, GUIContent content, int controlID, bool on);
 
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_DrawCursor", HasExplicitThis = true)]
-        private extern void Internal_DrawCursor(Rect position, GUIContent content, int pos, Color cursorColor);
+        private extern void Internal_DrawCursor(Rect position, GUIContent content, Vector2 pos, Color cursorColor);
 
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_DrawWithTextSelection", HasExplicitThis = true)]
         private extern void Internal_DrawWithTextSelection(Rect screenRect, GUIContent content, bool isHover, bool isActive,
-            bool on, bool hasKeyboardFocus, bool drawSelectionAsComposition, int cursorFirst, int cursorLast, Color cursorColor,
+            bool on, bool hasKeyboardFocus, bool drawSelectionAsComposition, Vector2 cursorFirstPosition, Vector2 cursorLastPosition, Color cursorColor,
             Color selectionColor);
-
-        [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetCursorPixelPosition", HasExplicitThis = true)]
-        internal extern Vector2 Internal_GetCursorPixelPosition(Rect position, GUIContent content, int cursorStringIndex);
-
-        [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetCursorStringIndex", HasExplicitThis = true)]
-        internal extern int Internal_GetCursorStringIndex(Rect position, GUIContent content, Vector2 cursorPixelPosition);
-
-        [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetSelectedRenderedText", HasExplicitThis = true)]
-        internal extern string Internal_GetSelectedRenderedText(Rect localPosition, GUIContent mContent,
-            int selectIndex, int cursorIndex);
-
-        [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetHyperlinksRect", HasExplicitThis = true)]
-        internal extern Rect[] Internal_GetHyperlinksRect(Rect localPosition, GUIContent mContent);
-
-        [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetNumCharactersThatFitWithinWidth", HasExplicitThis = true)]
-        internal extern int Internal_GetNumCharactersThatFitWithinWidth(string text, float width);
 
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_CalcSize", HasExplicitThis = true)]
         internal extern Vector2 Internal_CalcSize(GUIContent content);
@@ -107,15 +90,21 @@ namespace UnityEngine
 
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_DrawPrefixLabel", HasExplicitThis = true)]
         private extern void Internal_DrawPrefixLabel(Rect position, GUIContent content, int controlID, bool on);
-
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_DrawContent", HasExplicitThis = true)]
         internal extern void Internal_DrawContent(Rect screenRect, GUIContent content, bool isHover, bool isActive, bool on, bool hasKeyboardFocus,
-            bool hasTextInput, bool drawSelectionAsComposition, int cursorFirst, int cursorLast, Color cursorColor, Color selectionColor,
+            bool hasTextInput, bool drawSelectionAsComposition, Vector2 cursorFirst, Vector2 cursorLast, Color cursorColor, Color selectionColor,
             Color imageColor, float textOffsetX, float textOffsetY, float imageTopOffset, float imageLeftOffset, bool overflowX, bool overflowY);
 
+        [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetTextRectOffset", HasExplicitThis = true)]
+        internal extern Vector2 Internal_GetTextRectOffset(Rect screenRect, GUIContent content, Vector2 textSize);
         [FreeFunction(Name = "GUIStyle_Bindings::SetMouseTooltip")] internal static extern void SetMouseTooltip(string tooltip, Rect screenRect);
         [FreeFunction(Name = "GUIStyle_Bindings::IsTooltipActive")] internal static extern bool IsTooltipActive(string tooltip);
         [FreeFunction(Name = "GUIStyle_Bindings::Internal_GetCursorFlashOffset")] private static extern float Internal_GetCursorFlashOffset();
         [FreeFunction(Name = "GUIStyle::SetDefaultFont")] internal static extern void SetDefaultFont(Font font);
+
+        [FreeFunction(Name = "GUIStyle_Bindings::Internal_DestroyTextGenerator")]
+        internal static extern void Internal_DestroyTextGenerator(int meshInfoId);
+        [FreeFunction(Name = "GUIStyle_Bindings::Internal_CleanupAllTextGenerator")]
+        internal static extern void Internal_CleanupAllTextGenerator();
     }
 }

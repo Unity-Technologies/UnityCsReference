@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 
@@ -29,48 +30,71 @@ namespace UnityEngine
     internal class TextEditingUtilities
     {
         private TextSelectingUtilities m_TextSelectingUtility;
-        TextHandle m_TextHandle;
+        internal TextHandle textHandle;
         private bool hasSelection => m_TextSelectingUtility.hasSelection;
         private string SelectedText => m_TextSelectingUtility.selectedText;
         private int m_iAltCursorPos => m_TextSelectingUtility.iAltCursorPos;
         int m_CursorIndexSavedState = -1;
         internal bool isCompositionActive;
         bool m_UpdateImeWindowPosition;
+        internal Action OnTextChanged;
 
         public bool multiline = false;
         internal bool revealCursor
         {
-            get { return m_TextSelectingUtility.revealCursor; }
-            set { m_TextSelectingUtility.revealCursor = value; }
+            get => m_TextSelectingUtility.revealCursor;
+            set => m_TextSelectingUtility.revealCursor = value;
         }
+
+        //Used by automated tests
+        internal int stringCursorIndex
+        {
+            get => textHandle.GetCorrespondingStringIndex(cursorIndex);
+            set => cursorIndex = textHandle.GetCorrespondingCodePointIndex(value);
+        }
+
         private int cursorIndex
         {
-            get { return m_TextSelectingUtility.cursorIndex; }
-            set { m_TextSelectingUtility.cursorIndex = value; }
+            get => m_TextSelectingUtility.cursorIndex;
+            set => m_TextSelectingUtility.cursorIndex = value;
         }
+
+        //Used by automated tests
+        internal int stringSelectIndex
+        {
+            get => textHandle.GetCorrespondingStringIndex(selectIndex);
+            set => selectIndex = textHandle.GetCorrespondingCodePointIndex(value);
+        }
+
         private int selectIndex
         {
-            get { return m_TextSelectingUtility.selectIndex; }
-            set { m_TextSelectingUtility.selectIndex = value; }
+            get => m_TextSelectingUtility.selectIndex;
+            set => m_TextSelectingUtility.selectIndex = value;
         }
 
         string m_Text;
         public string text
         {
-            get { return m_Text; }
+            get => m_Text;
             set
             {
                 if (value == m_Text)
                     return;
 
                 m_Text = value ?? string.Empty;
+                OnTextChanged?.Invoke();
             }
+        }
+
+        internal void SetTextWithoutNotify(string value)
+        {
+            m_Text = value;
         }
 
         public TextEditingUtilities(TextSelectingUtilities selectingUtilities, TextHandle textHandle, string text)
         {
             m_TextSelectingUtility = selectingUtilities;
-            m_TextHandle = textHandle;
+            this.textHandle = textHandle;
             m_Text = text;
         }
 
@@ -104,7 +128,7 @@ namespace UnityEngine
 
         public void SetImeWindowPosition(Vector2 worldPosition)
         {
-            var cursorPos = m_TextHandle.GetCursorPositionFromStringIndexUsingCharacterHeight(cursorIndex, true);
+            var cursorPos = textHandle.GetCursorPositionFromStringIndexUsingCharacterHeight(cursorIndex, true);
             GUIUtility.compositionCursorPos = worldPosition + cursorPos;
         }
 
@@ -114,7 +138,7 @@ namespace UnityEngine
             var compositionString = GUIUtility.compositionString;
             if (isCompositionActive)
             {
-                return richText ? text.Insert(cursorIndex, $"<u>{compositionString}</u>") : text.Insert(cursorIndex, compositionString);
+                return richText ? text.Insert(stringCursorIndex, $"<u>{compositionString}</u>") : text.Insert(stringCursorIndex, compositionString);
             }
             return text;
         }
@@ -311,22 +335,18 @@ namespace UnityEngine
                 DeleteSelection();
                 return true;
             }
-            int p = cursorIndex;
-            int i = p;
-            while (i-- != 0)
-                if (text[i] == '\n')
-                {
-                    p = i + 1;
-                    break;
-                }
-            if (i == -1)
-                p = 0;
-            if (cursorIndex != p)
+
+            var currentLineInfo = textHandle.GetLineInfoFromCharacterIndex(cursorIndex);
+            var startIndex = currentLineInfo.firstCharacterIndex;
+            var stringStartIndex = textHandle.GetCorrespondingStringIndex(startIndex);
+
+            if (startIndex != cursorIndex)
             {
-                text = text.Remove(p, cursorIndex - p);
-                m_TextSelectingUtility.selectIndex = cursorIndex = p;
+                text = text.Remove(stringStartIndex, stringCursorIndex - stringStartIndex);
+                cursorIndex = selectIndex = startIndex;
                 return true;
             }
+
             return false;
         }
 
@@ -344,7 +364,8 @@ namespace UnityEngine
             int prevWordEnd = m_TextSelectingUtility.FindEndOfPreviousWord(cursorIndex);
             if (cursorIndex != prevWordEnd)
             {
-                text = text.Remove(prevWordEnd, cursorIndex - prevWordEnd);
+                int prevWordEndString = textHandle.GetCorrespondingStringIndex(prevWordEnd);
+                text = text.Remove(prevWordEndString, stringCursorIndex - prevWordEndString);
                 selectIndex = cursorIndex = prevWordEnd;
                 return true;
             }
@@ -365,7 +386,8 @@ namespace UnityEngine
             int nextWordStart = m_TextSelectingUtility.FindStartOfNextWord(cursorIndex);
             if (cursorIndex < text.Length)
             {
-                text = text.Remove(cursorIndex, nextWordStart - cursorIndex);
+                int nextWordStartString = textHandle.GetCorrespondingStringIndex(nextWordStart);
+                text = text.Remove(stringCursorIndex, nextWordStartString - stringCursorIndex);
                 return true;
             }
             return false;
@@ -381,9 +403,10 @@ namespace UnityEngine
                 DeleteSelection();
                 return true;
             }
-            else if (cursorIndex < text.Length)
+            else if (stringCursorIndex < text.Length)
             {
-                text = text.Remove(cursorIndex, m_TextSelectingUtility.NextCodePointIndex(cursorIndex) - cursorIndex);
+                var count = textHandle.textInfo.textElementInfo[cursorIndex].stringLength;
+                text = text.Remove(stringCursorIndex, count);
                 return true;
             }
             return false;
@@ -402,9 +425,10 @@ namespace UnityEngine
             else if (cursorIndex > 0)
             {
                 var startIndex = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
-                text = text.Remove(startIndex, cursorIndex - startIndex);
-                m_TextSelectingUtility.SetCursorIndexWithoutNotify(startIndex);
-                m_TextSelectingUtility.SetSelectIndexWithoutNotify(startIndex);
+                var count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
+                text = text.Remove(stringCursorIndex - count, count);
+                cursorIndex = startIndex;
+                selectIndex = startIndex;
                 m_TextSelectingUtility.ClearCursorPos();
                 return true;
             }
@@ -418,13 +442,13 @@ namespace UnityEngine
                 return false;
             if (cursorIndex < selectIndex)
             {
-                text = text.Substring(0, cursorIndex) + text.Substring(selectIndex, text.Length - selectIndex);
-                m_TextSelectingUtility.SetSelectIndexWithoutNotify(cursorIndex);
+                text = text.Substring(0, stringCursorIndex) + text.Substring(stringSelectIndex, text.Length - stringSelectIndex);
+                selectIndex = cursorIndex;
             }
             else
             {
-                text = text.Substring(0, selectIndex) + text.Substring(cursorIndex, text.Length - cursorIndex);
-                m_TextSelectingUtility.SetCursorIndexWithoutNotify(selectIndex);
+                text = text.Substring(0, stringSelectIndex) + text.Substring(stringCursorIndex, text.Length - stringCursorIndex);
+                cursorIndex = selectIndex;
             }
             m_TextSelectingUtility.ClearCursorPos();
 
@@ -438,9 +462,9 @@ namespace UnityEngine
             DeleteSelection();
             text = text.Insert(cursorIndex, replace);
 
-            var newIndex = cursorIndex + replace.Length;
-            m_TextSelectingUtility.SetCursorIndexWithoutNotify(newIndex);
-            m_TextSelectingUtility.SetSelectIndexWithoutNotify(newIndex);
+            var newIndex = cursorIndex + new StringInfo(replace).LengthInTextElements;
+            cursorIndex = newIndex;
+            selectIndex = newIndex;
             m_TextSelectingUtility.ClearCursorPos();
         }
 

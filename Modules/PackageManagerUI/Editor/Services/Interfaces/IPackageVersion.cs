@@ -68,6 +68,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         DependencyInfo[] resolvedDependencies { get; }
 
+        IEnumerable<Asset> importedAssets { get; }
+
         bool HasTag(PackageTag tag);
 
         // A version is fully fetched when the information isn't derived from another version (therefore may be inaccurate)

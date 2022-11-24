@@ -8,6 +8,7 @@ using System;
 
 namespace UnityEditor
 {
+    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetOrigin.h")]
     [NativeAsStruct]

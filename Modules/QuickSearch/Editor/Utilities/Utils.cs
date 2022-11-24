@@ -126,26 +126,26 @@ namespace UnityEditor.Search
             return AssetDatabase.GetSourceAssetFileHash(guid);
         }
 
-        public static Texture2D GetAssetThumbnailFromPath(string path)
+        public static Texture2D GetAssetThumbnailFromPath(SearchContext ctx, string path)
         {
-            var thumbnail = GetAssetPreviewFromGUID(AssetDatabase.AssetPathToGUID(path));
+            var thumbnail = GetAssetPreviewFromGUID(ctx, AssetDatabase.AssetPathToGUID(path));
             if (thumbnail)
                 return thumbnail;
             thumbnail = AssetDatabase.GetCachedIcon(path) as Texture2D;
             return thumbnail ?? InternalEditorUtility.FindIconForFile(path);
         }
 
-        private static Texture2D GetAssetPreviewFromGUID(string guid)
+        private static Texture2D GetAssetPreviewFromGUID(SearchContext ctx, string guid)
         {
-            return AssetPreview.GetAssetPreviewFromGUID(guid);
+            return AssetPreview.GetAssetPreviewFromGUID(guid, GetClientId(ctx));
         }
 
-        public static Texture2D GetAssetPreviewFromPath(string path, FetchPreviewOptions previewOptions)
+        public static Texture2D GetAssetPreviewFromPath(SearchContext ctx, string path, FetchPreviewOptions previewOptions)
         {
-            return GetAssetPreviewFromPath(path, new Vector2(128, 128), previewOptions);
+            return GetAssetPreviewFromPath(ctx, path, new Vector2(128, 128), previewOptions);
         }
 
-        public static Texture2D GetAssetPreviewFromPath(string path, Vector2 previewSize, FetchPreviewOptions previewOptions)
+        public static Texture2D GetAssetPreviewFromPath(SearchContext ctx, string path, Vector2 previewSize, FetchPreviewOptions previewOptions)
         {
             var assetType = AssetDatabase.GetMainAssetTypeAtPath(path);
             if (assetType == typeof(SceneAsset))
@@ -154,7 +154,7 @@ namespace UnityEditor.Search
             if (previewOptions.HasAny(FetchPreviewOptions.Normal))
             {
                 if (assetType == typeof(AudioClip))
-                    return GetAssetThumbnailFromPath(path);
+                    return GetAssetThumbnailFromPath(ctx, path);
 
                 try
                 {
@@ -162,7 +162,7 @@ namespace UnityEditor.Search
                     if (!fi.Exists)
                         return null;
                     if (fi.Length > 16 * 1024 * 1024)
-                        return GetAssetThumbnailFromPath(path);
+                        return GetAssetThumbnailFromPath(ctx, path);
                 }
                 catch
                 {
@@ -188,7 +188,7 @@ namespace UnityEditor.Search
                     return tex;
             }
 
-            return GetAssetPreview(obj, previewOptions) ?? AssetDatabase.GetCachedIcon(path) as Texture2D;
+            return GetAssetPreview(ctx, obj, previewOptions) ?? AssetDatabase.GetCachedIcon(path) as Texture2D;
         }
 
         internal static bool HasInvalidComponent(UnityEngine.Object obj)
@@ -216,9 +216,9 @@ namespace UnityEditor.Search
             return GUIContent.Temp(text);
         }
 
-        internal static Texture2D GetAssetPreview(UnityEngine.Object obj, FetchPreviewOptions previewOptions)
+        internal static Texture2D GetAssetPreview(SearchContext ctx, UnityEngine.Object obj, FetchPreviewOptions previewOptions)
         {
-            var preview = AssetPreview.GetAssetPreview(obj);
+            var preview = AssetPreview.GetAssetPreview(obj.GetInstanceID(), GetClientId(ctx));
             if (preview == null || previewOptions.HasAny(FetchPreviewOptions.Large))
             {
                 var largePreview = AssetPreview.GetMiniThumbnail(obj);
@@ -709,16 +709,22 @@ namespace UnityEditor.Search
             return path;
         }
 
-        internal static Texture2D GetSceneObjectPreview(GameObject obj, Vector2 previewSize, FetchPreviewOptions options, Texture2D defaultThumbnail)
+        private static int GetClientId(SearchContext ctx)
+        {
+            return ctx != null && ctx.searchView != null ? ctx.searchView.GetViewId() : 0;
+        }
+
+        internal static Texture2D GetSceneObjectPreview(SearchContext ctx, GameObject obj, Vector2 previewSize, FetchPreviewOptions options, Texture2D defaultThumbnail)
         {
             var sr = obj.GetComponent<SpriteRenderer>();
             if (sr && sr.sprite && sr.sprite.texture)
                 return sr.sprite.texture;
 
 
+            
             if (!options.HasAny(FetchPreviewOptions.Large))
             {
-                var preview = AssetPreview.GetAssetPreview(obj);
+                var preview = AssetPreview.GetAssetPreview(obj.GetInstanceID(), GetClientId(ctx));
                 if (preview)
                     return preview;
 
@@ -728,8 +734,8 @@ namespace UnityEditor.Search
 
             var assetPath = SearchUtils.GetHierarchyAssetPath(obj, true);
             if (string.IsNullOrEmpty(assetPath))
-                return AssetPreview.GetAssetPreview(obj) ?? defaultThumbnail;
-            return GetAssetPreviewFromPath(assetPath, previewSize, options);
+                return AssetPreview.GetAssetPreview(obj.GetInstanceID(), GetClientId(ctx)) ?? defaultThumbnail;
+            return GetAssetPreviewFromPath(ctx, assetPath, previewSize, options);
         }
 
         internal static bool TryGetNumber(object value, out double number)

@@ -1325,7 +1325,7 @@ namespace UnityEditor
                 return true;
 
             if (m_SerializedObject == null)
-                CreateSerializedObject();
+                m_SerializedObject = new SerializedObject(targets, m_Context);
             else
                 m_SerializedObject.Update();
             m_SerializedObject.inspectorMode = inspectorMode;
@@ -1339,7 +1339,7 @@ namespace UnityEditor
                 return true;
 
             if (m_SerializedObject == null)
-                CreateSerializedObject();
+                m_SerializedObject = new SerializedObject(targets, m_Context);
             SerializedProperty property = m_SerializedObject.GetIterator();
 
             bool analyzePropertyChildren = true;

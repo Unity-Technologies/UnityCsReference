@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Bindings;
-using PassIdentifier = UnityEngine.Rendering.PassIdentifier;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -16,7 +15,6 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_UsePassNameHandle;
         internal FoundryHandle m_DisplayNameHandle;
         internal FoundryHandle m_ReferenceNameHandle;
-        internal FoundryHandle m_PassIdentifierHandle;
         internal FoundryHandle m_StageDescriptionListHandle;
         internal FoundryHandle m_CommandDescriptorListHandle;
         internal FoundryHandle m_PragmaDescriptorListHandle;
@@ -54,8 +52,6 @@ namespace UnityEditor.ShaderFoundry
         public string UsePassName => container?.GetString(templatePass.m_UsePassNameHandle) ?? string.Empty;
         public string DisplayName => container?.GetString(templatePass.m_DisplayNameHandle) ?? string.Empty;
         public string ReferenceName => container?.GetString(templatePass.m_ReferenceNameHandle) ?? string.Empty;
-        // TODO SHADER: The else case should return invalid pass identifier once it's possible to construct this in managed.
-        public PassIdentifier PassIdentifier => container?.GetPassIdentifier(templatePass.m_PassIdentifierHandle) ?? new PassIdentifier();
 
         public StageDescription GetStageDescription(PassStageType stageType)
         {
@@ -137,7 +133,6 @@ namespace UnityEditor.ShaderFoundry
                     m_UsePassNameHandle = container.AddString(usePassName),
                     m_DisplayNameHandle = invalid,
                     m_ReferenceNameHandle = invalid,
-                    m_PassIdentifierHandle = invalid,
                     m_TagDescriptorListHandle = invalid,
                     m_PackageRequirementListHandle = invalid,
                     m_EnableDebugging = false
@@ -151,7 +146,6 @@ namespace UnityEditor.ShaderFoundry
         public class Builder
         {
             ShaderContainer container;
-            PassIdentifierInternal passIdentifier = new PassIdentifierInternal(uint.MaxValue, uint.MaxValue);
             List<StageDescription> stageDescriptions;
             List<CommandDescriptor> commandDescriptors;
             List<PragmaDescriptor> pragmaDescriptors;
@@ -169,11 +163,6 @@ namespace UnityEditor.ShaderFoundry
                 stageDescriptions = new List<StageDescription>();
                 for (var i = 0; i < (int)PassStageType.Count; ++i)
                     stageDescriptions.Add(StageDescription.Invalid);
-            }
-
-            public void SetPassIdentifier(uint subShaderIndex, uint passIndex)
-            {
-                passIdentifier = new PassIdentifierInternal(subShaderIndex, passIndex);
             }
 
             public void AddCommandDescriptor(CommandDescriptor commandDescriptor)
@@ -223,7 +212,6 @@ namespace UnityEditor.ShaderFoundry
                     m_EnableDebugging = EnableDebugging,
                 };
 
-                templatePassInternal.m_PassIdentifierHandle = container.AddPassIdentifier(passIdentifier.SubShaderIndex, passIdentifier.PassIndex);
                 templatePassInternal.m_StageDescriptionListHandle = FixedHandleListInternal.Build(container, stageDescriptions, (s) => (s.handle));
                 templatePassInternal.m_CommandDescriptorListHandle = FixedHandleListInternal.Build(container, commandDescriptors, (o) => (o.handle));
                 templatePassInternal.m_PragmaDescriptorListHandle = FixedHandleListInternal.Build(container, pragmaDescriptors, (o) => (o.handle));

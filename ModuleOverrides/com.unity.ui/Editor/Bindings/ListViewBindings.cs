@@ -166,7 +166,7 @@ namespace UnityEditor.UIElements.Bindings
 
             m_IsBinding = true;
             field.bindingPath = itemProp.propertyPath;
-            bindingContext.ContinueBinding(ve, itemProp);
+            bindingContext.ContinueBinding(ve, null);
             m_IsBinding = false;
         }
 

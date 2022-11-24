@@ -57,7 +57,7 @@ namespace Unity.UI.Builder
 
         public BuilderUXMLFileSettings fileSettings => m_FileSettings ?? (m_FileSettings = new BuilderUXMLFileSettings(visualTreeAsset));
 
-        List<BuilderDocumentOpenUXML> openUXMLFiles
+        internal List<BuilderDocumentOpenUXML> openUXMLFiles
         {
             get
             {
@@ -376,10 +376,6 @@ namespace Unity.UI.Builder
             selection.ForceReselection(source);
         }
 
-        //
-        // Save / Load
-        //
-
         public bool SaveUnsavedChanges(string manualUxmlPath = null, bool isSaveAs = false)
         {
             return SaveNewDocument(null, isSaveAs, out var needsFullRefresh, manualUxmlPath);
@@ -410,7 +406,8 @@ namespace Unity.UI.Builder
                 }
             }
 
-            List<BuilderDocumentOpenUSS> savedUSSFiles = new List<BuilderDocumentOpenUSS>();
+            var startTime = DateTime.UtcNow;
+            var savedUSSFiles = new List<BuilderDocumentOpenUSS>();
 
             // Save USS files.
             foreach (var openUSSFile in m_OpenUSSFiles)
@@ -487,6 +484,9 @@ namespace Unity.UI.Builder
                 ReloadDocumentToCanvas(documentRootElement);
 
             hasUnsavedChanges = false;
+            
+            var assetSize = uxmlText?.Length ?? 0;
+            BuilderAnalyticsUtility.SendSaveEvent(startTime, this, newUxmlPath, assetSize);
 
             return true;
         }

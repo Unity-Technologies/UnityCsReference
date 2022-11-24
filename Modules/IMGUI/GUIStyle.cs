@@ -3,7 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEngine.Scripting;
+using UnityEngine.TextCore.Text;
 
 namespace UnityEngine
 {
@@ -235,7 +238,7 @@ namespace UnityEngine
         }
 
         // The height of one line of text with this style, measured in pixels.
-        public float lineHeight => Mathf.Round(Internal_GetLineHeight(m_Ptr));
+        public float lineHeight => Mathf.Round(IMGUITextHandle.GetLineHeight(this));
 
         // Draw plain GUIStyle without text nor image.
         public void Draw(Rect position, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
@@ -308,7 +311,7 @@ namespace UnityEngine
                 var drawStates = new DrawStates(controlID, position.Contains(Event.current.mousePosition), false, false,
                     GUIUtility.HasKeyFocus(controlID));
                 if (onDraw == null || !onDraw(this, position, content, drawStates))
-                Internal_DrawPrefixLabel(position, content, controlID, false);
+                    Internal_DrawPrefixLabel(position, content, controlID, false);
             }
             else
                 Debug.LogError("Style.DrawPrefixLabel may not be called with GUIContent that is null.");
@@ -331,7 +334,7 @@ namespace UnityEngine
                 if (cursorFlashSpeed == 0 || cursorFlashRel < .5f)
                     cursorColor = GUI.skin.settings.cursorColor;
 
-                Internal_DrawCursor(position, content, character, cursorColor);
+                Internal_DrawCursor(position, content, GetCursorPixelPosition(position, content, character), cursorColor);
             }
         }
 
@@ -344,6 +347,21 @@ namespace UnityEngine
                 return;
             }
 
+            if (firstSelectedCharacter > lastSelectedCharacter)
+            {
+                var temp = lastSelectedCharacter;
+                lastSelectedCharacter = firstSelectedCharacter;
+                firstSelectedCharacter = temp;
+            }
+
+            Vector2 firstSelectedCharacterPosition = GetCursorPixelPosition(position, content, firstSelectedCharacter);
+            Vector2 lastSelectedCharacterPosition = GetCursorPixelPosition(position, content, lastSelectedCharacter);
+
+            // This offset is only required for IMGUI, so the change from TextNative->TextCore doesn't change the rendering
+            var imguiOffset = new Vector2(string.IsNullOrEmpty(content.text) ? 0f : 1f, 0f);
+            firstSelectedCharacterPosition -= imguiOffset;
+            lastSelectedCharacterPosition -= imguiOffset;
+
             // Figure out the cursor color...
             Color cursorColor = new Color(0, 0, 0, 0);
             float cursorFlashSpeed = GUI.skin.settings.cursorFlashSpeed;
@@ -353,11 +371,11 @@ namespace UnityEngine
 
             bool hovered = position.Contains(Event.current.mousePosition);
             var drawStates = new DrawStates(-1, hovered, isActive, false, hasKeyboardFocus,
-                drawSelectionAsComposition, firstSelectedCharacter, lastSelectedCharacter, cursorColor, selectionColor);
+                drawSelectionAsComposition, firstSelectedCharacterPosition, lastSelectedCharacterPosition, cursorColor, selectionColor);
             if (onDraw == null || !onDraw(this, position, content, drawStates))
             {
                 Internal_DrawWithTextSelection(position, content, hovered, isActive, false, hasKeyboardFocus,
-                    drawSelectionAsComposition, firstSelectedCharacter, lastSelectedCharacter, cursorColor, selectionColor);
+                    drawSelectionAsComposition, firstSelectedCharacterPosition, lastSelectedCharacterPosition, cursorColor, selectionColor);
             }
         }
 
@@ -393,19 +411,29 @@ namespace UnityEngine
         // Get the pixel position of a given string index.
         public Vector2 GetCursorPixelPosition(Rect position, GUIContent content, int cursorStringIndex)
         {
-            return Internal_GetCursorPixelPosition(position, content, cursorStringIndex);
+            var handle = IMGUITextHandle.GetTextHandle(this, padding.Remove(position), content.textWithWhitespace, Color.white, true);
+            var cursorPos = handle.GetCursorPositionFromStringIndexUsingLineHeight(cursorStringIndex);
+            cursorPos = new Vector2(Mathf.Max(0.0f, cursorPos.x), cursorPos.y);
+            var rectOffset = Internal_GetTextRectOffset(position, content, new Vector2(handle.preferredSize.x, handle.preferredSize.y > 0 ? handle.preferredSize.y : lineHeight));
+            return cursorPos + rectOffset - contentOffset - new Vector2(0, lineHeight);
+        }
+
+        internal Rect[] GetHyperlinkRects(IMGUITextHandle handle, Rect content)
+        {
+            content = padding.Remove(content);
+            return handle.GetHyperlinkRects(content);
         }
 
         // Get the cursor position (indexing into contents.text) when the user clicked at cursorPixelPosition
         public int GetCursorStringIndex(Rect position, GUIContent content, Vector2 cursorPixelPosition)
         {
-            return Internal_GetCursorStringIndex(position, content, cursorPixelPosition);
+            return IMGUITextHandle.GetTextHandle(this, position, content.textWithWhitespace, Color.white, true).GetCursorIndexFromPosition(cursorPixelPosition);
         }
 
         // Returns number of characters that can fit within width, returns -1 if fails due to missing font
         internal int GetNumCharactersThatFitWithinWidth(string text, float width)
         {
-            return Internal_GetNumCharactersThatFitWithinWidth(text, width);
+            return IMGUITextHandle.GetTextHandle(this, new Rect(0, 0, width, 1), text, Color.white, true).GetNumCharactersThatFitWithinWidth(width);
         }
 
         // Calculate the size of a some content if it is rendered with this style.
@@ -432,7 +460,13 @@ namespace UnityEngine
         // How tall this element will be when rendered with /content/ and a specific /width/.
         public float CalcHeight(GUIContent content, float width)
         {
-            return Internal_CalcHeight(content, width);
+            var height = Internal_CalcHeight(content, width);
+            return height;
+        }
+
+        internal Vector2 GetPreferredSize(string content, Rect rect)
+        {
+            return IMGUITextHandle.GetTextHandle(this, padding.Remove(rect), content, Color.white, true).GetPreferredSize();
         }
 
         public bool isHeightDependantOnWidth => fixedHeight == 0 && (wordWrap && imagePosition != ImagePosition.ImageOnly);
@@ -448,6 +482,36 @@ namespace UnityEngine
         public override string ToString()
         {
             return UnityString.Format("GUIStyle '{0}'", name);
+        }
+
+        [RequiredByNativeCode]
+        internal static void GetMeshInfo(GUIStyle style, Color color, string content, Rect rect, ref MeshInfoBindings[] meshInfos, ref Vector2 dimensions, ref int generationId)
+        {
+            var textHandle = IMGUITextHandle.GetTextHandle(style, rect, content, color);
+            var meshInfosRaw = textHandle.GetTextInfo(ref generationId).meshInfo;
+            meshInfos = new MeshInfoBindings[meshInfosRaw.Length];
+            for (int i = 0; i < meshInfosRaw.Length; i++)
+            {
+                meshInfos[i] = new MeshInfoBindings()
+                {
+                    vertexCount = meshInfosRaw[i].vertexCount,
+                    vertexData = meshInfosRaw[i].vertexData,
+                    material = meshInfosRaw[i].material
+                };
+            }
+            dimensions = textHandle.preferredSize;
+        }
+
+        [RequiredByNativeCode]
+        internal static void GetDimensions(GUIStyle style, Color color, string content, Rect rect, ref Vector2 dimensions)
+        {
+            dimensions = style.GetPreferredSize(content, rect);
+        }
+
+        [RequiredByNativeCode]
+        internal static void GetLineHeight(GUIStyle style, ref float lineHeight)
+        {
+            lineHeight = style.lineHeight;
         }
     }
 

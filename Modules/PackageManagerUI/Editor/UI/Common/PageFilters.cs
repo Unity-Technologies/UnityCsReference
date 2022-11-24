@@ -13,6 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         internal const string k_UnlabeledStatus = "Unlabeled";
         internal const string k_DownloadedStatus = "Downloaded";
+        internal const string k_ImportedStatus = "Imported";
         internal const string k_UpdateAvailableStatus = "Update available";
         internal const string k_SubscriptionBasedStatus = "Subscription based";
 
@@ -29,6 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public bool downloadedOnly => k_DownloadedStatus.Equals(status, StringComparison.OrdinalIgnoreCase);
+        public bool importedOnly => k_ImportedStatus.Equals(status, StringComparison.OrdinalIgnoreCase);
         public bool updateAvailableOnly => k_UpdateAvailableStatus.Equals(status, StringComparison.OrdinalIgnoreCase);
         public bool subscriptionBasedOnly => k_SubscriptionBasedStatus.Equals(status, StringComparison.OrdinalIgnoreCase);
 

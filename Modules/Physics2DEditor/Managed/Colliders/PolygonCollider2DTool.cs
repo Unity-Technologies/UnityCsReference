@@ -35,7 +35,7 @@ namespace UnityEditor
     {
         public PolygonCollider2D m_Collider;
         int m_PathIndex;
-        public LineHandle[] handles;
+        public EditableLineHandle2D[] handles;
         List<Vector2> m_Points2D;
 
         public override Matrix4x4 localToWorldMatrix => m_Collider.transform.localToWorldMatrix;

@@ -9,7 +9,7 @@ namespace UnityEditor.EditorTools
     [EditorToolContext, Icon(k_IconPath)]
     public sealed class GameObjectToolContext : EditorToolContext
     {
-        const string k_IconPath = "Toolbars/ObjectMode";
+        const string k_IconPath = "GameObject Icon";
         GameObjectToolContext() {}
     }
 }

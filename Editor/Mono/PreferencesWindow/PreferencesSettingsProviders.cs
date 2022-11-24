@@ -51,6 +51,7 @@ namespace UnityEditor
             public static readonly GUIContent autoSaveScenesBeforeBuilding = EditorGUIUtility.TrTextContent("Auto-save scenes before building");
             public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
             public static readonly GUIContent editorFont = EditorGUIUtility.TrTextContent("Editor Font");
+            public static readonly GUIContent editorTextSharpness = EditorGUIUtility.TrTextContent("Editor Text Sharpness");
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme");
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
             public static readonly GUIContent hierarchyHeader = EditorGUIUtility.TrTextContent("Hierarchy window");
@@ -193,6 +194,7 @@ namespace UnityEditor
         private static SystemLanguage[] m_stableLanguages = { SystemLanguage.English };
         private bool m_EnableCompilerMessagesLocalization;
 
+        private float m_EditorTextSharpness = 0.0f;
         private bool m_AllowAlphaNumericHierarchy = false;
         private PrefabStage.Mode m_DefaultPrefabModeFromHierarchy = PrefabStage.Mode.InContext;
         private bool m_Create3DObjectsAtOrigin = false;
@@ -515,6 +517,8 @@ namespace UnityEditor
                     InternalEditorUtility.RepaintAllViews();
                 }
             }
+
+            m_EditorTextSharpness = EditorGUILayout.Slider(GeneralProperties.editorTextSharpness, m_EditorTextSharpness, -0.5f, 1.0f);
 
             if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
             {
@@ -1109,6 +1113,9 @@ namespace UnityEditor
             EditorPrefs.SetString("Editor.kEditorLocale", m_SelectedLanguage);
             EditorPrefs.SetBool("Editor.kEnableCompilerMessagesLocalization", m_EnableCompilerMessagesLocalization);
 
+            EditorPrefs.SetFloat($"EditorTextSharpness_{EditorResources.GetFont(FontDef.Style.Normal).name}", m_EditorTextSharpness);
+            EditorApplication.RequestRepaintAllTexts();
+
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
             EditorPrefs.SetInt("DefaultPrefabModeFromHierarchy", (int)m_DefaultPrefabModeFromHierarchy);
 
@@ -1197,6 +1204,7 @@ namespace UnityEditor
             m_EnableEditorLocalization = EditorPrefs.GetBool("Editor.kEnableEditorLocalization", true);
             m_SelectedLanguage = EditorPrefs.GetString("Editor.kEditorLocale", LocalizationDatabase.GetDefaultEditorLanguage().ToString());
             m_EnableCompilerMessagesLocalization = EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false);
+            m_EditorTextSharpness = EditorPrefs.GetFloat($"EditorTextSharpness_{EditorResources.GetFont(FontDef.Style.Normal).name}", 0.0f);
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
             m_DefaultPrefabModeFromHierarchy = GetDefaultPrefabModeForHierarchy();
             m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);

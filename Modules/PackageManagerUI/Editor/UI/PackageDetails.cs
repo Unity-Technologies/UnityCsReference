@@ -103,6 +103,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var featureDependencies = tabView.GetTab<FeatureDependenciesTab>(FeatureDependenciesTab.k_Id);
             featureDependencies?.RecalculateFillerHeight(detail.layout.height, scrollView.layout.height);
+            var importedAssets = tabView.GetTab<PackageDetailsImportedAssetsTab>(PackageDetailsImportedAssetsTab.k_Id);
+            importedAssets?.RecalculateTabHeight(detail.layout.height, scrollView.layout.height, header.layout.height,
+                tabViewHeaderContainer.layout.height, customContainer.layout.height,
+                extensionContainer.layout.height);
         }
 
         private void OnDetailScroll(float offset)
@@ -229,5 +233,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal VisualElement extensionContainer => cache.Get<VisualElement>("detailExtensionContainer");
 
         private PackageDetailsTabView tabView => cache.Get<PackageDetailsTabView>("packageDetailsTabView");
+        private VisualElement tabViewHeaderContainer => cache.Get<VisualElement>("packageDetailsTabViewHeaderContainer");
     }
 }

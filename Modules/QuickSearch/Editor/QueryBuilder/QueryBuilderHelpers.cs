@@ -153,9 +153,9 @@ namespace UnityEditor.Search
             return q;
         }
 
-        public void UpdateTitle()
+        public void UpdateTitle(int count)
         {
-            title.text = ($"{displayName} ({queries.Count})");
+            title.text = ($"{displayName} ({count})");
         }
 
         public bool HasQuery(ISearchQuery query, out int index)

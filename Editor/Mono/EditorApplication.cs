@@ -389,6 +389,15 @@ namespace UnityEditor
                 view.Repaint();
         }
 
+        internal static void RequestRepaintAllTexts()
+        {
+            foreach (GUIView view in Resources.FindObjectsOfTypeAll(typeof(GUIView)))
+            {
+                view.Repaint();
+                view.RepaintUITKText();
+            }
+        }
+
         static void Internal_CallHierarchyHasChanged()
         {
             #pragma warning disable 618

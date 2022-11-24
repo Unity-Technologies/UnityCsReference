@@ -513,6 +513,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     // Set font atlas texture gradient scale
                     cmd.state.sdfScale = entry.textScale;
+                    cmd.state.sharpness = entry.fontSharpness;
                 }
 
                 m_VertsFilled += entry.vertices.Length;

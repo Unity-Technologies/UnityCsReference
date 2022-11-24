@@ -162,7 +162,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             internal static readonly GUIStyle s_ArrayFoldoutStyle = new GUIStyle(EditorStyles.foldout)
             {
-                margin = new RectOffset(-30, 0, 0, 0),
+                margin = new RectOffset(-29, 0, 0, 0),
             };
 
             internal static readonly GUIStyle s_TitleHorizontalStyle = new GUIStyle(EditorStyles.label)

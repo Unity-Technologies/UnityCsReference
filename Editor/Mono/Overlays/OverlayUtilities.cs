@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using UnityEditor.EditorTools;
 using UnityEditor.Toolbars;
 using UnityEngine;
@@ -142,11 +143,21 @@ namespace UnityEditor.Overlays
 
             var folders = s.Split('/');
             var last = folders[folders.Length - 1];
-            var words = last.Trim().Split(' ');
+            if (string.IsNullOrEmpty(last))
+                return string.Empty;
 
+            var words = last.Trim().Split(' ');
             if (words.Length == 1)
             {
-                return words[0].Length > 1 ? words[0].Substring(0, 2) : words[0][0].ToString();
+                var regex = new Regex(@"[A-Z][^A-Z]*", RegexOptions.Compiled);
+                var matches = regex.Matches(words[0]);
+                if (matches == null || matches.Count == 0)
+                    return words[0].Length > 1 ? words[0].Substring(0, 2) : words[0][0].ToString();
+
+                if (matches.Count == 1)
+                    return matches[0].Length > 1 ? matches[0].Value.Substring(0, 2) : matches[0].Value[0].ToString();
+
+                return matches[0].Value.Substring(0, 1) + matches[1].Value.Substring(0, 1);
             }
 
             return words[0].Substring(0, 1) + words[1].Substring(0, 1);

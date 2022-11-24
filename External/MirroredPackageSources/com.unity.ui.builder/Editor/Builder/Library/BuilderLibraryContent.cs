@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -73,6 +72,9 @@ namespace Unity.UI.Builder
         public static List<TreeViewItem> projectContentTree { get; private set; }
         public static List<TreeViewItem> projectContentTreeNoPackages { get; private set; }
 
+        static HashSet<string> s_StandardEditorControls = new();
+        static HashSet<string> s_StandardControls = new();
+
         static readonly int k_DefaultVisualElementFlexGrow = 1;
         static readonly Color k_DefaultVisualElementBackgroundColor = new (0, 0, 0, 0);
 
@@ -91,18 +93,28 @@ namespace Unity.UI.Builder
             }));
         }
 
+        public static bool IsEditorOnlyControl(string fullTypeName)
+        {
+            return s_StandardEditorControls.Contains(fullTypeName);
+        }
+
+        public static bool IsStandardControl(string fullTypeName)
+        {
+            return s_StandardControls.Contains(fullTypeName);
+        }
+
         public static void RegenerateLibraryContent()
         {
             standardControlsTree = GenerateControlsItemsTree();
             standardControlsTreeNoEditor = new List<TreeViewItem>();
+
             foreach (var item in standardControlsTree)
             {
                 var builderLibraryTreeItem = item.data;
-                if (builderLibraryTreeItem.isEditorOnly)
-                    continue;
-
-                standardControlsTreeNoEditor.Add(item);
-                RemoveEditorOnlyControls(item);
+                if (!builderLibraryTreeItem.isEditorOnly)
+                {
+                    standardControlsTreeNoEditor.Add(item);
+                }
             }
 
             GenerateProjectContentTrees();
@@ -111,22 +123,6 @@ namespace Unity.UI.Builder
             s_ProjectUxmlPathsHash = s_ProjectAssetsScanner.GetAllProjectUxmlFilePathsHash();
 
             OnLibraryContentUpdated?.Invoke();
-        }
-
-        static void RemoveEditorOnlyControls(TreeViewItem item)
-        {
-            var children = new List<TreeViewItem>(item.children);
-            (item.children as IList)?.Clear();
-            foreach (var child in children)
-            {
-                var builderLibraryTreeItem = child.data;
-                if (!builderLibraryTreeItem.isEditorOnly)
-                {
-                    item.AddChild(child);
-                    if (child.hasChildren)
-                        RemoveEditorOnlyControls(child);
-                }
-            }
         }
 
         internal static void ResetProjectUxmlPathsHash()
@@ -237,6 +233,9 @@ namespace Unity.UI.Builder
 
         static List<TreeViewItem> GenerateControlsItemsTree()
         {
+            s_StandardEditorControls.Clear();
+            s_StandardControls.Clear();
+            
             var containersItem = CreateItem(BuilderConstants.LibraryContainersSectionHeaderName, null, null, null, id: 1, isHeader:true);
             var controlsTree = new List<TreeViewItem>();
             IList<TreeViewItem> containersItemList = new List<TreeViewItem>
@@ -360,6 +359,19 @@ namespace Unity.UI.Builder
             controlsTree.Add(toolbar);
             controlsTree.Add(inspectors);
 
+            foreach (var categoryData in controlsTree)
+            {
+                foreach (var itemData in categoryData.children)
+                {
+                    if (categoryData.data.isEditorOnly)
+                    {
+                        s_StandardEditorControls.Add(itemData.data.type.FullName);    
+                    }
+
+                    s_StandardControls.Add(itemData.data.type.FullName);
+                }
+            }
+            
             return controlsTree;
         }
 

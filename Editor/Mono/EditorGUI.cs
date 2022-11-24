@@ -208,6 +208,8 @@ namespace UnityEditor
 
         internal static SavedBool s_ShowRepaintDots = new SavedBool("ShowRepaintDots", true);
 
+        internal static readonly Regex s_HyperlinkRegex = new Regex(@"(?<=\b=')[^']*");
+
         static class Styles
         {
             public static Texture2D prefabOverlayAddedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayAdded Icon");
@@ -520,7 +522,7 @@ namespace UnityEditor
                 return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && GUIView.current.hasFocus;
             }
 
-            public virtual void BeginEditing(int id, string newText, Rect _position, GUIStyle _style, bool _multiline, bool passwordField)
+            public virtual void BeginEditing(int id, string newText, Rect position, GUIStyle style, bool multiline, bool passwordField)
             {
                 if (IsEditingControl(id))
                 {
@@ -532,9 +534,9 @@ namespace UnityEditor
                 activeEditor = this;
                 controlID = id;
                 text = s_OriginalText = newText;
-                multiline = _multiline;
-                style = _style;
-                position = _position;
+                isMultiline = multiline;
+                this.position = position;
+                this.style = style;
                 isPasswordField = passwordField;
                 s_ActuallyEditing = true;
                 scrollOffset = Vector2.zero;
@@ -982,12 +984,18 @@ namespace UnityEditor
                 // If the editor is already set up, we just need to sync position, etc...
                 if (editor.IsEditingControl(id))
                 {
+                    // Fast path flag to ensure that we only update the scroll offset if the text area grew (dynamic height)
+                    bool requireUpdateScrollOffset = editor.position.height != position.height;
                     editor.position = position;
                     editor.style = style;
                     editor.controlID = id;
-                    editor.multiline = multiline;
+                    editor.isMultiline = multiline;
                     editor.isPasswordField = passwordField;
                     editor.DetectFocusChange();
+                    editor.UpdateTextHandle();
+
+                    if (requireUpdateScrollOffset)
+                        editor.UpdateScrollOffset();
                 }
                 else if (EditorGUIUtility.editingTextField || (evt.GetTypeForControl(id) == EventType.ExecuteCommand && evt.commandName == EventCommandNames.NewKeyboardFocus))
                 {
@@ -1119,7 +1127,12 @@ namespace UnityEditor
                         {
                             // Extract hyperlink info
                             Dictionary<string, string> hyperLinkData;
-                            if (HasClickedOnHyperlink(text, editor.cursorIndex, editor, out hyperLinkData)) // Check if the cursor is between hyperlink tags and store the hyperlink info (tag arguments in a dictionary)
+
+                            if (editor.HasClickedOnHREF(Event.current.mousePosition, out string href))
+                            {
+                                Application.OpenURL(href);
+                            }
+                            else if (HasClickedOnHyperlink(editor, out hyperLinkData)) // Check if the cursor is between hyperlink tags and store the hyperlink info (tag arguments in a dictionary)
                             {
                                 // Raise event with the info
                                 var window = GUIView.current is HostView hostView ? hostView.actualView : null;
@@ -1358,7 +1371,6 @@ namespace UnityEditor
                         drawText = passwordField ? "".PadRight(text.Length, '*') : text;
                     }
 
-
                     if (!string.IsNullOrEmpty(s_UnitString) && !passwordField)
                         drawText += " " + s_UnitString;
 
@@ -1393,6 +1405,10 @@ namespace UnityEditor
                     }
 
                     break;
+                case EventType.ScrollWheel:
+                    // Scroll offset might need to be updated
+                    editor.UpdateScrollOffset();
+                    break;
             }
 
             if (GUIUtility.keyboardControl == id)
@@ -1400,9 +1416,6 @@ namespace UnityEditor
                 // TODO: remove the need for this with Optimized GUI blocks
                 GUIUtility.textFieldInput = EditorGUIUtility.editingTextField;
             }
-
-            // Scroll offset might need to be updated
-            editor.UpdateScrollOffsetIfNeeded(evt);
 
             changed = false;
             if (mayHaveChanged)
@@ -1441,58 +1454,31 @@ namespace UnityEditor
             return origText;
         }
 
-        private static bool HasClickedOnHyperlink(string text, int cursorIndex, RecycledTextEditor editor, out Dictionary<string, string> hyperLinkData)
+        private static bool HasClickedOnHyperlink(RecycledTextEditor editor, out Dictionary<string, string> hyperLinkData)
         {
-            Vector2 mousePosition = Event.current.mousePosition;
             hyperLinkData = new Dictionary<string, string>();
-            if (cursorIndex > 0)
+            Vector2 mousePosition = Event.current.mousePosition;
+            if (!editor.HasClickedOnLink(mousePosition, out string link))
+                return false;
+
+            MatchCollection matches = s_HyperlinkRegex.Matches(link);
+
+            int endPreviousAttributeIndex = 0;
+            // for each attribute we need to find the attribute name
+            foreach (Match match in matches)
             {
-                bool hitHyperlink = false;
-                foreach (var rect in editor.GetHyperlinksRect())
-                {
-                    if (rect.Contains(mousePosition))
-                    {
-                        hitHyperlink = true;
-                        break;
-                    }
-                }
+                // We are only working on the text between the previous attribute and the current
+                string namePart = link.Substring(endPreviousAttributeIndex,
+                    (match.Index - 2) - endPreviousAttributeIndex); // -2 is the character before ="
+                int indexName = namePart.LastIndexOf(' ') + 1;
+                string name = namePart.Substring(indexName);
+                // Add the name of the attribute and its value in the dictionary
+                hyperLinkData.Add(name, match.Value);
 
-                if (hitHyperlink)
-                {
-                    int indexBeginTag = text.Substring(0, editor.cursorIndex)
-                        .LastIndexOf("<a ", StringComparison.Ordinal);
-                    // We should always have the cursor index in the tag but it might not be the case for the first pixels of the hyperlink rect
-                    // Validity check for that case
-                    if (indexBeginTag >= 0)
-                    {
-                        int indexBeginTagClose =
-                            text.Substring(indexBeginTag, cursorIndex - indexBeginTag).IndexOf('>');
-
-                        string beginTag = text.Substring(indexBeginTag, indexBeginTagClose);
-                        // Regex to find the attribute value
-                        Regex regex = new Regex(@"(?<=\b="")[^""]*");
-                        MatchCollection matches = regex.Matches(beginTag);
-
-                        int endPreviousAttributeIndex = 0;
-                        // for each attribute we need to find the attribute name
-                        foreach (Match match in matches)
-                        {
-                            // We are only working on the text between the previous attribute and the current
-                            string namePart = beginTag.Substring(endPreviousAttributeIndex,
-                                (match.Index - 2) - endPreviousAttributeIndex); // -2 is the character before ="
-                            int indexName = namePart.LastIndexOf(' ') + 1;
-                            string name = namePart.Substring(indexName);
-                            // Add the name of the attribute and its value in the dictionary
-                            hyperLinkData.Add(name, match.Value);
-
-                            endPreviousAttributeIndex = match.Index + match.Value.Length + 1;
-                        }
-
-                        return true;
-                    }
-                }
+                endPreviousAttributeIndex = match.Index + match.Value.Length + 1;
             }
-            return false;
+
+            return true;
         }
 
         public static event Action<EditorWindow, UnityEditor.HyperLinkClickedEventArgs> hyperLinkClicked;
@@ -2054,7 +2040,7 @@ namespace UnityEditor
                 else
                 {
                     //Move the Editor offset to match our scrollbar
-                    s_RecycledEditor.scrollOffset.y = scrollPosition.y;
+                    s_RecycledEditor.scrollOffset = scrollPosition;
                 }
             }
             bool dummy;
@@ -4631,7 +4617,8 @@ namespace UnityEditor
             s_Vector3Floats[2] = value.z;
             position.height = kSingleLineHeight;
             BeginChangeCheck();
-            LockingMultiFloatFieldInternal(position, proportionalScale, mixedValues, s_XYZLabels, s_Vector3Floats, new float[] {initialScale.x, initialScale.y, initialScale.z}, property, EditorGUI.CalcPrefixLabelWidth(s_XYZLabels[0]) + 3);
+            const float kPrefixWidthOffset = 3.65f;
+            LockingMultiFloatFieldInternal(position, proportionalScale, mixedValues, s_XYZLabels, s_Vector3Floats, new float[] {initialScale.x, initialScale.y, initialScale.z}, property, EditorGUI.CalcPrefixLabelWidth(s_XYZLabels[0]) + kPrefixWidthOffset);
             if (EndChangeCheck())
             {
                 valueAfterChangeCheck.x = s_Vector3Floats[0];

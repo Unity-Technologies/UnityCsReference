@@ -603,7 +603,7 @@ namespace UnityEngine
             editor.SaveBackup();
             editor.position = position;
             editor.style = style;
-            editor.multiline = multiline;
+            editor.isMultiline = multiline;
             editor.controlID = id;
             editor.DetectFocusChange();
 
@@ -789,6 +789,7 @@ namespace UnityEngine
                 case EventType.Repaint:
                     // If we have keyboard focus, draw the cursor
                     // TODO:    check if this OpenGL view has keyboard focus
+                    editor.UpdateTextHandle();
                     if (GUIUtility.keyboardControl != id)
                     {
                         style.Draw(position, content, id, false);
@@ -951,11 +952,16 @@ namespace UnityEngine
 
         internal static int Toolbar(Rect position, int selected, GUIContent[] contents, string[] controlNames, GUIStyle style, ToolbarButtonSize buttonSize, bool[] contentsEnabled = null)
         {
-            GUIUtility.CheckOnGUI();
-
             // Get the styles here
             GUIStyle firstStyle, midStyle, lastStyle;
             FindStyles(ref style, out firstStyle, out midStyle, out lastStyle, "left", "mid", "right");
+
+            return Toolbar(position, selected, contents, controlNames, style, firstStyle, midStyle, lastStyle, buttonSize, contentsEnabled);
+        }
+
+        internal static int Toolbar(Rect position, int selected, GUIContent[] contents, string[] controlNames, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, ToolbarButtonSize buttonSize, bool[] contentsEnabled = null)
+        {
+            GUIUtility.CheckOnGUI();
 
             return DoButtonGrid(position, selected, contents, controlNames, contents.Length, style, firstStyle, midStyle, lastStyle, buttonSize, contentsEnabled);
         }

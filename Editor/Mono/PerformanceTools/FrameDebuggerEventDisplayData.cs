@@ -408,6 +408,12 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             return true;
         }
 
+        private string GetArrayIndexString(int nameLength, int numOfValues, int currentIndex)
+        {
+            int numOfSpaces = nameLength + (FrameDebuggerHelper.CountDigits(numOfValues) - FrameDebuggerHelper.CountDigits(currentIndex));
+            return $"{new string(' ', numOfSpaces)}[{currentIndex}]";
+        }
+
         private bool GetShaderPropertyData(ShaderPropertyType dataType, int arrayIndex, string name, ref ShaderPropertyCollection propertyTypeDisplayData, ref ShaderInfo shaderInfo, ref ShaderPropertyDisplayInfo data)
         {
             m_StringBuilder.Clear();
@@ -501,7 +507,13 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         m_StringBuilder.Clear();
                         data.m_FoldoutString = String.Format(propertyTypeDisplayData.m_Format, $"{name}[{numOfValues}]", stage, string.Empty, string.Empty, string.Empty, string.Empty);
                         for (int k = arrayIndex; k < arrayIndex + numOfValues; k++)
-                            m_StringBuilder.Append(String.Format(propertyTypeDisplayData.m_Format, $"[{k - arrayIndex}]", string.Empty, shaderInfo.m_Vectors[k].m_Value));
+                        {
+                            int value = shaderInfo.m_Ints[k].m_Value;
+                            m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format,
+                                                         GetArrayIndexString(name.Length, numOfValues, k - arrayIndex),
+                                                         string.Empty,
+                                                         value).AppendLine();
+                        }
 
                         // Remove last linebreak
                         if (m_StringBuilder.Length > 2)
@@ -529,7 +541,13 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         data.m_FoldoutString = m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format, $"{name}[{numOfValues}]", stage, string.Empty, string.Empty, string.Empty, string.Empty).ToString();
                         m_StringBuilder.Clear();
                         for (int k = arrayIndex; k < arrayIndex + numOfValues; k++)
-                            m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format, $"[{k - arrayIndex}]", string.Empty, shaderInfo.m_Floats[k].m_Value);
+                        {
+                            float value = shaderInfo.m_Floats[k].m_Value;
+                            m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format,
+                                                         GetArrayIndexString(name.Length, numOfValues, k - arrayIndex),
+                                                         string.Empty,
+                                                         value).AppendLine();
+                        }
 
                         // Remove last linebreak
                         if (numOfValues > 1 && m_StringBuilder.Length > 2)
@@ -557,9 +575,13 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         for (int k = arrayIndex; k < arrayIndex + numOfValues; k++)
                         {
                             Vector4 value = shaderInfo.m_Vectors[k].m_Value;
-                            int numOfSpaces = name.Length + (FrameDebuggerHelper.CountDigits(numOfValues) - FrameDebuggerHelper.CountDigits(k - arrayIndex));
-                            m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format, $"{new string(' ', numOfSpaces)}[{k - arrayIndex}]", string.Empty, value.x, value.y, value.z, value.w);
-                            m_StringBuilder.AppendLine();
+                            m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format,
+                                                         GetArrayIndexString(name.Length, numOfValues, k - arrayIndex),
+                                                         string.Empty,
+                                                         value.x,
+                                                         value.y,
+                                                         value.z,
+                                                         value.w).AppendLine();
                         }
 
                         // Remove last linebreak
@@ -597,13 +619,12 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         for (int k = arrayIndex; k < arrayIndex + numOfValues; k++)
                         {
                             Matrix4x4 value = shaderInfo.m_Matrices[k].m_Value;
-                            int numOfSpaces = name.Length + (FrameDebuggerHelper.CountDigits(numOfValues) - FrameDebuggerHelper.CountDigits(k - arrayIndex));
                             m_StringBuilder.AppendFormat(propertyTypeDisplayData.m_Format,
-                                         $"{new string(' ', numOfSpaces)}[{k - arrayIndex}]", string.Empty, value.m00, value.m01, value.m02, value.m03,
-                                         string.Empty, string.Empty, value.m10, value.m11, value.m12, value.m13,
-                                         string.Empty, string.Empty, value.m20, value.m21, value.m22, value.m23,
-                                         string.Empty, string.Empty, value.m30, value.m31, value.m32, value.m33);
-                            m_StringBuilder.AppendLine();
+                                                         GetArrayIndexString(name.Length, numOfValues, k - arrayIndex),
+                                                                       string.Empty, value.m00, value.m01, value.m02, value.m03,
+                                                         string.Empty, string.Empty, value.m10, value.m11, value.m12, value.m13,
+                                                         string.Empty, string.Empty, value.m20, value.m21, value.m22, value.m23,
+                                                         string.Empty, string.Empty, value.m30, value.m31, value.m32, value.m33).AppendLine();
                         }
 
                         // Remove last linebreak

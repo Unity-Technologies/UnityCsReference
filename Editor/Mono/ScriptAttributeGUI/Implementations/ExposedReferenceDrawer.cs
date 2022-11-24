@@ -149,7 +149,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         ObjectField obj = new ObjectField()
         {
             name = kVisualElementName,
-            label = prop.displayName,
+            label = preferredLabel,
             bindingPath = m_Item.exposedPropertyDefault.propertyPath,
             objectType = typeOfExposedReference,
             value = m_Item.currentReferenceValue,

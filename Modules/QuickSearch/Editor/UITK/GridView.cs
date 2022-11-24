@@ -202,7 +202,6 @@ namespace UnityEditor.Search
             m_MakeItem = makeItem;
 
             AddToClassList(k_GridViewStyleClassName);
-            RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
 
             m_ScrollView = new ScrollView();
             m_ScrollView.AddToClassList(k_GridViewItemsScrollViewStyleClassName);
@@ -226,6 +225,8 @@ namespace UnityEditor.Search
         {
             if (evt.destinationPanel == null)
                 return;
+
+            RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
 
             m_ScrollView.contentContainer.AddManipulator(m_NavigationManipulator = new KeyboardGridNavigationManipulator(Apply));
             m_ScrollView.RegisterCallback<PointerDownEvent>(OnPointerDown);
@@ -745,7 +746,7 @@ namespace UnityEditor.Search
 
         internal int GetIndexByPosition(Vector2 localPosition)
         {
-            var resolvedRowWidth = m_ScrollView.contentContainer.resolvedStyle.width;
+            var resolvedRowWidth = m_ScrollView.contentContainer.boundingBox.width;
             var calculatedRowWidth = m_ColumnCount * m_FixedItemWidth;
             var delta = resolvedRowWidth - calculatedRowWidth;
             var extraElementPadding = Mathf.Ceil(delta / (m_ColumnCount - 1));
@@ -788,23 +789,17 @@ namespace UnityEditor.Search
             if (m_FirstVisibleRowIndex == newFirstVisibleRowIndex)
                 return;
 
+            var direction = m_FirstVisibleRowIndex > newFirstVisibleRowIndex ? ScrollingDirection.Up : ScrollingDirection.Down;
             var delta = Math.Abs(newFirstVisibleRowIndex - m_FirstVisibleRowIndex);
+            m_FirstVisibleRowIndex = newFirstVisibleRowIndex;
             if (delta >= m_RowCount)
             {
                 RebindActiveItems(newFirstVisibleRowIndex);
-            }
-            else if (m_FirstVisibleRowIndex > newFirstVisibleRowIndex)
-            {
-                for (int i = m_FirstVisibleRowIndex - 1; i >= newFirstVisibleRowIndex; i--)
-                    OnScrollBindItems(ScrollingDirection.Up);
-            }
-            else if (m_FirstVisibleRowIndex < newFirstVisibleRowIndex)
-            {
-                for (int i = m_FirstVisibleRowIndex + 1; i <= newFirstVisibleRowIndex; i++)
-                    OnScrollBindItems(ScrollingDirection.Down);
+                return;
             }
 
-            m_FirstVisibleRowIndex = newFirstVisibleRowIndex;
+            for (var i = 0; i < delta; ++i)
+                OnScrollBindItems(direction);
         }
 
         private void RebindActiveItems(int firstVisibleItemIndex)
@@ -846,7 +841,11 @@ namespace UnityEditor.Search
 
         private void ScrollingDown()
         {
-            var nextElementIndexToBind = m_RowPool.Last().GetLastItemInRow().index + 1;
+            // When scrolling down, if the last item in the last row is already undefined
+            // (because it is already outside the range of source items), then don't bind
+            // items from the start.
+            var lastIndex = m_RowPool.Last().GetLastItemInRow().index;
+            var nextElementIndexToBind = lastIndex == ReusableGridViewItem.UndefinedIndex ? ReusableGridViewItem.UndefinedIndex : lastIndex + 1;
             var row = m_RowPool.First();
             for (int i = 0; i < m_ColumnCount; i++)
             {
@@ -855,7 +854,7 @@ namespace UnityEditor.Search
                 UnbindItem(reusableItem, reusableItem.index);
 
                 row.AddItem(reusableItem);
-                if (nextElementIndexToBind < m_ItemsSource.Count)
+                if (nextElementIndexToBind != ReusableGridViewItem.UndefinedIndex && nextElementIndexToBind < m_ItemsSource.Count)
                 {
                     BindItem(reusableItem, nextElementIndexToBind, m_ItemsSourceIds[nextElementIndexToBind]);
                     nextElementIndexToBind++;
@@ -951,11 +950,6 @@ namespace UnityEditor.Search
                 var reusableItem = activeItems[activeItemIndex];
                 activeItemIndex++;
 
-                if (m_SelectedIds.Contains(reusableItem.id))
-                    reusableItem.SetSelected(true);
-                else
-                    reusableItem.SetSelected(false);
-
                 if (i >= m_ItemsSource.Count)
                 {
                     if (reusableItem.id != ReusableGridViewItem.UndefinedIndex)
@@ -968,6 +962,26 @@ namespace UnityEditor.Search
                     continue;
 
                 UnbindItem(reusableItem, i);
+            }
+
+            activeItemIndex = 0;
+            for (int i = firstVisibleItemIndex; i < endIndex; i++)
+            {
+                var reusableItem = activeItems[activeItemIndex];
+                activeItemIndex++;
+
+                if (m_SelectedIds.Contains(reusableItem.id))
+                    reusableItem.SetSelected(true);
+                else
+                    reusableItem.SetSelected(false);
+
+                if (i >= m_ItemsSource.Count)
+                {
+                    continue;
+                }
+
+                if (m_ItemsSourceIds[i] == reusableItem.id)
+                    continue;
                 BindItem(reusableItem, i, m_ItemsSourceIds[i]);
             }
 

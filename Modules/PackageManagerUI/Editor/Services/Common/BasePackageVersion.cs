@@ -45,6 +45,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual DependencyInfo[] resolvedDependencies => null;
         public virtual EntitlementsInfo entitlements => null;
 
+        public virtual IEnumerable<Asset> importedAssets => null;
+
         public virtual bool isRegistryPackage => false;
 
         public virtual bool isFromScopedRegistry => false;

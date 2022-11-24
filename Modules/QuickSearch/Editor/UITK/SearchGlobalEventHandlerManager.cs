@@ -99,5 +99,17 @@ namespace UnityEditor.Search
             if (existingHandlerIndex >= 0)
                 handlerList.RemoveAt(existingHandlerIndex);
         }
+
+        public static bool HandleGlobalEventHandlers<T>(SearchGlobalEventHandlerManager eventManager, T evt) where T : EventBase
+        {
+            var globalEventHandlers = eventManager.GetOrderedGlobalEventHandlers<T>();
+            foreach (var globalEventHandler in globalEventHandlers)
+            {
+                if (globalEventHandler?.Invoke(evt) ?? false)
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

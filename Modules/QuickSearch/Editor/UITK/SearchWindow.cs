@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.Profiling;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Search;
@@ -17,6 +18,7 @@ namespace UnityEditor.Search
     {
         void Close();
         bool IsPicker();
+        bool HasFocus();
         void Show();
         ISearchView ShowWindow();
         ISearchView ShowWindow(SearchFlags flags);
@@ -120,6 +122,11 @@ namespace UnityEditor.Search
             m_SearchAutoCompleteWindow = new SearchAutoCompleteWindow(this, body);
         }
 
+        int ISearchView.GetViewId()
+        {
+            return ((ISearchView)m_SearchView).GetViewId();
+        }
+
         private void SetFocusOnViewAttached(AttachToPanelEvent evt)
         {
             SelectSearch();
@@ -159,18 +166,6 @@ namespace UnityEditor.Search
             return true;
         }
 
-        private bool HandleGlobalEventHandlers<T>(T evt) where T : EventBase
-        {
-            var globalEventHandlers = m_ViewState.globalEventManager.GetOrderedGlobalEventHandlers<T>();
-            foreach (var globalEventHandler in globalEventHandlers)
-            {
-                if (globalEventHandler?.Invoke(evt) ?? false)
-                    return true;
-            }
-
-            return false;
-        }
-
         private bool HandleKeyboardNavigation(VisualElement target, KeyDownEvent evt, Event imguiEvt)
         {
             if ((target is TextElement) && !SearchElement.IsPartOf<SearchToolbar>(target))
@@ -180,7 +175,7 @@ namespace UnityEditor.Search
             if (evt.keyCode == KeyCode.None && (evt.character == '\t' || (int)evt.character == 10))
                 return true;
 
-            if (HandleGlobalEventHandlers(evt))
+            if (SearchGlobalEventHandlerManager.HandleGlobalEventHandlers(m_ViewState.globalEventManager, evt))
                 return true;
 
             if (imguiEvt != null && HandleDefaultPressEnter(imguiEvt))
@@ -444,42 +439,45 @@ namespace UnityEditor.Search
 
         internal virtual void OnEnable()
         {
-            minSize = new Vector2(200f, minSize.y);
-
-            rootVisualElement.name = nameof(SearchWindow);
-            rootVisualElement.AddToClassList("search-window");
-            SearchElement.AppendStyleSheets(rootVisualElement);
-
-            hideFlags |= HideFlags.DontSaveInEditor;
-            wantsLessLayoutEvents = true;
-
-            m_LastFocusedWindow = m_LastFocusedWindow ?? focusedWindow;
-            m_ViewState = s_GlobalViewState ?? m_ViewState ?? SearchViewState.LoadDefaults();
-
-            SetContext(m_ViewState.context);
-            LoadSessionSettings(m_ViewState);
-
-            SearchSettings.SortActionsPriority();
-
-            m_SearchMonitorView = SearchMonitor.GetView();
-            m_SearchView = new SearchView(m_ViewState) { multiselect = true };
-
-            UpdateWindowTitle();
-
-            SearchSettings.providerActivationChanged += OnProviderActivationChanged;
-
-            m_SearchEventOffs = new List<Action>()
+            using (new EditorPerformanceTracker("SearchView.OnEnable"))
             {
-                Dispatcher.On(SearchEvent.ExecuteSearchQuery, HandleExecuteSearchQuery),
-                Dispatcher.On(SearchEvent.SaveUserQuery, HandleSaveUserQuery),
-                Dispatcher.On(SearchEvent.SaveProjectQuery, HandleSaveProjectQuery),
-                Dispatcher.On(SearchEvent.SaveActiveSearchQuery, HandleSaveActiveSearchQuery),
-                Dispatcher.On(SearchEvent.TogglePackages, HandleTogglePackages),
-                Dispatcher.On(SearchEvent.ToggleWantsMore, HandleToggleWantsMore),
-                Dispatcher.On(SearchEvent.RefreshContent, RefreshContent)
-            };
+                minSize = new Vector2(200f, minSize.y);
 
-            s_GlobalViewState = null;
+                rootVisualElement.name = nameof(SearchWindow);
+                rootVisualElement.AddToClassList("search-window");
+                SearchElement.AppendStyleSheets(rootVisualElement);
+
+                hideFlags |= HideFlags.DontSaveInEditor;
+                wantsLessLayoutEvents = true;
+
+                m_LastFocusedWindow = m_LastFocusedWindow ?? focusedWindow;
+                m_ViewState = s_GlobalViewState ?? m_ViewState ?? SearchViewState.LoadDefaults();
+
+                SetContext(m_ViewState.context);
+                LoadSessionSettings(m_ViewState);
+
+                SearchSettings.SortActionsPriority();
+
+                m_SearchMonitorView = SearchMonitor.GetView();
+                m_SearchView = new SearchView(m_ViewState, GetInstanceID()) { multiselect = true };
+
+                UpdateWindowTitle();
+
+                SearchSettings.providerActivationChanged += OnProviderActivationChanged;
+
+                m_SearchEventOffs = new List<Action>()
+                {
+                    Dispatcher.On(SearchEvent.ExecuteSearchQuery, HandleExecuteSearchQuery),
+                    Dispatcher.On(SearchEvent.SaveUserQuery, HandleSaveUserQuery),
+                    Dispatcher.On(SearchEvent.SaveProjectQuery, HandleSaveProjectQuery),
+                    Dispatcher.On(SearchEvent.SaveActiveSearchQuery, HandleSaveActiveSearchQuery),
+                    Dispatcher.On(SearchEvent.TogglePackages, HandleTogglePackages),
+                    Dispatcher.On(SearchEvent.ToggleWantsMore, HandleToggleWantsMore),
+                    Dispatcher.On(SearchEvent.RefreshContent, RefreshContent)
+                };
+
+                s_GlobalViewState = null;
+            }
         }
 
         void HandleToggleWantsMore(ISearchEvent evt)
@@ -732,6 +730,8 @@ namespace UnityEditor.Search
         {
             var currentTabs = rootVisualElement.Q<SearchGroupBar>();
             viewState.hideTabs = !viewState.hideTabs;
+            SearchSettings.hideTabs = viewState.hideTabs;
+            SearchSettings.Save();
             if (viewState.hideTabs)
                 currentTabs?.RemoveFromHierarchy();
             else if (currentTabs == null)
@@ -1279,34 +1279,37 @@ namespace UnityEditor.Search
 
         public SearchWindow ShowWindow(float width, float height, SearchFlags flags)
         {
-            var windowSize = new Vector2(width, height);
-            if (flags.HasAny(SearchFlags.Dockable) && viewState.flags.HasNone(SearchViewFlags.Borderless))
+            using (new EditorPerformanceTracker("SearchView.ShowWindow"))
             {
-                bool firstOpen = Utils.IsRunningTests() || !EditorPrefs.HasKey(k_CheckWindowKeyName);
-                Show(true);
-                if (firstOpen)
+                var windowSize = new Vector2(width, height);
+                if (flags.HasAny(SearchFlags.Dockable) && viewState.flags.HasNone(SearchViewFlags.Borderless))
                 {
-                    var centeredPosition = Utils.GetMainWindowCenteredPosition(windowSize);
-                    position = centeredPosition;
-                }
-                else if (!firstOpen && !docked)
-                {
-                    var newWindow = this;
-                    var existingWindow = Resources.FindObjectsOfTypeAll<SearchWindow>().FirstOrDefault(w => w != newWindow);
-                    if (existingWindow)
+                    bool firstOpen = Utils.IsRunningTests() || !EditorPrefs.HasKey(k_CheckWindowKeyName);
+                    Show(true);
+                    if (firstOpen)
                     {
-                        var cascadedWindowPosition = existingWindow.position.position;
-                        cascadedWindowPosition += new Vector2(30f, 30f);
-                        position = new Rect(cascadedWindowPosition, position.size);
+                        var centeredPosition = Utils.GetMainWindowCenteredPosition(windowSize);
+                        position = centeredPosition;
+                    }
+                    else if (!firstOpen && !docked)
+                    {
+                        var newWindow = this;
+                        var existingWindow = Resources.FindObjectsOfTypeAll<SearchWindow>().FirstOrDefault(w => w != newWindow);
+                        if (existingWindow)
+                        {
+                            var cascadedWindowPosition = existingWindow.position.position;
+                            cascadedWindowPosition += new Vector2(30f, 30f);
+                            position = new Rect(cascadedWindowPosition, position.size);
+                        }
                     }
                 }
+                else
+                {
+                    this.ShowDropDown(windowSize);
+                }
+                Focus();
+                return this;
             }
-            else
-            {
-                this.ShowDropDown(windowSize);
-            }
-            Focus();
-            return this;
         }
 
         void ISearchView.SetupColumns(IList<SearchField> fields)
@@ -1377,6 +1380,11 @@ namespace UnityEditor.Search
         IEnumerable<SearchItem> ISearchWindow.FetchItems()
         {
             return FetchItems();
+        }
+
+        bool ISearchWindow.HasFocus()
+        {
+            return hasFocus;
         }
 
         [WindowAction]

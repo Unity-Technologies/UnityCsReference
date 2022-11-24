@@ -43,7 +43,7 @@ namespace UnityEditor
         SerializedProperty m_UseSubStepContacts;
         SerializedProperty m_MinSubStepFPS;
         SerializedProperty m_MaxSubStepCount;
-        
+
         public void OnEnable()
         {
             m_ReuseCollisionCallbacks = serializedObject.FindProperty("m_ReuseCollisionCallbacks");
@@ -156,7 +156,7 @@ namespace UnityEditor
                 {
                     EditorGUI.indentLevel++;
                     EditorGUILayout.PropertyField(m_UseSubStepping);
-                    EditorGUILayout.PropertyField(m_UseSubStepContacts);                    
+                    EditorGUILayout.PropertyField(m_UseSubStepContacts);
                     EditorGUILayout.PropertyField(m_MaxSubStepCount);
 
                     GUILayout.BeginHorizontal();

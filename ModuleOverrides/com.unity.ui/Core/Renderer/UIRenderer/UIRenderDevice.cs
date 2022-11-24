@@ -711,7 +711,7 @@ namespace UnityEngine.UIElements.UIR
                 if (textureSlot < 0)
                 {
                     textureSlot = m_TextureSlotManager.FindOldestSlot();
-                    m_TextureSlotManager.Bind(cmd.state.texture, cmd.state.sdfScale, textureSlot, st.stateMatProps);
+                    m_TextureSlotManager.Bind(cmd.state.texture, cmd.state.sdfScale, cmd.state.sharpness, textureSlot, st.stateMatProps);
                     st.mustApplyStateBlock = true;
                 }
                 else

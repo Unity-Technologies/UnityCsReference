@@ -30,6 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected string m_PackageIdOrName = string.Empty;
         public virtual string packageIdOrName => m_PackageIdOrName;
 
+        public virtual long productId => 0;
         public string packageUniqueId => packageName;
 
         [SerializeField]

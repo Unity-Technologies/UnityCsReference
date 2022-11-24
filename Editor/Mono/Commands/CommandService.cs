@@ -152,8 +152,16 @@ namespace UnityEditor
             var commands = new List<Command>();
             foreach (var mi in TypeCache.GetMethodsWithAttribute<CommandHandlerAttribute>())
             {
-                if (!(Delegate.CreateDelegate(typeof(CommandHandler), mi) is CommandHandler callback))
+                CommandHandler callback = null;
+                try
+                {
+                    callback = (CommandHandler)Delegate.CreateDelegate(typeof(CommandHandler), mi);
+                }
+                catch(Exception e)
+                {
+                    Debug.LogError($"Cannot create CommandHandler from Attribute: {mi.Name} {e.Message}");
                     continue;
+                }
 
                 foreach (var attr in mi.GetCustomAttributes<CommandHandlerAttribute>())
                 {

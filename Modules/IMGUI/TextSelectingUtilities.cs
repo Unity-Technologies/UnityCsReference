@@ -18,7 +18,7 @@ namespace UnityEngine
         private bool m_bJustSelected = false;
         private bool m_MouseDragSelectsWholeWords = false;
         private int m_DblClickInitPos = 0;
-        TextHandle m_TextHandle;
+        public TextHandle textHandle;
         private const int kMoveDownHeight = 5;
         private const char kNewLineChar = '\n';
 
@@ -39,19 +39,33 @@ namespace UnityEngine
             }
         }
 
-        int m_CharacterCount => m_TextHandle.textInfo.characterCount;
-        int characterCount => (m_CharacterCount > 0 && m_TextHandle.textInfo.textElementInfo[m_CharacterCount - 1].character == 0x200B) ? m_CharacterCount - 1 : m_CharacterCount;
-        TextElementInfo[] m_TextElementInfos => m_TextHandle.textInfo.textElementInfo;
+        int m_CharacterCount => textHandle.textInfo.characterCount;
+        int characterCount => (m_CharacterCount > 0 && textHandle.textInfo.textElementInfo[m_CharacterCount - 1].character == 0x200B) ? m_CharacterCount - 1 : m_CharacterCount;
+        TextElementInfo[] m_TextElementInfos => textHandle.textInfo.textElementInfo;
 
         int m_CursorIndex = 0;
         public int cursorIndex
         {
-            get => m_TextHandle.IsPlaceholder ? 0 : EnsureValidCodePointIndex(m_CursorIndex);
+            get => textHandle.IsPlaceholder ? 0 : EnsureValidCodePointIndex(m_CursorIndex);
+            set
+            {
+                if (m_CursorIndex != value)
+                {
+                    m_CursorIndex = value;
+                    revealCursor = true;
+                    OnCursorIndexChange?.Invoke();
+                }
+            }
+        }
+        internal int cursorIndexNoValidation
+        {
+            get { return m_CursorIndex; }
             set
             {
                 if (m_CursorIndex != value)
                 {
                     SetCursorIndexWithoutNotify(value);
+                    revealCursor = true;
                     OnCursorIndexChange?.Invoke();
                 }
             }
@@ -65,7 +79,7 @@ namespace UnityEngine
         internal int m_SelectIndex = 0;
         public int selectIndex
         {
-            get => m_TextHandle.IsPlaceholder ? 0 : EnsureValidCodePointIndex(m_SelectIndex);
+            get => textHandle.IsPlaceholder ? 0 : EnsureValidCodePointIndex(m_SelectIndex);
             set
             {
 
@@ -90,16 +104,16 @@ namespace UnityEngine
                     return "";
 
                 if (cursorIndex < selectIndex)
-                    return m_TextHandle.Substring(cursorIndex, selectIndex - cursorIndex);
+                    return textHandle.Substring(cursorIndex, selectIndex - cursorIndex);
                 else
-                    return m_TextHandle.Substring(selectIndex, cursorIndex - selectIndex);
+                    return textHandle.Substring(selectIndex, cursorIndex - selectIndex);
             }
         }
 
 
         public TextSelectingUtilities(TextHandle textHandle)
         {
-            m_TextHandle = textHandle;
+            this.textHandle = textHandle;
         }
 
         internal bool HandleKeyEvent(Event e)
@@ -269,12 +283,12 @@ namespace UnityEngine
 
         public void SelectUp()
         {
-            cursorIndex = m_TextHandle.LineUpCharacterPosition(cursorIndex);
+            cursorIndex = textHandle.LineUpCharacterPosition(cursorIndex);
         }
 
         public void SelectDown()
         {
-            cursorIndex = m_TextHandle.LineDownCharacterPosition(cursorIndex);
+            cursorIndex = textHandle.LineDownCharacterPosition(cursorIndex);
         }
 
         /// Select to the end of the text
@@ -373,7 +387,7 @@ namespace UnityEngine
             bool wasInFront = cursorIndex > selectIndex;
             if (cursorIndex > 1)
             {
-                cursorIndex = m_TextHandle.LastIndexOf(kNewLineChar, cursorIndex - 2) + 1;
+                cursorIndex = textHandle.LastIndexOf(kNewLineChar, cursorIndex - 2) + 1;
                 if (wasInFront && cursorIndex < selectIndex)
                     cursorIndex = selectIndex;
             }
@@ -409,7 +423,7 @@ namespace UnityEngine
             if (cursorIndex < textLen)
                 cursorIndex = IndexOfEndOfLine(cursorIndex);
             if (selectIndex != 0)
-                selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, selectIndex - 1) + 1;
+                selectIndex = textHandle.LastIndexOf(kNewLineChar, selectIndex - 1) + 1;
         }
 
         /// Move the cursor one character to the right and deselect.
@@ -455,7 +469,7 @@ namespace UnityEngine
                 selectIndex = cursorIndex;
             else
                 cursorIndex = selectIndex;
-            cursorIndex = selectIndex = m_TextHandle.LineUpCharacterPosition(cursorIndex);
+            cursorIndex = selectIndex = textHandle.LineUpCharacterPosition(cursorIndex);
             if (cursorIndex <= 0)
                 ClearCursorPos();
         }
@@ -467,7 +481,7 @@ namespace UnityEngine
                 selectIndex = cursorIndex;
             else
                 cursorIndex = selectIndex;
-            cursorIndex = selectIndex = m_TextHandle.LineDownCharacterPosition(cursorIndex);
+            cursorIndex = selectIndex = textHandle.LineDownCharacterPosition(cursorIndex);
             if (cursorIndex == characterCount)
                 ClearCursorPos();
         }
@@ -548,7 +562,7 @@ namespace UnityEngine
             cursorIndex = cursorIndex < selectIndex ? cursorIndex : selectIndex;
             if (cursorIndex > 1)
             {
-                selectIndex = cursorIndex = m_TextHandle.LastIndexOf(kNewLineChar, cursorIndex - 2) + 1;
+                selectIndex = cursorIndex = textHandle.LastIndexOf(kNewLineChar, cursorIndex - 2) + 1;
             }
             else
                 selectIndex = cursorIndex = 0;
@@ -638,7 +652,7 @@ namespace UnityEngine
 
         protected internal void MoveCursorToPosition_Internal(Vector2 cursorPosition, bool shift)
         {
-            selectIndex = m_TextHandle.GetCursorIndexFromPosition(cursorPosition);
+            selectIndex = textHandle.GetCursorIndexFromPosition(cursorPosition);
 
             if (!shift)
             {
@@ -646,15 +660,26 @@ namespace UnityEngine
             }
         }
 
+        protected internal void MoveAltCursorToPosition(Vector2 cursorPosition)
+        {
+            int index = textHandle.GetCursorIndexFromPosition(cursorPosition);
+            iAltCursorPos = Mathf.Min(characterCount, index);
+        }
+
+        protected internal bool IsOverSelection(Vector2 cursorPosition)
+        {
+            int p = textHandle.GetCursorIndexFromPosition(cursorPosition);
+            return ((p < Mathf.Max(cursorIndex, selectIndex)) && (p > Mathf.Min(cursorIndex, selectIndex)));
+        }
+
         // Do a drag selection. Used to expand the selection in MouseDrag events.
         public void SelectToPosition(Vector2 cursorPosition)
         {
             if (!m_MouseDragSelectsWholeWords)
-                cursorIndex = m_TextHandle.GetCursorIndexFromPosition(cursorPosition);
+                cursorIndex = textHandle.GetCursorIndexFromPosition(cursorPosition);
             else // snap to words/paragraphs
             {
-                int p = m_TextHandle.GetCursorIndexFromPosition(cursorPosition);
-
+                int p = textHandle.GetCursorIndexFromPosition(cursorPosition);
                 p = EnsureValidCodePointIndex(p);
                 m_DblClickInitPos = EnsureValidCodePointIndex(m_DblClickInitPos);
 
@@ -676,11 +701,11 @@ namespace UnityEngine
                     if (p < m_DblClickInitPos)
                     {
                         if (p > 0)
-                            cursorIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, p - 2)) + 1;
+                            cursorIndex = textHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, p - 2)) + 1;
                         else
                             cursorIndex = 0;
 
-                        selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Min(characterCount - 1, m_DblClickInitPos));
+                        selectIndex = textHandle.LastIndexOf(kNewLineChar, Mathf.Min(characterCount - 1, m_DblClickInitPos));
                     }
                     else
                     {
@@ -691,7 +716,7 @@ namespace UnityEngine
                         else
                             cursorIndex = characterCount;
 
-                        selectIndex = m_TextHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, m_DblClickInitPos - 2)) + 1;
+                        selectIndex = textHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, m_DblClickInitPos - 2)) + 1;
                     }
                 }
             }
@@ -817,11 +842,6 @@ namespace UnityEngine
         internal Action OnSelectIndexChange;
         internal Action OnRevealCursorChange;
 
-        int ClampTextIndex(int index)
-        {
-            return Mathf.Clamp(index, 0, characterCount);
-        }
-
         internal int EnsureValidCodePointIndex(int index)
         {
             index = ClampTextIndex(index);
@@ -839,9 +859,14 @@ namespace UnityEngine
             return !char.IsLowSurrogate(m_TextElementInfos[index].character);
         }
 
+        int ClampTextIndex(int index)
+        {
+            return Mathf.Clamp(index, 0, characterCount);
+        }
+
         int IndexOfEndOfLine(int startIndex)
         {
-            int index = m_TextHandle.IndexOf(kNewLineChar, startIndex);
+            int index = textHandle.IndexOf(kNewLineChar, startIndex);
             return (index != -1 ? index : characterCount);
         }
 
@@ -851,6 +876,7 @@ namespace UnityEngine
                 index--;
             while (index > 0 && char.IsLowSurrogate(m_TextElementInfos[index].character))
                 index--;
+
             return index;
         }
 
@@ -860,23 +886,24 @@ namespace UnityEngine
                 index++;
             while (index < characterCount && char.IsLowSurrogate(m_TextElementInfos[index].character))
                 index++;
+
             return index;
         }
 
         int GetGraphicalLineStart(int p)
         {
-            Vector2 point = m_TextHandle.GetCursorPositionFromStringIndexUsingLineHeight(p);
+            Vector2 point = textHandle.GetCursorPositionFromStringIndexUsingLineHeight(p);
             point.y -= 1.0f / GUIUtility.pixelsPerPoint; // we make sure no floating point errors can make us land on another line
             point.x = 0;
-            return m_TextHandle.GetCursorIndexFromPosition(point);
+            return textHandle.GetCursorIndexFromPosition(point);
         }
 
         int GetGraphicalLineEnd(int p)
         {
-            Vector2 point = m_TextHandle.GetCursorPositionFromStringIndexUsingLineHeight(p);
+            Vector2 point = textHandle.GetCursorPositionFromStringIndexUsingLineHeight(p);
             point.y -= 1.0f / GUIUtility.pixelsPerPoint; // we make sure no floating point errors can make us land on another line
             point.x += 5000;
-            return m_TextHandle.GetCursorIndexFromPosition(point);
+            return textHandle.GetCursorIndexFromPosition(point);
         }
 
         public void Copy()

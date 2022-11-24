@@ -262,7 +262,7 @@ namespace UnityEditorInternal
 
             var region = new IMGUIContainer(() =>
             {
-                var label = new GUIContent(property.name);
+                var label = new GUIContent(preferredLabel);
                 var rect = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight);
                 EditorGUI.LabelField(rect, label);
                 rect = EditorGUI.PrefixLabel(rect, label);
@@ -296,7 +296,7 @@ namespace UnityEditorInternal
                     if (state == MinMaxCurveState.k_Scalar)
                     {
                         label.ResetPositionProperties();
-                        label.text = property.name;
+                        label.text = preferredLabel;
                     }
                     else
                     {

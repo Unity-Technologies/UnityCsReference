@@ -261,6 +261,7 @@ namespace UnityEditor.UIElements
             {
                 if (handler.hasPropertyDrawer)
                 {
+                    handler.propertyDrawer.m_PreferredLabel = label ?? serializedProperty.localizedDisplayName;
                     customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty);
 
                     if (customPropertyGUI == null)

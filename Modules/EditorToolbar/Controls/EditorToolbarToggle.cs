@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Overlays;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -10,8 +11,13 @@ namespace UnityEditor.Toolbars
 {
     public class EditorToolbarToggle : ToolbarToggle
     {
+        internal const string textIconClassName = EditorToolbar.elementTextIconClassName;
         internal const string textClassName = EditorToolbar.elementLabelClassName;
         internal const string iconClassName = EditorToolbar.elementIconClassName;
+
+        internal const string k_TextIconElementName = "EditorToolbarToggleTextIcon";
+        internal const string k_TextElementName = "EditorToolbarToggleText";
+
         public new const string ussClassName = "unity-editor-toolbar-toggle";
         internal static readonly string toggleNoIconClassName = ussClassName + "-noicon";
 
@@ -19,12 +25,12 @@ namespace UnityEditor.Toolbars
         Texture2D m_OffIcon;
 
         TextElement m_TextElement;
-        readonly Image m_IconElement;
+        TextElement m_TextIconElement;
+        Image m_IconElement;
 
         public new string text
         {
             get => m_TextElement?.text;
-
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -36,12 +42,56 @@ namespace UnityEditor.Toolbars
 
                 if (m_TextElement == null)
                 {
-                    Insert(IndexOf(m_IconElement)+1, m_TextElement = new TextElement());
+                    m_TextElement = new TextElement();
+                    m_TextElement.name = k_TextElementName;
                     m_TextElement.AddToClassList(textClassName);
+
+                    var input = this.Q<VisualElement>(className: Toggle.inputUssClassName);
+                    if (m_IconElement != null)
+                        input.Insert(input.IndexOf(m_IconElement) + 1, m_TextElement);
+                    else if (m_TextIconElement != null)
+                        input.Insert(input.IndexOf(m_TextIconElement) + 1, m_TextElement);
+                    else
+                        input.Add(m_TextElement);
                 }
 
                 m_TextElement.text = value;
                 UpdateIconState();
+                UpdateTextIconState();
+            }
+        }
+
+        public string textIcon
+        {
+            get => m_TextIconElement?.text;
+            set
+            {
+                if (m_TextIconElement == null)
+                {
+                    m_IconElement?.RemoveFromHierarchy();
+                    m_IconElement = null;
+                    m_OffIcon = null;
+                    m_OnIcon = null;
+
+                    m_TextIconElement = new TextElement();
+                    m_TextIconElement.name = k_TextIconElementName;
+                    m_TextIconElement.AddToClassList(textIconClassName);
+
+                    var input = this.Q<VisualElement>(className: Toggle.inputUssClassName);
+                    if (m_TextElement != null)
+                    {
+                        m_TextElement.RemoveFromHierarchy();
+                        input.Add(m_TextIconElement);
+                        input.Add(m_TextElement);
+                    }
+                    else
+                    {
+                        input.Add(m_TextIconElement);
+                    }
+                }
+
+                m_TextIconElement.text = OverlayUtilities.GetSignificantLettersForIcon(value);
+                UpdateTextIconState();
             }
         }
 
@@ -50,6 +100,8 @@ namespace UnityEditor.Toolbars
             get => offIcon;
             set
             {
+                CreateIconElement();
+
                 offIcon = onIcon = value;
                 UpdateIconState();
             }
@@ -60,6 +112,8 @@ namespace UnityEditor.Toolbars
             get => m_OnIcon;
             set
             {
+                CreateIconElement();
+
                 m_OnIcon = value;
                 UpdateIconState();
             }
@@ -70,6 +124,8 @@ namespace UnityEditor.Toolbars
             get => m_OffIcon;
             set
             {
+                CreateIconElement();
+
                 m_OffIcon = value;
                 UpdateIconState();
             }
@@ -84,17 +140,22 @@ namespace UnityEditor.Toolbars
         public EditorToolbarToggle(string text, Texture2D onIcon, Texture2D offIcon)
         {
             AddToClassList(ussClassName);
-            var input = this.Q<VisualElement>(className: Toggle.inputUssClassName);
 
-            m_IconElement = new Image { scaleMode = ScaleMode.ScaleToFit};
-            m_IconElement.AddToClassList(iconClassName);
-            input.Add(m_IconElement);
-
+            this.onIcon = onIcon;
+            this.offIcon = offIcon;
             this.text = text;
-            m_OnIcon = onIcon;
-            m_OffIcon = offIcon;
 
             UpdateIconState();
+        }
+
+        public EditorToolbarToggle(string textIcon, string label)
+        {
+            AddToClassList(ussClassName);
+
+            this.textIcon = textIcon;
+            this.text = label;
+
+            UpdateTextIconState();
         }
 
         public override void SetValueWithoutNotify(bool newValue)
@@ -105,20 +166,68 @@ namespace UnityEditor.Toolbars
 
         void UpdateIcon()
         {
+            if (m_IconElement == null)
+                return;
+
             m_IconElement.image = value ? onIcon : offIcon;
         }
 
         void UpdateIconState()
         {
+            if (m_IconElement == null)
+                return;
+
             if (icon == null && (text != null && text != string.Empty))
             {
                 if (!m_IconElement.ClassListContains(toggleNoIconClassName))
                     m_IconElement.AddToClassList(toggleNoIconClassName);
             }
             else if (icon && m_IconElement.ClassListContains(toggleNoIconClassName))
+            {
                 m_IconElement.RemoveFromClassList(toggleNoIconClassName);
+            }
 
             UpdateIcon();
+        }
+
+        void UpdateTextIconState()
+        {
+            if (m_TextIconElement == null)
+                return;
+
+            if ((m_TextIconElement == null || string.IsNullOrEmpty(textIcon)) && (text != null && text != string.Empty))
+            {
+                if (!m_TextIconElement.ClassListContains(toggleNoIconClassName))
+                    m_TextIconElement.AddToClassList(toggleNoIconClassName);
+            }
+            else if (m_TextIconElement != null && m_TextIconElement.ClassListContains(toggleNoIconClassName))
+            {
+                m_TextIconElement.RemoveFromClassList(toggleNoIconClassName);
+            }
+        }
+
+        void CreateIconElement()
+        {
+            if (m_IconElement == null)
+            {
+                m_TextIconElement?.RemoveFromHierarchy();
+                m_TextIconElement = null;
+
+                var input = this.Q<VisualElement>(className: Toggle.inputUssClassName);
+                m_IconElement = new Image { scaleMode = ScaleMode.ScaleToFit };
+                m_IconElement.AddToClassList(iconClassName);
+
+                if (m_TextElement != null)
+                {
+                    m_TextElement.RemoveFromHierarchy();
+                    input.Add(m_IconElement);
+                    input.Add(m_TextElement);
+                }
+                else
+                {
+                    input.Add(m_IconElement);
+                }
+            }
         }
     }
 }

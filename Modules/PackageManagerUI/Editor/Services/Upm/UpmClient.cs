@@ -46,6 +46,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmRemoveOperation m_RemoveOperation;
         private UpmRemoveOperation removeOperation => CreateOperation(ref m_RemoveOperation);
 
+        [SerializeField]
+        private UpmSearchOperation[] m_SerializedInProgressExtraFetchOperations = Array.Empty<UpmSearchOperation>();
+
         private readonly Dictionary<string, UpmSearchOperation> m_ExtraFetchOperations = new Dictionary<string, UpmSearchOperation>();
 
         [SerializeField]
@@ -97,6 +100,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_SerializedRegistryUrlsKeys = m_RegistryUrls?.Keys.ToArray() ?? new string[0];
             m_SerializedRegistryUrlsValues = m_RegistryUrls?.Values.ToArray() ?? new bool[0];
+
+            m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations?.Values.Where(i => i.isInProgress).ToArray() ?? new UpmSearchOperation[0];
         }
 
         public void OnAfterDeserialize()
@@ -409,7 +414,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return null;
             var operation = new UpmSearchOperation();
             operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            operation.Search(packageIdOrName);
+            operation.Search(packageIdOrName, productId);
             operation.onProcessResult += (requst) => OnProcessExtraFetchResult(requst, productId);
             operation.onOperationFinalized += (op) => m_ExtraFetchOperations.Remove(packageIdOrName);
             m_ExtraFetchOperations[packageIdOrName] = operation;
@@ -479,6 +484,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_SearchOperation?.isInProgress ?? false)
                 SearchAll();
+
+            foreach (var operation in m_SerializedInProgressExtraFetchOperations)
+                ExtraFetchInternal(operation.packageIdOrName, operation.productId);
         }
 
         public void OnEnable()

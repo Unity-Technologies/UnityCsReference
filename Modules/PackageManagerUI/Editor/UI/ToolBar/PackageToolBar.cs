@@ -53,6 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageCancelDownloadButton m_CancelButton;
 
         private PackageImportButton m_ImportButton;
+        private PackageRemoveImportedButton m_RemoveImportedButton;
         private PackageRedownloadButton m_RedownloadButton;
         private PackageDownloadButton m_DownloadButton;
         private PackageDownloadUpdateButton m_DownloadUpdateButton;
@@ -148,6 +149,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ImportButton.SetGlobalDisableConditions(m_DisableIfCompiling);
             m_ImportButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_ImportButton.element);
+
+            m_RemoveImportedButton = new PackageRemoveImportedButton(m_Application, m_OperationDispatcher);
+            m_RemoveImportedButton.SetGlobalDisableConditions(m_DisableIfCompiling);
+            m_RemoveImportedButton.onAction += RefreshBuiltInButtons;
+            m_BuiltInActions.Add(m_RemoveImportedButton.element);
 
             m_RedownloadButton = new PackageRedownloadButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher);
             m_RedownloadButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
@@ -262,6 +268,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResetButton.Refresh(m_Version);
 
             m_ImportButton.Refresh(m_Version);
+            m_RemoveImportedButton.Refresh(m_Version);
             m_RedownloadButton.Refresh(m_Version);
             m_DownloadButton.Refresh(m_Version);
             m_DownloadUpdateButton.Refresh(m_Version);

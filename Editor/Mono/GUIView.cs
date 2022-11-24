@@ -302,5 +302,17 @@ namespace UnityEditor
                 System.Diagnostics.Process.Start(System.IO.Path.GetDirectoryName(path));
             }
         }
+
+        static readonly Action<TextElement> k_QueryMarkDirty = MarkDirtyRepaint;
+
+        static void MarkDirtyRepaint(TextElement v)
+        {
+            v.MarkDirtyRepaint();
+        }
+
+        internal void RepaintUITKText()
+        {
+            visualTree.Query<TextElement>().ForEach(k_QueryMarkDirty);
+        }
     }
 } //namespace

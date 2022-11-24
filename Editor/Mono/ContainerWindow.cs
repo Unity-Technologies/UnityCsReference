@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -27,6 +28,7 @@ namespace UnityEditor
         internal int m_DisplayIndex;
         internal bool m_IsFullscreenContainer;
         internal bool m_IsForceTitleBar;
+        internal bool m_UpdateTitleFromChildWindow = true;
 
         internal bool m_DontSaveToLayout = false;
         private bool m_HasUnsavedChanges = false;
@@ -373,6 +375,7 @@ namespace UnityEditor
             DestroyImmediate(this, true);
         }
 
+        [RequiredByNativeCode]
         internal bool InternalIsForceTitleBar()
         {
             return m_IsForceTitleBar;

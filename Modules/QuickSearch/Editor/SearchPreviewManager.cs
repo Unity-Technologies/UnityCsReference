@@ -101,7 +101,7 @@ namespace UnityEditor.Search
         ConcurrentDictionary<SearchPreviewKey, SearchPreview> m_PreviewCollections = new();
         ConcurrentDictionary<SearchPreviewKey, SearchPreviewAsyncFetch> m_FetchPreviewOffs = new();
 
-        public int poolSize { get; }
+        public int poolSize { get; set; }
         public int count => m_PreviewCollections.Count;
 
         public SearchPreviewManager(int poolSize)

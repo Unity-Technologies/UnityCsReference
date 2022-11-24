@@ -22,6 +22,9 @@ namespace UnityEngine.Rendering
         static readonly Lazy<Type[]> k_DefaultRenderPipelineAsset = new(() => new[] { typeof(RenderPipelineAsset) });
         public Type[] renderPipelineTypes { get; }
 
+        public SupportedOnRenderPipelineAttribute(Type renderPipeline)
+            : this(new[] { renderPipeline }) {}
+
         public SupportedOnRenderPipelineAttribute(params Type[] renderPipeline)
         {
             if (renderPipeline == null)

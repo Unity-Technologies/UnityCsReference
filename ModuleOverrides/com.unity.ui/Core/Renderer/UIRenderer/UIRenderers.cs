@@ -31,6 +31,7 @@ namespace UnityEngine.UIElements.UIR
         public TextureId texture;
         public int stencilRef;
         public float sdfScale;
+        public float sharpness;
     }
 
     internal enum CommandType

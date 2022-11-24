@@ -164,6 +164,27 @@ namespace UnityEngine.TextCore.Text
         static Shader k_ShaderRef_MobileSDF;
 
         /// <summary>
+        /// Returns a reference to the mobile distance field shader for IMGUI
+        /// </summary>
+        internal static Shader ShaderRef_MobileSDF_IMGUI
+        {
+            get
+            {
+                // IMGUI doesn't work with TMP shader so we ignore that one
+                if (k_ShaderRef_MobileSDF_IMGUI == null)
+                {
+                    k_ShaderRef_MobileSDF_IMGUI = Shader.Find("Text/Mobile/Distance Field SSD");
+
+                    if (k_ShaderRef_MobileSDF_IMGUI == null)
+                        k_ShaderRef_MobileSDF_IMGUI = Shader.Find("Hidden/TextCore/Distance Field SSD");
+                }
+
+                return k_ShaderRef_MobileSDF_IMGUI;
+            }
+        }
+        static Shader k_ShaderRef_MobileSDF_IMGUI;
+
+        /// <summary>
         /// Returns a reference to the mobile bitmap shader.
         /// </summary>
         internal static Shader ShaderRef_MobileBitmap

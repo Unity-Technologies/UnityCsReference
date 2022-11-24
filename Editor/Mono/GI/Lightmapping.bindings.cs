@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using Scene = UnityEngine.SceneManagement.Scene;
 using NativeArrayUnsafeUtility = Unity.Collections.LowLevel.Unsafe.NativeArrayUnsafeUtility;
 using Unity.Collections;
+using UnityEditor.LightBaking;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
@@ -217,40 +218,23 @@ namespace UnityEditor
             set { GetOrCreateLightingsSettings().lightmapFilterMode = value; }
         }
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern bool isProgressiveLightmapperDone {[NativeName("IsDone")] get; }
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern bool isProgressiveLightmapperDone {[NativeName("IsBakedGIDone")] get; }
 
-        // Returns true when the bake job is baking, false otherwise.
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern bool isBaking { [NativeName("IsBaking")] get; }
-
-        // Returns true when the bake job is preparing, false otherwise.
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern bool isPreparing { [NativeName("IsPreparing")] get; }
-
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern ulong occupiedTexelCount { get; }
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern ulong GetVisibleTexelCount(int lightmapIndex);
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern int atlasCount { [NativeName("GetAtlasCount")] get; }
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern LightmapConvergence GetLightmapConvergence(int lightmapIndex);
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern LightProbesConvergence GetLightProbesConvergence();
-
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern LightmapMemory GetLightmapMemory(int lightmapIndex);
-
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern bool GetGBufferHash(int lightmapIndex, out Hash128 gbufferHash);
-
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern float GetGBufferMemory(ref Hash128 gbufferHash);
 
         [FreeFunction]
         internal static extern MemLabels GetLightProbeMemLabels();
@@ -271,36 +255,33 @@ namespace UnityEditor
         [NativeName("GetGeometryMemory")]
         internal static extern GeoMemLabels GetGeometryMemory();
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float ComputeTotalCPUMemoryUsageInBytes();
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float ComputeTotalGPUMemoryUsageInBytes();
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern void LogGPUMemoryStatistics();
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float GetLightmapBakeTimeRaw();
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float GetLightmapBakeTimeTotal();
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         [NativeName("GetLightmapBakePerformance")]
         internal static extern float GetLightmapBakePerformanceTotal();
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern float GetLightmapBakePerformance(int lightmapIndex);
-
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern string GetLightmapBakeGPUDeviceName();
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern int GetLightmapBakeGPUDeviceIndex();
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        extern internal static DeviceAndPlatform[] GetLightmappingGpuDevices();
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern DeviceAndPlatform[] GetLightmappingGpuDevices();
 
         // Exports the current state of the scene to the dynamic GI workflow.
         [FreeFunction]
@@ -320,6 +301,7 @@ namespace UnityEditor
 
         // Stops the current bake at the state it has reached so far.
         [FreeFunction]
+        [System.Obsolete("ForceStop is no longer available, use Cancel instead to stop a bake.", false)]
         public static extern void ForceStop();
 
         // Returns true when the bake job is running, false otherwise (RO).
@@ -411,6 +393,16 @@ namespace UnityEditor
                 wroteLightingDataAsset();
         }
 
+        // This event is fired when BakeInput has been populated, but before passing it to Bake().
+        // Create a LightBaker.BakeInput by passing the IntPtr but don't access it beyond the call-back.
+        internal static event Action<IntPtr> createdBakeInputForTestingOnly;
+
+        internal static void Internal_CallOnCreatedBakeInputForTestingOnly(IntPtr ptr)
+        {
+            if (createdBakeInputForTestingOnly != null)
+                createdBakeInputForTestingOnly(ptr);
+        }
+
         [System.Obsolete("OnCompletedFunction.completed is obsolete, please use event bakeCompleted instead. ", false)]
         public static OnCompletedFunction completed;
 
@@ -457,17 +449,6 @@ namespace UnityEditor
         [NativeName("LightProbeUtils::Tetrahedralize")]
         [FreeFunction]
         private static extern TetrahedralizationData TetrahedralizeInternal(Vector3[] positions);
-
-        internal static void GetEnvironmentSamples(out Vector4[] outDirections, out Vector4[] outIntensities)
-        {
-            EnvironmentSamplesData data = GetEnvironmentSamplesInternal();
-            outDirections = data.directions;
-            outIntensities = data.intensities;
-        }
-
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        [NativeName("GetEnvironmentSamples")]
-        private static extern EnvironmentSamplesData GetEnvironmentSamplesInternal();
 
         [FreeFunction]
         public static extern bool BakeReflectionProbe(ReflectionProbe probe, string path);
@@ -682,18 +663,6 @@ namespace UnityEditor
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetPVRInstanceHash(int instanceID, out Hash128 instanceHash);
-
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetPVRAtlasHash(int instanceID, out Hash128 atlasHash);
-
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetPVRAtlasInstanceOffset(int instanceID, out int atlasInstanceOffset);
-
-        [FreeFunction]
-        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
         extern static internal bool GetGeometryHash([NotNull("NullExceptionObject")] Renderer renderer, out Hash128 geometryHash);
 
         [FreeFunction]
@@ -706,11 +675,11 @@ namespace UnityEditor.Experimental
 {
     public sealed partial class Lightmapping
     {
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         public static extern bool probesIgnoreDirectEnvironment { get; set; }
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        private unsafe static extern void SetCustomBakeInputs([Span("inputDataLength", isReadOnly:true)]Vector4* inputData, int inputDataLength, int sampleCount);
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
+        private static extern unsafe void SetCustomBakeInputs([Span("inputDataLength", isReadOnly:true)]Vector4* inputData, int inputDataLength, int sampleCount);
 
         public static void SetCustomBakeInputs(Vector4[] inputData, int sampleCount)
         {
@@ -725,8 +694,8 @@ namespace UnityEditor.Experimental
         }
 
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        private static unsafe extern bool GetCustomBakeResultsCopy([Span("resultsLength")]Vector4* results, int resultsLength);
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
+        private static extern unsafe bool GetCustomBakeResultsCopy([Span("resultsLength")]Vector4* results, int resultsLength);
         public static unsafe bool GetCustomBakeResults(Span<Vector4> results)
         {
             fixed (Vector4* resultsPtr = results) {
@@ -738,7 +707,7 @@ namespace UnityEditor.Experimental
             return GetCustomBakeResults(results.AsSpan());
         }
 
-        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         public static extern ReadOnlySpan<Vector4> GetCustomBakeResultsNoCopy();
 
         [Obsolete("UnityEditor.Experimental.Lightmapping.extractAmbientOcclusion is obsolete, use LightingSettings.extractAO instead. ", false)]

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEditor.Profiling;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
 
@@ -16,6 +17,7 @@ namespace UnityEditor.Search
         const int k_ResetSelectionIndex = -1;
         internal const double resultViewUpdateThrottleDelay = 0.05d;
 
+        private int m_ViewId;
         private bool m_Disposed = false;
         private SearchViewState m_ViewState;
         private Action m_AsyncRequestOff = null;
@@ -27,6 +29,7 @@ namespace UnityEditor.Search
         private int m_DelayedCurrentSelection = k_ResetSelectionIndex;
         private bool m_SyncSearch;
         private SearchPreviewManager m_PreviewManager;
+        private int m_TextureCacheSize;
 
         // UITK
         private VisualElement m_ResultViewContainer;
@@ -112,35 +115,28 @@ namespace UnityEditor.Search
         public IEnumerable<SearchItem> items => m_FilteredItems;
         public bool searchInProgress => context.searchInProgress || m_AsyncRequestOff != null;
 
-        public SearchView(SearchViewState viewState)
+        public SearchView(SearchViewState viewState, int viewId)
         {
-            m_ViewState = viewState;
-            m_PreviewManager = new SearchPreviewManager();
+            using (new EditorPerformanceTracker("SearchView.ctror"))
+            {
+                m_ViewId = viewId;
+                m_ViewState = viewState;
+                m_PreviewManager = new SearchPreviewManager();
 
-            context.searchView = context.searchView ?? this;
-            multiselect = viewState.context?.options.HasAny(SearchFlags.Multiselect) ?? false;
-            m_FilteredItems = new GroupedSearchList(context, GetDefaultSearchListComparer());
-            m_FilteredItems.currentGroup = viewState.group;
-            viewState.itemSize = GetDefaultItemSize();
-            hideHelpers = m_ViewState.HasFlag(SearchViewFlags.DisableQueryHelpers);
+                context.searchView = context.searchView ?? this;
+                multiselect = viewState.context?.options.HasAny(SearchFlags.Multiselect) ?? false;
+                m_FilteredItems = new GroupedSearchList(context, GetDefaultSearchListComparer());
+                m_FilteredItems.currentGroup = viewState.group;
+                viewState.itemSize = GetDefaultItemSize();
+                hideHelpers = m_ViewState.HasFlag(SearchViewFlags.DisableQueryHelpers);
 
-            style.flexGrow = 1f;
+                style.flexGrow = 1f;
 
-            Refresh();
-            UpdateView();
-        }
+                Refresh();
+                UpdateView();
 
-        public SearchView(SearchContext context) : this(new SearchViewState(context, SearchViewFlags.GridView)) { }
-        public SearchView(SearchContext context, SearchViewFlags flags) : this(new SearchViewState(context, flags)) { }
-
-        public SearchView(in string searchText)
-            : this(searchText, SearchViewFlags.GridView)
-        {
-        }
-
-        public SearchView(in string searchText, SearchViewFlags flags)
-            : this(SearchService.CreateContext(searchText ?? string.Empty, SearchFlags.OpenGlobal), flags)
-        {
+                RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            }
         }
 
         public void Reset()
@@ -172,10 +168,13 @@ namespace UnityEditor.Search
 
         private void AsyncRefresh()
         {
-            if (m_SyncSearch)
-                NotifySyncSearch(currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.SyncSearch);
+            using (new EditorPerformanceTracker("SearchView.AsyncRefresh"))
+            {
+                if (m_SyncSearch)
+                    NotifySyncSearch(currentGroup, UnityEditor.SearchService.SearchService.SyncSearchEvent.SyncSearch);
 
-            FetchItems();
+                FetchItems();
+            }
         }
 
         public void FetchItems()
@@ -186,8 +185,9 @@ namespace UnityEditor.Search
             context.ClearErrors();
             m_FilteredItems.Clear();
 
-            if (this.GetHostWindow() is ISearchWindow searchWindow)
-                OnIncomingItems(context, searchWindow.FetchItems());
+            var hostWindow = this.GetSearchHostWindow();
+            if (hostWindow != null)
+                OnIncomingItems(context, hostWindow.FetchItems());
 
             if (context.options.HasAny(SearchFlags.Debug))
                 Debug.Log($"[{context.sessionId}] Running query {context.searchText}");
@@ -210,12 +210,23 @@ namespace UnityEditor.Search
 
             if (disposing)
             {
+                AssetPreview.DeletePreviewTextureManagerByID(m_ViewId);
                 m_AsyncRequestOff?.Invoke();
                 m_AsyncRequestOff = null;
                 m_ViewState.context?.Dispose();
             }
 
             m_Disposed = true;
+        }
+
+        int ISearchView.GetViewId()
+        {
+            return m_ViewId;
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            UpdatePreviewManagerCacheSize();
         }
 
         private void SetItemSize(float value)
@@ -243,58 +254,80 @@ namespace UnityEditor.Search
 
         private bool UpdateView()
         {
-            IResultView nextView;
-            if (results.Count == 0 && displayMode != DisplayMode.Table)
+            using (new EditorPerformanceTracker("SearchView.UpdateView"))
             {
-                if (!m_ResultView?.showNoResultMessage ?? false)
-                    return false;
-
-                if (m_ResultView is SearchEmptyView)
-                    return false;
-
-                nextView = new SearchEmptyView(this, hideHelpers);
-            }
-            else
-            {
-                if (itemSize <= 32f)
+                IResultView nextView = null;
+                if (results.Count == 0 && displayMode != DisplayMode.Table)
                 {
-                    if (m_ResultView is SearchListView)
+                    if (!m_ResultView?.showNoResultMessage ?? false)
                         return false;
-                    nextView = new SearchListView(this);
-                }
-                else if (itemSize >= (float)DisplayMode.Table)
-                {
-                    if (m_ResultView is ITableView)
+
+                    if (m_ResultView is SearchEmptyView)
                         return false;
-                    nextView = new SearchTableView(this);
+
+                    nextView = new SearchEmptyView(this, hideHelpers);
                 }
                 else
                 {
-                    if (m_ResultView is SearchGridView)
-                        return false;
-                    nextView = new SearchGridView(this);
+                    if (itemSize <= 32f)
+                    {
+                        if (!(m_ResultView is SearchListView))
+                            nextView = new SearchListView(this);
+                    }
+                    else if (itemSize >= (float)DisplayMode.Table)
+                    {
+                        if (!(m_ResultView is SearchTableView))
+                            nextView = new SearchTableView(this);
+                    }
+                    else
+                    {
+                        if (!(m_ResultView is SearchGridView))
+                            nextView = new SearchGridView(this);
+                    }
                 }
+
+                if (nextView == null)
+                    return false;
+
+                if (nextView is not SearchTableView)
+                    m_FilteredItems.Sort();
+
+                m_ResultView = nextView;
+                UpdatePreviewManagerCacheSize();
+
+                if (m_ResultViewContainer != null)
+                    m_ResultViewContainer.RemoveFromHierarchy();
+
+                m_ResultViewContainer = m_ResultView as VisualElement;
+                if (m_ResultViewContainer == null)
+                    throw new NotSupportedException("Result view must be implemented using UTIK");
+
+                m_ResultViewContainer.style.flexGrow = 1f;
+                Add(m_ResultViewContainer);
+
+                EmitDisplayModeChanged();
+                return true;
             }
+        }
 
-            if (nextView == null)
-                return false;
+        private void UpdatePreviewManagerCacheSize()
+        {
+            var width = worldBound.width;
+            var height = worldBound.height;
+            if (width <= 0 || float.IsNaN(width) || height <= 0 || float.IsNaN(height))
+                return;
 
-            if (nextView is not SearchTableView)
-                m_FilteredItems.Sort();
+            // Note: We approximate how many items could be displayed in the current Rect. We cannot rely on the ResultView to have
+            // an exact list of visibleItems since get updated AFTER our resize handler and we need to update the Cache size so preview are properly generated.
 
-            m_ResultView = nextView;
-            if (m_ResultViewContainer != null)
-                m_ResultViewContainer.RemoveFromHierarchy();
+            var potentialVisibleItems = Mathf.Min(m_ResultView.ComputeVisibleItemCapacity(width, height), results.Count);
+            var newTextureCacheSize = Mathf.Max(potentialVisibleItems * 2 + 30, 128);
+            if (potentialVisibleItems == 0 || newTextureCacheSize <= m_TextureCacheSize)
+                return;
 
-            m_ResultViewContainer = m_ResultView as VisualElement;
-            if (m_ResultViewContainer == null)
-                throw new NotSupportedException("Result view must be implemented using UTIK");
-
-            m_ResultViewContainer.style.flexGrow = 1f;
-            Add(m_ResultViewContainer);
-
-            EmitDisplayModeChanged();
-            return true;
+            m_PreviewManager.poolSize = newTextureCacheSize;
+            m_TextureCacheSize = newTextureCacheSize;
+            AssetPreview.SetPreviewTextureCacheSize(m_TextureCacheSize, ((ISearchView)this).GetViewId());
         }
 
         private DisplayMode GetDisplayMode()
@@ -324,11 +357,14 @@ namespace UnityEditor.Search
 
         public void RefreshContent(RefreshFlags flags)
         {
-            UpdateView();
-            if (context.debug)
-                Debug.Log($"[{searchInProgress}] Refresh {flags} for query \"{context.searchText}\": {m_ResultView}");
-            m_ResultView?.Refresh(flags);
-            Dispatcher.Emit(SearchEvent.RefreshContent, new SearchEventPayload(this, flags, context.searchText));
+            using (new EditorPerformanceTracker("SearchView.RefreshContent"))
+            {
+                UpdateView();
+                if (context.debug)
+                    Debug.Log($"[{searchInProgress}] Refresh {flags} for query \"{context.searchText}\": {m_ResultView}");
+                m_ResultView?.Refresh(flags);
+                Dispatcher.Emit(SearchEvent.RefreshContent, new SearchEventPayload(this, flags, context.searchText));
+            }
         }
 
         private void OnIncomingItems(SearchContext context, IEnumerable<SearchItem> items)
@@ -632,9 +668,8 @@ namespace UnityEditor.Search
 
         public bool IsPicker()
         {
-            if (this.GetHostWindow() is ISearchWindow window)
-                return window.IsPicker();
-            return false;
+            var window = this.GetSearchHostWindow();
+            return window != null && window.IsPicker();
         }
 
         IEnumerable<IGroup> ISearchView.EnumerateGroups()

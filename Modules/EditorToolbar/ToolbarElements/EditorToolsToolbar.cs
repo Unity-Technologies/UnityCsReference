@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.EditorTools;
 using UnityEngine.UIElements;
 
@@ -39,7 +41,7 @@ namespace UnityEditor.Toolbars
             {
                 new VisualElement() { name = "Builtin View and Transform Tools" },
                 new VisualElement() { name = "Custom Global Tools" },
-                new VisualElement() { name = "Component Tools" }
+                new VisualElement()
             };
 
             for (int i = 0; i < k_ToolbarSections; ++i)
@@ -71,25 +73,24 @@ namespace UnityEditor.Toolbars
             foreach (var toolbar in m_Toolbars)
                 toolbar.Clear();
 
-            // Builtin tools are handled as a special case because order needs to be consistent
-            for (int i = (int)Tool.View; i < (int)Tool.Custom; ++i)
-            {
-                var tool = m_AvailableTools.FindIndex(x=> (Tool) x.scope == (Tool) i);
-                if(tool > -1)
-                    defaultToolButtons.Add(new ToolButton((Tool) i, m_AvailableTools[tool].tools));
-            }
+            m_AvailableTools.OrderBy(x => x.scope)
+                .ThenBy(x => x.GetHashCode())
+                .ThenBy(x => x.priority);
 
-            m_AvailableTools.Sort((a, b) =>
-            {
-                if (a.priority == ToolAttribute.defaultPriority && b.priority == ToolAttribute.defaultPriority)
-                    return a.GetHashCode().CompareTo(b.GetHashCode());
-                return a.priority.CompareTo(b.priority);
-            });
-
+            Type currentComponentHeaderType = null;
+            VisualElement componentTools = null;
             foreach (var entry in m_AvailableTools)
             {
                 switch (entry.scope)
                 {
+                    case ToolEntry.Scope.BuiltinView:
+                    case ToolEntry.Scope.BuiltinMove:
+                    case ToolEntry.Scope.BuiltinRotate:
+                    case ToolEntry.Scope.BuiltinScale:
+                    case ToolEntry.Scope.BuiltinRect:
+                    case ToolEntry.Scope.BuiltinTransform:
+                        defaultToolButtons.Add(new ToolButton((Tool)entry.scope, entry.tools));
+                        break;
                     case ToolEntry.Scope.BuiltinAdditional:
                         defaultToolButtons.Add(new ToolButton(entry.tools));
                         break;
@@ -97,13 +98,35 @@ namespace UnityEditor.Toolbars
                         customGlobalToolButtons.Add(new ToolButton(entry.tools));
                         break;
                     case ToolEntry.Scope.Component:
-                        componentToolButtons.Add(new ToolButton(entry.tools));
+                        if (currentComponentHeaderType == null || currentComponentHeaderType != entry.tools[0].target?.GetType())
+                        {
+                            currentComponentHeaderType = entry.tools[0].target?.GetType();
+                            if (currentComponentHeaderType == null)
+                                break;
+
+                            if (componentTools != null)
+                                EditorToolbarUtility.SetupChildrenAsButtonStrip(componentTools);
+
+                            componentTools = new VisualElement() { name = "Component Tools" };
+                            componentTools.AddToClassList("toolbar-contents");
+
+                            var header = new EditorToolbarIcon();
+                            if ((header.icon = EditorGUIUtility.FindTexture(currentComponentHeaderType)) == null)
+                                header.textIcon = currentComponentHeaderType.Name;
+
+                            componentToolButtons.Add(header);
+                            componentToolButtons.Add(componentTools);
+                        }
+                        componentTools.Add(new ToolButton(entry.tools));
                         break;
                 }
             }
 
-            foreach(var toolbar in m_Toolbars)
-                EditorToolbarUtility.SetupChildrenAsButtonStrip(toolbar);
+            if (componentTools != null)
+                EditorToolbarUtility.SetupChildrenAsButtonStrip(componentTools);
+
+            for (var i = 0; i < k_ToolbarSections - 1; i++)
+                EditorToolbarUtility.SetupChildrenAsButtonStrip(m_Toolbars[i]);
         }
     }
 }

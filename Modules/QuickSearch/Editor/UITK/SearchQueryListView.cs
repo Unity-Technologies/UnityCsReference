@@ -252,7 +252,7 @@ namespace UnityEditor.Search
 
         void OnPointerDown(PointerDownEvent evt)
         {
-            if (evt.clickCount != 1 && evt.button != 0)
+            if (evt.clickCount != 1 || evt.button != 0)
                 return;
 
             if (!m_Selected)

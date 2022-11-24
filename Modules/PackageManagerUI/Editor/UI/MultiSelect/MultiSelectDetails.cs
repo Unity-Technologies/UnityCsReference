@@ -49,6 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private DownloadFoldoutGroup m_DownloadFoldoutGroup;
         private DownloadUpdateFoldoutGroup m_DownloadUpdateFoldoutGroup;
+        private RemoveImportedFoldoutGroup m_RemoveImportedFoldoutGroup;
 
         private MultiSelectFoldoutGroup[] m_UpmFoldoutGroups;
         private MultiSelectFoldoutGroup[] m_AssetStoreFoldoutGroups;
@@ -116,10 +117,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DownloadUpdateFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfNoNetwork);
             m_DownloadUpdateFoldoutGroup.cancelButton.SetGlobalDisableConditions(disableIfCompiling);
 
+            m_RemoveImportedFoldoutGroup = new RemoveImportedFoldoutGroup(m_Application, m_OperationDispatcher);
+            m_RemoveImportedFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling);
+
             m_UpmFoldoutGroups = new MultiSelectFoldoutGroup[] { m_InstallFoldoutGroup, m_RemoveFoldoutGroup, m_UpdateFoldoutGroup };
 
             // Now that Upm packages can live on Asset Store, we want to show Upm foldout groups on asset store too
-            m_AssetStoreFoldoutGroups = new MultiSelectFoldoutGroup[] { m_DownloadFoldoutGroup, m_DownloadUpdateFoldoutGroup, m_InstallFoldoutGroup, m_RemoveFoldoutGroup, m_UpdateFoldoutGroup };
+            m_AssetStoreFoldoutGroups = new MultiSelectFoldoutGroup[] { m_DownloadFoldoutGroup, m_DownloadUpdateFoldoutGroup, m_RemoveImportedFoldoutGroup, m_InstallFoldoutGroup, m_RemoveFoldoutGroup, m_UpdateFoldoutGroup };
 
             // Add foldouts to the UI in the correct order. Note that the order here is not the same as the initialization order from above.
             foldoutsContainer.Add(m_UnlockFoldout);
@@ -135,6 +139,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             foldoutsContainer.Add(m_DownloadFoldoutGroup.inProgressFoldout);
             foldoutsContainer.Add(m_DownloadUpdateFoldoutGroup.mainFoldout);
             foldoutsContainer.Add(m_DownloadUpdateFoldoutGroup.inProgressFoldout);
+
+            foldoutsContainer.Add(m_RemoveImportedFoldoutGroup.mainFoldout);
+            foldoutsContainer.Add(m_RemoveImportedFoldoutGroup.inProgressFoldout);
 
             foldoutsContainer.Add(m_CheckUpdateFoldout);
             foldoutsContainer.Add(m_NoActionFoldout);

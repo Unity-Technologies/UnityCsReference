@@ -593,7 +593,17 @@ namespace UnityEngine.TextCore.Text
             {
                 if (font.name == "LegacyRuntime")
                 {
-                    return FontAsset.CreateFontAsset("Arial", "Regular");
+                    RuntimePlatform platform = Application.platform;
+
+                    switch (platform)
+                    {
+                        case RuntimePlatform.LinuxPlayer:
+                            return FontAsset.CreateFontAsset("Liberation Sans", "Regular");
+                        case RuntimePlatform.Switch:
+                            return FontAsset.CreateFontAsset("nintendo_udsg-r_std_003", "R");
+                        default:
+                            return FontAsset.CreateFontAsset("Arial", "Regular");
+                    }
                 }
                 Debug.LogWarning("Unable to load font face for [" + font.name + "]. Make sure \"Include Font Data\" is enabled in the Font Import Settings.", font);
                 return null;
@@ -630,7 +640,7 @@ namespace UnityEngine.TextCore.Text
             fontAsset.atlasTextures = new Texture2D[1];
 
             // Create and add font atlas texture.
-            Texture2D texture = new Texture2D(0, 0, TextureFormat.Alpha8, false);
+            Texture2D texture = new Texture2D(1, 1, TextureFormat.Alpha8, false);
             fontAsset.atlasTextures[0] = texture;
 
             fontAsset.isMultiAtlasTexturesEnabled = enableMultiAtlasSupport;
@@ -1819,7 +1829,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width == 0 || m_AtlasTextures[m_AtlasTextureIndex].height == 0)
+            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
             {
                 m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
                 FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
@@ -2034,7 +2044,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width == 0 || m_AtlasTextures[m_AtlasTextureIndex].height == 0)
+            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
             {
                 m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
                 FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
@@ -2155,7 +2165,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width == 0 || m_AtlasTextures[m_AtlasTextureIndex].height == 0)
+            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
             {
                 //Debug.Log("Setting initial size of atlas texture used by font asset [" + this.name + "].");
                 m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
@@ -2204,7 +2214,7 @@ namespace UnityEngine.TextCore.Text
             uint glyphIndex = glyph.index;
 
             // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width == 0 || m_AtlasTextures[m_AtlasTextureIndex].height == 0)
+            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
             {
                 //Debug.Log("Setting initial size of atlas texture used by font asset [" + this.name + "].");
                 m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
@@ -2279,7 +2289,7 @@ namespace UnityEngine.TextCore.Text
                 }
 
                 // Resize the Atlas Texture to the appropriate size
-                if (m_AtlasTextures[m_AtlasTextureIndex].width == 0 || m_AtlasTextures[m_AtlasTextureIndex].height == 0)
+                if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
                 {
                     m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
                     FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
@@ -2449,7 +2459,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width == 0 || m_AtlasTextures[m_AtlasTextureIndex].height == 0)
+            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
             {
                 m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
                 FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
@@ -2644,7 +2654,7 @@ namespace UnityEngine.TextCore.Text
                 return;
 
             // Resize the Atlas Texture to the appropriate size
-            if (m_AtlasTextures[m_AtlasTextureIndex].width == 0 || m_AtlasTextures[m_AtlasTextureIndex].height == 0)
+            if (m_AtlasTextures[m_AtlasTextureIndex].width <= 1 || m_AtlasTextures[m_AtlasTextureIndex].height <= 1)
             {
                 //Debug.Log("Setting initial size of atlas texture used by font asset [" + this.name + "].");
                 m_AtlasTextures[m_AtlasTextureIndex].Reinitialize(m_AtlasWidth, m_AtlasHeight);
@@ -3115,7 +3125,7 @@ namespace UnityEngine.TextCore.Text
 
             if (setAtlasSizeToZero)
             {
-                texture.Reinitialize(0, 0, TextureFormat.Alpha8, false);
+                texture.Reinitialize(1, 1, TextureFormat.Alpha8, false);
             }
             else if (texture.width != m_AtlasWidth || texture.height != m_AtlasHeight)
             {

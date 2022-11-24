@@ -127,7 +127,6 @@ namespace UnityEditor.Search
                 counter++;
                 return m_ViewModel.previewManager.HasPreview(m_PreviewKey) || counter >= k_PreviewFetchCounter;
             });
-
             UpdateFavoriteImage();
         }
 
@@ -220,7 +219,7 @@ namespace UnityEditor.Search
         private void FetchPreview(SearchItem item, SearchContext context, FetchPreviewOptions options, Vector2 size, OnPreviewReady onPreviewReady)
         {
             SearchPreview searchPreview;
-            if (item == null)
+            if (item == null || m_BindedItem == null)
             {
                 searchPreview = SearchPreview.invalid;
             }
@@ -235,7 +234,7 @@ namespace UnityEditor.Search
 
         private void OnPreviewReady(SearchItem item, SearchContext context, SearchPreview preview)
         {
-            if (preview.valid)
+            if (preview.valid && m_BindedItem != null && m_Thumbnail != null)
             {
                 var fetchedPreview = preview.texture;
                 if (fetchedPreview != null && fetchedPreview.width > 0 && fetchedPreview.height > 0)
@@ -245,7 +244,7 @@ namespace UnityEditor.Search
                 }
             }
 
-            if (m_Thumbnail.image == null)
+            if (m_Thumbnail != null && m_BindedItem != null && m_Thumbnail.image == null)
             {
                 var tex = m_BindedItem.GetThumbnail(context, cacheThumbnail: false);
                 m_Thumbnail.image = tex;

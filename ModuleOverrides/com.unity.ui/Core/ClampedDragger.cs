@@ -44,6 +44,9 @@ namespace UnityEngine.UIElements
             startMousePosition = localPosition;
             dragDirection = DragDirection.None;
             base.ProcessDownEvent(evt, localPosition, pointerId);
+
+            // First click should behave like dragging immediately & ensure that the cursor is clamped on first touch
+            dragging?.Invoke();
         }
 
         protected override void ProcessMoveEvent(EventBase evt, Vector2 localPosition)

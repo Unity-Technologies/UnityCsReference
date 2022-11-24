@@ -284,11 +284,11 @@ namespace UnityEditor
         {
             managedReferenceInstanceType = null;
 
-            var parts = managedReferenceFullTypename.Split(' ');
-            if (parts.Length == 2)
+            var splitIndex = managedReferenceFullTypename.IndexOf(' ');
+            if (splitIndex > 0)
             {
-                var assemblyPart = parts[0];
-                var nsClassnamePart = parts[1];
+                var assemblyPart = managedReferenceFullTypename.Substring(0, splitIndex);
+                var nsClassnamePart = managedReferenceFullTypename.Substring(splitIndex);
                 managedReferenceInstanceType = Type.GetType($"{nsClassnamePart}, {assemblyPart}");
             }
 

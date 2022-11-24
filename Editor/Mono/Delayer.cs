@@ -10,7 +10,7 @@ namespace UnityEditor
     {
         private long m_LastExecutionTime;
         private Action<object> m_Action;
-        private readonly double m_DebounceDelay;
+        private readonly long m_DebounceDelay;
         private object m_Context;
         private readonly bool m_IsThrottle;
         private readonly bool m_FirstExecuteImmediate;
@@ -63,7 +63,7 @@ namespace UnityEditor
         private Delayer(Action<object> action, double delay, bool isThrottle, bool firstExecuteImmediate)
         {
             m_Action = action;
-            m_DebounceDelay = delay;
+            m_DebounceDelay = TimeSpan.FromSeconds(delay).Ticks;
             m_IsThrottle = isThrottle;
             m_FirstExecuteImmediate = firstExecuteImmediate;
         }
@@ -74,41 +74,44 @@ namespace UnityEditor
             EditorApplication.tick -= Throttle;
             m_Context = null;
             m_Action = null;
+            m_DelayInProgress = false;
         }
 
         private void Debounce()
         {
-            m_DelayInProgress = false;
-            EditorApplication.tick -= Debounce;
             var currentTime = DateTime.UtcNow.Ticks;
             if (m_LastExecutionTime != 0 && DelayHasPassed(currentTime))
             {
+                m_DelayInProgress = false;
+                EditorApplication.tick -= Debounce;
                 m_Action?.Invoke(m_Context);
                 m_LastExecutionTime = 0;
             }
             else
             {
-                EditorApplication.tick += Debounce;
+                if (!m_DelayInProgress)
+                    EditorApplication.tick += Debounce;
                 m_DelayInProgress = true;
             }
         }
 
         private void Throttle()
         {
-            m_DelayInProgress = false;
-            EditorApplication.tick -= Throttle;
             var currentTime = DateTime.UtcNow.Ticks;
 
             if (m_FirstExecuteImmediate)
             {
                 if (m_LastExecutionTime == 0 || DelayHasPassed(currentTime))
                 {
+                    m_DelayInProgress = false;
+                    EditorApplication.tick -= Throttle;
                     m_Action?.Invoke(m_Context);
                     m_LastExecutionTime = currentTime;
                 }
                 else
                 {
-                    EditorApplication.tick += Throttle;
+                    if (!m_DelayInProgress)
+                        EditorApplication.tick += Throttle;
                     m_DelayInProgress = true;
                 }
             }
@@ -116,6 +119,8 @@ namespace UnityEditor
             {
                 if (m_LastExecutionTime != 0 && DelayHasPassed(currentTime))
                 {
+                    m_DelayInProgress = false;
+                    EditorApplication.tick -= Throttle;
                     m_Action?.Invoke(m_Context);
                     m_LastExecutionTime = 0;
                 }
@@ -123,7 +128,8 @@ namespace UnityEditor
                 {
                     if (m_LastExecutionTime == 0)
                         m_LastExecutionTime = currentTime;
-                    EditorApplication.tick += Throttle;
+                    if (!m_DelayInProgress)
+                        EditorApplication.tick += Throttle;
                     m_DelayInProgress = true;
                 }
             }
@@ -132,7 +138,7 @@ namespace UnityEditor
         private bool DelayHasPassed(long currentTime)
         {
             var timeSpan = new TimeSpan(currentTime - m_LastExecutionTime);
-            return timeSpan.TotalSeconds >= m_DebounceDelay;
+            return timeSpan.Ticks >= m_DebounceDelay;
         }
     }
 }

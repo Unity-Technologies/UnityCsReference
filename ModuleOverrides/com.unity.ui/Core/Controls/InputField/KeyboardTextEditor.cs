@@ -94,11 +94,13 @@ namespace UnityEngine.UIElements
                     return;
 
                 // We rely on KeyCode.Tab for both navigation and inserting tabulation.
-                if (c == '\t')
+                // On Linux Platform regular tab event occupies both keycode and character fields
+                if (c == '\t' && evt.keyCode == KeyCode.None && evt.modifiers == EventModifiers.None)
                     return;
 
                 // Ignore tab in single-line text fields, modifier+tab in multiline text fields
-                if (evt.keyCode == KeyCode.Tab)
+                // On Linux Platform modifier+tab case will be represented as keycode=None and character='\t'
+                if (evt.keyCode == KeyCode.Tab || (evt.keyCode == KeyCode.Tab && evt.character == '\t' && evt.modifiers == EventModifiers.Shift))
                 {
                     if(!textElement.edition.multiline || evt.shiftKey)
                     {
@@ -145,7 +147,7 @@ namespace UnityEngine.UIElements
                 if (!textElement.edition.AcceptCharacter(c))
                     return;
 
-                if (c >= k_Space || evt.keyCode == KeyCode.Tab || c == '\n' || c == '\r' || c == k_LineFeed)
+                if (c >= k_Space || evt.keyCode == KeyCode.Tab || (textElement.edition.multiline && !evt.altKey && (c == '\n' || c == '\r' || c == k_LineFeed)))
                 {
                     editingUtilities.Insert(c);
                     m_Changed = true;

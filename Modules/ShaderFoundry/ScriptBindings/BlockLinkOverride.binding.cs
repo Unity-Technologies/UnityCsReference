@@ -53,8 +53,8 @@ namespace UnityEditor.ShaderFoundry
             LinkElementInternal IInternalType<LinkElementInternal>.ConstructInvalid() => Invalid();
         }
 
-        internal FoundryHandle m_SourceHandle;
-        internal FoundryHandle m_DestinationHandle;
+        internal FoundryHandle m_InterfaceFieldHandle;
+        internal FoundryHandle m_ArgumentHandle;
 
         internal extern static BlockLinkOverrideInternal Invalid();
         internal extern bool IsValid();
@@ -272,8 +272,10 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
-        public LinkElement Source => new LinkElement(container, linkOverride.m_SourceHandle);
-        public LinkElement Destination => new LinkElement(container, linkOverride.m_DestinationHandle);
+        // The interface field is applied to the block sequence element (e.g. block input or output).
+        public LinkElement InterfaceField => new LinkElement(container, linkOverride.m_InterfaceFieldHandle);
+        // The argument is applied to the block sequence (e.g. the input or output being matched against).
+        public LinkElement Argument => new LinkElement(container, linkOverride.m_ArgumentHandle);
 
         // private
         internal BlockLinkOverride(ShaderContainer container, FoundryHandle handle)
@@ -295,23 +297,23 @@ namespace UnityEditor.ShaderFoundry
         public class Builder
         {
             ShaderContainer container;
-            internal LinkElement source;
-            internal LinkElement destination;
+            internal LinkElement interfaceField;
+            internal LinkElement argument;
 
             public ShaderContainer Container => container;
 
-            public Builder(ShaderContainer container, LinkElement source, LinkElement destination)
+            public Builder(ShaderContainer container, LinkElement interfaceField, LinkElement argument)
             {
                 this.container = container;
-                this.source = source;
-                this.destination = destination;
+                this.interfaceField = interfaceField;
+                this.argument = argument;
             }
 
             public BlockLinkOverride Build()
             {
                 var linkOverrideInternal = new BlockLinkOverrideInternal();
-                linkOverrideInternal.m_SourceHandle = source.handle;
-                linkOverrideInternal.m_DestinationHandle = destination.handle;
+                linkOverrideInternal.m_InterfaceFieldHandle = interfaceField.handle;
+                linkOverrideInternal.m_ArgumentHandle = argument.handle;
                 var returnTypeHandle = container.Add(linkOverrideInternal);
                 return new BlockLinkOverride(container, returnTypeHandle);
             }

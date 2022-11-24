@@ -17,5 +17,7 @@ namespace UnityEditor.Search
         void OnGroupChanged(string prevGroupId, string newGroupId);
         void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu);
         void Focus();
+
+        internal int ComputeVisibleItemCapacity(float size, float height);
     }
 }

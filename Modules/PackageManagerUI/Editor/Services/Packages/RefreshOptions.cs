@@ -17,7 +17,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         UpmSearch        = 1 << 3,
         Purchased        = 1 << 4,
         PurchasedOffline = 1 << 5,
-
-        UpmAny = UpmList | UpmListOffline | UpmSearch | UpmSearchOffline
+        ImportedAssets   = 1 << 6
     }
 }

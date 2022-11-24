@@ -66,6 +66,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_TabView.AddTab(new PackageDetailsDescriptionTab(m_ResourceLoader, m_PackageManagerPrefs));
             m_TabView.AddTab(new PackageDetailsOverviewTab(m_ResourceLoader));
             m_TabView.AddTab(new PackageDetailsReleasesTab());
+            m_TabView.AddTab(new PackageDetailsImportedAssetsTab(m_IOProxy, m_PackageManagerPrefs));
             m_TabView.AddTab(new PackageDetailsVersionsTab(m_ResourceLoader, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_SettingsProxy, m_UpmCache, m_IOProxy));
             m_TabView.AddTab(new PackageDetailsDependenciesTab(m_ResourceLoader, m_PackageDatabase));
             m_TabView.AddTab(new FeatureDependenciesTab(m_ResourceLoader, m_PackageDatabase, m_PackageManagerPrefs, m_SettingsProxy, m_Application));

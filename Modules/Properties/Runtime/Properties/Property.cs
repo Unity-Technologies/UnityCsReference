@@ -194,7 +194,7 @@ namespace Unity.Properties
 
             foreach (var attribute in attributes)
             {
-                if (null == attribute || attribute.GetType() == typeof(CreatePropertyAttribute))
+                if (null == attribute)
                     continue;
 
                 m_Attributes.Add(attribute);

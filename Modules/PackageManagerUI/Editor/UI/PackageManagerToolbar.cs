@@ -405,6 +405,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     },
                     windowSize = new Vector2(resolvedStyle.width, 50)
                 };
+                // If a background GUI painted before, the coordinates got could be different. 
+                // Repaint the package manager to ensure the coordinates retrieved is from packmanager. 
+                PackageManagerWindow.GetWindow<PackageManagerWindow>().RepaintImmediately();
                 addMenu.ShowInputDropdown(args);
             };
 
@@ -413,6 +416,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.userData = "AddByName";
             dropdownItem.action = () =>
             {
+                // If a background GUI painted before, the coordinates got could be different. 
+                // Repaint the package manager to ensure the coordinates retrieved is from packmanager. 
+                PackageManagerWindow.GetWindow<PackageManagerWindow>().RepaintImmediately();
                 // Same as above, the worldBound of the toolbar is used rather than the addMenu
                 var rect = GUIUtility.GUIToScreenRect(worldBound);
                 var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageManagerPrefs, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance) { position = rect };

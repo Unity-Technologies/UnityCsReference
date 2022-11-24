@@ -326,6 +326,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("This {0} is installed."),
             L10n.Tr("This {0} is available for download."),
             L10n.Tr("This {0} is available for import."),
+            L10n.Tr("There are assets in your project that are imported from this {0}."),
             L10n.Tr("This {0} is in development."),
             L10n.Tr("A newer version of this {0} is available."),
             "",

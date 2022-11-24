@@ -33,13 +33,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private FetchStatusTracker m_FetchStatusTracker;
         [NonSerialized]
-        private UpmCache m_UpmCache;
+        private AssetDatabaseProxy m_AssetDatabase;
         public void ResolveDependencies(UnityConnectProxy unityConnect,
             AssetStoreCache assetStoreCache,
             AssetStoreUtils assetStoreUtils,
             AssetStoreRestAPI assetStoreRestAPI,
             FetchStatusTracker fetchStatusTracker,
-            UpmCache upmCache)
+            AssetDatabaseProxy assetDatabase)
         {
             m_UnityConnect = unityConnect;
             m_AssetStoreCache = assetStoreCache;
@@ -47,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreRestAPI = assetStoreRestAPI;
 
             m_FetchStatusTracker = fetchStatusTracker;
-            m_UpmCache = upmCache;
+            m_AssetDatabase = assetDatabase;
 
             m_ListOperation?.ResolveDependencies(unityConnect, assetStoreRestAPI, assetStoreCache);
         }
@@ -174,6 +174,33 @@ namespace UnityEditor.PackageManager.UI.Internal
                     onUpdateChecked?.Invoke(productIds);
                     doneCallback?.Invoke();
                 });
+        }
+
+        public virtual IEnumerable<Asset> ListImportedAssets()
+        {
+            // We need to manually create the SearchFilter so that we look for assetorigins
+            var filter = new SearchFilter { searchArea = SearchFilter.SearchArea.AllAssets };
+            filter.ClearSearch();
+            filter.originalText = "assetorigin:";
+            filter.anyWithAssetOrigin = true;
+
+            var guidsWithOrigin = m_AssetDatabase.FindAssets(filter);
+            return guidsWithOrigin.Select(guid =>
+            {
+                var assetOrigin = m_AssetDatabase.GetAssetOrigin(guid);
+                var assetPath = m_AssetDatabase.GUIDToAssetPath(guid);
+                return new Asset
+                {
+                    guid = guid,
+                    importedPath = assetPath,
+                    origin = assetOrigin
+                };
+            });
+        }
+
+        public virtual void RefreshImportedAssets()
+        {
+            m_AssetStoreCache.SetImportedAssets(ListImportedAssets());
         }
     }
 }

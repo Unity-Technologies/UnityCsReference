@@ -1070,6 +1070,9 @@
     <Compile Include="..\..\Editor\Mono\EditorSettings.bindings.cs">
       <Link>Editor\Mono\EditorSettings.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorTextSettings.cs">
+      <Link>Editor\Mono\EditorTextSettings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\EditorUserBuildSettings.bindings.cs">
       <Link>Editor\Mono\EditorUserBuildSettings.bindings.cs</Link>
     </Compile>
@@ -1120,6 +1123,12 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GI\BuiltinSkyManager.bindings.cs">
       <Link>Editor\Mono\GI\BuiltinSkyManager.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GI\InputExtraction.bindings.cs">
+      <Link>Editor\Mono\GI\InputExtraction.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GI\LightBaker.bindings.cs">
+      <Link>Editor\Mono\GI\LightBaker.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GI\LightProbeVisualization.bindings.cs">
       <Link>Editor\Mono\GI\LightProbeVisualization.bindings.cs</Link>
@@ -2072,9 +2081,6 @@
     <Compile Include="..\..\Editor\Mono\Inspector\LightingSettingsEditor.cs">
       <Link>Editor\Mono\Inspector\LightingSettingsEditor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\LineHandle.cs">
-      <Link>Editor\Mono\Inspector\LineHandle.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\LineRendererCurveEditor.cs">
       <Link>Editor\Mono\Inspector\LineRendererCurveEditor.cs</Link>
     </Compile>
@@ -2248,6 +2254,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ScriptableObjectAssetEditor.cs">
       <Link>Editor\Mono\Inspector\ScriptableObjectAssetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\ScriptableRenderPipelineExtensionAttribute.deprecated.cs">
+      <Link>Editor\Mono\Inspector\ScriptableRenderPipelineExtensionAttribute.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\ShaderGUI.cs">
       <Link>Editor\Mono\Inspector\ShaderGUI.cs</Link>
@@ -2950,6 +2959,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneModeWindows\DefaultLightingExplorerExtension.cs">
       <Link>Editor\Mono\SceneModeWindows\DefaultLightingExplorerExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneModeWindows\LightingExplorerExtensionAttribute.deprecated.cs">
+      <Link>Editor\Mono\SceneModeWindows\LightingExplorerExtensionAttribute.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneModeWindows\LightingExplorerTab.cs">
       <Link>Editor\Mono\SceneModeWindows\LightingExplorerTab.cs</Link>
@@ -4097,6 +4109,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Toolbar\BuilderToolbar.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Toolbar\BuilderToolbar.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderAnalyticsUtility.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderAnalyticsUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderAssetModificationProcessor.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderAssetModificationProcessor.cs</Link>
     </Compile>
@@ -5026,6 +5041,9 @@
     </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\Controls\EditorToolbarDropdownToggle.cs">
       <Link>Modules\EditorToolbar\Controls\EditorToolbarDropdownToggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EditorToolbar\Controls\EditorToolbarIcon.cs">
+      <Link>Modules\EditorToolbar\Controls\EditorToolbarIcon.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\Controls\EditorToolbarToggle.cs">
       <Link>Modules\EditorToolbar\Controls\EditorToolbarToggle.cs</Link>
@@ -6728,6 +6746,12 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\Asset.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\Asset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetSelectionHandler.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetSelectionHandler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCache.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreCache.cs</Link>
     </Compile>
@@ -6746,6 +6770,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreDownloadOperation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreImportedPackage.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreImportedPackage.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStoreListOperation.cs</Link>
     </Compile>
@@ -6757,6 +6784,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageInstaller.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageInstaller.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageVersion.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\AssetStore\AssetStorePackageVersion.cs</Link>
@@ -7163,6 +7193,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\RemoveFoldoutGroup.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\RemoveFoldoutGroup.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\RemoveImportedFoldoutGroup.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\RemoveImportedFoldoutGroup.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\MultiSelect\UnlockFoldout.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\MultiSelect\UnlockFoldout.cs</Link>
     </Compile>
@@ -7196,6 +7229,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsImagesTab.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsImagesTab.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsImportedAssetsTab.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsImportedAssetsTab.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsOverviewTab.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsOverviewTab.cs</Link>
     </Compile>
@@ -7222,6 +7258,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsVersionsTab.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsVersionsTab.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\SortedColumn.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\SortedColumn.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageGroup.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageGroup.cs</Link>
@@ -7313,6 +7352,30 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistryAddedPopup.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistryAddedPopup.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindow.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowData.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowFooter.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowFooter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowHeader.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowHeader.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowRoot.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowRoot.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowRow.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowRow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowTreeView.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\SelectionWindow\SelectionWindowTreeView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageAddButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageAddButton.cs</Link>
     </Compile>
@@ -7348,6 +7411,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRemoveCustomButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRemoveCustomButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRemoveImportedButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageRemoveImportedButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageResetButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageResetButton.cs</Link>
@@ -7726,6 +7792,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\EdgeCollider2DTool.cs">
       <Link>Modules\Physics2DEditor\Managed\Colliders\EdgeCollider2DTool.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\EditableLineHandle2D.cs">
+      <Link>Modules\Physics2DEditor\Managed\Colliders\EditableLineHandle2D.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics2DEditor\Managed\Colliders\EditablePath2D.cs">
       <Link>Modules\Physics2DEditor\Managed\Colliders\EditablePath2D.cs</Link>
@@ -8960,9 +9029,6 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PackageRequirement.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\PackageRequirement.binding.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PassIdentifier.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\PassIdentifier.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PassStageType.binding.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\PassStageType.binding.cs</Link>
     </Compile>
@@ -9800,7 +9866,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-linux-x64_f3f3/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-linux-x64_1341/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

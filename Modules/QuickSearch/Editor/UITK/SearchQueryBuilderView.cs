@@ -134,7 +134,10 @@ namespace UnityEditor.Search
 
         private bool GlobalEventHandler(KeyDownEvent evt)
         {
-            return m_QueryBuilder?.HandleGlobalKeyDown(evt) ?? false;
+            var isHandled = m_QueryBuilder?.HandleGlobalKeyDown(evt) ?? false;
+            if (isHandled)
+                Focus();
+            return isHandled;
         }
 
         private void DeferRefreshBuilder()

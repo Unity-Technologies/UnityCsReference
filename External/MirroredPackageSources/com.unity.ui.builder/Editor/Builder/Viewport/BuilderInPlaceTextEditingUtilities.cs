@@ -136,8 +136,7 @@ namespace Unity.UI.Builder
             textInput.style.whiteSpace = s_EditedTextElement.resolvedStyle.whiteSpace;
             textInput.style.width = s_EditedTextElement.resolvedStyle.width;
             textInput.style.height = s_EditedTextElement.resolvedStyle.height;
-
-            textEditor.multiline = true;
+            textEditor.multiline = s_EditedTextElement.edition.multiline;
 
             GetAlignmentFromTextAnchor(textElement.resolvedStyle.unityTextAlign, out var alignItems, out var justifyContent);
 

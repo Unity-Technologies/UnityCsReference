@@ -131,9 +131,9 @@ namespace UnityEditor
             }
         }
 
-        // Windows has 1 build target per CPU architecture
-        private readonly DesktopSingleCPUProperty m_WindowsX86;
-        private readonly DesktopSingleCPUProperty m_WindowsX86_X64;
+        // Windows has 2 build targets. One build target for 32bit that supports 1 CPU architectue. The other for 64 bit that supports multiple 64 bit architectures (x64 and ARM64).
+        private readonly DesktopSingleCPUProperty m_Windows32;
+        private readonly DesktopMultiCPUProperty m_Windows64;
 
         // Linux has 1 build target and 1 supported CPU architecture
         private readonly DesktopSingleCPUProperty m_Linux;
@@ -145,15 +145,16 @@ namespace UnityEditor
         public DesktopPluginImporterExtension()
             : base(null)
         {
-            m_WindowsX86 = new DesktopSingleCPUProperty(BuildTarget.StandaloneWindows, DesktopPluginCPUArchitecture.x86);
-            m_WindowsX86_X64 = new DesktopSingleCPUProperty(BuildTarget.StandaloneWindows64, DesktopPluginCPUArchitecture.x86_64);
+            m_Windows32 = new DesktopSingleCPUProperty(BuildTarget.StandaloneWindows, DesktopPluginCPUArchitecture.x86);
+            m_Windows64 = new DesktopMultiCPUProperty(BuildTarget.StandaloneWindows64, DesktopPluginCPUArchitecture.x86_64, DesktopPluginCPUArchitecture.ARM64);
+
             m_Linux = new DesktopSingleCPUProperty(BuildTarget.StandaloneLinux64, DesktopPluginCPUArchitecture.x86_64);
             m_MacOS = new DesktopMultiCPUProperty(BuildTarget.StandaloneOSX, DesktopPluginCPUArchitecture.x86_64, DesktopPluginCPUArchitecture.ARM64);
 
             properties = new Property[]
             {
-                m_WindowsX86,
-                m_WindowsX86_X64,
+                m_Windows32,
+                m_Windows64,
                 m_Linux,
                 m_MacOS
             };
@@ -193,8 +194,8 @@ namespace UnityEditor
             if (IsUsableOnWindows(imp))
             {
                 EditorGUILayout.LabelField(EditorGUIUtility.TrTextContent("Windows"), EditorStyles.boldLabel);
-                m_WindowsX86.OnGUI(inspector);
-                m_WindowsX86_X64.OnGUI(inspector);
+                m_Windows32.OnGUI(inspector);
+                m_Windows64.OnGUI(inspector);
                 EditorGUILayout.Space();
             }
 

@@ -423,8 +423,30 @@ namespace UnityEditor
         public static extern string remoteDeviceExports { get; set; }
         public static extern string pathOnRemoteDevice { get; set; }
 
-        // The currently selected target for a standalone build.
-        public static extern BuildTarget selectedStandaloneTarget
+        public static BuildTarget selectedStandaloneTarget
+        {
+            get { return internal_SelectedStandaloneTarget; }
+            set
+            {
+                string platformName = BuildPipeline.GetBuildTargetName(value);
+                var architecture = GetPlatformSettings(platformName, kSettingArchitecture).ToLower();
+                switch (value)
+                {
+                    case BuildTarget.StandaloneWindows:
+                        if (architecture != "x86")
+                            SetPlatformSettings(platformName, kSettingArchitecture, OSArchitecture.x86.ToString());
+                        break;
+                    case BuildTarget.StandaloneWindows64:
+                        if (architecture != "x64" && architecture != "arm64")
+                            SetPlatformSettings(platformName, kSettingArchitecture, OSArchitecture.x64.ToString());
+                        break;
+                }
+
+                internal_SelectedStandaloneTarget = value;
+            }
+        }
+
+        private static extern BuildTarget internal_SelectedStandaloneTarget
         {
             [NativeMethod("GetSelectedStandaloneTarget")]
             get;
