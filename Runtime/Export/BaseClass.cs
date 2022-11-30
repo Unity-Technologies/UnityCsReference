@@ -125,8 +125,9 @@ namespace UnityEngine
         // BJM
         Stadia = 34,
         // Cloud Rendering
-        [System.Obsolete("Use LinuxPlayer instead")]
-        CloudRendering = 35,
+        [System.Obsolete("CloudRendering is deprecated, please use LinuxHeadlessSimulation (UnityUpgradable) -> LinuxHeadlessSimulation", false)]
+        CloudRendering = -1,
+        LinuxHeadlessSimulation = 35,
         // Game Core
         [System.Obsolete("GameCoreScarlett is deprecated, please use GameCoreXboxSeries (UnityUpgradable) -> GameCoreXboxSeries", false)]
         GameCoreScarlett = -1, // GameCoreScarlett renumbered here so it's destinct from GameCoreXboxSeries.

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -13,6 +14,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class AbstractProgressBar : BindableElement, INotifyValueChanged<float>
     {
+        internal static readonly DataBindingProperty titleProperty = nameof(title);
+        internal static readonly DataBindingProperty lowValueProperty = nameof(lowValue);
+        internal static readonly DataBindingProperty highValueProperty = nameof(highValue);
+        internal static readonly DataBindingProperty valueProperty = nameof(value);
+
         /// <summary>
         /// USS Class Name used to style the <see cref="ProgressBar"/>.
         /// </summary>
@@ -67,35 +73,54 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Sets the title of the ProgressBar that displays in the center of the control.
         /// </summary>
+        [CreateProperty]
         public string title
         {
             get => m_Title.text;
-            set => m_Title.text = value;
+            set
+            {
+                var previous = title;
+                m_Title.text = value;
+
+                if (string.CompareOrdinal(previous, title) != 0)
+                    NotifyPropertyChanged(titleProperty);
+            }
         }
 
         /// <summary>
         /// Sets the minimum value of the ProgressBar.
         /// </summary>
+        [CreateProperty]
         public float lowValue
         {
             get => m_LowValue;
             set
             {
+                var previous = lowValue;
                 m_LowValue = value;
                 SetProgress(m_Value);
+
+                if (!Mathf.Approximately(previous, lowValue))
+                    NotifyPropertyChanged(lowValueProperty);
             }
         }
 
         /// <summary>
         /// Sets the maximum value of the ProgressBar.
         /// </summary>
+        [CreateProperty]
         public float highValue
         {
             get => m_HighValue;
             set
             {
+                var previous = highValue;
+
                 m_HighValue = value;
                 SetProgress(m_Value);
+
+                if (!Mathf.Approximately(previous, highValue))
+                    NotifyPropertyChanged(highValueProperty);
             }
         }
 
@@ -138,6 +163,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Sets the progress value. If the value has changed, dispatches an <see cref="ChangeEvent{T}"/> of type float.
         /// </summary>
+        [CreateProperty]
         public virtual float value
         {
             get { return m_Value; }
@@ -152,6 +178,7 @@ namespace UnityEngine.UIElements
                             evt.elementTarget = this;
                             SetValueWithoutNotify(value);
                             SendEvent(evt);
+                            NotifyPropertyChanged(valueProperty);
                         }
                     }
                     else

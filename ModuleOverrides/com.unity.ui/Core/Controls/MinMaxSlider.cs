@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -11,6 +12,12 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class MinMaxSlider : BaseField<Vector2>
     {
+        internal static readonly DataBindingProperty minValueProperty = nameof(minValue);
+        internal static readonly DataBindingProperty maxValueProperty = nameof(maxValue);
+        internal static readonly DataBindingProperty rangeProperty = nameof(range);
+        internal static readonly DataBindingProperty lowLimitProperty = nameof(lowLimit);
+        internal static readonly DataBindingProperty highLimitProperty = nameof(highLimit);
+
         /// <summary>
         /// Instantiates a <see cref="MinMaxSlider"/> using the data read from a UXML file.
         /// </summary>
@@ -77,12 +84,17 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the low value of the range represented on the slider.
         /// </summary>
+        [CreateProperty]
         public float minValue
         {
             get { return value.x; }
             set
             {
+                var previous = minValue;
                 base.value = ClampValues(new Vector2(value, rawValue.y));
+
+                if (!Mathf.Approximately(previous, minValue))
+                    NotifyPropertyChanged(minValueProperty);
             }
         }
 
@@ -90,12 +102,17 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the high value of the range represented on the slider.
         /// </summary>
+        [CreateProperty]
         public float maxValue
         {
             get { return value.y; }
             set
             {
+                var previous = maxValue;
                 base.value = ClampValues(new Vector2(rawValue.x, value));
+
+                if (!Mathf.Approximately(previous, maxValue))
+                    NotifyPropertyChanged(maxValueProperty);
             }
         }
 
@@ -122,6 +139,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns the range of the low/high limits of the slider.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public float range
         {
             get { return Math.Abs(highLimit - lowLimit); }
@@ -134,6 +152,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the low limit of the slider.
         /// </summary>
+        [CreateProperty]
         public float lowLimit
         {
             get { return m_MinLimit; }
@@ -152,6 +171,7 @@ namespace UnityEngine.UIElements
 
                     if (!string.IsNullOrEmpty(viewDataKey))
                         SaveViewData();
+                    NotifyPropertyChanged(lowLimitProperty);
                 }
             }
         }
@@ -160,6 +180,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the high limit of the slider.
         /// </summary>
+        [CreateProperty]
         public float highLimit
         {
             get { return m_MaxLimit; }
@@ -178,6 +199,7 @@ namespace UnityEngine.UIElements
 
                     if (!string.IsNullOrEmpty(viewDataKey))
                         SaveViewData();
+                    NotifyPropertyChanged(highLimitProperty);
                 }
             }
         }

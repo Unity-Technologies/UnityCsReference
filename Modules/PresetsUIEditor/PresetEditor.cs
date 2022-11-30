@@ -139,7 +139,7 @@ namespace UnityEditor.Presets
 
                 innerRoot.Add(internalInspector);
                 internalInspector.TrackSerializedObjectValue(m_InternalEditor.serializedObject, SaveTargetChangesToPreset);
-                if (m_CoupledEditor != null)
+                if (m_CoupledEditor != null && m_CoupledEditor.coupledComponent != null)
                 {
                     var hiddenElement = new VisualElement();
                     hiddenElement.style.display = DisplayStyle.None;

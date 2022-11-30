@@ -163,10 +163,10 @@ namespace Unity.UI.Builder
         public virtual void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
             if (element == null ||
-                changeType.HasFlag(BuilderHierarchyChangeType.ChildrenAdded) ||
-                changeType.HasFlag(BuilderHierarchyChangeType.ChildrenRemoved) ||
-                changeType.HasFlag(BuilderHierarchyChangeType.Attributes) ||
-                changeType.HasFlag(BuilderHierarchyChangeType.ClassList))
+                (changeType & (BuilderHierarchyChangeType.ChildrenAdded | 
+                               BuilderHierarchyChangeType.ChildrenRemoved |
+                               BuilderHierarchyChangeType.Attributes | 
+                               BuilderHierarchyChangeType.ClassList)) != 0)
             {
                 UpdateHierarchyAndSelection(m_Selection.hasUnsavedChanges);
                 m_ShouldRebuildHierarchyOnStyleChange = !m_Selection.hasUnsavedChanges;

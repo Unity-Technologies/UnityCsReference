@@ -43,6 +43,7 @@ namespace UnityEngine.UIElements.UIR
         PushRenderTexture, PopRenderTexture,
         BlitToPreviousRT, //From Active target to previous on RT stack
         PushDefaultMaterial, PopDefaultMaterial,
+        BeginDisable, EndDisable,
     }
 
     internal class DrawParams

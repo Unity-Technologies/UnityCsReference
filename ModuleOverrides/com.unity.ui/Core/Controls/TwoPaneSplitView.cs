@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -11,6 +12,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class TwoPaneSplitView : VisualElement
     {
+        internal static readonly DataBindingProperty fixedPaneIndexProperty = nameof(fixedPaneIndex);
+        internal static readonly DataBindingProperty fixedPaneInitialDimensionProperty = nameof(fixedPaneInitialDimension);
+        internal static readonly DataBindingProperty orientationProperty = nameof(orientation);
+
         static readonly string s_UssClassName = "unity-two-pane-split-view";
         static readonly string s_ContentContainerClassName = "unity-two-pane-split-view__content-container";
         static readonly string s_HandleDragLineClassName = "unity-two-pane-split-view__dragline";
@@ -58,7 +63,7 @@ namespace UnityEngine.UIElements
         VisualElement m_FixedPane;
         VisualElement m_FlexedPane;
 
-        [SerializeField] float m_FixedPaneDimension = -1;
+        [SerializeField, DontCreateProperty] float m_FixedPaneDimension = -1;
 
         /// <summary>
         /// The child element that is set as the fixed size pane.
@@ -83,6 +88,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// 0 for setting first child as the fixed pane, 1 for the second child element.
         /// </summary>
+        [CreateProperty]
         public int fixedPaneIndex
         {
             get => m_FixedPaneIndex;
@@ -92,12 +98,14 @@ namespace UnityEngine.UIElements
                     return;
 
                 Init(value, m_FixedPaneInitialDimension, m_Orientation);
+                NotifyPropertyChanged(fixedPaneIndexProperty);
             }
         }
 
         /// <summary>
         /// The initial width or height for the fixed pane.
         /// </summary>
+        [CreateProperty]
         public float fixedPaneInitialDimension
         {
             get => m_FixedPaneInitialDimension;
@@ -107,12 +115,14 @@ namespace UnityEngine.UIElements
                     return;
 
                 Init(m_FixedPaneIndex, value, m_Orientation);
+                NotifyPropertyChanged(fixedPaneInitialDimensionProperty);
             }
         }
 
         /// <summary>
         /// Orientation of the split view.
         /// </summary>
+        [CreateProperty]
         public TwoPaneSplitViewOrientation orientation
         {
             get => m_Orientation;
@@ -122,6 +132,7 @@ namespace UnityEngine.UIElements
                     return;
 
                 Init(m_FixedPaneIndex, m_FixedPaneInitialDimension, value);
+                NotifyPropertyChanged(orientationProperty);
             }
         }
 

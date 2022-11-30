@@ -7,14 +7,11 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Mono.Cecil;
-using UnityEditor.Build;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
 using System.Runtime.InteropServices;
-using UnityEditor.VisualStudioIntegration;
 using UnityEngine.Scripting;
 using Debug = UnityEngine.Debug;
 using Unity.Profiling;
@@ -24,180 +21,10 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEditor
 {
-    internal partial class AssemblyHelper
+    internal class AssemblyHelper
     {
         static Dictionary<string, bool> managedToDllType = new Dictionary<string, bool>();
         static BuildPlayerDataExtractor m_BuildPlayerDataExtractor = new BuildPlayerDataExtractor();
-
-        static public string[] GetNamesOfAssembliesLoadedInCurrentDomain()
-        {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            var locations = new List<string>();
-            foreach (var a in assemblies)
-            {
-                try
-                {
-                    locations.Add(a.Location);
-                }
-                catch (NotSupportedException)
-                {
-                    //we have some "dynamic" assmeblies that do not have a filename
-                }
-            }
-            return locations.ToArray();
-        }
-
-        static public string ExtractInternalAssemblyName(string path)
-        {
-            try
-            {
-                AssemblyDefinition definition = AssemblyDefinition.ReadAssembly(path);
-                return definition.Name.Name;
-            }
-            catch
-            {
-                return "";
-            }
-        }
-
-        static AssemblyDefinition GetAssemblyDefinitionCached(string path, Dictionary<string, AssemblyDefinition> cache)
-        {
-            if (cache.ContainsKey(path))
-                return cache[path];
-
-            AssemblyDefinition definition = AssemblyDefinition.ReadAssembly(path);
-            cache[path] = definition;
-            return definition;
-        }
-
-        static private bool CouldBelongToDotNetOrWindowsRuntime(string assemblyPath)
-        {
-            return assemblyPath.IndexOf("mscorlib.dll") != -1 ||
-                assemblyPath.IndexOf("System.") != -1 ||
-                assemblyPath.IndexOf("Microsoft.") != -1 ||
-                assemblyPath.IndexOf("Windows.") != -1 ||
-                assemblyPath.IndexOf("WinRTLegacy.dll") != -1 ||
-                assemblyPath.IndexOf("platform.dll") != -1;
-        }
-
-        static private bool IgnoreAssembly(string assemblyPath, BuildTarget target, ScriptingImplementation scriptingImplementation)
-        {
-#pragma warning disable 618
-            if (target == BuildTarget.WSAPlayer || scriptingImplementation == ScriptingImplementation.CoreCLR)
-            {
-                if (CouldBelongToDotNetOrWindowsRuntime(assemblyPath))
-                    return true;
-            }
-            else if (target == BuildTarget.XboxOne)
-            {
-                var profile = PlayerSettings.GetApiCompatibilityLevel(NamedBuildTarget.XboxOne);
-                if (profile == ApiCompatibilityLevel.NET_4_6 || profile == ApiCompatibilityLevel.NET_Standard_2_0)
-                {
-                    if (CouldBelongToDotNetOrWindowsRuntime(assemblyPath))
-                        return true;
-                }
-            }
-
-            return IsInternalAssembly(assemblyPath);
-        }
-
-        static private void AddReferencedAssembliesRecurse(string assemblyPath, List<string> alreadyFoundAssemblies, string[] allAssemblyPaths, string[] foldersToSearch, Dictionary<string, AssemblyDefinition> cache, BuildTarget target, ScriptingImplementation scriptingImplementation)
-        {
-            if (IgnoreAssembly(assemblyPath, target, scriptingImplementation))
-                return;
-
-            if (!File.Exists(assemblyPath))
-                return;
-
-            AssemblyDefinition assembly = GetAssemblyDefinitionCached(assemblyPath, cache);
-            if (assembly == null)
-                throw new System.ArgumentException("Referenced Assembly " + Path.GetFileName(assemblyPath) + " could not be found!");
-
-            // Ignore it if we already added the assembly
-            if (alreadyFoundAssemblies.IndexOf(assemblyPath) != -1)
-                return;
-
-            alreadyFoundAssemblies.Add(assemblyPath);
-
-            var architectureSpecificPlugins = PluginImporter.GetImporters(target).Where(i =>
-            {
-                var cpu = i.GetPlatformData(target, "CPU");
-                return !string.IsNullOrEmpty(cpu) && !string.Equals(cpu, "AnyCPU", StringComparison.InvariantCultureIgnoreCase);
-            }).Select(i => Path.GetFileName(i.assetPath)).Distinct();
-
-            // Go through all referenced assemblies
-            foreach (AssemblyNameReference referencedAssembly in assembly.MainModule.AssemblyReferences)
-            {
-                // Special cases for Metro
-                if (referencedAssembly.Name == "BridgeInterface") continue;
-                if (referencedAssembly.Name == "WinRTBridge") continue;
-                if (referencedAssembly.Name == "UnityEngineProxy") continue;
-                if (IgnoreAssembly(referencedAssembly.Name + ".dll", target, scriptingImplementation)) continue;
-
-                string foundPath = FindAssemblyName(referencedAssembly.FullName, referencedAssembly.Name, allAssemblyPaths, foldersToSearch, cache);
-
-                if (foundPath == "")
-                {
-                    // Ignore architecture specific plugin references
-                    var found = false;
-                    foreach (var extension in new[] { ".dll", ".winmd" })
-                    {
-                        if (architectureSpecificPlugins.Any(p => string.Equals(p, referencedAssembly.Name + extension, StringComparison.InvariantCultureIgnoreCase)))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (found)
-                        continue;
-                    throw new System.ArgumentException(string.Format("The Assembly {0} is referenced by {1} ('{2}'). But the dll is not allowed to be included or could not be found.",
-                        referencedAssembly.Name,
-                        assembly.MainModule.Assembly.Name.Name,
-                        assemblyPath));
-                }
-
-                AddReferencedAssembliesRecurse(foundPath, alreadyFoundAssemblies, allAssemblyPaths, foldersToSearch, cache, target, scriptingImplementation);
-            }
-        }
-
-        static string FindAssemblyName(string fullName, string name, string[] allAssemblyPaths, string[] foldersToSearch, Dictionary<string, AssemblyDefinition> cache)
-        {
-            // Search in provided assemblies
-            for (int i = 0; i < allAssemblyPaths.Length; i++)
-            {
-                if (!File.Exists(allAssemblyPaths[i]))
-                    continue;
-
-                AssemblyDefinition definition = GetAssemblyDefinitionCached(allAssemblyPaths[i], cache);
-                if (definition.MainModule.Assembly.Name.Name == name)
-                    return allAssemblyPaths[i];
-            }
-
-            // Search in GAC
-            foreach (string folder in foldersToSearch)
-            {
-                string pathInGacFolder = Path.Combine(folder, name + ".dll");
-                if (File.Exists(pathInGacFolder))
-                    return pathInGacFolder;
-            }
-            return "";
-        }
-
-        [RequiredByNativeCode]
-        static public string[] FindAssembliesReferencedBy(string[] paths, string[] foldersToSearch, BuildTarget target, ScriptingImplementation scriptingImplementation)
-        {
-            List<string> unique = new List<string>();
-            string[] allAssemblyPaths = paths;
-
-            var cache = new Dictionary<string, AssemblyDefinition>();
-            for (int i = 0; i < paths.Length; i++)
-                AddReferencedAssembliesRecurse(paths[i], unique, allAssemblyPaths, foldersToSearch, cache, target, scriptingImplementation);
-
-            for (int i = 0; i < paths.Length; i++)
-                unique.Remove(paths[i]);
-
-            return unique.ToArray();
-        }
 
         static public bool IsUnityEngineModule(AssemblyDefinition assembly)
         {
@@ -207,33 +34,6 @@ namespace UnityEditor
         static public bool IsUnityEngineModule(Assembly assembly)
         {
             return assembly.GetCustomAttributes(typeof(UnityEngineModuleAssembly), false).Length > 0;
-        }
-
-        private static bool IsTypeAUserExtendedScript(TypeReference type)
-        {
-            if (type == null || type.FullName == "System.Object")
-                return false;
-
-            try
-            {
-                var typeDefinition = type.Resolve();
-                var attributes = typeDefinition.CustomAttributes;
-                for (var i = 0; i < attributes.Count; i++)
-                {
-                    if (attributes[i].Constructor.DeclaringType.FullName == "UnityEngine.ExtensionOfNativeClassAttribute")
-                        return true;
-                }
-
-                if (typeDefinition.BaseType != null)
-                    return IsTypeAUserExtendedScript(typeDefinition.BaseType);
-            }
-            catch (AssemblyResolutionException)
-            {
-                // just eat exception if we fail to load assembly here.
-                // failure should be handled better in other places.
-            }
-
-            return false;
         }
 
         public static string[] GetDefaultAssemblySearchPaths()
@@ -357,36 +157,6 @@ namespace UnityEditor
         public static bool IsInternalAssembly(string file)
         {
             return ModuleUtils.GetAdditionalReferencesForUserScripts().Any(p => p.Equals(file));
-        }
-
-        const int kDefaultDepth = 10;
-        internal static ICollection<string> FindAssemblies(string basePath)
-        {
-            return FindAssemblies(basePath, kDefaultDepth);
-        }
-
-        internal static ICollection<string> FindAssemblies(string basePath, int maxDepth)
-        {
-            var assemblies = new List<string>();
-
-            if (0 == maxDepth)
-                return assemblies;
-
-            try
-            {
-                DirectoryInfo directory = new DirectoryInfo(basePath);
-                assemblies.AddRange(directory.GetFiles()
-                    .Where(file => IsManagedAssembly(file.FullName))
-                    .Select(file => file.FullName));
-                foreach (DirectoryInfo subdirectory in directory.GetDirectories())
-                    assemblies.AddRange(FindAssemblies(subdirectory.FullName, maxDepth - 1));
-            }
-            catch (Exception)
-            {
-                // Return what we have now
-            }
-
-            return assemblies;
         }
 
         /// <summary>

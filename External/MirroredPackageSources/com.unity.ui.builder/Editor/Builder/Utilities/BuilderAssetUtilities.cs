@@ -19,18 +19,29 @@ namespace Unity.UI.Builder
 
         public static string GetResourcesPathForAsset(string assetPath)
         {
-            var resourcesFolder = "Resources/";
-            if (string.IsNullOrEmpty(assetPath) || !assetPath.Contains(resourcesFolder))
+            if (string.IsNullOrWhiteSpace(assetPath))
                 return null;
 
-            var lastResourcesSubstring = assetPath.LastIndexOf(resourcesFolder) + resourcesFolder.Length;
+            // Start by trying to find a "Resources" folder in the middle of the path. 
+            var resourcesFolder = "/Resources/";
+            var lastResourcesFolderIndex = assetPath.LastIndexOf(resourcesFolder, StringComparison.Ordinal);
+            // Otherwise check if the "Resources" path is at the start.
+            if (lastResourcesFolderIndex < 0)
+            {
+                if (assetPath.StartsWith("Resources/"))
+                {
+                    lastResourcesFolderIndex = 0;
+                    resourcesFolder = "Resources/";
+                }
+                else return null;
+            }
+            
+            var lastResourcesSubstring = lastResourcesFolderIndex + resourcesFolder.Length;
             assetPath = assetPath.Substring(lastResourcesSubstring);
-            var lastExtDot = assetPath.LastIndexOf(".");
+            var lastExtDot = assetPath.LastIndexOf(".", StringComparison.Ordinal);
 
             if (lastExtDot == -1)
-            {
                 return null;
-            }
 
             assetPath = assetPath.Substring(0, lastExtDot);
 
@@ -406,7 +417,6 @@ namespace Unity.UI.Builder
             }
             else if (ve.GetVisualElementAsset() != null)
             {
-                Undo.IncrementCurrentGroup();
                 Undo.RegisterCompleteObjectUndo(
                     document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
 
@@ -444,7 +454,6 @@ namespace Unity.UI.Builder
             }
             else if (ve.GetVisualElementAsset() != null)
             {
-                Undo.IncrementCurrentGroup();
                 Undo.RegisterCompleteObjectUndo(
                     document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
 
@@ -506,7 +515,7 @@ namespace Unity.UI.Builder
         public static List<CreationContext.AttributeOverrideRange> GetAccumulatedAttributeOverrides(VisualElement visualElement)
         {
             VisualElement parent = visualElement.parent;
-            List<CreationContext.AttributeOverrideRange> attributeOverrideRanges = new ();
+            List<CreationContext.AttributeOverrideRange> attributeOverrideRanges = new();
 
             while (parent != null)
             {
@@ -527,7 +536,7 @@ namespace Unity.UI.Builder
                         VisualTreeAsset visualTreeAsset = parent.GetVisualTreeAsset();
                         if (visualTreeAsset != null)
                         {
-                            attributeOverrideRanges.Add(new CreationContext.AttributeOverrideRange(visualTreeAsset, templateAsset.attributeOverrides));   
+                            attributeOverrideRanges.Add(new CreationContext.AttributeOverrideRange(visualTreeAsset, templateAsset.attributeOverrides));
                         }
                     }
 

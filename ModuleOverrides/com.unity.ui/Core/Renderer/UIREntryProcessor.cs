@@ -581,6 +581,7 @@ namespace UnityEngine.UIElements.UIR
             }
             else
             {
+                next.prev = m_LastCommand;
                 m_LastCommand.next = next;
                 m_LastCommand = next;
             }

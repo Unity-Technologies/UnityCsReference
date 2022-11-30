@@ -168,6 +168,13 @@ namespace UnityEditor.Modules
             }
         }
 
+        static IEnumerable<NPath> GetFilesWithRoleFromBuildReport(BuildReport report, params string[] roles) =>
+            report.GetFiles()
+                .Where(file => roles.Contains(file.role))
+                .Select(file => file.path.ToNPath())
+                .GroupBy(file => file.FileName)
+                .Select(group => group.First());
+        
         LinkerConfig LinkerConfigFor(BuildPostProcessArgs args)
         {
             var namedBuildTarget = GetNamedBuildTarget(args);
@@ -178,39 +185,45 @@ namespace UnityEditor.Modules
             if (GetScriptingBackend(args) == ScriptingBackend.IL2CPP && strippingLevel == ManagedStrippingLevel.Disabled)
                 strippingLevel = ManagedStrippingLevel.Minimal;
 
-            if (strippingLevel > ManagedStrippingLevel.Disabled)
+            var additionalArgs = new List<string>();
+
+            var diagArgs = Debug.GetDiagnosticSwitch("VMUnityLinkerAdditionalArgs").value as string;
+            if (!string.IsNullOrEmpty(diagArgs))
+                additionalArgs.Add(diagArgs.Trim('\''));
+
+            var linkerInputDirectory = DagDirectory.Combine($"artifacts/UnityLinkerInputs").CreateDirectory();
+            
+            // In Disabled mode, we pass all generated and engine assemblies to the linker as roots, as the linker
+            // will only perform a simple assembly reference traversal, ignoring link.xml files and attributes which 
+            // would otherwise find dependent assemblies to preserve.
+            // In other modes (when stripping is desired), we pass only a smaller set of user assemblies (assemblies from
+            // packages if used in any scenes, as well as any assembly from the Assets folder) as roots.
+            var assembliesToProcess = strippingLevel == ManagedStrippingLevel.Disabled
+                ? GetFilesWithRoleFromBuildReport(args.report, "ManagedLibrary", "ManagedEngineAPI").Select(f => f.FileName)
+                : args.usedClassRegistry.GetUserAssemblies();
+            
+            return new LinkerConfig
             {
-                var additionalArgs = new List<string>();
-
-                var diagArgs = Debug.GetDiagnosticSwitch("VMUnityLinkerAdditionalArgs").value as string;
-                if (!string.IsNullOrEmpty(diagArgs))
-                    additionalArgs.Add(diagArgs.Trim('\''));
-
-                var linkerInputDirectory = DagDirectory.Combine($"artifacts/UnityLinkerInputs").CreateDirectory();
-                return new LinkerConfig
+                LinkXmlFiles = AssemblyStripper.GetLinkXmlFiles(args, linkerInputDirectory),
+                EditorToLinkerData = AssemblyStripper.WriteEditorData(args, linkerInputDirectory),
+                AssembliesToProcess = assembliesToProcess.ToArray(),
+                Runtime = GetScriptingBackend(args).ToString().ToLower(),
+                Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
+                    PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
+                Ruleset = strippingLevel switch
                 {
-                    LinkXmlFiles = AssemblyStripper.GetLinkXmlFiles(args, linkerInputDirectory),
-                    EditorToLinkerData = AssemblyStripper.WriteEditorData(args, linkerInputDirectory),
-                    AssembliesToProcess = args.usedClassRegistry.GetUserAssemblies(),
-                    Runtime = GetScriptingBackend(args).ToString().ToLower(),
-                    Profile = IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(
-                        PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget), args.target),
-                    Ruleset = strippingLevel switch
-                    {
-                        ManagedStrippingLevel.Minimal => "Minimal",
-                        ManagedStrippingLevel.Low => "Conservative",
-                        ManagedStrippingLevel.Medium => "Aggressive",
-                        ManagedStrippingLevel.High => "Experimental",
-                        _ => throw new ArgumentException($"Unhandled {nameof(ManagedStrippingLevel)} value")
-                    },
-                    AdditionalArgs = additionalArgs.ToArray(),
-                    ModulesAssetPath = $"{BuildPipeline.GetPlaybackEngineDirectory(args.target, 0)}/modules.asset",
-                    AllowDebugging = GetAllowDebugging(args),
-                    PerformEngineStripping = PlayerSettings.stripEngineCode,
-                };
-            }
-
-            return null;
+                    ManagedStrippingLevel.Disabled => "Copy",
+                    ManagedStrippingLevel.Minimal => "Minimal",
+                    ManagedStrippingLevel.Low => "Conservative",
+                    ManagedStrippingLevel.Medium => "Aggressive",
+                    ManagedStrippingLevel.High => "Experimental",
+                    _ => throw new ArgumentException($"Unhandled {nameof(ManagedStrippingLevel)} value")
+                },
+                AdditionalArgs = additionalArgs.ToArray(),
+                ModulesAssetPath = $"{BuildPipeline.GetPlaybackEngineDirectory(args.target, 0)}/modules.asset",
+                AllowDebugging = GetAllowDebugging(args),
+                PerformEngineStripping = PlayerSettings.stripEngineCode,
+            };
         }
 
         static bool IsBuildOptionSet(BuildOptions options, BuildOptions flag) => (options & flag) != 0;
@@ -392,11 +405,8 @@ namespace UnityEditor.Modules
                 .Select(e => new StreamingAssetsFile { File = e.src.ToString(), RelativePath = e.dst.ToString() })
                 .ToArray(),
             UseNewInputSystem = IsNewInputSystemEnabled(),
-            ManagedAssemblies = args.report.GetFiles()
-                .Where(file => file.role == "ManagedLibrary" || file.role == "DependentManagedLibrary" || file.role == "ManagedEngineAPI")
-                .Select(file => file.path.ToNPath())
-                .GroupBy(file => file.FileName)
-                .Select(group => group.First().ToString())
+            ManagedAssemblies = GetFilesWithRoleFromBuildReport(args.report, "ManagedLibrary", "DependentManagedLibrary", "ManagedEngineAPI")
+                .Select(p => p.ToString())
                 .ToArray()
         };
 
@@ -507,7 +517,6 @@ namespace UnityEditor.Modules
             ResultProcessors["IL2CPP_CodeGen"] = PrintStdoutOnErrorProcessor;
             ResultProcessors["UnityLinker"] = UnityLinkerResultProcessor;
             ResultProcessors["ExtractUsedFeatures"] = PrintStdoutOnErrorProcessor;
-
         }
 
         protected void DefaultResultProcessor(NodeFinishedMessage node, bool printErrors = true, bool printWarnings = true)

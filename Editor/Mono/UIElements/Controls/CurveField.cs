@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
@@ -16,6 +17,8 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class CurveField : BaseField<AnimationCurve>
     {
+        internal static readonly DataBindingProperty renderModeProperty = nameof(renderMode);
+
         /// <summary>
         /// Instantiates a <see cref="CurveField"/> using the data read from a UXML file.
         /// </summary>
@@ -89,6 +92,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// The RenderMode of CurveField. The default is RenderMode.Default.
         /// </summary>
+        [CreateProperty]
         public RenderMode renderMode
         {
             get { return m_RenderMode; }
@@ -124,6 +128,7 @@ namespace UnityEditor.UIElements
                     }
 
                     m_TextureDirty = true;
+                    NotifyPropertyChanged(renderModeProperty);
                 }
             }
         }
@@ -159,6 +164,7 @@ namespace UnityEditor.UIElements
                             evt.elementTarget = this;
                             SetValueWithoutNotify(value);
                             SendEvent(evt);
+                            NotifyPropertyChanged(valueProperty);
                         }
                     }
                     else

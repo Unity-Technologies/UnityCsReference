@@ -72,10 +72,6 @@ namespace UnityEditor
                 {
                     ++EditorGUI.indentLevel;
 
-                    EditorGUILayout.LabelField(Styles.enlightenLabel, EditorStyles.boldLabel);
-
-                    ++EditorGUI.indentLevel;
-
                     EditorGUILayout.PropertyField(m_Resolution, Styles.resolutionContent);
                     EditorGUILayout.Slider(m_ClusterResolution, 0.1F, 1.0F, Styles.clusterResolutionContent);
                     EditorGUILayout.IntSlider(m_IrradianceBudget, 32, 2048, Styles.irradianceBudgetContent);
@@ -87,27 +83,35 @@ namespace UnityEditor
                     EditorGUILayout.Space();
 
                     --EditorGUI.indentLevel;
-                    --EditorGUI.indentLevel;
                 }
             }
 
-            GUILayout.Label(Styles.bakedGIContent, EditorStyles.boldLabel);
+            m_BakedGISettings.value = EditorGUILayout.FoldoutTitlebar(m_BakedGISettings.value, Styles.bakedGIContent, true);
 
-            EditorGUILayout.PropertyField(m_AntiAliasingSamples, Styles.antiAliasingSamplesContent);
-            const float minPushOff = 0.0001f; // Keep in sync with PLM_MIN_PUSHOFF
-            EditorGUILayout.Slider(m_Pushoff, minPushOff, 1.0f, Styles.pushoffContent);
-            EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);
-            m_LimitLightmapCount.boolValue = EditorGUILayout.Toggle(Styles.limitLightmapCount, m_LimitLightmapCount.boolValue);
-            if (m_LimitLightmapCount.boolValue)
+            if (m_BakedGISettings.value)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(m_LightmapMaxCount, Styles.lightmapMaxCount);
+                EditorGUILayout.PropertyField(m_AntiAliasingSamples, Styles.antiAliasingSamplesContent);
+                const float minPushOff = 0.0001f; // Keep in sync with PLM_MIN_PUSHOFF
+                EditorGUILayout.Slider(m_Pushoff, minPushOff, 1.0f, Styles.pushoffContent);
+                EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);
+                m_LimitLightmapCount.boolValue = EditorGUILayout.Toggle(Styles.limitLightmapCount, m_LimitLightmapCount.boolValue);
+                if (m_LimitLightmapCount.boolValue)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(m_LightmapMaxCount, Styles.lightmapMaxCount);
+                    EditorGUI.indentLevel--;
+                }
                 EditorGUI.indentLevel--;
             }
-            EditorGUILayout.Space();
-
-            GUILayout.Label(Styles.generalGIContent, EditorStyles.boldLabel);
-            EditorGUILayout.Slider(m_BackFaceTolerance, 0.0f, 1.0f, Styles.backFaceToleranceContent);
+            
+            m_GeneralParametersSettings.value = EditorGUILayout.FoldoutTitlebar(m_GeneralParametersSettings.value, Styles.generalGIContent, true);
+            if (m_GeneralParametersSettings.value)
+            {
+                ++EditorGUI.indentLevel;
+                EditorGUILayout.Slider(m_BackFaceTolerance, 0.0f, 1.0f, Styles.backFaceToleranceContent);
+                --EditorGUI.indentLevel;
+            }
 
             serializedObject.ApplyModifiedProperties();
         }

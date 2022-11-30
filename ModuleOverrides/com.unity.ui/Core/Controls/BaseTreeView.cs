@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -14,6 +15,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseTreeView : BaseVerticalCollectionView
     {
+        internal static readonly DataBindingProperty autoExpandProperty = nameof(autoExpand);
+
         /// <summary>
         /// The USS class name for TreeView elements.
         /// </summary>
@@ -92,9 +95,10 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// To set the items source, use <see cref="SetRootItems{T}"/> instead, which allows fully typed items.
         /// </remarks>
+        [CreateProperty(ReadOnly = true)]
         public new IList itemsSource
         {
-            get => viewController.itemsSource;
+            get => viewController?.itemsSource;
             internal set => GetOrCreateViewController().itemsSource = value;
         }
 
@@ -174,18 +178,23 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// When true, items are automatically expanded when added to the TreeView.
         /// </summary>
+        [CreateProperty]
         public bool autoExpand
         {
             get => m_AutoExpand;
             set
             {
+                if (m_AutoExpand == value)
+                    return;
+
                 m_AutoExpand = value;
                 viewController?.RegenerateWrappers();
                 RefreshItems();
+                NotifyPropertyChanged(autoExpandProperty);
             }
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private List<int> m_ExpandedItemIds;
 
         internal List<int> expandedItemIds

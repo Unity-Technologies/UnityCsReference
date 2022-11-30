@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -12,6 +13,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class Scroller : VisualElement
     {
+        internal static readonly DataBindingProperty valueProperty = nameof(value);
+        internal static readonly DataBindingProperty lowValueProperty = nameof(lowValue);
+        internal static readonly DataBindingProperty highValueProperty = nameof(highValue);
+        internal static readonly DataBindingProperty directionProperty = nameof(direction);
+
         class ScrollerSlider : Slider
         {
             public ScrollerSlider(float start, float end,
@@ -78,51 +84,78 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The slider used by this scroller.
         /// </summary>
-        public Slider slider { get; private set; }
+        public Slider slider { get; }
+
         /// <summary>
         /// Bottom or left scroll button.
         /// </summary>
-        public RepeatButton lowButton { get; private set; }
+        public RepeatButton lowButton { get;  }
+
         /// <summary>
         /// Top or right scroll button.
         /// </summary>
-        public RepeatButton highButton { get; private set; }
+        public RepeatButton highButton { get; }
 
         /// <summary>
         /// Value that defines the slider position. It lies between <see cref="lowValue"/> and <see cref="highValue"/>.
         /// </summary>
+        [CreateProperty]
         public float value
         {
             get { return slider.value; }
-            set { slider.value = value; }
+            set
+            {
+                var previous = slider.value;
+                slider.value = value;
+                if (!Mathf.Approximately(previous, slider.value))
+                    NotifyPropertyChanged(valueProperty);
+            }
         }
 
         /// <summary>
         /// Minimum value.
         /// </summary>
+        [CreateProperty]
         public float lowValue
         {
             get { return slider.lowValue; }
-            set { slider.lowValue = value; }
+            set
+            {
+                var previous = slider.lowValue;
+                slider.lowValue = value;
+
+                if (!Mathf.Approximately(previous, slider.lowValue))
+                    NotifyPropertyChanged(lowValueProperty);
+            }
         }
 
         /// <summary>
         /// Maximum value.
         /// </summary>
+        [CreateProperty]
         public float highValue
         {
             get { return slider.highValue; }
-            set { slider.highValue = value; }
+            set
+            {
+                var previous = slider.highValue;
+                slider.highValue = value;
+
+                if (!Mathf.Approximately(previous, slider.highValue))
+                    NotifyPropertyChanged(highValueProperty);
+            }
         }
 
         /// <summary>
         /// Direction of this scrollbar.
         /// </summary>
+        [CreateProperty]
         public SliderDirection direction
         {
             get { return resolvedStyle.flexDirection == FlexDirection.Row ? SliderDirection.Horizontal : SliderDirection.Vertical; }
             set
             {
+                var previous = slider.direction;
                 slider.direction = value;
                 // We want default behavior for vertical scrollers to be lowValue at the top and highValue at the bottom,
                 // instead of the default Slider behavior.
@@ -139,6 +172,8 @@ namespace UnityEngine.UIElements
                     AddToClassList(verticalVariantUssClassName);
                     RemoveFromClassList(horizontalVariantUssClassName);
                 }
+                if (previous != slider.direction)
+                    NotifyPropertyChanged(directionProperty);
             }
         }
 

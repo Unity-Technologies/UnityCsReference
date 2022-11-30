@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -93,9 +94,22 @@ namespace UnityEngine.UIElements
     // Text editing and selection management implementation
     public partial class TextElement : ITextSelection
     {
+        internal static readonly DataBindingProperty isSelectableProperty = nameof(isSelectable);
+        internal static readonly DataBindingProperty cursorIndexProperty = nameof(cursorIndex);
+        internal static readonly DataBindingProperty selectIndexProperty = nameof(selectIndex);
+        internal static readonly DataBindingProperty doubleClickSelectsWordProperty = nameof(doubleClickSelectsWord);
+        internal static readonly DataBindingProperty tripleClickSelectsLineProperty = nameof(tripleClickSelectsLine);
+        internal static readonly DataBindingProperty cursorPositionProperty = nameof(cursorPosition);
+        internal static readonly DataBindingProperty selectionColorProperty = nameof(selectionColor);
+        internal static readonly DataBindingProperty cursorColorProperty = nameof(cursorColor);
+        internal static readonly DataBindingProperty selectAllOnFocusProperty = nameof(selectAllOnFocus);
+        internal static readonly DataBindingProperty selectAllOnMouseUpProperty = nameof(selectAllOnMouseUp);
+        internal static readonly DataBindingProperty selectionProperty = nameof(selection);
+
         /// <summary>
         /// Retrieves this TextElement's ITextSelection
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public ITextSelection selection => this;
 
         TextSelectingManipulator m_SelectingManipulator;
@@ -109,9 +123,20 @@ namespace UnityEngine.UIElements
             get => m_IsSelectable && focusable;
             set
             {
+                if (value == m_IsSelectable)
+                    return;
+
                 focusable = value;
                 m_IsSelectable = value;
+                NotifyPropertyChanged(isSelectableProperty);
             }
+        }
+
+        [CreateProperty]
+        private bool isSelectable
+        {
+            get => selection.isSelectable;
+            set => selection.isSelectable = value;
         }
 
         int ITextSelection.cursorIndex
@@ -119,20 +144,40 @@ namespace UnityEngine.UIElements
             get => selection.isSelectable ? selectingManipulator.cursorIndex : -1;
             set
             {
+                var current = selection.cursorIndex;
                 if (selection.isSelectable)
                     selectingManipulator.cursorIndex = value;
+
+                if (current != selection.cursorIndex)
+                    NotifyPropertyChanged(cursorIndexProperty);
             }
         }
 
+        [CreateProperty]
+        private int cursorIndex
+        {
+            get => selection.cursorIndex;
+            set => selection.cursorIndex = value;
+        }
 
         int ITextSelection.selectIndex
         {
             get => selection.isSelectable ? selectingManipulator.selectIndex : -1;
             set
             {
+                var current = selection.selectIndex;
                 if (selection.isSelectable)
                     selectingManipulator.selectIndex = value;
+                if (current != selection.selectIndex)
+                    NotifyPropertyChanged(selectIndexProperty);
             }
+        }
+
+        [CreateProperty]
+        private int selectIndex
+        {
+            get => selection.selectIndex;
+            set => selection.selectIndex = value;
         }
 
         void ITextSelection.SelectAll()
@@ -161,21 +206,100 @@ namespace UnityEngine.UIElements
             return selection.isSelectable && selectingManipulator.HasSelection();
         }
 
-        bool ITextSelection.doubleClickSelectsWord { get; set; } = true;
+        private bool m_DoubleClickSelectsWord = true;
 
-        bool ITextSelection.tripleClickSelectsLine { get; set; } = true;
+        bool ITextSelection.doubleClickSelectsWord
+        {
+            get => m_DoubleClickSelectsWord;
+            set
+            {
+                if (m_DoubleClickSelectsWord == value)
+                    return;
+                m_DoubleClickSelectsWord = value;
+                NotifyPropertyChanged(doubleClickSelectsWordProperty);
+            }
+        }
+
+        [CreateProperty]
+        private bool doubleClickSelectsWord
+        {
+            get => selection.doubleClickSelectsWord;
+            set => selection.doubleClickSelectsWord = value;
+        }
+
+        private bool m_TripleClickSelectsLine = true;
+
+        bool ITextSelection.tripleClickSelectsLine
+        {
+            get => m_TripleClickSelectsLine;
+            set
+            {
+                if (m_TripleClickSelectsLine == value)
+                    return;
+                m_TripleClickSelectsLine = value;
+                NotifyPropertyChanged(tripleClickSelectsLineProperty);
+            }
+        }
+
+        [CreateProperty]
+        private bool tripleClickSelectsLine
+        {
+            get => selection.tripleClickSelectsLine;
+            set => selection.tripleClickSelectsLine = value;
+        }
+
+        private bool m_SelectAllOnFocus = false;
 
         /// <summary>
         /// Controls whether the element's content is selected upon receiving focus.
         /// </summary>
-        bool ITextSelection.selectAllOnFocus { get; set; } = false;
+        bool ITextSelection.selectAllOnFocus
+        {
+            get => m_SelectAllOnFocus;
+            set
+            {
+                if (m_SelectAllOnFocus == value)
+                    return;
+                m_SelectAllOnFocus = value;
+                NotifyPropertyChanged(selectAllOnFocusProperty);
+            }
+        }
+
+        [CreateProperty]
+        private bool selectAllOnFocus
+        {
+            get => selection.selectAllOnFocus;
+            set => selection.selectAllOnFocus = value;
+        }
+
+        private bool m_SelectAllOnMouseUp = false;
 
         /// <summary>
         /// Controls whether the element's content is selected when you mouse up for the first time.
         /// </summary>
-        bool ITextSelection.selectAllOnMouseUp { get; set; } = false;
+        bool ITextSelection.selectAllOnMouseUp
+        {
+            get => m_SelectAllOnMouseUp;
+            set
+            {
+                if (m_SelectAllOnMouseUp == value)
+                    return;
+                m_SelectAllOnMouseUp = value;
+                NotifyPropertyChanged(selectAllOnMouseUpProperty);
+            }
+        }
+
+        [CreateProperty]
+        private bool selectAllOnMouseUp
+        {
+            get => selection.selectAllOnMouseUp;
+            set => selection.selectAllOnMouseUp = value;
+        }
 
         Vector2 ITextSelection.cursorPosition => uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(selection.cursorIndex) + contentRect.min;
+
+        [CreateProperty(ReadOnly = true)]
+        private Vector2 cursorPosition => selection.cursorPosition;
 
         float ITextSelection.lineHeightAtCursorPosition => uitkTextHandle.GetLineHeightFromCharacterIndex(selection.cursorIndex);
 
@@ -185,12 +309,58 @@ namespace UnityEngine.UIElements
                 selectingManipulator.m_SelectingUtilities.MoveTextEnd();
         }
 
-        Color ITextSelection.selectionColor { get; set; } = new Color(0.239f, 0.502f, 0.875f, 0.65f);
+        private Color m_SelectionColor = new Color(0.239f, 0.502f, 0.875f, 0.65f);
 
+        Color ITextSelection.selectionColor
+        {
+            get => m_SelectionColor;
+            set
+            {
+                if (m_SelectionColor == value)
+                    return;
+                m_SelectionColor = value;
+                NotifyPropertyChanged(selectionColorProperty);
+            }
+        }
 
-        Color ITextSelection.cursorColor { get; set; } = new Color(0.706f, 0.706f, 0.706f, 1.0f);
+        [CreateProperty]
+        private Color selectionColor
+        {
+            get => selection.selectionColor;
+            set => selection.selectionColor = value;
+        }
 
-        float ITextSelection.cursorWidth { get; set; } = 1.0f;
+        private Color m_CursorColor = new Color(0.706f, 0.706f, 0.706f, 1.0f);
+        Color ITextSelection.cursorColor {
+            get => m_CursorColor;
+            set
+            {
+                if (m_CursorColor == value)
+                    return;
+                m_CursorColor = value;
+                NotifyPropertyChanged(cursorColorProperty);
+            }
+        }
+
+        [CreateProperty]
+        private Color cursorColor
+        {
+            get => selection.cursorColor;
+            set => selection.cursorColor = value;
+        }
+
+        private float m_CursorWidth = 1.0f;
+
+        float ITextSelection.cursorWidth
+        {
+            get => m_CursorWidth;
+            set
+            {
+                if (Mathf.Approximately(m_CursorWidth, value))
+                    return;
+                m_CursorWidth = value;
+            }
+        }
 
         // Always return a valid selecting manipulator and rely on isSelectable to use it/not
         internal TextSelectingManipulator selectingManipulator =>

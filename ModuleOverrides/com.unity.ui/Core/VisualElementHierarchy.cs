@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -46,6 +47,20 @@ namespace UnityEngine.UIElements
             return computedStyle.overflow != OverflowInternal.Visible && !disableClipping;
         }
 
+        internal bool disableRendering
+        {
+            get => (m_Flags & VisualElementFlags.DisableRendering) == VisualElementFlags.DisableRendering;
+            set
+            {
+                var oldFlags = m_Flags;
+                m_Flags = value ? m_Flags | VisualElementFlags.DisableRendering : m_Flags & ~VisualElementFlags.DisableRendering;
+                if (oldFlags != m_Flags)
+                {
+                    IncrementVersion(VersionChangeType.DisableRendering);
+                }
+            }
+        }
+
         // parent in visual tree
         private VisualElement m_PhysicalParent;
         private VisualElement m_LogicalParent;
@@ -77,6 +92,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The panel onto which this VisualElement is attached.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public IPanel panel { get { return elementPanel; } }
 
         // Logical container where child elements are added.
@@ -96,6 +112,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Stores the asset reference, if the generated element is cloned from a VisualTreeAsset.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public VisualTreeAsset visualTreeAssetSource
         {
             get => m_VisualTreeAssetSource;
@@ -228,6 +245,7 @@ namespace UnityEngine.UIElements
         ///  Number of child elements in this object's contentContainer.
         ///
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public int childCount
         {
             get

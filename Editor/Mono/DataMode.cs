@@ -4,15 +4,15 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.Linq;
+using UnityEngine;
 using UnityObject = UnityEngine.Object;
 using DataModeSupportHandler = UnityEditor.DeclareDataModeSupportAttribute.DataModeSupportHandler;
 
 namespace UnityEditor
 {
     /// <summary>
-    /// Options for the different modes of an <see cref="EditorWindow"/> that implements
-    /// <see cref="IDataModeHandler"/> or <see cref="IDataModeHandlerAndDispatcher"/>.
+    /// Options for the different modes of an <see cref="EditorWindow"/>.
     /// </summary>
     //
     // Dev note:
@@ -26,150 +26,260 @@ namespace UnityEditor
     // Sincerely,
     // The #dots-editor team
     //
+    [Serializable]
     public enum DataMode // Values must be kept in sync with `DataMode.h`
     {
         /// <summary>
-        /// Represents a situation or context in which the usage of data modes is not applicable.
+        /// Represents a situation or context in which the usage of <see cref="DataMode"/> is not applicable.
         /// </summary>
         /// <remarks> <para>
-        /// This mode informs the docking area that the data modes switch should now be displayed.
+        /// This mode disables the DataMode switch in the docking area.
         /// </para> </remarks>
         Disabled = 0,
         /// <summary>
-        /// Uses a mode where only authoring data is available.
+        /// Uses this mode where only authoring data is available.
         /// </summary>
         /// <remarks> <para>
         /// In this mode, only authoring data is available. When exiting Play mode, Unity retains authoring data.
         /// </para> </remarks>
         Authoring = 1,
         /// <summary>
-        /// Uses a mode where a mix of authoring and runtime data is available.
+        /// Uses this mode where a mix of authoring and runtime data is available.
         /// </summary>
         /// <remarks> <para>
-        /// In this mode, a mixture of authoring and runtime data is available. **Important:** When exiting Play mode,
-        /// Unity loses runtime data. However, it retains any authoring data.
+        /// In this mode, a mixture of authoring and runtime data is available.
+        /// When exiting Play mode, Unity loses runtime data. However, it retains any authoring data.
         /// </para> </remarks>
         Mixed = 2,
         /// <summary>
-        /// Uses a mode where only runtime data is available.
+        /// Uses this mode where only runtime data is available.
         /// </summary>
         /// <remarks> <para>
-        /// In this mode, only runtime data is available. **Important:** When exiting Play mode, Unity loses runtime
-        /// data.
+        /// In this mode, only runtime data is available. When exiting Play mode, Unity loses runtime data.
         /// </para> </remarks>
         Runtime = 3
     }
 
     /// <summary>
-    /// Implement this interface to allow an <see cref="EditorWindow"/> to handle <see cref="DataMode"/> changes.
+    /// Container for the different parameters of the <see cref="IDataModeController.dataModeChanged"/> event.
+    /// </summary>
+    /// <param name="nextDataMode"> DataMode to which the <see cref="EditorWindow"/> should change.</param>
+    /// <param name="changedThroughUI"> Whether the change was initiated by the DataMode switcher UI
+    /// at the top-right of the Editor window.</param>
+    public readonly struct DataModeChangeEventArgs
+    {
+        public readonly DataMode nextDataMode;
+        public readonly bool changedThroughUI;
+
+        public DataModeChangeEventArgs(DataMode nextDataMode, bool changedThroughUI)
+        {
+            this.nextDataMode = nextDataMode;
+            this.changedThroughUI = changedThroughUI;
+        }
+    }
+
+    /// <summary>
+    /// Interface with which any <see cref="EditorWindow"/> can interact with <see cref="DataMode"/> functionalities.
+    /// To obtain an instance, use <see cref="EditorWindow.dataModeController"/>>
     /// </summary>
     /// <remarks> <para>
-    /// This interface displays a switch in the docking area when the window is visible and lists the supported modes in
-    /// the contextual menu for that window. Use this interface if your window only needs to react to direct user
-    /// interactions with the data mode switch or the contextual menu. If your window needs to change its state based on
-    /// other factors, like entering or exiting play mode, you should implement
-    /// <see cref="IDataModeHandlerAndDispatcher"/> instead.
+    /// This interface displays a switch in the docking area when the window is visible and has
+    /// more than one supported DataModes.
     /// </para> </remarks>
-    public interface IDataModeHandler
+    public interface IDataModeController
     {
         /// <summary>
-        /// Returns the <see cref="DataMode"/> currently active for the implementor <see cref="EditorWindow"/>.
+        /// Returns the <see cref="DataMode"/> currently active for the <see cref="EditorWindow"/> that
+        /// owns this instance of IDataModeController.
         /// </summary>
-        /// <remarks> <para>
-        /// Unity does not serialize or store this value. It is the window's responsibility to do so.
-        /// </para> </remarks>
         DataMode dataMode { get; }
 
         /// <summary>
-        /// <para>
-        /// A list of the <see cref="DataMode"/>s the <see cref="EditorWindow"/> supports.
-        /// </para>
-        /// <para>
-        /// That list of the <see cref="DataMode"/>s the <see cref="EditorWindow"/> supports varies based
-        /// on a number of factors, so it should only contain the modes available to the current context.
+        /// Event for subscribing to <see cref="DataMode"/> changes.
+        /// </summary>
+        /// <remarks> <para>
+        /// This method accepts <see cref="DataModeChangeEventArgs"/>>.
+        /// For example, you can register to this method to update the contents of the window for the given data mode.
+        /// </para> </remarks>
+        event Action<DataModeChangeEventArgs> dataModeChanged;
+
+        /// <summary>
+        /// Updates the list of <see cref="DataMode"/>s that the <see cref="EditorWindow"/> supports,
+        /// and sets the preferred DataMode to be used when the DataMode switcher UI is set to Automatic.
+        /// </summary>
+        /// <remarks> <para>
+        /// That list of the DataModes the Editor window supports varies based on a number of factors,
+        /// so it should only contain the DataModes available to the current context.
         /// For example, a window might support the <see cref="DataMode.Authoring"/> and <see cref="DataMode.Runtime"/>
         /// modes when in Edit mode, and the <see cref="DataMode.Mixed"/> and <see cref="DataMode.Runtime"/> modes when
         /// in Play mode. A common pattern for that case is to store two lists internally and use
         /// <see cref="EditorApplication.isPlaying"/> to select which one to return.
-        /// </para>
-        /// </summary>
-        IReadOnlyList<DataMode> supportedDataModes { get; }
+        /// <param name="supportedDataMode"> A list of the supported DataModes. </param>
+        /// <param name="preferredDataMode">
+        /// Preferred DataMode to use given the current context when the DataMode switcher UI is set to Automatic.
+        /// </param>
+        /// </para> </remarks>
+        void UpdateSupportedDataModes(IList<DataMode> supportedDataMode, DataMode preferredDataMode);
 
         /// <summary>
-        /// Unity calls this method automatically before any call to <see cref="SwitchToDataMode"/> is made. If the
-        /// method returns <code>false</code>, <see cref="SwitchToDefaultDataMode"/> is called instead.
+        /// Requests a <see cref="DataMode"/> change for the <see cref="EditorWindow"/>.
         /// </summary>
-        /// <param name="mode">
-        /// The <see cref="DataMode"/> for which support is being tested.
+        /// <remarks> <para>
+        /// If the DataMode switcher UI is currently set to Automatic, the Editor window also
+        /// changes to that preferred DataMode.
+        /// <seealso cref="IDataModeController.UpdateSupportedDataModes"/>>
+        /// </para> </remarks>
+        /// <param name="newDataMode">
+        /// The DataMode to which the Editor window should change.
         /// </param>
         /// <returns>
-        /// Whether the <see cref="EditorWindow"/> currently supports the specified <see cref="DataMode"/>.
-        /// </returns>
+        /// Whether the Editor window has accepted the requested DataMode change.
+        /// </returns>>
+        bool TryChangeDataMode(DataMode newDataMode);
+    }
+
+    // DataModeController handles DataMode related actions internally.
+    // Each Editor window has a DataModeController instance.
+    [Serializable]
+    internal sealed class DataModeController : IDataModeController
+    {
+        static readonly DataMode[] k_DefaultModes = Array.Empty<DataMode>();
+
+        public event Action<DataModeChangeEventArgs> dataModeChanged;
+
+        [SerializeField] DataMode m_DataMode = DataMode.Disabled;
+        public DataMode dataMode
+        {
+            get => m_DataMode;
+            private set => m_DataMode = value;
+        }
+
+        [SerializeField] DataMode m_PreferredDataMode = DataMode.Disabled;
+        public DataMode preferredDataMode
+        {
+            get => m_PreferredDataMode;
+            private set => m_PreferredDataMode = value;
+        }
+
+        [SerializeField] DataMode[] m_SupportedDataModes = k_DefaultModes;
+        public IList<DataMode> supportedDataModes
+        {
+            get => m_SupportedDataModes;
+            private set => m_SupportedDataModes = value.ToArray();
+        }
+
+        [SerializeField] internal bool isAutomatic = true;
+
+        readonly List<DataMode> m_DataModeSanitizationCache = new List<DataMode>(3); // Number of modes, minus `Disabled`
+
+        public void UpdateSupportedDataModes(IList<DataMode> supported, DataMode preferred)
+        {
+            SanitizeSupportedDataModesList(supported.ToList(), m_DataModeSanitizationCache);
+
+            supportedDataModes = m_DataModeSanitizationCache.Count != 0 ? m_DataModeSanitizationCache : k_DefaultModes;
+
+            preferredDataMode = supportedDataModes.Count switch
+            {
+                0 => DataMode.Disabled,
+                1 => supportedDataModes[0],
+                _ => supportedDataModes.Contains(preferred) ? preferred : supportedDataModes[0]
+            };
+
+            if (!isAutomatic || dataMode == preferredDataMode)
+                return;
+
+            // Recover if automatic
+            dataMode = preferredDataMode;
+            dataModeChanged?.Invoke(new DataModeChangeEventArgs(dataMode, false));
+        }
+
+        static void SanitizeSupportedDataModesList(IReadOnlyList<DataMode> originalList, List<DataMode> sanitizedList)
+        {
+            sanitizedList.Clear();
+
+            foreach (var mode in originalList)
+            {
+                if (mode == DataMode.Disabled)
+                    continue; // Never list `DataMode.Disabled`
+
+                if (sanitizedList.Contains(mode))
+                    continue; // Prevent duplicate entries
+
+                sanitizedList.Add(mode);
+            }
+
+            // Ensure we are displaying the data modes in a predefined order, regardless of
+            // the order in which the user defined their list.
+            sanitizedList.Sort();
+        }
+
+        public bool ShouldDrawDataModesSwitch()
+        {
+            return dataMode != DataMode.Disabled
+                   // We don't want to show DataMode switch if there are not
+                   // at least 2 modes supported at the current moment.
+                   && supportedDataModes.Count > 1;
+        }
+
+        public bool TryChangeDataMode(DataMode newDataMode)
+        {
+            // Only change if currently in automatic mode
+            if (!isAutomatic || dataMode == newDataMode || !supportedDataModes.Contains(newDataMode))
+                return false;
+
+            dataMode = newDataMode;
+            dataModeChanged?.Invoke(new DataModeChangeEventArgs(newDataMode, false));
+            return true;
+        }
+
+        // Invoked when user interacts with the DataMode dropdown menu, for internal use only.
+        internal void SwitchToAutomatic()
+        {
+            if (isAutomatic)
+                return;
+
+            isAutomatic = true;
+
+            if (dataMode == preferredDataMode)
+                return;
+
+            // If the DataMode is not supported in current context, we fall back to default one.
+            dataMode = preferredDataMode;
+            dataModeChanged?.Invoke(new DataModeChangeEventArgs(dataMode, true));
+        }
+
+        // Invoked when user interacts with the DataMode dropdown men, for internal use only.
+        internal void SwitchToStickyDataMode(DataMode stickyDataMode)
+        {
+            isAutomatic = false;
+
+            if (dataMode == stickyDataMode)
+                return;
+
+            dataMode = supportedDataModes.Contains(stickyDataMode)
+                ? stickyDataMode
+                : preferredDataMode;
+
+            dataModeChanged?.Invoke(new DataModeChangeEventArgs(dataMode, true));
+        }
+    }
+
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("IDataModeHandler has been deprecated, please use EditorWindow.dataModeController instead.", false)]
+    public interface IDataModeHandler
+    {
+        DataMode dataMode { get; }
+        IReadOnlyList<DataMode> supportedDataModes { get; }
         bool IsDataModeSupported(DataMode mode);
-
-        /// <summary>
-        /// Unity calls this method automatically when a user clicks the <see cref="DataMode"/> switch in the docking
-        /// area tied to the implementing <see cref="EditorWindow"/>.
-        /// </summary>
-        /// <remarks> <para>
-        /// This method informs the window to change its <see cref="dataMode"/> to whatever mode should come after
-        /// the current. In most cases, a window only supports two data modes at a time, but it is possible to support
-        /// all three. Also, a window that supports all three modes might want the switch to only toggle between two
-        /// specific modes and rely on the contextual menu to change to the third mode.
-        /// </para> </remarks>
         void SwitchToNextDataMode();
-
-        /// <summary>
-        /// Unity calls this method automatically whenever the Editor wants an <see cref="EditorWindow"/> to be in a
-        /// specific <see cref="DataMode"/>.
-        /// </summary>
-        /// <remarks> <para>
-        /// By convention, Unity always calls <see cref="IsDataModeSupported"/> before calling this method. If the
-        /// data mode is not supported, <see cref="SwitchToDefaultDataMode"/> is called instead.
-        /// </para> </remarks>
-        /// <param name="mode">
-        /// The explicit data mode to which the Editor window should change.
-        /// </param>
         void SwitchToDataMode(DataMode mode);
-
-        /// <summary>
-        /// Unity calls this method automatically whenever going to a requested <see cref="DataMode"/> is impossible
-        /// because of the result of <see cref="IsDataModeSupported"/>.
-        /// </summary>
-        /// <remarks> <para>
-        /// This method is a fallback to make sure the <see cref="EditorWindow"/> is always in a valid state.
-        /// </para> </remarks>
-        /// <seealso cref="SwitchToDataMode"/>
         void SwitchToDefaultDataMode();
     }
 
-    /// <summary>
-    /// Implement this interface to allow an <see cref="EditorWindow"/> to handle <see cref="DataMode"/> changes and
-    /// alter its <see cref="IDataModeHandler.dataMode"/> internally.
-    /// </summary>
-    /// <remarks> <para>
-    /// This interface displays a switch in the docking area when the window is visible and lists the supported modes in
-    /// the contextual menu for that window. Use this interface if your window needs to control its mode internally
-    /// based on factors other than the user directly interacting with the data mode switch or the contextual menu, for
-    /// example, entering or exiting Play mode. If your window does not need to control its own mode, use
-    /// <see cref="IDataModeHandler"/> instead.
-    /// </para> </remarks>
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+    [Obsolete("IDataModeHandlerAndDispatcher has been deprecated, please use EditorWindow.dataModeController instead.", false)]
     public interface IDataModeHandlerAndDispatcher : IDataModeHandler
     {
-        /// <summary>
-        /// <para>
-        /// Calls the methods in its invocation list when the <see cref="DataMode"/> changes due to an external factor
-        /// and passes the new data mode as an argument.
-        /// </para>
-        /// <para>
-        /// An external factor refers to any action which results in a data mode change that Unity did not initiate
-        /// directly through calling either <see cref="IDataModeHandler.SwitchToNextDataMode"/>,
-        /// <see cref="IDataModeHandler.SwitchToDefaultDataMode"/>, or <see cref="IDataModeHandler.SwitchToDataMode"/>.
-        /// </para>
-        /// <para>
-        /// For example, when entering or exiting Play mode, some windows might want to force a data mode switch.
-        /// </para>
-        /// </summary>
         event Action<DataMode> dataModeChanged;
     }
 

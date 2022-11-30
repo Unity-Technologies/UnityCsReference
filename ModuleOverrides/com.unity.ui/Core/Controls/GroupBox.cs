@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -14,6 +15,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class GroupBox : BindableElement, IGroupBox
     {
+        internal static readonly DataBindingProperty textProperty = nameof(text);
+
         /// <summary>
         /// Instantiates a <see cref="GroupBox"/> using data from a UXML file.
         /// </summary>
@@ -60,11 +63,14 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The title text of the box.
         /// </summary>
+        [CreateProperty]
         public string text
         {
             get => m_TitleLabel?.text;
             set
             {
+                var previous = text;
+
                 if (!string.IsNullOrEmpty(value))
                 {
                     // Lazy allocation of label if needed...
@@ -82,6 +88,9 @@ namespace UnityEngine.UIElements
                     m_TitleLabel.RemoveFromHierarchy();
                     m_TitleLabel = null;
                 }
+
+                if (string.CompareOrdinal(previous, text) != 0)
+                    NotifyPropertyChanged(textProperty);
             }
         }
 

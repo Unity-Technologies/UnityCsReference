@@ -284,10 +284,8 @@ namespace UnityEditor
 
                 var window = Resources.FindObjectsOfTypeAll<ContainerWindow>().FirstOrDefault(w => w.windowID == windowId);
                 InitContainerWindow(ref window, windowId, layoutData);
-
+                window.m_IsMppmCloneWindow = true;
                 GenerateLayout(window, ShowMode.Utility, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
-                window.m_IsForceTitleBar = true;
-                window.m_UpdateTitleFromChildWindow = false;
                 return window;
             }
             finally

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -12,6 +13,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class RadioButtonGroup : BaseField<int>, IGroupBox
     {
+        internal static readonly DataBindingProperty choicesProperty = nameof(choices);
+
         /// <summary>
         /// Instantiates a <see cref="RadioButtonGroup"/> using data from a UXML file.
         /// </summary>
@@ -35,7 +38,7 @@ namespace UnityEngine.UIElements
                 base.Init(ve, bag, cc);
 
                 var f = (RadioButtonGroup)ve;
-                f.choices = ParseChoiceList(m_Choices.GetValueFromBag(bag, cc));
+                f.choices = UxmlUtility.ParseStringListAttribute(m_Choices.GetValueFromBag(bag, cc));
             }
         }
 
@@ -62,6 +65,7 @@ namespace UnityEngine.UIElements
         /// Writing to this property removes existing <see cref="RadioButton"/> elements and
         /// re-creates them to display the new list.
         /// </remarks>
+        [CreateProperty]
         public IEnumerable<string> choices
         {
             get
@@ -107,6 +111,7 @@ namespace UnityEngine.UIElements
                 }
 
                 UpdateRadioButtons();
+                NotifyPropertyChanged(choicesProperty);
             }
         }
 

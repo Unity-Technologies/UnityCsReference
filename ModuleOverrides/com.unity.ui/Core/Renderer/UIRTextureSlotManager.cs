@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements.UIR
     {
         static TextureSlotManager()
         {
-            k_SlotCount = UIRenderDevice.shaderModelIs35 ? 8 : 4;
+            k_SlotCount = 8;
             slotIds = new int[k_SlotCount];
             for (int i = 0; i < k_SlotCount; ++i)
                 slotIds[i] = Shader.PropertyToID($"_Texture{i}");

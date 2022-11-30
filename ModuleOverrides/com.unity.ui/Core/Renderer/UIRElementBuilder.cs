@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements.UIR
         public void Build(MeshGenerationContext mgc)
         {
             var ve = mgc.visualElement;
+            Debug.Assert(ve.areAncestorsAndSelfDisplayed);
 
             bool isGroupTransform = (ve.renderHints & RenderHints.GroupTransform) == RenderHints.GroupTransform;
             if (isGroupTransform)

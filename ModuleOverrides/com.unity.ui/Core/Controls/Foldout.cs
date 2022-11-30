@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Properties;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -15,6 +17,9 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class Foldout : BindableElement, INotifyValueChanged<bool>
     {
+        internal static readonly DataBindingProperty textProperty = nameof(text);
+        internal static readonly DataBindingProperty valueProperty = nameof(value);
+
         /// <summary>
         /// Instantiates a <see cref="Foldout"/> using the data from a UXML file.
         /// </summary>
@@ -54,9 +59,9 @@ namespace UnityEngine.UIElements
         }
 
         Toggle m_Toggle;
-        VisualElement m_Container;
-
         internal Toggle toggle => m_Toggle;
+
+        VisualElement m_Container;
 
         /// <summary>
         /// This element contains the elements that are shown or hidden when you toggle the <see cref="Foldout"/>.
@@ -66,23 +71,28 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the text of the toggle's label.
         /// </summary>
+        [CreateProperty]
         public string text
         {
             get => m_Toggle.text;
             set
             {
+                var previous = text;
                 m_Toggle.text = value;
                 m_Toggle.visualInput.Q(className: Toggle.textUssClassName)?.AddToClassList(textUssClassName);
+                if (string.CompareOrdinal(previous, text) != 0)
+                    NotifyPropertyChanged(textProperty);
             }
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private bool m_Value;
 
         /// <summary>
         /// This is the state of the Foldout's toggle. It is true if the <see cref="Foldout"/> is open and its contents are
         /// visible, and false if the Foldout is closed, and its contents are hidden.
         /// </summary>
+        [CreateProperty]
         public bool value
         {
             get => m_Value;
@@ -97,6 +107,7 @@ namespace UnityEngine.UIElements
                     SetValueWithoutNotify(value);
                     SendEvent(evt);
                     SaveViewData();
+                    NotifyPropertyChanged(valueProperty);
                 }
             }
         }

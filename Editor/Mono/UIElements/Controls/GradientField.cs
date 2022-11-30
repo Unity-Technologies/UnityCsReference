@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
@@ -15,6 +16,9 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class GradientField : BaseField<Gradient>
     {
+        internal static readonly DataBindingProperty colorSpaceProperty = nameof(colorSpace);
+        internal static readonly DataBindingProperty hdrProperty = nameof(hdr);
+
         static readonly GradientColorKey k_WhiteKeyBegin = new GradientColorKey(Color.white, 0);
         static readonly GradientColorKey k_WhiteKeyEnd = new GradientColorKey(Color.white, 1);
         static readonly GradientAlphaKey k_AlphaKeyBegin = new GradientAlphaKey(1, 0);
@@ -53,19 +57,47 @@ namespace UnityEditor.UIElements
                         evt.elementTarget = this;
                         SetValueWithoutNotify(value);
                         SendEvent(evt);
+                        NotifyPropertyChanged(valueProperty);
                     }
                 }
             }
         }
 
+        private ColorSpace m_ColorSpace;
+
         /// <summary>
         /// The color space currently used by the field.
         /// </summary>
-        public ColorSpace colorSpace { get; set; }
+        [CreateProperty]
+        public ColorSpace colorSpace
+        {
+            get => m_ColorSpace;
+            set
+            {
+                if (m_ColorSpace == value)
+                    return;
+                m_ColorSpace = value;
+                NotifyPropertyChanged(colorSpaceProperty);
+            }
+        }
+
+        private bool m_Hdr;
+
         /// <summary>
         /// If true, treats the color as an HDR value. If false, treats the color as a standard LDR value.
         /// </summary>
-        public bool hdr { get; set; }
+        [CreateProperty]
+        public bool hdr
+        {
+            get => m_Hdr;
+            set
+            {
+                if (m_Hdr == value)
+                    return;
+                m_Hdr = value;
+                NotifyPropertyChanged(hdrProperty);
+            }
+        }
 
         internal static Gradient GradientCopy(Gradient other)
         {

@@ -391,7 +391,7 @@ namespace UnityEngine.UIElements
             {
                 if (SetStyleValue(StylePropertyId.Display, value))
                 {
-                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                     ve.yogaNode.Display = (YogaDisplay)ve.computedStyle.display;
                 }
             }

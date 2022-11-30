@@ -1234,7 +1234,7 @@ namespace UnityEngine.UIElements
                     {
                         layoutData.Write().display = (DisplayStyle)newValue;
                         ve.yogaNode.Display = (YogaDisplay)newValue;
-                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                        ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
                     break;

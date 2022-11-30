@@ -4,10 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
+using Unity.Properties;
 using JetBrains.Annotations;
 using UnityEngine.Assertions;
 using UnityEngine.Yoga;
@@ -63,6 +61,9 @@ namespace UnityEngine.UIElements
         HierarchyDisplayed = 1 << 12,
         // Element style are computed
         StyleInitialized = 1 << 13,
+        // Element is not rendered, but we keep the generated geometry in case it is shown later
+        DisableRendering = 1 << 14,
+
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventCallbackParentCategoriesDirty | HierarchyDisplayed
     }
@@ -240,10 +241,18 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool isHierarchyDisplayed
+        // areAncestorsAndSelfDisplayed is a combination of the inherited display state and our own display state.
+        // (See UIRLayoutUpdater::UpdateHierarchyDisplayed() to understand how it is set.)
+        internal bool areAncestorsAndSelfDisplayed
         {
             get => (m_Flags & VisualElementFlags.HierarchyDisplayed) == VisualElementFlags.HierarchyDisplayed;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.HierarchyDisplayed : m_Flags & ~VisualElementFlags.HierarchyDisplayed;
+            set
+            {
+                m_Flags = value ? m_Flags | VisualElementFlags.HierarchyDisplayed : m_Flags & ~VisualElementFlags.HierarchyDisplayed;
+
+                if(value && ( renderChainData.pendingRepaint|| renderChainData.pendingHierarchicalRepaint))
+                    IncrementVersion(VersionChangeType.Repaint);
+            }
         }
 
         private static uint s_NextId;
@@ -269,6 +278,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This is the key used to save/load the view data from the view data store. Not setting this key will disable persistence for this <see cref="VisualElement"/>.
         /// </remarks>
+        [CreateProperty]
         public string viewDataKey
         {
             get { return m_ViewDataKey; }
@@ -280,6 +290,8 @@ namespace UnityEngine.UIElements
 
                     if (!string.IsNullOrEmpty(value))
                         IncrementVersion(VersionChangeType.ViewData);
+
+                    NotifyPropertyChanged(viewDataKeyProperty);
                 }
             }
         }
@@ -300,6 +312,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This property can be used to associate application-specific user data with this VisualElement.
         /// </summary>
+        [CreateProperty]
         public object userData
         {
             get
@@ -307,7 +320,14 @@ namespace UnityEngine.UIElements
                 TryGetPropertyInternal(userDataPropertyKey, out object value);
                 return value;
             }
-            set { SetPropertyInternal(userDataPropertyKey, value); }
+            set
+            {
+                var previous = userData;
+                SetPropertyInternal(userDataPropertyKey, value);
+
+                if (previous != userData)
+                    NotifyPropertyChanged(userDataProperty);
+            }
         }
 
         public override bool canGrabFocus
@@ -342,6 +362,7 @@ namespace UnityEngine.UIElements
         /// Note that those hints do not affect behavioral or visual results, but only affect the overall performance of the panel and the elements within.
         /// It's advised to always consider specifying the proper <see cref="UsageHints"/>, but keep in mind that some <see cref="UsageHints"/> might be internally ignored under certain conditions (e.g. due to hardware limitations on the target platform).
         /// </summary>
+        [CreateProperty]
         public UsageHints usageHints
         {
             get
@@ -370,6 +391,8 @@ namespace UnityEngine.UIElements
                 if ((value & UsageHints.DynamicColor) != 0)
                     renderHints |= RenderHints.DynamicColor;
                 else renderHints &= ~RenderHints.DynamicColor;
+
+                NotifyPropertyChanged(usageHintsProperty);
             }
         }
 
@@ -484,6 +507,7 @@ namespace UnityEngine.UIElements
         /// Before reading from this property, add it to a panel and wait for one frame to ensure that the element layout is computed.
         /// After the layout is computed, a <see cref="GeometryChangedEvent"/> will be sent on this element.
         /// </remarks>
+        [CreateProperty(ReadOnly = true)]
         public Rect layout
         {
             get
@@ -546,6 +570,7 @@ namespace UnityEngine.UIElements
         /// In the box model used by UI Toolkit, the content area refers to the inner rectangle for displaying text and images.
         /// It excludes the borders and the padding.
         /// </remarks>
+        [CreateProperty(ReadOnly = true)]
         public Rect contentRect
         {
             get
@@ -674,6 +699,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// AABB after applying the world transform to <c>rect</c>.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public Rect worldBound
         {
             get
@@ -687,6 +713,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// AABB after applying the transform to the rect, but before applying the layout translation.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public Rect localBound
         {
             get
@@ -738,6 +765,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Multiplying the <c>layout</c> rect by this matrix is incorrect because it already contains the translation.
         /// </remarks>
+        [CreateProperty(ReadOnly = true)]
         public Matrix4x4 worldTransform
         {
             get
@@ -1040,10 +1068,23 @@ namespace UnityEngine.UIElements
             return self.Contains(capturingElement as VisualElement);
         }
 
+        private PickingMode m_PickingMode;
+
         /// <summary>
         /// Determines if this element can be pick during mouseEvents or <see cref="IPanel.Pick"/> queries.
         /// </summary>
-        public PickingMode pickingMode { get; set; }
+        [CreateProperty]
+        public PickingMode pickingMode
+        {
+            get => m_PickingMode;
+            set
+            {
+                if (m_PickingMode == value)
+                    return;
+                m_PickingMode = value;
+                NotifyPropertyChanged(pickingModeProperty);
+            }
+        }
 
         /// <summary>
         /// The name of this VisualElement.
@@ -1052,6 +1093,7 @@ namespace UnityEngine.UIElements
         /// Use this property to write USS selectors that target a specific element.
         /// The standard practice is to give an element a unique name.
         /// </remarks>
+        [CreateProperty]
         public string name
         {
             get { return m_Name; }
@@ -1061,6 +1103,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_Name = value;
                 IncrementVersion(VersionChangeType.StyleSheet);
+                NotifyPropertyChanged(nameProperty);
             }
         }
 
@@ -1471,19 +1514,33 @@ namespace UnityEngine.UIElements
         /// <remarks>
         ///  This flag verifies if the element is enabled globally. A parent disabling its child VisualElement affects this variable.
         /// </remarks>
+        [CreateProperty(ReadOnly = true)]
         public bool enabledInHierarchy
         {
             get { return (pseudoStates & PseudoStates.Disabled) != PseudoStates.Disabled; }
         }
 
+        private bool m_EnabledSelf;
         //Returns the local enabled state
         /// <summary>
         /// Returns true if the <see cref="VisualElement"/> is enabled locally.
         /// </summary>
         /// <remarks>
-        /// This flag isn't changed if the VisualElement is disabled implicitely by one of its parents. To verify this, use enabledInHierarchy.
+        /// This flag isn't changed if the VisualElement is disabled implicitly by one of its parents. To verify this, use enabledInHierarchy.
         /// </remarks>
-        public bool enabledSelf { get; private set;}
+        [CreateProperty(ReadOnly = true)]
+        public bool enabledSelf
+        {
+            get => m_EnabledSelf;
+            private set
+            {
+                if (m_EnabledSelf != value)
+                {
+                    m_EnabledSelf = value;
+                    NotifyPropertyChanged(enabledSelfProperty);
+                }
+            }
+        }
 
         /// <summary>
         /// Changes the <see cref="VisualElement"/> enabled state. A disabled VisualElement does not receive most events.
@@ -1523,6 +1580,7 @@ namespace UnityEngine.UIElements
         /// <seealso cref="resolvedStyle"/>
         /// <seealso cref="style"/>
         /// </remarks>
+        [CreateProperty]
         public bool visible
         {
             get
@@ -1531,10 +1589,13 @@ namespace UnityEngine.UIElements
             }
             set
             {
+                var previous = visible;
                 // Note: this could causes an allocation because styles are copy-on-write
                 // we might want to remove this setter altogether
                 // so everything goes through style.visibility (and then it's documented in a single place)
                 style.visibility = value ? Visibility.Visible : Visibility.Hidden;
+                if (previous != visible)
+                    NotifyPropertyChanged(visibleProperty);
             }
         }
 

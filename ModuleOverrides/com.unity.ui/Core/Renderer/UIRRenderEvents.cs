@@ -730,12 +730,6 @@ namespace UnityEngine.UIElements.UIR
             dst = (IntPtr)newVerts.GetUnsafePtr();
             count = vertCount;
         }
-
-        public static bool IsElementHierarchyHidden(VisualElement ve)
-        {
-            return ve.resolvedStyle.display == DisplayStyle.None;
-        }
-
         static VisualElement GetLastDeepestChild(VisualElement ve)
         {
             // O(n) of the visual tree depth, usually not too bad.. probably 10-15 in really bad cases

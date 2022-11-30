@@ -123,6 +123,9 @@ namespace UnityEngine
             m_Height = size.y;
         }
 
+        // Shorthand for writing new RectInt(0,0,0,0).
+        static public RectInt zero => new RectInt(0, 0, 0, 0);
+
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void ClampToBounds(RectInt bounds)
         {
@@ -173,6 +176,33 @@ namespace UnityEngine
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;
             return UnityString.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), width.ToString(format, formatProvider), height.ToString(format, formatProvider));
         }
+
+        // Returns true if the rectangles are different.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool operator!=(RectInt lhs, RectInt rhs)
+        {
+            return !(lhs == rhs);
+        }
+
+        // Returns true if the rectangles are the same.
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static bool operator==(RectInt lhs, RectInt rhs)
+        {
+            return lhs.x == rhs.x && lhs.y == rhs.y && lhs.width == rhs.width && lhs.height == rhs.height;
+        }   
+
+        public override int GetHashCode()
+        {
+            return x.GetHashCode() ^ (width.GetHashCode() << 2) ^ (y.GetHashCode() >> 2) ^ (height.GetHashCode() >> 1);
+        }        
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public override bool Equals(object other)
+        {
+            if (!(other is RectInt)) return false;
+
+            return Equals((RectInt)other);
+        }                 
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public bool Equals(RectInt other)

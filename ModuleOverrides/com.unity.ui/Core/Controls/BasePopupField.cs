@@ -4,7 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
+using Unity.Properties;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -19,6 +19,9 @@ namespace UnityEngine.UIElements
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public abstract class BasePopupField<TValueType, TValueChoice> : BaseField<TValueType>
     {
+        internal static readonly DataBindingProperty choicesProperty = nameof(choices);
+        internal static readonly DataBindingProperty textProperty = nameof(text);
+
         internal List<TValueChoice> m_Choices;
         TextElement m_TextElement;
         VisualElement m_ArrowElement;
@@ -48,6 +51,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The list of choices to display in the popup menu.
         /// </summary>
+        [CreateProperty]
         public virtual List<TValueChoice> choices
         {
             get { return m_Choices; }
@@ -60,6 +64,7 @@ namespace UnityEngine.UIElements
 
                 // Make sure to update the text displayed
                 SetValueWithoutNotify(rawValue);
+                NotifyPropertyChanged(choicesProperty);
             }
         }
 
@@ -76,6 +81,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the text displayed to the user for the current selection of the popup.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public string text
         {
             get { return m_TextElement.text; }

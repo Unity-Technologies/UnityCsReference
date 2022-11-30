@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -62,6 +63,8 @@ namespace UnityEngine.UIElements
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public abstract class TextValueField<TValueType> : TextInputBaseField<TValueType>, IValueField<TValueType>
     {
+        internal static readonly DataBindingProperty formatStringProperty = nameof(formatString);
+
         // This property to alleviate the fact we have to cast all the time
         TextValueInput textValueInput => (TextValueInput)textInputBase;
 
@@ -72,6 +75,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The format string for the value.
         /// </summary>
+        [CreateProperty]
         public string formatString
         {
             get => textValueInput.formatString;
@@ -81,6 +85,7 @@ namespace UnityEngine.UIElements
                 {
                     textValueInput.formatString = value;
                     textEdition.UpdateText(ValueToString(rawValue));
+                    NotifyPropertyChanged(formatStringProperty);
                 }
             }
         }
@@ -122,15 +127,6 @@ namespace UnityEngine.UIElements
         public void StopDragging()
         {
             textValueInput.StopDragging();
-        }
-
-        /// <summary>
-        /// This is the value of the field.
-        /// </summary>
-        public override TValueType value
-        {
-            get => base.value;
-            set => base.value = value;
         }
 
         internal override void UpdateValueFromText()

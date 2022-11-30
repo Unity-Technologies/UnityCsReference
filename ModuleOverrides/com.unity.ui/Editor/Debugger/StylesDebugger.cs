@@ -194,8 +194,30 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             m_SelectedElement.usageHints = (UsageHints)EditorGUILayout.EnumFlagsField("Usage Hints", m_SelectedElement.usageHints);
+            m_SelectedElement.tabIndex = EditorGUILayout.IntField("Tab Index", m_SelectedElement.tabIndex);
 
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
+            EditorGUILayout.LabelField("LastLayout", m_SelectedElement.lastLayout.ToString());
+
+            if (GUILayout.Button("Increment Version Change - Repaint"))
+            {
+                m_SelectedElement.IncrementVersion(VersionChangeType.Repaint);
+            }
+
+            if (Unsupported.IsDeveloperBuild())
+            {
+                if (GUILayout.Button("Increment Version Change - Size"))
+                {
+                    m_SelectedElement.IncrementVersion(VersionChangeType.Size);
+                }
+                if (GUILayout.Button("Increment Version Change - Transform"))
+                {
+                    m_SelectedElement.IncrementVersion(VersionChangeType.Transform);
+                }
+            }
+
+            EditorGUILayout.LabelField("Display", (m_SelectedElement.resolvedStyle.display == DisplayStyle.None) ? "None" : "Flex");
+
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
             EditorGUILayout.LabelField("World Clip", m_SelectedElement.worldClip.ToString());
             EditorGUILayout.LabelField("Bounding Box", m_SelectedElement.boundingBox.ToString());

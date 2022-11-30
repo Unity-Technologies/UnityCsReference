@@ -279,7 +279,7 @@ namespace UnityEngine
         {
             if (IsCompleted)
             {
-                RaiseManagedCompletion();
+                PropagateExceptionAndRelease();
                 return false;
             }
             return true;

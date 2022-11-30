@@ -686,10 +686,13 @@ namespace UnityEditor
 
             if (m_ShowInternalSettings.value)
             {
+                bool enableRealtimeGI = (m_EnableRealtimeGI.boolValue && !m_EnableRealtimeGI.hasMultipleDifferentValues);
                 EditorGUI.indentLevel++;
-
-                EditorGUILayout.PropertyField(m_ForceWhiteAlbedo, Styles.forceWhiteAlbedo);
-                EditorGUILayout.PropertyField(m_ForceUpdates, Styles.forceUpdates);
+                if (enableRealtimeGI)
+                {
+                    EditorGUILayout.PropertyField(m_ForceWhiteAlbedo, Styles.forceWhiteAlbedo);
+                    EditorGUILayout.PropertyField(m_ForceUpdates, Styles.forceUpdates);
+                }
 
                 EditorGUILayout.PropertyField(m_ExportTrainingData, Styles.exportTrainingData);
 
@@ -701,8 +704,10 @@ namespace UnityEditor
                 }
 
                 EditorGUILayout.PropertyField(m_FilterMode, Styles.filterMode);
-                EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.bounceScale);
-
+                if (enableRealtimeGI)
+                {
+                    EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.bounceScale);
+                }
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space();
             }

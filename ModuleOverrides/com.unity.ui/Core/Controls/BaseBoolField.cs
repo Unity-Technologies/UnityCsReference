@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Properties;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -9,6 +11,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseBoolField : BaseField<bool>
     {
+        internal static readonly DataBindingProperty textProperty = nameof(text);
+
         protected Label m_Label;
         protected readonly VisualElement m_CheckMark;
 
@@ -52,11 +56,15 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Unity creates a <see cref="Label"/> automatically if one does not exist.
         /// </remarks>
+        [CreateProperty]
         public string text
         {
             get { return m_Label?.text; }
             set
             {
+                if (string.CompareOrdinal(m_Label?.text, value) == 0)
+                    return;
+
                 if (!string.IsNullOrEmpty(value))
                 {
                     // Lazy allocation of label if needed...
@@ -72,6 +80,7 @@ namespace UnityEngine.UIElements
                     m_Label.RemoveFromHierarchy();
                     m_Label = null;
                 }
+                NotifyPropertyChanged(textProperty);
             }
         }
 

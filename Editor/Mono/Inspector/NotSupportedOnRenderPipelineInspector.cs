@@ -12,5 +12,10 @@ namespace UnityEditor
         {
             return new HelpBox("This component is not supported on the currently active render pipeline.", HelpBoxMessageType.Warning);
         }
+
+        public override void OnInspectorGUI()
+        {
+            EditorGUILayout.HelpBox("This component is not supported on the currently active render pipeline.", MessageType.Warning);
+        }
     }
 }

@@ -2022,6 +2022,7 @@ namespace UnityEngine.Rendering
         LegacyJobified = 3,
         NativeGraphicsJobs = 4,
         NativeGraphicsJobsWithoutRenderThread = 5,
+        NativeGraphicsJobsSplitThreading = 6,
     }
     public enum CameraLateLatchMatrixType
     {

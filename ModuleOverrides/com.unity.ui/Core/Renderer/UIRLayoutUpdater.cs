@@ -16,7 +16,6 @@ namespace UnityEngine.UIElements
     {
         const int kMaxValidateLayoutCount = 5;
 
-
         private static readonly string s_Description = "Update Layout";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
@@ -33,7 +32,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        List<KeyValuePair<Rect, VisualElement>> changeEventsList = new List<KeyValuePair<Rect, VisualElement>>();
+        List<(Rect, Rect, VisualElement)> changeEventsList = new ();
 
         public override void Update()
         {
@@ -52,7 +51,7 @@ namespace UnityEngine.UIElements
                 visualTree.yogaNode.CalculateLayout();
                 panel.duringLayoutPhase = false;
 
-                UpdateSubTree(visualTree, true, changeEventsList);
+                UpdateSubTree(visualTree, changeEventsList);
                 DispatchChangeEvents(changeEventsList, validateLayoutCount);
 
                 if (validateLayoutCount++ >= kMaxValidateLayoutCount)
@@ -70,8 +69,69 @@ namespace UnityEngine.UIElements
             visualTree.focusController.ReevaluateFocus();
         }
 
-        private void UpdateSubTree(VisualElement ve, bool isDisplayed, List<KeyValuePair<Rect, VisualElement>> changeEvents)
+        /// <summary>
+        /// This method update areAncestorsAndSelfDisplayed and disableRendering for the provided element and for all disabled element under.
+        /// It also trigger changeEvents if some element were disabled
+        /// This method does not update the elements under a displayed element since they are updated in UpdateSubTree
+        /// </summary>
+        /// <param name="ve"></param>
+        /// <param name="changeEvents"> is a list to accumulate the event to dispatch later</param>
+        /// <param name="inheritedDisplayed"> false when any of the ancestors has display:none, otherwise true</param>
+        /// <returns> has his state changed</returns>
+        static private bool UpdateHierarchyDisplayed(VisualElement ve, List<(Rect, Rect, VisualElement)> changeEvents, bool inheritedDisplayed = true)
         {
+            var isDisplayed = inheritedDisplayed & ve.resolvedStyle.display != DisplayStyle.None;
+
+            // If our parent is disabled, there is no need to disable the rendering on the child,
+            // but if the child is disabled, there is no need to re-enable it.
+            // If we are displayed we definitely don't want to be disabled!
+            if (inheritedDisplayed && !isDisplayed)
+                ve.disableRendering = true;
+            else if (isDisplayed)
+                ve.disableRendering = false;
+
+            // If the status changed, we need to update the display status of the children.
+            // If the children has already the correct state, we don't need to continue
+            // (This check will stop the depth first branch from being updated)
+            if (ve.areAncestorsAndSelfDisplayed == isDisplayed)
+                return false;
+
+            ve.areAncestorsAndSelfDisplayed = isDisplayed;
+
+            // UpdateSubTree will propagate the Display:flex status but will not recurse in the case of a display:none
+            // We need recurse here to update/propagate the Display:none status and generate changeEvents when elements were hidden this frame
+            if (!isDisplayed)
+            {
+                if (inheritedDisplayed)//for the element having a displayed parent and that just became in display:none
+                {
+                    // Make sure bounding box are re-computed (using yoga layout).
+                    ve.IncrementVersion(VersionChangeType.Size);
+                }
+
+                if ( ve.HasEventCallbacksOrDefaultActions(GeometryChangedEvent.EventCategory) )
+                    changeEvents.Add( (ve.lastLayout, Rect.zero, ve));
+
+                var childCount = ve.hierarchy.childCount;
+                for (int i = 0; i < childCount; ++i)
+                {
+                    UpdateHierarchyDisplayed(ve.hierarchy[i], changeEvents, isDisplayed);
+                }
+            }
+
+            return true;
+        }
+
+        private void UpdateSubTree(VisualElement ve, List<(Rect, Rect, VisualElement)> changeEvents)
+        {
+            // Because the UpdateSubTree recursion always starts form the root, and does not process subtrees that are not displayed, inheritedDisplay is always true.
+            bool isDisplayedJustChanged = UpdateHierarchyDisplayed(ve, changeEvents, true);
+
+            // Events for disabled element and their descendant have been added by UpdateHierarchyDisplayed
+            // We don't trigger any IncrementVersion because we want to keep the UI buffered.
+            // the transform and size version change will occur when the element become displayed again.
+            if (!ve.areAncestorsAndSelfDisplayed)
+                return;
+
             Rect yogaLayoutRect = new Rect(ve.yogaNode.LayoutX, ve.yogaNode.LayoutY, ve.yogaNode.LayoutWidth, ve.yogaNode.LayoutHeight);
 
             // we encode right/bottom into width/height
@@ -89,7 +149,6 @@ namespace UnityEngine.UIElements
                 yogaLayoutRect.height - (rawPadding.y + rawPadding.height));
             Rect lastLayoutRect = ve.lastLayout;
             Rect lastPseudoPaddingRect = ve.lastPseudoPadding;
-            bool wasHierarchyDisplayed = ve.isHierarchyDisplayed;
 
             VersionChangeType changeType = 0;
             // Changing the layout/padding size should trigger the following version changes:
@@ -104,11 +163,8 @@ namespace UnityEngine.UIElements
             // - Transform: to draw the element and content at the right position
             bool layoutPositionChanged = yogaLayoutRect.position != lastLayoutRect.position;
             bool paddingPositionChanged = yogaPseudoPaddingRect.position != lastPseudoPaddingRect.position;
-            if (layoutPositionChanged || paddingPositionChanged)
+            if (layoutPositionChanged || paddingPositionChanged || isDisplayedJustChanged)
                 changeType |= VersionChangeType.Transform;
-
-            isDisplayed &= ve.resolvedStyle.display != DisplayStyle.None;
-            ve.isHierarchyDisplayed = isDisplayed;
 
             if (changeType != 0)
                 ve.IncrementVersion(changeType);
@@ -125,16 +181,21 @@ namespace UnityEngine.UIElements
                 {
                     var child = ve.hierarchy[i];
 
-                    if(child.yogaNode.HasNewLayout)
-                        UpdateSubTree(child, isDisplayed, changeEvents);
+                    if (child.yogaNode.HasNewLayout)
+                        UpdateSubTree(child, changeEvents);
                 }
+            }
+
+            if (isDisplayedJustChanged)
+            {
+                ve.IncrementVersion(VersionChangeType.Size);
             }
 
             // Only send GeometryChanged events when the layout changes
             // (padding changes don't affect the element's outer geometry).
-            if ((layoutSizeChanged || layoutPositionChanged) && ve.HasEventCallbacksOrDefaultActions(GeometryChangedEvent.EventCategory))
+            if ((layoutSizeChanged || layoutPositionChanged || isDisplayedJustChanged) && ve.HasEventCallbacksOrDefaultActions(GeometryChangedEvent.EventCategory))
             {
-                changeEvents.Add(new KeyValuePair<Rect, VisualElement>(lastLayoutRect, ve));
+                changeEvents.Add((isDisplayedJustChanged ? Rect.zero : lastLayoutRect, yogaLayoutRect, ve));
             }
 
             if (hasNewLayout)
@@ -143,14 +204,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-
-        private void DispatchChangeEvents(List<KeyValuePair<Rect, VisualElement>> changeEvents, int currentLayoutPass)
+        private void DispatchChangeEvents(List<(Rect, Rect, VisualElement)> changeEvents, int currentLayoutPass)
         {
-            foreach (var changeElement in changeEvents)
+            foreach ((var oldRect, var newRect, var ve) in changeEvents)
             {
-                var ve = changeElement.Value;
-
-                using (var evt = GeometryChangedEvent.GetPooled(changeElement.Key, ve.lastLayout))
+                using (var evt = GeometryChangedEvent.GetPooled(oldRect, newRect))
                 {
                     evt.layoutPass = currentLayoutPass;
                     evt.elementTarget = ve;

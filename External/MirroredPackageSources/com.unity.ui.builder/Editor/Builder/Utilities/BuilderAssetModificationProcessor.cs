@@ -75,19 +75,6 @@ namespace Unity.UI.Builder
 
         static string[] OnWillSaveAssets(string[] paths)
         {
-            // On a duplication, this function is called with no paths. Same for Save and Save Project commands.
-            // However if we want to save assets on Save/Save Project commands, we have no real choice here but
-            // to also check if we're here because of the Duplicate command.  Ideal situation would be to have
-            // the Duplicate command trigger its own callback and not OnWillSaveAssets.
-            var evt = Event.current;
-            if ((evt == null || evt.commandName != EventCommandNames.Duplicate) &&
-                (paths.Length == 0 || !paths.Any(x => x.Contains(".uxml") || x.Contains(".uss"))))
-            {
-                var builder = Builder.ActiveWindow;
-                if (builder != null && builder.document.hasUnsavedChanges)
-                    builder.SaveChanges();
-            }
-
             foreach (var modificationProcessor in m_ModificationProcessors)
                 modificationProcessor.OnAssetChange();
 

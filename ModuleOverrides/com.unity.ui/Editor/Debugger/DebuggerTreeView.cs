@@ -30,6 +30,10 @@ namespace UnityEditor.UIElements.Debugger
         {
             get
             {
+                if (m_TreeView?.viewController == null)
+                {
+                    yield break;
+                }
                 foreach (var itemId in m_TreeView.viewController.GetAllItemIds())
                 {
                     yield return m_TreeViewController.GetTreeViewItemDataForId(itemId);

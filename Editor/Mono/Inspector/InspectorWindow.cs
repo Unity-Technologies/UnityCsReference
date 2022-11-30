@@ -96,8 +96,6 @@ namespace UnityEditor
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
             Selection.selectionChanged += OnSelectionChanged;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
-
-            UpdateDataMode();
         }
 
         private void OnAfterAssemblyReload()
@@ -158,32 +156,22 @@ namespace UnityEditor
                 m_MultiEditLabel.RemoveFromHierarchy();
             }
 
-            UpdateDataMode();
-        }
+            if (isLocked)
+                return;
 
-        private void UpdateDataMode()
-        {
-            UpdateSupportedDataModes();
-
-            // Try to respect the DataMode hint provided by the selection.
-            // If impossible, try to retain the current DataMode if supported.
-            if (IsDataModeSupported(Selection.dataModeHint))
-                SwitchToDataMode(Selection.dataModeHint);
-            else if (!IsDataModeSupported(dataMode))
-                SwitchToDefaultDataMode();
+            UpdateSupportedDataModesList();
         }
 
         // Note: supportedModes is cleared before and sorted after this method is called
         protected override void OnUpdateSupportedDataModes(List<DataMode> supportedModes)
         {
-            m_UserSupportedDataModes.Clear();
-
             // Not showing data modes in debug
-            if (m_InspectorMode == InspectorMode.Normal)
-            {
-                DataModeSupportUtils.GetDataModeSupport(Selection.activeObject, Selection.activeContext, m_UserSupportedDataModes);
-                supportedModes.AddRange(m_UserSupportedDataModes);
-            }
+            if (m_InspectorMode != InspectorMode.Normal)
+                return;
+
+            m_UserSupportedDataModes.Clear();
+            DataModeSupportUtils.GetDataModeSupport(Selection.activeObject, Selection.activeContext, m_UserSupportedDataModes);
+            supportedModes.AddRange(m_UserSupportedDataModes);
         }
 
         protected override void OnDisable()

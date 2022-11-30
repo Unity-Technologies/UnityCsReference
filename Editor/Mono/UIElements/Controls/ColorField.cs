@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,6 +13,10 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ColorField : BaseField<Color>
     {
+        internal static readonly DataBindingProperty showEyeDropperProperty = nameof(showEyeDropper);
+        internal static readonly DataBindingProperty showAlphaProperty = nameof(showAlpha);
+        internal static readonly DataBindingProperty hdrProperty = nameof(hdr);
+
         /// <summary>
         /// Instantiates a <see cref="ColorField"/> using the data read from a UXML file.
         /// </summary>
@@ -45,39 +50,50 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// If true, the color picker will show the eyedropper control. If false, the color picker won't show the eyedropper control.
         /// </summary>
+        [CreateProperty]
         public bool showEyeDropper
         {
             get => m_ShowEyeDropper;
             set
             {
+                var previous = m_ShowEyeDropper;
                 m_ShowEyeDropper = value;
                 if (m_EyeDropperElement != null)
                     m_EyeDropperElement.style.display = m_ShowEyeDropper ? DisplayStyle.Flex : DisplayStyle.None;
+
+                if (previous != m_ShowEyeDropper)
+                    NotifyPropertyChanged(showEyeDropperProperty);
             }
         }
 
         /// <summary>
         /// If true, allows the user to set an alpha value for the color. If false, hides the alpha component.
         /// </summary>
+        [CreateProperty]
         public bool showAlpha
         {
             get => m_ShowAlpha;
             set
             {
+                var previous = m_ShowAlpha;
                 m_ShowAlpha = value;
                 if (m_AlphaElement != null)
                     m_AlphaElement.style.display = m_ShowAlpha ? DisplayStyle.Flex : DisplayStyle.None;
+                if (previous != m_ShowAlpha)
+                    NotifyPropertyChanged(showAlphaProperty);
             }
         }
 
         /// <summary>
         /// If true, treats the color as an HDR value. If false, treats the color as a standard LDR value.
         /// </summary>
+        [CreateProperty]
         public bool hdr
         {
             get => m_HDR;
             set
             {
+                var previous = m_HDR;
                 m_HDR = value;
                 if (m_HDRLabel != null)
                     m_HDRLabel.style.display = m_HDR ? DisplayStyle.Flex : DisplayStyle.None;
@@ -86,6 +102,9 @@ namespace UnityEditor.UIElements
                 if (m_AlphaGradientContainer != null)
                     m_AlphaGradientContainer.style.display = m_HDR ? DisplayStyle.Flex : DisplayStyle.None;
                 UpdateColorProperties(this.value);
+
+                if (previous != m_HDR)
+                    NotifyPropertyChanged(hdrProperty);
             }
         }
 

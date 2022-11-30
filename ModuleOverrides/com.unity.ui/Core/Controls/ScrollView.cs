@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -99,6 +101,17 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class ScrollView : VisualElement
     {
+        internal static readonly DataBindingProperty horizontalScrollerVisibilityProperty = nameof(horizontalScrollerVisibility);
+        internal static readonly DataBindingProperty verticalScrollerVisibilityProperty = nameof(verticalScrollerVisibility);
+        internal static readonly DataBindingProperty scrollOffsetProperty = nameof(scrollOffset);
+        internal static readonly DataBindingProperty horizontalPageSizeProperty = nameof(horizontalPageSize);
+        internal static readonly DataBindingProperty verticalPageSizeProperty = nameof(verticalPageSize);
+        internal static readonly DataBindingProperty scrollDecelerationRateProperty = nameof(scrollDecelerationRate);
+        internal static readonly DataBindingProperty elasticityProperty = nameof(elasticity);
+        internal static readonly DataBindingProperty touchScrollBehaviorProperty = nameof(touchScrollBehavior);
+        internal static readonly DataBindingProperty nestedInteractionKindProperty = nameof(nestedInteractionKind);
+        internal static readonly DataBindingProperty modeProperty = nameof(mode);
+
         /// <summary>
         /// Instantiates a <see cref="ScrollView"/> using the data read from a UXML file.
         /// </summary>
@@ -187,13 +200,18 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Specifies whether the horizontal scroll bar is visible.
         /// </summary>
+        [CreateProperty]
         public ScrollerVisibility horizontalScrollerVisibility
         {
             get { return m_HorizontalScrollerVisibility; }
             set
             {
+                var previous = m_HorizontalScrollerVisibility;
                 m_HorizontalScrollerVisibility = value;
                 UpdateScrollers(needsHorizontal, needsVertical);
+
+                if (previous != m_HorizontalScrollerVisibility)
+                    NotifyPropertyChanged(horizontalScrollerVisibilityProperty);
             }
         }
 
@@ -202,13 +220,17 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Specifies whether the vertical scroll bar is visible.
         /// </summary>
+        [CreateProperty]
         public ScrollerVisibility verticalScrollerVisibility
         {
             get { return m_VerticalScrollerVisibility; }
             set
             {
+                var previous = m_VerticalScrollerVisibility;
                 m_VerticalScrollerVisibility = value;
                 UpdateScrollers(needsHorizontal, needsVertical);
+                if (previous != m_VerticalScrollerVisibility)
+                    NotifyPropertyChanged(verticalScrollerVisibilityProperty);
             }
         }
 
@@ -280,6 +302,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The current scrolling position.
         /// </summary>
+        [CreateProperty]
         public Vector2 scrollOffset
         {
             get { return new Vector2(horizontalScroller.value, verticalScroller.value); }
@@ -290,6 +313,7 @@ namespace UnityEngine.UIElements
                     horizontalScroller.value = value.x;
                     verticalScroller.value = value.y;
                     UpdateContentViewTransform();
+                    NotifyPropertyChanged(scrollOffsetProperty);
                 }
             }
         }
@@ -299,13 +323,17 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This property is controlling the scrolling speed of the horizontal scroller.
         /// </summary>
+        [CreateProperty]
         public float horizontalPageSize
         {
             get { return m_HorizontalPageSize; }
             set
             {
+                var previous = m_HorizontalPageSize;
                 m_HorizontalPageSize = value;
                 UpdateHorizontalSliderPageSize();
+                if (!Mathf.Approximately(previous, m_HorizontalPageSize))
+                    NotifyPropertyChanged(horizontalPageSizeProperty);
             }
         }
 
@@ -314,13 +342,17 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This property is controlling the scrolling speed of the vertical scroller.
         /// </summary>
+        [CreateProperty]
         public float verticalPageSize
         {
             get { return m_VerticalPageSize; }
             set
             {
+                var previous = m_VerticalPageSize;
                 m_VerticalPageSize = value;
                 UpdateVerticalSliderPageSize();
+                if (!Mathf.Approximately(previous, m_VerticalPageSize))
+                    NotifyPropertyChanged(verticalPageSizeProperty);
             }
         }
 
@@ -344,10 +376,17 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The deceleration rate is the speed reduction per second. A value of 0.5 halves the speed each second. A value of 0 stops the scrolling immediately.
         /// </remarks>
+        [CreateProperty]
         public float scrollDecelerationRate
         {
             get { return m_ScrollDecelerationRate; }
-            set { m_ScrollDecelerationRate = Mathf.Max(0f, value); }
+            set
+            {
+                var previous = m_ScrollDecelerationRate;
+                m_ScrollDecelerationRate = Mathf.Max(0f, value);
+                if (!Mathf.Approximately(previous, m_ScrollDecelerationRate))
+                    NotifyPropertyChanged(scrollDecelerationRateProperty);
+            }
         }
 
         // For elastic behavior: how long it takes to go back to original position.
@@ -359,10 +398,17 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Elasticity is only used when <see cref="touchScrollBehavior"/> is set to Elastic.
         /// </remarks>
+        [CreateProperty]
         public float elasticity
         {
             get { return m_Elasticity;}
-            set { m_Elasticity = Mathf.Max(0f, value); }
+            set
+            {
+                var previous = m_Elasticity;
+                m_Elasticity = Mathf.Max(0f, value);
+                if (!Mathf.Approximately(previous, m_Elasticity))
+                    NotifyPropertyChanged(elasticityProperty);
+            }
         }
 
         /// <summary>
@@ -388,11 +434,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The behavior to use when a user tries to scroll past the boundaries of the ScrollView content using a touch interaction.
         /// </summary>
+        [CreateProperty]
         public TouchScrollBehavior touchScrollBehavior
         {
             get { return m_TouchScrollBehavior; }
             set
             {
+                var previous = m_TouchScrollBehavior;
                 m_TouchScrollBehavior = value;
                 if (m_TouchScrollBehavior == TouchScrollBehavior.Clamped)
                 {
@@ -404,6 +452,8 @@ namespace UnityEngine.UIElements
                     horizontalScroller.slider.clamped = false;
                     verticalScroller.slider.clamped = false;
                 }
+                if (previous != m_TouchScrollBehavior)
+                    NotifyPropertyChanged(touchScrollBehaviorProperty);
             }
         }
 
@@ -433,10 +483,17 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The behavior to use when scrolling reaches limits of a nested <see cref="ScrollView"/>.
         /// </summary>
+        [CreateProperty]
         public NestedInteractionKind nestedInteractionKind
         {
             get => m_NestedInteractionKind;
-            set => m_NestedInteractionKind = value;
+            set
+            {
+                var previous = m_NestedInteractionKind;
+                m_NestedInteractionKind = value;
+                if (previous != m_NestedInteractionKind)
+                    NotifyPropertyChanged(nestedInteractionKindProperty);
+            }
         }
 
         void OnHorizontalScrollDragElementChanged(GeometryChangedEvent evt)
@@ -611,16 +668,16 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Represents the visible part of contentContainer.
         /// </summary>
-        public VisualElement contentViewport { get; private set; } // Represents the visible part of contentContainer
+        public VisualElement contentViewport { get; } // Represents the visible part of contentContainer
 
         /// <summary>
         /// Horizontal scrollbar.
         /// </summary>
-        public Scroller horizontalScroller { get; private set; }
+        public Scroller horizontalScroller { get; }
         /// <summary>
         /// Vertical Scrollbar.
         /// </summary>
-        public Scroller verticalScroller { get; private set; }
+        public Scroller verticalScroller { get; }
 
         private VisualElement m_ContentContainer;
         private VisualElement m_ContentAndVerticalScrollContainer;
@@ -798,6 +855,7 @@ namespace UnityEngine.UIElements
         /// <see cref="ScrollViewMode"/>. When the value changes, the class list matching the old value is removed and
         /// the class list matching the new value is added.
         /// </remarks>
+        [CreateProperty]
         public ScrollViewMode mode
         {
             get => m_Mode;
@@ -806,6 +864,7 @@ namespace UnityEngine.UIElements
                 if (m_Mode == value)
                     return;
                 SetScrollViewMode(value);
+                NotifyPropertyChanged(modeProperty);
             }
         }
 

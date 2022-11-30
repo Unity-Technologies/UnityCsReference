@@ -1829,7 +1829,7 @@ namespace UnityEditor.UIElements.Bindings
 
             int enumValueAsInt = property.intValue;
 
-            Enum value = GetEnumFromSerializedFromInt(manageType, enumValueAsInt);
+            Enum value = GetEnumFromSerializedFromInt(manageType, ref enumValueAsInt);
 
             if (c is EnumField)
                 (c as EnumField).Init(value);
@@ -1865,24 +1865,41 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        static Enum GetEnumFromSerializedFromInt(Type managedType, int enumValueAsInt)
+        static Enum GetEnumFromSerializedFromInt(Type managedType, ref int enumValueAsInt)
         {
             var enumData = EnumDataUtility.GetCachedEnumData(managedType);
 
             if (enumData.flags)
                 return EnumDataUtility.IntToEnumFlags(managedType, enumValueAsInt);
-            else
-            {
-                int valueIndex = Array.IndexOf(enumData.flagValues, enumValueAsInt);
+            int valueIndex = Array.IndexOf(enumData.flagValues, enumValueAsInt);
 
-                if (valueIndex != -1)
-                    return enumData.values[valueIndex];
-                else
+            if (valueIndex != -1)
+                return enumData.values[valueIndex];
+
+            // For binding, return the minimal default value if enumValueAsInt is smaller than the smallest enum value,
+            // especially if no default enum is defined
+            if (enumData.flagValues.Length != 0)
+            {
+                var minIntValue = enumData.flagValues[0];
+                var minIntValueIndex = 0;
+                for (int i = 1; i < enumData.flagValues.Length; i++)
                 {
-                    Debug.LogWarning("Error: invalid enum value " + enumValueAsInt + " for type " + managedType);
-                    return null;
+                    if (enumData.flagValues[i] < minIntValue)
+                    {
+                        minIntValueIndex = i;
+                        minIntValue = enumData.flagValues[i];
+                    }
+                }
+
+                if (enumValueAsInt <= minIntValue || (enumValueAsInt == 0 && minIntValue < 0))
+                {
+                    enumValueAsInt = minIntValue;
+                    return enumData.values[minIntValueIndex];
                 }
             }
+
+            Debug.LogWarning("Error: invalid enum value " + enumValueAsInt + " for type " + managedType);
+            return null;
         }
 
         protected override void SyncPropertyToField(BaseField<Enum> c, SerializedProperty p)
@@ -1897,7 +1914,7 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             int enumValueAsInt = p.intValue;
-            field.value = GetEnumFromSerializedFromInt(managedType, enumValueAsInt);
+            field.value = GetEnumFromSerializedFromInt(managedType, ref enumValueAsInt);
             lastEnumValue = enumValueAsInt;
         }
 

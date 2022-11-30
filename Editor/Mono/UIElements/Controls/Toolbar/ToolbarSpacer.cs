@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -12,6 +13,8 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ToolbarSpacer : VisualElement
     {
+        internal static readonly DataBindingProperty flexProperty = nameof(flex);
+
         /// <summary>
         /// Instantiates a <see cref="ToolbarSpacer"/> using the data read from a UXML file.
         /// </summary>
@@ -45,6 +48,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Return true if the spacer stretches or shrinks to occupy available space.
         /// </summary>
+        [CreateProperty]
         public bool flex
         {
             get { return ClassListContains(flexibleSpacerVariantUssClassName); }
@@ -53,6 +57,7 @@ namespace UnityEditor.UIElements
                 if (flex != value)
                 {
                     EnableInClassList(flexibleSpacerVariantUssClassName, value);
+                    NotifyPropertyChanged(flexProperty);
                 }
             }
         }

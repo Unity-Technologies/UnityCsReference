@@ -43,26 +43,6 @@ namespace UnityEditor.UIElements
             get { return base.searchButton; }
         }
 
-        /// <summary>
-        /// The object currently being exposed by the field.
-        /// </summary>
-        /// <remarks>
-        /// If the new value is different from the current value, this method notifies registered callbacks with a <see cref="ChangeEvent{T}"/> of type string.
-        /// </remarks>
-        public new string value
-        {
-            get { return base.value; }
-            set { base.value = value; }
-        }
-
-        /// <summary>
-        /// Sets the value for the toolbar search field without sending a change event.
-        /// </summary>
-        public override void SetValueWithoutNotify(string newValue)
-        {
-            base.SetValueWithoutNotify(newValue);
-        }
-
         // KEEP ABOVE CODE TO BE BACKWARD COMPATIBLE WITH 2019.1 ToolbarSearchField
 
         /// <summary>

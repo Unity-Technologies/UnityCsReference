@@ -339,6 +339,13 @@ namespace UnityEngine
         // Get/Set the Include Layers,
         extern public LayerMask includeLayers { get; set; }
 
+        extern public LowLevelPhysics.GeometryHolder GeometryHolder { get; }
+
+        public T GetGeometry<T>() where T : struct, LowLevelPhysics.IGeometry
+        {
+            return GeometryHolder.As<T>();
+        }
+
         [NativeMethod("Material")]
         extern public PhysicMaterial sharedMaterial { get; set; }
 

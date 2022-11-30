@@ -157,11 +157,6 @@ namespace UnityEngine.UIElements.UIR
         BitmapAllocator32 m_TransformAllocator, m_ClipRectAllocator, m_OpacityAllocator, m_ColorAllocator, m_TextSettingsAllocator; // All allocators take pages from the same storage
         bool m_StorageReallyCreated;
 
-        // Support for absence of vertex texturing
-        bool m_VertexTexturingEnabled;
-        NativeArray<Transform3x4> m_Transforms;
-        NativeArray<Vector4> m_ClipRects;
-
         static int pageWidth { get { return BitmapAllocator32.kPageWidth; } }
         static int pageHeight { get { return 8; } } // 32*8 = 256, can be stored in a byte
 
@@ -203,11 +198,6 @@ namespace UnityEngine.UIElements.UIR
                 alloc.pageLine * allocator.entryHeight + y);
         }
 
-        static int AllocToConstantBufferIndex(BMPAlloc alloc)
-        {
-            return alloc.pageLine * pageWidth + alloc.bitIndex;
-        }
-
         static bool AtlasRectMatchesPage(ref BitmapAllocator32 allocator, BMPAlloc defAlloc, RectInt atlasRect)
         {
             UInt16 x, y;
@@ -217,15 +207,13 @@ namespace UnityEngine.UIElements.UIR
                 (allocator.entryHeight * pageHeight == atlasRect.height);
         }
 
-        public NativeSlice<Transform3x4> transformConstants { get { return m_Transforms; } }
-        public NativeSlice<Vector4> clipRectConstants { get { return m_ClipRects; } }
         public Texture atlas
         {
             get
             {
                 if (m_StorageReallyCreated)
                     return m_Storage.texture;
-                return m_VertexTexturingEnabled ? UIRenderDevice.defaultShaderInfoTexFloat : UIRenderDevice.defaultShaderInfoTexARGB8;
+                return UIRenderDevice.defaultShaderInfoTexFloat;
             }
         }
         public bool internalAtlasCreated { get { return m_StorageReallyCreated; } } // For diagnostics really
@@ -246,28 +234,12 @@ namespace UnityEngine.UIElements.UIR
             m_ColorAllocator.ForceFirstAlloc((ushort)clearColorTexel.x, (ushort)clearColorTexel.y);
             m_TextSettingsAllocator.Construct(pageHeight, 1, 4);
             m_TextSettingsAllocator.ForceFirstAlloc((ushort)defaultTextCoreSettingsTexel.x, (ushort)defaultTextCoreSettingsTexel.y);
-
-            m_VertexTexturingEnabled = UIRenderDevice.vertexTexturingIsAvailable;
-            if (!m_VertexTexturingEnabled)
-            {
-                int constantCount = 20; // Once custom materials are exposed, this number must be parameterized
-                // Note that we can't do a lazy late allocation on the constants array size here (e.g. allocate only the default entry)
-                // because once the material receives an array parameter value for the first time, it clings to its size and never
-                // allows size changes afterwards without recreating the material, so we need to get the size right pessimistically
-                m_Transforms = new NativeArray<Transform3x4>(constantCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                m_ClipRects = new NativeArray<Vector4>(constantCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                m_Transforms[0] = new Transform3x4() { v0 = identityTransformRow0Value, v1 = identityTransformRow1Value, v2 = identityTransformRow2Value };
-                m_ClipRects[0] = infiniteClipRectValue;
-            }
         }
 
         void ReallyCreateStorage()
         {
             // Because we want predictable placement of first pages, 64 will fit all default allocs
-            if (m_VertexTexturingEnabled)
-                m_Storage = new ShaderInfoStorageRGBAFloat(64);
-            else
-                m_Storage = new ShaderInfoStorageRGBA32(64); // If no vertex texturing, only store opacity in RGBA32
+            m_Storage = new ShaderInfoStorageRGBAFloat(64);
 
             // The order of allocation from the atlas below is important. See the comment at the beginning of Construct().
             RectInt rcTransform, rcClipRect, rcOpacity, rcColor, rcTextCoreSettings;
@@ -292,16 +264,11 @@ namespace UnityEngine.UIElements.UIR
             if (!AtlasRectMatchesPage(ref m_TextSettingsAllocator, defaultTextCoreSettings, rcTextCoreSettings))
                 throw new Exception("Atlas text setting allocation failed unexpectedly");
 
-            if (m_VertexTexturingEnabled)
-            {
-                SetTransformValue(identityTransform, identityTransformValue);
-                SetClipRectValue(infiniteClipRect, infiniteClipRectValue);
-            }
-            {
-                SetOpacityValue(fullOpacity, fullOpacityValue.w);
-                SetColorValue(clearColor, clearColorValue);
-                SetTextCoreSettingValue(defaultTextCoreSettings, defaultTextCoreSettingsValue);
-            }
+            SetTransformValue(identityTransform, identityTransformValue);
+            SetClipRectValue(infiniteClipRect, infiniteClipRectValue);
+            SetOpacityValue(fullOpacity, fullOpacityValue.w);
+            SetColorValue(clearColor, clearColorValue);
+            SetTextCoreSettingValue(defaultTextCoreSettings, defaultTextCoreSettingsValue);
 
             m_StorageReallyCreated = true;
         }
@@ -311,10 +278,6 @@ namespace UnityEngine.UIElements.UIR
             if (m_Storage != null)
                 m_Storage.Dispose();
             m_Storage = null;
-            if (m_ClipRects.IsCreated)
-                m_ClipRects.Dispose();
-            if (m_Transforms.IsCreated)
-                m_Transforms.Dispose();
             m_StorageReallyCreated = false;
         }
 
@@ -328,16 +291,7 @@ namespace UnityEngine.UIElements.UIR
             if (!m_StorageReallyCreated)
                 ReallyCreateStorage();
 
-            if (m_VertexTexturingEnabled)
-                return m_TransformAllocator.Allocate(m_Storage);
-
-            var alloc = m_TransformAllocator.Allocate(null); // Don't want to allow new pages
-
-            // If the returned alloc address fits within the constant buffer then succeed, otherwise fail
-            if (AllocToConstantBufferIndex(alloc) < m_Transforms.Length)
-                return alloc;
-            m_TransformAllocator.Free(alloc); // Not really necessary, but feels cleaner
-            return BMPAlloc.Invalid;
+            return m_TransformAllocator.Allocate(m_Storage);
         }
 
         public BMPAlloc AllocClipRect()
@@ -345,16 +299,7 @@ namespace UnityEngine.UIElements.UIR
             if (!m_StorageReallyCreated)
                 ReallyCreateStorage();
 
-            if (m_VertexTexturingEnabled)
-                return m_ClipRectAllocator.Allocate(m_Storage);
-
-            var alloc = m_ClipRectAllocator.Allocate(null); // Don't want to allow new pages
-
-            // If the returned alloc address fits within the constant buffer then succeed, otherwise fail
-            if (AllocToConstantBufferIndex(alloc) < m_ClipRects.Length)
-                return alloc;
-            m_ClipRectAllocator.Free(alloc); // Not really necessary, but feels cleaner
-            return BMPAlloc.Invalid;
+            return m_ClipRectAllocator.Allocate(m_Storage);
         }
 
         public BMPAlloc AllocOpacity()
@@ -384,31 +329,17 @@ namespace UnityEngine.UIElements.UIR
         public void SetTransformValue(BMPAlloc alloc, Matrix4x4 xform)
         {
             Debug.Assert(alloc.IsValid());
-            if (m_VertexTexturingEnabled)
-            {
-                var allocXY = AllocToTexelCoord(ref m_TransformAllocator, alloc);
-                m_Storage.SetTexel(allocXY.x, allocXY.y + 0, xform.GetRow(0));
-                m_Storage.SetTexel(allocXY.x, allocXY.y + 1, xform.GetRow(1));
-                m_Storage.SetTexel(allocXY.x, allocXY.y + 2, xform.GetRow(2));
-            }
-            else
-                m_Transforms[AllocToConstantBufferIndex(alloc)] = new Transform3x4()
-                {
-                    v0 = xform.GetRow(0),
-                    v1 = xform.GetRow(1),
-                    v2 = xform.GetRow(2)
-                };
+            var allocXY = AllocToTexelCoord(ref m_TransformAllocator, alloc);
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 0, xform.GetRow(0));
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 1, xform.GetRow(1));
+            m_Storage.SetTexel(allocXY.x, allocXY.y + 2, xform.GetRow(2));
         }
 
         public void SetClipRectValue(BMPAlloc alloc, Vector4 clipRect)
         {
             Debug.Assert(alloc.IsValid());
-            if (m_VertexTexturingEnabled)
-            {
-                var allocXY = AllocToTexelCoord(ref m_ClipRectAllocator, alloc);
-                m_Storage.SetTexel(allocXY.x, allocXY.y, clipRect);
-            }
-            else m_ClipRects[AllocToConstantBufferIndex(alloc)] = clipRect;
+            var allocXY = AllocToTexelCoord(ref m_ClipRectAllocator, alloc);
+            m_Storage.SetTexel(allocXY.x, allocXY.y, clipRect);
         }
 
         public void SetOpacityValue(BMPAlloc alloc, float opacity)
@@ -471,8 +402,7 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
             UInt16 x = 0, y = 0;
-            if (m_VertexTexturingEnabled)
-                m_TransformAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
+            m_TransformAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
             return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
         }
 
@@ -480,8 +410,7 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(pageWidth == 32 && pageHeight == 8); // Match the bit-shift values below for fast integer division
             UInt16 x = 0, y = 0;
-            if (m_VertexTexturingEnabled)
-                m_ClipRectAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
+            m_ClipRectAllocator.GetAllocPageAtlasLocation(alloc.page, out x, out y);
             return new Color32((byte)(x >> 5), (byte)(y >> 3), (byte)(alloc.pageLine * pageWidth + alloc.bitIndex), 0);
         }
 
