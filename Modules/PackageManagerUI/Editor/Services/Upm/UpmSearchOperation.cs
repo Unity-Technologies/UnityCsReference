@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.PackageManager.Requests;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -14,10 +15,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override string operationErrorMessage => isOfflineMode ? L10n.Tr("Error searching for packages offline.") : L10n.Tr("Error searching for packages.");
 
+        [SerializeField]
+        private long m_ProductId;
+        public override long productId => m_ProductId;
+
         public void SearchAll()
         {
             m_OfflineMode = false;
             m_PackageIdOrName = string.Empty;
+            m_ProductId = 0;
             Start();
         }
 
@@ -26,13 +32,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OfflineMode = true;
             m_Timestamp = timestamp;
             m_PackageIdOrName = string.Empty;
+            m_ProductId = 0;
             Start();
         }
 
-        public void Search(string packageIdOrName)
+        public void Search(string packageIdOrName, long productId)
         {
             m_OfflineMode = false;
             m_PackageIdOrName = packageIdOrName;
+            m_ProductId = productId;
             Start();
         }
 
@@ -41,6 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OfflineMode = true;
             m_Timestamp = timestamp;
             m_PackageIdOrName = packageIdOrName;
+            m_ProductId = 0;
             Start();
         }
 

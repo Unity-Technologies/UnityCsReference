@@ -284,7 +284,10 @@ namespace UnityEditor
                     // Rethrow exceptions during build postprocessing as BuildFailedException, so we don't pretend the build was fine.
                     throw new BuildFailedException(e);
                 }
-                report.AddAppendix(props);
+                if (props != null)
+                {
+                    report.AddAppendix(props);
+                }
 
                 return;
             }

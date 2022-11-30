@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -21,6 +22,13 @@ namespace UnityEngine.UIElements
     /// </summary>
     public partial class TextElement : BindableElement, ITextElement, INotifyValueChanged<string>
     {
+        internal static readonly DataBindingProperty textProperty = nameof(text);
+        internal static readonly DataBindingProperty enableRichTextProperty = nameof(enableRichText);
+        internal static readonly DataBindingProperty parseEscapeSequencesProperty = nameof(parseEscapeSequences);
+        internal static readonly DataBindingProperty isElidedProperty = nameof(isElided);
+        internal static readonly DataBindingProperty displayTooltipWhenElidedProperty = nameof(displayTooltipWhenElided);
+        internal static readonly DataBindingProperty valueProperty = nameof(value);
+
         /// <summary>
         /// Instantiates a <see cref="TextElement"/> using the data read from a UXML file.
         /// </summary>
@@ -143,7 +151,7 @@ namespace UnityEngine.UIElements
             (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private string m_Text = String.Empty;
 
         /// <summary>
@@ -152,6 +160,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Changing this value will implicitly invoke the <see cref="INotifyValueChanged{T}.value"/> setter, which will raise a <see cref="ChangeEvent{T}"/> of type string.
         /// </remarks>
+        [CreateProperty]
         public virtual string text
         {
             get => ((INotifyValueChanged<string>) this).value;
@@ -163,6 +172,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// When false, rich text tags will not be parsed.
         /// </summary>
+        [CreateProperty]
         public bool enableRichText
         {
             get => m_EnableRichText;
@@ -171,6 +181,7 @@ namespace UnityEngine.UIElements
                 if (m_EnableRichText == value) return;
                 m_EnableRichText = value;
                 MarkDirtyRepaint();
+                NotifyPropertyChanged(enableRichTextProperty);
             }
         }
 
@@ -178,6 +189,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Specifies whether escape sequences are displayed as is or if they are replaced by the character they represent.
         /// </summary>
+        [CreateProperty]
         public bool parseEscapeSequences
         {
             get => m_ParseEscapeSequences;
@@ -187,6 +199,7 @@ namespace UnityEngine.UIElements
 
                 m_ParseEscapeSequences = value;
                 MarkDirtyRepaint();
+                NotifyPropertyChanged(parseEscapeSequencesProperty);
             }
         }
 
@@ -196,6 +209,7 @@ namespace UnityEngine.UIElements
         /// When true, a tooltip displays the full version of elided text, and also if a tooltip had been previously
         /// provided, it will be overwritten.
         /// </summary>
+        [CreateProperty]
         public bool displayTooltipWhenElided
         {
             get => m_DisplayTooltipWhenElided;
@@ -206,6 +220,7 @@ namespace UnityEngine.UIElements
                     m_DisplayTooltipWhenElided = value;
                     UpdateVisibleText();
                     MarkDirtyRepaint();
+                    NotifyPropertyChanged(displayTooltipWhenElidedProperty);
                 }
             }
         }
@@ -222,6 +237,7 @@ namespace UnityEngine.UIElements
         ///
         /// The text Element hides elided text, and displays an ellipsis ('...') to indicate that there is hidden overflow content.
         /// </remarks>
+        [CreateProperty(ReadOnly = true)]
         public bool isElided { get; private set; }
 
         internal static readonly string k_EllipsisText = @"..."; // Some web standards seem to suggest "\u2026" (horizontal ellipsis Unicode character)
@@ -421,6 +437,9 @@ namespace UnityEngine.UIElements
                             evt.elementTarget = this;
                             ((INotifyValueChanged<string>) this).SetValueWithoutNotify(value);
                             SendEvent(evt);
+                            NotifyPropertyChanged(valueProperty);
+                            // We fire the property changed for text here because text simply assigns the value.
+                            NotifyPropertyChanged(textProperty);
                         }
                     }
                     else
@@ -429,6 +448,13 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
+        }
+
+        [CreateProperty]
+        private string value
+        {
+            get => ((INotifyValueChanged<string>) this).value;
+            set => ((INotifyValueChanged<string>) this).value = value;
         }
 
         void INotifyValueChanged<string>.SetValueWithoutNotify(string newValue)

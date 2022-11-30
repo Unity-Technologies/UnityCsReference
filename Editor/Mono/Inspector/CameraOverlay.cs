@@ -10,7 +10,7 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
-    [Overlay(id = k_OverlayID, displayName = k_DisplayName)]
+    [Overlay(id = k_OverlayID, displayName = k_DisplayName, defaultDisplay = true)]
     [Icon("Icons/Overlays/CameraPreview.png")]
     class SceneViewCameraOverlay : IMGUIOverlay
     {

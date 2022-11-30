@@ -136,11 +136,18 @@ namespace UnityEngine
             return UnityEngine.Application.CanStreamedLevelBeLoaded(levelName);
         }
 
+#pragma warning disable 618
         public virtual string[] GetBuildTags()
         {
             return UnityEngine.Application.GetBuildTags();
         }
 
+        public virtual void SetBuildTags(string[] buildTags)
+        {
+            UnityEngine.Application.SetBuildTags(buildTags);
+        }
+#pragma warning restore 618
+        
         public virtual UnityEngine.StackTraceLogType GetStackTraceLogType(UnityEngine.LogType logType)
         {
             return UnityEngine.Application.GetStackTraceLogType(logType);
@@ -184,11 +191,6 @@ namespace UnityEngine
         public virtual UnityEngine.AsyncOperation RequestUserAuthorization(UnityEngine.UserAuthorization mode)
         {
             return UnityEngine.Application.RequestUserAuthorization(mode);
-        }
-
-        public virtual void SetBuildTags(string[] buildTags)
-        {
-            UnityEngine.Application.SetBuildTags(buildTags);
         }
 
         public virtual void SetStackTraceLogType(UnityEngine.LogType logType, UnityEngine.StackTraceLogType stackTraceType)

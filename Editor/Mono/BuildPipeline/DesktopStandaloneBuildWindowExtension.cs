@@ -19,15 +19,26 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     protected bool m_HasMonoPlayers;
     protected bool m_HasIl2CppPlayers;
     protected bool m_HasCoreCLRPlayers;
-    protected bool m_HasServerPlayers;
+    protected bool m_HasServerMonoPlayers;
+    protected bool m_HasServerIl2CppPlayers;
     protected bool m_IsRunningOnHostPlatform;
+
+    public bool MonoPlayersInstalled(NamedBuildTarget namedBuildTarget)
+    {
+        return namedBuildTarget == NamedBuildTarget.Server ? m_HasServerMonoPlayers : m_HasMonoPlayers;
+    }
+
+    public bool Il2CppPlayersInstalled(NamedBuildTarget namedBuildTarget)
+    {
+        return namedBuildTarget == NamedBuildTarget.Server ? m_HasServerIl2CppPlayers : m_HasIl2CppPlayers;
+    }
 
     public static void SetArchitectureForPlatform(BuildTarget buildTarget, OSArchitecture architecture)
     {
         EditorUserBuildSettings.SetPlatformSettings(BuildPipeline.GetBuildTargetName(buildTarget), EditorUserBuildSettings.kSettingArchitecture, architecture.ToString().ToLower());
     }
 
-    public DesktopStandaloneBuildWindowExtension(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasCoreCLRPlayers, bool hasServerPlayers)
+    public DesktopStandaloneBuildWindowExtension(bool hasMonoPlayers, bool hasIl2CppPlayers, bool hasCoreCLRPlayers, bool hasServerMonoPlayers, bool hasServerIl2CppPlayers)
     {
         SetupStandaloneSubtargets();
 
@@ -35,7 +46,8 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         m_HasIl2CppPlayers = hasIl2CppPlayers;
         m_HasCoreCLRPlayers = hasCoreCLRPlayers;
         m_HasMonoPlayers = hasMonoPlayers;
-        m_HasServerPlayers = hasServerPlayers;
+        m_HasServerMonoPlayers = hasServerMonoPlayers;
+        m_HasServerIl2CppPlayers = hasServerIl2CppPlayers;
     }
 
     private void SetupStandaloneSubtargets()
@@ -82,30 +94,6 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     {
         public BuildTarget buildTarget;
         public OSArchitecture architecture;
-    }
-
-    private static Dictionary<GUIContent, BuildTargetInfo> GetArchitecturesForPlatform(BuildTarget target)
-    {
-        switch (target)
-        {
-            case BuildTarget.StandaloneWindows:
-            case BuildTarget.StandaloneWindows64:
-                return new Dictionary<GUIContent, BuildTargetInfo>
-                {
-                    { EditorGUIUtility.TrTextContent("Intel 64-bit"), new BuildTargetInfo
-                        {
-                            buildTarget = BuildTarget.StandaloneWindows64,
-                            architecture = OSArchitecture.x64
-                        }},
-                    { EditorGUIUtility.TrTextContent("Intel 32-bit"), new BuildTargetInfo
-                        {
-                            buildTarget = BuildTarget.StandaloneWindows,
-                            architecture = OSArchitecture.x86
-                        }},
-                };
-            default:
-                return null;
-        }
     }
 
     private static BuildTarget DefaultTargetForPlatform(BuildTarget target)
@@ -186,30 +174,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         int selectedIndex = Math.Max(0, Array.IndexOf(m_StandaloneSubtargets, DefaultTargetForPlatform(selectedTarget)));
         int newIndex = EditorGUILayout.Popup(m_StandaloneTarget, selectedIndex, m_StandaloneSubtargetStrings);
 
-        if (newIndex == selectedIndex)
-        {
-            Dictionary<GUIContent, BuildTargetInfo> architectures = GetArchitecturesForPlatform(selectedTarget);
-            if (null != architectures)
-            {
-                // Display architectures for the current target platform
-                GUIContent[] architectureNames = new List<GUIContent>(architectures.Keys).ToArray();
-                int selectedArchitecture = 0;
-
-                // Grab m_Architecture index for currently selected target
-                foreach (var architecture in architectures)
-                {
-                    if (architecture.Value.buildTarget == selectedTarget)
-                    {
-                        selectedArchitecture = System.Math.Max(0, System.Array.IndexOf(architectureNames, architecture.Key));
-                        break;
-                    }
-                }
-
-                selectedArchitecture = EditorGUILayout.Popup(m_Architecture, selectedArchitecture, architectureNames);
-                newTarget = architectures[architectureNames[selectedArchitecture]];
-            }
-        }
-        else
+        if (newIndex != selectedIndex)
         {
             newTarget = DefaultArchitectureForTarget(m_StandaloneSubtargets[newIndex]);
         }
@@ -223,7 +188,6 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         }
 
         ShowArchitectureSpecificOptions();
-
         ShowBackendErrorIfNeeded();
     }
 
@@ -246,22 +210,27 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         var namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
         var scriptingBackend = PlayerSettings.GetScriptingBackend(namedBuildTarget);
 
+        /*
         if (namedBuildTarget == NamedBuildTarget.Server)
         {
-            if(!m_HasServerPlayers)
-                return $"Dedicated Server support for {GetHostPlatformName()} is not installed.";
+            if (scriptingBackend == ScriptingImplementation.Mono2x && !m_HasServerMonoPlayers)
+                return $"Currently selected scripting backend (Mono) is not installed for {GetHostPlatformName()}.";
+
+            if (scriptingBackend == ScriptingImplementation.IL2CPP && !m_HasServerIl2CppPlayers)
+                return $"Currently selected scripting backend (IL2CPP) is not installed for {GetHostPlatformName()}.";
 
             if (scriptingBackend == ScriptingImplementation.IL2CPP && !m_IsRunningOnHostPlatform)
                 return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
 
             return null;
         }
+        */
 
         switch(scriptingBackend)
         {
             case ScriptingImplementation.Mono2x:
             {
-                if (!m_HasMonoPlayers)
+                if (!MonoPlayersInstalled(namedBuildTarget))
                     return "Currently selected scripting backend (Mono) is not installed.";
                 break;
             }
@@ -276,7 +245,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             {
                 if (!m_IsRunningOnHostPlatform)
                     return string.Format("{0} IL2CPP player can only be built on {0}.", GetHostPlatformName());
-                if (!m_HasIl2CppPlayers)
+                if (!Il2CppPlayersInstalled(namedBuildTarget))
                     return "Currently selected scripting backend (IL2CPP) is not installed.";
                 break;
             }
@@ -285,8 +254,6 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
                 return $"Unknown scripting backend: {scriptingBackend}";
             }
         }
-
-
 
         return null;
     }

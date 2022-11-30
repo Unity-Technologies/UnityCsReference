@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -128,6 +129,14 @@ namespace UnityEngine.UIElements
     // Text editing and selection management implementation
     public partial class TextElement : ITextEdition
     {
+        internal static readonly DataBindingProperty autoCorrectionProperty = nameof(autoCorrection);
+        internal static readonly DataBindingProperty hideMobileInputProperty = nameof(hideMobileInput);
+        internal static readonly DataBindingProperty keyboardTypeProperty = nameof(keyboardType);
+        internal static readonly DataBindingProperty isReadOnlyProperty = nameof(isReadOnly);
+        internal static readonly DataBindingProperty isPasswordProperty = nameof(isPassword);
+        internal static readonly DataBindingProperty maxLengthProperty = nameof(maxLength);
+        internal static readonly DataBindingProperty maskCharProperty = nameof(maskChar);
+
         /// <summary>
         /// Retrieves this TextElement's ITextEdition
         /// </summary>
@@ -163,7 +172,20 @@ namespace UnityEngine.UIElements
         TouchScreenKeyboardType ITextEdition.keyboardType
         {
             get => m_KeyboardType;
-            set => m_KeyboardType = value;
+            set
+            {
+                if (m_KeyboardType == value)
+                    return;
+                m_KeyboardType = value;
+                NotifyPropertyChanged(keyboardTypeProperty);
+            }
+        }
+
+        [CreateProperty]
+        private TouchScreenKeyboardType keyboardType
+        {
+            get => edition.keyboardType;
+            set => edition.keyboardType = value;
         }
 
         bool m_HideMobileInput;
@@ -184,6 +206,7 @@ namespace UnityEngine.UIElements
             }
             set
             {
+                var current = m_HideMobileInput;
                 switch(Application.platform)
                 {
                     case RuntimePlatform.Android:
@@ -196,7 +219,16 @@ namespace UnityEngine.UIElements
                         m_HideMobileInput = value;
                         break;
                 }
+                if (current != m_HideMobileInput)
+                    NotifyPropertyChanged(hideMobileInputProperty);
             }
+        }
+
+        [CreateProperty]
+        private bool hideMobileInput
+        {
+            get => edition.hideMobileInput;
+            set => edition.hideMobileInput = value;
         }
 
         bool m_IsReadOnly = true;
@@ -212,7 +244,15 @@ namespace UnityEngine.UIElements
                 editingManipulator = value ? null : new TextEditingManipulator(this);
                 m_IsReadOnly = value;
                 onIsReadOnlyChanged?.Invoke(value);
+                NotifyPropertyChanged(isReadOnlyProperty);
             }
+        }
+
+        [CreateProperty]
+        private bool isReadOnly
+        {
+            get => edition.isReadOnly;
+            set => edition.isReadOnly = value;
         }
 
         void ProcessMenuCommand(string command)
@@ -318,9 +358,19 @@ namespace UnityEngine.UIElements
             get => m_MaxLength;
             set
             {
+                if (m_MaxLength == value)
+                    return;
                 m_MaxLength = value;
                 text = edition.CullString(text);
+                NotifyPropertyChanged(maxLengthProperty);
             }
+        }
+
+        [CreateProperty]
+        private int maxLength
+        {
+            get => edition.maxLength;
+            set => edition.maxLength = value;
         }
 
         string m_PlaceholderText = "";
@@ -407,8 +457,16 @@ namespace UnityEngine.UIElements
                     {
                         IncrementVersion(VersionChangeType.Repaint);
                     }
+                    NotifyPropertyChanged(maskCharProperty);
                 }
             }
+        }
+
+        [CreateProperty]
+        private char maskChar
+        {
+            get => edition.maskChar;
+            set => edition.maskChar = value;
         }
 
         char effectiveMaskChar
@@ -425,8 +483,16 @@ namespace UnityEngine.UIElements
                 {
                     m_IsPassword = value;
                     IncrementVersion(VersionChangeType.Repaint);
+                    NotifyPropertyChanged(isPasswordProperty);
                 }
             }
+        }
+
+        [CreateProperty]
+        private bool isPassword
+        {
+            get => edition.isPassword;
+            set => edition.isPassword = value;
         }
 
         bool ITextEdition.hidePlaceholderOnFocus
@@ -449,7 +515,20 @@ namespace UnityEngine.UIElements
         bool ITextEdition.autoCorrection
         {
             get => m_AutoCorrection;
-            set => m_AutoCorrection = value;
+            set
+            {
+                if (m_AutoCorrection == value)
+                    return;
+                m_AutoCorrection = value;
+                NotifyPropertyChanged(autoCorrectionProperty);
+            }
+        }
+
+        [CreateProperty]
+        private bool autoCorrection
+        {
+            get => edition.autoCorrection;
+            set => edition.autoCorrection = value;
         }
 
         string m_RenderedText;

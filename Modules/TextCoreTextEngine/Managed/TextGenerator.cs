@@ -79,7 +79,37 @@ namespace UnityEngine.TextCore.Text
         public float charWidthMaxAdj;
         internal TextInputSource inputSource = TextInputSource.TextString;
 
-        public bool Equals(TextGenerationSettings other)
+        private bool m_CachedHashCodeIsIntialized = false;
+        private int m_CachedHashCode;
+        public int cachedHashCode
+        {
+            get
+            {
+                if (!m_CachedHashCodeIsIntialized)
+                {
+                    m_CachedHashCode = GetHashCode();
+                    m_CachedHashCodeIsIntialized = true;
+                }
+                return m_CachedHashCode;
+            }
+        }
+
+        private bool m_CachedGeometryHashCodeIsIntialized = false;
+        private int m_CachedGeometryHashCode;
+        public int cachedGeomertyHashCode
+        {
+            get
+            {
+                if (!m_CachedGeometryHashCodeIsIntialized)
+                {
+                    m_CachedGeometryHashCode = GetGeomertyHashCode();
+                    m_CachedGeometryHashCodeIsIntialized = true;
+                }
+                return m_CachedGeometryHashCode;
+            }
+        }
+
+	public bool Equals(TextGenerationSettings other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
@@ -175,6 +205,54 @@ namespace UnityEngine.TextCore.Text
             hashCode.Add((int)inputSource);
             hashCode.Add(isPlaceholder);
             return hashCode.ToHashCode();
+        }
+
+        public int GetGeomertyHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (text != null ? text.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ screenRect.GetHashCode();
+                hashCode = (hashCode * 397) ^ margins.GetHashCode();
+                hashCode = (hashCode * 397) ^ scale.GetHashCode();
+                hashCode = (hashCode * 397) ^ (fontAsset != null ? fontAsset.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (spriteAsset != null ? spriteAsset.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (int)fontStyle;
+                hashCode = (hashCode * 397) ^ (int)textAlignment;
+                hashCode = (hashCode * 397) ^ (int)overflowMode;
+                hashCode = (hashCode * 397) ^ wordWrap.GetHashCode();
+                hashCode = (hashCode * 397) ^ wordWrappingRatio.GetHashCode();
+                hashCode = (hashCode * 397) ^ fontSize.GetHashCode();
+                hashCode = (hashCode * 397) ^ autoSize.GetHashCode();
+                hashCode = (hashCode * 397) ^ fontSizeMin.GetHashCode();
+                hashCode = (hashCode * 397) ^ fontSizeMax.GetHashCode();
+                hashCode = (hashCode * 397) ^ enableKerning.GetHashCode();
+                hashCode = (hashCode * 397) ^ richText.GetHashCode();
+                hashCode = (hashCode * 397) ^ isRightToLeft.GetHashCode();
+                hashCode = (hashCode * 397) ^ extraPadding.GetHashCode();
+                hashCode = (hashCode * 397) ^ parseControlCharacters.GetHashCode();
+                hashCode = (hashCode * 397) ^ characterSpacing.GetHashCode();
+                hashCode = (hashCode * 397) ^ wordSpacing.GetHashCode();
+                hashCode = (hashCode * 397) ^ lineSpacing.GetHashCode();
+                hashCode = (hashCode * 397) ^ paragraphSpacing.GetHashCode();
+                hashCode = (hashCode * 397) ^ lineSpacingMax.GetHashCode();
+                hashCode = (hashCode * 397) ^ maxVisibleCharacters;
+                hashCode = (hashCode * 397) ^ maxVisibleWords;
+                hashCode = (hashCode * 397) ^ maxVisibleLines;
+                hashCode = (hashCode * 397) ^ firstVisibleCharacter;
+                hashCode = (hashCode * 397) ^ useMaxVisibleDescender.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)fontWeight;
+                hashCode = (hashCode * 397) ^ pageToDisplay;
+                hashCode = (hashCode * 397) ^ (int)horizontalMapping;
+                hashCode = (hashCode * 397) ^ (int)verticalMapping;
+                hashCode = (hashCode * 397) ^ uvLineOffset.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)geometrySortingOrder;
+                hashCode = (hashCode * 397) ^ inverseYAxis.GetHashCode();
+                hashCode = (hashCode * 397) ^ charWidthMaxAdj.GetHashCode();
+                hashCode = (hashCode * 397) ^ (int)textWrappingMode;
+                hashCode = (hashCode * 397) ^ isOrthographic.GetHashCode();
+                return hashCode;
+            }
         }
 
         public static bool operator ==(TextGenerationSettings left, TextGenerationSettings right)
@@ -288,7 +366,7 @@ namespace UnityEngine.TextCore.Text
                 return Vector2.zero;
             }
 
-            TextInfo textInfo = new TextInfo();
+            TextInfo textInfo = new TextInfo(VertexDataLayout.Mesh);
             GenerateText(settings, textInfo);
 
             return GetCursorPosition(textInfo, settings.screenRect, index);
@@ -391,7 +469,7 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         protected bool m_VertexBufferAutoSizeReduction = false;
 
-        private char[] m_HtmlTag = new char[128]; // Maximum length of rich text tag. This is pre-allocated to avoid GC.
+        private char[] m_HtmlTag = new char[256]; // Maximum length of rich text tag. This is pre-allocated to avoid GC.
 
         internal HighlightState m_HighlightState = new HighlightState(Color.white, Offset.zero);
 
@@ -5189,7 +5267,7 @@ namespace UnityEngine.TextCore.Text
             int verticesCount = index + 12;
 
             // Check to make sure our current mesh buffer allocations can hold these new Quads.
-            if (verticesCount > textInfo.meshInfo[underlineMaterialIndex].vertices.Length)
+            if (verticesCount > textInfo.meshInfo[underlineMaterialIndex].vertexBufferSize)
             {
                 // Resize Mesh Buffers
                 textInfo.meshInfo[underlineMaterialIndex].ResizeMeshInfo(verticesCount / 4);
@@ -5216,25 +5294,49 @@ namespace UnityEngine.TextCore.Text
 
             // UNDERLINE VERTICES FOR (3) LINE SEGMENTS
             #region UNDERLINE VERTICES
-            Vector3[] vertices = textInfo.meshInfo[underlineMaterialIndex].vertices;
+            var vertexData = textInfo.meshInfo[underlineMaterialIndex].vertexData;
 
-            // Front Part of the Underline
-            vertices[index + 0] = start + new Vector3(0, 0 - (underlineThickness + m_Padding) * maxScale, 0); // BL
-            vertices[index + 1] = start + new Vector3(0, m_Padding * maxScale, 0); // TL
-            vertices[index + 2] = vertices[index + 1] + new Vector3(segmentWidth, 0, 0); // TR
-            vertices[index + 3] = vertices[index + 0] + new Vector3(segmentWidth, 0, 0); // BR
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                // Front Part of the Underline
+                vertexData[index + 0].position = start + new Vector3(0, 0 - (underlineThickness + m_Padding) * maxScale, 0); // BL
+                vertexData[index + 1].position = start + new Vector3(0, m_Padding * maxScale, 0); // TL
+                vertexData[index + 2].position = vertexData[index + 1].position + new Vector3(segmentWidth, 0, 0); // TR
+                vertexData[index + 3].position = vertexData[index + 0].position + new Vector3(segmentWidth, 0, 0); // BR
 
-            // Middle Part of the Underline
-            vertices[index + 4] = vertices[index + 3]; // BL
-            vertices[index + 5] = vertices[index + 2]; // TL
-            vertices[index + 6] = end + new Vector3(-segmentWidth, m_Padding * maxScale, 0); // TR
-            vertices[index + 7] = end + new Vector3(-segmentWidth, -(underlineThickness + m_Padding) * maxScale, 0); // BR
+                // Middle Part of the Underline
+                vertexData[index + 4].position = vertexData[index + 3].position; // BL
+                vertexData[index + 5].position = vertexData[index + 2].position; // TL
+                vertexData[index + 6].position = end + new Vector3(-segmentWidth, m_Padding * maxScale, 0); // TR
+                vertexData[index + 7].position = end + new Vector3(-segmentWidth, -(underlineThickness + m_Padding) * maxScale, 0); // BR
 
-            // End Part of the Underline
-            vertices[index + 8] = vertices[index + 7]; // BL
-            vertices[index + 9] = vertices[index + 6]; // TL
-            vertices[index + 10] = end + new Vector3(0, m_Padding * maxScale, 0); // TR
-            vertices[index + 11] = end + new Vector3(0, -(underlineThickness + m_Padding) * maxScale, 0); // BR
+                // End Part of the Underline
+                vertexData[index + 8].position = vertexData[index + 7].position; // BL
+                vertexData[index + 9].position = vertexData[index + 6].position; // TL
+                vertexData[index + 10].position = end + new Vector3(0, m_Padding * maxScale, 0); // TR
+                vertexData[index + 11].position = end + new Vector3(0, -(underlineThickness + m_Padding) * maxScale, 0); // BR
+            }
+            else
+            {
+                Vector3[] vertices = textInfo.meshInfo[underlineMaterialIndex].vertices;
+                // Front Part of the Underline
+                vertices[index + 0] = start + new Vector3(0, 0 - (underlineThickness + m_Padding) * maxScale, 0); // BL
+                vertices[index + 1] = start + new Vector3(0, m_Padding * maxScale, 0); // TL
+                vertices[index + 2] = vertices[index + 1] + new Vector3(segmentWidth, 0, 0); // TR
+                vertices[index + 3] = vertices[index + 0] + new Vector3(segmentWidth, 0, 0); // BR
+
+                // Middle Part of the Underline
+                vertices[index + 4] = vertices[index + 3]; // BL
+                vertices[index + 5] = vertices[index + 2]; // TL
+                vertices[index + 6] = end + new Vector3(-segmentWidth, m_Padding * maxScale, 0); // TR
+                vertices[index + 7] = end + new Vector3(-segmentWidth, -(underlineThickness + m_Padding) * maxScale, 0); // BR
+
+                // End Part of the Underline
+                vertices[index + 8] = vertices[index + 7]; // BL
+                vertices[index + 9] = vertices[index + 6]; // TL
+                vertices[index + 10] = end + new Vector3(0, m_Padding * maxScale, 0); // TR
+                vertices[index + 11] = end + new Vector3(0, -(underlineThickness + m_Padding) * maxScale, 0); // BR
+            }
             #endregion
 
             // Handle potential axis inversion.
@@ -5242,40 +5344,29 @@ namespace UnityEngine.TextCore.Text
             {
                 Vector3 axisOffset;
                 axisOffset.x = 0;
-                axisOffset.y = generationSettings.screenRect.y + generationSettings.screenRect.height;
+                axisOffset.y = generationSettings.screenRect.height;
                 axisOffset.z = 0;
 
-                //vertices[index + 0].x += axisOffset.x;
-                vertices[index + 0].y = (vertices[index + 0].y * -1) + axisOffset.y;
-                //vertices[index + 1].x += axisOffset.x;
-                vertices[index + 1].y = (vertices[index + 1].y * -1) + axisOffset.y;
-                //vertices[index + 2].x += axisOffset.x;
-                vertices[index + 2].y = (vertices[index + 2].y * -1) + axisOffset.y;
-                //vertices[index + 3].x += axisOffset.x;
-                vertices[index + 3].y = (vertices[index + 3].y * -1) + axisOffset.y;
-
-                //vertices[index + 4].x += axisOffset.x;
-                vertices[index + 4].y = (vertices[index + 4].y * -1) + axisOffset.y;
-                //vertices[index + 5].x += axisOffset.x;
-                vertices[index + 5].y = (vertices[index + 5].y * -1) + axisOffset.y;
-                //vertices[index + 6].x += axisOffset.x;
-                vertices[index + 6].y = (vertices[index + 6].y * -1) + axisOffset.y;
-                //vertices[index + 7].x += axisOffset.x;
-                vertices[index + 7].y = (vertices[index + 7].y * -1) + axisOffset.y;
-
-                //vertices[index + 8].x += axisOffset.x;
-                vertices[index + 8].y = (vertices[index + 8].y * -1) + axisOffset.y;
-                //vertices[index + 9].x += axisOffset.x;
-                vertices[index + 9].y = (vertices[index + 9].y * -1) + axisOffset.y;
-                //vertices[index + 10].x += axisOffset.x;
-                vertices[index + 10].y = (vertices[index + 10].y * -1) + axisOffset.y;
-                //vertices[index + 11].x += axisOffset.x;
-                vertices[index + 11].y = (vertices[index + 11].y * -1) + axisOffset.y;
+                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+                {
+                    for (int i = 0; i < 12; i++)
+                    {
+                        //vertices[index + i].x += axisOffset.x;
+                        textInfo.meshInfo[underlineMaterialIndex].vertexData[index + i].position.y = textInfo.meshInfo[underlineMaterialIndex].vertexData[index + i].position.y * -1 + axisOffset.y;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < 12; i++)
+                    {
+                        //vertices[index + i].x += axisOffset.x;
+                        textInfo.meshInfo[underlineMaterialIndex].vertices[index + i].y = textInfo.meshInfo[underlineMaterialIndex].vertices[index + i].y * -1 + axisOffset.y;
+                    }
+                }
             }
 
             // UNDERLINE UV0
             #region HANDLE UV0
-            Vector4[] uvs0 = textInfo.meshInfo[underlineMaterialIndex].uvs0;
 
             int atlasWidth = m_Underline.fontAsset.atlasWidth;
             int atlasHeight = m_Underline.fontAsset.atlasHeight;
@@ -5292,52 +5383,105 @@ namespace UnityEngine.TextCore.Text
             Vector4 uv6 = new Vector4((underlineGlyphRect.x + endPadding + underlineGlyphRect.width) / atlasWidth, uv1.y, 0, xScale); // End Part - Bottom Right
             Vector4 uv7 = new Vector4(uv6.x, uv0.y, 0, xScale); // End Part - Top Right
 
-            // Left Part of the Underline
-            uvs0[0 + index] = uv0; // BL
-            uvs0[1 + index] = uv1; // TL
-            uvs0[2 + index] = uv2; // TR
-            uvs0[3 + index] = uv3; // BR
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                // Left Part of the Underline
+                vertexData[0 + index].uv0 = uv0; // BL
+                vertexData[1 + index].uv0 = uv1; // TL
+                vertexData[2 + index].uv0 = uv2; // TR
+                vertexData[3 + index].uv0 = uv3; // BR
 
-            // Middle Part of the Underline
-            uvs0[4 + index] = new Vector4(uv2.x - uv2.x * 0.001f, uv0.y, 0, xScale);
-            uvs0[5 + index] = new Vector4(uv2.x - uv2.x * 0.001f, uv1.y, 0, xScale);
-            uvs0[6 + index] = new Vector4(uv2.x + uv2.x * 0.001f, uv1.y, 0, xScale);
-            uvs0[7 + index] = new Vector4(uv2.x + uv2.x * 0.001f, uv0.y, 0, xScale);
+                // Middle Part of the Underline
+                vertexData[4 + index].uv0 = new Vector4(uv2.x - uv2.x * 0.001f, uv0.y, 0, xScale);
+                vertexData[5 + index].uv0 = new Vector4(uv2.x - uv2.x * 0.001f, uv1.y, 0, xScale);
+                vertexData[6 + index].uv0 = new Vector4(uv2.x + uv2.x * 0.001f, uv1.y, 0, xScale);
+                vertexData[7 + index].uv0 = new Vector4(uv2.x + uv2.x * 0.001f, uv0.y, 0, xScale);
 
-            // Right Part of the Underline
-            uvs0[8 + index] = uv5;
-            uvs0[9 + index] = uv4;
-            uvs0[10 + index] = uv6;
-            uvs0[11 + index] = uv7;
+                // Right Part of the Underline
+                vertexData[8 + index].uv0 = uv5;
+                vertexData[9 + index].uv0 = uv4;
+                vertexData[10 + index].uv0 = uv6;
+                vertexData[11 + index].uv0 = uv7;
+            }
+            else
+            {
+                Vector4[] uvs0 = textInfo.meshInfo[underlineMaterialIndex].uvs0;
+                // Left Part of the Underline
+                uvs0[0 + index] = uv0; // BL
+                uvs0[1 + index] = uv1; // TL
+                uvs0[2 + index] = uv2; // TR
+                uvs0[3 + index] = uv3; // BR
+
+                // Middle Part of the Underline
+                uvs0[4 + index] = new Vector4(uv2.x - uv2.x * 0.001f, uv0.y, 0, xScale);
+                uvs0[5 + index] = new Vector4(uv2.x - uv2.x * 0.001f, uv1.y, 0, xScale);
+                uvs0[6 + index] = new Vector4(uv2.x + uv2.x * 0.001f, uv1.y, 0, xScale);
+                uvs0[7 + index] = new Vector4(uv2.x + uv2.x * 0.001f, uv0.y, 0, xScale);
+
+                // Right Part of the Underline
+                uvs0[8 + index] = uv5;
+                uvs0[9 + index] = uv4;
+                uvs0[10 + index] = uv6;
+                uvs0[11 + index] = uv7;
+            }
             #endregion
 
             // UNDERLINE UV2
             #region HANDLE UV2 - SDF SCALE
             // UV1 contains Face / Border UV layout.
-            float minUvX = 0;
-            float maxUvX = (vertices[index + 2].x - start.x) / (end.x - start.x);
+            float min_UvX = 0;
 
-            Vector2[] uvs2 = textInfo.meshInfo[underlineMaterialIndex].uvs2;
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                float max_UvX = (vertexData[index + 2].position.x - start.x) / (end.x - start.x);
 
-            uvs2[0 + index] = TextGeneratorUtilities.PackUV(0, 0, xScale);
-            uvs2[1 + index] = TextGeneratorUtilities.PackUV(0, 1, xScale);
-            uvs2[2 + index] = TextGeneratorUtilities.PackUV(maxUvX, 1, xScale);
-            uvs2[3 + index] = TextGeneratorUtilities.PackUV(maxUvX, 0, xScale);
+                vertexData[0 + index].uv2 = new Vector2(0, 0);
+                vertexData[1 + index].uv2 = new Vector2(0, 1);
+                vertexData[2 + index].uv2 = new Vector2(max_UvX, 1);
+                vertexData[3 + index].uv2 = new Vector2(max_UvX, 0);
 
-            minUvX = (vertices[index + 4].x - start.x) / (end.x - start.x);
-            maxUvX = (vertices[index + 6].x - start.x) / (end.x - start.x);
+                min_UvX = (vertexData[index + 4].position.x - start.x) / (end.x - start.x);
+                max_UvX = (vertexData[index + 6].position.x - start.x) / (end.x - start.x);
 
-            uvs2[4 + index] = TextGeneratorUtilities.PackUV(minUvX, 0, xScale);
-            uvs2[5 + index] = TextGeneratorUtilities.PackUV(minUvX, 1, xScale);
-            uvs2[6 + index] = TextGeneratorUtilities.PackUV(maxUvX, 1, xScale);
-            uvs2[7 + index] = TextGeneratorUtilities.PackUV(maxUvX, 0, xScale);
+                vertexData[4 + index].uv2 = new Vector2(min_UvX, 0);
+                vertexData[5 + index].uv2 = new Vector2(min_UvX, 1);
+                vertexData[6 + index].uv2 = new Vector2(max_UvX, 1);
+                vertexData[7 + index].uv2 = new Vector2(max_UvX, 0);
 
-            minUvX = (vertices[index + 8].x - start.x) / (end.x - start.x);
+                min_UvX = (vertexData[index + 8].position.x - start.x) / (end.x - start.x);
 
-            uvs2[8 + index] = TextGeneratorUtilities.PackUV(minUvX, 0, xScale);
-            uvs2[9 + index] = TextGeneratorUtilities.PackUV(minUvX, 1, xScale);
-            uvs2[10 + index] = TextGeneratorUtilities.PackUV(1, 1, xScale);
-            uvs2[11 + index] = TextGeneratorUtilities.PackUV(1, 0, xScale);
+                vertexData[8 + index].uv2 = new Vector2(min_UvX, 0);
+                vertexData[9 + index].uv2 = new Vector2(min_UvX, 1);
+                vertexData[10 + index].uv2 = new Vector2(1, 1);
+                vertexData[11 + index].uv2 = new Vector2(1, 0);
+            }
+            else
+            {
+                Vector3[] vertices = textInfo.meshInfo[underlineMaterialIndex].vertices;
+                float max_UvX = (vertices[index + 2].x - start.x) / (end.x - start.x);
+
+                Vector2[] uvs2 = textInfo.meshInfo[underlineMaterialIndex].uvs2;
+
+                uvs2[0 + index] = new Vector2(0, 0);
+                uvs2[1 + index] = new Vector2(0, 1);
+                uvs2[2 + index] = new Vector2(max_UvX, 1);
+                uvs2[3 + index] = new Vector2(max_UvX, 0);
+
+                min_UvX = (vertices[index + 4].x - start.x) / (end.x - start.x);
+                max_UvX = (vertices[index + 6].x - start.x) / (end.x - start.x);
+
+                uvs2[4 + index] = new Vector2(min_UvX, 0);
+                uvs2[5 + index] = new Vector2(min_UvX, 1);
+                uvs2[6 + index] = new Vector2(max_UvX, 1);
+                uvs2[7 + index] = new Vector2(max_UvX, 0);
+
+                min_UvX = (vertices[index + 8].x - start.x) / (end.x - start.x);
+
+                uvs2[8 + index] = new Vector2(min_UvX, 0);
+                uvs2[9 + index] = new Vector2(min_UvX, 1);
+                uvs2[10 + index] = new Vector2(1, 1);
+                uvs2[11 + index] = new Vector2(1, 0);
+            }
             #endregion
 
             // UNDERLINE VERTEX COLORS
@@ -5345,21 +5489,21 @@ namespace UnityEngine.TextCore.Text
             // Alpha is the lower of the vertex color or tag color alpha used.
             underlineColor.a = m_FontColor32.a < underlineColor.a ? m_FontColor32.a : underlineColor.a;
 
-            Color32[] colors32 = textInfo.meshInfo[underlineMaterialIndex].colors32;
-            colors32[0 + index] = underlineColor;
-            colors32[1 + index] = underlineColor;
-            colors32[2 + index] = underlineColor;
-            colors32[3 + index] = underlineColor;
-
-            colors32[4 + index] = underlineColor;
-            colors32[5 + index] = underlineColor;
-            colors32[6 + index] = underlineColor;
-            colors32[7 + index] = underlineColor;
-
-            colors32[8 + index] = underlineColor;
-            colors32[9 + index] = underlineColor;
-            colors32[10 + index] = underlineColor;
-            colors32[11 + index] = underlineColor;
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                for (int i = 0; i < 12; i++)
+                {
+                    vertexData[i + index].color = underlineColor;
+                }
+            }
+            else
+            {
+                Color32[] colors32 = textInfo.meshInfo[underlineMaterialIndex].colors32;
+                for (int i = 0; i < 12; i++)
+                {
+                    colors32[i + index] = underlineColor;
+                }
+            }
             #endregion
 
             index += 12;
@@ -5387,43 +5531,63 @@ namespace UnityEngine.TextCore.Text
             int verticesCount = index + 4;
 
             // Check to make sure our current mesh buffer allocations can hold these new Quads.
-            if (verticesCount > textInfo.meshInfo[underlineMaterialIndex].vertices.Length)
+            if (verticesCount > textInfo.meshInfo[underlineMaterialIndex].vertexBufferSize)
             {
                 // Resize Mesh Buffers
                 textInfo.meshInfo[underlineMaterialIndex].ResizeMeshInfo(verticesCount / 4);
             }
 
+            var vertexData = textInfo.meshInfo[underlineMaterialIndex].vertexData;
+
             // UNDERLINE VERTICES FOR (3) LINE SEGMENTS
             #region HIGHLIGHT VERTICES
-            Vector3[] vertices = textInfo.meshInfo[underlineMaterialIndex].vertices;
 
-            // Front Part of the Underline
-            vertices[index + 0] = start; // BL
-            vertices[index + 1] = new Vector3(start.x, end.y, 0); // TL
-            vertices[index + 2] = end; // TR
-            vertices[index + 3] = new Vector3(end.x, start.y, 0); // BR
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                vertexData[index + 0].position = start; // BL
+                vertexData[index + 1].position = new Vector3(start.x, end.y, 0); // TL
+                vertexData[index + 2].position = end; // TR
+                vertexData[index + 3].position = new Vector3(end.x, start.y, 0); // BR
+            }
+            else
+            {
+                Vector3[] vertices = textInfo.meshInfo[underlineMaterialIndex].vertices;
+                // Front Part of the Underline
+                vertices[index + 0] = start; // BL
+                vertices[index + 1] = new Vector3(start.x, end.y, 0); // TL
+                vertices[index + 2] = end; // TR
+                vertices[index + 3] = new Vector3(end.x, start.y, 0); // BR
+            }
+               
             #endregion
 
             if (generationSettings.inverseYAxis)
             {
                 Vector3 axisOffset;
                 axisOffset.x = 0;
-                axisOffset.y = generationSettings.screenRect.y + generationSettings.screenRect.height;
+                axisOffset.y = generationSettings.screenRect.height;
                 axisOffset.z = 0;
 
-                //vertices[index + 0].x += axisOffset.x;
-                vertices[index + 0].y = (vertices[index + 0].y * -1) + axisOffset.y;
-                //vertices[index + 1].x += axisOffset.x;
-                vertices[index + 1].y = (vertices[index + 1].y * -1) + axisOffset.y;
-                //vertices[index + 2].x += axisOffset.x;
-                vertices[index + 2].y = (vertices[index + 2].y * -1) + axisOffset.y;
-                //vertices[index + 3].x += axisOffset.x;
-                vertices[index + 3].y = (vertices[index + 3].y * -1) + axisOffset.y;
+                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        //vertices[index + 0].x += axisOffset.x;
+                        vertexData[index + i].position.y = vertexData[index + i].position.y * -1 + axisOffset.y;
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < 4; i++)
+                    {
+                        //vertices[index + 0].x += axisOffset.x;
+                        textInfo.meshInfo[underlineMaterialIndex].vertices[index + i].y = textInfo.meshInfo[underlineMaterialIndex].vertices[index + i].y * -1 + axisOffset.y;
+                    }
+                }
             }
 
             // UNDERLINE UV0
             #region HANDLE UV0
-            Vector4[] uvs0 = textInfo.meshInfo[underlineMaterialIndex].uvs0;
 
             int atlasWidth = m_Underline.fontAsset.atlasWidth;
             int atlasHeight = m_Underline.fontAsset.atlasHeight;
@@ -5433,21 +5597,45 @@ namespace UnityEngine.TextCore.Text
             Vector2 uvGlyphCenter = new Vector2((glyphRect.x + (float)glyphRect.width / 2) / atlasWidth, (glyphRect.y + (float)glyphRect.height / 2) / atlasHeight);
             Vector2 uvTexelSize = new Vector2(1.0f / atlasWidth, 1.0f / atlasHeight);
 
-            // UVs for the Quad
-            uvs0[0 + index] = uvGlyphCenter - uvTexelSize; // BL
-            uvs0[1 + index] = uvGlyphCenter + new Vector2(-uvTexelSize.x, uvTexelSize.y); // TL
-            uvs0[2 + index] = uvGlyphCenter + uvTexelSize; // TR
-            uvs0[3 + index] = uvGlyphCenter + new Vector2(uvTexelSize.x, -uvTexelSize.y); // BR
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                // UVs for the Quad
+                vertexData[0 + index].uv0 = uvGlyphCenter - uvTexelSize; // BL
+                vertexData[1 + index].uv0 = uvGlyphCenter + new Vector2(-uvTexelSize.x, uvTexelSize.y); // TL
+                vertexData[2 + index].uv0 = uvGlyphCenter + uvTexelSize; // TR
+                vertexData[3 + index].uv0 = uvGlyphCenter + new Vector2(uvTexelSize.x, -uvTexelSize.y); // BR
+            }
+            else
+            {
+                Vector4[] uvs0 = textInfo.meshInfo[underlineMaterialIndex].uvs0;
+                // UVs for the Quad
+                uvs0[0 + index] = uvGlyphCenter - uvTexelSize; // BL
+                uvs0[1 + index] = uvGlyphCenter + new Vector2(-uvTexelSize.x, uvTexelSize.y); // TL
+                uvs0[2 + index] = uvGlyphCenter + uvTexelSize; // TR
+                uvs0[3 + index] = uvGlyphCenter + new Vector2(uvTexelSize.x, -uvTexelSize.y); // BR
+            }
             #endregion
 
             // HIGHLIGHT UV2
             #region HANDLE UV2 - SDF SCALE
-            Vector2[] uvs2 = textInfo.meshInfo[underlineMaterialIndex].uvs2;
             Vector2 customUV = new Vector2(0, 1);
-            uvs2[0 + index] = customUV;
-            uvs2[1 + index] = customUV;
-            uvs2[2 + index] = customUV;
-            uvs2[3 + index] = customUV;
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                // HIGHLIGHT UV2
+                vertexData[0 + index].uv2 = customUV;
+                vertexData[1 + index].uv2 = customUV;
+                vertexData[2 + index].uv2 = customUV;
+                vertexData[3 + index].uv2 = customUV;
+            }
+            else
+            {
+                Vector2[] uvs2 = textInfo.meshInfo[underlineMaterialIndex].uvs2;
+                // HIGHLIGHT UV2
+                uvs2[0 + index] = customUV;
+                uvs2[1 + index] = customUV;
+                uvs2[2 + index] = customUV;
+                uvs2[3 + index] = customUV;
+            }
             #endregion
 
             // HIGHLIGHT VERTEX COLORS
@@ -5455,11 +5643,21 @@ namespace UnityEngine.TextCore.Text
             // Alpha is the lower of the vertex color or tag color alpha used.
             highlightColor.a = m_FontColor32.a < highlightColor.a ? m_FontColor32.a : highlightColor.a;
 
-            Color32[] colors32 = textInfo.meshInfo[underlineMaterialIndex].colors32;
-            colors32[0 + index] = highlightColor;
-            colors32[1 + index] = highlightColor;
-            colors32[2 + index] = highlightColor;
-            colors32[3 + index] = highlightColor;
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                vertexData[0 + index].color = highlightColor;
+                vertexData[1 + index].color = highlightColor;
+                vertexData[2 + index].color = highlightColor;
+                vertexData[3 + index].color = highlightColor;
+            }
+            else
+            {
+                Color32[] colors = textInfo.meshInfo[underlineMaterialIndex].colors32;
+                colors[0 + index] = highlightColor;
+                colors[1 + index] = highlightColor;
+                colors[2 + index] = highlightColor;
+                colors[3 + index] = highlightColor;
+            }
             #endregion
 
             index += 4;
@@ -5510,7 +5708,7 @@ namespace UnityEngine.TextCore.Text
             MaterialReference.AddMaterialReference(m_CurrentMaterial, m_CurrentFontAsset, ref m_MaterialReferences, m_MaterialReferenceIndexLookup);
 
             if (textInfo == null)
-                textInfo = new TextInfo();
+                textInfo = new TextInfo(VertexDataLayout.Mesh);
             else if (textInfo.textElementInfo.Length < m_InternalTextProcessingArraySize)
                 TextInfo.Resize(ref textInfo.textElementInfo, m_InternalTextProcessingArraySize, false);
 
@@ -5894,16 +6092,16 @@ namespace UnityEngine.TextCore.Text
                 int referenceCount = m_MaterialReferences[i].referenceCount;
 
                 // Check to make sure buffer allocations can accommodate the required text elements.
-                if (textInfo.meshInfo[i].vertices == null || textInfo.meshInfo[i].vertices.Length < referenceCount * 4)
+                if ((textInfo.meshInfo[i].vertexData == null && textInfo.meshInfo[i].vertices == null) || textInfo.meshInfo[i].vertexBufferSize < referenceCount * 4)
                 {
-                    if (textInfo.meshInfo[i].vertices == null)
+                    if (textInfo.meshInfo[i].vertexData == null && textInfo.meshInfo[i].vertices == null)
                     {
-                        textInfo.meshInfo[i] = new MeshInfo(referenceCount + 1);
+                        textInfo.meshInfo[i] = new MeshInfo(referenceCount + 1, textInfo.vertexDataLayout);
                     }
                     else
                         textInfo.meshInfo[i].ResizeMeshInfo(referenceCount > 1024 ? referenceCount + 256 : Mathf.NextPowerOfTwo(referenceCount));
                 }
-                else if (textInfo.meshInfo[i].vertices.Length - referenceCount * 4 > 1024)
+                else if (textInfo.meshInfo[i].vertexBufferSize - referenceCount * 4 > 1024)
                 {
                     // Resize vertex buffers if allocations are excessive.
                     textInfo.meshInfo[i].ResizeMeshInfo(referenceCount > 1024 ? referenceCount + 256 : Mathf.Max(Mathf.NextPowerOfTwo(referenceCount), 256));

@@ -788,6 +788,9 @@ namespace UnityEngine
         [NativeName("ImmediateVertex")] extern public static void Vertex3(float x, float y, float z);
         public static void Vertex(Vector3 v) { Vertex3(v.x, v.y, v.z); }
 
+        [NativeName("ImmediateVertices")]
+        extern internal static unsafe void Vertices(Vector3* v, Vector3* coords, Vector4* colors, int length);
+
         [NativeName("ImmediateTexCoordAll")] extern public static void TexCoord3(float x, float y, float z);
         public static void TexCoord(Vector3 v)          { TexCoord3(v.x, v.y, v.z); }
         public static void TexCoord2(float x, float y)  { TexCoord3(x, y, 0.0f); }

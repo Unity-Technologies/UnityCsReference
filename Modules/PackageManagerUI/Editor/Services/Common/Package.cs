@@ -65,6 +65,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (primary != recommended && ((primary.isInstalled && primary != latestKeyVersion) || primary.HasTag(PackageTag.LegacyFormat)) && !primary.HasTag(PackageTag.Local))
                     return PackageState.UpdateAvailable;
 
+                if (primary.importedAssets?.Any() == true)
+                    return PackageState.Imported;
+
                 if (versions.importAvailable != null)
                     return PackageState.ImportAvailable;
 

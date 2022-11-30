@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -15,6 +16,9 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ObjectField : BaseField<Object>
     {
+        internal static readonly DataBindingProperty objectTypeProperty = nameof(objectType);
+        internal static readonly DataBindingProperty allowSceneObjectsProperty = nameof(allowSceneObjects);
+
         /// <summary>
         /// Instantiates an <see cref="ObjectField"/> using the data read from a UXML file.
         /// </summary>
@@ -61,6 +65,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// The type of the objects that can be assigned.
         /// </summary>
+        [CreateProperty]
         public Type objectType
         {
             get { return m_objectType; }
@@ -70,6 +75,7 @@ namespace UnityEditor.UIElements
                 {
                     m_objectType = value;
                     UpdateDisplay();
+                    NotifyPropertyChanged(objectTypeProperty);
                 }
             }
         }
@@ -79,10 +85,23 @@ namespace UnityEditor.UIElements
             m_objectType = type;
         }
 
+        private bool m_AllowSceneObjects;
+
         /// <summary>
         /// Allows scene objects to be assigned to the field.
         /// </summary>
-        public bool allowSceneObjects { get; set; }
+        [CreateProperty]
+        public bool allowSceneObjects
+        {
+            get => m_AllowSceneObjects;
+            set
+            {
+                if (m_AllowSceneObjects == value)
+                    return;
+                m_AllowSceneObjects = value;
+                NotifyPropertyChanged(allowSceneObjectsProperty);
+            }
+        }
 
         protected override void UpdateMixedValueContent()
         {

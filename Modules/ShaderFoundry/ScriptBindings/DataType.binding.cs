@@ -32,7 +32,6 @@ namespace UnityEditor.ShaderFoundry
         ShaderType,
         BlockVariable,
         Block,
-        PassIdentifier,
         CustomizationPoint,
         TemplatePass,
         Template,

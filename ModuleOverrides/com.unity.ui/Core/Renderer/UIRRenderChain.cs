@@ -168,8 +168,6 @@ namespace UnityEngine.UIElements.UIR
             public UIRenderDevice device;
             public Texture vectorAtlas, shaderInfoAtlas;
             public float dpiScale;
-            public NativeSlice<Transform3x4> transformConstants;
-            public NativeSlice<Vector4> clipRectConstants;
         };
 
         RenderChainCommand m_FirstCommand;
@@ -484,8 +482,7 @@ namespace UnityEngine.UIElements.UIR
                     //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
                     //m_BlockDirtyRegistration = true;
                     device.EvaluateChain(m_FirstCommand, standardMaterial, standardMaterial, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
-                        panel.scaledPixelsPerPoint, shaderInfoAllocator.transformConstants, shaderInfoAllocator.clipRectConstants,
-                        m_RenderNodesData[0].matPropBlock, true, ref immediateException);
+                        panel.scaledPixelsPerPoint, m_RenderNodesData[0].matPropBlock, true, ref immediateException);
                     //m_BlockDirtyRegistration = false;
                 }
             }
@@ -633,6 +630,17 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
+        public void UIEOnDisableRenderingChanged(VisualElement ve)
+        {
+            if (ve.renderChainData.isInChain)
+            {
+                if (m_BlockDirtyRegistration)
+                    throw new InvalidOperationException("VisualElements cannot change their display style during generateVisualContent callback execution nor during visual tree rendering");
+
+                CommandManipulator.DisableElementRendering(this , ve, ve.disableRendering);
+            }
+        }
+
         #endregion
 
         internal BaseVisualElementPanel panel { get; private set; }
@@ -750,8 +758,7 @@ namespace UnityEngine.UIElements.UIR
             Exception immediateException = null;
             rnd.device.EvaluateChain(rnd.firstCommand, rnd.initialMaterial, rnd.standardMaterial,
                 rnd.vectorAtlas, rnd.shaderInfoAtlas,
-                rnd.dpiScale, rnd.transformConstants, rnd.clipRectConstants,
-                rnd.matPropBlock, false, ref immediateException);
+                rnd.dpiScale, rnd.matPropBlock, false, ref immediateException);
         }
 
         private static void OnRegisterIntermediateRenderers(Camera camera)
@@ -773,8 +780,6 @@ namespace UnityEngine.UIElements.UIR
                 rndSource.vectorAtlas = renderChain.vectorImageManager?.atlas;
                 rndSource.shaderInfoAtlas = renderChain.shaderInfoAllocator.atlas;
                 rndSource.dpiScale = rtp.scaledPixelsPerPoint;
-                rndSource.transformConstants = renderChain.shaderInfoAllocator.transformConstants;
-                rndSource.clipRectConstants = renderChain.shaderInfoAllocator.clipRectConstants;
 
                 if (renderChain.m_CustomMaterialCommands == 0)
                 {
@@ -925,7 +930,9 @@ namespace UnityEngine.UIElements.UIR
             var drawStats = ((UIRenderDevice)device).GatherDrawStatistics();
             GUI.Label(rc, "Frame index\t: " + drawStats.currentFrameIndex); rc.y += y_off;
             GUI.Label(rc, "Command count\t: " + drawStats.commandCount); rc.y += y_off;
+            GUI.Label(rc, "Skip cmd counts\t: " + drawStats.skippedCommandCount); rc.y += y_off;
             GUI.Label(rc, "Draw commands\t: " + drawStats.drawCommandCount); rc.y += y_off;
+            GUI.Label(rc, "Disable commands\t: " + drawStats.disableCommandCount); rc.y += y_off;
             GUI.Label(rc, "Draw ranges\t: " + drawStats.drawRangeCount); rc.y += y_off;
             GUI.Label(rc, "Draw range calls\t: " + drawStats.drawRangeCallCount); rc.y += y_off;
             GUI.Label(rc, "Material sets\t: " + drawStats.materialSetCount); rc.y += y_off;
@@ -983,7 +990,6 @@ namespace UnityEngine.UIElements.UIR
         internal RenderChainCommand firstHeadCommand, lastHeadCommand; // Sequential for the same owner
         internal RenderChainCommand firstTailCommand, lastTailCommand; // Sequential for the same owner
         internal bool isInChain;
-        internal bool isHierarchyHidden;
         internal bool localFlipsWinding;
         internal bool localTransformScaleZero;
         internal bool worldFlipsWinding;
@@ -1004,6 +1010,11 @@ namespace UnityEngine.UIElements.UIR
         internal RenderChainCommand lastTailOrHeadCommand { get { return lastTailCommand ?? lastHeadCommand; } }
         static internal bool AllocatesID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Owned) && alloc.IsValid(); }
         static internal bool InheritsID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Inherited) && alloc.IsValid(); }
+
+        // This is set whenever there is repaint requested when HierarchyDisplayed == false and is used to trigger the repaint when it finally get displayed
+        internal bool pendingRepaint;
+        // This is set whenever a hierarchical repaint was needed when HierarchyDisplayed == false.
+        internal bool pendingHierarchicalRepaint;
     }
 
     struct TextureEntry

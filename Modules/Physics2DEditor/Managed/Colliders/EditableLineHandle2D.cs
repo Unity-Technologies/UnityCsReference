@@ -8,7 +8,7 @@ using UnityEditorInternal;
 
 namespace UnityEditor
 {
-    class LineHandle
+    class EditableLineHandle2D
     {
         public enum LineIntersectionHighlight
         {
@@ -42,7 +42,7 @@ namespace UnityEditor
             set => m_Points = value;
         }
 
-        public LineHandle(IList<Vector2> points, bool loop, int minPointCount, LineIntersectionHighlight intersectionHighlight = LineIntersectionHighlight.None)
+        public EditableLineHandle2D(IList<Vector2> points, bool loop, int minPointCount, LineIntersectionHighlight intersectionHighlight = LineIntersectionHighlight.None)
         {
             int count = points.Count;
             m_Points = new Vector3[count];
@@ -53,7 +53,7 @@ namespace UnityEditor
             m_IntersectionHighlight = intersectionHighlight;
         }
 
-        public LineHandle(IList<Vector3> points, bool loop, int minPointCount, LineIntersectionHighlight intersectionHighlight = LineIntersectionHighlight.None)
+        public EditableLineHandle2D(IList<Vector3> points, bool loop, int minPointCount, LineIntersectionHighlight intersectionHighlight = LineIntersectionHighlight.None)
         {
             int count = points.Count;
             m_Points = new Vector3[count];

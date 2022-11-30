@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -12,6 +13,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class TextField : TextInputBaseField<string>
     {
+        internal static readonly DataBindingProperty multilineProperty = nameof(multiline);
+
         // This property to alleviate the fact we have to cast all the time
         TextInput textInput => (TextInput)textInputBase;
 
@@ -61,10 +64,18 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Set this to true to allow multiple lines in the textfield and false if otherwise.
         /// </summary>
+        [CreateProperty]
         public bool multiline
         {
             get { return textInput.multiline; }
-            set { textInput.multiline = value; }
+            set
+            {
+                var previous = multiline;
+                textInput.multiline = value;
+
+                if (previous != multiline)
+                    NotifyPropertyChanged(multilineProperty);
+            }
         }
 
         /// <summary>

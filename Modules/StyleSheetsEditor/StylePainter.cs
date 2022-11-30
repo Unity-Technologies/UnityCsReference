@@ -294,7 +294,7 @@ namespace UnityEditor.StyleSheets
                 float contentImageOffsetX = hasImage ? block.GetFloat(StyleCatalogKeyword.contentImageOffsetX) : 0;
                 float contentImageOffsetY = hasImage ? block.GetFloat(StyleCatalogKeyword.contentImageOffsetY) : 0;
                 basis.Internal_DrawContent(contentRect, content, states.isHover, states.isActive, states.on, states.hasKeyboardFocus,
-                    states.hasTextInput, states.drawSelectionAsComposition, states.cursorFirst, states.cursorLast,
+                    states.hasTextInput, states.drawSelectionAsComposition, states.cursorFirstPosition, states.cursorLastPosition,
                     states.cursorColor, states.selectionColor, guiContentColor * opacity,
                     0, 0, contentImageOffsetY, contentImageOffsetX, false, false);
 

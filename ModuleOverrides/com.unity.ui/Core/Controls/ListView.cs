@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -106,6 +107,11 @@ namespace UnityEngine.UIElements
     /// </example>
     public class ListView : BaseListView
     {
+        internal static readonly DataBindingProperty makeItemProperty = nameof(makeItem);
+        internal static readonly DataBindingProperty bindItemProperty = nameof(bindItem);
+        internal static readonly DataBindingProperty unbindItemProperty = nameof(unbindItem);
+        internal static readonly DataBindingProperty destroyItemProperty = nameof(destroyItem);
+
         /// <summary>
         /// Instantiates a <see cref="ListView"/> using data from a UXML file.
         /// </summary>
@@ -137,6 +143,7 @@ namespace UnityEngine.UIElements
         /// If this property and <see cref="bindItem"/> are not set, Unity will either create a PropertyField if bound
         /// to a SerializedProperty, or create an empty label for any other case.
         /// </remarks>
+        [CreateProperty]
         public new Func<VisualElement> makeItem
         {
             get => m_MakeItem;
@@ -146,6 +153,7 @@ namespace UnityEngine.UIElements
                 {
                     m_MakeItem = value;
                     Rebuild();
+                    NotifyPropertyChanged(makeItemProperty);
                 }
             }
         }
@@ -167,6 +175,7 @@ namespace UnityEngine.UIElements
         /// If this property and <see cref="makeItem"/> are not set, Unity will try to bind to a SerializedProperty if
         /// bound, or simply set text in the created Label.
         /// </remarks>
+        [CreateProperty]
         public new Action<VisualElement, int> bindItem
         {
             get => m_BindItem;
@@ -176,6 +185,7 @@ namespace UnityEngine.UIElements
                 {
                     m_BindItem = value;
                     RefreshItems();
+                    NotifyPropertyChanged(bindItemProperty);
                 }
             }
         }
@@ -185,6 +195,7 @@ namespace UnityEngine.UIElements
             m_BindItem = callback;
         }
 
+        private Action<VisualElement, int> m_UnbindItem;
         /// <summary>
         /// Callback for unbinding a data item from the VisualElement.
         /// </summary>
@@ -192,7 +203,20 @@ namespace UnityEngine.UIElements
         /// The method called by this callback receives the VisualElement to unbind, and the index of the
         /// element to unbind it from.
         /// </remarks>
-        public new Action<VisualElement, int> unbindItem { get; set; }
+        [CreateProperty]
+        public new Action<VisualElement, int> unbindItem
+        {
+            get => m_UnbindItem;
+            set
+            {
+                if (value == m_UnbindItem)
+                    return;
+                m_UnbindItem = value;
+                NotifyPropertyChanged(unbindItemProperty);
+            }
+        }
+
+        private Action<VisualElement> m_DestroyItem;
 
         /// <summary>
         /// Callback invoked when a <see cref="VisualElement"/> created via <see cref="makeItem"/> is no longer needed and will be destroyed.
@@ -200,7 +224,18 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The method called by this callback receives the VisualElement that will be destroyed from the pool.
         /// </remarks>
-        public new Action<VisualElement> destroyItem { get; set; }
+        [CreateProperty]
+        public new Action<VisualElement> destroyItem
+        {
+            get => m_DestroyItem;
+            set
+            {
+                if (value == m_DestroyItem)
+                    return;
+                m_DestroyItem = value;
+                NotifyPropertyChanged(destroyItemProperty);
+            }
+        }
 
         internal override bool HasValidDataAndBindings()
         {

@@ -10,7 +10,7 @@ namespace UnityEditor.VFX
 {
     [CustomEditor(typeof(VisualEffect))]
     [CanEditMultipleObjects]
-    class VisualEffectEditorDefault : Editor
+    class VisualEffectEditorDefault : Editor, ICoupledEditor
     {
         class Styles
         {
@@ -21,5 +21,7 @@ namespace UnityEditor.VFX
         {
             EditorGUILayout.LabelField(Styles.message);
         }
+
+        SerializedObject ICoupledEditor.coupledComponent => null;
     }
 }

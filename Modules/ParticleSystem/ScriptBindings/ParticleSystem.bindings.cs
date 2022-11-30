@@ -233,7 +233,7 @@ namespace UnityEngine
         [FreeFunction(Name = "ParticleSystemEditor::SetupDefaultParticleSystemType", HasExplicitThis = true)]
         extern internal void SetupDefaultType(ParticleSystemSubEmitterType type);
 
-        [NativeProperty("GetState().localToWorld", TargetType = TargetType.Field)]
+        [NativeProperty("GetState()->localToWorld", TargetType = TargetType.Field)]
         extern internal Matrix4x4 localToWorldMatrix { get; }
 
         [NativeName("GetNoiseModule().GeneratePreviewTexture")]

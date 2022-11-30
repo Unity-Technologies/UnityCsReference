@@ -667,7 +667,7 @@ namespace Unity.Properties
 
         static PropertyPath ConstructFromPath(string path)
         {
-            if (string.IsNullOrEmpty(path))
+            if (string.IsNullOrWhiteSpace(path))
                 return default;
 
             const int matchAny = 0;
@@ -855,6 +855,18 @@ namespace Unity.Properties
             {
                 UnityEngine.Pool.ListPool<PropertyPathPart>.Release(parts);
             }
+        }
+
+        /// <undoc/>
+        public static bool operator==(PropertyPath lhs, PropertyPath rhs)
+        {
+            return lhs.Equals(rhs);
+        }
+
+        /// <undoc/>
+        public static bool operator !=(PropertyPath lhs, PropertyPath rhs)
+        {
+            return !(lhs == rhs);
         }
 
         /// <summary>

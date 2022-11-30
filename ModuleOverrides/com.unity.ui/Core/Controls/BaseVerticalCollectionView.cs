@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Profiling;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -61,6 +62,19 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
     {
+        internal static readonly DataBindingProperty itemsSourceProperty = nameof(itemsSource);
+        internal static readonly DataBindingProperty selectionTypeProperty = nameof(selectionType);
+        internal static readonly DataBindingProperty selectedItemProperty = nameof(selectedItem);
+        internal static readonly DataBindingProperty selectedItemsProperty = nameof(selectedItems);
+        internal static readonly DataBindingProperty selectedIndexProperty = nameof(selectedIndex);
+        internal static readonly DataBindingProperty selectedIndicesProperty = nameof(selectedIndices);
+        internal static readonly DataBindingProperty showBorderProperty = nameof(showBorder);
+        internal static readonly DataBindingProperty reorderableProperty = nameof(reorderable);
+        internal static readonly DataBindingProperty horizontalScrollingEnabledProperty = nameof(horizontalScrollingEnabled);
+        internal static readonly DataBindingProperty showAlternatingRowBackgroundsProperty = nameof(showAlternatingRowBackgrounds);
+        internal static readonly DataBindingProperty virtualizationMethodProperty = nameof(virtualizationMethod);
+        internal static readonly DataBindingProperty fixedItemHeightProperty = nameof(fixedItemHeight);
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseVerticalCollectionView"/>.
         /// </summary>
@@ -218,10 +232,17 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This list contains the items that the <see cref="BaseVerticalCollectionView"/> displays.
         /// </remarks>
+        [CreateProperty]
         public IList itemsSource
         {
             get => viewController?.itemsSource;
-            set => GetOrCreateViewController().itemsSource = value;
+            set
+            {
+                var previous = itemsSource;
+                GetOrCreateViewController().itemsSource = value;
+                if (previous != itemsSource)
+                    NotifyPropertyChanged(itemsSourceProperty);
+            }
         }
 
         internal virtual bool sourceIncludesArraySize => false;
@@ -281,11 +302,13 @@ namespace UnityEngine.UIElements
         /// The default value is <see cref="SelectionType.Single"/>.
         /// When you set the collection view to disable selections, any current selection is cleared.
         /// </remarks>
+        [CreateProperty]
         public SelectionType selectionType
         {
             get { return m_SelectionType; }
             set
             {
+                var previous = m_SelectionType;
                 m_SelectionType = value;
                 if (m_SelectionType == SelectionType.None)
                 {
@@ -298,34 +321,47 @@ namespace UnityEngine.UIElements
                         SetSelection(m_SelectedIndices.First());
                     }
                 }
+
+                if (previous != m_SelectionType)
+                    NotifyPropertyChanged(selectionTypeProperty);
             }
         }
 
         /// <summary>
         /// Returns the selected item from the data source. If multiple items are selected, returns the first selected item.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public object selectedItem => m_SelectedItems.Count == 0 ? null : m_SelectedItems.First();
 
         /// <summary>
         /// Returns the selected items from the data source. Always returns an enumerable, even if no item is selected, or a single
         /// item is selected.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public IEnumerable<object> selectedItems => m_SelectedItems;
 
         /// <summary>
         /// Returns or sets the selected item's index in the data source. If multiple items are selected, returns the
         /// first selected item's index. If multiple items are provided, sets them all as selected.
         /// </summary>
+        [CreateProperty]
         public int selectedIndex
         {
             get { return m_SelectedIndices.Count == 0 ? -1 : m_SelectedIndices.First(); }
-            set { SetSelection(value); }
+            set
+            {
+                var previous = selectedIndex;
+                SetSelection(value);
+                if (previous != selectedIndex)
+                    NotifyPropertyChanged(selectedIndexProperty);
+            }
         }
 
         /// <summary>
         /// Returns the indices of selected items in the data source. Always returns an enumerable, even if no item  is selected, or a
         /// single item is selected.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public IEnumerable<int> selectedIndices => m_SelectedIndices;
 
         internal List<int> currentSelectionIds => m_SelectedIds;
@@ -364,10 +400,18 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// If set to true, a border appears around the ScrollView that the collection view uses internally.
         /// </remarks>
+        [CreateProperty]
         public bool showBorder
         {
             get => m_ScrollView.ClassListContains(borderUssClassName);
-            set => m_ScrollView.EnableInClassList(borderUssClassName, value);
+            set
+            {
+                var previous = showBorder;
+                m_ScrollView.EnableInClassList(borderUssClassName, value);
+
+                if (previous != showBorder)
+                    NotifyPropertyChanged(showBorderProperty);
+            }
         }
 
         /// <summary>
@@ -379,26 +423,37 @@ namespace UnityEngine.UIElements
         /// provides a default controller to allow standard behavior. It also automatically handles reordering
         /// the items in the data source.
         /// </remarks>
+        [CreateProperty]
         public bool reorderable
         {
             get => m_Dragger?.dragAndDropController?.enableReordering ?? false;
             set
             {
-                if (m_Dragger?.dragAndDropController == null)
+                var previous = reorderable;
+
+                try
                 {
-                    if (value)
+                    if (m_Dragger?.dragAndDropController == null)
                     {
-                        InitializeDragAndDropController(true);
+                        if (value)
+                        {
+                            InitializeDragAndDropController(true);
+                        }
+
+                        return;
                     }
 
-                    return;
+                    var controller = m_Dragger.dragAndDropController;
+                    if (controller != null && controller.enableReordering != value)
+                    {
+                        controller.enableReordering = value;
+                        Rebuild();
+                    }
                 }
-
-                var controller = m_Dragger.dragAndDropController;
-                if (controller != null && controller.enableReordering != value)
+                finally
                 {
-                    controller.enableReordering = value;
-                    Rebuild();
+                    if (previous != reorderable)
+                        NotifyPropertyChanged(reorderableProperty);
                 }
             }
         }
@@ -409,6 +464,7 @@ namespace UnityEngine.UIElements
         /// This property controls whether the collection view shows a horizontal scroll bar when its content
         /// does not fit in the visible area.
         /// </summary>
+        [CreateProperty]
         public bool horizontalScrollingEnabled
         {
             get { return m_HorizontalScrollingEnabled; }
@@ -419,16 +475,18 @@ namespace UnityEngine.UIElements
 
                 m_HorizontalScrollingEnabled = value;
                 m_ScrollView.mode = (value ? ScrollViewMode.VerticalAndHorizontal : ScrollViewMode.Vertical);
+                NotifyPropertyChanged(horizontalScrollingEnabledProperty);
             }
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private AlternatingRowBackground m_ShowAlternatingRowBackgrounds = AlternatingRowBackground.None;
 
         /// <summary>
         /// This property controls whether the background colors of collection view rows alternate.
         /// Takes a value from the <see cref="AlternatingRowBackground"/> enum.
         /// </summary>
+        [CreateProperty]
         public AlternatingRowBackground showAlternatingRowBackgrounds
         {
             get { return m_ShowAlternatingRowBackgrounds; }
@@ -439,9 +497,11 @@ namespace UnityEngine.UIElements
 
                 m_ShowAlternatingRowBackgrounds = value;
                 RefreshItems();
+                NotifyPropertyChanged(showAlternatingRowBackgroundsProperty);
             }
         }
 
+        internal static readonly string k_InvalidTemplateError = "Template Not Found";
         // If we ever change the default item height, we should consider changing the default max height of the view when
         // used in property fields. The rule to look for is ".unity-property-field > .unity-collection-view"
         internal static readonly int s_DefaultItemHeight = 22;
@@ -460,18 +520,18 @@ namespace UnityEngine.UIElements
         /// When using <c>DynamicHeight</c>, the collection will wait for the actual height to be computed.
         /// Dynamic height is more flexible but less performant.
         /// </remarks>
+        [CreateProperty]
         public CollectionVirtualizationMethod virtualizationMethod
         {
             get => m_VirtualizationMethod;
             set
             {
-                var oldValue = m_VirtualizationMethod;
+                if (m_VirtualizationMethod == value)
+                    return;
                 m_VirtualizationMethod = value;
-                if (oldValue != value)
-                {
-                    CreateVirtualizationController();
-                    Rebuild();
-                }
+                CreateVirtualizationController();
+                Rebuild();
+                NotifyPropertyChanged(virtualizationMethodProperty);
             }
         }
 
@@ -494,11 +554,14 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This property must be set when using the <see cref="virtualizationMethod"/> is set to <c>FixedHeight</c>, for the collection view to function.
         /// </remarks>
+        [CreateProperty]
         public float fixedItemHeight
         {
             get => m_FixedItemHeight;
             set
             {
+                var previous = fixedItemHeight;
+
                 if (value < 0)
                     throw new ArgumentOutOfRangeException(nameof(fixedItemHeight), "Value needs to be positive for virtualization.");
 
@@ -507,6 +570,7 @@ namespace UnityEngine.UIElements
                 {
                     m_FixedItemHeight = value;
                     RefreshItems();
+                    NotifyPropertyChanged(fixedItemHeightProperty);
                 }
             }
         }
@@ -516,11 +580,11 @@ namespace UnityEngine.UIElements
         CollectionVirtualizationController m_VirtualizationController;
         KeyboardNavigationManipulator m_NavigationManipulator;
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         internal SerializedVirtualizationData serializedVirtualizationData = new SerializedVirtualizationData();
 
         // Persisted. It's why this can't be a HashSet(). :(
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private readonly List<int> m_SelectedIds = new List<int>();
 
         // Not persisted! Just used for fast lookups of selected indices and object references.

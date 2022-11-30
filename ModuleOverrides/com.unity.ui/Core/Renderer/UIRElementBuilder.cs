@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements.UIR
         public void Build(MeshGenerationContext mgc)
         {
             var ve = mgc.visualElement;
+            Debug.Assert(ve.areAncestorsAndSelfDisplayed);
 
             bool isGroupTransform = (ve.renderHints & RenderHints.GroupTransform) == RenderHints.GroupTransform;
             if (isGroupTransform)
@@ -187,6 +188,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     rectParams = MeshGenerator.RectangleParams.MakeSprite(
                         ve.rect,
+                        new Rect(0, 0, 1, 1),
                         background.sprite,
                         ScaleMode.StretchToFill,
                         ve.panel.contextType,

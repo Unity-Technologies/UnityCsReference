@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
@@ -13,6 +14,14 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class Image : VisualElement
     {
+        internal static readonly DataBindingProperty imageProperty = nameof(image);
+        internal static readonly DataBindingProperty spriteProperty = nameof(sprite);
+        internal static readonly DataBindingProperty vectorImageProperty = nameof(vectorImage);
+        internal static readonly DataBindingProperty sourceRectProperty = nameof(sourceRect);
+        internal static readonly DataBindingProperty uvProperty = nameof(uv);
+        internal static readonly DataBindingProperty scaleModeProperty = nameof(scaleMode);
+        internal static readonly DataBindingProperty tintColorProperty = nameof(tintColor);
+
         /// <summary>
         /// Instantiates an <see cref="Image"/> using the data read from a UXML file.
         /// </summary>
@@ -43,56 +52,62 @@ namespace UnityEngine.UIElements
         private bool m_ScaleModeIsInline;
         private bool m_TintColorIsInline;
 
-
         /// <summary>
         /// The texture to display in this image.
         /// </summary>
+        [CreateProperty]
         public Texture image
         {
             get { return m_Image; }
             set
             {
+                if (m_Image == value)
+                    return;
+
                 if (value != null && (m_Sprite != null || m_VectorImage != null))
                 {
                     var unsetProp = m_Sprite != null ? "sprite" : "vector image";
                     Debug.LogWarning($"Image object already has a background, removing {unsetProp}");
-                    m_Sprite = null;
-                    m_VectorImage = null;
+                    sprite = null;
+                    vectorImage = null;
                 }
+
                 m_ImageIsInline = value != null;
-                if (m_Image != value)
+                m_Image = value;
+                IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                if (m_Image == null)
                 {
-                    m_Image = value;
-                    IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
-                    if (m_Image == null)
-                    {
-                        m_UV = new Rect(0, 0, 1, 1);
-                    }
+                    uv = new Rect(0, 0, 1, 1);
                 }
+
+                NotifyPropertyChanged(imageProperty);
             }
         }
 
         /// <summary>
         /// The sprite to display in this image.
         /// </summary>
+        [CreateProperty]
         public Sprite sprite
         {
             get { return m_Sprite; }
             set
             {
+                if (m_Sprite == value)
+                    return;
+
                 if (value != null && (m_Image != null || m_VectorImage != null))
                 {
                     var unsetProp = m_Image != null ? "texture" : "vector image";
                     Debug.LogWarning($"Image object already has a background, removing {unsetProp}");
-                    m_Image = null;
-                    m_VectorImage = null;
+                    image = null;
+                    vectorImage = null;
                 }
+
                 m_ImageIsInline = value != null;
-                if (m_Sprite != value)
-                {
-                    m_Sprite = value;
-                    IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
-                }
+                m_Sprite = value;
+                IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                NotifyPropertyChanged(spriteProperty);
             }
         }
 
@@ -100,73 +115,94 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The <see cref="VectorImage"/> to display in this image.
         /// </summary>
+        [CreateProperty]
         public VectorImage vectorImage
         {
             get { return m_VectorImage; }
             set
             {
+                if (m_VectorImage == value)
+                    return;
+
                 if (value != null && (m_Image != null || m_Sprite != null))
                 {
                     var unsetProp = m_Image != null ? "texture" : "sprite";
                     Debug.LogWarning($"Image object already has a background, removing {unsetProp}");
-                    m_Image = null;
-                    m_Sprite = null;
+                    image = null;
+                    sprite = null;
                 }
+
                 m_ImageIsInline = value != null;
-                if (m_VectorImage != value)
+                m_VectorImage = value;
+                IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                if (m_VectorImage == null)
                 {
-                    m_VectorImage = value;
-                    IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
-                    if (m_VectorImage == null)
-                    {
-                        m_UV = new Rect(0, 0, 1, 1);
-                    }
+                    uv = new Rect(0, 0, 1, 1);
                 }
+
+                NotifyPropertyChanged(vectorImageProperty);
             }
         }
 
         /// <summary>
         /// The source rectangle inside the texture relative to the top left corner.
         /// </summary>
+        [CreateProperty]
         public Rect sourceRect
         {
             get { return GetSourceRect(); }
             set
             {
+                if (GetSourceRect() == value)
+                    return;
+
                 if (sprite != null)
                 {
                     Debug.LogError("Cannot set sourceRect on a sprite image");
                     return;
                 }
                 CalculateUV(value);
+                NotifyPropertyChanged(sourceRectProperty);
             }
         }
 
         /// <summary>
         /// The base texture coordinates of the Image relative to the bottom left corner.
         /// </summary>
+        [CreateProperty]
         public Rect uv
         {
             get { return m_UV; }
-            set { m_UV = value; }
+            set
+            {
+                if (m_UV == value)
+                    return;
+                m_UV = value;
+                NotifyPropertyChanged(uvProperty);
+            }
         }
 
         /// <summary>
         /// ScaleMode used to display the Image.
         /// </summary>
+        [CreateProperty]
         public ScaleMode scaleMode
         {
             get { return m_ScaleMode; }
             set
             {
+                if (m_ScaleMode == value && m_ScaleModeIsInline)
+                    return;
                 m_ScaleModeIsInline = true;
                 SetScaleMode(value);
+                NotifyPropertyChanged(scaleModeProperty);
             }
         }
 
         /// <summary>
         /// Tinting color for this Image.
         /// </summary>
+        [CreateProperty]
         public Color tintColor
         {
             get
@@ -175,12 +211,13 @@ namespace UnityEngine.UIElements
             }
             set
             {
+                if (m_TintColor == value && m_TintColorIsInline)
+                    return;
+
                 m_TintColorIsInline = true;
-                if (m_TintColor != value)
-                {
-                    m_TintColor = value;
-                    IncrementVersion(VersionChangeType.Repaint);
-                }
+                m_TintColor = value;
+                IncrementVersion(VersionChangeType.Repaint);
+                NotifyPropertyChanged(tintColorProperty);
             }
         }
 
@@ -251,9 +288,10 @@ namespace UnityEngine.UIElements
 
             // covers the MeasureMode.Exactly case
             Rect rect = sourceRect;
-            bool hasImagePosition = rect != Rect.zero;
-            measuredWidth = hasImagePosition ? rect.width : sourceSize.x;
-            measuredHeight = hasImagePosition ? rect.height : sourceSize.y;
+            bool hasRect = rect != Rect.zero;
+            // UUM-17229: rect width/height can be negative (e.g. when the UVs are flipped)
+            measuredWidth = hasRect ? Mathf.Abs(rect.width) : sourceSize.x;
+            measuredHeight = hasRect ? Mathf.Abs(rect.height) : sourceSize.y;
 
             if (widthMode == MeasureMode.AtMost)
             {
@@ -281,7 +319,7 @@ namespace UnityEngine.UIElements
             else if (sprite != null)
             {
                 var slices = Vector4.zero;
-                rectParams = UIR.MeshGenerator.RectangleParams.MakeSprite(alignedRect, sprite, scaleMode, panel.contextType, false, ref slices);
+                rectParams = UIR.MeshGenerator.RectangleParams.MakeSprite(alignedRect, uv, sprite, scaleMode, panel.contextType, false, ref slices);
             }
             else if (vectorImage != null)
                 rectParams = UIR.MeshGenerator.RectangleParams.MakeVectorTextured(alignedRect, uv, vectorImage, scaleMode, panel.contextType);

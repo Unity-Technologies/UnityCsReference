@@ -90,7 +90,7 @@ namespace UnityEditor.Overlays
         public OverlayAttribute()
         {
             m_EditorWindowType = null;
-            m_DefaultDisplay = false;
+            m_DefaultDisplay = true;
             m_Id = null;
             m_DisplayName = null;
             m_UssName = null;

@@ -3456,7 +3456,7 @@ namespace UnityEditor
                 case EventCommandNames.SelectAll:
                     if (execute)
                     {
-                        var gameObjects = FindObjectsOfType<GameObject>();
+                        var gameObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.InstanceID);
                         var objs = new List<Object>(gameObjects.Length);
                         foreach (var go in gameObjects)
                             if (SceneVisibilityManager.instance.IsSelectable(go))
@@ -3473,7 +3473,9 @@ namespace UnityEditor
                     break;
                 case EventCommandNames.InvertSelection:
                     if (execute)
-                        Selection.objects = FindObjectsOfType<GameObject>().Except(Selection.gameObjects).Where(SceneVisibilityManager.instance.IsSelectable).ToArray();
+                    {
+                        Selection.objects = FindObjectsByType<GameObject>(FindObjectsSortMode.InstanceID).Except(Selection.gameObjects).Where(SceneVisibilityManager.instance.IsSelectable).ToArray();
+                    }
                     Event.current.Use();
                     break;
                 case EventCommandNames.SelectChildren:

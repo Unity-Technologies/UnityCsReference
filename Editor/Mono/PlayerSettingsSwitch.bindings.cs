@@ -30,26 +30,26 @@ namespace UnityEditor
                 Both = 3
             }
 
-            // These language names should be match to the name descriptions where in an NMETA file.
+            // These language names should be match to the name descriptions where in an NMETA file and SwitchBuildUtils.Languages.
             // And, please notice that you have to increase numSwitchLanguages in EditorOnlyPlayerSettings.h when you add a new language here.
             public enum Languages
             {
-                AmericanEnglish,
-                BritishEnglish,
-                Japanese,
-                French,
-                German,
-                LatinAmericanSpanish,
-                Spanish,
-                Italian,
-                Dutch,
-                CanadianFrench,
-                Portuguese,
-                Russian,
-                SimplifiedChinese,
-                TraditionalChinese,
-                Korean,
-                BrazilianPortuguese,
+                AmericanEnglish = 0,
+                BritishEnglish = 1,
+                Japanese = 2,
+                French = 3,
+                German = 4,
+                LatinAmericanSpanish = 5,
+                Spanish = 6,
+                Italian = 7,
+                Dutch = 8,
+                CanadianFrench = 9,
+                Portuguese = 10,
+                Russian = 11,
+                SimplifiedChinese = 12,
+                TraditionalChinese = 13,
+                Korean = 14,
+                BrazilianPortuguese = 15,
             }
 
             public enum

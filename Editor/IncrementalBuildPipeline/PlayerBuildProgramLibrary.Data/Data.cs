@@ -47,6 +47,7 @@ namespace PlayerBuildProgramLibrary.Data
         public string ApplicationIdentifier;
         public string Architecture;
         public ScriptingBackend ScriptingBackend;
+        public bool NoGUID;
         public bool InstallIntoBuildsFolder;
         public bool GenerateIdeProject;
         public bool Development;
@@ -60,6 +61,7 @@ namespace PlayerBuildProgramLibrary.Data
     public class BuiltFilesOutput
     {
         public string[] Files = new string[0];
+        public string BootConfigArtifact;
     }
 
     public class LinkerConfig

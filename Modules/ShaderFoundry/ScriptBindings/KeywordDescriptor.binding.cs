@@ -17,12 +17,11 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ListHandle;
 
         internal extern static KeywordDescriptorInternal Invalid();
-        internal extern void Setup(ShaderContainer container, string definition, string scope, string stage, string name, string[] ops);
+        internal extern void Setup(ShaderContainer container, string definition, string scope, string stage, string[] ops);
 
         internal extern string GetDefinition(ShaderContainer container);
         internal extern string GetScope(ShaderContainer container);
         internal extern string GetStage(ShaderContainer container);
-        internal extern string GetName(ShaderContainer container);
         internal extern int GetOpCount(ShaderContainer container);
         internal extern string GetOp(ShaderContainer container, int index);
 
@@ -51,7 +50,6 @@ namespace UnityEditor.ShaderFoundry
         public string Definition => descriptor.GetDefinition(container);
         public string Scope => descriptor.GetScope(container);
         public string Stage => descriptor.GetStage(container);
-        public string Name => descriptor.GetName(container);
 
         public IEnumerable<string> Ops
         {
@@ -86,15 +84,13 @@ namespace UnityEditor.ShaderFoundry
             string definition;
             string scope;
             string stage;
-            string name;
             List<string> ops = new List<string>();
 
             public ShaderContainer Container => container;
 
-            public Builder(ShaderContainer container, string name, string definition, string scope, string stage, IEnumerable<string> ops)
+            public Builder(ShaderContainer container, string definition, string scope, string stage, IEnumerable<string> ops)
             {
                 this.container = container;
-                this.name = name;
                 this.definition = definition;
                 this.scope = scope;
                 this.stage = stage;
@@ -104,7 +100,7 @@ namespace UnityEditor.ShaderFoundry
             public KeywordDescriptor Build()
             {
                 var descriptor = new KeywordDescriptorInternal();
-                descriptor.Setup(container, definition, scope, stage, name, ops.ToArray());
+                descriptor.Setup(container, definition, scope, stage, ops.ToArray());
                 var resultHandle = container.Add(descriptor);
                 return new KeywordDescriptor(container, resultHandle);
             }

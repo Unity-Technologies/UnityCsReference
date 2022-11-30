@@ -69,6 +69,8 @@ namespace UnityEditor.Search
             }
         }
 
+        internal QueryTextFieldBlock textBlock => m_TextBlock;
+
         public bool hasOwnText => m_SearchText != null;
 
         public bool valid => errors.Count == 0;
@@ -560,7 +562,7 @@ namespace UnityEditor.Search
                     return true;
                 }
             }
-            else if (evt.keyCode == KeyCode.RightArrow && cursorAtBeginning && !HasCharacterModifier(evt))
+            else if (evt.keyCode == KeyCode.RightArrow && !HasCharacterModifier(evt))
             {
                 var currentIndex = GetBlockIndex(currentBlock);
                 if (currentIndex != -1)
@@ -570,9 +572,14 @@ namespace UnityEditor.Search
                         // Put focus back in the textfield:
                         m_TextBlock.GetSearchField()?.Focus();
                     }
+                    
                     SetSelection(currentIndex + 1);
                     evt.Use();
                     return true;
+                }
+                else
+                {
+                    m_TextBlock.GetSearchField()?.Focus();
                 }
             }
             else if ((evt.keyCode == KeyCode.Backspace && cursorAtBeginning) ||
@@ -654,6 +661,15 @@ namespace UnityEditor.Search
                 else
                 {
                     cb.OpenEditor(cb.drawRect);
+                    return true;
+                }
+            }
+            else if (evt.keyCode == KeyCode.LeftArrow)
+            {
+                var currentIndex = GetBlockIndex(currentBlock);
+                if (m_TextBlock != null && currentIndex == -1 && te != null && te.cursorIndex == 0 && blocks.Count > 0)
+                {
+                    SetSelection(blocks.Count - 1);
                     return true;
                 }
             }

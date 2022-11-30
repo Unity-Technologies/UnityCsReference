@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -13,6 +15,8 @@ namespace UnityEditor.UIElements
     public abstract class SearchFieldBase<TextInputType, T> : VisualElement, INotifyValueChanged<T>
         where TextInputType : TextInputBaseField<T>, new()
     {
+        internal static readonly DataBindingProperty valueProperty = nameof(value);
+
         private readonly Button m_SearchButton;
         private readonly Button m_CancelButton;
         private readonly TextInputType m_TextField;
@@ -35,10 +39,17 @@ namespace UnityEditor.UIElements
         /// <remarks>
         /// If the new value is different from the current value, this method notifies registered callbacks with a <see cref="ChangeEvent{T}"/>.
         /// </remarks>
+        [CreateProperty]
         public T value
         {
             get { return m_TextField.value; }
-            set { m_TextField.value = value; }
+            set
+            {
+                var previous = m_TextField.value;
+                m_TextField.value = value;
+                if (!EqualityComparer<T>.Default.Equals(m_TextField.value, previous))
+                    NotifyPropertyChanged(valueProperty);
+            }
         }
 
         /// <summary>

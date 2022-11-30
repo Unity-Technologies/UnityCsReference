@@ -390,6 +390,11 @@ namespace UnityEditor
             }
         }
 
+        internal DataMode dataMode =>
+            propertyViewer is EditorWindow editorWindow
+                ? editorWindow.dataModeController.dataMode
+                : DataMode.Disabled;
+
         internal static float kLineHeight = EditorGUI.kSingleLineHeight;
 
         internal bool hideInspector = false;
@@ -659,6 +664,9 @@ namespace UnityEditor
             {
                 m_SerializedObject = new SerializedObject(targets, m_Context);
                 m_SerializedObject.inspectorMode = inspectorMode;
+                if (m_SerializedObject.inspectorDataMode != dataMode)
+                    m_SerializedObject.inspectorDataMode = dataMode;
+
                 AssignCachedProperties(this, m_SerializedObject.GetIterator());
                 m_EnabledProperty = m_SerializedObject.FindProperty("m_Enabled");
             }
@@ -1325,10 +1333,12 @@ namespace UnityEditor
                 return true;
 
             if (m_SerializedObject == null)
-                CreateSerializedObject();
+                m_SerializedObject = new SerializedObject(targets, m_Context);
             else
                 m_SerializedObject.Update();
             m_SerializedObject.inspectorMode = inspectorMode;
+            if (m_SerializedObject.inspectorDataMode != dataMode)
+                m_SerializedObject.inspectorDataMode = dataMode;
 
             return CanBeExpandedViaAFoldoutWithoutUpdate();
         }
@@ -1339,7 +1349,7 @@ namespace UnityEditor
                 return true;
 
             if (m_SerializedObject == null)
-                CreateSerializedObject();
+                m_SerializedObject = new SerializedObject(targets, m_Context);
             SerializedProperty property = m_SerializedObject.GetIterator();
 
             bool analyzePropertyChildren = true;

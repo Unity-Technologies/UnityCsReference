@@ -211,28 +211,39 @@ namespace UnityEditor.Search
             selectPos = -1;
 
 
-            if (evt.modifiers.HasAny(EventModifiers.Alt))
+            if (evt.altKey)
             {
                 if (evt.keyCode == KeyCode.DownArrow)
+                {
                     searchText = CyclePreviousSearch(-1);
+                    return true;
+                }
                 else if (evt.keyCode == KeyCode.UpArrow)
+                {
                     searchText = CyclePreviousSearch(+1);
+                    return true;
+                }
             }
-            else if (m_UndoStack.CanUndo() && evt.keyCode == KeyCode.Z && (evt.commandKey || evt.ctrlKey))
+            else if (evt.commandKey || evt.ctrlKey)
             {
-                if (!m_UndoStack.Undo(out var undoData))
-                    return false;
-                searchText = undoData.text;
-                cursorPos = undoData.cursorPos;
-                selectPos = undoData.selectPos;
-            }
-            else if (m_UndoStack.CanRedo() && evt.keyCode == KeyCode.Y && (evt.commandKey || evt.ctrlKey))
-            {
-                if (!m_UndoStack.Redo(out var redoData))
-                    return false;
-                searchText = redoData.text;
-                cursorPos = redoData.cursorPos;
-                selectPos = redoData.selectPos;
+                if (m_UndoStack.CanUndo() && evt.keyCode == KeyCode.Z)
+                {
+                    if (!m_UndoStack.Undo(out var undoData))
+                        return false;
+                    searchText = undoData.text;
+                    cursorPos = undoData.cursorPos;
+                    selectPos = undoData.selectPos;
+                    return true;
+                }
+                else if (m_UndoStack.CanRedo() && evt.keyCode == KeyCode.Y)
+                {
+                    if (!m_UndoStack.Redo(out var redoData))
+                        return false;
+                    searchText = redoData.text;
+                    cursorPos = redoData.cursorPos;
+                    selectPos = redoData.selectPos;
+                    return true;
+                }
             }
 
             if (searchText != null && string.CompareOrdinal(searchText, m_CurrentText) != 0)

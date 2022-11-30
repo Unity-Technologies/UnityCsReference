@@ -504,11 +504,6 @@ namespace UnityEditor
                     else
                     {
                         var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
-                        // Only show Force Stop when using the PathTracer backend
-                        if (settings.bakedGI && GUILayout.Button("Force Stop", GUILayout.Width(Styles.ButtonWidth)))
-                        {
-                            Lightmapping.ForceStop();
-                        }
                         if (GUILayout.Button("Cancel", GUILayout.Width(Styles.ButtonWidth)))
                         {
                             Lightmapping.Cancel();
@@ -539,142 +534,151 @@ namespace UnityEditor
 
         internal static void Summary()
         {
-            long totalMemorySize = 0;
-            int lightmapCount = 0;
-            Dictionary<Vector2, int> sizes = new Dictionary<Vector2, int>();
-            bool directionalLightmapsMode = false;
-            bool shadowmaskMode = false;
-            foreach (LightmapData ld in LightmapSettings.lightmaps)
+            bool autoGenerate = Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
+            if (autoGenerate || !Lightmapping.isRunning)
             {
-                if (ld.lightmapColor == null)
-                    continue;
-                lightmapCount++;
-
-                Vector2 texSize = new Vector2(ld.lightmapColor.width, ld.lightmapColor.height);
-                if (sizes.ContainsKey(texSize))
-                    sizes[texSize]++;
-                else
-                    sizes.Add(texSize, 1);
-
-                totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapColor);
-                if (ld.lightmapDir)
+                long totalMemorySize = 0;
+                int lightmapCount = 0;
+                Dictionary<Vector2, int> sizes = new Dictionary<Vector2, int>();
+                bool directionalLightmapsMode = false;
+                bool shadowmaskMode = false;
+                foreach (LightmapData ld in LightmapSettings.lightmaps)
                 {
-                    totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapDir);
-                    directionalLightmapsMode = true;
-                }
-                if (ld.shadowMask)
-                {
-                    totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.shadowMask);
-                    shadowmaskMode = true;
-                }
-            }
-            StringBuilder sizesString = new StringBuilder();
-            sizesString.Append(lightmapCount);
-            sizesString.Append((directionalLightmapsMode ? " Directional" : " Non-Directional"));
-            sizesString.Append(" Lightmap");
-            if (lightmapCount != 1) sizesString.Append("s");
-            if (shadowmaskMode)
-            {
-                sizesString.Append(" with Shadowmask");
-                if (lightmapCount != 1) sizesString.Append("s");
-            }
-
-            bool first = true;
-            foreach (var s in sizes)
-            {
-                sizesString.Append(first ? ": " : ", ");
-                first = false;
-                if (s.Value > 1)
-                {
-                    sizesString.Append(s.Value);
-                    sizesString.Append("x");
-                }
-                sizesString.Append(s.Key.x.ToString(CultureInfo.InvariantCulture.NumberFormat));
-                sizesString.Append("x");
-                sizesString.Append(s.Key.y.ToString(CultureInfo.InvariantCulture.NumberFormat));
-                sizesString.Append("px");
-            }
-            sizesString.Append(" ");
-
-            GUILayout.BeginHorizontal();
-
-            GUILayout.BeginVertical();
-            GUILayout.Label(sizesString.ToString(), Styles.labelStyle);
-            GUILayout.EndVertical();
-
-            GUILayout.BeginVertical();
-            GUILayout.Label(EditorUtility.FormatBytes(totalMemorySize), Styles.labelStyle);
-            GUILayout.Label((lightmapCount == 0 ? "No Lightmaps" : ""), Styles.labelStyle);
-            GUILayout.EndVertical();
-
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginVertical();
-            GUILayout.Label("Occupied Texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.labelStyle);
-            if (Lightmapping.isRunning)
-            {
-                int numLightmapsInView = 0;
-                int numConvergedLightmapsInView = 0;
-                int numNotConvergedLightmapsInView = 0;
-
-                int numLightmapsNotInView = 0;
-                int numConvergedLightmapsNotInView = 0;
-                int numNotConvergedLightmapsNotInView = 0;
-
-                int numInvalidConvergenceLightmaps = 0;
-                int numLightmaps = LightmapSettings.lightmaps.Length;
-                for (int i = 0; i < numLightmaps; ++i)
-                {
-                    LightmapConvergence lc = Lightmapping.GetLightmapConvergence(i);
-                    if (!lc.IsValid())
-                    {
-                        numInvalidConvergenceLightmaps++;
+                    if (ld.lightmapColor == null)
                         continue;
-                    }
+                    lightmapCount++;
 
-                    if (Lightmapping.GetVisibleTexelCount(i) > 0)
-                    {
-                        numLightmapsInView++;
-                        if (lc.IsConverged())
-                            numConvergedLightmapsInView++;
-                        else
-                            numNotConvergedLightmapsInView++;
-                    }
+                    Vector2 texSize = new Vector2(ld.lightmapColor.width, ld.lightmapColor.height);
+                    if (sizes.ContainsKey(texSize))
+                        sizes[texSize]++;
                     else
+                        sizes.Add(texSize, 1);
+
+                    totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapColor);
+                    if (ld.lightmapDir)
                     {
-                        numLightmapsNotInView++;
-                        if (lc.IsConverged())
-                            numConvergedLightmapsNotInView++;
-                        else
-                            numNotConvergedLightmapsNotInView++;
+                        totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapDir);
+                        directionalLightmapsMode = true;
+                    }
+                    if (ld.shadowMask)
+                    {
+                        totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.shadowMask);
+                        shadowmaskMode = true;
                     }
                 }
-                if (Lightmapping.atlasCount > 0)
+                StringBuilder sizesString = new StringBuilder();
+                sizesString.Append(lightmapCount);
+                sizesString.Append((directionalLightmapsMode ? " Directional" : " Non-Directional"));
+                sizesString.Append(" Lightmap");
+                if (lightmapCount != 1) sizesString.Append("s");
+                if (shadowmaskMode)
                 {
-                    int convergedMaps = numConvergedLightmapsInView + numConvergedLightmapsNotInView;
-                    GUILayout.Label("Lightmap convergence: (" + convergedMaps + "/" + Lightmapping.atlasCount + ")", Styles.labelStyle);
+                    sizesString.Append(" with Shadowmask");
+                    if (lightmapCount != 1) sizesString.Append("s");
                 }
-                EditorGUILayout.LabelField("Lightmaps in view: " + numLightmapsInView, Styles.labelStyle);
-                EditorGUI.indentLevel += 1;
-                EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsInView, Styles.labelStyle);
-                EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsInView, Styles.labelStyle);
-                EditorGUI.indentLevel -= 1;
-                EditorGUILayout.LabelField("Lightmaps not in view: " + numLightmapsNotInView, Styles.labelStyle);
-                EditorGUI.indentLevel += 1;
-                EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsNotInView, Styles.labelStyle);
-                EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsNotInView, Styles.labelStyle);
-                EditorGUI.indentLevel -= 1;
 
-                LightProbesConvergence lpc = Lightmapping.GetLightProbesConvergence();
-                if (lpc.IsValid() && lpc.probeSetCount > 0)
-                    GUILayout.Label("Light Probes convergence: (" + lpc.convergedProbeSetCount + "/" + lpc.probeSetCount + ")", Styles.labelStyle);
+                bool first = true;
+                foreach (var s in sizes)
+                {
+                    sizesString.Append(first ? ": " : ", ");
+                    first = false;
+                    if (s.Value > 1)
+                    {
+                        sizesString.Append(s.Value);
+                        sizesString.Append("x");
+                    }
+                    sizesString.Append(s.Key.x.ToString(CultureInfo.InvariantCulture.NumberFormat));
+                    sizesString.Append("x");
+                    sizesString.Append(s.Key.y.ToString(CultureInfo.InvariantCulture.NumberFormat));
+                    sizesString.Append("px");
+                }
+                sizesString.Append(" ");
+
+                GUILayout.BeginHorizontal();
+
+                GUILayout.BeginVertical();
+                GUILayout.Label(sizesString.ToString(), Styles.labelStyle);
+                GUILayout.EndVertical();
+
+                GUILayout.BeginVertical();
+                GUILayout.Label(EditorUtility.FormatBytes(totalMemorySize), Styles.labelStyle);
+                GUILayout.Label((lightmapCount == 0 ? "No Lightmaps" : ""), Styles.labelStyle);
+                GUILayout.EndVertical();
+
+                GUILayout.EndHorizontal();
             }
-            float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
-            float mraysPerSec = Lightmapping.GetLightmapBakePerformanceTotal();
-            if (mraysPerSec >= 0.0)
-                GUILayout.Label("Bake Performance: " + mraysPerSec.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat) + " mrays/sec", Styles.labelStyle);
+
+            GUILayout.BeginVertical();
+            if (autoGenerate)
+            {
+                GUILayout.Label("Occupied Texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.labelStyle);
+                if (Lightmapping.isRunning)
+                {
+                    int numLightmapsInView = 0;
+                    int numConvergedLightmapsInView = 0;
+                    int numNotConvergedLightmapsInView = 0;
+
+                    int numLightmapsNotInView = 0;
+                    int numConvergedLightmapsNotInView = 0;
+                    int numNotConvergedLightmapsNotInView = 0;
+
+                    int numInvalidConvergenceLightmaps = 0;
+                    int numLightmaps = LightmapSettings.lightmaps.Length;
+                    for (int i = 0; i < numLightmaps; ++i)
+                    {
+                        LightmapConvergence lc = Lightmapping.GetLightmapConvergence(i);
+                        if (!lc.IsValid())
+                        {
+                            numInvalidConvergenceLightmaps++;
+                            continue;
+                        }
+
+                        if (Lightmapping.GetVisibleTexelCount(i) > 0)
+                        {
+                            numLightmapsInView++;
+                            if (lc.IsConverged())
+                                numConvergedLightmapsInView++;
+                            else
+                                numNotConvergedLightmapsInView++;
+                        }
+                        else
+                        {
+                            numLightmapsNotInView++;
+                            if (lc.IsConverged())
+                                numConvergedLightmapsNotInView++;
+                            else
+                                numNotConvergedLightmapsNotInView++;
+                        }
+                    }
+                    if (Lightmapping.atlasCount > 0)
+                    {
+                        int convergedMaps = numConvergedLightmapsInView + numConvergedLightmapsNotInView;
+                        GUILayout.Label("Lightmap convergence: (" + convergedMaps + "/" + Lightmapping.atlasCount + ")", Styles.labelStyle);
+                    }
+                    EditorGUILayout.LabelField("Lightmaps in view: " + numLightmapsInView, Styles.labelStyle);
+                    EditorGUI.indentLevel += 1;
+                    EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsInView, Styles.labelStyle);
+                    EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsInView, Styles.labelStyle);
+                    EditorGUI.indentLevel -= 1;
+                    EditorGUILayout.LabelField("Lightmaps not in view: " + numLightmapsNotInView, Styles.labelStyle);
+                    EditorGUI.indentLevel += 1;
+                    EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsNotInView, Styles.labelStyle);
+                    EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsNotInView, Styles.labelStyle);
+                    EditorGUI.indentLevel -= 1;
+
+                    LightProbesConvergence lpc = Lightmapping.GetLightProbesConvergence();
+                    if (lpc.IsValid() && lpc.probeSetCount > 0)
+                        GUILayout.Label("Light Probes convergence: (" + lpc.convergedProbeSetCount + "/" + lpc.probeSetCount + ")", Styles.labelStyle);
+                }
+                float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
+                float mraysPerSec = Lightmapping.GetLightmapBakePerformanceTotal();
+                if (mraysPerSec >= 0.0)
+                    GUILayout.Label("Bake Performance: " + mraysPerSec.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat) + " mrays/sec", Styles.labelStyle);
+            }
+
             if (!Lightmapping.isRunning)
             {
+                float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
                 float bakeTimeRaw = Lightmapping.GetLightmapBakeTimeRaw();
                 if (bakeTime >= 0.0)
                 {

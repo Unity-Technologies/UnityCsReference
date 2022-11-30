@@ -29,6 +29,7 @@ namespace UnityEditor
         }
 
         internal List<DecoratorDrawer> decoratorDrawers => m_DecoratorDrawers;
+        internal bool skipDecoratorDrawers { get; set; }
 
         private int m_NestingLevel;
 
@@ -153,7 +154,8 @@ namespace UnityEditor
 
             float propHeight = position.height;
             position.height = 0;
-            if (m_DecoratorDrawers != null && !isCurrentlyNested)
+
+            if (!skipDecoratorDrawers && m_DecoratorDrawers != null && !isCurrentlyNested)
             {
                 foreach (DecoratorDrawer decorator in m_DecoratorDrawers)
                 {
@@ -302,7 +304,7 @@ namespace UnityEditor
         {
             float height = 0;
 
-            if (m_DecoratorDrawers != null && !isCurrentlyNested)
+            if (!skipDecoratorDrawers && m_DecoratorDrawers != null && !isCurrentlyNested)
                 foreach (DecoratorDrawer drawer in m_DecoratorDrawers)
                     height += drawer.GetHeight();
 

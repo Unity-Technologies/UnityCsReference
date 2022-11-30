@@ -1393,7 +1393,7 @@ namespace UnityEngine.TextCore.Text
             int indexX4 = textInfo.meshInfo[materialIndex].vertexCount;
 
             // Check to make sure our current mesh buffer allocations can hold these new Quads.
-            if (indexX4 >= textInfo.meshInfo[materialIndex].vertices.Length)
+            if (indexX4 >= textInfo.meshInfo[materialIndex].vertexBufferSize)
                 textInfo.meshInfo[materialIndex].ResizeMeshInfo(Mathf.NextPowerOfTwo((indexX4 + 4) / 4));
 
             TextElementInfo[] textElementInfoArray = textInfo.textElementInfo;
@@ -1404,48 +1404,104 @@ namespace UnityEngine.TextCore.Text
             {
                 Vector3 axisOffset;
                 axisOffset.x = 0;
-                axisOffset.y = generationSettings.screenRect.y + generationSettings.screenRect.height;
+                axisOffset.y = generationSettings.screenRect.height;
                 axisOffset.z = 0;
 
                 Vector3 position = textElementInfoArray[i].vertexBottomLeft.position;
                 position.y *= -1;
 
-                textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = position + axisOffset;
-                position = textElementInfoArray[i].vertexTopLeft.position;
-                position.y *= -1;
-                textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = position + axisOffset;
-                position = textElementInfoArray[i].vertexTopRight.position;
-                position.y *= -1;
-                textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = position + axisOffset;
-                position = textElementInfoArray[i].vertexBottomRight.position;
-                position.y *= -1;
-                textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = position + axisOffset;
+                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+                {
+                    textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].position = position + axisOffset;
+                    position = textElementInfoArray[i].vertexTopLeft.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].position = position + axisOffset;
+                    position = textElementInfoArray[i].vertexTopRight.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].position = position + axisOffset;
+                    position = textElementInfoArray[i].vertexBottomRight.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].position = position + axisOffset;
+                }
+                else
+                {
+                    textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = position + axisOffset;
+                    position = textElementInfoArray[i].vertexTopLeft.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = position + axisOffset;
+                    position = textElementInfoArray[i].vertexTopRight.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = position + axisOffset;
+                    position = textElementInfoArray[i].vertexBottomRight.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = position + axisOffset;
+                }
             }
             else
             {
-                textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.position;
-                textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.position;
-                textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = textElementInfoArray[i].vertexTopRight.position;
-                textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.position;
+                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+                {
+                    textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].position = textElementInfoArray[i].vertexBottomLeft.position;
+                    textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].position = textElementInfoArray[i].vertexTopLeft.position;
+                    textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].position = textElementInfoArray[i].vertexTopRight.position;
+                    textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].position = textElementInfoArray[i].vertexBottomRight.position;
+                }
+                else
+                {
+                    textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.position;
+                    textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.position;
+                    textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = textElementInfoArray[i].vertexTopRight.position;
+                    textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.position;
+                }
             }
 
             // Setup UVS0
-            textInfo.meshInfo[materialIndex].uvs0[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv;
-            textInfo.meshInfo[materialIndex].uvs0[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv;
-            textInfo.meshInfo[materialIndex].uvs0[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv;
-            textInfo.meshInfo[materialIndex].uvs0[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv;
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].uv0 = textElementInfoArray[i].vertexBottomLeft.uv;
+                textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].uv0 = textElementInfoArray[i].vertexTopLeft.uv;
+                textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].uv0 = textElementInfoArray[i].vertexTopRight.uv;
+                textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].uv0 = textElementInfoArray[i].vertexBottomRight.uv;
+            }
+            else
+            {
+                textInfo.meshInfo[materialIndex].uvs0[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv;
+                textInfo.meshInfo[materialIndex].uvs0[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv;
+                textInfo.meshInfo[materialIndex].uvs0[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv;
+                textInfo.meshInfo[materialIndex].uvs0[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv;
+            }
 
             // Setup UVS2
-            textInfo.meshInfo[materialIndex].uvs2[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv2;
-            textInfo.meshInfo[materialIndex].uvs2[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv2;
-            textInfo.meshInfo[materialIndex].uvs2[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv2;
-            textInfo.meshInfo[materialIndex].uvs2[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv2;
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].uv2 = textElementInfoArray[i].vertexBottomLeft.uv2;
+                textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].uv2 = textElementInfoArray[i].vertexTopLeft.uv2;
+                textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].uv2 = textElementInfoArray[i].vertexTopRight.uv2;
+                textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].uv2 = textElementInfoArray[i].vertexBottomRight.uv2;
+            }
+            else
+            {
+                textInfo.meshInfo[materialIndex].uvs2[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv2;
+                textInfo.meshInfo[materialIndex].uvs2[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv2;
+                textInfo.meshInfo[materialIndex].uvs2[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv2;
+                textInfo.meshInfo[materialIndex].uvs2[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv2;
+            }
 
             // setup Vertex Colors
-            textInfo.meshInfo[materialIndex].colors32[0 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomLeft.color) : textElementInfoArray[i].vertexBottomLeft.color;
-            textInfo.meshInfo[materialIndex].colors32[1 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopLeft.color) : textElementInfoArray[i].vertexTopLeft.color;
-            textInfo.meshInfo[materialIndex].colors32[2 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopRight.color) : textElementInfoArray[i].vertexTopRight.color;
-            textInfo.meshInfo[materialIndex].colors32[3 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomRight.color) : textElementInfoArray[i].vertexBottomRight.color;
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomLeft.color) : textElementInfoArray[i].vertexBottomLeft.color;
+                textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopLeft.color) : textElementInfoArray[i].vertexTopLeft.color;
+                textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopRight.color) : textElementInfoArray[i].vertexTopRight.color;
+                textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomRight.color) : textElementInfoArray[i].vertexBottomRight.color;
+            }
+            else
+            {
+                textInfo.meshInfo[materialIndex].colors32[0 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomLeft.color) : textElementInfoArray[i].vertexBottomLeft.color;
+                textInfo.meshInfo[materialIndex].colors32[1 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopLeft.color) : textElementInfoArray[i].vertexTopLeft.color;
+                textInfo.meshInfo[materialIndex].colors32[2 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopRight.color) : textElementInfoArray[i].vertexTopRight.color;
+                textInfo.meshInfo[materialIndex].colors32[3 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomRight.color) : textElementInfoArray[i].vertexBottomRight.color;
+            }
 
             textInfo.meshInfo[materialIndex].vertexCount = indexX4 + 4;
         }
@@ -1469,49 +1525,104 @@ namespace UnityEngine.TextCore.Text
             {
                 Vector3 axisOffset;
                 axisOffset.x = 0;
-                axisOffset.y = generationSettings.screenRect.y + generationSettings.screenRect.height;
+                axisOffset.y = generationSettings.screenRect.height;
                 axisOffset.z = 0;
 
                 Vector3 position = textElementInfoArray[i].vertexBottomLeft.position;
                 position.y *= -1;
 
-                textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = position + axisOffset;
-                position = textElementInfoArray[i].vertexTopLeft.position;
-                position.y *= -1;
-                textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = position + axisOffset;
-                position = textElementInfoArray[i].vertexTopRight.position;
-                position.y *= -1;
-                textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = position + axisOffset;
-                position = textElementInfoArray[i].vertexBottomRight.position;
-                position.y *= -1;
-                textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = position + axisOffset;
+                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+                {
+                    textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].position = position + axisOffset;
+                    position = textElementInfoArray[i].vertexTopLeft.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].position = position + axisOffset;
+                    position = textElementInfoArray[i].vertexTopRight.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].position = position + axisOffset;
+                    position = textElementInfoArray[i].vertexBottomRight.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].position = position + axisOffset;
+                }
+                else
+                {
+                    textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = position + axisOffset;
+                    position = textElementInfoArray[i].vertexTopLeft.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = position + axisOffset;
+                    position = textElementInfoArray[i].vertexTopRight.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = position + axisOffset;
+                    position = textElementInfoArray[i].vertexBottomRight.position;
+                    position.y *= -1;
+                    textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = position + axisOffset;
+                }
             }
             else
             {
-                textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.position;
-                textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.position;
-                textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = textElementInfoArray[i].vertexTopRight.position;
-                textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.position;
+                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+                {
+                    textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].position = textElementInfoArray[i].vertexBottomLeft.position;
+                    textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].position = textElementInfoArray[i].vertexTopLeft.position;
+                    textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].position = textElementInfoArray[i].vertexTopRight.position;
+                    textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].position = textElementInfoArray[i].vertexBottomRight.position;
+                }
+                else
+                {
+                    textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.position;
+                    textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.position;
+                    textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = textElementInfoArray[i].vertexTopRight.position;
+                    textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.position;
+                }
             }
 
             // Setup UVS0
-            textInfo.meshInfo[materialIndex].uvs0[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv;
-            textInfo.meshInfo[materialIndex].uvs0[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv;
-            textInfo.meshInfo[materialIndex].uvs0[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv;
-            textInfo.meshInfo[materialIndex].uvs0[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv;
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].uv0 = textElementInfoArray[i].vertexBottomLeft.uv;
+                textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].uv0 = textElementInfoArray[i].vertexTopLeft.uv;
+                textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].uv0 = textElementInfoArray[i].vertexTopRight.uv;
+                textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].uv0 = textElementInfoArray[i].vertexBottomRight.uv;
+            }
+            else
+            {
+                textInfo.meshInfo[materialIndex].uvs0[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv;
+                textInfo.meshInfo[materialIndex].uvs0[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv;
+                textInfo.meshInfo[materialIndex].uvs0[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv;
+                textInfo.meshInfo[materialIndex].uvs0[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv;
+            }
 
             // Setup UVS2
-            textInfo.meshInfo[materialIndex].uvs2[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv2;
-            textInfo.meshInfo[materialIndex].uvs2[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv2;
-            textInfo.meshInfo[materialIndex].uvs2[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv2;
-            textInfo.meshInfo[materialIndex].uvs2[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv2;
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].uv2 = textElementInfoArray[i].vertexBottomLeft.uv2;
+                textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].uv2 = textElementInfoArray[i].vertexTopLeft.uv2;
+                textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].uv2 = textElementInfoArray[i].vertexTopRight.uv2;
+                textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].uv2 = textElementInfoArray[i].vertexBottomRight.uv2;
+            }
+            else
+            {
+                textInfo.meshInfo[materialIndex].uvs2[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv2;
+                textInfo.meshInfo[materialIndex].uvs2[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv2;
+                textInfo.meshInfo[materialIndex].uvs2[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv2;
+                textInfo.meshInfo[materialIndex].uvs2[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv2;
+            }
 
             // setup Vertex Colors
-            textInfo.meshInfo[materialIndex].colors32[0 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomLeft.color) : textElementInfoArray[i].vertexBottomLeft.color;
-            textInfo.meshInfo[materialIndex].colors32[1 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopLeft.color) : textElementInfoArray[i].vertexTopLeft.color;
-            textInfo.meshInfo[materialIndex].colors32[2 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopRight.color) : textElementInfoArray[i].vertexTopRight.color;
-            textInfo.meshInfo[materialIndex].colors32[3 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomRight.color) : textElementInfoArray[i].vertexBottomRight.color;
-
+            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
+            {
+                textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomLeft.color) : textElementInfoArray[i].vertexBottomLeft.color;
+                textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopLeft.color) : textElementInfoArray[i].vertexTopLeft.color;
+                textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopRight.color) : textElementInfoArray[i].vertexTopRight.color;
+                textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomRight.color) : textElementInfoArray[i].vertexBottomRight.color;
+            }
+            else
+            {
+                textInfo.meshInfo[materialIndex].colors32[0 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomLeft.color) : textElementInfoArray[i].vertexBottomLeft.color;
+                textInfo.meshInfo[materialIndex].colors32[1 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopLeft.color) : textElementInfoArray[i].vertexTopLeft.color;
+                textInfo.meshInfo[materialIndex].colors32[2 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopRight.color) : textElementInfoArray[i].vertexTopRight.color;
+                textInfo.meshInfo[materialIndex].colors32[3 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomRight.color) : textElementInfoArray[i].vertexBottomRight.color;
+            }
             textInfo.meshInfo[materialIndex].vertexCount = indexX4 + 4;
         }
 

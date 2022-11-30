@@ -24,6 +24,40 @@ namespace UnityEditor
         static class Styles
         {
             public static GUIStyle command = "AppCommand";
+            public static GUIStyle commandLeft;
+            public static GUIStyle commandMid;
+            public static GUIStyle commandRight;
+
+            static Styles()
+            {
+                GUI.FindStyles(ref command, out commandLeft, out commandMid, out commandRight, "left", "mid", "right");
+
+                var normalColor = command.normal.textColor;
+
+                command.imagePosition = ImagePosition.ImageAbove;
+                command.active.textColor = normalColor;
+                command.onActive.textColor = normalColor;
+                command.onNormal.textColor = normalColor;
+                command.fontStyle = FontStyle.Bold;
+
+                commandLeft.imagePosition = ImagePosition.ImageAbove;
+                commandLeft.active.textColor = normalColor;
+                commandLeft.onActive.textColor = normalColor;
+                commandLeft.onNormal.textColor = normalColor;
+                commandLeft.fontStyle = FontStyle.Bold;
+
+                commandMid.imagePosition = ImagePosition.ImageAbove;
+                commandMid.active.textColor = normalColor;
+                commandMid.onActive.textColor = normalColor;
+                commandMid.onNormal.textColor = normalColor;
+                commandMid.fontStyle = FontStyle.Bold;
+
+                commandRight.imagePosition = ImagePosition.ImageAbove;
+                commandRight.active.textColor = normalColor;
+                commandRight.onActive.textColor = normalColor;
+                commandRight.onNormal.textColor = normalColor;
+                commandRight.fontStyle = FontStyle.Bold;
+            }
         }
 
         public static void EditorToolbarForTarget(UObject target)
@@ -138,7 +172,7 @@ namespace UnityEditor
 
                 EditorGUI.BeginChangeCheck();
 
-                index = GUILayout.Toolbar(index, buttons, enabled, Styles.command);
+                index = GUILayout.Toolbar(index, buttons, enabled, Styles.command, Styles.commandLeft, Styles.commandMid, Styles.commandRight);
 
                 if (EditorGUI.EndChangeCheck())
                 {

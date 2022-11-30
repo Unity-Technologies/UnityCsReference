@@ -32,8 +32,8 @@ namespace UnityEditor
         [NativeProperty("s_ActiveVisible", false, TargetType.Field)]
         public static extern bool activeVisible { get; private set; }
 
-        [NativeProperty("s_ActiveIsImguiContainer", false, TargetType.Field)]
-        internal static extern bool activeIsImguiContainer { get; private set; }
+        [NativeProperty("s_UseUIToolkitScrolling", false, TargetType.Field)]
+        internal static extern bool useUIToolkitScrolling { get; private set; }
 
         [NativeProperty("k_Padding", false, TargetType.Field)]
         internal static extern float padding { get; }

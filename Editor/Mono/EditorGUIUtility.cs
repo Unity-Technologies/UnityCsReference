@@ -1162,7 +1162,7 @@ namespace UnityEditor
             L10n.ClearCache();
             EditorUtility.Internal_UpdateMenuTitleForLanguage(newLanguage);
             LocalizationDatabase.currentEditorLanguage = newLanguage;
-            PanelTextSettings.UpdateLocalizationFontAsset();
+            EditorTextSettings.UpdateLocalizationFontAsset();
             EditorApplication.RequestRepaintAllViews();
         }
 

@@ -70,6 +70,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns a <see cref="VisualElementStyleSheetSet"/> that manipulates style sheets attached to this element.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public VisualElementStyleSheetSet styleSheets => new VisualElementStyleSheetSet(this);
 
         internal List<StyleSheet> styleSheetList;

@@ -31,6 +31,7 @@ namespace UnityEngine.UIElements.UIR
         public TextureId texture;
         public int stencilRef;
         public float sdfScale;
+        public float sharpness;
     }
 
     internal enum CommandType
@@ -42,6 +43,7 @@ namespace UnityEngine.UIElements.UIR
         PushRenderTexture, PopRenderTexture,
         BlitToPreviousRT, //From Active target to previous on RT stack
         PushDefaultMaterial, PopDefaultMaterial,
+        BeginDisable, EndDisable,
     }
 
     internal class DrawParams

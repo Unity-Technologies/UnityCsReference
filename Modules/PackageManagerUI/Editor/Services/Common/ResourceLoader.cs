@@ -33,7 +33,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             "StyleSheets/Extensions/base/light.uss";
 
             internal static readonly string packageManagerCommon = "StyleSheets/PackageManager/Common.uss";
-            internal static readonly string[] packageManagerComponents = {
+            internal static readonly string[] packageManagerComponents =
+            {
                 "StyleSheets/PackageManager/PackageDetailsDependenciesTab.uss",
                 "StyleSheets/PackageManager/PackageDetails.uss",
                 "StyleSheets/PackageManager/PackageItem.uss",
@@ -42,6 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 "StyleSheets/PackageManager/PackageDetailsSamplesTab.uss",
                 "StyleSheets/PackageManager/PackageDetailsReleasesTab.uss",
                 "StyleSheets/PackageManager/PackageDetailsVersionsTab.uss",
+                "StyleSheets/PackageManager/PackageDetailsInstalledAssetsTab.uss",
                 "StyleSheets/PackageManager/PackageStatusBar.uss",
                 "StyleSheets/PackageManager/PackageToolbar.uss",
                 "StyleSheets/PackageManager/ProgressBar.uss",
@@ -52,6 +54,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             internal static readonly string filtersDropdown = "StyleSheets/PackageManager/Filters.uss";
             internal static readonly string inputDropdown = "StyleSheets/PackageManager/InputDropdown.uss";
             internal static readonly string inProgressDropdown = "StyleSheets/PackageManager/InProgressDropdown.uss";
+
+            internal static readonly string selectionWindowCommon = "StyleSheets/PackageManager/SelectionWindow.uss";
+            internal static string selectionWindowVariables => EditorGUIUtility.isProSkin ?
+                "StyleSheets/PackageManager/SelectionWindowDark.uss" :
+                "StyleSheets/PackageManager/SelectionWindowLight.uss";
         }
 
         private enum StyleSheetType : int
@@ -61,6 +68,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             InputDropdown,
             FiltersDropdown,
             InProgressDropdown,
+            SelectionWindow,
 
             Count
         }
@@ -99,7 +107,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     s_ResolvedLightStyleSheetIds[i] = m_SerializedResolvedLightStyleSheetIds[i];
             }
         }
-
 
         private StyleSheet FindResolvedStyleSheetFromType(StyleSheetType styleSheetType)
         {
@@ -174,6 +181,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                                           StyleSheetPath.defaultCommon,
                                           StyleSheetPath.packageManagerVariables,
                                           StyleSheetPath.inProgressDropdown);
+            }
+        }
+
+        public StyleSheet selectionWindowStyleSheet
+        {
+            get
+            {
+                var styleSheet = FindResolvedStyleSheetFromType(StyleSheetType.SelectionWindow);
+                if (styleSheet == null)
+                    styleSheet = ResolveStyleSheets(StyleSheetType.SelectionWindow,
+                        StyleSheetPath.selectionWindowCommon,
+                        StyleSheetPath.selectionWindowVariables);
+                return styleSheet;
             }
         }
 

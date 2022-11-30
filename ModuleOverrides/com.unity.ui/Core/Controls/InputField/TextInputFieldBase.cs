@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -11,6 +12,27 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class TextInputBaseField<TValueType> : BaseField<TValueType>
     {
+        internal static readonly DataBindingProperty autoCorrectionProperty = nameof(autoCorrection);
+        internal static readonly DataBindingProperty hideMobileInputProperty = nameof(hideMobileInput);
+        internal static readonly DataBindingProperty keyboardTypeProperty = nameof(keyboardType);
+        internal static readonly DataBindingProperty isReadOnlyProperty = nameof(isReadOnly);
+        internal static readonly DataBindingProperty isPasswordFieldProperty = nameof(isPasswordField);
+        internal static readonly DataBindingProperty textSelectionProperty = nameof(textSelection);
+        internal static readonly DataBindingProperty textEditionProperty = nameof(textEdition);
+        internal static readonly DataBindingProperty selectionColorProperty = nameof(selectionColor);
+        internal static readonly DataBindingProperty cursorColorProperty = nameof(cursorColor);
+        internal static readonly DataBindingProperty cursorIndexProperty = nameof(cursorIndex);
+        internal static readonly DataBindingProperty cursorPositionProperty = nameof(cursorPosition);
+        internal static readonly DataBindingProperty selectIndexProperty = nameof(selectIndex);
+        internal static readonly DataBindingProperty selectAllOnFocusProperty = nameof(selectAllOnFocus);
+        internal static readonly DataBindingProperty selectAllOnMouseUpProperty = nameof(selectAllOnMouseUp);
+        internal static readonly DataBindingProperty maxLengthProperty = nameof(maxLength);
+        internal static readonly DataBindingProperty doubleClickSelectsWordProperty = nameof(doubleClickSelectsWord);
+        internal static readonly DataBindingProperty tripleClickSelectsLineProperty = nameof(tripleClickSelectsLine);
+        internal static readonly DataBindingProperty isDelayedProperty = nameof(isDelayed);
+        internal static readonly DataBindingProperty maskCharProperty = nameof(maskChar);
+        internal static readonly DataBindingProperty verticalScrollerVisibilityProperty = nameof(verticalScrollerVisibility);
+
         static CustomStyleProperty<Color> s_SelectionColorProperty = new CustomStyleProperty<Color>("--unity-selection-color");
         static CustomStyleProperty<Color> s_CursorColorProperty = new CustomStyleProperty<Color>("--unity-cursor-color");
         internal const int kMaxLengthNone = -1;
@@ -212,11 +234,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Retrieves this Field's TextElement ITextSelection
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public ITextSelection textSelection => m_TextInputBase.textElement.selection;
 
         /// <summary>
         /// Retrieves this Field's TextElement ITextEdition
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public ITextEdition textEdition => m_TextInputBase.textElement.edition;
 
         #region TextEdition
@@ -232,16 +256,24 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns true if the field is read only.
         /// </summary>
+        [CreateProperty]
         public bool isReadOnly
         {
             get => textEdition.isReadOnly;
-            set => textEdition.isReadOnly = value;
+            set
+            {
+                if (textEdition.isReadOnly == value)
+                    return;
+                textEdition.isReadOnly = value;
+                NotifyPropertyChanged(isReadOnlyProperty);
+            }
         }
 
         // Password field (indirectly lossy behaviour when activated via multiline)
         /// <summary>
         /// Returns true if the field is used to edit a password.
         /// </summary>
+        [CreateProperty]
         public bool isPasswordField
         {
             get => textEdition.isPassword;
@@ -252,34 +284,56 @@ namespace UnityEngine.UIElements
 
                 textEdition.isPassword = value;
                 m_TextInputBase.IncrementVersion(VersionChangeType.Repaint);
+                NotifyPropertyChanged(isPasswordFieldProperty);
             }
         }
 
         /// <summary>
         /// Determines if the touch screen keyboard auto correction is turned on or off.
         /// </summary>
+        [CreateProperty]
         public bool autoCorrection
         {
             get => textEdition.autoCorrection;
-            set => textEdition.autoCorrection = value;
+            set
+            {
+                if (textEdition.autoCorrection == value)
+                    return;
+                textEdition.autoCorrection = value;
+                NotifyPropertyChanged(autoCorrectionProperty);
+            }
         }
 
         /// <summary>
         /// Hides or shows the mobile input field.
         /// </summary>
+        [CreateProperty]
         public bool hideMobileInput
         {
             get => textEdition.hideMobileInput;
-            set => textEdition.hideMobileInput = value;
+            set
+            {
+                if (textEdition.hideMobileInput == value)
+                    return;
+                textEdition.hideMobileInput = value;
+                NotifyPropertyChanged(hideMobileInputProperty);
+            }
         }
 
         /// <summary>
         /// The type of mobile keyboard that will be used.
         /// </summary>
+        [CreateProperty]
         public TouchScreenKeyboardType keyboardType
         {
             get => textEdition.keyboardType;
-            set => textEdition.keyboardType = value;
+            set
+            {
+                if (textEdition.keyboardType == value)
+                    return;
+                textEdition.keyboardType = value;
+                NotifyPropertyChanged(keyboardTypeProperty);
+            }
         }
 
         /// <summary>
@@ -293,28 +347,49 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Maximum number of characters for the field.
         /// </summary>
+        [CreateProperty]
         public int maxLength
         {
             get => textEdition.maxLength;
-            set => textEdition.maxLength = value;
+            set
+            {
+                if (textEdition.maxLength == value)
+                    return;
+                textEdition.maxLength = value;
+                NotifyPropertyChanged(maxLengthProperty);
+            }
         }
 
         /// <summary>
         /// If set to true, the value property isn't updated until either the user presses Enter or the text field loses focus.
         /// </summary>
+        [CreateProperty]
         public bool isDelayed
         {
             get => textEdition.isDelayed;
-            set => textEdition.isDelayed = value;
+            set
+            {
+                if (textEdition.isDelayed == value)
+                    return;
+                textEdition.isDelayed = value;
+                NotifyPropertyChanged(isDelayedProperty);
+            }
         }
 
         /// <summary>
         /// The character used for masking in a password field.
         /// </summary>
+        [CreateProperty]
         public char maskChar
         {
             get => textEdition.maskChar;
-            set => textEdition.maskChar = value;
+            set
+            {
+                if (textEdition.maskChar == value)
+                    return;
+                textEdition.maskChar = value;
+                NotifyPropertyChanged(maskCharProperty);
+            }
         }
 
         #endregion
@@ -323,24 +398,34 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Background color of selected text.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public Color selectionColor => textSelection.selectionColor;
         /// <summary>
         /// Color of the cursor.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public Color cursorColor => textSelection.cursorColor;
 
         /// <summary>
         /// This is the cursor index in the text presented.
         /// </summary>
+        [CreateProperty]
         public int cursorIndex
         {
             get => textSelection.cursorIndex;
-            set => textSelection.cursorIndex = value;
+            set
+            {
+                if (textSelection.cursorIndex == value)
+                    return;
+                textSelection.cursorIndex = value;
+                NotifyPropertyChanged(cursorIndexProperty);
+            }
         }
 
         /// <summary>
         /// The position of the text cursor inside the element.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public Vector2 cursorPosition
         {
             get => textSelection.cursorPosition;
@@ -349,10 +434,17 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the selection index in the text presented.
         /// </summary>
+        [CreateProperty]
         public int selectIndex
         {
             get => textSelection.selectIndex;
-            set => textSelection.selectIndex = value;
+            set
+            {
+                if (textSelection.selectIndex == value)
+                    return;
+                textSelection.selectIndex = value;
+                NotifyPropertyChanged(selectIndexProperty);
+            }
         }
 
         /// <summary>
@@ -382,36 +474,65 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Controls whether the element's content is selected upon receiving focus.
         /// </summary>
+        [CreateProperty]
         public bool selectAllOnFocus
         {
             get => textSelection.selectAllOnFocus;
-            set => textSelection.selectAllOnFocus = value;
+            set
+            {
+                if (textSelection.selectAllOnFocus == value)
+                    return;
+                textSelection.selectAllOnFocus = value;
+                NotifyPropertyChanged(selectAllOnFocusProperty);
+            }
         }
 
         /// <summary>
         /// Controls whether the element's content is selected when you mouse up for the first time.
         /// </summary>
+        [CreateProperty]
         public bool selectAllOnMouseUp
         {
             get => textSelection.selectAllOnMouseUp;
-            set => textSelection.selectAllOnMouseUp = value;
+            set
+            {
+                if (textSelection.selectAllOnMouseUp == value)
+                    return;
+                textSelection.selectAllOnMouseUp = value;
+                NotifyPropertyChanged(selectAllOnMouseUpProperty);
+            }
         }
 
         /// <summary>
         /// Controls whether double clicking selects the word under the mouse pointer or not.
         /// </summary>
+        [CreateProperty]
         public bool doubleClickSelectsWord
         {
             get => textSelection.doubleClickSelectsWord;
-            set => textSelection.doubleClickSelectsWord = value;
+            set
+            {
+                if (textSelection.doubleClickSelectsWord == value)
+                    return;
+                textSelection.doubleClickSelectsWord = value;
+                NotifyPropertyChanged(doubleClickSelectsWordProperty);
+            }
         }
+
         /// <summary>
         /// Controls whether triple clicking selects the entire line under the mouse pointer or not.
         /// </summary>
+        [CreateProperty]
         public bool tripleClickSelectsLine
         {
             get => textSelection.tripleClickSelectsLine;
-            set => textSelection.tripleClickSelectsLine = value;
+            set
+            {
+                if (textSelection.tripleClickSelectsLine == value)
+                    return;
+                textSelection.tripleClickSelectsLine = value;
+                NotifyPropertyChanged(tripleClickSelectsLineProperty);
+            }
         }
 
         /// <summary>
@@ -435,10 +556,17 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Option for controlling the visibility of the vertical scroll bar in the <see cref="TextInputBaseField{TValueType}"/>.
         /// </summary>
+        [CreateProperty]
         public ScrollerVisibility verticalScrollerVisibility
         {
             get => textInputBase.verticalScrollerVisibility;
-            set => textInputBase.SetVerticalScrollerVisibility(value);
+            set
+            {
+                if (textInputBase.verticalScrollerVisibility == value)
+                    return;
+                textInputBase.SetVerticalScrollerVisibility(value);
+                NotifyPropertyChanged(verticalScrollerVisibilityProperty);
+            }
         }
 
         /// <summary>

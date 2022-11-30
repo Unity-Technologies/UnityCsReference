@@ -94,7 +94,7 @@ namespace UnityEditor.Search
         public virtual SearchViewState viewState => m_ViewModel.state;
 
         public ToolbarSearchField searchField { get; private set; }
-        internal QueryBuilder queryBuilder => (m_SearchTextInput as SearchQueryBuilderView).builder;
+        internal QueryBuilder queryBuilder => (m_SearchTextInput as SearchQueryBuilderView)?.builder;
 
         List<VisualMessage> m_VisualMessages = new();
         IVisualElementScheduledItem m_UpdateQueryErrorScheduledItem;
@@ -113,10 +113,12 @@ namespace UnityEditor.Search
             }
         }
 
-        TextField textField
+        internal TextField textField
         {
             get
             {
+                if (viewState.queryBuilderEnabled && queryBuilder != null)
+                    return queryBuilder?.textBlock?.GetSearchField()?.GetTextElement() as TextField;
                 if (searchField?.Q<TextField>() is not TextField tf)
                     return null;
                 return tf;
@@ -203,6 +205,7 @@ namespace UnityEditor.Search
 
         private void CreateSearchField(VisualElement searchFieldContainer)
         {
+            m_SearchTextInput = null;
             m_VisualMessages.Clear();
             searchFieldContainer.Clear();
             searchFieldContainer.style.flexDirection = FlexDirection.Row;
@@ -253,7 +256,7 @@ namespace UnityEditor.Search
 
         void FocusSearchField(FocusType focusType)
         {
-            if (!(textElement?.GetHostWindow()?.hasFocus ?? false))
+            if (!(textElement?.GetSearchHostWindow()?.HasFocus() ?? false))
                 return;
 
             if (textElement != null && textElement.selection != null)
@@ -400,6 +403,7 @@ namespace UnityEditor.Search
             Dispatcher.Off(SearchEvent.RefreshContent, OnRefreshContent);
 
             UnregisterCallback<KeyDownEvent>(OnSearchToolbarKeyDown);
+            searchField.UnregisterCallback<KeyDownEvent>(OnSearchFieldKeyDown);
 
             viewState.globalEventManager.UnregisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyInput);
 
@@ -414,8 +418,8 @@ namespace UnityEditor.Search
             Dispatcher.On(SearchEvent.SearchContextChanged, OnSearchContextChanged);
             Dispatcher.On(SearchEvent.RefreshBuilder, OnQueryBuilderStateChanged);
             Dispatcher.On(SearchEvent.RefreshContent, OnRefreshContent);
-
             RegisterCallback<KeyDownEvent>(OnSearchToolbarKeyDown);
+            searchField.RegisterCallback<KeyDownEvent>(OnSearchFieldKeyDown);
 
             viewState.globalEventManager.RegisterGlobalEventHandler<KeyDownEvent>(OnGlobalKeyInput, int.MaxValue);
 
@@ -473,7 +477,10 @@ namespace UnityEditor.Search
                 evt.StopPropagation();
                 evt.PreventDefault();
             }
+        }
 
+        private void OnSearchFieldKeyDown(KeyDownEvent evt)
+        {
             if (m_UndoManager.HandleEvent(evt, out var undoText, out var cursorPos, out _))
             {
                 UpdateSearchText(undoText, cursorPos);

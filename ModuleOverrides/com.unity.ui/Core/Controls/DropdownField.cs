@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
                 base.Init(ve, bag, cc);
 
                 var f = (DropdownField)ve;
-                var choices = ParseChoiceList(m_Choices.GetValueFromBag(bag, cc));
+                var choices = UxmlUtility.ParseStringListAttribute(m_Choices.GetValueFromBag(bag, cc));
                 if (choices != null)
                     f.choices = choices;
                 f.index = m_Index.GetValueFromBag(bag, cc);

@@ -234,6 +234,7 @@ namespace UnityEditor.Search
         /// <returns></returns>
         bool IsPicker();
 
+        internal int GetViewId();
         internal int totalCount { get; }
         internal bool syncSearch { get; set; }
         internal SearchPreviewManager previewManager { get; }

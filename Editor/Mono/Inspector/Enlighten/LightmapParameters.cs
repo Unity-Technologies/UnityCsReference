@@ -72,10 +72,6 @@ namespace UnityEditor
                 {
                     ++EditorGUI.indentLevel;
 
-                    EditorGUILayout.LabelField(Styles.enlightenLabel, EditorStyles.boldLabel);
-
-                    ++EditorGUI.indentLevel;
-
                     EditorGUILayout.PropertyField(m_Resolution, Styles.resolutionContent);
                     EditorGUILayout.Slider(m_ClusterResolution, 0.1F, 1.0F, Styles.clusterResolutionContent);
                     EditorGUILayout.IntSlider(m_IrradianceBudget, 32, 2048, Styles.irradianceBudgetContent);
@@ -87,27 +83,35 @@ namespace UnityEditor
                     EditorGUILayout.Space();
 
                     --EditorGUI.indentLevel;
-                    --EditorGUI.indentLevel;
                 }
             }
 
-            GUILayout.Label(Styles.bakedGIContent, EditorStyles.boldLabel);
+            m_BakedGISettings.value = EditorGUILayout.FoldoutTitlebar(m_BakedGISettings.value, Styles.bakedGIContent, true);
 
-            EditorGUILayout.PropertyField(m_AntiAliasingSamples, Styles.antiAliasingSamplesContent);
-            const float minPushOff = 0.0001f; // Keep in sync with PLM_MIN_PUSHOFF
-            EditorGUILayout.Slider(m_Pushoff, minPushOff, 1.0f, Styles.pushoffContent);
-            EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);
-            m_LimitLightmapCount.boolValue = EditorGUILayout.Toggle(Styles.limitLightmapCount, m_LimitLightmapCount.boolValue);
-            if (m_LimitLightmapCount.boolValue)
+            if (m_BakedGISettings.value)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(m_LightmapMaxCount, Styles.lightmapMaxCount);
+                EditorGUILayout.PropertyField(m_AntiAliasingSamples, Styles.antiAliasingSamplesContent);
+                const float minPushOff = 0.0001f; // Keep in sync with PLM_MIN_PUSHOFF
+                EditorGUILayout.Slider(m_Pushoff, minPushOff, 1.0f, Styles.pushoffContent);
+                EditorGUILayout.PropertyField(m_BakedLightmapTag, Styles.bakedLightmapTagContent);
+                m_LimitLightmapCount.boolValue = EditorGUILayout.Toggle(Styles.limitLightmapCount, m_LimitLightmapCount.boolValue);
+                if (m_LimitLightmapCount.boolValue)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(m_LightmapMaxCount, Styles.lightmapMaxCount);
+                    EditorGUI.indentLevel--;
+                }
                 EditorGUI.indentLevel--;
             }
-            EditorGUILayout.Space();
-
-            GUILayout.Label(Styles.generalGIContent, EditorStyles.boldLabel);
-            EditorGUILayout.Slider(m_BackFaceTolerance, 0.0f, 1.0f, Styles.backFaceToleranceContent);
+            
+            m_GeneralParametersSettings.value = EditorGUILayout.FoldoutTitlebar(m_GeneralParametersSettings.value, Styles.generalGIContent, true);
+            if (m_GeneralParametersSettings.value)
+            {
+                ++EditorGUI.indentLevel;
+                EditorGUILayout.Slider(m_BackFaceTolerance, 0.0f, 1.0f, Styles.backFaceToleranceContent);
+                --EditorGUI.indentLevel;
+            }
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -126,7 +130,7 @@ namespace UnityEditor
             public static readonly GUIContent clusterResolutionContent = EditorGUIUtility.TrTextContent("Cluster Resolution", "The ratio between the resolution of the clusters with which light bounce is calculated and the resolution of the output lightmaps that sample from these.");
             public static readonly GUIContent irradianceBudgetContent = EditorGUIUtility.TrTextContent("Irradiance Budget", "The amount of data used by each texel in the output lightmap. Specifies how fine-grained a view of the scene an output texel has. Small values mean more averaged out lighting, since the light contributions from more clusters are treated as one. Affects runtime memory usage and to a lesser degree runtime CPU usage.");
             public static readonly GUIContent irradianceQualityContent = EditorGUIUtility.TrTextContent("Irradiance Quality", "The number of rays to cast to compute which clusters affect a given output lightmap texel - the granularity of how this is saved is defined by the Irradiance Budget. Affects the speed of the precomputation but has no influence on runtime performance.");
-            public static readonly GUIContent backFaceToleranceContent = EditorGUIUtility.TrTextContent("Backface Tolerance", "The percentage of rays shot from an output texel that must hit front faces to be considered usable. Allows a texel to be invalidated if too many of the rays cast from it hit back faces (the texel is inside some geometry). In that case artefacts are avoided by cloning valid values from surrounding texels. For example, if backface tolerance is 0.0, the texel is rejected only if it sees nothing but backfaces. If it is 1.0, the ray origin is rejected if it has even one ray that hits a backface.");
+            public static readonly GUIContent backFaceToleranceContent = EditorGUIUtility.TrTextContent("Backface Tolerance", "Defines the percentage of rays which must hit front-facing geometry for the lightmapper to consider a texel valid. Increasing this number increases the likelihood that texels will be invalidated when backfaces can be seen. Invalid texels will then receive dilation.");
             public static readonly GUIContent modellingToleranceContent = EditorGUIUtility.TrTextContent("Modelling Tolerance", "Maximum size of gaps that can be ignored for GI.");
             public static readonly GUIContent edgeStitchingContent = EditorGUIUtility.TrTextContent("Edge Stitching", "If enabled, ensures that UV charts (aka UV islands) in the generated lightmaps blend together where they meet so there is no visible seam between them.");
             public static readonly GUIContent systemTagContent = EditorGUIUtility.TrTextContent("System Tag", "Systems are groups of objects whose lightmaps are in the same atlas. It is also the granularity at which dependencies are calculated. Multiple systems are created automatically if the scene is big enough, but it can be helpful to be able to split them up manually for e.g. streaming in sections of a level. The system tag lets you force an object into a different realtime system even though all the other parameters are the same.");

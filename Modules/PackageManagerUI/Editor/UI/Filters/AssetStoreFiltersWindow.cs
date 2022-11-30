@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal static readonly string[] k_Statuses =
         {
             PageFilters.k_DownloadedStatus,
+            PageFilters.k_ImportedStatus,
             PageFilters.k_UpdateAvailableStatus,
             PageFilters.k_UnlabeledStatus,
             "Hidden",

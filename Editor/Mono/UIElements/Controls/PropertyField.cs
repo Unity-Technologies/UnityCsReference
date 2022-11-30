@@ -261,6 +261,7 @@ namespace UnityEditor.UIElements
             {
                 if (handler.hasPropertyDrawer)
                 {
+                    handler.propertyDrawer.m_PreferredLabel = label ?? serializedProperty.localizedDisplayName;
                     customPropertyGUI = handler.propertyDrawer.CreatePropertyGUI(m_SerializedProperty);
 
                     if (customPropertyGUI == null)
@@ -299,7 +300,7 @@ namespace UnityEditor.UIElements
         {
              var decorators = handler.decoratorDrawers;
 
-             if (decorators == null || decorators.Count == 0)
+             if (decorators == null || decorators.Count == 0 || m_DrawNestingLevel > 0)
              {
                  if (m_DecoratorDrawersContainer != null)
                  {
@@ -391,6 +392,9 @@ namespace UnityEditor.UIElements
                     var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
                     using (var nestingContext = handler.ApplyNestingContext(m_DrawNestingLevel))
                     {
+                        // Decorator drawers are already handled on the uitk side
+                        handler.skipDecoratorDrawers = true;
+
                         if (label == null)
                         {
                             EditorGUILayout.PropertyField(serializedProperty, true);

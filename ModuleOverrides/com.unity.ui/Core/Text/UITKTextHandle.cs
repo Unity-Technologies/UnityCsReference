@@ -361,6 +361,9 @@ namespace UnityEngine.UIElements
 
     internal static class TextUtilities
     {
+        public static Func<TextSettings> getEditorTextSettings;
+        public static Func<string, float> getEditorTextSharpness;
+
         internal static Vector2 MeasureVisualElementTextSize(TextElement te, string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode)
         {
             float measuredWidth = float.NaN;
@@ -420,9 +423,9 @@ namespace UnityEngine.UIElements
 
             var textSettings = GetTextSettingsFrom(ve);
             if (ve.computedStyle.unityFontDefinition.font != null)
-                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font);
+                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font, TextShaderUtilities.ShaderRef_MobileSDF);
             else if (ve.computedStyle.unityFont != null)
-                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont);
+                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont, TextShaderUtilities.ShaderRef_MobileSDF);
             return null;
         }
 
@@ -442,11 +445,11 @@ namespace UnityEngine.UIElements
             return ve.computedStyle.unityFont != null || !ve.computedStyle.unityFontDefinition.IsEmpty();
         }
 
-        internal static PanelTextSettings GetTextSettingsFrom(VisualElement ve)
+        internal static TextSettings GetTextSettingsFrom(VisualElement ve)
         {
             if (ve.panel is RuntimePanel runtimePanel)
                 return runtimePanel.panelSettings.textSettings ?? PanelTextSettings.defaultPanelTextSettings;
-            return PanelTextSettings.defaultPanelTextSettings;
+            return getEditorTextSettings();
         }
 
         internal static TextCoreSettings GetTextCoreSettingsForElement(VisualElement ve)

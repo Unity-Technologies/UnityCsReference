@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using System.Text;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
@@ -15,6 +16,8 @@ namespace UnityEditor.UIElements
     /// </summary>
     public abstract class BaseMaskField<TChoice> : BasePopupField<TChoice, string>
     {
+        internal static readonly DataBindingProperty choicesMasksProperty = nameof(choicesMasks);
+
         internal abstract TChoice MaskToValue(int newMask);
         internal abstract int ValueToMask(TChoice value);
 
@@ -126,6 +129,7 @@ namespace UnityEditor.UIElements
 
                 // Make sure to update the text displayed
                 SetValueWithoutNotify(rawValue);
+                NotifyPropertyChanged(choicesProperty);
             }
         }
 
@@ -142,6 +146,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// The list of list of masks for every specific choice to display in the popup menu.
         /// </summary>
+        [CreateProperty]
         public virtual List<int> choicesMasks
         {
             get { return m_UserChoicesMasks; }
@@ -167,6 +172,7 @@ namespace UnityEditor.UIElements
                     // Make sure to update the text displayed
                     SetValueWithoutNotify(rawValue);
                 }
+                NotifyPropertyChanged(choicesMasksProperty);
             }
         }
 
@@ -543,7 +549,7 @@ namespace UnityEditor.UIElements
                 string choicesFromBag = m_MaskChoices.GetValueFromBag(bag, cc);
 
 
-                var listOfChoices = ParseChoiceList(choicesFromBag);
+                var listOfChoices = UxmlUtility.ParseStringListAttribute(choicesFromBag);
 
                 if (listOfChoices != null && listOfChoices.Count > 0)
                 {

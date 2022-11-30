@@ -299,6 +299,7 @@ namespace UnityEditor.Search
                 title = "Unity";
             if (!forceViewMode && !runningTests)
                 itemSize = SearchSettings.itemIconSize;
+            hideTabs = SearchSettings.hideTabs;
 
             if (!runningTests && flags.HasNone(SearchViewFlags.OpenInBuilderMode) && flags.HasNone(SearchViewFlags.OpenInTextMode))
                 queryBuilderEnabled = SearchSettings.queryBuilder;

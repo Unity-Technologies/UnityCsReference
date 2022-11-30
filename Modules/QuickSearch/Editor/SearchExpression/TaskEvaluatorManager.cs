@@ -85,7 +85,7 @@ namespace UnityEditor.Search
                 }
             });
 
-            while (!concurrentList.IsEmpty || !TaskHelper.IsTaskFinished(task))
+            while (!TaskHelper.IsTaskFinished(task) || !concurrentList.IsEmpty)
             {
                 if (cancelToken.IsCancellationRequested)
                 {
@@ -101,7 +101,9 @@ namespace UnityEditor.Search
                     yield return null;
                 }
                 while (concurrentList.TryTake(out var item))
+                {
                     yield return item;
+                }
             }
 
             yieldSignal.Dispose();

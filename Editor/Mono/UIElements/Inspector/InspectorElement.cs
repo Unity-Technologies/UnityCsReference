@@ -385,7 +385,11 @@ namespace UnityEditor.UIElements
 
         private Editor GetOrCreateEditor(SerializedObject serializedObject)
         {
-            var target = serializedObject?.targetObject;
+            Object target = null;
+            if (serializedObject != null && serializedObject.m_NativeObjectPtr != IntPtr.Zero) {
+                target = serializedObject.targetObject;
+            }
+
 
             if (editor != null)
             {
@@ -411,7 +415,10 @@ namespace UnityEditor.UIElements
 
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
-            var ed = Editor.CreateEditor(serializedObject?.targetObject);
+            if (serializedObject != null && serializedObject.m_NativeObjectPtr != IntPtr.Zero) {
+                target = serializedObject.targetObject;
+            }
+            var ed = Editor.CreateEditor(target);
             editor = ed;
             ownsEditor = true;
 

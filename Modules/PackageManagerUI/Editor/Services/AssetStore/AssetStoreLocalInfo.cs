@@ -13,6 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public long productId;
         public long uploadId;
         public long versionId;
+        public string title;
         public string versionString;
         public string publishedDate;
         public string supportedVersion;
@@ -36,6 +37,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     productId = productId,
                     packagePath = localInfo.packagePath ?? string.Empty,
+                    title = jsonInfo.GetString("title") ?? string.Empty,
                     versionString = jsonInfo.GetString("version") ?? string.Empty,
                     versionId = jsonInfo.GetStringAsLong("version_id"),
                     uploadId = jsonInfo.GetStringAsLong("upload_id"),

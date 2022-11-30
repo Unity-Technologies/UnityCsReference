@@ -32,6 +32,7 @@ namespace UnityEditor
             public static readonly GUIContent displayOcclusion = EditorGUIUtility.TrTextContent("Display Occlusion");
             public static readonly GUIContent highlightInvalidCells = EditorGUIUtility.TrTextContent("Highlight Invalid Cells", "Highlight the invalid cells that cannot be used for probe interpolation.");
             public static readonly GUIContent progressiveGPUBakingDevice = EditorGUIUtility.TrTextContent("GPU Baking Device", "Will list all available GPU devices.");
+            public static readonly GUIContent gpuBakingProfile = EditorGUIUtility.TrTextContent("GPU Baking Profile", "The profile chosen for trading off between performance and memory usage when baking using the GPU.");
             public static readonly GUIContent progressiveGPUChangeWarning = EditorGUIUtility.TrTextContent("Changing the compute device used by the Progressive GPU Lightmapper requires the editor to be relaunched. Do you want to change device and restart?");
             public static readonly GUIContent concurrentJobs = EditorGUIUtility.TrTextContent("Concurrent Jobs", "The amount of simultaneously scheduled jobs.");
             public static readonly GUIContent progressiveGPUUnknownDeviceInfo = EditorGUIUtility.TrTextContent("No devices found. Please start an initial bake to make this information available.");
@@ -50,13 +51,26 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Low"),
                 EditorGUIUtility.TrTextContent("High")
             };
+
+            // Keep in sync with BakingProfile.h::BakingProfile
+            public static readonly int bakingProfileDefault = 2;
+            public static readonly int[] bakingProfileValues = {0, 1, 2, 3, 4};
+            public static readonly GUIContent[] bakingProfileStrings =
+            {
+                EditorGUIUtility.TrTextContent("Highest Performance"),
+                EditorGUIUtility.TrTextContent("High Performance"),
+                EditorGUIUtility.TrTextContent("Balanced"),
+                EditorGUIUtility.TrTextContent("Low Memory Usage"),
+                EditorGUIUtility.TrTextContent("Lowest Memory Usage"),
+            };
         }
 
         SavedBool m_ShowLightingSettings;
         SavedBool m_ShowWorkflowSettings;
         SavedBool m_ShowProbeDebugSettings;
         Vector2 m_ScrollPosition = Vector2.zero;
-        string m_LightmappingDeviceIndex = "lightmappingDeviceIndex";
+        string m_LightmappingDeviceIndexKey = "lightmappingDeviceIndex";
+        string m_BakingProfileKey = "lightmappingBakingProfile";
         LightingWindowBakeSettings m_BakeSettings;
 
         SerializedObject m_LightmapSettings;
@@ -179,7 +193,7 @@ namespace UnityEditor
                         GUIContent[] lightmappingDeviceStrings = devicesAndPlatforms.Select(x => new GUIContent(x.name)).ToArray();
 
                         int bakingDeviceAndPlatform = -1;
-                        string configDeviceAndPlatform = EditorUserSettings.GetConfigValue(m_LightmappingDeviceIndex);
+                        string configDeviceAndPlatform = EditorUserSettings.GetConfigValue(m_LightmappingDeviceIndexKey);
                         if (configDeviceAndPlatform != null)
                         {
                             bakingDeviceAndPlatform = Int32.Parse(configDeviceAndPlatform);
@@ -199,7 +213,7 @@ namespace UnityEditor
                         {
                             if (EditorUtility.DisplayDialog("Warning", Styles.progressiveGPUChangeWarning.text, "OK", "Cancel"))
                             {
-                                EditorUserSettings.SetConfigValue(m_LightmappingDeviceIndex, bakingDeviceAndPlatform.ToString());
+                                EditorUserSettings.SetConfigValue(m_LightmappingDeviceIndexKey, bakingDeviceAndPlatform.ToString());
                                 DeviceAndPlatform selectedDeviceAndPlatform = devicesAndPlatforms[bakingDeviceAndPlatform];
                                 EditorApplication.CloseAndRelaunch(new string[] { "-OpenCL-PlatformAndDeviceIndices", selectedDeviceAndPlatform.platformId.ToString(), selectedDeviceAndPlatform.deviceId.ToString() });
                             }
@@ -215,6 +229,20 @@ namespace UnityEditor
 
                         EditorGUILayout.HelpBox(Styles.progressiveGPUUnknownDeviceInfo.text, MessageType.Info);
                     }
+
+                    // Handle the baking profile setting
+                    int bakingProfile = Styles.bakingProfileDefault;
+                    string bakingProfileString = EditorUserSettings.GetConfigValue(m_BakingProfileKey);
+                    if (bakingProfileString != null)
+                    {
+                        if (Int32.TryParse(bakingProfileString, out int bakingProfileStoredValue))
+                        {
+                            if (bakingProfileStoredValue >= 0 && bakingProfileStoredValue <= 4)
+                                bakingProfile = bakingProfileStoredValue;
+                        }
+                    }
+                    bakingProfile = EditorGUILayout.IntPopup(Styles.gpuBakingProfile, bakingProfile, Styles.bakingProfileStrings, Styles.bakingProfileValues);
+                    EditorUserSettings.SetConfigValue(m_BakingProfileKey, bakingProfile.ToString());
                 }
 
                 m_ShowProbeDebugSettings.value = EditorGUILayout.Foldout(m_ShowProbeDebugSettings.value, Styles.lightProbeVisualization, true);

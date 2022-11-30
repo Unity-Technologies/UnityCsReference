@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -17,6 +18,9 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class TemplateContainer : BindableElement
     {
+        internal static readonly DataBindingProperty templateIdProperty = nameof(templateId);
+        internal static readonly DataBindingProperty templateSourceProperty = nameof(templateSource);
+
         /// <summary>
         /// Instantiates and clones a <see cref="TemplateContainer"/> using the data read from a UXML file.
         /// </summary>
@@ -88,6 +92,7 @@ namespace UnityEngine.UIElements
         /// The local ID of the template in the parent UXML file (RO).
         /// </summary>
         /// <remarks>This value is null, unless the TemplateContainer represents a UXML template within another UXML file.</remarks>
+        [CreateProperty(ReadOnly = true)]
         public string templateId { get; private set; }
         private VisualElement m_ContentContainer;
 
@@ -97,6 +102,7 @@ namespace UnityEngine.UIElements
         /// Stores the template asset reference, if the generated element is cloned from a VisualTreeAsset as a
         /// Template declaration inside another VisualTreeAsset.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public VisualTreeAsset templateSource
         {
             get => m_TemplateSource;

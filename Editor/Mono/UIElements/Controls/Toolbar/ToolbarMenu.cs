@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Properties;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -11,6 +12,9 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ToolbarMenu : TextElement, IToolbarMenuElement
     {
+        internal static readonly DataBindingProperty menuProperty = nameof(menu);
+        internal static readonly DataBindingProperty variantProperty = nameof(variant);
+
         /// <summary>
         /// Instantiates a <see cref="ToolbarMenu"/> using the data read from a UXML file.
         /// </summary>
@@ -38,6 +42,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// The menu.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public DropdownMenu menu { get; }
         public override string text
         {
@@ -93,13 +98,18 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// The display styles that you can use when creating menus.
         /// </summary>
+        [CreateProperty]
         public Variant variant
         {
             get { return m_Variant; }
             set
             {
+                var previous = m_Variant;
                 m_Variant = value;
                 EnableInClassList(popupVariantUssClassName, value == Variant.Popup);
+
+                if (previous != m_Variant)
+                    NotifyPropertyChanged(variantProperty);
             }
         }
     }

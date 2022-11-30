@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -26,7 +27,7 @@ namespace UnityEditor
 
         internal int m_DisplayIndex;
         internal bool m_IsFullscreenContainer;
-        internal bool m_IsForceTitleBar;
+        internal bool m_IsMppmCloneWindow;
 
         internal bool m_DontSaveToLayout = false;
         private bool m_HasUnsavedChanges = false;
@@ -373,9 +374,10 @@ namespace UnityEditor
             DestroyImmediate(this, true);
         }
 
-        internal bool InternalIsForceTitleBar()
+        [RequiredByNativeCode]
+        internal bool IsMultiplayerClone()
         {
-            return m_IsForceTitleBar;
+            return m_IsMppmCloneWindow;
         }
 
         private static List<EditorWindow> FindUnsavedChanges(View view)

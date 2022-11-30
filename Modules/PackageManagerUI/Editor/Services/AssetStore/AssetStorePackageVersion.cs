@@ -31,6 +31,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private long m_VersionId;
         [SerializeField]
         private List<SemVersion> m_SupportedUnityVersions;
+        [SerializeField]
+        private AssetStoreImportedPackage m_ImportedPackage;
 
         [SerializeField]
         private string m_SupportedUnityVersionString;
@@ -71,6 +73,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IEnumerable<PackageSizeInfo> sizes => m_SizeInfos;
 
+        public override IEnumerable<Asset> importedAssets => m_ImportedPackage;
+
         public void SetLocalPath(IOProxy ioProxy, string path)
         {
             m_LocalPath = path ?? string.Empty;
@@ -85,7 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public AssetStorePackageVersion(IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null)
+        public AssetStorePackageVersion(IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null, AssetStoreImportedPackage importedPackage = null)
         {
             if (productInfo == null)
                 throw new ArgumentNullException(nameof(productInfo));
@@ -104,6 +108,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionString = localInfo?.versionString ?? productInfo.versionString ?? string.Empty;
             m_VersionId = localInfo?.versionId ?? productInfo.versionId;
             SemVersionParser.TryParse(m_VersionString.Trim(), out m_Version);
+
+            m_ImportedPackage = importedPackage;
 
             var publishDateString = localInfo?.publishedDate ?? productInfo.publishedDate ?? string.Empty;
             m_PublishedDateTicks = !string.IsNullOrEmpty(publishDateString) ? DateTime.Parse(publishDateString).Ticks : 0;

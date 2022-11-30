@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -17,6 +18,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel
     {
+        internal static readonly DataBindingProperty valueProperty = nameof(value);
+        internal static readonly DataBindingProperty labelProperty = nameof(label);
+        internal static readonly DataBindingProperty showMixedValueProperty = nameof(showMixedValue);
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseField"/>.
         /// </summary>
@@ -37,26 +42,6 @@ namespace UnityEngine.UIElements
             {
                 base.Init(ve, bag, cc);
                 ((BaseField<TValueType>)ve).label = m_Label.GetValueFromBag(bag, cc);
-            }
-
-            internal static List<string> ParseChoiceList(string choicesFromBag)
-            {
-                if (string.IsNullOrEmpty(choicesFromBag.Trim()))
-                    return null;
-
-                // Here the choices is comma separated in the string...
-                var choices = choicesFromBag.Split(',');
-
-                if (choices.Length != 0)
-                {
-                    var listOfChoices = new List<string>();
-                    foreach (var choice in choices)
-                    {
-                        listOfChoices.Add(choice.Trim());
-                    }
-                    return listOfChoices;
-                }
-                return null;
             }
         }
 
@@ -138,7 +123,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         TValueType m_Value;
 
         /// <summary>
@@ -155,6 +140,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The value associated with the field.
         /// </summary>
+        [CreateProperty]
         public virtual TValueType value
         {
             get
@@ -175,6 +161,7 @@ namespace UnityEngine.UIElements
                             evt.elementTarget = this;
                             SendEvent(evt);
                         }
+                        NotifyPropertyChanged(valueProperty);
                     }
                     else
                     {
@@ -191,6 +178,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The string representing the label that will appear beside the field.
         /// </summary>
+        [CreateProperty]
         public string label
         {
             get
@@ -202,7 +190,6 @@ namespace UnityEngine.UIElements
                 if (labelElement.text != value)
                 {
                     labelElement.text = value;
-
                     if (string.IsNullOrEmpty(labelElement.text))
                     {
                         AddToClassList(noLabelVariantUssClassName);
@@ -216,6 +203,8 @@ namespace UnityEngine.UIElements
                             RemoveFromClassList(noLabelVariantUssClassName);
                         }
                     }
+
+                    NotifyPropertyChanged(labelProperty);
                 }
             }
         }
@@ -225,6 +214,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// When set to true, gives the field the appearance of editing multiple different values.
         /// </summary>
+        [CreateProperty]
         public bool showMixedValue
         {
             get => m_ShowMixedValue;
@@ -236,6 +226,8 @@ namespace UnityEngine.UIElements
 
                 // Once value has been set, update the field's appearance
                 UpdateMixedValueContent();
+
+                NotifyPropertyChanged(showMixedValueProperty);
             }
         }
 

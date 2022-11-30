@@ -44,6 +44,20 @@ namespace UnityEngine
         HideAndDontSave = HideInHierarchy | DontSaveInEditor | NotEditable | DontSaveInBuild | DontUnloadUnusedAsset
     }
 
+    // Must match Scripting::FindObjectsSortMode
+    public enum FindObjectsSortMode
+    {
+        None = 0,
+        InstanceID = 1
+    }
+
+    // Must match Scripting::FindObjectsInactive
+    public enum FindObjectsInactive
+    {
+        Exclude = 0,
+        Include = 1
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode(GenerateProxy = true)]
     [NativeHeader("Runtime/Export/Scripting/UnityEngineObject.bindings.h")]
@@ -284,16 +298,50 @@ namespace UnityEngine
             DestroyImmediate(obj, allowDestroyingAssets);
         }
 
-        // Returns a list of all active loaded objects of Type /type/.
+        /*
+         * Profiling enter/exit playmode with the Volvo Test Track project and Gigaya has shown that ~95% of the time spent in FindObjectsOfType() is spent sorting the array by InstanceID even though in almost all cases this is not thought to be necessary.
+         * In the Volvo project(2022.1) during a single enter/exit playmode cycle 203ms was spent in Object::FindObjectsOfType() of which 190ms was in the sorting(93.6%)
+         * In Gigaya(2021.3) during a single enter/exit playmode cycle 496ms was spent in Object::FindObjectsOfType() of which 461ms was in the sorting(92.9%)
+         * There has been a lengthy discussion in #devs-scripting about possible solutions to this (https://unity.slack.com/archives/C06TPSM32/p1651840563109579), the consensus is to deprecate FindObjectsOfType() and replace it with FindObjectsByType()
+         * which lets the user choose whether to perform the sort or not
+         * Note it is considered undesirable to have the API updater automatically convert FindObjectsOfType() to FindObjectsByType(FindObjectsSortMode.InstanceID) as we really want users to assess their usage on a case by case basis and only choose
+         * sorting when necessary to maximise the performance gain
+         * The plan is:
+         *   2023.1 :
+         *     FindObjectsOfType() Obsolete(warning), direct users to FindObjectsByType
+         *     FindObjectOfType() Obsolete(warning), direct users to FindFirstObjectByType and FindAnyObjectByType
+         *   2023.2
+         *     FindObjectsOfType() Obsolete(error), direct users to FindObjectsByType
+         *     FindObjectOfType() Obsolete(error), direct users to FindFirstObjectByType and FindAnyObjectByType
+         *   2024.2
+         *     FindObjectsOfType() deleted
+         *     FindObjectOfType() deleted
+         * This work is captured in https://jira.unity3d.com/browse/COPT-854
+         * */
+
+        // Returns a list of all active loaded objects of Type /type/. Results are sorted by InstanceID
+        [Obsolete("Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID, but if you do not need this using FindObjectSortMode.None is considerably faster.", false)]
         public static Object[] FindObjectsOfType(Type type)
         {
             return FindObjectsOfType(type, false);
         }
 
-        // Returns a list of all loaded objects of Type /type/.
+        // Returns a list of all loaded objects of Type /type/. Results are sorted by InstanceID
         [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
         [FreeFunction("UnityEngineObjectBindings::FindObjectsOfType")]
+        [Obsolete("Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.", false)]
         public extern static Object[] FindObjectsOfType(Type type, bool includeInactive);
+
+        // Returns a list of all active loaded objects of Type /type/.
+        public static Object[] FindObjectsByType(Type type, FindObjectsSortMode sortMode)
+        {
+            return FindObjectsByType(type, FindObjectsInactive.Exclude, sortMode);
+        }
+
+        // Returns a list of all loaded objects of Type /type/.
+        [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
+        [FreeFunction("UnityEngineObjectBindings::FindObjectsByType")]
+        public extern static Object[] FindObjectsByType(Type type, FindObjectsInactive findObjectsInactive, FindObjectsSortMode sortMode);
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
         [FreeFunction("GetSceneManager().DontDestroyOnLoad", ThrowsException = true)]
@@ -320,7 +368,7 @@ namespace UnityEngine
         }
 
         //*undocumented* DEPRECATED
-        [Obsolete("warning use Object.FindObjectsOfType instead.")]
+        [Obsolete("Object.FindSceneObjectsOfType has been deprecated, Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindSceneObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.", false)]
         public static Object[] FindSceneObjectsOfType(Type type)
         {
             return FindObjectsOfType(type);
@@ -331,24 +379,63 @@ namespace UnityEngine
         [FreeFunction("UnityEngineObjectBindings::FindObjectsOfTypeIncludingAssets")]
         public extern static Object[] FindObjectsOfTypeIncludingAssets(Type type);
 
+        // Returns a list of all loaded objects of Type /type/. Results are sorted by InstanceID
+        [Obsolete("Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.", false)]
         public static T[] FindObjectsOfType<T>() where T : Object
         {
             return Resources.ConvertObjects<T>(FindObjectsOfType(typeof(T), false));
         }
 
+        // Returns a list of all loaded objects of Type /type/
+        public static T[] FindObjectsByType<T>(FindObjectsSortMode sortMode) where T : Object
+        {
+            return Resources.ConvertObjects<T>(FindObjectsByType(typeof(T), FindObjectsInactive.Exclude, sortMode));
+        }
+
+        // Returns a list of all loaded objects of Type /type/. Results are sorted by InstanceID
+        [Obsolete("Object.FindObjectsOfType has been deprecated. Use Object.FindObjectsByType instead which lets you decide whether you need the results sorted or not.  FindObjectsOfType sorts the results by InstanceID but if you do not need this using FindObjectSortMode.None is considerably faster.", false)]
         public static T[] FindObjectsOfType<T>(bool includeInactive) where T : Object
         {
             return Resources.ConvertObjects<T>(FindObjectsOfType(typeof(T), includeInactive));
         }
 
+        // Returns a list of all loaded objects of Type /type/. Order of results is not guaranteed to be consistent between calls
+        public static T[] FindObjectsByType<T>(FindObjectsInactive findObjectsInactive, FindObjectsSortMode sortMode) where T : Object
+        {
+            return Resources.ConvertObjects<T>(FindObjectsByType(typeof(T), findObjectsInactive, sortMode));
+        }
+
+
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
         public static T FindObjectOfType<T>() where T : Object
         {
             return (T)FindObjectOfType(typeof(T), false);
         }
 
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
         public static T FindObjectOfType<T>(bool includeInactive) where T : Object
         {
             return (T)FindObjectOfType(typeof(T), includeInactive);
+        }
+
+        public static T FindFirstObjectByType<T>() where T : Object
+        {
+            return (T)FindFirstObjectByType(typeof(T), FindObjectsInactive.Exclude);
+        }
+
+        public static T FindAnyObjectByType<T>() where T : Object
+        {
+            return (T)FindAnyObjectByType(typeof(T), FindObjectsInactive.Exclude);
+        }
+
+        public static T FindFirstObjectByType<T>(FindObjectsInactive findObjectsInactive) where T : Object
+        {
+            return (T)FindFirstObjectByType(typeof(T), findObjectsInactive);
+        }
+
+        public static T FindAnyObjectByType<T>(FindObjectsInactive findObjectsInactive) where T : Object
+        {
+            return (T)FindAnyObjectByType(typeof(T), findObjectsInactive);
         }
 
         [System.Obsolete("Please use Resources.FindObjectsOfTypeAll instead")]
@@ -365,6 +452,7 @@ namespace UnityEngine
 
         // Returns the first active loaded object of Type /type/.
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
         public static Object FindObjectOfType(System.Type type)
         {
             Object[] objects = FindObjectsOfType(type, false);
@@ -374,8 +462,21 @@ namespace UnityEngine
                 return null;
         }
 
+        public static Object FindFirstObjectByType(System.Type type)
+        {
+            Object[] objects = FindObjectsByType(type, FindObjectsInactive.Exclude, FindObjectsSortMode.InstanceID);
+            return (objects.Length > 0) ? objects[0] : null;
+        }
+
+        public static Object FindAnyObjectByType(System.Type type)
+        {
+            Object[] objects = FindObjectsByType(type, FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            return (objects.Length > 0) ? objects[0] : null;
+        }
+
         // Returns the first active loaded object of Type /type/.
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
+        [Obsolete("Object.FindObjectOfType has been deprecated. Use Object.FindFirstObjectByType instead or if finding any instance is acceptable the faster Object.FindAnyObjectByType", false)]
         public static Object FindObjectOfType(System.Type type, bool includeInactive)
         {
             Object[] objects = FindObjectsOfType(type, includeInactive);
@@ -383,6 +484,18 @@ namespace UnityEngine
                 return objects[0];
             else
                 return null;
+        }
+
+        public static Object FindFirstObjectByType(System.Type type, FindObjectsInactive findObjectsInactive)
+        {
+            Object[] objects = FindObjectsByType(type, findObjectsInactive, FindObjectsSortMode.InstanceID);
+            return (objects.Length > 0) ? objects[0] : null;
+        }
+
+        public static Object FindAnyObjectByType(System.Type type, FindObjectsInactive findObjectsInactive)
+        {
+            Object[] objects = FindObjectsByType(type, findObjectsInactive, FindObjectsSortMode.None);
+            return (objects.Length > 0) ? objects[0] : null;
         }
 
         // Returns the name of the game object.

@@ -13,12 +13,6 @@ namespace UnityEditor
     //Attribute that should be deprecated in 2020.1
     //Will be replaced by ScriptableRenderPipelineAttribute
     //Kept for package compatibility and user SRP compatibility at the moment
-    [AttributeUsage(AttributeTargets.Class)]
-    public class LightingExplorerExtensionAttribute : ScriptableRenderPipelineExtensionAttribute
-    {
-        public LightingExplorerExtensionAttribute(Type renderPipeline)
-            : base(renderPipeline) {}
-    }
 
     public interface ILightingExplorerExtension
     {
@@ -92,7 +86,7 @@ namespace UnityEditor
                 {
                     if (i == (m_TableTabs.Length - 1)) // last tab containing materials
                     {
-                        int[] selectedIds = UnityEngine.Object.FindObjectsOfType<MeshRenderer>().Where((MeshRenderer mr) => {
+                        int[] selectedIds = UnityEngine.Object.FindObjectsByType<MeshRenderer>(UnityEngine.FindObjectsSortMode.InstanceID).Where((MeshRenderer mr) => {
                             return Selection.instanceIDs.Contains(mr.gameObject.GetInstanceID());
                         }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
                                 return m != null && (m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0;
@@ -185,29 +179,23 @@ namespace UnityEditor
             }
         }
 
-        private ILightingExplorerExtension GetDefaultLightingExplorerExtension()
+        ILightingExplorerExtension GetDefaultLightingExplorerExtension()
         {
-            if (s_DefaultLightingExplorerExtension == null)
-            {
-                s_DefaultLightingExplorerExtension = new DefaultLightingExplorerExtension();
-            }
-            return s_DefaultLightingExplorerExtension;
+            return s_DefaultLightingExplorerExtension ??= new DefaultLightingExplorerExtension();
         }
 
-        private ILightingExplorerExtension GetLightExplorerExtension(System.Type currentSRPType)
+        ILightingExplorerExtension GetLightExplorerExtension(Type currentSRPType)
         {
             if (currentSRPType == null)
                 return GetDefaultLightingExplorerExtension();
 
-            Type extensionType = RenderPipelineEditorUtility.FetchFirstCompatibleTypeUsingScriptableRenderPipelineExtension<ILightingExplorerExtension>();
-            if (extensionType != null)
-            {
-                ILightingExplorerExtension extension = (ILightingExplorerExtension)System.Activator.CreateInstance(extensionType);
-                return extension;
-            }
+            var extensionType = RenderPipelineEditorUtility.GetDerivedTypesSupportedOnCurrentPipeline<ILightingExplorerExtension>().FirstOrDefault();
+            if (extensionType == null)
+                return GetDefaultLightingExplorerExtension();
 
+            var extension = (ILightingExplorerExtension) Activator.CreateInstance(extensionType);
+            return extension;
             // no light explorer extension found for current srp, return the default one
-            return GetDefaultLightingExplorerExtension();
         }
     }
 }

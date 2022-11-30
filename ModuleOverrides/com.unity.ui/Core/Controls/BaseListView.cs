@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -33,6 +34,12 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseListView : BaseVerticalCollectionView
     {
+        internal static readonly DataBindingProperty showBoundCollectionSizeProperty = nameof(showBoundCollectionSize);
+        internal static readonly DataBindingProperty showFoldoutHeaderProperty = nameof(showFoldoutHeader);
+        internal static readonly DataBindingProperty headerTitleProperty = nameof(headerTitle);
+        internal static readonly DataBindingProperty showAddRemoveFooterProperty = nameof(showAddRemoveFooter);
+        internal static readonly DataBindingProperty reorderModeProperty = nameof(reorderMode);
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseListView"/>.
         /// </summary>
@@ -89,6 +96,7 @@ namespace UnityEngine.UIElements
         /// linked correctly. In production, the collection size rarely displays as a line item in a ListView.
         /// </remarks>>
         /// <seealso cref="UnityEditor.UIElements.BindingExtensions.Bind"/>
+        [CreateProperty]
         public bool showBoundCollectionSize
         {
             get => m_ShowBoundCollectionSize;
@@ -100,6 +108,7 @@ namespace UnityEngine.UIElements
                 m_ShowBoundCollectionSize = value;
 
                 SetupArraySizeField();
+                NotifyPropertyChanged(showBoundCollectionSizeProperty);
             }
         }
 
@@ -118,6 +127,7 @@ namespace UnityEngine.UIElements
         /// If <see cref="showBoundCollectionSize"/> is set to <c>true</c>, the header includes a TextField to control
         /// the array size, instead of using the field as part of the list.
         /// </remarks>>
+        [CreateProperty]
         public bool showFoldoutHeader
         {
             get => m_ShowFoldoutHeader;
@@ -130,30 +140,37 @@ namespace UnityEngine.UIElements
 
                 EnableInClassList(listViewWithHeaderUssClassName, value);
 
-                if (m_ShowFoldoutHeader)
+                try
                 {
-                    if (m_Foldout != null)
-                        return;
+                    if (m_ShowFoldoutHeader)
+                    {
+                        if (m_Foldout != null)
+                            return;
 
-                    m_Foldout = new Foldout() { name = foldoutHeaderUssClassName, text = m_HeaderTitle };
-                    m_Foldout.AddToClassList(foldoutHeaderUssClassName);
-                    m_Foldout.tabIndex = 1;
-                    hierarchy.Add(m_Foldout);
-                    m_Foldout.Add(scrollView);
+                        m_Foldout = new Foldout() {name = foldoutHeaderUssClassName, text = m_HeaderTitle};
+                        m_Foldout.AddToClassList(foldoutHeaderUssClassName);
+                        m_Foldout.tabIndex = 1;
+                        hierarchy.Add(m_Foldout);
+                        m_Foldout.Add(scrollView);
+                    }
+                    else if (m_Foldout != null)
+                    {
+                        m_Foldout?.RemoveFromHierarchy();
+                        m_Foldout = null;
+                        hierarchy.Add(scrollView);
+                    }
+
+                    SetupArraySizeField();
+                    UpdateListViewLabel();
+
+                    if (showAddRemoveFooter)
+                    {
+                        EnableFooter(true);
+                    }
                 }
-                else if (m_Foldout != null)
+                finally
                 {
-                    m_Foldout?.RemoveFromHierarchy();
-                    m_Foldout = null;
-                    hierarchy.Add(scrollView);
-                }
-
-                SetupArraySizeField();
-                UpdateListViewLabel();
-
-                if (showAddRemoveFooter)
-                {
-                    EnableFooter(true);
+                    NotifyPropertyChanged(showFoldoutHeaderProperty);
                 }
             }
         }
@@ -182,15 +199,21 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This property controls the text of the foldout header when using <see cref="showFoldoutHeader"/>.
         /// </summary>
+        [CreateProperty]
         public string headerTitle
         {
             get => m_HeaderTitle;
             set
             {
+                var previous = m_HeaderTitle;
+
                 m_HeaderTitle = value;
 
                 if (m_Foldout != null)
                     m_Foldout.text = m_HeaderTitle;
+
+                if (string.CompareOrdinal(previous, m_HeaderTitle) != 0)
+                    NotifyPropertyChanged(headerTitleProperty);
             }
         }
 
@@ -204,10 +227,18 @@ namespace UnityEngine.UIElements
         /// A "+" button. When clicked, it adds a single item at the end of the list view.
         /// A "-" button. When clicked, it removes all selected items, or the last item if none are selected.
         /// </remarks>
+        [CreateProperty]
         public bool showAddRemoveFooter
         {
             get => m_Footer != null;
-            set => EnableFooter(value);
+            set
+            {
+                var previous = showAddRemoveFooter;
+                EnableFooter(value);
+
+                if (previous != showFoldoutHeader)
+                    NotifyPropertyChanged(showAddRemoveFooterProperty);
+            }
         }
 
         internal Foldout headerFoldout => m_Foldout;
@@ -479,6 +510,7 @@ namespace UnityEngine.UIElements
         /// drop manipulation pushes items with an animation when the reordering happens.
         /// Multiple item reordering is only supported with the <c>Simple</c> drag mode.
         /// </remarks>
+        [CreateProperty]
         public ListViewReorderMode reorderMode
         {
             get => m_ReorderMode;
@@ -490,6 +522,7 @@ namespace UnityEngine.UIElements
                     InitializeDragAndDropController(reorderable);
                     reorderModeChanged?.Invoke();
                     Rebuild();
+                    NotifyPropertyChanged(reorderModeProperty);
                 }
             }
         }

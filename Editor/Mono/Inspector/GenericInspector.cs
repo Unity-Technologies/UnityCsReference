@@ -68,11 +68,19 @@ namespace UnityEditor
 
             // Update serialized object representation
             if (m_SerializedObject == null)
-                m_SerializedObject = new SerializedObject(targets, m_Context) { inspectorMode = inspectorMode };
+            {
+                m_SerializedObject = new SerializedObject(targets, m_Context)
+                {
+                    inspectorMode = inspectorMode,
+                    inspectorDataMode = dataMode
+                };
+            }
             else
             {
                 m_SerializedObject.Update();
                 m_SerializedObject.inspectorMode = inspectorMode;
+                if (m_SerializedObject.inspectorDataMode != dataMode)
+                    m_SerializedObject.inspectorDataMode = dataMode;
             }
 
             height = 0;

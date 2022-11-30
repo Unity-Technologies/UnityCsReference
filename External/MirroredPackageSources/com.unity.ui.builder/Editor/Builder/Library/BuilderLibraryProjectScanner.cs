@@ -291,13 +291,11 @@ namespace Unity.UI.Builder
 
                         var tree = vta.CloneTree();
                         tree.SetProperty(BuilderConstants.LibraryItemLinkedTemplateContainerPathVEPropertyName, assetPath);
-                        tree.name = vta.name;
                         return tree;
                     },
                     (inVta, inParent, ve) =>
                     {
                         var vea = inVta.AddTemplateInstance(inParent, assetPath) as VisualElementAsset;
-                        vea.SetAttribute("name", vta.name);
                         ve.SetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName, vta);
                         return vea;
                     },

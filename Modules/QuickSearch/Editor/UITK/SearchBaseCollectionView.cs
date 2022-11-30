@@ -28,6 +28,11 @@ namespace UnityEditor.Search
             : base(name, viewModel, className)
         {
         }
+        
+        int IResultView.ComputeVisibleItemCapacity(float size, float height)
+        {
+            return (int)(height / GetItemHeight()) + 10;
+        }
 
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
         {

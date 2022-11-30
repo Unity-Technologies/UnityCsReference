@@ -166,7 +166,7 @@ namespace UnityEditor.Search.Providers
                 fetchLabel = (item, context) => FetchLabel(item),
                 fetchDescription = (item, context) => FetchDescription(item),
                 fetchThumbnail = (item, context) => FetchThumbnail(item),
-                fetchPreview = (item, context, size, options) => FetchPreview(item, size, options),
+                fetchPreview = (item, context, size, options) => FetchPreview(item, context, size, options),
                 startDrag = (item, context) => StartDrag(item, context),
                 trackSelection = (item, context) => EditorGUIUtility.PingObject(GetInstanceId(item)),
                 fetchPropositions = (context, options) => FetchPropositions(context, options),
@@ -187,7 +187,7 @@ namespace UnityEditor.Search.Providers
             return GetInfo(item).guid.GetHashCode64();
         }
 
-        private static Texture2D FetchPreview(SearchItem item, Vector2 size, FetchPreviewOptions options)
+        private static Texture2D FetchPreview(SearchItem item, SearchContext context, Vector2 size, FetchPreviewOptions options)
         {
             var info = GetInfo(item);
             if (info.gid.assetGUID == default)
@@ -199,23 +199,26 @@ namespace UnityEditor.Search.Providers
             if (info.gid.identifierType == (int)IdentifierType.kSceneObject)
                 return AssetDatabase.GetCachedIcon(info.source) as Texture2D;
 
+            var objInstanceId = info.obj ? info.obj.GetInstanceID() : 0;
+            var clientId = context.searchView != null ? context.searchView.GetViewId() : 0;
+
             if (info.gid.identifierType == (int)IdentifierType.kBuiltInAsset)
-                return AssetPreview.GetAssetPreview(info.obj) ?? AssetPreview.GetMiniThumbnail(info.obj);
+                return AssetPreview.GetAssetPreview(objInstanceId, clientId) ?? AssetPreview.GetMiniThumbnail(info.obj);
 
             var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(info.gid);
             if (obj is GameObject go)
-                return Utils.GetSceneObjectPreview(go, size, options, item.thumbnail);
+                return Utils.GetSceneObjectPreview(context, go, size, options, item.thumbnail);
             else if (obj && options.HasAny(FetchPreviewOptions.Normal))
             {
-                var p = AssetPreview.GetAssetPreview(obj);
+                var p = AssetPreview.GetAssetPreview(obj.GetInstanceID(), clientId);
                 if (p)
                     return p;
 
-                if (AssetPreview.IsLoadingAssetPreview(obj.GetInstanceID()))
+                if (AssetPreview.IsLoadingAssetPreview(obj.GetInstanceID(), clientId))
                     return null;
             }
 
-            return Utils.GetAssetPreviewFromPath(info.source, size, options);
+            return Utils.GetAssetPreviewFromPath(context, info.source, size, options);
         }
 
         private static Texture2D FetchThumbnail(in SearchItem item)

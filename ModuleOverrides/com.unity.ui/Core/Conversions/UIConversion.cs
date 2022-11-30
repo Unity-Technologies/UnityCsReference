@@ -16,6 +16,9 @@ namespace UnityEngine.UIElements
         static readonly ConversionRegistry s_GlobalUIConverters = ConversionRegistry.Create();
         static readonly ConversionRegistry s_PrimitiveConverters = ConversionRegistry.Create();
 
+        internal static ConversionRegistry globalUIConverters => s_GlobalUIConverters;
+        internal static ConversionRegistry primitiveConverters => s_PrimitiveConverters;
+
         static UIConversion()
         {
             RegisterPrimitivesConverter();
@@ -175,6 +178,7 @@ namespace UnityEngine.UIElements
             RegisterDoubleConverters();
             RegisterBooleanConverters();
             RegisterCharConverters();
+            RegisterColorConverters();
         }
 
         static void RegisterInt8Converters()
@@ -466,6 +470,12 @@ namespace UnityEngine.UIElements
             s_PrimitiveConverters.Register(typeof(char), typeof(double), (TypeConverter<char, double>) ((ref char v) => (double) v));
 
             s_PrimitiveConverters.Register(typeof(string), typeof(char), (TypeConverter<string, char>) ((ref string v) => !string.IsNullOrEmpty(v) ? v[0] : '\0'));
+        }
+
+        static void RegisterColorConverters()
+        {
+            s_PrimitiveConverters.Register(typeof(Color), typeof(Color32), (TypeConverter<Color, Color32>) ((ref Color v) => v));
+            s_PrimitiveConverters.Register(typeof(Color32), typeof(Color), (TypeConverter<Color32, Color>) ((ref Color32 v) => v));
         }
     }
 }

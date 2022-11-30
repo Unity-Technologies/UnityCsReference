@@ -303,7 +303,9 @@ namespace UnityEditor.Search
                     else if (!skipNull)
                     {
                         if (timeoutWatch.Elapsed.TotalSeconds > 3.0d)
+                        {
                             c.ThrowError("Timeout");
+                        }
                         yield return null;
                     }
                 }

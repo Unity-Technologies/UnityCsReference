@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -14,6 +15,8 @@ namespace UnityEngine.UIElements
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class PopupField<T> : BasePopupField<T, T>
     {
+        internal static readonly DataBindingProperty indexProperty = nameof(index);
+
         /// <summary>
         /// Callback that provides a string representation used to display the selected value.
         /// </summary>
@@ -58,8 +61,11 @@ namespace UnityEngine.UIElements
             get { return base.value; }
             set
             {
-                m_Index = m_Choices?.IndexOf(value) ?? -1;
+                var newIndex = m_Choices?.IndexOf(value) ?? -1;
+                m_Index = newIndex;
                 base.value = value;
+                if (m_Index != newIndex)
+                    NotifyPropertyChanged(indexProperty);
             }
         }
 
@@ -74,6 +80,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The currently selected index in the popup menu.
         /// </summary>
+        [CreateProperty]
         public int index
         {
             get { return m_Index; }
@@ -86,6 +93,7 @@ namespace UnityEngine.UIElements
                         this.value = m_Choices[m_Index];
                     else
                         this.value = default(T);
+                    NotifyPropertyChanged(indexProperty);
                 }
             }
         }

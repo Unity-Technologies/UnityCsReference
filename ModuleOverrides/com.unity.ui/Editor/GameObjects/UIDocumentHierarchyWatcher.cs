@@ -27,7 +27,7 @@ namespace Unity.UIElements.Editor
                 return;
             }
 
-            var uiDocuments = Object.FindObjectsOfType<UIDocument>();
+            var uiDocuments = Object.FindObjectsByType<UIDocument>(FindObjectsSortMode.InstanceID);
 
             // Early exit: no UIDocument to keep track of.
             if (uiDocuments == null || uiDocuments.Length == 0)

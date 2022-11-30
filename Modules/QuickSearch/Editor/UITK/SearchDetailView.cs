@@ -128,9 +128,6 @@ namespace UnityEditor.Search
 
         private void OnSelectionChanged(ISearchEvent evt)
         {
-            if (evt.sourceViewState.context.searchView != viewState.context.searchView)
-                return;
-
             int selectionCount;
             if (evt.argumentCount == 1)
             {
@@ -392,6 +389,7 @@ namespace UnityEditor.Search
             Texture2D thumbnail = null;
             if (SearchSettings.fetchPreview && width >= 32)
             {
+                // TODO: Use SearchPreviewManager
                 thumbnail = item.GetPreview(ctx, new Vector2(width, 256f),
                     FetchPreviewOptions.Large | FetchPreviewOptions.Preview2D, cacheThumbnail: false);
             }

@@ -882,10 +882,7 @@ namespace UnityEditor
                                     filePathPart.Substring(lineIndex + 1, (endLineIndex) - (lineIndex + 1));
                                 string filePath = filePathPart.Substring(0, lineIndex);
 
-                                textWithHyperlinks.Append(lines[i].Substring(0, filePathIndex));
-                                textWithHyperlinks.Append("<a href=\"" + filePath + "\"" + " line=\"" + lineString + "\">");
-                                textWithHyperlinks.Append(filePath + ":" + lineString);
-                                textWithHyperlinks.Append("</a>)\n");
+                                textWithHyperlinks.Append($"{lines[i].Substring(0, filePathIndex)}<color=#40a0ff><link=\"href='{filePath}' line='{lineString}'\">{filePath}:{lineString}</link></color>)\n");
 
                                 continue; // continue to evade the default case
                             }

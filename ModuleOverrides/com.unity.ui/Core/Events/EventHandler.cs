@@ -230,6 +230,15 @@ namespace UnityEngine.UIElements
         internal const string ExecuteDefaultActionName = nameof(ExecuteDefaultAction);
         internal const string ExecuteDefaultActionAtTargetName = nameof(ExecuteDefaultActionAtTarget);
 
+        /// <summary>
+        /// Informs the data binding system that a property of a control has changed.
+        /// </summary>
+        /// <param name="property">The property that has changed.</param>
+        internal void NotifyPropertyChanged(DataBindingProperty property)
+        {
+            // Intentionally left empty. This will be implemented with the data binding feature.
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ExecuteDefaultActionInternal(EventBase evt) => ExecuteDefaultAction(evt);
 

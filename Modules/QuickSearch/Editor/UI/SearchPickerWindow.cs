@@ -21,11 +21,6 @@ namespace UnityEditor.Search
             return true;
         }
 
-        internal override void OnEnable()
-        {
-            base.OnEnable();
-        }
-
         internal override void OnDisable()
         {
             if (m_LastFocusedWindow && !Utils.IsRunningTests())
@@ -40,7 +35,7 @@ namespace UnityEditor.Search
 
         protected override void RestoreSearchText(SearchViewState viewState)
         {
-            if (Utils.IsRunningTests() || viewState.context == null)
+            if (Utils.IsRunningTests() || viewState.context == null || viewState.ignoreSaveSearches)
                 return;
 
             var previousSearchText = SearchSettings.GetScopeValue(k_SavedSearchTextPrefKey, m_ContextHash, viewState.initialQuery);

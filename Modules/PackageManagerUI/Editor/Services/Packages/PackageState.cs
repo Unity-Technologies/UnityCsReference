@@ -11,6 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         InstalledAsDependency,
         DownloadAvailable,
         ImportAvailable,
+        Imported,
         InDevelopment,
         UpdateAvailable,
         InProgress,

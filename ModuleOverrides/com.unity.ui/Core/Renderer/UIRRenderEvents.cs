@@ -102,7 +102,7 @@ namespace UnityEngine.UIElements.UIR
             ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
             ve.renderChainData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
             ve.renderChainData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
-            ve.renderChainData.colorID = BMPAlloc.Invalid; // Rely on vertex tint color by default
+            ve.renderChainData.colorID = BMPAlloc.Invalid;
             ve.renderChainData.backgroundColorID = BMPAlloc.Invalid;
             ve.renderChainData.borderLeftColorID = BMPAlloc.Invalid;
             ve.renderChainData.borderTopColorID = BMPAlloc.Invalid;
@@ -654,7 +654,15 @@ namespace UnityEngine.UIElements.UIR
                 ve.renderChainData.textCoreSettingsID = renderChain.shaderInfoAllocator.AllocTextCoreSettings(settings);
 
             if (RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID))
+            {
+                if (ve.panel.contextType == ContextType.Editor)
+                {
+                    settings.faceColor *= UIElementsUtility.editorPlayModeTintColor;
+                    settings.outlineColor *= UIElementsUtility.editorPlayModeTintColor;
+                    settings.underlayColor *= UIElementsUtility.editorPlayModeTintColor;
+                }
                 renderChain.shaderInfoAllocator.SetTextCoreSettingValue(ve.renderChainData.textCoreSettingsID, settings);
+            }
 
             return true;
         }
@@ -722,12 +730,6 @@ namespace UnityEngine.UIElements.UIR
             dst = (IntPtr)newVerts.GetUnsafePtr();
             count = vertCount;
         }
-
-        public static bool IsElementHierarchyHidden(VisualElement ve)
-        {
-            return ve.resolvedStyle.display == DisplayStyle.None;
-        }
-
         static VisualElement GetLastDeepestChild(VisualElement ve)
         {
             // O(n) of the visual tree depth, usually not too bad.. probably 10-15 in really bad cases

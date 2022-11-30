@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -29,13 +30,21 @@ namespace UnityEngine.UIElements
     public abstract class BaseSlider<TValueType> : BaseField<TValueType>, IValueField<TValueType>
         where TValueType : System.IComparable<TValueType>
     {
+        internal static readonly DataBindingProperty lowValueProperty = nameof(lowValue);
+        internal static readonly DataBindingProperty highValueProperty = nameof(highValue);
+        internal static readonly DataBindingProperty rangeProperty = nameof(range);
+        internal static readonly DataBindingProperty pageSizeProperty = nameof(pageSize);
+        internal static readonly DataBindingProperty showInputFieldProperty = nameof(showInputField);
+        internal static readonly DataBindingProperty directionProperty = nameof(direction);
+        internal static readonly DataBindingProperty invertedProperty = nameof(inverted);
+
         internal VisualElement dragContainer { get; private set; }
         internal VisualElement dragElement { get; private set; }
         internal VisualElement trackElement { get; private set; }
         internal VisualElement dragBorderElement { get; private set; }
         internal TextField inputTextField { get; private set; }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private TValueType m_LowValue;
 
         /// <summary>
@@ -59,6 +68,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the minimum value that the slider encodes.
         /// </summary>
+        [CreateProperty]
         public TValueType lowValue
         {
             get { return m_LowValue; }
@@ -70,16 +80,18 @@ namespace UnityEngine.UIElements
                     ClampValue();
                     UpdateDragElementPosition();
                     SaveViewData();
+                    NotifyPropertyChanged(lowValueProperty);
                 }
             }
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private TValueType m_HighValue;
 
         /// <summary>
         /// This is the maximum value that the slider encodes.
         /// </summary>
+        [CreateProperty]
         public TValueType highValue
         {
             get { return m_HighValue; }
@@ -91,6 +103,7 @@ namespace UnityEngine.UIElements
                     ClampValue();
                     UpdateDragElementPosition();
                     SaveViewData();
+                    NotifyPropertyChanged(highValueProperty);
                 }
             }
         }
@@ -107,6 +120,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the range from the minimum value to the maximum value of the slider.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public TValueType range
         {
             get { return SliderRange(); }
@@ -117,10 +131,17 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is a generic page size used to change the value when clicking in the slider.
         /// </summary>
+        [CreateProperty]
         public virtual float pageSize
         {
             get { return m_PageSize; }
-            set { m_PageSize = value; }
+            set
+            {
+                if (m_PageSize == value)
+                    return;
+                m_PageSize = value;
+                NotifyPropertyChanged(pageSizeProperty);
+            }
         }
 
         private bool m_ShowInputField = false;
@@ -132,6 +153,7 @@ namespace UnityEngine.UIElements
         /// Set this property to true to display a numerical text field that provides another way to
         /// edit the slider value.
         /// </remarks>
+        [CreateProperty]
         public virtual bool showInputField
         {
             get { return m_ShowInputField; }
@@ -141,6 +163,7 @@ namespace UnityEngine.UIElements
                 {
                     m_ShowInputField = value;
                     UpdateTextFieldVisibility();
+                    NotifyPropertyChanged(showInputFieldProperty);
                 }
             }
         }
@@ -224,11 +247,14 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the actual property to contain the direction of the slider.
         /// </summary>
+        [CreateProperty]
         public SliderDirection direction
         {
             get { return m_Direction; }
             set
             {
+                var previous = m_Direction;
+
                 m_Direction = value;
                 if (m_Direction == SliderDirection.Horizontal)
                 {
@@ -240,6 +266,8 @@ namespace UnityEngine.UIElements
                     RemoveFromClassList(horizontalVariantUssClassName);
                     AddToClassList(verticalVariantUssClassName);
                 }
+                if (previous != m_Direction)
+                    NotifyPropertyChanged(directionProperty);
             }
         }
 
@@ -250,6 +278,7 @@ namespace UnityEngine.UIElements
         /// For an inverted horizontal slider, high value is located to the left, low value is located to the right
         /// For an inverted vertical slider, high value is located to the bottom, low value is located to the top.
         /// </summary>
+        [CreateProperty]
         public bool inverted
         {
             get { return m_Inverted; }
@@ -259,6 +288,7 @@ namespace UnityEngine.UIElements
                 {
                     m_Inverted = value;
                     UpdateDragElementPosition();
+                    NotifyPropertyChanged(invertedProperty);
                 }
             }
         }
@@ -690,6 +720,7 @@ namespace UnityEngine.UIElements
                 {
                     inputTextField = new TextField() { name = "unity-text-field" };
                     inputTextField.AddToClassList(textFieldClassName);
+                    inputTextField.RegisterCallback<NavigationMoveEvent>(OnInputNavigationMoveEvent, TrickleDown.TrickleDown);
                     inputTextField.RegisterValueChangedCallback(OnTextFieldValueChange);
                     inputTextField.RegisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
                     visualInput.Add(inputTextField);
@@ -701,6 +732,7 @@ namespace UnityEngine.UIElements
                 if (inputTextField.panel != null)
                     inputTextField.RemoveFromHierarchy();
 
+                inputTextField.UnregisterCallback<NavigationMoveEvent>(OnInputNavigationMoveEvent);
                 inputTextField.UnregisterValueChangedCallback(OnTextFieldValueChange);
                 inputTextField.UnregisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
                 inputTextField = null;
@@ -718,6 +750,12 @@ namespace UnityEngine.UIElements
         private void OnTextFieldFocusOut(FocusOutEvent evt)
         {
             UpdateTextFieldValue();
+        }
+
+        private void OnInputNavigationMoveEvent(NavigationMoveEvent evt)
+        {
+            // The input field should not do any navigation when using the arrow keys.
+            evt.StopPropagation();
         }
 
         void OnTextFieldValueChange(ChangeEvent<string> evt)
@@ -741,7 +779,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                visualInput.Add(dragElement);
+                dragContainer.Add(dragElement);
             }
         }
     }

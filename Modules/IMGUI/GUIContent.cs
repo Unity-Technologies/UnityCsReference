@@ -23,6 +23,8 @@ namespace UnityEngine
         Texture m_Image;
         [SerializeField]
         string m_Tooltip = string.Empty;
+        [SerializeField]
+        string m_TextWithWhitespace = string.Empty;
 
         internal event Action OnTextChanged;
 
@@ -30,16 +32,39 @@ namespace UnityEngine
         private static readonly GUIContent s_Image     = new GUIContent();
         private static readonly GUIContent s_TextImage = new GUIContent();
 
+        internal static string k_ZeroWidthSpace = "\u200B";
+
         // The text contained.
         public string text
         {
             get { return m_Text; }
-            set {
-                if (value == m_Text)
+            set
+            {
+                if (m_Text == value)
                     return;
+
                 m_Text = value;
+                textWithWhitespace = value;
                 OnTextChanged?.Invoke();
             }
+        }
+
+        internal string textWithWhitespace
+        {
+            get
+            {
+                return string.IsNullOrEmpty(m_TextWithWhitespace) ? k_ZeroWidthSpace : m_TextWithWhitespace;
+            }
+            set =>
+
+                //The NoWidthSpace unicode is added at the end of the string to make sure LineFeeds update the layout of the text.
+                m_TextWithWhitespace = value + k_ZeroWidthSpace;
+        }
+
+        internal void SetTextWithoutNotify(string value)
+        {
+            m_Text = value;
+            textWithWhitespace = value;
         }
 
         // The icon image contained.
@@ -118,6 +143,7 @@ namespace UnityEngine
         internal static GUIContent Temp(string t)
         {
             s_Text.m_Text = t;
+            s_Text.textWithWhitespace = t;
             s_Text.m_Tooltip = string.Empty;
             return s_Text;
         }
@@ -125,6 +151,7 @@ namespace UnityEngine
         internal static GUIContent Temp(string t, string tooltip)
         {
             s_Text.m_Text = t;
+            s_Text.textWithWhitespace = t;
             s_Text.m_Tooltip = tooltip;
             return s_Text;
         }
@@ -146,6 +173,7 @@ namespace UnityEngine
         internal static GUIContent Temp(string t, Texture i)
         {
             s_TextImage.m_Text = t;
+            s_Text.textWithWhitespace = t;
             s_TextImage.m_Image = i;
             return s_TextImage;
         }
@@ -153,11 +181,14 @@ namespace UnityEngine
         internal static void ClearStaticCache()
         {
             s_Text.m_Text = null;
+            s_Text.m_TextWithWhitespace = null;
             s_Text.m_Tooltip = string.Empty;
             s_Image.m_Image = null;
             s_Image.m_Tooltip = string.Empty;
+            s_Image.m_TextWithWhitespace = null;
             s_TextImage.m_Text = null;
             s_TextImage.m_Image = null;
+            s_TextImage.m_TextWithWhitespace = null;
         }
 
         internal static GUIContent[] Temp(string[] texts)

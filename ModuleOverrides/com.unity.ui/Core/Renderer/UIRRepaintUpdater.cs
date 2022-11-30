@@ -35,6 +35,8 @@ namespace UnityEngine.UIElements
             bool borderRadiusChanged = (versionChangeType & VersionChangeType.BorderRadius) != 0;
             bool borderWidthChanged = (versionChangeType & VersionChangeType.BorderWidth) != 0;
             bool renderHintsChanged = (versionChangeType & VersionChangeType.RenderHints) != 0;
+            bool disableRenderingChanged = (versionChangeType & VersionChangeType.DisableRendering) != 0;
+            bool repaintChanged = (versionChangeType & VersionChangeType.Repaint) != 0;
 
             if (renderHintsChanged)
                 renderChain.UIEOnRenderHintsChanged(ve);
@@ -51,8 +53,11 @@ namespace UnityEngine.UIElements
             if ((versionChangeType & VersionChangeType.Color) != 0)
                 renderChain.UIEOnColorChanged(ve);
 
-            if ((versionChangeType & VersionChangeType.Repaint) != 0)
+            if (repaintChanged)
                 renderChain.UIEOnVisualsChanged(ve, false);
+
+            if (disableRenderingChanged && !repaintChanged) // The disable rendering will be taken care of by the repaint (it clear all commands)
+                renderChain.UIEOnDisableRenderingChanged(ve);
         }
 
         public override void Update()

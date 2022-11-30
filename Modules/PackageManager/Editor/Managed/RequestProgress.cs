@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine.Bindings;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.PackageManager
 {
@@ -11,11 +12,9 @@ namespace UnityEditor.PackageManager
     [StaticAccessor("PackageManager::Api", StaticAccessorType.DoubleColon)]
     internal class RequestProgress
     {
-        private protected delegate void RequestProgressCallback(IntPtr progressUpdatesPtr);
+        private static extern void SetProgressHandler(long operationId, RequestProgress requestProgress);
 
-        private protected static extern void SetProgressDelegate(long operationId, RequestProgressCallback progressDelegate);
-
-        private protected static extern void ClearProgressDelegate(long operationId);
+        private static extern void ClearProgressHandler(long operationId);
 
         private Action<ProgressUpdateEventArgs>  m_ProgressUpdate;
 
@@ -34,7 +33,7 @@ namespace UnityEditor.PackageManager
                 {
                     if (m_ProgressUpdate == null)
                     {
-                        SetProgressDelegate(m_OperationId, OnNativeProgress);
+                        SetProgressHandler(m_OperationId, this);
                     }
 
                     m_ProgressUpdate += value;
@@ -49,7 +48,7 @@ namespace UnityEditor.PackageManager
 
                     if (m_ProgressUpdate == null)
                     {
-                        ClearProgressDelegate(m_OperationId);
+                        ClearProgressHandler(m_OperationId);
                     }
                 }
             }
@@ -59,11 +58,12 @@ namespace UnityEditor.PackageManager
         [StaticAccessor("PackageManager::PackageProgress", StaticAccessorType.DoubleColon)]
         private static extern PackageProgress[] Internal_GetPackageProgressArray(IntPtr nativeHandle);
 
-        private void OnNativeProgress(IntPtr progressUpdatesPtr)
+        [RequiredByNativeCode]
+        internal static void OnNativeProgress(RequestProgress requestProgress, IntPtr progressUpdatesPtr)
         {
             var progressUpdates = Internal_GetPackageProgressArray(progressUpdatesPtr);
 
-            InvokeProgressUpdated(new ProgressUpdateEventArgs(progressUpdates));
+            requestProgress.InvokeProgressUpdated(new ProgressUpdateEventArgs(progressUpdates));
         }
 
         private void InvokeProgressUpdated(ProgressUpdateEventArgs e)

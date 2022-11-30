@@ -121,12 +121,18 @@ namespace UnityEngine
         public static int Toolbar(int selected, GUIContent[] contents, GUIStyle style, params GUILayoutOption[] options) { return Toolbar(selected, contents, style, GUI.ToolbarButtonSize.Fixed, options); }
         public static int Toolbar(int selected, GUIContent[] contents, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options) { return Toolbar(selected, contents, null, style, buttonSize, options); }
         public static int Toolbar(int selected, GUIContent[] contents, bool[] enabled, GUIStyle style, params GUILayoutOption[] options) { return Toolbar(selected, contents, enabled, style, GUI.ToolbarButtonSize.Fixed, options); }
+        internal static int Toolbar(int selected, GUIContent[] contents, bool[] enabled, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, params GUILayoutOption[] options) { return Toolbar(selected, contents, enabled, style, firstStyle, midStyle, lastStyle, GUI.ToolbarButtonSize.Fixed, options); }
 
         public static int Toolbar(int selected, GUIContent[] contents, bool[] enabled, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options)
         {
             GUIStyle firstStyle, midStyle, lastStyle;
             GUI.FindStyles(ref style, out firstStyle, out midStyle, out lastStyle, "left", "mid", "right");
 
+            return Toolbar(selected, contents, enabled, style, firstStyle, midStyle, lastStyle, buttonSize, options);
+        }
+
+        internal static int Toolbar(int selected, GUIContent[] contents, bool[] enabled, GUIStyle style, GUIStyle firstStyle, GUIStyle midStyle, GUIStyle lastStyle, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options)
+        {
             Vector2 size = new Vector2();
             int count = contents.Length;
             GUIStyle currentStyle = count > 1 ? firstStyle : style;
@@ -173,7 +179,7 @@ namespace UnityEngine
                     break;
             }
 
-            return GUI.Toolbar(GUILayoutUtility.GetRect(size.x, size.y, style, options), selected, contents, null, style, buttonSize, enabled);
+            return GUI.Toolbar(GUILayoutUtility.GetRect(size.x, size.y, style, options), selected, contents, null, style, firstStyle, midStyle, lastStyle, buttonSize, enabled);
         }
 
         public static int SelectionGrid(int selected, string[] texts, int xCount, params GUILayoutOption[] options)                    { return SelectionGrid(selected, GUIContent.Temp(texts), xCount, GUI.skin.button, options); }

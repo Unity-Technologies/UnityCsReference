@@ -594,24 +594,6 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
-            bool showProgressiveInfo = !isPreset && settings.bakedGI;
-
-            if (showProgressiveInfo && Unsupported.IsDeveloperMode())
-            {
-                Hash128 instanceHash;
-                Lightmapping.GetPVRInstanceHash(instanceID, out instanceHash);
-                EditorGUILayout.LabelField(Styles.pvrInstanceHash, GUIContent.Temp(instanceHash.ToString()));
-
-                Hash128 atlasHash;
-                Lightmapping.GetPVRAtlasHash(instanceID, out atlasHash);
-                EditorGUILayout.LabelField(Styles.pvrAtlasHash, GUIContent.Temp(atlasHash.ToString()));
-
-                int atlasInstanceOffset;
-                Lightmapping.GetPVRAtlasInstanceOffset(instanceID, out atlasInstanceOffset);
-                EditorGUILayout.LabelField(Styles.pvrAtlasInstanceOffset, GUIContent.Temp(atlasInstanceOffset.ToString()));
-            }
-            EditorGUI.indentLevel -= 1;
-
             GUILayout.Space(5);
         }
 

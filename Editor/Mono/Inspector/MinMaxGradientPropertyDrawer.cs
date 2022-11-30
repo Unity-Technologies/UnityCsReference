@@ -135,7 +135,7 @@ namespace UnityEditorInternal
         {
             Init(property);
 
-            return new MinMaxGradientField(m_Property, property.localizedDisplayName);
+            return new MinMaxGradientField(m_Property, preferredLabel);
         }
     }
 }

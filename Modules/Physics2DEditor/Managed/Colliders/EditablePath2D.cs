@@ -11,8 +11,8 @@ namespace UnityEditor
 {
     abstract class EditablePath2D
     {
-        LineHandle m_Handle;
-        public LineHandle handle => m_Handle;
+        EditableLineHandle2D m_Handle;
+        public EditableLineHandle2D handle => m_Handle;
 
         public abstract IList<Vector2> GetPoints();
         public abstract void SetPoints(Vector3[] points);
@@ -20,7 +20,7 @@ namespace UnityEditor
 
         protected EditablePath2D(bool loop, int pointCount, int minPointCount)
         {
-            m_Handle = new LineHandle(new Vector3[pointCount], loop, minPointCount, LineHandle.LineIntersectionHighlight.Always);
+            m_Handle = new EditableLineHandle2D(new Vector3[pointCount], loop, minPointCount, EditableLineHandle2D.LineIntersectionHighlight.Always);
         }
 
         public void Update()

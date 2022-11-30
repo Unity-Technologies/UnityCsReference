@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -21,6 +22,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Text to display inside an information box after the user hovers the element for a small amount of time.
         /// </summary>
+        [CreateProperty]
         public string tooltip
         {
             get
@@ -41,7 +43,11 @@ namespace UnityEngine.UIElements
                     RegisterCallback<TooltipEvent>(SetTooltip);
                 }
 
+                var tooltipText = GetProperty(tooltipPropertyKey) as string;
+                if (string.CompareOrdinal(tooltipText, value) == 0)
+                    return;
                 SetProperty(tooltipPropertyKey, value);
+                NotifyPropertyChanged(tooltipProperty);
             }
         }
     }

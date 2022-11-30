@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class PackageOperationDispatcher
     {
         [NonSerialized]
-        private AssetDatabaseProxy m_AssetDatabase;
+        private AssetStorePackageInstaller m_AssetStorePackageInstaller;
         [NonSerialized]
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         [NonSerialized]
@@ -20,12 +20,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private IOProxy m_IOProxy;
 
-        public void ResolveDependencies(AssetDatabaseProxy assetDatabase,
+        public void ResolveDependencies(AssetStorePackageInstaller assetStorePackageInstaller,
             AssetStoreDownloadManager assetStoreDownloadManager,
             UpmClient upmClient,
             IOProxy ioProxy)
         {
-            m_AssetDatabase = assetDatabase;
+            m_AssetStorePackageInstaller = assetStorePackageInstaller;
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_UpmClient = upmClient;
             m_IOProxy = ioProxy;
@@ -157,12 +157,28 @@ namespace UnityEditor.PackageManager.UI.Internal
             try
             {
                 if (m_IOProxy.FileExists(path))
-                    m_AssetDatabase.ImportPackage(path, true);
+                    m_AssetStorePackageInstaller.Install(package.product.id, true);
             }
             catch (System.IO.IOException e)
             {
                 Debug.Log($"[Package Manager Window] Cannot import package {package.displayName}: {e.Message}");
             }
+        }
+
+        public virtual void RemoveImportedAssets(IPackage package)
+        {
+            if (package?.versions.primary?.importedAssets?.Any() != true)
+                return;
+
+            m_AssetStorePackageInstaller.Uninstall(package.product.id, true);
+        }
+
+        public virtual void RemoveImportedAssets(IEnumerable<IPackageVersion> versions)
+        {
+            if (versions?.Any() != true)
+                return;
+
+            m_AssetStorePackageInstaller.Uninstall(versions.Select(v => v.package.product.id));
         }
     }
 }

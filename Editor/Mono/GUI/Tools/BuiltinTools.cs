@@ -591,7 +591,7 @@ namespace UnityEditor
             TransformManipulator.BeginManipulationHandling(false);
             // Move handle
             EditorGUI.BeginChangeCheck();
-            Vector3 newPos = MoveHandlesGUI(rect, handlePosition, rectRotation);
+            Vector3 newPos = MoveHandlesGUI(rect, rectRotation * rect.center + handlePosition, rectRotation);
             if (EditorGUI.EndChangeCheck() && !isStatic)
             {
                 if (GridSnapping.active)

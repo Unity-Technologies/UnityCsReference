@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Properties;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -11,6 +12,8 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ToolbarPopupSearchField : ToolbarSearchField, IToolbarMenuElement
     {
+        internal static readonly DataBindingProperty menuProperty = nameof(menu);
+
         /// <summary>
         /// Instantiates a <see cref="ToolbarPopupSearchField"/> using the data read from a UXML file.
         /// </summary>
@@ -28,6 +31,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// The menu used by the pop-up search field element.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public DropdownMenu menu { get; }
 
         /// <summary>

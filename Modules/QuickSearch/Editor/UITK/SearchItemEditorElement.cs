@@ -122,7 +122,7 @@ namespace UnityEditor.Search
 
         void HeaderOnGUI()
         {
-            if (editor == null)
+            if (!Utils.IsEditorValid(editor))
             {
                 if (m_InspectorElement != null)
                 {
@@ -296,9 +296,7 @@ namespace UnityEditor.Search
 
         void FooterOnGUI()
         {
-            var ed = editor;
-
-            if (ed == null)
+            if (!Utils.IsEditorValid(editor))
             {
                 return;
             }

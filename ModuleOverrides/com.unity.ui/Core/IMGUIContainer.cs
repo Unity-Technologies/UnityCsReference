@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using Unity.Properties;
 using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
@@ -14,6 +15,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class IMGUIContainer : VisualElement, IDisposable
     {
+        internal static readonly DataBindingProperty cullingEnabledProperty = nameof(cullingEnabled);
+        internal static readonly DataBindingProperty contextTypeProperty = nameof(contextType);
+
         /// <summary>
         /// Instantiates an <see cref="IMGUIContainer"/> using the data read from a UXML file.
         /// </summary>
@@ -92,10 +96,18 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// When this property is set to true, <see cref="onGUIHandler"/> is not called when the Element is outside the viewport.
         /// </summary>
+        [CreateProperty]
         public bool cullingEnabled
         {
             get { return m_CullingEnabled; }
-            set { m_CullingEnabled = value; IncrementVersion(VersionChangeType.Repaint); }
+            set
+            {
+                if (m_CullingEnabled == value)
+                    return;
+                m_CullingEnabled = value;
+                IncrementVersion(VersionChangeType.Repaint);
+                NotifyPropertyChanged(cullingEnabledProperty);
+            }
         }
 
         private bool m_RefreshCachedLayout = true;
@@ -134,10 +146,23 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private ContextType m_ContextType;
+
         /// <summary>
-        /// ContextType of this IMGUIContrainer. Currently only supports ContextType.Editor.
+        /// ContextType of this IMGUIContainer. Currently only supports ContextType.Editor.
         /// </summary>
-        public ContextType contextType { get; set; }
+        [CreateProperty]
+        public ContextType contextType
+        {
+            get => m_ContextType;
+            set
+            {
+                if (m_ContextType == value)
+                    return;
+                m_ContextType = value;
+                NotifyPropertyChanged(contextTypeProperty);
+            }
+        }
 
         // The following 2 flags indicate the following :
         // 1) lostFocus : a blur event occurred and we need to make sure the actual keyboard focus from IMGUI is really un-focused

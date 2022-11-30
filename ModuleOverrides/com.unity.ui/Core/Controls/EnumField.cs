@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -46,6 +47,8 @@ namespace UnityEngine.UIElements
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class EnumField : BaseField<Enum>
     {
+        internal static readonly DataBindingProperty textProperty = nameof(text);
+
         /// <summary>
         /// Instantiates an <see cref="EnumField"/> using the data read from a UXML file.
         /// </summary>
@@ -112,6 +115,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Return the text value of the currently selected enum.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public string text
         {
             get { return m_TextElement.text; }

@@ -31,13 +31,31 @@ namespace UnityEditor
             {
                 public const float switchButtonWidth = 16.0f;
 
+                static readonly string k_AutomaticAuthoringString = L10n.Tr("Automatic (Authoring)");
+                static readonly string k_AutomaticMixedString = L10n.Tr("Automatic (Mixed)");
+                static readonly string k_AutomaticRuntimeString = L10n.Tr("Automatic (Runtime)");
+                static readonly string k_AuthoringString = L10n.Tr("Authoring");
+                static readonly string k_MixedString = L10n.Tr("Mixed");
+                static readonly string k_RuntimeString = L10n.Tr("Runtime");
+                static readonly string k_DisabledString = L10n.Tr("Disabled");
+
+                // Auto data mode icons
                 static readonly Texture2D k_AuthoringModeIcon = EditorGUIUtility.LoadIcon("DataMode.Authoring");
                 static readonly Texture2D k_MixedModeIcon = EditorGUIUtility.LoadIcon("DataMode.Mixed");
                 static readonly Texture2D k_RuntimeModeIcon = EditorGUIUtility.LoadIcon("DataMode.Runtime");
 
-                public static readonly GUIContent authoringModeContent = EditorGUIUtility.TrIconContent(k_AuthoringModeIcon, "Data Mode: Authoring");
-                public static readonly GUIContent mixedModeContent = EditorGUIUtility.TrIconContent(k_MixedModeIcon, "Data Mode: Mixed");
-                public static readonly GUIContent runtimeModeContent = EditorGUIUtility.TrIconContent(k_RuntimeModeIcon, "Data Mode: Runtime");
+                public static readonly GUIContent authoringModeContent = EditorGUIUtility.TrIconContent(k_AuthoringModeIcon, k_AutomaticAuthoringString);
+                public static readonly GUIContent mixedModeContent = EditorGUIUtility.TrIconContent(k_MixedModeIcon, k_AutomaticMixedString);
+                public static readonly GUIContent runtimeModeContent = EditorGUIUtility.TrIconContent(k_RuntimeModeIcon, k_AutomaticRuntimeString);
+
+                // Sticky data mode icons
+                static readonly Texture2D k_StickyAuthoringModeIcon = EditorGUIUtility.LoadIcon("DataMode.Authoring.Sticky");
+                static readonly Texture2D k_StickyMixedModeIcon = EditorGUIUtility.LoadIcon("DataMode.Mixed.Sticky");
+                static readonly Texture2D k_StickyRuntimeModeIcon = EditorGUIUtility.LoadIcon("DataMode.Runtime.Sticky");
+
+                public static readonly GUIContent stickyAuthoringModeContent = EditorGUIUtility.TrIconContent(k_StickyAuthoringModeIcon, k_AuthoringString);
+                public static readonly GUIContent stickyMixedModeContent = EditorGUIUtility.TrIconContent(k_StickyMixedModeIcon, k_MixedString);
+                public static readonly GUIContent stickyRuntimeModeContent = EditorGUIUtility.TrIconContent(k_StickyRuntimeModeIcon, k_RuntimeString);
 
                 // Use an empty style to avoid the hover effect of normal buttons
                 public static readonly GUIStyle switchStyle = new GUIStyle();
@@ -45,10 +63,10 @@ namespace UnityEditor
                 public static readonly Dictionary<DataMode, GUIContent> dataModeNameLabels =
                     new Dictionary<DataMode, GUIContent>
                     {
-                        { DataMode.Disabled,  EditorGUIUtility.TrTextContent("Disabled")       },
-                        { DataMode.Authoring, EditorGUIUtility.TrTextContent("Authoring Mode") },
-                        { DataMode.Mixed,     EditorGUIUtility.TrTextContent("Mixed Mode")     },
-                        { DataMode.Runtime,   EditorGUIUtility.TrTextContent("Runtime Mode")   }
+                        { DataMode.Disabled,  EditorGUIUtility.TextContent(k_DisabledString)  },
+                        { DataMode.Authoring, EditorGUIUtility.TextContent(k_AuthoringString) },
+                        { DataMode.Mixed,     EditorGUIUtility.TextContent(k_MixedString)     },
+                        { DataMode.Runtime,   EditorGUIUtility.TextContent(k_RuntimeString)   }
                     };
             }
 
@@ -84,6 +102,8 @@ namespace UnityEditor
         protected EditorWindowDelegate m_Update;
         protected EditorWindowDelegate m_ModifierKeysChanged;
         protected EditorWindowShowButtonDelegate m_ShowButton;
+
+        private bool m_IsLosingFocus = false;
 
         internal EditorWindow actualView
         {
@@ -321,8 +341,22 @@ namespace UnityEditor
 
         internal void OnLostFocus()
         {
+            // Avoid calling OnLostFocus script callback if we are already processing the focus lost.
+            // This can happen when user scripts call Close() in OnLostFocus() callback.
+            if (m_IsLosingFocus)
+                return;
+
             EditorGUI.EndEditingActiveTextField();
-            m_OnLostFocus?.Invoke();
+
+            try
+            {
+                m_IsLosingFocus = true;
+                m_OnLostFocus?.Invoke();
+            }
+            finally
+            {
+                m_IsLosingFocus = false;
+            }
 
             // Callback could have killed us
             if (!this)
@@ -527,9 +561,6 @@ namespace UnityEditor
             set { windowBackend = value; }
         }
 
-        DataMode m_CachedDataMode;
-        bool m_ShouldDrawDataModeSwitch;
-
         protected void RegisterSelectedPane(bool sendEvents)
         {
             if (!m_ActualView)
@@ -559,19 +590,6 @@ namespace UnityEditor
             {
                 EditorApplication.update -= m_ActualView.CheckForWindowRepaint;
                 EditorApplication.update += m_ActualView.CheckForWindowRepaint;
-            }
-
-            if (m_ActualView is IDataModeHandler dataModeHandler)
-            {
-                UpdateDataMode(dataModeHandler.dataMode, false);
-
-                if (m_ActualView is IDataModeHandlerAndDispatcher dataModesDispatcher)
-                    dataModesDispatcher.dataModeChanged += OnViewDataModeChanged;
-            }
-            else
-            {
-                m_CachedDataMode = DataMode.Disabled;
-                m_ShouldDrawDataModeSwitch = false;
             }
 
             if (sendEvents)
@@ -611,19 +629,15 @@ namespace UnityEditor
                 EditorApplication.update -= m_ActualView.CheckForWindowRepaint;
             }
 
-            if (m_ActualView is IDataModeHandlerAndDispatcher dataModesDispatcher)
-                dataModesDispatcher.dataModeChanged -= OnViewDataModeChanged;
-
             if (clearActualView)
             {
-                var onLostFocus = m_OnLostFocus;
                 var onBecameInvisible = m_OnBecameInvisible;
 
                 m_ActualView = null;
 
                 if (sendEvents)
                 {
-                    onLostFocus?.Invoke();
+                    OnLostFocus();
                     onBecameInvisible?.Invoke();
                 }
                 ClearDelegates();
@@ -696,7 +710,7 @@ namespace UnityEditor
             if (m_ShowButton != null)
                 extraWidth += ContainerWindow.kButtonWidth;
 
-            if (m_ShouldDrawDataModeSwitch)
+            if (m_ActualView.GetDataModeController_Internal().ShouldDrawDataModesSwitch())
                 extraWidth += Styles.DataModes.switchButtonWidth + Styles.iconMargin;
 
             foreach (var item in windowActions)
@@ -723,13 +737,15 @@ namespace UnityEditor
             if (m_ShowButton != null)
                 m_ShowButton.Invoke(new Rect(leftOffset, topOffset, ContainerWindow.kButtonWidth, ContainerWindow.kButtonHeight));
 
-            if (m_ShouldDrawDataModeSwitch)
+            var dataModeControllerInternal = m_ActualView.GetDataModeController_Internal();
+            if (dataModeControllerInternal.ShouldDrawDataModesSwitch())
             {
-                var switchContent = m_CachedDataMode switch
+                var isClientInAutomaticDataMode = dataModeControllerInternal.isAutomatic;
+                var switchContent = dataModeControllerInternal.dataMode switch
                 {
-                    DataMode.Authoring => Styles.DataModes.authoringModeContent,
-                    DataMode.Mixed => Styles.DataModes.mixedModeContent,
-                    DataMode.Runtime => Styles.DataModes.runtimeModeContent,
+                    DataMode.Authoring => isClientInAutomaticDataMode? Styles.DataModes.authoringModeContent : Styles.DataModes.stickyAuthoringModeContent,
+                    DataMode.Mixed => isClientInAutomaticDataMode? Styles.DataModes.mixedModeContent : Styles.DataModes.stickyMixedModeContent,
+                    DataMode.Runtime => isClientInAutomaticDataMode? Styles.DataModes.runtimeModeContent : Styles.DataModes.stickyRuntimeModeContent,
                     _ => default
                 };
 
@@ -741,11 +757,14 @@ namespace UnityEditor
 
                     if (EditorGUI.Button(switchRect, switchContent, Styles.DataModes.switchStyle))
                     {
-                        // This cast is guaranteed to work by m_ShouldDrawDataModeSwitch
-                        var dataModesClient = (IDataModeHandler) m_ActualView;
+                        var evt = Event.current;
 
-                        dataModesClient.SwitchToNextDataMode();
-                        UpdateDataMode(dataModesClient.dataMode, true);
+                        if (evt.button == 0 || evt.button == 1) // left click or right click
+                        {
+                            var menu = new GenericMenu();
+                            PopulateDataModeDropdown(dataModeControllerInternal, menu);
+                            menu.DropDown(switchRect);
+                        }
                     }
                 }
             }
@@ -770,39 +789,23 @@ namespace UnityEditor
             }
         }
 
-        bool ShouldDrawDataModesSwitch()
+        void PopulateDataModeDropdown(DataModeController clientDataModeController, GenericMenu menu)
         {
-            return m_ActualView is IDataModeHandler dataModesHandler
-                   && dataModesHandler.dataMode != DataMode.Disabled
-                   // We don't want to show this switch if there are not
-                   // at least 2 modes supported at the current moment.
-                   && dataModesHandler.supportedDataModes.Count > 1;
-        }
+            var autoLabel = !clientDataModeController.isAutomatic
+                ? L10n.Tr($"Automatic ({clientDataModeController.preferredDataMode})")
+                : L10n.Tr($"Automatic ({clientDataModeController.dataMode})");
 
-        void SelectDataMode(object dataMode)
-        {
-            if (m_ActualView is not IDataModeHandler dataModeHandler)
-                return; // Something very weird has happened...
+            menu.AddItem(new GUIContent(autoLabel),
+                clientDataModeController.isAutomatic,
+                () => clientDataModeController.SwitchToAutomatic());
 
-            if (dataMode is DataMode mode && dataModeHandler.IsDataModeSupported(mode))
-                dataModeHandler.SwitchToDataMode(mode);
-            else
-                dataModeHandler.SwitchToDefaultDataMode();
+            menu.AddSeparator("");
 
-            UpdateDataMode(dataModeHandler.dataMode, true);
-        }
-
-        void OnViewDataModeChanged(DataMode newDataMode) => UpdateDataMode(newDataMode, true);
-
-        void UpdateDataMode(DataMode newDataMode, bool needsRepaint)
-        {
-            m_CachedDataMode = newDataMode;
-            m_ShouldDrawDataModeSwitch = ShouldDrawDataModesSwitch();
-
-            if (needsRepaint)
+            foreach (var mode in clientDataModeController.supportedDataModes)
             {
-                m_ActualView.Repaint();
-                RepaintImmediately();
+                menu.AddItem(Styles.DataModes.dataModeNameLabels[mode],
+                    !clientDataModeController.isAutomatic && clientDataModeController.dataMode == mode,
+                    () => clientDataModeController.SwitchToStickyDataMode(mode));
             }
         }
 
@@ -920,53 +923,11 @@ namespace UnityEditor
             File.Delete(saveWindowPath);
         }
 
-        readonly List<DataMode> m_DataModeSanitizationCache = new List<DataMode>(3); // Number of modes, minus `Disabled`
-
-        static void SanitizeSupportedDataModesList(IReadOnlyList<DataMode> originalList, List<DataMode> sanitizedList)
-        {
-            sanitizedList.Clear();
-
-            foreach (var mode in originalList)
-            {
-                if (mode == DataMode.Disabled)
-                    continue; // Never list `DataMode.Disabled`
-
-                if (sanitizedList.Contains(mode))
-                    continue; // Prevent duplicate entries
-
-                sanitizedList.Add(mode);
-            }
-
-            // Ensure we are displaying the data modes in a predefined order, regardless of
-            // the order in which the user defined their list.
-            sanitizedList.Sort();
-        }
 
         protected virtual void AddDefaultItemsToMenu(GenericMenu menu, EditorWindow window)
         {
             if (menu.GetItemCount() != 0)
                 menu.AddSeparator("");
-
-            if (m_ShouldDrawDataModeSwitch)
-            {
-                // This cast is guaranteed to work by m_ShouldDrawDataModeSwitch
-                var dataModesHandler = (IDataModeHandler) window;
-                SanitizeSupportedDataModesList(dataModesHandler.supportedDataModes, m_DataModeSanitizationCache);
-
-                // Don't show anything if only one mode is supported
-                if (m_DataModeSanitizationCache.Count > 1)
-                {
-                    foreach (var mode in m_DataModeSanitizationCache)
-                    {
-                        menu.AddItem(Styles.DataModes.dataModeNameLabels[mode],
-                            m_CachedDataMode == mode,
-                            SelectDataMode,
-                            mode);
-                    }
-
-                    menu.AddSeparator("");
-                }
-            }
 
             if(window is ISupportsOverlays)
             {

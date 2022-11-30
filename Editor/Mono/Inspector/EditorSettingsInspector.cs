@@ -93,7 +93,7 @@ namespace UnityEditor
             public static readonly GUIContent enterPlayModeOptionsEnabled = EditorGUIUtility.TrTextContent("Enter Play Mode Options", "Enables options when Entering Play Mode");
             public static readonly GUIContent enterPlayModeOptionsEnableDomainReload = EditorGUIUtility.TrTextContent("Reload Domain", "Enables Domain Reload when Entering Play Mode. Domain reload reinitializes game completely making loading behavior very close to the Player");
             public static readonly GUIContent enterPlayModeOptionsEnableSceneReload = EditorGUIUtility.TrTextContent("Reload Scene", "Enables Scene Reload when Entering Play Mode. Scene reload makes loading behavior and performance characteristics very close to the Player");
-            public static readonly GUIContent enterPlayModeOptionsDisableSceneBackup = EditorGUIUtility.TrTextContent("Disable Scene Backup", "Conditionally skips writing a backup of the open scenes to disk. Only scenes that are modified in-memory need to be backed up, but making modifications from script may change the scene without setting the scene's dirty flag.");
+            public static readonly GUIContent enterPlayModeOptionsEnableSceneBackup = EditorGUIUtility.TrTextContent("Scene Backup", "Force writing a backup of all the open scenes to disk even if scenes are not dirty when entering Play mode. Only scenes that are modified in-memory actually need to be backed up, but making modifications from script may change the scene without setting the scene's dirty flag.");
 
             public static readonly GUIContent numberingScheme = EditorGUIUtility.TrTextContent("Numbering Scheme");
 
@@ -991,7 +991,7 @@ namespace UnityEditor
                 EnterPlayModeOptions options = (EnterPlayModeOptions)m_EnterPlayModeOptions.intValue;
                 options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableDomainReload, Content.enterPlayModeOptionsEnableDomainReload);
                 options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableSceneReload, Content.enterPlayModeOptionsEnableSceneReload);
-                options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableSceneBackupUnlessDirty, Content.enterPlayModeOptionsDisableSceneBackup);
+                options = ToggleEnterPlayModeOptions(options, EnterPlayModeOptions.DisableSceneBackupUnlessDirty, Content.enterPlayModeOptionsEnableSceneBackup);
 
                 if (m_EnterPlayModeOptions.intValue != (int)options)
                 {

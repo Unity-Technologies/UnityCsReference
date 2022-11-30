@@ -54,7 +54,12 @@ namespace UnityEditor.Search
 
         public static Texture2D GetSceneObjectPreview(GameObject obj, Vector2 size, FetchPreviewOptions options, Texture2D thumbnail)
         {
-            return Utils.GetSceneObjectPreview(obj, size, options, thumbnail);
+            return Utils.GetSceneObjectPreview(null, obj, size, options, thumbnail);
+        }
+        
+        public static Texture2D GetSceneObjectPreview(SearchContext ctx, GameObject obj, Vector2 size, FetchPreviewOptions options, Texture2D thumbnail)
+        {
+            return GetSceneObjectPreview(null, obj, size, options, thumbnail);
         }
 
         /// <summary>
@@ -1021,19 +1026,29 @@ namespace UnityEditor.Search
             return Utils.GetMainWindowCenteredPosition(size);
         }
 
+        public static Texture2D GetAssetThumbnailFromPath(SearchContext context, string path)
+        {
+            return Utils.GetAssetThumbnailFromPath(context, path);
+        }
+        
         public static Texture2D GetAssetThumbnailFromPath(string path)
         {
-            return Utils.GetAssetThumbnailFromPath(path);
+            return GetAssetThumbnailFromPath(null, path);
         }
-
+        
         public static Texture2D GetAssetPreviewFromPath(string path, FetchPreviewOptions previewOptions)
         {
-            return Utils.GetAssetPreviewFromPath(path, previewOptions);
+            return GetAssetPreviewFromPath(null, path, previewOptions);
+        }
+
+        public static Texture2D GetAssetPreviewFromPath(SearchContext context, string path, FetchPreviewOptions previewOptions, Vector2 previewSize = new())
+        {
+            return Utils.GetAssetPreviewFromPath(context, path, previewSize == Vector2.zero ? new Vector2(128, 128) : previewSize, previewOptions);
         }
 
         public static Texture2D GetAssetPreviewFromPath(string path, Vector2 previewSize, FetchPreviewOptions previewOptions)
         {
-            return Utils.GetAssetPreviewFromPath(path, previewSize, previewOptions);
+            return GetAssetPreviewFromPath(null, path, previewOptions, previewSize);
         }
 
         public static void FrameAssetFromPath(string path)

@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<IOperation> onOperationProgress;
 
         string packageUniqueId { get; }
+        long productId { get; }
 
         // a timestamp is added to keep track of how `fresh` the result is
         // in the case of an online operation, it is the time when the operation starts

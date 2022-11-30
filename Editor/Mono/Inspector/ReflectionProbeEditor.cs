@@ -239,7 +239,7 @@ namespace UnityEditor
 
         private bool IsCollidingWithOtherProbes(string targetPath, ReflectionProbe targetProbe, out ReflectionProbe collidingProbe)
         {
-            ReflectionProbe[] probes = FindObjectsOfType<ReflectionProbe>().ToArray();
+            ReflectionProbe[] probes = FindObjectsByType<ReflectionProbe>(FindObjectsSortMode.InstanceID).ToArray();
             collidingProbe = null;
             foreach (var probe in probes)
             {

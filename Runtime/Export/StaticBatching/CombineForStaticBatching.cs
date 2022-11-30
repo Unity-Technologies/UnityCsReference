@@ -27,7 +27,7 @@ namespace UnityEngine
             MeshFilter[] filters;
             GameObject[] gos;
             if (staticBatchRoot == null)
-                filters = (MeshFilter[])Object.FindObjectsOfType(typeof(MeshFilter));
+                filters = (MeshFilter[])Object.FindObjectsByType(typeof(MeshFilter), FindObjectsSortMode.None);
             else
                 filters = staticBatchRoot.GetComponentsInChildren<MeshFilter>();
 

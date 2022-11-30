@@ -19,7 +19,7 @@ using System.Diagnostics.Contracts;
 namespace UnityEngine.Rendering
 {
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
-    [NativeHeader("Runtime/Shaders/RayTracingShader.h")]
+    [NativeHeader("Runtime/Shaders/RayTracing/RayTracingShader.h")]
     [NativeHeader("Runtime/Export/Graphics/RenderingCommandBuffer.bindings.h")]
     [NativeType("Runtime/Graphics/CommandBuffer/RenderingCommandBuffer.h")]
     [UsedByNativeCode]
@@ -531,6 +531,9 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_DrawMesh", HasExplicitThis = true)]
         extern private void Internal_DrawMesh([NotNull] Mesh mesh, Matrix4x4 matrix, Material material, int submeshIndex, int shaderPass, MaterialPropertyBlock properties);
+
+        [NativeMethod("AddDrawMultipleMeshes")]
+        extern private void Internal_DrawMultipleMeshes(Matrix4x4[] matrices, Mesh[] meshes, int[] subsetIndices, int count, Material material, int shaderPass, MaterialPropertyBlock properties);
 
         [NativeMethod("AddDrawRenderer")]
         extern private void Internal_DrawRenderer([NotNull] Renderer renderer, Material material, int submeshIndex, int shaderPass);

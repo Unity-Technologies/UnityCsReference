@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -16,6 +17,8 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public abstract class ImmediateModeElement : VisualElement
     {
+        internal static readonly DataBindingProperty cullingEnabledProperty = nameof(cullingEnabled);
+
         static readonly Dictionary<Type, ProfilerMarker> s_Markers = new Dictionary<Type, ProfilerMarker>();
         readonly ProfilerMarker m_ImmediateRepaintMarker;
 
@@ -24,10 +27,18 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// When this property is set to true, the Element does not repaint itself when it is outside the viewport.
         /// </summary>
+        [CreateProperty]
         public bool cullingEnabled
         {
             get { return m_CullingEnabled; }
-            set { m_CullingEnabled = value; IncrementVersion(VersionChangeType.Repaint); }
+            set
+            {
+                if (m_CullingEnabled == value)
+                    return;
+                m_CullingEnabled = value;
+                IncrementVersion(VersionChangeType.Repaint);
+                NotifyPropertyChanged(cullingEnabledProperty);
+            }
         }
 
         /// <summary>

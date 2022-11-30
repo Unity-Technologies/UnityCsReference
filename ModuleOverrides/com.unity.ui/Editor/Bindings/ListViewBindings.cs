@@ -166,7 +166,7 @@ namespace UnityEditor.UIElements.Bindings
 
             m_IsBinding = true;
             field.bindingPath = itemProp.propertyPath;
-            bindingContext.ContinueBinding(ve, itemProp);
+            bindingContext.ContinueBinding(ve, null);
             m_IsBinding = false;
         }
 
@@ -420,7 +420,20 @@ namespace UnityEditor.UIElements.Bindings
 
         public bool IsFixedSize => true;
 
-        public int Count => properties.Count;
+        public int Count
+        {
+            get
+            {
+                if (ArrayProperty.serializedObject.isEditingMultipleObjects)
+                {
+                   if (IsOverMaxMultiEditLimit)
+                        return 0;
+
+                    return ArrayProperty.minArraySize;
+                }
+                return properties != null ? properties.Count : 0;
+            }
+        }
 
         bool ICollection.IsSynchronized
         {
@@ -501,7 +514,7 @@ namespace UnityEditor.UIElements.Bindings
             if (index >= 0 && index < Count)
             {
                 var currentProperty = ArrayProperty.GetArrayElementAtIndex(index);
-                for (var i = index + 1; i < ArraySize.intValue; i++)
+                for (var i = index + 1; i < Count; i++)
                 {
                     var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
                     if (nextProperty != null)

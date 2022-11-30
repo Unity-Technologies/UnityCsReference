@@ -22,19 +22,19 @@ namespace UnityEngine
 
             hasTextInput = false;
             drawSelectionAsComposition = false;
-            cursorFirst = cursorLast = -1;
+            cursorFirstPosition = cursorLastPosition = Vector2.zero;
             selectionColor = cursorColor = Color.red;
         }
 
         public DrawStates(int controlId, bool isHover, bool isActive, bool on, bool hasKeyboardFocus,
-                          bool drawSelectionAsComposition, int cursorFirst, int cursorLast,
+                          bool drawSelectionAsComposition, Vector2 cursorFirstPosition, Vector2 cursorLastPosition,
                           Color cursorColor, Color selectionColor)
             : this(controlId, isHover, isActive, on, hasKeyboardFocus)
         {
             hasTextInput = true;
             this.drawSelectionAsComposition = drawSelectionAsComposition;
-            this.cursorFirst = cursorFirst;
-            this.cursorLast = cursorLast;
+            this.cursorFirstPosition = cursorFirstPosition;
+            this.cursorLastPosition = cursorLastPosition;
             this.cursorColor = cursorColor;
             this.selectionColor = selectionColor;
         }
@@ -47,8 +47,8 @@ namespace UnityEngine
 
         public readonly bool hasTextInput;
         public readonly bool drawSelectionAsComposition;
-        public readonly int cursorFirst;
-        public readonly int cursorLast;
+        public readonly Vector2 cursorFirstPosition;
+        public readonly Vector2 cursorLastPosition;
         public readonly Color cursorColor;
         public readonly Color selectionColor;
     }

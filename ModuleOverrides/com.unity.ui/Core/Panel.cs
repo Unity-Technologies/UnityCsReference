@@ -58,6 +58,8 @@ namespace UnityEngine.UIElements
         TransitionProperty = 1 << 15,
         // The combined registered callbacks' EventCategory values has changed
         EventCallbackCategories = 1 << 16,
+        // The DisableRendering flag has changed
+        DisableRendering = 1 << 17,
     }
 
     /// <summary>

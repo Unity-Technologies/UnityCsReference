@@ -83,6 +83,31 @@ namespace UnityEditor.Search
             return null;
         }
 
+        public static ISearchWindow GetSearchHostWindow(this VisualElement self)
+        {
+            if (self?.elementPanel == null)
+                return null;
+
+            if (self.elementPanel.ownerObject is ISearchWindow sw)
+                return sw;
+            if (self.elementPanel.ownerObject is HostView hv && hv.actualView is ISearchWindow hvsw)
+                return hvsw;
+            if (self.elementPanel.ownerObject is IEditorWindowModel ewm && ewm.window is ISearchWindow ewmsw)
+                return ewmsw;
+            return null;
+        }
+
+        public static bool HostWindowHasFocus(this VisualElement self)
+        {
+            if (self?.elementPanel == null)
+                return false;
+
+            if (self.elementPanel.ownerObject is ISearchWindow sw)
+                return sw.HasFocus();
+            var hostWindow = self.GetHostWindow();
+            return hostWindow?.hasFocus ?? false;
+        }
+
         public static void RegisterFireAndForgetCallback<TEventType>(this VisualElement self, EventCallback<TEventType> callback)
             where TEventType : EventBase<TEventType>, new()
         {

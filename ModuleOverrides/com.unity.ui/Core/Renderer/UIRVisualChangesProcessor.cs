@@ -53,17 +53,14 @@ namespace UnityEngine.UIElements.UIR
 
             public void ProcessOnVisualsChanged(VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
             {
-                bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
+                bool hierarchical = ve.renderChainData.pendingHierarchicalRepaint || (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
                 if (hierarchical)
                     stats.recursiveVisualUpdates++;
                 else stats.nonRecursiveVisualUpdates++;
-                var parent = ve.hierarchy.parent;
-                var parentHierarchyHidden = parent != null &&
-                    (parent.renderChainData.isHierarchyHidden || RenderEvents.IsElementHierarchyHidden(parent));
-                DepthFirstOnVisualsChanged(ve, dirtyID, parentHierarchyHidden, hierarchical, ref stats);
+                DepthFirstOnVisualsChanged(ve, dirtyID, hierarchical, ref stats);
             }
 
-            void DepthFirstOnVisualsChanged(VisualElement ve, uint dirtyID, bool parentHierarchyHidden, bool hierarchical, ref ChainBuilderStats stats)
+            void DepthFirstOnVisualsChanged(VisualElement ve, uint dirtyID, bool hierarchical, ref ChainBuilderStats stats)
             {
                 if (dirtyID == ve.renderChainData.dirtyID)
                     return;
@@ -72,10 +69,17 @@ namespace UnityEngine.UIElements.UIR
                 if (hierarchical)
                     stats.recursiveVisualUpdatesExpanded++;
 
-                bool wasHierarchyHidden = ve.renderChainData.isHierarchyHidden;
-                ve.renderChainData.isHierarchyHidden = parentHierarchyHidden || RenderEvents.IsElementHierarchyHidden(ve);
-                if (wasHierarchyHidden != ve.renderChainData.isHierarchyHidden)
-                    hierarchical = true;
+                if (!ve.areAncestorsAndSelfDisplayed)
+                {
+                    if (hierarchical)
+                        ve.renderChainData.pendingHierarchicalRepaint = true;
+                    else
+                        ve.renderChainData.pendingRepaint = true;
+                    return;
+                }
+
+                ve.renderChainData.pendingHierarchicalRepaint = false;
+                ve.renderChainData.pendingRepaint = false;
 
                 if (!hierarchical && (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) == RenderDataDirtyTypes.VisualsOpacityId)
                 {
@@ -105,21 +109,18 @@ namespace UnityEngine.UIElements.UIR
                     rootEntry = rootEntry
                 });
 
-                if (!ve.renderChainData.isHierarchyHidden)
-                {
-                    k_GenerateEntriesMarker.Begin();
-                    m_MeshGenerationContext.Begin(new MeshGenerationNode { placeholder = rootEntry }, ve);
-                    m_ElementBuilder.Build(m_MeshGenerationContext);
-                    m_MeshGenerationContext.End();
-                    k_GenerateEntriesMarker.End();
-                }
+                k_GenerateEntriesMarker.Begin();
+                m_MeshGenerationContext.Begin(new MeshGenerationNode { placeholder = rootEntry }, ve);
+                m_ElementBuilder.Build(m_MeshGenerationContext);
+                m_MeshGenerationContext.End();
+                k_GenerateEntriesMarker.End();
 
                 if (hierarchical)
                 {
                     // Recurse on children
                     int childrenCount = ve.hierarchy.childCount;
                     for (int i = 0; i < childrenCount; i++)
-                        DepthFirstOnVisualsChanged(ve.hierarchy[i], dirtyID, ve.renderChainData.isHierarchyHidden, true, ref stats);
+                        DepthFirstOnVisualsChanged(ve.hierarchy[i], dirtyID, true, ref stats);
                 }
 
                 m_EntryProcessingList.Add(new EntryProcessingInfo

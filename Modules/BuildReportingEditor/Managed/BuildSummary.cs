@@ -36,6 +36,7 @@ namespace UnityEditor.Build.Reporting
         public BuildResult result { get; }
 
         internal BuildType buildType { get; }
+        public bool multiProcessEnabled { get; }
 
         private T ParseSubtarget<T, S>() where T : Enum where S : Enum
         {

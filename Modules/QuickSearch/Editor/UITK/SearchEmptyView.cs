@@ -28,12 +28,28 @@ namespace UnityEditor.Search
         private bool m_Disposed;
         private QueryBuilder m_Areas;
         private VisualElement m_QueriesContainer;
+        private SearchEmptyViewMode m_DisplayMode;
 
         float IResultView.itemSize => m_ViewModel.itemIconSize;
         Rect IResultView.rect => worldBound;
         bool IResultView.showNoResultMessage => true;
 
+        enum SearchEmptyViewMode
+        {
+            None,
+            HideHelpersNoResult,
+            SearchInProgress,
+            NoResultWithTips,
+            QueryHelpersText,
+            QueryHelpersBlock
+        }
+
         public bool hideHelpers { get; set; }
+
+        int IResultView.ComputeVisibleItemCapacity(float width, float height)
+        {
+            return 0;
+        }
 
         static readonly string k_NoResultsLabel = L10n.Tr("No Results.");
         static readonly string k_SearchInProgressLabel = L10n.Tr("Search in progress...");
@@ -63,8 +79,30 @@ namespace UnityEditor.Search
             BuildView();
         }
 
+        private SearchEmptyViewMode GetDisplayMode()
+        {
+            if (hideHelpers)
+                return SearchEmptyViewMode.HideHelpersNoResult;
+
+            if (m_ViewModel.searchInProgress)
+                return SearchEmptyViewMode.SearchInProgress;
+
+            if (!context.empty)
+                return SearchEmptyViewMode.NoResultWithTips;
+
+            if (viewState.queryBuilderEnabled)
+                return SearchEmptyViewMode.QueryHelpersBlock;
+
+            return SearchEmptyViewMode.QueryHelpersText;
+        }
+
         private void BuildView()
         {
+            var displayMode = GetDisplayMode();
+            if (displayMode == m_DisplayMode)
+                return;
+            m_DisplayMode = displayMode;
+
             Clear();
 
             if (hideHelpers)
@@ -82,11 +120,10 @@ namespace UnityEditor.Search
         private void BuildQueryHelpers()
         {
             Add(CreateHeader(k_NarrowYourSearchLabel));
-            Add(CreateProviderHelpers(viewState.queryBuilderEnabled));
 
             m_QueriesContainer = new VisualElement();
             m_QueriesContainer.name = "QueryHelpersContainer";
-            BuildSearches();
+            Add(CreateProviderHelpers(viewState.queryBuilderEnabled));
 
             Add(m_QueriesContainer);
         }
@@ -102,7 +139,6 @@ namespace UnityEditor.Search
             m_QueriesContainer.Add(searchesHeader);
             m_QueriesContainer.Add(CreateSearchHelpers(viewState.queryBuilderEnabled, searches));
 
-            searches.UpdateTitle();
             searchesHeader.text = searches.title.text;
         }
 
@@ -126,7 +162,7 @@ namespace UnityEditor.Search
             var currentAreaFilterId = SearchSettings.helperWidgetCurrentArea;
             var filteredQueries = GetFilteredQueries(searches.queries, currentAreaFilterId, blockMode); ;
             PopulateSearchHelpers(filteredQueries, container);
-
+            searches.UpdateTitle(filteredQueries.Count());
             container.Children().LastOrDefault()?.AddToClassList("last-child");
             return container;
         }
@@ -172,7 +208,7 @@ namespace UnityEditor.Search
             if (evt.target is not VisualElement ve || ve.userData is not QueryHelperSearchGroup.QueryData qd)
                 return;
 
-            if (qd.query != null && this.GetHostWindow() is ISearchQueryView sqv)
+            if (qd.query != null && this.GetSearchHostWindow() is ISearchQueryView sqv)
                 ExecuteQuery(qd.query);
             else
                 m_ViewModel.SetSearchText(qd.searchText);
@@ -250,7 +286,23 @@ namespace UnityEditor.Search
                 b.tooltip = string.Format(k_AreaTooltipFormat, b.value);
 
             foreach (var b in m_Areas.EnumerateBlocks())
+            {
+                if (b is QueryAreaBlock area && GetFilterId(area) == SearchSettings.helperWidgetCurrentArea)
+                {
+                    b.selected = true;
+                }
                 providersContainer.Add(b.CreateGUI());
+            }
+
+            if (!m_Areas.selectedBlocks.Any())
+            {
+                allArea.selected = true;
+                SetCurrentArea(allArea);
+            }
+            else
+            {
+                BuildSearches();
+            }
 
             return providersContainer;
         }
@@ -268,13 +320,23 @@ namespace UnityEditor.Search
             }
             else
             {
-                var filterId = string.IsNullOrEmpty(area.filterId) ? area.value : area.filterId;
-                SearchSettings.helperWidgetCurrentArea = filterId;
-                BuildSearches();
+                SetCurrentArea(area);
             }
 
             evt.StopPropagation();
             evt.PreventDefault();
+        }
+
+        private void SetCurrentArea(QueryAreaBlock area)
+        {
+            var filterId = GetFilterId(area);
+            SearchSettings.helperWidgetCurrentArea = filterId;
+            BuildSearches();
+        }
+
+        private static string GetFilterId(QueryAreaBlock area)
+        {
+            return string.IsNullOrEmpty(area.filterId) ? area.value : area.filterId;
         }
 
         private static ISearchQuery CreateQuery(string queryStr)
@@ -286,7 +348,7 @@ namespace UnityEditor.Search
 
         private void ExecuteQuery(ISearchQuery query)
         {
-            if(this.GetHostWindow() is ISearchQueryView sqv)
+            if(this.GetSearchHostWindow() is ISearchQueryView sqv)
                 sqv.ExecuteSearchQuery(query);
         }
 
@@ -329,6 +391,7 @@ namespace UnityEditor.Search
 
         private void BuildView(ISearchEvent evt)
         {
+            m_DisplayMode = SearchEmptyViewMode.None;
             BuildView();
         }
 
@@ -449,7 +512,8 @@ namespace UnityEditor.Search
 
         void IResultView.Refresh(RefreshFlags flags)
         {
-            BuildView();
+            if (flags == RefreshFlags.QueryCompleted || flags == RefreshFlags.ItemsChanged)
+                BuildView();
         }
 
         void IResultView.OnGroupChanged(string prevGroupId, string newGroupId)

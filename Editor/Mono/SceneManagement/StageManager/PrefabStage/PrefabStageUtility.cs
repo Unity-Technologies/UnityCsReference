@@ -665,13 +665,14 @@ namespace UnityEditor.SceneManagement
         {
             GUIContent result;
             var defaultPrefabMode = PreferencesProvider.GetDefaultPrefabModeForHierarchy();
+            var modifierKey = Application.platform == RuntimePlatform.OSXEditor ? "Option" : "Alt";
             switch (defaultPrefabMode)
             {
                 case PrefabStage.Mode.InContext:
-                    result = new GUIContent("", null, $"Open Prefab Asset in context.\nPress modifier key [Alt] to open in isolation.");
+                    result = new GUIContent("", null, $"Open Prefab Asset in context.\nPress the {modifierKey} modifier key to open in isolation.");
                     break;
                 case PrefabStage.Mode.InIsolation:
-                    result = new GUIContent("", null, "Open Prefab Asset in isolation.\nPress modifier key [Alt] to open in context.");
+                    result = new GUIContent("", null, $"Open Prefab Asset in isolation.\nPress the {modifierKey} modifier key to open in context.");
                     break;
                 default:
                     result = new GUIContent("");

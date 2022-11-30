@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using Unity.Profiling;
 
@@ -21,8 +20,15 @@ namespace UnityEngine.UIElements
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
+        // Only Editor panels actually do something with the ViewData of VisualElements
+        // Skip the execution of the updater completely for Runtime UI (including when developing in the Editor)
+        public bool enabled => panel.contextType == ContextType.Editor;
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
+            if (!enabled)
+                return;
+
             if ((versionChangeType & VersionChangeType.ViewData) != VersionChangeType.ViewData)
                 return;
 
@@ -34,6 +40,9 @@ namespace UnityEngine.UIElements
 
         public override void Update()
         {
+            if (!enabled)
+                return;
+
             if (m_Version == m_LastVersion)
                 return;
 

@@ -53,6 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onPurchaseInfosChanged += OnPurchaseInfosChanged;
             m_AssetStoreCache.onProductInfoChanged += OnProductInfoChanged;
             m_AssetStoreCache.onUpdateInfosChanged += OnUpdateInfosChanged;
+            m_AssetStoreCache.onImportedPackagesChanged += OnImportedPackagesChanged;
 
             m_AssetStoreDownloadManager.onDownloadProgress += OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized += OnDownloadFinalized;
@@ -71,6 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onPurchaseInfosChanged -= OnPurchaseInfosChanged;
             m_AssetStoreCache.onProductInfoChanged -= OnProductInfoChanged;
             m_AssetStoreCache.onUpdateInfosChanged -= OnUpdateInfosChanged;
+            m_AssetStoreCache.onImportedPackagesChanged -= OnImportedPackagesChanged;
 
             m_AssetStoreDownloadManager.onDownloadProgress -= OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized -= OnDownloadFinalized;
@@ -189,6 +191,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             GeneratePackagesAndTriggerChangeEvent(productIds);
         }
 
+        private void OnImportedPackagesChanged(IEnumerable<AssetStoreImportedPackage> addedOrUpdated, IEnumerable<AssetStoreImportedPackage> removed)
+        {
+            // Since users could have way more locally downloaded .unitypackages than what's in their purchase list
+            // we don't want to trigger change events for all of them, only the ones we already checked before (the ones with productInfos)
+            var productIds = addedOrUpdated?.Select(info => info.productId).Concat(removed.Select(info => info.productId) ?? new long[0]);
+            GeneratePackagesAndTriggerChangeEvent(productIds);
+        }
+
         private void OnUpdateInfosChanged(IEnumerable<AssetStoreUpdateInfo> updateInfos)
         {
             // Right now updateInfo goes hands in hands with localInfo, so we handle it the same way as localInfo changes
@@ -243,7 +253,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var isDeprecated = productInfo.state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase);
                 var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
                 var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
-                var versionList = new AssetStoreVersionList(m_IOProxy, productInfo, localInfo, updateInfo);
+                var importedPackage = m_AssetStoreCache.GetImportedPackage(productId);
+                var versionList = new AssetStoreVersionList(m_IOProxy, productInfo, localInfo, updateInfo, importedPackage);
                 var package = CreatePackage(string.Empty, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated);
                 if (m_AssetStoreDownloadManager.GetDownloadOperation(productId)?.isInProgress == true)
                     SetProgress(package, PackageProgress.Downloading);

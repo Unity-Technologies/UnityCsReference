@@ -52,17 +52,18 @@ namespace UnityEngine.TextCore.Text
         public MeshInfo[] meshInfo;
 
         public bool isDirty;
+        public VertexDataLayout vertexDataLayout { get; private set; }
 
         // Default Constructor
-        public TextInfo()
+        public TextInfo(VertexDataLayout vertexDataLayout)
         {
+            this.vertexDataLayout = vertexDataLayout;
             textElementInfo = new TextElementInfo[4];
             wordInfo = new WordInfo[1];
             lineInfo = new LineInfo[1];
             pageInfo = new PageInfo[1];
-            linkInfo = new LinkInfo[0];
-            meshInfo = new MeshInfo[1];
-
+            linkInfo = Array.Empty<LinkInfo>();
+            meshInfo = Array.Empty<MeshInfo>();
             materialCount = 0;
 
             isDirty = true;

@@ -323,7 +323,7 @@ namespace UnityEngine.Rendering
         public void SetRayTracingBufferParam(RayTracingShader rayTracingShader, int nameID, GraphicsBufferHandle bufferHandle)
         {
             Internal_SetRayTracingGraphicsBufferHandleParam(rayTracingShader, nameID, bufferHandle);
-        }     
+        }
 
         public void SetRayTracingConstantBufferParam(RayTracingShader rayTracingShader, int nameID, ComputeBuffer buffer, int offset, int size)
         {
@@ -512,6 +512,17 @@ namespace UnityEngine.Rendering
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material)
         {
             DrawMesh(mesh, matrix, material, 0);
+        }
+
+        [ExcludeFromDocs]
+        public void DrawMultipleMeshes(Matrix4x4[] matrices, Mesh[] meshes, int[] subsetIndices, int count, Material material, int shaderPass, [DefaultValue("null")] MaterialPropertyBlock properties)
+        {
+            if (matrices.Length != meshes.Length || matrices.Length != subsetIndices.Length)
+                throw new InvalidOperationException("matrices, meshes, subsetIndices must be of same length and must be valid");
+            if (count < 1)
+                throw new InvalidOperationException("count must be atleast 1");
+
+            Internal_DrawMultipleMeshes(matrices, meshes, subsetIndices, count, material, shaderPass, properties);
         }
 
         public void DrawRenderer(Renderer renderer, Material material, [DefaultValue("0")] int submeshIndex, [DefaultValue("-1")] int shaderPass)

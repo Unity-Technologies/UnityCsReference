@@ -8,8 +8,6 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
 
-using PassIdentifier = UnityEngine.Rendering.PassIdentifier;
-
 namespace UnityEditor.ShaderFoundry
 {
     [NativeHeader("Modules/ShaderFoundry/Public/ShaderContainer.h")]
@@ -134,10 +132,6 @@ namespace UnityEditor.ShaderFoundry
         {
             return new ShaderType(this, GetTypeByName(name, builder.blockHandle));
         }
-
-        internal extern FoundryHandle AddPassIdentifier(uint subShaderIndex, uint passIndex);
-        [NativeMethod("Get<PassIdentifier>")]
-        internal extern PassIdentifier GetPassIdentifier(FoundryHandle passIdentifierHandle);
 
         internal FoundryHandle AddTemplateLinker(ITemplateLinker linker)
         {

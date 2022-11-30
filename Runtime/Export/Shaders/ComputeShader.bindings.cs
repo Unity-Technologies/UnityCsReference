@@ -15,7 +15,7 @@ namespace UnityEngine
     [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
-    [NativeHeader("Runtime/Shaders/RayTracingAccelerationStructure.h")]
+    [NativeHeader("Runtime/Shaders/RayTracing/RayTracingAccelerationStructure.h")]
     public sealed partial class ComputeShader : Object
     {
         // skinning/blend-shapes are implemented with compute shaders so we must be able to load them from builtins

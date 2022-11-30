@@ -494,7 +494,7 @@ namespace UnityEditor
             if (targets.Length == 1)
             {
                 AudioSource t = (AudioSource)target;
-                AudioListener audioListener = (AudioListener)FindObjectOfType(typeof(AudioListener));
+                AudioListener audioListener = (AudioListener)FindFirstObjectByType(typeof(AudioListener));
                 if (audioListener != null)
                 {
                     float distToListener = (AudioUtil.GetListenerPos() - t.transform.position).magnitude;

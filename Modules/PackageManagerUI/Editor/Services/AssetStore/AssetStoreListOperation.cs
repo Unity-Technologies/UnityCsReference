@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string k_UserNotLoggedInErrorMessage = L10n.Tr("User not logged in.");
 
         public string packageUniqueId => string.Empty;
+        public long productId => 0;
 
         [SerializeField]
         protected long m_Timestamp;
@@ -51,7 +52,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private bool m_DownloadedAssetsOnly;
-
+        [SerializeField]
+        private bool m_ImportedAssetsOnly;
         [SerializeField]
         private bool m_UpdateAvailableOnly;
 
@@ -117,7 +119,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             m_Result = new AssetStorePurchases(m_OriginalQueryArgs);
-            if ((m_DownloadedAssetsOnly || m_UpdateAvailableOnly) && !m_AdjustedQueryArgs.productIds.Any())
+            if ((m_DownloadedAssetsOnly || m_UpdateAvailableOnly || m_ImportedAssetsOnly) && !m_AdjustedQueryArgs.productIds.Any())
             {
                 m_Result.total = 0;
                 onOperationSuccess?.Invoke(this);
@@ -142,6 +144,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OriginalQueryArgs = queryArgs;
 
             m_DownloadedAssetsOnly = m_OriginalQueryArgs.downloadedOnly;
+            m_ImportedAssetsOnly = m_OriginalQueryArgs.importedOnly;
             m_UpdateAvailableOnly = m_OriginalQueryArgs.updateAvailableOnly;
             // The GetPurchases API has a limit of maximum 1000 items (to avoid performance issues)
             // therefore we do some adjustments to the original query args enforce that limit and split
@@ -153,6 +156,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_AdjustedQueryArgs.status = string.Empty;
                 m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Select(info => info.productId).ToList();
+            }
+            else if (m_ImportedAssetsOnly)
+            {
+                m_AdjustedQueryArgs.status = string.Empty;
+                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.importedPackages.Select(p => p.productId).ToList();
             }
             else if (m_UpdateAvailableOnly)
             {

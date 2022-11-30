@@ -13,7 +13,7 @@ namespace UnityEditor
 {
 
     // AssetImporter for importing VideoClip
-    [NativeHeader("Editor/Src/Video/VideoClipTranscode.h")]
+    [NativeHeader("Modules/VideoEditor/VideoClipTranscode.h")]
     public enum VideoCodec
     {
         Auto = 0,
@@ -38,7 +38,7 @@ namespace UnityEditor
         H264High = 2
     }
 
-    [NativeHeader("Editor/Src/Video/VideoClipTranscode.h")]
+    [NativeHeader("Modules/VideoEditor/VideoClipTranscode.h")]
     public enum VideoDeinterlaceMode
     {
         Off = 0,
@@ -46,7 +46,7 @@ namespace UnityEditor
         Odd = 2
     }
 
-    [NativeHeader("Editor/Src/Video/VideoClipTranscode.h")]
+    [NativeHeader("Modules/VideoEditor/VideoClipTranscode.h")]
     internal enum VideoColorSpace
     {
         sRGB = 0,
@@ -66,7 +66,7 @@ namespace UnityEditor
         CustomSize = 7
     }
 
-    [NativeHeader("Editor/Src/Video/VideoClipTranscode.h")]
+    [NativeHeader("Modules/VideoEditor/VideoClipTranscode.h")]
     public enum VideoSpatialQuality
     {
         LowSpatialQuality = 0,

@@ -184,6 +184,20 @@ namespace UnityEditor
         public Texture2D banner;
     }
 
+    [Flags]
+    public enum AndroidApplicationEntry : uint
+    {
+        /// <summary>
+        /// Include entry which derives from Activity
+        /// - Activity https://developer.android.com/reference/android/app/Activity
+        /// </summary>
+        Activity = 1 << 0,
+        /// <summary>
+        /// Include entry which derives from Game Activity https://developer.android.com/games/agdk/game-activity
+        /// </summary>
+        GameActivity = 1 << 1
+    }
+
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     public partial class PlayerSettings : UnityEngine.Object
     {
@@ -558,9 +572,40 @@ namespace UnityEditor
                 set;
             }
 
+            public static TextureCompressionFormat[] textureCompressionFormats
+            {
+                get
+                {
+                    return GetTextureCompressionFormatsImpl(BuildTargetGroup.Android);
+                }
+                set
+                {
+                    if (value == null || value.Length == 0)
+                    {
+                        throw new ArgumentException($"Android textureCompressionFormats can't be null or empty");
+                    }
+                    foreach (var format in value)
+                    {
+                        if (format == TextureCompressionFormat.Unknown || format == TextureCompressionFormat.BPTC)
+                        {
+                            throw new ArgumentException($"{format} can't be used as a target texture compression for Android");
+                        }
+                    }
+                    SetTextureCompressionFormatsImpl(BuildTargetGroup.Android, value);
+                }
+            }
+
             // Google Play App Dependencies info.
             [NativeProperty("AndroidReportGooglePlayAppDependencies", TargetType.Function)]
             public static extern bool reportGooglePlayAppDependencies { get; set; }
+
+            public static extern AndroidApplicationEntry applicationEntry
+            {
+                [NativeMethod("GetAndroidApplicationEntry")]
+                get;
+                [NativeMethod("SetAndroidApplicationEntry")]
+                set;
+            }
         }
     }
 }

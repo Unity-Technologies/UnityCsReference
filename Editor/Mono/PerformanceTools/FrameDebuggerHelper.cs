@@ -129,7 +129,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 frameDebuggerMaterial.EnableKeyword(ShaderPropertyIDs._TEX2DARRAY);
             else if (samplerType == TextureDimension.CubeArray)
                 frameDebuggerMaterial.EnableKeyword(ShaderPropertyIDs._CUBEMAP);
-            
+
             mat.DisableKeyword(ShaderPropertyIDs._MSAA_2);
             mat.DisableKeyword(ShaderPropertyIDs._MSAA_4);
             mat.DisableKeyword(ShaderPropertyIDs._MSAA_8);

@@ -83,7 +83,11 @@ namespace UnityEditor.Search
         {
             // the contextual click is registered on the row container to ensure that there are no gaps between cells in the click target
             var pp = parent?.parent;
-            pp?.RegisterCallback<ContextClickEvent>(OnItemContextualClicked);
+            if (m_TableView.GetColumnIndex(m_SearchColumn.name) == 0)
+            {
+                // Ensure we only register a single context click handler.
+                pp?.RegisterCallback<ContextClickEvent>(OnItemContextualClicked);
+            }
 
             if (m_SearchColumn.setter == null)
             {
@@ -284,7 +288,7 @@ namespace UnityEditor.Search
             if (m_BindedItem == null)
                 return;
 
-            m_ViewModel.ShowItemContextualMenu(m_BindedItem, worldBound);
+            m_ViewModel.ShowItemContextualMenu(m_BindedItem, new Rect(evt.mousePosition, worldBound.size));
         }
 
         private void OnItemPointerDown(PointerDownEvent evt)

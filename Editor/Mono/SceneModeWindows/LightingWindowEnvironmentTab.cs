@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using Object = UnityEngine.Object;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -79,7 +80,7 @@ namespace UnityEditor
         {
             get
             {
-                var currentSRP = GraphicsSettings.currentRenderPipeline?.GetType();
+                var currentSRP = GraphicsSettings.currentRenderPipelineAssetType;
                 if (m_EnvironmentSection != null && m_SRP != currentSRP)
                 {
                     m_SRP = currentSRP;
@@ -89,9 +90,7 @@ namespace UnityEditor
 
                 if (m_EnvironmentSection == null)
                 {
-                    Type extensionType = RenderPipelineEditorUtility.FetchFirstCompatibleTypeUsingScriptableRenderPipelineExtension<LightingWindowEnvironmentSection>();
-                    if (extensionType == null)
-                        extensionType = typeof(DefaultEnvironmentSectionExtension);
+                    var extensionType = RenderPipelineEditorUtility.GetDerivedTypesSupportedOnCurrentPipeline<LightingWindowEnvironmentSection>().FirstOrDefault() ?? typeof(DefaultEnvironmentSectionExtension);
                     LightingWindowEnvironmentSection extension = (LightingWindowEnvironmentSection)Activator.CreateInstance(extensionType);
                     m_EnvironmentSection = extension;
                     m_EnvironmentSection.OnEnable();
@@ -129,7 +128,7 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            m_SRP = GraphicsSettings.currentRenderPipeline?.GetType();
+            m_SRP = GraphicsSettings.currentRenderPipelineAssetType;
             m_ShowOtherSettings = new SavedBool($"LightingWindow.ShowOtherSettings", true);
         }
 

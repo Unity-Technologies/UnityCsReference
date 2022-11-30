@@ -146,6 +146,7 @@ namespace UnityEditor.Search
         internal static bool onBoardingDoNotAskAgain { get; set; }
         internal static bool showPackageIndexes { get; set; }
         internal static bool showStatusBar { get; set; }
+        internal static bool hideTabs { get; set; }
         internal static SearchQuerySortOrder savedSearchesSortOrder { get; set; }
         internal static bool showSavedSearchPanel { get; set; }
         internal static Dictionary<string, string> scopes { get; private set; }
@@ -236,6 +237,7 @@ namespace UnityEditor.Search
             onBoardingDoNotAskAgain = ReadSetting(settings, nameof(onBoardingDoNotAskAgain), false);
             showPackageIndexes = ReadSetting(settings, nameof(showPackageIndexes), false);
             showStatusBar = ReadSetting(settings, nameof(showStatusBar), false);
+            hideTabs = ReadSetting(settings, nameof(hideTabs), false);
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
             showSavedSearchPanel = ReadSetting(settings, nameof(showSavedSearchPanel), false);
             queryBuilder = ReadSetting(settings, nameof(queryBuilder), false);
@@ -286,6 +288,7 @@ namespace UnityEditor.Search
                 [nameof(searchItemFavorites)] = searchItemFavorites.ToList(),
                 [nameof(savedSearchesSortOrder)] = (int)savedSearchesSortOrder,
                 [nameof(showSavedSearchPanel)] = showSavedSearchPanel,
+                [nameof(hideTabs)] = hideTabs,
                 [nameof(expandedQueries)] = expandedQueries,
                 [nameof(queryBuilder)] = queryBuilder,
                 [nameof(ignoredProperties)] = ignoredProperties,
@@ -390,7 +393,11 @@ namespace UnityEditor.Search
             var settings = new SettingsProvider(settingsPreferencesKey, SettingsScope.User)
             {
                 guiHandler = DrawSearchSettings,
-                keywords = new[] { "quick", "omni", "search" },
+                keywords = new[] { "quick", "search",  }
+                    .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>())
+                    .Concat(SearchService.OrderedObjectSelectors.Select(s => s.displayName))
+                    .Concat(SearchService.OrderedProviders.Select(p => p.name))
+                    .Concat(GetOrderedApis().Select(api => api.displayName))
             };
             return settings;
         }
@@ -401,14 +408,14 @@ namespace UnityEditor.Search
             return new SettingsProvider("Preferences/Search/Indexing", SettingsScope.User)
             {
                 guiHandler = DrawSearchIndexingSettings,
-                keywords = new[] { "search", "index" },
+                keywords = new[] { "search", "index", "indexer", "custom" },
             };
         }
 
         static void DrawSearchServiceSettings()
         {
             EditorGUILayout.LabelField(L10n.Tr("Search Engines"), EditorStyles.largeLabel);
-            var orderedApis = UnityEditor.SearchService.SearchService.searchApis.OrderBy(api => api.displayName);
+            var orderedApis = GetOrderedApis();
             foreach (var api in orderedApis)
             {
                 var searchContextName = api.displayName;
@@ -426,20 +433,16 @@ namespace UnityEditor.Search
                             $"Search engine for {searchContextName}" :
                             $"Set search engine for {searchContextName}")).ToArray();
                         var activeEngineIndex = Math.Max(searchEngines.FindIndex(engine => engine.name == activeEngine?.name), 0);
-
                         GUILayout.Space(20);
-                        GUILayout.Label(new GUIContent(searchContextName), GUILayout.Width(175));
-                        GUILayout.Space(20);
-
                         using (var scope = new EditorGUI.ChangeCheckScope())
                         {
-                            var newSearchEngine = EditorGUILayout.Popup(activeEngineIndex, items, GUILayout.ExpandWidth(true));
+                            var newSearchEngine = EditorGUILayout.Popup(new GUIContent(searchContextName), activeEngineIndex, items, GUILayout.ExpandWidth(true));
                             if (scope.changed)
                             {
                                 api.SetActiveSearchEngine(searchEngines[newSearchEngine].name);
                                 GUI.changed = true;
                             }
-                            GUILayout.Space(10);
+                            GUILayout.Space(35);
                         }
                     }
                     catch (Exception ex)
@@ -461,6 +464,11 @@ namespace UnityEditor.Search
             }
         }
 
+        static IEnumerable<ISearchApi> GetOrderedApis()
+        {
+            return UnityEditor.SearchService.SearchService.searchApis.OrderBy(api => api.displayName);
+        }
+
         static void DrawAdvancedObjectSelectorsSettings()
         {
             using (new EditorGUILayout.VerticalScope())
@@ -473,14 +481,10 @@ namespace UnityEditor.Search
                     GUILayout.Space(20);
 
                     var wasActive = selector.active;
-                    if (GUILayout.Toggle(wasActive, Styles.toggleObjectSelectorActiveContent) != wasActive)
+                    var c = new GUIContent(selector.displayName, Styles.toggleObjectSelectorActiveContent.tooltip);
+                    if (EditorGUILayout.ToggleLeft(c, wasActive, GUILayout.Width(200)) != wasActive)
                     {
                         TogglePickerActive(selector);
-                    }
-
-                    using (new EditorGUI.DisabledGroupScope(!selector.active))
-                    {
-                        GUILayout.Label(new GUIContent(selector.displayName), GUILayout.Width(175));
                     }
 
                     if (GUILayout.Button(Styles.increaseObjectSelectorPriorityContent, Styles.priorityButton))
@@ -777,20 +781,15 @@ namespace UnityEditor.Search
 
                 var settings = GetProviderSettings(p.id);
 
+                var content = p.name + " (" + $"{p.filterId}" + ")";
                 var wasActive = p.active;
-                p.active = GUILayout.Toggle(wasActive, Styles.toggleProviderActiveContent);
+                p.active = EditorGUILayout.ToggleLeft(new GUIContent(content, Styles.toggleProviderActiveContent.tooltip), wasActive, GUILayout.Width(200));
                 if (p.active != wasActive)
                 {
                     SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.PreferenceChanged, "activateProvider", p.id, p.active.ToString());
                     settings.active = p.active;
                     if (providerActivationChanged != null)
                         providerActivationChanged.Invoke(p.id, p.active);
-                }
-
-                using (new EditorGUI.DisabledGroupScope(!p.active))
-                {
-                    var content = p.name + " (" + $"{p.filterId}" + ")";
-                    GUILayout.Label(new GUIContent(content), GUILayout.Width(175));
                 }
 
                 if (!p.isExplicitProvider)
@@ -958,7 +957,7 @@ namespace UnityEditor.Search
             return initialFolder;
         }
 
-        static class Styles
+        class Styles
         {
             public static GUIStyle priorityButton = new GUIStyle("Button")
             {

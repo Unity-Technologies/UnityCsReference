@@ -25,7 +25,14 @@ namespace Unity.Properties
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class CreatePropertyAttribute : Attribute
     {
-
+        /// <summary>
+        /// Indicates if the property should generate a setter.
+        /// </summary>
+        /// <remarks>
+        /// Setting this to <see langword="false"/> will not generate a setter for a readonly field or
+        /// a get only property.
+        /// </remarks>
+        public bool ReadOnly { get; set; } = false;
     }
 
     /// <summary>

@@ -284,6 +284,8 @@ namespace UnityEditor
                                 texImporter.sRGBTexture = false; // extra texture does not contain color data, hence shouldn't be sRGB.
                                 texImporter.SaveAndReimport();
                             }
+
+                            
                         }
                     }
                 }

@@ -334,7 +334,15 @@ namespace UnityEditor.Toolbars
                 case Tool.Custom:
                     var content = EditorToolUtility.GetToolbarIcon(currentVariant);
                     tooltip = L10n.Tr(content.tooltip);
-                    onIcon = offIcon = content.image as Texture2D;
+                    if (content.image == null && !string.IsNullOrEmpty(content.text))
+                    {
+                        textIcon = content.text;
+                    }
+                    else
+                    {
+                        onIcon = offIcon = content.image as Texture2D;
+                        text = content.text;
+                    }
                     break;
             }
         }

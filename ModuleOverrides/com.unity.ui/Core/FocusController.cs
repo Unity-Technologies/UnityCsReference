@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -15,6 +16,12 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public abstract class Focusable : CallbackEventHandler
     {
+        internal static readonly DataBindingProperty focusableProperty = nameof(focusable);
+        internal static readonly DataBindingProperty tabIndexProperty = nameof(tabIndex);
+        internal static readonly DataBindingProperty delegatesFocusProperty = nameof(delegatesFocus);
+        internal static readonly DataBindingProperty canGrabFocusProperty = nameof(canGrabFocus);
+
+
         protected Focusable()
         {
             focusable = true;
@@ -26,27 +33,58 @@ namespace UnityEngine.UIElements
         /// </summary>
         public abstract FocusController focusController { get; }
 
+        private bool m_Focusable;
+
         /// <summary>
         /// True if the element can be focused.
         /// </summary>
-        public bool focusable { get; set; }
+        [CreateProperty]
+        public bool focusable
+        {
+            get => m_Focusable;
+            set
+            {
+                if (m_Focusable == value)
+                    return;
+                m_Focusable = value;
+                NotifyPropertyChanged(focusableProperty);
+            }
+        }
+
+        private int m_TabIndex;
 
         // See http://w3c.github.io/html/editing.html#the-tabindex-attribute
         /// <summary>
         /// An integer used to sort focusables in the focus ring. Must be greater than or equal to zero.
         /// </summary>
-        public int tabIndex { get; set; }
+        [CreateProperty]
+        public int tabIndex
+        {
+            get => m_TabIndex;
+            set
+            {
+                if (m_TabIndex == value)
+                    return;
+                m_TabIndex = value;
+                NotifyPropertyChanged(tabIndexProperty);
+            }
+        }
 
         bool m_DelegatesFocus;
+
         /// <summary>
         /// Whether the element should delegate the focus to its children.
         /// </summary>
+        [CreateProperty]
         public bool delegatesFocus
         {
             get { return m_DelegatesFocus; }
             set
             {
+                if (m_DelegatesFocus == value)
+                    return;
                 m_DelegatesFocus = value;
+                NotifyPropertyChanged(delegatesFocusProperty);
             }
         }
 
@@ -70,6 +108,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Return true if the element can be focused.
         /// </summary>
+        [CreateProperty(ReadOnly = true)]
         public virtual bool canGrabFocus => focusable;
 
         /// <summary>
@@ -555,7 +594,7 @@ namespace UnityEngine.UIElements
             if (focusedElement is VisualElement currentFocus)
             {
                 // If the currently focused element is not displayed in the hierarchy or not visible, blur it.
-                if (!currentFocus.isHierarchyDisplayed || !currentFocus.visible)
+                if (!currentFocus.areAncestorsAndSelfDisplayed || !currentFocus.visible)
                     currentFocus.Blur();
             }
         }

@@ -99,22 +99,12 @@ namespace UnityEngine.UIElements.UIR
 
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
-        static readonly int s_TransformsPropID = Shader.PropertyToID("_Transforms");
-        static readonly int s_ClipRectsPropID = Shader.PropertyToID("_ClipRects");
 
         static ProfilerMarker s_MarkerAllocate = new ProfilerMarker("UIR.Allocate");
         static ProfilerMarker s_MarkerFree = new ProfilerMarker("UIR.Free");
         static ProfilerMarker s_MarkerAdvanceFrame = new ProfilerMarker("UIR.AdvanceFrame");
         static ProfilerMarker s_MarkerFence = new ProfilerMarker("UIR.WaitOnFence");
         static ProfilerMarker s_MarkerBeforeDraw = new ProfilerMarker("UIR.BeforeDraw");
-
-        static bool? s_VertexTexturingIsAvailable;
-        const string k_VertexTexturingIsAvailableTag = "UIE_VertexTexturingIsAvailable";
-        const string k_VertexTexturingIsAvailableTrue = "1";
-
-        static bool? s_ShaderModelIs35;
-        const string k_ShaderModelIs35Tag = "UIE_ShaderModelIs35";
-        const string k_ShaderModelIs35True = "1";
 
         internal static uint maxVerticesPerPage => 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
 
@@ -161,7 +151,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
         #region Default system resources
-        static private Texture2D s_DefaultShaderInfoTexFloat, s_DefaultShaderInfoTexARGB8;
+        static private Texture2D s_DefaultShaderInfoTexFloat;
         static internal Texture2D defaultShaderInfoTexFloat
         {
             get
@@ -186,63 +176,8 @@ namespace UnityEngine.UIElements.UIR
                 return s_DefaultShaderInfoTexFloat;
             }
         }
-        static internal Texture2D defaultShaderInfoTexARGB8
-        {
-            get
-            {
-                if (s_DefaultShaderInfoTexARGB8 == null)
-                {
-                    s_DefaultShaderInfoTexARGB8 = new Texture2D(64, 64, TextureFormat.RGBA32, false); // No mips
-                    s_DefaultShaderInfoTexARGB8.name = "DefaultShaderInfoTexARGB8";
-                    s_DefaultShaderInfoTexARGB8.hideFlags = HideFlags.HideAndDontSave;
-                    s_DefaultShaderInfoTexARGB8.filterMode = FilterMode.Point;
-                    s_DefaultShaderInfoTexARGB8.SetPixel(UIRVEShaderInfoAllocator.fullOpacityTexel.x, UIRVEShaderInfoAllocator.fullOpacityTexel.y, UIRVEShaderInfoAllocator.fullOpacityValue);
-                    s_DefaultShaderInfoTexARGB8.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 0, Color.white);
-                    s_DefaultShaderInfoTexARGB8.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 1, Color.clear);
-                    s_DefaultShaderInfoTexARGB8.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 2, Color.clear);
-                    s_DefaultShaderInfoTexARGB8.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 3, Color.clear);
-                    s_DefaultShaderInfoTexARGB8.Apply(false, true);
-                }
-                return s_DefaultShaderInfoTexARGB8;
-            }
-        }
+
         #endregion
-
-        static internal bool vertexTexturingIsAvailable
-        {
-            get
-            {
-                if (!s_VertexTexturingIsAvailable.HasValue)
-                {
-                    var stockDefaultShader = Shader.Find(UIRUtility.k_DefaultShaderName);
-                    var stockDefaultMaterial = new Material(stockDefaultShader);
-                    stockDefaultMaterial.hideFlags |= HideFlags.DontSaveInEditor;
-                    string tagValue = stockDefaultMaterial.GetTag(k_VertexTexturingIsAvailableTag, false);
-                    UIRUtility.Destroy(stockDefaultMaterial);
-                    s_VertexTexturingIsAvailable = (tagValue == k_VertexTexturingIsAvailableTrue);
-                }
-
-                return s_VertexTexturingIsAvailable.Value;
-            }
-        }
-
-        internal static bool shaderModelIs35
-        {
-            get
-            {
-                if (!s_ShaderModelIs35.HasValue)
-                {
-                    var stockDefaultShader = Shader.Find(UIRUtility.k_DefaultShaderName);
-                    var stockDefaultMaterial = new Material(stockDefaultShader);
-                    stockDefaultMaterial.hideFlags |= HideFlags.DontSaveInEditor;
-                    string tagValue = stockDefaultMaterial.GetTag(k_ShaderModelIs35Tag, false);
-                    UIRUtility.Destroy(stockDefaultMaterial);
-                    s_ShaderModelIs35 = (tagValue == k_ShaderModelIs35True);
-                }
-
-                return s_ShaderModelIs35.Value;
-            }
-        }
 
         void InitVertexDeclaration()
         {
@@ -711,7 +646,7 @@ namespace UnityEngine.UIElements.UIR
                 if (textureSlot < 0)
                 {
                     textureSlot = m_TextureSlotManager.FindOldestSlot();
-                    m_TextureSlotManager.Bind(cmd.state.texture, cmd.state.sdfScale, textureSlot, st.stateMatProps);
+                    m_TextureSlotManager.Bind(cmd.state.texture, cmd.state.sdfScale, cmd.state.sharpness, textureSlot, st.stateMatProps);
                     st.mustApplyStateBlock = true;
                 }
                 else
@@ -772,7 +707,7 @@ namespace UnityEngine.UIElements.UIR
         }
 
         public unsafe void EvaluateChain(RenderChainCommand head, Material initialMat, Material defaultMat, Texture gradientSettings, Texture shaderInfo,
-            float pixelsPerPoint, NativeSlice<Transform3x4> transforms, NativeSlice<Vector4> clipRects, MaterialPropertyBlock stateMatProps, bool allowMaterialChange,
+            float pixelsPerPoint, MaterialPropertyBlock stateMatProps, bool allowMaterialChange,
             ref Exception immediateException)
         {
             Utility.ProfileDrawChainBegin();
@@ -791,10 +726,6 @@ namespace UnityEngine.UIElements.UIR
                     m_StandardMatProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
                 if (shaderInfo != null)
                     m_StandardMatProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
-                if (transforms.Length > 0)
-                    UIR.Utility.SetVectorArray<Transform3x4>(m_StandardMatProps, s_TransformsPropID, transforms);
-                if (clipRects.Length > 0)
-                    UIR.Utility.SetVectorArray<Vector4>(m_StandardMatProps, s_ClipRectsPropID, clipRects);
                 Utility.SetPropertyBlock(m_StandardMatProps);
             }
 
@@ -805,6 +736,7 @@ namespace UnityEngine.UIElements.UIR
             int rangesReady = 0;
             DrawBufferRange curDrawRange = new DrawBufferRange();
             int curDrawIndex = -1;
+            int disableCounter = 0;
 
             var st = new EvaluationState
             {
@@ -818,7 +750,30 @@ namespace UnityEngine.UIElements.UIR
 
             while (head != null)
             {
-                m_DrawStats.commandCount++;
+
+                if (head.type == CommandType.BeginDisable)
+                {
+                    m_DrawStats.commandCount++;
+                    disableCounter++;
+                    head = head.next;
+                    continue;
+                }
+
+                if (head.type == CommandType.EndDisable)
+                {
+                    m_DrawStats.commandCount++;
+                    disableCounter--;
+                    head = head.next;
+                    continue;
+                }
+
+                if (disableCounter > 0)
+                {
+                    m_DrawStats.skippedCommandCount++;
+                    head = head.next;
+                    continue;
+                }
+
                 m_DrawStats.drawCommandCount += (head.type == CommandType.Draw ? 1u : 0u);
 
                 bool isLastRange = curDrawRange.indexCount > 0 && rangesReady == rangesCount - 1;
@@ -989,6 +944,8 @@ namespace UnityEngine.UIElements.UIR
                 ApplyBatchState(ref st, allowMaterialChange);
                 KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage);
             }
+
+            Debug.Assert(disableCounter == 0, "Rendering disabled counter is not 0, indicating a mismatch of commands");
 
             UpdateFenceValue();
 
@@ -1191,11 +1148,6 @@ namespace UnityEngine.UIElements.UIR
                 UIRUtility.Destroy(s_DefaultShaderInfoTexFloat);
                 s_DefaultShaderInfoTexFloat = null;
             }
-            if (s_DefaultShaderInfoTexARGB8 != null)
-            {
-                UIRUtility.Destroy(s_DefaultShaderInfoTexARGB8);
-                s_DefaultShaderInfoTexARGB8 = null;
-            }
         }
 
         internal static void WrapUpGfxDeviceRecreate() { m_ActiveDeviceCount -= 1; }
@@ -1244,7 +1196,9 @@ namespace UnityEngine.UIElements.UIR
             public int currentFrameIndex;
             public uint totalIndices;
             public uint commandCount;
+            public uint skippedCommandCount;
             public uint drawCommandCount;
+            public uint disableCommandCount;
             public uint materialSetCount;
             public uint drawRangeCount;
             public uint drawRangeCallCount;
@@ -1282,11 +1236,6 @@ namespace UnityEngine.UIElements.UIR
                 {
                     UIRUtility.Destroy(s_DefaultShaderInfoTexFloat);
                     s_DefaultShaderInfoTexFloat = null;
-                }
-                if (s_DefaultShaderInfoTexARGB8 != null)
-                {
-                    UIRUtility.Destroy(s_DefaultShaderInfoTexARGB8);
-                    s_DefaultShaderInfoTexARGB8 = null;
                 }
                 Utility.NotifyOfUIREvents(false);
                 m_SubscribedToNotifications = false;

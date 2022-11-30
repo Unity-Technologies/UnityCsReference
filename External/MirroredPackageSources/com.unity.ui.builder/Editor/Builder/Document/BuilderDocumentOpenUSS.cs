@@ -173,5 +173,31 @@ namespace Unity.UI.Builder
 
             return BuilderAssetUtilities.WriteTextFileToDisk(ussPath, ussText);
         }
+        
+        public int GetComplexSelectorsCount()
+        {
+            if (m_StyleSheet == null || m_StyleSheet.complexSelectors == null)
+                return 0;
+            
+            var nbComplexSelectorsCount = 0;
+            for (var complexSelectorIndex = 0;
+                 complexSelectorIndex < m_StyleSheet.complexSelectors.Length;
+                 ++complexSelectorIndex)
+            {
+                var complexSelector = m_StyleSheet.complexSelectors[complexSelectorIndex];
+
+                // Omit special selection rule.
+                if (complexSelector.selectors.Length > 0 &&
+                    complexSelector.selectors[0].parts.Length > 0 &&
+                    (complexSelector.selectors[0].parts[0].value == BuilderConstants.SelectedStyleSheetSelectorName
+                     || complexSelector.selectors[0].parts[0].value
+                         .StartsWith(BuilderConstants.StyleSelectorElementName)))
+                    continue;
+
+                nbComplexSelectorsCount++;
+            }
+
+            return nbComplexSelectorsCount;
+        }
     }
 }

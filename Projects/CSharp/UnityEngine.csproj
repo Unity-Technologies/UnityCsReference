@@ -1010,6 +1010,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleAccessPropertyBag.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleAccessPropertyBag.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleProperties.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ResolvedStyleProperties.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\ShorthandApplicator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\ShorthandApplicator.cs</Link>
     </Compile>
@@ -1018,6 +1021,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\StyleDebug.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\StyleDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\StyleProperties.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\StyleProperties.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Style\Generated\StylePropertyCache.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Style\Generated\StylePropertyCache.cs</Link>
@@ -1229,6 +1235,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlTypeRestriction.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlTypeRestriction.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlUtility.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\VisualElementAsset.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\VisualElementAsset.cs</Link>
     </Compile>
@@ -1255,6 +1264,12 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementAnimation.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualElementAnimation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementBindableProperties.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementBindableProperties.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementDataBinding.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\VisualElementDataBinding.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElementEventInterests.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualElementEventInterests.cs</Link>
@@ -1937,6 +1952,9 @@
     <Compile Include="..\..\Modules\IMGUI\GUIUtility.cs">
       <Link>Modules\IMGUI\GUIUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\IMGUI\IMGUITextHandle.cs">
+      <Link>Modules\IMGUI\IMGUITextHandle.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\IMGUI\LayoutEntry.cs">
       <Link>Modules\IMGUI\LayoutEntry.cs</Link>
     </Compile>
@@ -1945,6 +1963,9 @@
     </Compile>
     <Compile Include="..\..\Modules\IMGUI\ObjectGUIState.bindings.cs">
       <Link>Modules\IMGUI\ObjectGUIState.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\IMGUI\RuntimeTextSettings.cs">
+      <Link>Modules\IMGUI\RuntimeTextSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\IMGUI\ScrollViewState.cs">
       <Link>Modules\IMGUI\ScrollViewState.cs</Link>
@@ -2048,8 +2069,14 @@
     <Compile Include="..\..\Modules\Physics\ScriptBindings\Dynamics.deprecated.cs">
       <Link>Modules\Physics\ScriptBindings\Dynamics.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\ImmediatePhysics.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\ImmediatePhysics.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\PhysicsContact.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\PhysicsContact.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Physics\ScriptBindings\PhysicsGeometry.bindings.cs">
+      <Link>Modules\Physics\ScriptBindings\PhysicsGeometry.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\QueryCommand.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\QueryCommand.bindings.cs</Link>
@@ -2458,6 +2485,12 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\UnicodeLineBreakingRules.cs">
       <Link>Modules\TextCoreTextEngine\Managed\UnicodeLineBreakingRules.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\MeshInfo.bindings.cs">
+      <Link>Modules\TextCoreTextEngine\MeshInfo.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\TextCoreVertex.bindings.cs">
+      <Link>Modules\TextCoreTextEngine\TextCoreVertex.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextRendering\FontStyle.cs">
       <Link>Modules\TextRendering\FontStyle.cs</Link>
@@ -3104,6 +3137,9 @@
     <Compile Include="..\..\Runtime\Export\Graphics\GraphicsSettings.bindings.cs">
       <Link>Runtime\Export\Graphics\GraphicsSettings.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsTexture.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsTexture.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Graphics_BindingsOverloads.cs">
       <Link>Runtime\Export\Graphics\Graphics_BindingsOverloads.cs</Link>
     </Compile>
@@ -3542,11 +3578,17 @@
     <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.ThreadSafeObjectPool.cs">
       <Link>Runtime\Export\Scripting\Awaitable.ThreadSafeObjectPool.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.Threading.cs">
+      <Link>Runtime\Export\Scripting\Awaitable.Threading.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.UnityEvents.cs">
       <Link>Runtime\Export\Scripting\Awaitable.UnityEvents.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\Awaitable.cs">
       <Link>Runtime\Export\Scripting\Awaitable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Scripting\AwaitableCompletionSource.cs">
+      <Link>Runtime\Export\Scripting\AwaitableCompletionSource.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Scripting\AwaitableT.cs">
       <Link>Runtime\Export\Scripting\AwaitableT.cs</Link>

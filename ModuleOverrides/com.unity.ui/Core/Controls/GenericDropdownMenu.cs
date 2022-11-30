@@ -148,6 +148,7 @@ namespace UnityEngine.UIElements
 
             if (m_TargetElement != null)
             {
+                m_TargetElement.UnregisterCallback<DetachFromPanelEvent>(OnTargetElementDetachFromPanel);
                 m_TargetElement.pseudoStates ^= PseudoStates.Active;
                 if (giveFocusBack)
                     m_TargetElement.Focus();

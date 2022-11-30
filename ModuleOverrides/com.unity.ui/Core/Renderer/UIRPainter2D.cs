@@ -271,23 +271,7 @@ namespace UnityEngine.UIElements
             return isValid;
         }
 
-        private static float s_MaxArcRadius = -1.0f;
-        private static float maxArcRadius
-        {
-            get {
-                if (s_MaxArcRadius < 0.0f)
-                {
-                    if (!UIRenderDevice.vertexTexturingIsAvailable)
-                        // If vertexTexturingIsAvailable is false, we probably are on a low-end
-                        // device which may have fp16 fragment shader float precision. We limit
-                        // the max arc radius even more in this case.
-                        s_MaxArcRadius = 1.0e3f;
-                    else
-                        s_MaxArcRadius = 1.0e5f;
-                }
-                return s_MaxArcRadius;
-            }
-        }
+        private static float maxArcRadius => 1.0e5f;
 
         /// <summary>
         /// Begins a new path and empties the list of recorded sub-paths and resets the pen position to (0,0).

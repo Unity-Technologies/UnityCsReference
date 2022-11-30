@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using Unity.Properties;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -50,6 +52,9 @@ namespace UnityEngine.UIElements
     /// </example>
     public class HelpBox : VisualElement
     {
+        internal static readonly DataBindingProperty textProperty = nameof(text);
+        internal static readonly DataBindingProperty messageTypeProperty = nameof(messageType);
+
         /// <summary>
         /// The USS class name for Elements of this type.
         /// </summary>
@@ -112,15 +117,24 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The message text.
         /// </summary>
+        [CreateProperty]
         public string text
         {
             get { return m_Label.text; }
-            set { m_Label.text = value; }
+            set
+            {
+                var previous = text;
+                m_Label.text = value;
+
+                if (string.CompareOrdinal(previous, text) != 0)
+                    NotifyPropertyChanged(textProperty);
+            }
         }
 
         /// <summary>
         /// The type of message.
         /// </summary>
+        [CreateProperty]
         public HelpBoxMessageType messageType
         {
             get { return m_HelpBoxMessageType; }
@@ -130,6 +144,7 @@ namespace UnityEngine.UIElements
                 {
                     m_HelpBoxMessageType = value;
                     UpdateIcon(value);
+                    NotifyPropertyChanged(messageTypeProperty);
                 }
             }
         }

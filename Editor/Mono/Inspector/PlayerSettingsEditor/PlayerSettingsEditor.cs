@@ -1714,6 +1714,19 @@ namespace UnityEditor
             return options[newIdx];
         }
 
+        public static void EnumPropertyField<T>(SerializedProperty property, GUIContent name) where T : Enum
+        {
+            using (var horizontal = new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, property))
+                {
+                    var values = (T[])Enum.GetValues(typeof(T));
+                    var valueNames = Enum.GetNames(typeof(T)).Select(e => new GUIContent(e)).ToArray();
+                    PlayerSettingsEditor.BuildEnumPopup(property, name, values, valueNames);
+                }
+            }
+        }
+
         public void OtherSectionGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension, int sectionIndex = 4)
         {
             if (BeginSettingsBox(sectionIndex, SettingsContent.otherSettingsTitle))
