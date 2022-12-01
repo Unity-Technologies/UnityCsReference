@@ -18,6 +18,7 @@ namespace Unity.Profiling.LowLevel
         ScriptDeepProfiler = 1 << 6,
 
         AvailabilityEditor = 1 << 2,
+        AvailabilityNonDevelopment = 1 << 3,
 
         Warning = 1 << 4,
 

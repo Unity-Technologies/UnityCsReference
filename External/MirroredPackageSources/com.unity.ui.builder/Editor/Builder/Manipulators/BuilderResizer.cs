@@ -38,16 +38,16 @@ namespace Unity.UI.Builder
             m_HandleElements.Add("bottom-left-handle", this.Q("bottom-left-handle"));
             m_HandleElements.Add("bottom-right-handle", this.Q("bottom-right-handle"));
 
-            m_HandleElements["top-handle"].AddManipulator(new Manipulator(base.OnStartDrag, base.OnEndDrag, OnDragTop));
-            m_HandleElements["left-handle"].AddManipulator(new Manipulator(base.OnStartDrag, base.OnEndDrag, OnDragLeft));
-            m_HandleElements["bottom-handle"].AddManipulator(new Manipulator(base.OnStartDrag, base.OnEndDrag, OnDragBottom));
-            m_HandleElements["right-handle"].AddManipulator(new Manipulator(base.OnStartDrag, base.OnEndDrag, OnDragRight));
+            m_HandleElements["top-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTop));
+            m_HandleElements["left-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragLeft));
+            m_HandleElements["bottom-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottom));
+            m_HandleElements["right-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragRight));
 
-            m_HandleElements["top-left-handle"].AddManipulator(new Manipulator(base.OnStartDrag, base.OnEndDrag, OnDragTopLeft));
-            m_HandleElements["top-right-handle"].AddManipulator(new Manipulator(base.OnStartDrag, base.OnEndDrag, OnDragTopRight));
+            m_HandleElements["top-left-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTopLeft));
+            m_HandleElements["top-right-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTopRight));
 
-            m_HandleElements["bottom-left-handle"].AddManipulator(new Manipulator(base.OnStartDrag, base.OnEndDrag, OnDragBottomLeft));
-            m_HandleElements["bottom-right-handle"].AddManipulator(new Manipulator(base.OnStartDrag, base.OnEndDrag, OnDragBottomRight));
+            m_HandleElements["bottom-left-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottomLeft));
+            m_HandleElements["bottom-right-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottomRight));
 
             base.m_AbsoluteOnlyHandleElements.Add(m_HandleElements["top-handle"]);
             base.m_AbsoluteOnlyHandleElements.Add(m_HandleElements["left-handle"]);
@@ -108,6 +108,12 @@ namespace Unity.UI.Builder
             }
         }
 
+        protected override void OnEndDrag()
+        {
+            base.OnEndDrag();
+            NotifySelection(false);
+        }
+
         void OnDragTop(Vector2 diff, List<string> changeList)
         {
             OnDrag(
@@ -158,10 +164,15 @@ namespace Unity.UI.Builder
             style.width = Mathf.Round(m_ThisRectOnStartDrag.width + diff.x);
         }
 
-        void NotifySelection()
+        void NotifySelection(bool refreshOnly = true)
         {
-            m_Selection.NotifyOfStylingChange(this, m_ScratchChangeList);
-            m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            var styleChangeType = refreshOnly ? BuilderStylingChangeType.RefreshOnly : BuilderStylingChangeType.Default;
+            var hierarchyChangeType = refreshOnly ? 
+                BuilderHierarchyChangeType.InlineStyle : 
+                BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh;
+
+            m_Selection.NotifyOfStylingChange(this, m_ScratchChangeList, styleChangeType);
+            m_Selection.NotifyOfHierarchyChange(this, m_Target, hierarchyChangeType);
         }
 
         void OnDragTop(Vector2 diff)

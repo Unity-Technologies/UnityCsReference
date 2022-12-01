@@ -26,9 +26,10 @@ namespace Unity.UI.Builder
     {
         ChildrenAdded = 1 << 0,
         ChildrenRemoved = 1 << 1,
-        Name = 1 << 2,
+        Attributes = 1 << 2,
         ClassList = 1 << 3,
         InlineStyle = 1 << 4,
+        FullRefresh = 1 << 5, // Skip this flag if you want to avoid expensive refresh during changes (ex. on drag operations)
 
         All = ~0
     }
@@ -247,11 +248,12 @@ namespace Unity.UI.Builder
                 element.UpdateInlineRule(vta.inlineSheet, rule);
 
                 // Need to enforce this specific style is updated.
-                element.IncrementVersion(VersionChangeType.Opacity | VersionChangeType.Overflow);
+                element.IncrementVersion(VersionChangeType.Opacity | VersionChangeType.Overflow | VersionChangeType.StyleSheet);
             }
-
-            if (m_DocumentRootElement != null)
+            else if (m_DocumentRootElement != null)
+            {
                 m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
+            }
 
             // This is so anyone interested can refresh their use of this UXML with
             // the latest (unsaved to disk) changes.

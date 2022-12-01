@@ -370,7 +370,7 @@ namespace UnityEngine.UIElements
             else
             {
                 // Non repeatable button clicks are performed on the MouseUp
-                if (ContainsPointer(pointerId))
+                if (ContainsPointer(pointerId) && target.enabledInHierarchy)
                 {
                     Invoke(evt);
                 }

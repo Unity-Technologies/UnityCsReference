@@ -287,6 +287,7 @@ namespace UnityEngine.UIElements
 
         public abstract void UpdateAssetTrackers();
         public abstract void DirtyStyleSheets();
+        internal abstract void UpdateInlineStylesRecursively(VisualElement root = null);
 
         public bool enableAssetReload { get; set; }
 
@@ -974,6 +975,21 @@ namespace UnityEngine.UIElements
             return m_VisualTreeUpdater.GetEditorUpdater(phase);
         }
 
+        internal override void UpdateInlineStylesRecursively(VisualElement rootElement = null)
+        {
+            var root = rootElement ?? m_RootContainer;
+
+            if (root.visualTreeAssetSource?.inlineSheet?.rules.Length == 0)
+                return;
+
+            foreach (var element in root.Children())
+            {
+                if (element.visualTreeAssetSource?.inlineSheet != null && element.inlineStyleAccess?.inlineRule.rule != null)
+                    element.UpdateInlineRule(element.visualTreeAssetSource.inlineSheet, element.inlineStyleAccess.inlineRule.rule);
+
+                UpdateInlineStylesRecursively(element);
+            }
+        }
 
         static internal event Action<Panel> beforeAnyRepaint;
 

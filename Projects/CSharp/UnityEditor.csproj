@@ -3394,6 +3394,18 @@
     <Compile Include="..\..\Editor\Mono\ShaderUtil.cs">
       <Link>Editor\Mono\ShaderUtil.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\ShaderKeywordFilterAttributes.cs">
+      <Link>Editor\Mono\Shaders\ShaderKeywordFilterAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\ShaderKeywordFilterConstraintAttributes.cs">
+      <Link>Editor\Mono\Shaders\ShaderKeywordFilterConstraintAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\ShaderKeywordFilterData.cs">
+      <Link>Editor\Mono\Shaders\ShaderKeywordFilterData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Shaders\ShaderKeywordFilterUtil.cs">
+      <Link>Editor\Mono\Shaders\ShaderKeywordFilterUtil.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SpeedTreeMaterialFixer.cs">
       <Link>Editor\Mono\SpeedTreeMaterialFixer.cs</Link>
     </Compile>

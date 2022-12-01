@@ -580,6 +580,10 @@ namespace UnityEditor
             [NativeProperty("switchUseNewStyleFilepaths", TargetType.Field)]
             extern public static bool useNewStyleFilepaths { get; set; }
 
+            // Forces all FMOD threads to use nn::os::LowestThreadPriority
+            [NativeProperty("switchUseLegacyFmodPriorities", TargetType.Field)]
+            extern public static bool switchUseLegacyFmodPriorities { get; set; }
+
             // Controls if calls to nn::os::YieldThread are swapped with calls to nn::os::SleepThread({switchMicroSleepForYieldTime}us)
             [NativeProperty("switchUseMicroSleepForYield", TargetType.Field)]
             extern public static bool switchUseMicroSleepForYield { get; set; }

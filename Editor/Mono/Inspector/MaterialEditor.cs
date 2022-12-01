@@ -956,16 +956,26 @@ namespace UnityEditor
 
         public Vector4 VectorProperty(MaterialProperty prop, string label)
         {
+            return VectorProperty(prop, new GUIContent(label));
+        }
+        
+        public Vector4 VectorProperty(MaterialProperty prop, GUIContent label)
+        {
             Rect r = GetPropertyRect(prop, label, true);
             return VectorProperty(r, prop, label);
         }
-
+        
         public Vector4 VectorProperty(Rect position, MaterialProperty prop, string label)
+        {
+            return VectorPropertyInternal(position, prop, new GUIContent(label));
+        }
+        
+        public Vector4 VectorProperty(Rect position, MaterialProperty prop, GUIContent label)
         {
             return VectorPropertyInternal(position, prop, label);
         }
 
-        internal static Vector4 VectorPropertyInternal(in Rect position, in MaterialProperty prop, in string label)
+        internal static Vector4 VectorPropertyInternal(in Rect position, in MaterialProperty prop, in GUIContent label)
         {
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = prop.hasMixedValue;
@@ -1124,6 +1134,11 @@ namespace UnityEditor
 
         public Texture TextureProperty(Rect position, MaterialProperty prop, string label)
         {
+            return TextureProperty(position, prop, new GUIContent(label, string.Empty));
+        }
+        
+        public Texture TextureProperty(Rect position, MaterialProperty prop, GUIContent label)
+        {
             bool scaleOffset = ((prop.flags & MaterialProperty.PropFlags.NoScaleOffset) == 0);
             return TextureProperty(position, prop, label, scaleOffset);
         }
@@ -1132,11 +1147,16 @@ namespace UnityEditor
         {
             return TextureProperty(position, prop, label, string.Empty, scaleOffset);
         }
-
+        
         public Texture TextureProperty(Rect position, MaterialProperty prop, string label, string tooltip, bool scaleOffset)
         {
+            return TextureProperty(position, prop, new GUIContent(label, tooltip), scaleOffset);
+        }
+
+        public Texture TextureProperty(Rect position, MaterialProperty prop, GUIContent label, bool scaleOffset)
+        {
             // Label
-            EditorGUI.PrefixLabel(position, new GUIContent(label, tooltip));
+            EditorGUI.PrefixLabel(position, label);
 
             // Texture slot
             position.height = GetTextureFieldHeight();
@@ -1573,10 +1593,10 @@ namespace UnityEditor
                     ColorPropertyInternal(position, prop, label);
                     break;
                 case MaterialProperty.PropType.Texture: // textures
-                    TextureProperty(position, prop, label.text);
+                    TextureProperty(position, prop, label);
                     break;
                 case MaterialProperty.PropType.Vector: // vectors
-                    VectorProperty(position, prop, label.text);
+                    VectorProperty(position, prop, label);
                     break;
                 default:
                     GUI.Label(position, "Unknown property type: " + prop.name + ": " + (int)prop.type);

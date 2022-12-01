@@ -183,7 +183,7 @@ namespace UnityEditor
             if (near != null)
             {
                 Vector2 planeSize;
-                planeSize.y = 2.0f * camera.nearClipPlane * Mathf.Tan(Mathf.Deg2Rad * camera.fieldOfView * 0.5f);
+                planeSize.y = camera.nearClipPlane * Mathf.Tan(Mathf.Deg2Rad * camera.fieldOfView * 0.5f);
                 planeSize.x = planeSize.y * camera.sensorSize.x / camera.sensorSize.y;
 
                 Vector3 rightOffset = camera.gameObject.transform.right * planeSize.x;

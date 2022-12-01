@@ -13,17 +13,90 @@ namespace UnityEngine.UIElements.UIR.Implementation
     {
         static readonly ProfilerMarker k_ConvertEntriesToCommandsMarker = new ProfilerMarker("UIR.ConvertEntriesToCommands");
         static readonly ProfilerMarker k_NudgeVerticesMarker = new ProfilerMarker("UIR.NudgeVertices");
+        static readonly ProfilerMarker k_ComputeTransformMatrixMarker = new ProfilerMarker("UIR.ComputeTransformMatrix");
 
         static void GetVerticesTransformInfo(VisualElement ve, out Matrix4x4 transform)
         {
             if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || (ve.renderHints & (RenderHints.GroupTransform)) != 0)
+            {
                 transform = Matrix4x4.identity;
+            }
             else if (ve.renderChainData.boneTransformAncestor != null)
-                VisualElement.MultiplyMatrix34(ref ve.renderChainData.boneTransformAncestor.worldTransformInverse, ref ve.worldTransformRef, out transform);
+            {
+                if (ve.renderChainData.boneTransformAncestor.renderChainData.localTransformScaleZero)
+                    ComputeTransformMatrix(ve, ve.renderChainData.boneTransformAncestor, out transform);
+                else
+                    VisualElement.MultiplyMatrix34(ref ve.renderChainData.boneTransformAncestor.worldTransformInverse, ref ve.worldTransformRef, out transform);
+            }
             else if (ve.renderChainData.groupTransformAncestor != null)
-                VisualElement.MultiplyMatrix34(ref ve.renderChainData.groupTransformAncestor.worldTransformInverse, ref ve.worldTransformRef, out transform);
-            else transform = ve.worldTransform;
+            {
+                if (ve.renderChainData.groupTransformAncestor.renderChainData.localTransformScaleZero)
+                    ComputeTransformMatrix(ve, ve.renderChainData.groupTransformAncestor, out transform);
+                else
+                    VisualElement.MultiplyMatrix34(ref ve.renderChainData.groupTransformAncestor.worldTransformInverse, ref ve.worldTransformRef, out transform);
+            }
+            else
+            {
+                transform = ve.worldTransform;
+            }
             transform.m22 = 1.0f; // Once world-space mode is introduced, this should become conditional
+        }
+
+        // ComputeTransformMatrix()
+        // This function is used when we detect that the dynamic transform or group transform is using a scale of zero in the x or y axis.
+        // It fixes the bug UUM-4171, which is caused when we re-generate the mesh while the scaling is zero.
+        // In UUM-4171, using the original previous code we would end up using the to-world/inverse matrices which were invalid
+        // since the scale was 0. The solution is to use explicitly compute the chain of transform from the ancestor to the visual element
+        // without using the inverse matrices.
+
+        // There are multiple possible solution for this problem, we took the one which only update the needed data but at a cost of
+        // computing the hierarchy transform up to the dynamic or group transform. We used a ProfileMarker to check if this can be an issue.
+
+        // Other solutions includes:
+        // 1) Defer repaint: When we detect that the element dynamic transform or group scale is 0, we add it to a list of item to repaint later.
+        //    When the dynamic transform or group scale transition from 0 to != 0, we then repaint the element keep in the list. This would be the
+        //    optimal solution but it is more complicated since we need to keep track of the dirty element.
+
+        // 2) LocalTransform: Keep and maintain a LocalTransform relative to the dynamic transform or group when its scale is 0. Update the LocalTransform
+        //    Only when needed and cache its value. We can then use it instead of computing it like we currently do. It will be faster but take more memory
+        //    as we need to store another matrix in the VisualElement.
+
+        // 3) Simply repaint all the hierarchy when the dynamic transform or group transform scale transition from 0 to != 0. This would be the simplest solution
+        //    but it is the most costly.
+        internal static void ComputeTransformMatrix(VisualElement ve, VisualElement ancestor, out Matrix4x4 result)
+        {
+            k_ComputeTransformMatrixMarker.Begin();
+
+            ve.GetPivotedMatrixWithLayout(out result);
+            VisualElement currentAncestor = ve.parent;
+            if ((currentAncestor == null) || (ancestor == currentAncestor))
+            {
+                k_ComputeTransformMatrixMarker.End();
+                return;
+            }
+
+            // We need to proceed recursively
+            Matrix4x4 temp = new Matrix4x4();
+            bool destIsTemp = true;
+
+            do
+            {
+                currentAncestor.GetPivotedMatrixWithLayout(out Matrix4x4 ancestorMatrix);
+                if (destIsTemp)
+                    VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref result, out temp);
+                else
+                    VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref temp, out result);
+
+                currentAncestor = currentAncestor.parent;
+
+                destIsTemp = !destIsTemp;
+            } while ((currentAncestor != null) && (ancestor != currentAncestor));
+
+            // Invert logic as destIsTemp is changed each iteration
+            if (!destIsTemp)
+                result = temp;
+
+            k_ComputeTransformMatrixMarker.End();
         }
 
         static bool IsParentOrAncestorOf(this VisualElement ve, VisualElement child)

@@ -54,7 +54,7 @@ namespace Unity.UI.Builder
             }
 
             // Need to explicitly update inline styles from asset.
-            selection.NotifyOfHierarchyChange(null, absoluteIslandContainer, BuilderHierarchyChangeType.InlineStyle);
+            selection.NotifyOfHierarchyChange(null, absoluteIslandContainer, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
 
             return absoluteIslandContainer;
         }

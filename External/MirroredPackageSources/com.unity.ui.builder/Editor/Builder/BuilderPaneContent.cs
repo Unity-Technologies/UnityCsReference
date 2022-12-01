@@ -1,7 +1,5 @@
 using UnityEngine.UIElements;
-using System.Linq;
 using System.Collections.Generic;
-using UnityEditor;
 
 namespace Unity.UI.Builder
 {
@@ -31,14 +29,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        public BuilderPane pane
-        {
-            get { return m_Pane; }
-        }
-
-        public BuilderPaneContent()
-        {
-        }
+        public BuilderPane pane => m_Pane;
 
         protected void AddFocusable(VisualElement focusable)
         {

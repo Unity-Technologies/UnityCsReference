@@ -78,6 +78,7 @@ namespace UnityEditor
                 + "\n* Debug: high-level debugging messages."
                 + "\n* Silly: detailed debugging messages.");
             public static readonly GUIContent packageManagerLogLevelOverridden = EditorGUIUtility.TrTextContent("Package Manager Log Level currently overridden by -enablePackageManagerTraces command-line argument.");
+            public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
         }
 
         class ExternalProperties
@@ -588,6 +589,7 @@ namespace UnityEditor
 
             DrawPackageManagerOptions();
             DrawDynamicHintsOptions();
+			DrawEnableTooltipsInPlayMode();
         }
 
         enum InteractionMode
@@ -675,6 +677,22 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(GeneralProperties.packageManagerLogLevelOverridden.text, MessageType.Info, true);
                 }
+            }
+        }
+
+        void DrawEnableTooltipsInPlayMode()
+        {
+            const string tooltipsKeyName = "EnableTooltipsInPlayMode";
+            var enableTooltips = EditorPrefs.GetBool(tooltipsKeyName, false);
+
+            EditorGUI.BeginChangeCheck();
+            enableTooltips = EditorGUILayout.Toggle(GeneralProperties.enablePlayModeTooltips, enableTooltips);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetBool(tooltipsKeyName, enableTooltips);
+
+                // Transfer native
+                EditorApplication.UpdateTooltipsInPlayModeSettings();
             }
         }
 

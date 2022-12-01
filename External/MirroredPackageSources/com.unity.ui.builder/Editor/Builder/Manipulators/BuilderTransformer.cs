@@ -76,7 +76,7 @@ namespace Unity.UI.Builder
             m_DragHoverCoverLayer.style.cursor = handle.computedStyle.cursor;
         }
 
-        protected void OnEndDrag()
+        protected virtual void OnEndDrag()
         {
             m_DragHoverCoverLayer.style.display = DisplayStyle.None;
             m_DragHoverCoverLayer.RemoveFromClassList(s_ActiveClassName);
