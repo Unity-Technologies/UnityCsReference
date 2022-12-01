@@ -9,6 +9,7 @@ using UnityEngine.Rendering;
 
 using AmbientMode = UnityEngine.Rendering.AmbientMode;
 using ReflectionMode = UnityEngine.Rendering.DefaultReflectionMode;
+using System.Collections.Generic;
 
 namespace UnityEngine
 {
@@ -134,6 +135,23 @@ namespace UnityEngine
         [NativeProperty("QualitySettingsNames")] extern public static string[] names { get; }
 
         [NativeName("IsTextureResReducedOnAnyPlatform")] extern internal static bool IsTextureResReducedOnAnyPlatform();
+
+        [NativeName("GetRenderPipelineAssetsForPlatform")] extern internal static ScriptableObject[] InternalGetRenderPipelineAssetsForPlatform(string buildTargetGroupName);
+
+        public static void GetAllRenderPipelineAssetsForPlatform(string buildTargetGroupName, ref List<RenderPipelineAsset> renderPipelineAssets)
+        {
+            if (renderPipelineAssets == null)
+                renderPipelineAssets = new List<RenderPipelineAsset>();
+
+            var scriptableObjects = InternalGetRenderPipelineAssetsForPlatform(buildTargetGroupName);
+            for (int i = 0; i < scriptableObjects.Length; ++i)
+            {
+                if (scriptableObjects[i] is RenderPipelineAsset rpAsset)
+                    renderPipelineAssets.Add(rpAsset);
+                else
+                    renderPipelineAssets.Add(GraphicsSettings.defaultRenderPipeline);
+            }
+        }
     }
 
     // both desiredColorSpace/activeColorSpace should be deprecated

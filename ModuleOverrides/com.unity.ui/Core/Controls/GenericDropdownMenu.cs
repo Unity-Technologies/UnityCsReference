@@ -137,7 +137,10 @@ namespace UnityEngine.UIElements
             m_MenuContainer.RemoveFromHierarchy();
 
             if (m_TargetElement != null)
+            {
+                m_TargetElement.UnregisterCallback<DetachFromPanelEvent>(OnTargetElementDetachFromPanel);
                 m_TargetElement.pseudoStates ^= PseudoStates.Active;
+            }
             m_TargetElement = null;
         }
 
@@ -464,6 +467,8 @@ namespace UnityEngine.UIElements
             }
 
             m_TargetElement = targetElement;
+            m_TargetElement.RegisterCallback<DetachFromPanelEvent>(OnTargetElementDetachFromPanel);
+
             m_PanelRootVisualContainer = m_TargetElement.GetRootVisualContainer();
 
             if (m_PanelRootVisualContainer == null)
@@ -490,6 +495,11 @@ namespace UnityEngine.UIElements
 
             if (targetElement != null)
                 targetElement.pseudoStates |= PseudoStates.Active;
+        }
+
+        private void OnTargetElementDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            Hide();
         }
 
         void OnContainerGeometryChanged(GeometryChangedEvent evt)

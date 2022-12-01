@@ -1306,6 +1306,9 @@
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSampleProviderExtensions.bindings.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\AudioSampleProviderExtensions.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSourceExtensions.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioSourceExtensions.bindings.cs</Link>
     </Compile>

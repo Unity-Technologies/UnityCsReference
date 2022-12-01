@@ -781,13 +781,13 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-                    var mat = pivotedMatrixWithLayout;
+                    GetPivotedMatrixWithLayout(out var mat);
                     MultiplyMatrix34(ref hierarchy.parent.worldTransformRef,  ref mat, out m_WorldTransformCache);
                 }
             }
             else
             {
-                m_WorldTransformCache = pivotedMatrixWithLayout;
+                GetPivotedMatrixWithLayout(out m_WorldTransformCache);
             }
 
             isWorldTransformInverseDirty = true;

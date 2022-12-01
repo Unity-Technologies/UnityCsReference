@@ -159,7 +159,8 @@ namespace UnityEngine.UIElements
         internal struct InlineRule
         {
             public StyleSheet sheet;
-            public StyleProperty[] properties;
+            public StyleRule rule;
+            public StyleProperty[] properties => rule.properties;
             public StylePropertyId[] propertyIds;
         }
 
@@ -186,7 +187,7 @@ namespace UnityEngine.UIElements
         public void SetInlineRule(StyleSheet sheet, StyleRule rule)
         {
             m_InlineRule.sheet = sheet;
-            m_InlineRule.properties = rule.properties;
+            m_InlineRule.rule = rule;
             m_InlineRule.propertyIds = StyleSheetCache.GetPropertyIds(rule);
 
             ApplyInlineStyles(ref ve.computedStyle);
@@ -236,7 +237,7 @@ namespace UnityEngine.UIElements
 
             if (m_InlineRule.sheet != null)
             {
-                s_StylePropertyReader.SetInlineContext(m_InlineRule.sheet, m_InlineRule.properties, m_InlineRule.propertyIds);
+                s_StylePropertyReader.SetInlineContext(m_InlineRule.sheet, m_InlineRule.rule.properties, m_InlineRule.propertyIds);
                 computedStyle.ApplyProperties(s_StylePropertyReader, ref parentStyle);
             }
 

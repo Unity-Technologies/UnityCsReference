@@ -78,6 +78,8 @@ namespace Unity.UI.Builder
             }
         }
 
+        public bool isUsingLabelDragger { get; private set; }
+
         public DimensionStyleField() : this(string.Empty) { }
 
         public DimensionStyleField(string label) : base(label)
@@ -86,10 +88,27 @@ namespace Unity.UI.Builder
             m_DraggerIntegerField.name = "dragger-integer-field";
             m_DraggerIntegerField.AddToClassList(k_DraggerFieldUssClassName);
             m_DraggerIntegerField.RegisterValueChangedCallback(OnDraggerFieldUpdate);
+            m_DraggerIntegerField.labelElement.RegisterCallback<PointerUpEvent>(OnDraggerPointerUp);
             Insert(0, m_DraggerIntegerField);
             option = defaultUnit;
 
             RefreshChildFields();
+        }
+
+        void OnDraggerPointerUp(PointerUpEvent evt)
+        {
+            if (!isUsingLabelDragger)
+                return;
+
+            isUsingLabelDragger = false;
+
+            // Sending change event on release after we reset the isUsingLabelDragger, so that we can trigger a full update.
+            // The value didn't change but the state of this control in regards to the value did.
+            using (var e = ChangeEvent<string>.GetPooled(value, value))
+            {
+                e.target = this;
+                SendEvent(e);
+            }
         }
 
         bool FindUnitInExpression(Expression expression, DataType dataType)
@@ -201,10 +220,13 @@ namespace Unity.UI.Builder
 
         void OnDraggerFieldUpdate(ChangeEvent<int> evt)
         {
+            isUsingLabelDragger = true;
+
             if (isKeyword)
                 option = defaultUnit;
 
             value = (evt.newValue * m_DragStep).ToString(CultureInfo.InvariantCulture.NumberFormat);
+
             evt.StopImmediatePropagation();
             evt.PreventDefault();
         }

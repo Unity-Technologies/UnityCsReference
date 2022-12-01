@@ -2197,6 +2197,9 @@ namespace UnityEditor
             }
 
             prefabInstanceUnpacked?.Invoke(instanceRoot);
+
+            if (action == InteractionMode.UserAction)
+                Undo.FlushTrackedObjects();
         }
 
         public static void UnpackAllInstancesOfPrefab(GameObject prefabRoot, PrefabUnpackMode unpackMode, InteractionMode action)

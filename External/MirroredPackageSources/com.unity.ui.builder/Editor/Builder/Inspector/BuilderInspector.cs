@@ -493,7 +493,10 @@ namespace Unity.UI.Builder
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
-            m_AttributesSection.Refresh();
+            if (changeType == BuilderHierarchyChangeType.Attributes)
+            {
+                m_AttributesSection.Refresh();
+            }
         }
 
         public void SelectionChanged()

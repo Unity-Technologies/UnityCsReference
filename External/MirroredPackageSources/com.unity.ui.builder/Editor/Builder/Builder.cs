@@ -18,6 +18,8 @@ namespace Unity.UI.Builder
         BuilderUssPreview m_UssPreview;
         BuilderHierarchy m_Hierarchy;
 
+        TwoPaneSplitView m_MiddleSplitView;
+
         HighlightOverlayPainter m_HighlightOverlayPainter;
 
         public BuilderSelection selection => m_Selection;
@@ -41,15 +43,13 @@ namespace Unity.UI.Builder
 
         void UpdatePreviewsVisibility()
         {
-            var codeSplit = rootVisualElement.Q<TwoPaneSplitView>("middle-column");
-
             if (codePreviewVisible)
             {
-                codeSplit.UnCollapse();
+                m_MiddleSplitView.UnCollapse();
             }
             else
             {
-                codeSplit.CollapseChild(1);
+                m_MiddleSplitView.CollapseChild(1);
             }
         }
 
@@ -166,19 +166,17 @@ namespace Unity.UI.Builder
             commandHandler.RegisterPane(m_Viewport);
             commandHandler.RegisterToolbar(m_Toolbar);
 
-            var middleSplitView = rootVisualElement.Q<TwoPaneSplitView>("middle-column");
-
-            middleSplitView.RegisterCallback<GeometryChangedEvent>(OnFirstDisplay);
+            m_MiddleSplitView = rootVisualElement.Q<TwoPaneSplitView>("middle-column");
+            m_MiddleSplitView.RegisterCallback<GeometryChangedEvent>(OnFirstDisplay);
 
             OnEnableAfterAllSerialization();
         }
 
         void OnFirstDisplay(GeometryChangedEvent evt)
         {
-            var middleSplitView = rootVisualElement.Q<TwoPaneSplitView>("middle-column");
-
             UpdatePreviewsVisibility();
-            middleSplitView.UnregisterCallback<GeometryChangedEvent>(OnFirstDisplay);
+
+            m_MiddleSplitView.UnregisterCallback<GeometryChangedEvent>(OnFirstDisplay);
         }
 
         public override void OnEnableAfterAllSerialization()
@@ -238,13 +236,13 @@ namespace Unity.UI.Builder
             SetTitleContent(BuilderConstants.BuilderWindowTitle, BuilderConstants.BuilderWindowIcon);
 
             if (rootVisualElement.panel != null)
-                SetStyleUpdaterTraversal();
+                SetupPanel();
             // Sometimes, the panel is not already set
             else
-                rootVisualElement.RegisterCallback<AttachToPanelEvent>(e => SetStyleUpdaterTraversal());
+                rootVisualElement.RegisterCallback<AttachToPanelEvent>(e => SetupPanel());
         }
 
-        void SetStyleUpdaterTraversal()
+        void SetupPanel()
         {
             var panel = rootVisualElement.panel as BaseVisualElementPanel;
             var styleUpdater = panel.GetUpdater(VisualTreeUpdatePhase.Styles) as VisualTreeStyleUpdater;
