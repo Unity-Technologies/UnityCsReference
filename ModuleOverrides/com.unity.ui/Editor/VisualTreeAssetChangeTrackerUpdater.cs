@@ -19,6 +19,9 @@ namespace UnityEditor.UIElements
         private struct VisualTreeAssetToTrackMappingEntry
         {
             public int m_LastDirtyCount;
+            public int m_LastElementCount;
+            public int m_LastInlinePropertiesCount;
+            public int m_LastAttributePropertiesDirtyCount;
             public HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_Trackers;
         }
 
@@ -70,7 +73,7 @@ namespace UnityEditor.UIElements
         {
             // Note: due to Rich Text Tags, it's very difficult to predict if a text asset is actually in use
             // Therefore we will invalidate ALL text objects but only for panels which have Live Reload enabled
-            if (enable)
+            if (enable && (enabledTrackers & LiveReloadTrackers.Text) != 0)
             {
                 m_HasAnyTextAssetChanged = true;
                 panel.RequestUpdateAfterExternalEvent(this);
@@ -110,6 +113,8 @@ namespace UnityEditor.UIElements
         private Dictionary<VisualElement, ILiveReloadAssetTracker<VisualTreeAsset>> m_RuntimeVisualTreeAssetTrackers = new Dictionary<VisualElement, ILiveReloadAssetTracker<VisualTreeAsset>>();
 
         public bool enable { get; set; }
+
+        public LiveReloadTrackers enabledTrackers { get; set; } = (LiveReloadTrackers)(~0);
 
         public void RegisterVisualTreeAssetTracker(ILiveReloadAssetTracker<VisualTreeAsset> tracker, VisualElement rootElement)
         {
@@ -224,6 +229,9 @@ namespace UnityEditor.UIElements
                 trackers = new VisualTreeAssetToTrackMappingEntry()
                 {
                     m_LastDirtyCount = dirtyCount,
+                    m_LastElementCount = asset.visualElementAssets.Count,
+                    m_LastInlinePropertiesCount = asset.inlineSheet.rules.Sum(r => r.properties.Length),
+                    m_LastAttributePropertiesDirtyCount = asset.GetAttributePropertiesDirtyCount(),
                     m_Trackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>()
                 };
                 m_AssetToTrackerMap[asset] = trackers;
@@ -309,7 +317,19 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            UpdateTextElements();
+            // Windows can decide to enable/disable live reload of text elements,
+            // For example, the UI Builder will only refresh changes made to font assets and not the rest.
+            if ((enabledTrackers & LiveReloadTrackers.Text) != 0)
+            {
+                UpdateTextElements();
+            }
+
+            // Windows can also decide to skip document live reload, and only do text elements.
+            // The UI Builder will skip the live reload of hierarchy and styles, because it is already editing them.
+            if ((enabledTrackers & LiveReloadTrackers.Document) == 0)
+            {
+                return;
+            }
 
             // Early out: no tracker found for panel.
             if (m_EditorVisualTreeAssetTracker == null && m_RuntimeVisualTreeAssetTrackers.Count == 0)
@@ -339,6 +359,8 @@ namespace UnityEditor.UIElements
             // We update here to prevent unnecessary checking of asset changes.
             m_PreviousInMemoryAssetsVersion = UIElementsUtility.m_InMemoryAssetsVersion;
 
+            bool shouldRefreshStyles = false;
+
             // We iterate on the assets to avoid calling GetDirtyCount for the same asset more than once.
             // In Editor this seems very likely and in Runtime we're assuming there are not multiple panels going
             // around, or if there are they're not using the same UXMLs but we may have to revisit this if we ever
@@ -347,16 +369,44 @@ namespace UnityEditor.UIElements
             {
                 var trackedAsset = trackedAssetEntry.Key;
                 var trackersEntry = trackedAssetEntry.Value;
-                int dirtyCount = EditorUtility.GetDirtyCount(trackedAsset);
+                var dirtyCount = EditorUtility.GetDirtyCount(trackedAsset);
+
+                // We keep a trace of the number of elements to minimize the cost of LiveReload on Layout/Style changes.
+                // We also keep a trace of the number of inline rules, we need to recreate UI when they are added/removed.
+                // Same goes for attribute changes, we need to re-Init elements that changed, so we recreate UI to simplify things.
+                var elementCount = trackedAsset.visualElementAssets.Count;
+                var inlinePropertiesCount = trackedAsset.inlineSheet.rules.Sum(r => r.properties.Length);
+                var attributePropertiesDirtyCount = trackedAsset.GetAttributePropertiesDirtyCount();
+                bool shouldRecreateUI = false;
+
                 if (dirtyCount != trackersEntry.m_LastDirtyCount)
                 {
                     trackersEntry.m_LastDirtyCount = dirtyCount;
-                    foreach (var tracker in trackersEntry.m_Trackers)
+                    
+                    if (elementCount != trackersEntry.m_LastElementCount ||
+                        inlinePropertiesCount != trackersEntry.m_LastInlinePropertiesCount ||
+                        attributePropertiesDirtyCount != trackersEntry.m_LastAttributePropertiesDirtyCount)
                     {
-                        // Update the dirty count on the tracker to keep the information correct everywhere.
-                        tracker.UpdateAssetDirtyCount(trackedAsset, dirtyCount);
+                        trackersEntry.m_LastElementCount = elementCount;
+                        trackersEntry.m_LastInlinePropertiesCount = inlinePropertiesCount;
+                        trackersEntry.m_LastAttributePropertiesDirtyCount = attributePropertiesDirtyCount;
 
-                        // Add to list to make sure we only call each tracker only once.
+                        shouldRecreateUI = true;
+                    }
+                    else
+                    {
+                        shouldRefreshStyles = true;
+                    }
+                }
+
+                foreach (var tracker in trackersEntry.m_Trackers)
+                {
+                    // Update the dirty count on the tracker to keep the information correct everywhere.
+                    tracker.UpdateAssetTrackerCounts(trackedAsset, dirtyCount, elementCount, inlinePropertiesCount, attributePropertiesDirtyCount);
+
+                    // Add to list to make sure we only call each tracker only once.
+                    if (shouldRecreateUI)
+                    {
                         m_TrackersToRefresh.Add(tracker);
                     }
                 }
@@ -368,15 +418,16 @@ namespace UnityEditor.UIElements
             }
             m_TrackersToRefresh.Clear();
 
-            if (m_LiveReloadStyleSheetAssetTracker.CheckTrackedAssetsDirty())
+            if (shouldRefreshStyles || m_LiveReloadStyleSheetAssetTracker.CheckTrackedAssetsDirty())
             {
                 panel.DirtyStyleSheets();
+                panel.UpdateInlineStylesRecursively();
             }
         }
 
         public void RegisterTextElement(TextElement element)
         {
-            if (enable)
+            if ((enabledTrackers & LiveReloadTrackers.Text) != 0)
             {
                 m_TextElements.Add(element);
             }

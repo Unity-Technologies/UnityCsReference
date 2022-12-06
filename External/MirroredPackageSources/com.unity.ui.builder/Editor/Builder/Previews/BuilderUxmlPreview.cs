@@ -9,12 +9,6 @@ namespace Unity.UI.Builder
         {
         }
 
-        protected override void OnAttachToPanelDefaultAction()
-        {
-            base.OnAttachToPanelDefaultAction();
-            RefreshUXML();
-        }
-
         string GenerateUXMLText()
         {
             bool writingToFile = true; // Set this to false to see the special selection elements and attributes.
@@ -22,33 +16,39 @@ namespace Unity.UI.Builder
             return uxmlText;
         }
 
-        void RefreshUXML()
+        protected override void RefreshPreview()
+        {
+            SetText(hasDocument ? GenerateUXMLText() : string.Empty);
+        }
+
+        protected override void RefreshHeader()
         {
             if (hasDocument)
             {
-                SetText(GenerateUXMLText());
                 SetTargetAsset(document.visualTreeAsset, document.hasUnsavedChanges);
             }
             else
             {
-                SetText(string.Empty);
                 SetTargetAsset(null, false);
             }
         }
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
-            RefreshUXML();
+            if (changeType.HasFlag(BuilderHierarchyChangeType.FullRefresh))
+            {
+                RefreshPreviewIfVisible();
+            }
         }
 
         public void SelectionChanged()
         {
-            RefreshUXML();
+            RefreshPreviewIfVisible();
         }
 
         public void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
         {
-            RefreshUXML();
+            RefreshHeader();
         }
 
         protected override string previewAssetExtension => BuilderConstants.UxmlExtension;

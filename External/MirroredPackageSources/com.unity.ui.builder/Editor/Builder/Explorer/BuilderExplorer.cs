@@ -164,7 +164,7 @@ namespace Unity.UI.Builder
             if (element == null ||
                 changeType.HasFlag(BuilderHierarchyChangeType.ChildrenAdded) ||
                 changeType.HasFlag(BuilderHierarchyChangeType.ChildrenRemoved) ||
-                changeType.HasFlag(BuilderHierarchyChangeType.Name) ||
+                changeType.HasFlag(BuilderHierarchyChangeType.Attributes) ||
                 changeType.HasFlag(BuilderHierarchyChangeType.ClassList))
             {
                 UpdateHierarchyAndSelection(m_Selection.hasUnsavedChanges);

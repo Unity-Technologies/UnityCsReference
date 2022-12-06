@@ -205,7 +205,7 @@ namespace Unity.UI.Builder
             }
             FlexDirectionUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_FlexDirectionName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_FlexDirectionName });
         }
 
@@ -251,7 +251,7 @@ namespace Unity.UI.Builder
             }
             AlignItemsUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_AlignItemsName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_AlignItemsName });
         }
 
@@ -297,7 +297,7 @@ namespace Unity.UI.Builder
             }
             JustifyContentUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_JustifyContentName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_JustifyContentName });
         }
 
@@ -349,7 +349,7 @@ namespace Unity.UI.Builder
             }
             HorizontalTextAlignUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextAlignName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextAlignName });
         }
 
@@ -401,7 +401,7 @@ namespace Unity.UI.Builder
             }
             VerticalTextAlignUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextAlignName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextAlignName });
         }
 
@@ -438,7 +438,7 @@ namespace Unity.UI.Builder
             }
             TextWrapUpdateToggleIcon(result);
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, k_TextWrapName, result);
-            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            m_Selection.NotifyOfHierarchyChange(null, m_Target, BuilderHierarchyChangeType.InlineStyle | BuilderHierarchyChangeType.FullRefresh);
             m_Selection.NotifyOfStylingChange(null, new List<string>() { k_TextWrapName });
         }
     }

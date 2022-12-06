@@ -577,6 +577,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (transformChanged && UpdateLocalFlipsWinding(ve))
                 renderChain.UIEOnVisualsChanged(ve, true);
 
+            if (transformChanged)
+            {
+                UpdateZeroScaling(ve);
+            }
+
             bool dirtyHasBeenResolved = true;
             if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID))
             {
@@ -683,7 +688,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             // If we aren't using a color ID (the DynamicColor flag), the text color will be stored in the vertex data,
             // so there's no need for a color match with the default TextCore settings.
-            bool useDefaultColor = !NeedsColorID(ve) || settings.faceColor == Color.white;
+            bool useDefaultColor = !NeedsColorID(ve);
 
             if (useDefaultColor && !NeedsTextCoreSettings(ve) && !allocatesID)
             {
@@ -696,7 +701,15 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 ve.renderChainData.textCoreSettingsID = renderChain.shaderInfoAllocator.AllocTextCoreSettings(settings);
 
             if (RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID))
+            {
+                if (ve.panel.contextType == ContextType.Editor)
+                {
+                    settings.faceColor *= UIElementsUtility.editorPlayModeTintColor;
+                    settings.outlineColor *= UIElementsUtility.editorPlayModeTintColor;
+                    settings.underlayColor *= UIElementsUtility.editorPlayModeTintColor;
+                }
                 renderChain.shaderInfoAllocator.SetTextCoreSettingValue(ve.renderChainData.textCoreSettingsID, settings);
+            }
 
             return true;
         }
@@ -767,7 +780,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
             Vector3 scale = ve.transform.scale;
             float winding = scale.x * scale.y;
             if (Math.Abs(winding) < 0.001f)
+            {
                 return false; // Close to zero, preserve the current value
+            }
 
             bool newFlipsWinding = winding < 0;
             if (oldFlipsWinding != newFlipsWinding)
@@ -789,6 +804,11 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 parentFlipsWinding = parent.renderChainData.worldFlipsWinding;
 
             ve.renderChainData.worldFlipsWinding = parentFlipsWinding ^ flipsWinding;
+        }
+
+        static void UpdateZeroScaling(VisualElement ve)
+        {
+            ve.renderChainData.localTransformScaleZero = Math.Abs(ve.transform.scale.x * ve.transform.scale.y) < 0.001f;
         }
 
         static bool NeedsTransformID(VisualElement ve)
