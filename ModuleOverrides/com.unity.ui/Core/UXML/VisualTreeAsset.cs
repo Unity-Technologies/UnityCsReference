@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -794,7 +793,9 @@ namespace UnityEngine.UIElements
             if (asset.classes != null)
             {
                 for (int i = 0; i < asset.classes.Length; i++)
+                {
                     element.AddToClassList(asset.classes[i]);
+                }
             }
         }
 
@@ -803,7 +804,9 @@ namespace UnityEngine.UIElements
             if (asset.hasStylesheetPaths)
             {
                 for (int i = 0; i < asset.stylesheetPaths.Count; i++)
+                {
                     element.AddStyleSheetPath(asset.stylesheetPaths[i]);
+                }
             }
 
             if (asset.hasStylesheets)
@@ -825,6 +828,18 @@ namespace UnityEngine.UIElements
         {
             get { return m_ContentHash; }
             set { m_ContentHash = value; }
+        }
+
+        // Used for Live Reload.
+        internal int GetAttributePropertiesDirtyCount()
+        {
+            var dirtyCount = 0;
+            foreach (var vea in visualElementAssets)
+            {
+                dirtyCount += vea.GetPropertiesDirtyCount();
+            }
+
+            return dirtyCount;
         }
 
         internal void ExtractUsedUxmlQualifiedNames(HashSet<string> names)

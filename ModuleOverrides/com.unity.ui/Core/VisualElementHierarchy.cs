@@ -1108,6 +1108,5 @@ namespace UnityEngine.UIElements
             // THIS is not under retargetRoot
             return this;
         }
-
     }
 }

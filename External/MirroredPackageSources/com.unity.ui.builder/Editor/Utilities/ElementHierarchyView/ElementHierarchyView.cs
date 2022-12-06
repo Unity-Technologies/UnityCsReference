@@ -196,7 +196,6 @@ namespace Unity.UI.Builder
                 var isPartOfParentDocument = !string.IsNullOrEmpty(owningUxmlPath);
 
                 var styleSheetAsset = documentElement.GetStyleSheet();
-                var styleSheetFileName = AssetDatabase.GetAssetPath(styleSheetAsset);
                 var styleSheetAssetName = BuilderAssetUtilities.GetStyleSheetAssetName(styleSheetAsset, hasUnsavedChanges && !isPartOfParentDocument);
                 var ssLabel = new Label(styleSheetAssetName);
                 ssLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);

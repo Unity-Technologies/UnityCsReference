@@ -27,6 +27,8 @@ namespace Unity.UI.Builder
         TextField m_Code;
         Label m_LineNumbers;
 
+        bool m_NeedsRefreshOnResize;
+
         private Button m_OpenTargetAssetSourceButton;
         ScriptableObject m_TargetAsset;
         BuilderPaneWindow m_PaneWindow;
@@ -37,6 +39,7 @@ namespace Unity.UI.Builder
             
             m_ScrollView = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
             m_ScrollView.AddToClassList(s_CodeScrollViewClassName);
+            m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             Add(m_ScrollView);
 
             AddToClassList(s_UssClassName);
@@ -92,7 +95,35 @@ namespace Unity.UI.Builder
                 m_OpenTargetAssetSourceButton.AddToClassList(s_CodeOpenSourceFileClassName);
                 pane.toolbar.Add(m_OpenTargetAssetSourceButton);
             }
+
+            RefreshPreviewIfVisible();
         }
+
+        void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            if (!m_NeedsRefreshOnResize)
+                return;
+
+            RefreshPreview();
+            m_NeedsRefreshOnResize = false;
+        }
+
+        protected void RefreshPreviewIfVisible()
+        {
+            RefreshHeader();
+
+            if (m_ScrollView.contentViewport.resolvedStyle.height <= 0 ||
+                m_ScrollView.contentViewport.resolvedStyle.width <= 0)
+            {
+                m_NeedsRefreshOnResize = true;
+                return;
+            }
+
+            RefreshPreview();
+        }
+
+        protected abstract void RefreshPreview();
+        protected abstract void RefreshHeader();
 
         protected abstract string previewAssetExtension { get; }
 

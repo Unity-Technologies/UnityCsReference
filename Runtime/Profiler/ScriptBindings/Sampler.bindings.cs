@@ -89,7 +89,7 @@ namespace UnityEngine.Profiling
 
         public static CustomSampler Create(string name, bool collectGpuData = false)
         {
-            IntPtr nativeSampler = ProfilerUnsafeUtility.CreateMarker(name, ProfilerUnsafeUtility.CategoryScripts, MarkerFlags.Default | (collectGpuData ? MarkerFlags.SampleGPU : 0), 0);
+            IntPtr nativeSampler = ProfilerUnsafeUtility.CreateMarker(name, ProfilerUnsafeUtility.CategoryScripts, MarkerFlags.AvailabilityNonDevelopment | (collectGpuData ? MarkerFlags.SampleGPU : 0), 0);
             if (nativeSampler == IntPtr.Zero)
                 return s_InvalidCustomSampler;
             return new CustomSampler(nativeSampler);

@@ -21,6 +21,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Create a TransformOrigin data with two Lengths for the x and y axis.
+        /// </summary>
+        public TransformOrigin(Length x, Length y) : this(x, y, 0)
+        { }
+
+        /// <summary>
         /// Returns the initial value for the TransformOrigin property.
         /// </summary>
         public static TransformOrigin Initial()

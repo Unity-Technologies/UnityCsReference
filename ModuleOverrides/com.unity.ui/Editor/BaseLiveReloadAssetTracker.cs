@@ -13,6 +13,9 @@ namespace UnityEditor.UIElements
         public T m_Asset;
         public string m_AssetPath;
         public int m_LastDirtyCount;
+        public int m_LastElementCount;
+        public int m_LastInlinePropertiesCount;
+        public int m_LastAttributePropertiesDirtyCount;
         public int m_ReferenceCount;
     }
 
@@ -98,10 +101,14 @@ namespace UnityEditor.UIElements
             return isTrackedAssetDirty;
         }
 
-        public void UpdateAssetDirtyCount(T asset, int newDirtyCount)
+        public void UpdateAssetTrackerCounts(T asset, int newDirtyCount, int newElementCount, int newInlinePropertiesCount, int newAttributePropertiesDirtyCount)
         {
             if (m_TrackedAssets.TryGetValue(asset.GetInstanceID(), out var assetTracking))
             {
+                assetTracking.m_LastDirtyCount = newDirtyCount;
+                assetTracking.m_LastElementCount = newElementCount;
+                assetTracking.m_LastInlinePropertiesCount = newInlinePropertiesCount;
+                assetTracking.m_LastAttributePropertiesDirtyCount = newAttributePropertiesDirtyCount;
                 assetTracking.m_LastDirtyCount = newDirtyCount;
             }
         }
