@@ -181,6 +181,11 @@ namespace Unity.UI.Builder
                         uiField.AddToClassList(BuilderConstants.InspectorMultiLineTextFieldClassName);
                     }
 
+                    if (attribute.name.Equals("mask-character"))
+                    {
+                        uiField.maxLength = 1;
+                    }
+
                     fieldElement = uiField;
                 }
             }

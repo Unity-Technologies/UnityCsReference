@@ -47,7 +47,8 @@ namespace UnityEngine.UIElements
         internal Color32 xformClipPages; // Top-left of xform and clip pages: XY,XY
         internal Color32 ids; //XYZW (xform,clip,opacity,color/textcore)
         internal Color32 flags; //X (flags) Y (textcore-dilate) Z (is-arc) W (is-dynamic-color)
-        internal Color32 opacityColorPages; //XY (opacity) ZW (color, textcore or SVG setting)
+        internal Color32 opacityColorPages; //XY (opacity) ZW (color/textcore page)
+        internal Color32 settingIndex; // XY (SVG setting) ZW (unused)
         internal Vector4 circle; // XY (outer) ZW (inner)
         internal float textureId;
 

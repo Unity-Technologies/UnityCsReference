@@ -269,16 +269,19 @@ namespace UnityEngine.UIElements.UIR
                 // Flags (vertex type), all packed into a Color32
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord3, VertexAttributeFormat.UNorm8, 4),
 
-                // OpacityID page coordinate (XY), SVG/TextCore SettingIndex (16-bit encoded in ZW), packed into a Color32
+                // OpacityID page coordinate (XY), Color-page/TextCore-setting (16-bit encoded in ZW), packed into a Color32
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord4, VertexAttributeFormat.UNorm8, 4),
 
+                // SVG (16-bit encoded in XY), packed into a Color32
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord5, VertexAttributeFormat.UNorm8, 4),
+
                 // Circle arcs
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord5, VertexAttributeFormat.Float32, 4),
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord6, VertexAttributeFormat.Float32, 4),
 
                 // TextureID, to represent integers from 0 to 2048
                 // Float32 is overkill for the time being but it avoids conversion issues on GLES2 and metal. We should
                 // use a Float16 instead but this isn't a trivial because C# doesn't have a native "half" datatype.
-                new VertexAttributeDescriptor(VertexAttribute.TexCoord6, VertexAttributeFormat.Float32, 1)
+                new VertexAttributeDescriptor(VertexAttribute.TexCoord7, VertexAttributeFormat.Float32, 1)
             };
             m_VertexDecl = Utility.GetVertexDeclaration(vertexDecl);
         }

@@ -1221,7 +1221,14 @@ namespace UnityEngine
             set;
         }
 
-        extern public bool keepAnimatorControllerStateOnDisable
+        [Obsolete("keepAnimatorControllerStateOnDisable is deprecated, use keepAnimatorStateOnDisable instead. (UnityUpgradable) -> keepAnimatorStateOnDisable", false)]
+        public bool keepAnimatorControllerStateOnDisable
+        {
+            get { return keepAnimatorStateOnDisable; }
+            set { keepAnimatorStateOnDisable = value;}
+        }
+
+        extern public bool keepAnimatorStateOnDisable
         {
             get;
             set;

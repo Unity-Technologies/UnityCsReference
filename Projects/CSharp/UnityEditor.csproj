@@ -6838,9 +6838,6 @@
     <Compile Include="..\..\Modules\Progress\VisualProgressItem.cs">
       <Link>Modules\Progress\VisualProgressItem.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PropertiesEditor\Module\PropertiesEditorModule.cs">
-      <Link>Modules\PropertiesEditor\Module\PropertiesEditorModule.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\FuzzySearch.cs">
       <Link>Modules\QuickSearch\Editor\FuzzySearch.cs</Link>
     </Compile>

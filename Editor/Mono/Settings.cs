@@ -179,6 +179,7 @@ namespace UnityEditor
     {
         static List<IPrefType> m_AddedPrefs = new List<IPrefType>();
         static SortedList<string, object> m_Prefs = new SortedList<string, object>();
+        public static Action<string, Type> settingChanged;
 
         static internal void Add(IPrefType value)
         {
@@ -218,6 +219,7 @@ namespace UnityEditor
 
             EditorPrefs.SetString(name, value.ToUniqueString());
             m_Prefs[name] = value;
+            settingChanged?.Invoke(name, typeof(T));
         }
 
         static internal IEnumerable<KeyValuePair<string, T>> Prefs<T>()
@@ -229,6 +231,16 @@ namespace UnityEditor
             {
                 if (kvp.Value is T)
                     yield return new KeyValuePair<string, T>(kvp.Key, (T)kvp.Value);
+            }
+        }
+
+        static internal void RevertAll<T>()
+        {
+            foreach (KeyValuePair<string, PrefColor> kvp in Prefs<PrefColor>())
+            {
+                kvp.Value.ResetToDefault();
+                EditorPrefs.SetString(kvp.Value.Name, kvp.Value.ToUniqueString());
+                settingChanged?.Invoke(kvp.Key, typeof(T));
             }
         }
 

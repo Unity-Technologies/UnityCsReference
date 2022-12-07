@@ -324,7 +324,7 @@ namespace UnityEngine.UIElements
                 targetDisplay = (int)relativePosition.z;
                 return relativePosition;
             }
-            targetDisplay = null;
+            targetDisplay = Display.activeEditorGameViewTarget;
             return position;
         }
 

@@ -13,6 +13,7 @@ namespace UnityEditor.Profiling.ModuleEditor
         const string k_UssSelector_TitleLabel = "modules__title-label";
         const string k_UssSelector_ListView = "modules__list-view";
         const string k_UssSelector_CreateButton = "modules__create-button";
+        const int k_ListViewItemHeight = 30;
 
         // Data
         readonly List<ModuleData> m_Modules;
@@ -40,6 +41,7 @@ namespace UnityEditor.Profiling.ModuleEditor
             m_ListView.bindItem = BindListViewItem;
             m_ListView.selectionType = SelectionType.Single;
             m_ListView.reorderable = true;
+            m_ListView.fixedItemHeight = k_ListViewItemHeight;
             m_ListView.itemIndexChanged += OnListViewItemMoved;
             m_ListView.selectionChanged += OnListViewSelectionChange;
             m_ListView.itemsSource = m_Modules;
