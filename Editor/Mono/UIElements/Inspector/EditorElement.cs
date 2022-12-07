@@ -94,6 +94,9 @@ namespace UnityEditor.UIElements
             m_IsCulled = isCulled;
             pickingMode = PickingMode.Ignore;
 
+            var editor = editors == null || editors.Length == 0 || m_EditorIndex < 0 || m_EditorIndex >= editors.Length ? null : editors[m_EditorIndex];
+            name = GetNameFromEditor(editor);
+
             if (isCulled)
             {
                 InitCulled(editors);
@@ -203,6 +206,7 @@ namespace UnityEditor.UIElements
 
             PopulateCache(editors);
             Object editorTarget = editor.targets[0];
+            name = GetNameFromEditor(editor);
             string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
 
             // If the target change we need to invalidate IMGUI container cached measurements
@@ -219,7 +223,6 @@ namespace UnityEditor.UIElements
             m_Header.onGUIHandler = HeaderOnGUI;
             m_Footer.onGUIHandler = FooterOnGUI;
 
-            name = editorTitle;
             m_Header.name = editorTitle + "Header";
             m_Footer.name = editorTitle + "Footer";
 
@@ -252,6 +255,13 @@ namespace UnityEditor.UIElements
                 UpdateInspectorVisibility();
                 SetElementVisible(m_InspectorElement, m_WasVisible);
             }
+        }
+
+        string GetNameFromEditor(Editor editor)
+        {
+            return editor == null ?
+                    "Nothing Selected" :
+                    $"{editor.GetType().Name}_{editor.targets[0].GetType().Name}_{editor.targets[0].GetInstanceID()}";
         }
 
         void UpdateInspectorVisibility()

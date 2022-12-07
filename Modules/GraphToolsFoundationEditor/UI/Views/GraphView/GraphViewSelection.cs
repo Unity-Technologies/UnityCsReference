@@ -26,7 +26,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var mousePosition = PointerDeviceState.GetPointerPosition(PointerId.mousePointerId, ContextType.Editor);
             mousePosition = ((GraphView)m_View).ContentViewContainer.WorldToLocal(mousePosition);
-            return mousePosition - data.m_TopLeftNodePosition_Internal;
+            return mousePosition - data.TopLeftNodePosition;
         }
 
         /// <inheritdoc />
@@ -66,7 +66,7 @@ namespace Unity.GraphToolsFoundation.Editor
             foreach (var placemat in elementList.OfType<PlacematModel>())
             {
                 var placematUI = placemat.GetView<Placemat>(m_View);
-                placematUI?.ActOnGraphElementsOver_Internal(
+                placematUI?.ActOnGraphElementsInside_Internal(
                     el =>
                     {
                         if (el.Model is AbstractNodeModel node)

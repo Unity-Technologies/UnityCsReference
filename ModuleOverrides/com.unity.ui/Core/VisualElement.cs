@@ -8,7 +8,7 @@ using System.Text;
 using Unity.Properties;
 using JetBrains.Annotations;
 using UnityEngine.Assertions;
-using UnityEngine.Yoga;
+using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
 using PropertyBagValue = System.Collections.Generic.KeyValuePair<UnityEngine.PropertyName, object>;
@@ -513,22 +513,17 @@ namespace UnityEngine.UIElements
             get
             {
                 var result = m_Layout;
-                if (yogaNode != null && !isLayoutManual)
+                if (!layoutNode.IsUndefined && !isLayoutManual)
                 {
-                    result.x = yogaNode.LayoutX;
-                    result.y = yogaNode.LayoutY;
-                    result.width = yogaNode.LayoutWidth;
-                    result.height = yogaNode.LayoutHeight;
+                    result.x = layoutNode.LayoutX;
+                    result.y = layoutNode.LayoutY;
+                    result.width = layoutNode.LayoutWidth;
+                    result.height = layoutNode.LayoutHeight;
                 }
                 return result;
             }
             internal set
             {
-                if (yogaNode == null)
-                {
-                    yogaNode = new YogaNode();
-                }
-
                 // Same position value while type is already manual should not trigger any layout change, return early
                 if (isLayoutManual && m_Layout == value)
                     return;
@@ -1123,8 +1118,16 @@ namespace UnityEngine.UIElements
         internal string fullTypeName => typeData.fullTypeName;
         internal string typeName => typeData.typeName;
 
+        LayoutNode m_LayoutNode;
+
         // Set and pass in values to be used for layout
-        internal YogaNode yogaNode { get; private set; }
+        internal ref LayoutNode layoutNode
+        {
+            get
+            {
+                return ref m_LayoutNode;
+            }
+        }
 
         internal ComputedStyle m_Style = InitialStyle.Acquire();
         internal ref ComputedStyle computedStyle => ref m_Style;
@@ -1190,12 +1193,17 @@ namespace UnityEngine.UIElements
             focusable = false;
 
             name = string.Empty;
-            yogaNode = new YogaNode();
+            layoutNode = LayoutManager.SharedManager.CreateNode();
 
             renderHints = RenderHints.None;
 
             EventInterestReflectionUtils.GetDefaultEventInterests(GetType(), out m_DefaultActionEventCategories,
                 out m_DefaultActionAtTargetEventCategories);
+        }
+
+        ~VisualElement()
+        {
+            LayoutManager.SharedManager.DestroyNode(ref m_LayoutNode);
         }
 
         [EventInterest(typeof(MouseOverEvent), typeof(MouseOutEvent), typeof(MouseCaptureOutEvent), typeof(PointerEnterEvent),
@@ -1375,7 +1383,7 @@ namespace UnityEngine.UIElements
         {
             if (elementPanel != null)
             {
-                yogaNode.Config = elementPanel.yogaConfig;
+                layoutNode.Config = elementPanel.layoutConfig;
                 RegisterRunningAnimations();
 
                 //We need to reset any visual pseudo state
@@ -1397,9 +1405,8 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                yogaNode.Config = YogaConfig.Default;
+                layoutNode.Config = LayoutManager.SharedManager.GetDefaultConfig();
             }
-
 
             // styles are dependent on topology
             styleInitialized = false;
@@ -1805,15 +1812,15 @@ namespace UnityEngine.UIElements
             /// <summary>
             /// The element should give its preferred width/height without any constraint.
             /// </summary>
-            Undefined = YogaMeasureMode.Undefined,
+            Undefined = LayoutMeasureMode.Undefined,
             /// <summary>
             /// The element should give the width/height that is passed in and derive the opposite site from this value (for example, calculate text size from a fixed width).
             /// </summary>
-            Exactly = YogaMeasureMode.Exactly,
+            Exactly = LayoutMeasureMode.Exactly,
             /// <summary>
             /// At Most. The element should give its preferred width/height but no more than the value passed.
             /// </summary>
-            AtMost = YogaMeasureMode.AtMost
+            AtMost = LayoutMeasureMode.AtMost
         }
 
         internal bool requireMeasureFunction
@@ -1822,11 +1829,11 @@ namespace UnityEngine.UIElements
             set
             {
                 m_Flags = value ? m_Flags | VisualElementFlags.RequireMeasureFunction : m_Flags & ~VisualElementFlags.RequireMeasureFunction;
-                if (value && !yogaNode.IsMeasureDefined)
+                if (value && !layoutNode.IsMeasureDefined)
                 {
                     AssignMeasureFunction();
                 }
-                else if (!value && yogaNode.IsMeasureDefined)
+                else if (!value && layoutNode.IsMeasureDefined)
                 {
                     RemoveMeasureFunction();
                 }
@@ -1835,12 +1842,12 @@ namespace UnityEngine.UIElements
 
         private void AssignMeasureFunction()
         {
-            yogaNode.SetMeasureFunction((node, f, mode, f1, heightMode) => Measure(node, f, mode, f1, heightMode));
+            LayoutManager.SharedManager.SetMeasureFunction(layoutNode.Handle, Measure);
         }
 
         private void RemoveMeasureFunction()
         {
-            yogaNode.SetMeasureFunction(null);
+            layoutNode.SetMeasureFunction(null);
         }
 
         /// <undoc/>
@@ -1850,12 +1857,12 @@ namespace UnityEngine.UIElements
             return new Vector2(float.NaN, float.NaN);
         }
 
-        internal YogaSize Measure(YogaNode node, float width, YogaMeasureMode widthMode, float height, YogaMeasureMode heightMode)
+        internal void Measure(ref LayoutNode node, float width, LayoutMeasureMode widthMode, float height, LayoutMeasureMode heightMode, out LayoutSize result)
         {
-            Debug.Assert(node == yogaNode, "YogaNode instance mismatch");
+            Debug.Assert(node.Equals(layoutNode), "LayoutNode instance mismatch");
             Vector2 size = DoMeasure(width, (MeasureMode)widthMode, height, (MeasureMode)heightMode);
             float ppp = scaledPixelsPerPoint;
-            return MeasureOutput.Make(AlignmentUtils.RoundToPixelGrid(size.x, ppp), AlignmentUtils.RoundToPixelGrid(size.y, ppp));
+            result = new LayoutSize(AlignmentUtils.RoundToPixelGrid(size.x, ppp), AlignmentUtils.RoundToPixelGrid(size.y, ppp));
         }
 
         internal void SetSize(Vector2 size)
@@ -1868,14 +1875,7 @@ namespace UnityEngine.UIElements
 
         void FinalizeLayout()
         {
-            if (hasInlineStyle || hasRunningAnimations)
-            {
-                computedStyle.SyncWithLayout(yogaNode);
-            }
-            else
-            {
-                yogaNode.CopyStyle(computedStyle.yogaNode);
-            }
+            layoutNode.CopyFromComputedStyle(computedStyle);
         }
 
         internal void SetInlineRule(StyleSheet sheet, StyleRule rule)

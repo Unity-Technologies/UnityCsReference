@@ -641,7 +641,7 @@ namespace UnityEngine.UIElements.UIR
 
             // If we aren't using a color ID (the DynamicColor flag), the text color will be stored in the vertex data,
             // so there's no need for a color match with the default TextCore settings.
-            bool useDefaultColor = !NeedsColorID(ve) || settings.faceColor == Color.white;
+            bool useDefaultColor = !NeedsColorID(ve);
 
             if (useDefaultColor && !NeedsTextCoreSettings(ve) && !allocatesID)
             {

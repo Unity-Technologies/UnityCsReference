@@ -211,8 +211,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             var createdElements = new List<GraphElementModel>();
+            var graphModel = graphModelState.GraphModel;
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
                 foreach (var creationData in command.CreationData)
                 {
@@ -241,14 +243,12 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
 
                     var guid = creationData.Guid.Valid ? creationData.Guid : SerializableGUID.Generate();
-                    var graphModel = graphModelState.GraphModel;
 
                     // Delete previous connections
                     if (connectionsToMake == ConnectionsToMake.ExistingPort && creationData.PortModel.Capacity != PortCapacity.Multi)
                     {
                         var wiresToDelete = creationData.PortModel.GetConnectedWires();
-                        var deletedModels = graphModel.DeleteWires(wiresToDelete.ToList());
-                        graphUpdater.MarkDeleted(deletedModels);
+                        graphModel.DeleteWires(wiresToDelete);
                     }
 
                     // Create new element
@@ -273,7 +273,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
                     if (createdElement != null)
                     {
-                        graphUpdater.MarkNew(createdElement);
                         createdElements.Add(createdElement);
                         graphUpdater.MarkForRename(createdElement);
                     }
@@ -296,7 +295,6 @@ namespace Unity.GraphToolsFoundation.Editor
                                     {
                                         var newNode = graphModel.CreateItemizedNode(WireCommandConfig_Internal.nodeOffset,
                                             ref existingPortToConnect);
-                                        graphUpdater.MarkNew(newNode);
                                         createdElements.Add(newNode);
                                     }
 
@@ -307,7 +305,6 @@ namespace Unity.GraphToolsFoundation.Editor
                                     newWire = graphModel.CreateWire(existingPortToConnect, newPortToConnect);
                                 }
 
-                                graphUpdater.MarkNew(newWire);
                                 createdElements.Add(newWire);
 
                                 if (newWire != null && creationData.AutoAlign ||
@@ -324,8 +321,7 @@ namespace Unity.GraphToolsFoundation.Editor
                                 var wireOutput = creationData.WireToInsertOn.FromPort;
 
                                 // Delete old wire
-                                var deletedModels = graphModel.DeleteWire(creationData.WireToInsertOn);
-                                graphUpdater.MarkDeleted(deletedModels);
+                                graphModel.DeleteWire(creationData.WireToInsertOn);
 
                                 // Connect input port
                                 var inputPortModel =
@@ -334,8 +330,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                                 if (inputPortModel != null)
                                 {
-                                    var newWire = graphModel.CreateWire(inputPortModel, wireOutput);
-                                    graphUpdater.MarkNew(newWire);
+                                    graphModel.CreateWire(inputPortModel, wireOutput);
                                 }
 
                                 // Connect output port
@@ -343,8 +338,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                                 if (outputPortModel != null)
                                 {
-                                    var newWire = graphModel.CreateWire(wireInput, outputPortModel);
-                                    graphUpdater.MarkNew(newWire);
+                                    graphModel.CreateWire(wireInput, outputPortModel);
                                 }
                             }
                             break;
@@ -352,7 +346,11 @@ namespace Unity.GraphToolsFoundation.Editor
                             foreach (var wire in creationData.WiresToConnect)
                             {
                                 var wireModel = wire.model;
-                                var newPort = portNodeModel?.GetPortFitToConnectTo(wire.model.GetOtherPort(wire.side));
+                                var portToConnect = creationData.LibraryItem.Data is NodeItemLibraryData nodeData ? nodeData.PortToConnect : null;
+                                var newPort = portToConnect != null ?
+                                    portNodeModel?.Ports.FirstOrDefault(p => p.UniqueName == portToConnect.UniqueName) :
+                                    portNodeModel?.GetPortFitToConnectTo(wire.model.GetOtherPort(wire.side));
+
                                 if (newPort != null)
                                 {
                                     if (wire.model is IGhostWire _)
@@ -360,12 +358,10 @@ namespace Unity.GraphToolsFoundation.Editor
                                         var toPort = wire.side == WireSide.To ? newPort : wire.model.ToPort;
                                         var fromPort = wire.side == WireSide.From ? newPort : wire.model.FromPort;
                                         wireModel = graphModel.CreateWire(toPort, fromPort);
-                                        graphUpdater.MarkNew(wireModel);
                                     }
                                     else
                                     {
                                         wire.model.SetPort(wire.side, newPort);
-                                        graphUpdater.MarkChanged(wireModel);
                                     }
                                 }
                                 graphUpdater.MarkModelToRepositionAtCreation((createdElement, wireModel, wire.side));
@@ -375,6 +371,7 @@ namespace Unity.GraphToolsFoundation.Editor
                             throw new ArgumentOutOfRangeException();
                     }
                 }
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
             if (createdElements.Any())

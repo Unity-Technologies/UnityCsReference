@@ -13,15 +13,16 @@ namespace Unity.CommandStateObserver
     static class UpdateTypeExtensions
     {
         /// <summary>
-        /// Combines two update types together.
+        /// Combines two <see cref="UpdateType"/> together.
         /// </summary>
         /// <remarks>
-        /// Use this method when an observer observes more than one state component and
-        /// you want to combine the update types returned by each.
+        /// Use this method when an <see cref="IStateObserver"/> observes more
+        /// than one <see cref="IStateComponent"/> and
+        /// you want to combine the <see cref="UpdateType"/> returned by each.
         /// </remarks>
-        /// <param name="self">The first update type.</param>
-        /// <param name="other">The second update type.</param>
-        /// <returns>The combined update type.</returns>
+        /// <param name="self">The first <see cref="UpdateType"/>.</param>
+        /// <param name="other">The second <see cref="UpdateType"/>.</param>
+        /// <returns>The combined <see cref="UpdateType"/>.</returns>
         public static UpdateType Combine(this UpdateType self, UpdateType other)
         {
             if (self == UpdateType.Complete || other == UpdateType.Complete)
@@ -34,14 +35,15 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Combines update types together.
+        /// Combines <see cref="UpdateType"/> together.
         /// </summary>
         /// <remarks>
-        /// Use this method when an observer observes more than one state component and
-        /// you want to combine the update types returned by each.
+        /// Use this method when an <see cref="IStateObserver"/> observes more
+        /// than one <see cref="IStateComponent"/> and
+        /// you want to combine the <see cref="UpdateType"/> returned by each.
         /// </remarks>
-        /// <param name="updateTypes">The update types to combine.</param>
-        /// <returns>The combined update type.</returns>
+        /// <param name="updateTypes">The <see cref="UpdateType"/>s to combine.</param>
+        /// <returns>The combined <see cref="UpdateType"/>.</returns>
         public static UpdateType Combine(IEnumerable<UpdateType> updateTypes)
         {
             var partialFound = false;

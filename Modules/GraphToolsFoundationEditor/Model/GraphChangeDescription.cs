@@ -112,5 +112,139 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
             }
         }
+
+        /// <summary>
+        /// Adds new models to the changes.
+        /// </summary>
+        /// <param name="models">The new models.</param>
+        /// <returns>The modified <see cref="GraphChangeDescription"/>.</returns>
+        public GraphChangeDescription AddNewModels(params GraphElementModel[] models)
+        {
+            return AddNewModels(models as IEnumerable<GraphElementModel>);
+        }
+
+        /// <summary>
+        /// Adds new models to the changes.
+        /// </summary>
+        /// <param name="models">The new models.</param>
+        /// <returns>The modified <see cref="GraphChangeDescription"/>.</returns>
+        public GraphChangeDescription AddNewModels(IEnumerable<GraphElementModel> models)
+        {
+            Union(models, null, null);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds deleted models to the changes.
+        /// </summary>
+        /// <param name="models">The deleted models.</param>
+        /// <returns>The modified <see cref="GraphChangeDescription"/>.</returns>
+        public GraphChangeDescription AddDeletedModels(params GraphElementModel[] models)
+        {
+            return AddDeletedModels(models as IEnumerable<GraphElementModel>);
+        }
+
+        /// <summary>
+        /// Adds deleted models to the changes.
+        /// </summary>
+        /// <param name="models">The deleted models.</param>
+        /// <returns>The modified <see cref="GraphChangeDescription"/>.</returns>
+        public GraphChangeDescription AddDeletedModels(IEnumerable<GraphElementModel> models)
+        {
+            Union(null, null, models);
+            return this;
+        }
+
+        /// <summary>
+        /// Removes deleted models from the changes.
+        /// </summary>
+        /// <param name="models">The deleted models.</param>
+        /// <returns>The modified <see cref="GraphChangeDescription"/>.</returns>
+        public GraphChangeDescription RemoveDeletedModels(params GraphElementModel[] models)
+        {
+            DeletedModels = DeletedModels.Except(models);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds a changed model to the changes.
+        /// </summary>
+        /// <param name="model">The changed model.</param>
+        /// <param name="changeHint">The hint about what changed.</param>
+        /// <returns>The modified <see cref="GraphChangeDescription"/>.</returns>
+        public GraphChangeDescription AddChangedModel(GraphElementModel model, ChangeHint changeHint)
+        {
+            Union(null, new Dictionary<GraphElementModel, IReadOnlyList<ChangeHint>>() { { model, new[] { changeHint } } }, null);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds multiple changed models to the changes.
+        /// </summary>
+        /// <param name="models">The changed models.</param>
+        /// <param name="changeHint">The hint about what changed.</param>
+        /// <returns>The modified <see cref="GraphChangeDescription"/>.</returns>
+        public GraphChangeDescription AddChangedModels(IEnumerable<GraphElementModel> models, ChangeHint changeHint)
+        {
+            Union(null, models.ToDictionary<GraphElementModel, GraphElementModel, IReadOnlyList<ChangeHint>>(m => m, m => new[] { changeHint }), null);
+            return this;
+        }
+
+        /// <summary>
+        /// Adds multiple changed models to the changes.
+        /// </summary>
+        /// <param name="changedModels">The changed models and hints.</param>
+        /// <returns>The modified <see cref="GraphChangeDescription"/>.</returns>
+        public GraphChangeDescription AddChangedModels(IReadOnlyDictionary<GraphElementModel, IReadOnlyList<ChangeHint>> changedModels)
+        {
+            Union(null, changedModels, null);
+            return this;
+        }
+    }
+
+    /// <summary>
+    /// Describes a scope to gather a <see cref="GraphChangeDescription"/>. <see cref="GraphChangeDescriptionScope"/>s can be nested
+    /// and each scope provide the <see cref="GraphChangeDescription"/> related to their scope only. When a scope is disposed, their related <see cref="GraphChangeDescription"/>
+    /// is merged back into the parent scope, if any.
+    /// </summary>
+    class GraphChangeDescriptionScope : IDisposable
+    {
+        readonly GraphModel m_GraphModel;
+        readonly GraphChangeDescription m_CurrentChangeDescription;
+
+        /// <summary>
+        /// The current <see cref="GraphChangeDescription"/> for this scope.
+        /// </summary>
+        public GraphChangeDescription ChangeDescription => m_CurrentChangeDescription;
+
+        /// <summary>
+        /// Creates a <see cref="GraphChangeDescriptionScope"/> for the <param name="graphModel"></param>.
+        /// </summary>
+        /// <param name="graphModel">The <see cref="GraphModel"/> on which the scope is applied.</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        public GraphChangeDescriptionScope(GraphModel graphModel)
+        {
+            m_GraphModel = graphModel ?? throw new ArgumentNullException(nameof(graphModel));
+            m_CurrentChangeDescription = graphModel.PushNewGraphChangeDescription_Internal();
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~GraphChangeDescriptionScope()
+        {
+            Dispose(false);
+        }
+
+        void Dispose(bool disposing)
+        {
+            if (!disposing)
+                return;
+            m_GraphModel.PopGraphChangeDescription_Internal();
+        }
     }
 }

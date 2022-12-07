@@ -38,8 +38,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="window">The <see cref="EditorWindow"/> containing this view.</param>
         /// <param name="parentGraphView">The <see cref="GraphView"/> linked to this blackboard.</param>
-        /// <param name="viewSelection">An object that handles <see cref="ExecuteCommandEvent"/>s on the view. If null, an instance of <see cref="BlackboardViewSelection"/> will be created and used.</param>
-        public BlackboardView(EditorWindow window, GraphView parentGraphView, ViewSelection viewSelection = null)
+        /// <param name="viewSelectionProvider">A delegate to create the <see cref="ViewSelection"/> for this view. If null, an instance of <see cref="BlackboardViewSelection"/> will be created and used.</param>
+        public BlackboardView(EditorWindow window, GraphView parentGraphView,
+            Func<BlackboardView, BlackboardViewModel, ViewSelection> viewSelectionProvider = null)
             : base(window, parentGraphView.GraphTool)
         {
             Model = new BlackboardViewModel(parentGraphView, GraphTool.HighlighterState);
@@ -51,8 +52,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             RegisterCallback<KeyDownEvent>(OnRenameKeyDown);
 
-            ViewSelection = viewSelection;
-            ViewSelection ??= new BlackboardViewSelection(this, BlackboardViewModel);
+            viewSelectionProvider ??= (view, model) => new BlackboardViewSelection(view, model);
+            ViewSelection = viewSelectionProvider(this, BlackboardViewModel);
             ViewSelection.AttachToView();
         }
 
@@ -67,7 +68,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (m_UpdateObserver == null)
             {
-                m_UpdateObserver = new ModelViewUpdater(this, BlackboardViewModel.GraphModelState, BlackboardViewModel.SelectionState, BlackboardViewModel.ViewState, GraphTool.ToolState, GraphTool.HighlighterState);
+                m_UpdateObserver = new ModelViewUpdater(this, BlackboardViewModel.GraphModelState, BlackboardViewModel.SelectionState, BlackboardViewModel.ViewState, GraphTool.HighlighterState);
                 GraphTool.ObserverManager.RegisterObserver(m_UpdateObserver);
             }
 

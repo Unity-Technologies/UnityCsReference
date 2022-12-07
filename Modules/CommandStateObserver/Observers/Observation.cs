@@ -9,11 +9,11 @@ using UnityEngine.Assertions;
 namespace Unity.CommandStateObserver
 {
     /// <summary>
-    /// A class used to encompass observations by an <see cref="IStateObserver"/> on an <see cref="IStateComponent"/>.
+    /// A class used to represent observations by an <see cref="IStateObserver"/> on an <see cref="IStateComponent"/>.
     /// </summary>
     /// <remarks>
-    /// Instances of this class fetch the update type from the observed component and optionally update
-    /// the last observed version of the observer. They can be used in a using() context.
+    /// Instances of this class can be used in a using() context. To get an <see cref="Observation"/> object,
+    /// use one of the <see cref="StateObserverExtensions"/> method.
     /// </remarks>
     class Observation : IDisposable
     {
@@ -22,7 +22,7 @@ namespace Unity.CommandStateObserver
         bool m_UpdateObserverVersion;
 
         /// <summary>
-        /// The update type for the observation. This tells the observer how it should do its update.
+        /// The update type for the observation.
         /// </summary>
         public UpdateType UpdateType { get; }
 
@@ -46,7 +46,7 @@ namespace Unity.CommandStateObserver
         Observation(IStateObserver observer, IStateComponent observedComponent, bool updateObserverVersion = true)
         {
             Assert.IsTrue(observer.ObservedStateComponents.Contains(observedComponent),
-                $"Observer {observer.GetType().FullName} does not specify that it observes {observedComponent}. Please add the state component to its {nameof(IStateObserver.ObservedStateComponents)}.");
+                $"Observer {observer.GetType().FullName} does not state that it observes {observedComponent}. Please add the state component to its {nameof(IStateObserver.ObservedStateComponents)}.");
 
             m_ObservedComponent = observedComponent;
             m_Observer = observer;
@@ -54,7 +54,7 @@ namespace Unity.CommandStateObserver
 
             var internalObserver = m_Observer as IInternalStateObserver_Internal;
             var lastObservedVersion = internalObserver?.GetLastObservedComponentVersion_Internal(observedComponent) ?? default;
-            UpdateType = m_ObservedComponent.GetUpdateType(lastObservedVersion);
+            UpdateType = m_ObservedComponent.GetObserverUpdateType(lastObservedVersion);
             LastObservedVersion = lastObservedVersion.Version;
         }
 

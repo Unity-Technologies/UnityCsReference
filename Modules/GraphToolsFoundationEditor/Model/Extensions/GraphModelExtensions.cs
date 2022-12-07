@@ -26,36 +26,6 @@ namespace Unity.GraphToolsFoundation.Editor
             return self.FindReferencesInGraph(variableDeclarationModel).OfType<T>();
         }
 
-        public static IEnumerable<PortModel> GetPortModels(this GraphModel self)
-        {
-            IEnumerable<PortModel> result = Enumerable.Empty<PortModel>();
-
-            foreach (var element in self.GraphElementModels)
-            {
-                result = result.Concat(RecursivelyGetPortModels(element));
-            }
-
-            return result;
-        }
-
-        static IEnumerable<PortModel> RecursivelyGetPortModels(GraphElementModel model)
-        {
-            IEnumerable<PortModel> result;
-
-            if (model is PortNodeModel portNode)
-                result = portNode.Ports;
-            else
-                result = Enumerable.Empty<PortModel>();
-
-            if (model is IGraphElementContainer container)
-            {
-                foreach (var element in container.GraphElementModels)
-                    result = result.Concat(RecursivelyGetPortModels(element));
-            }
-
-            return result;
-        }
-
         /// <summary>
         /// Creates a new node in a graph.
         /// </summary>
@@ -122,30 +92,30 @@ namespace Unity.GraphToolsFoundation.Editor
             return self.CreateOppositePortal(wirePortalModel, currentPos + offset, spawnFlags);
         }
 
-        public static GraphChangeDescription DeleteVariableDeclaration(this GraphModel self,
+        public static void DeleteVariableDeclaration(this GraphModel self,
             VariableDeclarationModel variableDeclarationToDelete, bool deleteUsages)
         {
-            return self.DeleteVariableDeclarations(new[] { variableDeclarationToDelete }, deleteUsages);
+            self.DeleteVariableDeclarations(new[] { variableDeclarationToDelete }, deleteUsages);
         }
 
-        public static IReadOnlyCollection<GraphElementModel> DeleteNode(this GraphModel self, AbstractNodeModel nodeToDelete, bool deleteConnections)
+        public static void DeleteNode(this GraphModel self, AbstractNodeModel nodeToDelete, bool deleteConnections)
         {
-            return self.DeleteNodes(new[] { nodeToDelete }, deleteConnections);
+            self.DeleteNodes(new[] { nodeToDelete }, deleteConnections);
         }
 
-        public static IReadOnlyCollection<GraphElementModel> DeleteWire(this GraphModel self, WireModel wireToDelete)
+        public static void DeleteWire(this GraphModel self, WireModel wireToDelete)
         {
-            return self.DeleteWires(new[] { wireToDelete });
+            self.DeleteWires(new[] { wireToDelete });
         }
 
-        public static IReadOnlyCollection<GraphElementModel> DeleteStickyNote(this GraphModel self, StickyNoteModel stickyNoteToDelete)
+        public static void DeleteStickyNote(this GraphModel self, StickyNoteModel stickyNoteToDelete)
         {
-            return self.DeleteStickyNotes(new[] { stickyNoteToDelete });
+            self.DeleteStickyNotes(new[] { stickyNoteToDelete });
         }
 
-        public static IReadOnlyCollection<GraphElementModel> DeletePlacemat(this GraphModel self, PlacematModel placematToDelete)
+        public static void DeletePlacemat(this GraphModel self, PlacematModel placematToDelete)
         {
-            return self.DeletePlacemats(new[] { placematToDelete });
+            self.DeletePlacemats(new[] { placematToDelete });
         }
 
         struct ElementsByType
@@ -188,7 +158,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        public static GraphChangeDescription DeleteElements(this GraphModel self,
+        public static void DeleteElements(this GraphModel self,
             IReadOnlyCollection<GraphElementModel> graphElementModels)
         {
             ElementsByType elementsByType;
@@ -210,15 +180,12 @@ namespace Unity.GraphToolsFoundation.Editor
             foreach (var portModel in elementsByType.NodeModels.OfType<PortNodeModel>().SelectMany(n => n.Ports))
                 elementsByType.WireModels.UnionWith(allWires.Where(e => e != null && (e.ToPort == portModel || e.FromPort == portModel)));
 
-            var deletedModels = self.DeleteStickyNotes(elementsByType.StickyNoteModels)
-                .Concat(self.DeletePlacemats(elementsByType.PlacematModels))
-                .Concat(self.DeleteWires(elementsByType.WireModels))
-                .Concat(self.DeleteNodes(elementsByType.NodeModels, deleteConnections: false)).ToList();
-
-            var changeDescription = self.DeleteVariableDeclarations(elementsByType.VariableDeclarationsModels, deleteUsages: false);
-            changeDescription.Union(self.DeleteGroups(elementsByType.GroupModels));
-            changeDescription.Union(null, null, deletedModels);
-            return changeDescription;
+            self.DeleteVariableDeclarations(elementsByType.VariableDeclarationsModels, deleteUsages: false);
+            self.DeleteGroups(elementsByType.GroupModels);
+            self.DeleteStickyNotes(elementsByType.StickyNoteModels);
+            self.DeletePlacemats(elementsByType.PlacematModels);
+            self.DeleteWires(elementsByType.WireModels);
+            self.DeleteNodes(elementsByType.NodeModels, deleteConnections: false);
         }
 
         /// <summary>

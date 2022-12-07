@@ -34,7 +34,8 @@ namespace UnityEditor
         private SerializedProperty m_Material;
         private SerializedProperty m_IsTrigger;
         private SerializedProperty m_UsedByEffector;
-        private SerializedProperty m_UsedByComposite;
+        private SerializedProperty m_CompositeOperation;
+        private SerializedProperty m_CompositeOrder;
         private SerializedProperty m_Offset;
         protected SerializedProperty m_AutoTiling;
         private SerializedProperty m_LayerOverridePriority;
@@ -70,7 +71,8 @@ namespace UnityEditor
             m_Material = serializedObject.FindProperty("m_Material");
             m_IsTrigger = serializedObject.FindProperty("m_IsTrigger");
             m_UsedByEffector = serializedObject.FindProperty("m_UsedByEffector");
-            m_UsedByComposite = serializedObject.FindProperty("m_UsedByComposite");
+            m_CompositeOperation = serializedObject.FindProperty("m_CompositeOperation");
+            m_CompositeOrder = serializedObject.FindProperty("m_CompositeOrder");
             m_Offset = serializedObject.FindProperty("m_Offset");
             m_AutoTiling = serializedObject.FindProperty("m_AutoTiling");
             m_LayerOverridePriority = serializedObject.FindProperty("m_LayerOverridePriority");
@@ -81,11 +83,13 @@ namespace UnityEditor
             m_ContactCaptureLayers = serializedObject.FindProperty("m_ContactCaptureLayers");
             m_CallbackLayers = serializedObject.FindProperty("m_CallbackLayers");
 
-            m_ShowCompositeRedundants.value = !m_UsedByComposite.boolValue;
+            m_ShowCompositeRedundants.value = !isUsedByComposite;
             m_ShowCompositeRedundants.valueChanged.AddListener(Repaint);
 
             m_RequiresConstantRepaint = false;
         }
+
+        protected bool isUsedByComposite => ((Collider2D.CompositeOperation)m_CompositeOperation.enumValueIndex) != Collider2D.CompositeOperation.None;
 
         public virtual void OnDisable()
         {
@@ -101,7 +105,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            m_ShowCompositeRedundants.target = !m_UsedByComposite.boolValue;
+            m_ShowCompositeRedundants.target = !isUsedByComposite;
             if (EditorGUILayout.BeginFadeGroup(m_ShowCompositeRedundants.faded))
             {
                 // Density property.
@@ -116,12 +120,18 @@ namespace UnityEditor
             }
             EditorGUILayout.EndFadeGroup();
 
-            // Only show 'Used By Composite' if all targets are capable of being composited.
-            if (targets.Count(x => (x as Collider2D).compositeCapable == false) == 0)
-                EditorGUILayout.PropertyField(m_UsedByComposite);
-
             if (m_AutoTiling != null)
                 EditorGUILayout.PropertyField(m_AutoTiling, Styles.s_AutoTilingLabel);
+
+            // Only show 'Composite Operation' if all targets are capable of being composited.
+            if (targets.Count(x => (x as Collider2D).compositeCapable == false) == 0)
+            {
+                EditorGUILayout.PropertyField(m_CompositeOperation);
+                if (isUsedByComposite)
+                {
+                    EditorGUILayout.PropertyField(m_CompositeOrder);
+                }
+            }
 
             EditorGUILayout.PropertyField(m_Offset);
         }
@@ -138,7 +148,7 @@ namespace UnityEditor
             if (targets.Length == 1)
             {
                 var collider = target as Collider2D;
-                if (collider.isActiveAndEnabled && collider.composite == null && m_UsedByComposite.boolValue)
+                if (collider.isActiveAndEnabled && collider.composite == null && isUsedByComposite)
                     EditorGUILayout.HelpBox("This collider will not function with a composite until there is a CompositeCollider2D on the GameObject that the attached Rigidbody2D is on.", MessageType.Warning);
             }
 

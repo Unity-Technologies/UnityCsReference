@@ -45,13 +45,15 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="filter">The search filter.</param>
         /// <param name="adapter">The <see cref="ItemLibraryAdapter"/>.</param>
         /// <param name="usage">The usage string used to identify the <see cref="ItemLibraryLibrary_Internal"/> use.</param>
+        /// <param name="sourcePort">The port from which the library is created, if any.</param>
         internal static ItemLibraryWindow ShowDatabases_Internal(GraphView view,
             Vector2 position,
             Action<ItemLibraryItem> callback,
             IEnumerable<ItemLibraryDatabaseBase> dbs,
             ItemLibraryFilter filter,
             IItemLibraryAdapter adapter,
-            string usage)
+            string usage,
+            PortModel sourcePort = null)
         {
             var preferences = view.GraphTool.Preferences;
             var librarySize = preferences.GetItemLibrarySize(usage);
@@ -65,7 +67,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 callback?.Invoke(item);
             }
 
-            var library = new ItemLibraryLibrary_Internal(dbs, adapter, filter, usage);
+            var library = new ItemLibraryLibrary_Internal(dbs, adapter, filter, usage, sourcePort);
 
             var window = library.Show(view.Window, rect);
             window.CloseOnFocusLost = !(preferences?.GetBool( BoolPref.ItemLibraryStaysOpenOnBlur) ?? false);
@@ -114,7 +116,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 .Concat(dbProvider.GetGraphVariablesDatabases(graphModel))
                 .Concat(dbProvider.GetDynamicDatabases(portModels))
                 .ToList();
-            ShowDatabases_Internal(view, worldPosition, callback, dbs, filter, adapter, Usage.CreateNode);
+
+            ShowDatabases_Internal(view, worldPosition, callback, dbs, filter, adapter, Usage.CreateNode, portModels.FirstOrDefault());
         }
 
         public static void ShowOutputToGraphNodes(Stencil stencil, GraphView view,
@@ -131,7 +134,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
 
             var dbs = dbProvider.GetGraphElementsDatabases(graphModel).ToList();
-            ShowDatabases_Internal(view, worldPosition, callback, dbs, filter, adapter, Usage.CreateNode);
+            ShowDatabases_Internal(view, worldPosition, callback, dbs, filter, adapter, Usage.CreateNode, portModels.FirstOrDefault());
         }
 
         public static void ShowNodesForWire(Stencil stencil, GraphView view,

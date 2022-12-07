@@ -71,7 +71,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public VariableFlags VariableFlags
         {
             get => m_VariableFlags;
-            set => m_VariableFlags = value;
+            set
+            {
+                if (m_VariableFlags == value)
+                    return;
+                m_VariableFlags = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <summary>
@@ -80,7 +86,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual ModifierFlags Modifiers
         {
             get => (ModifierFlags)m_Modifiers;
-            set => m_Modifiers = (int)value;
+            set
+            {
+                if (m_Modifiers == (int)value)
+                    return;
+                m_Modifiers = (int)value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <inheritdoc />
@@ -90,6 +102,15 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
 
             GraphModel.RenameVariable(this, newName);
+
+            var references = GraphModel.FindReferencesInGraph<VariableNodeModel>(this).OfType<AbstractNodeModel>();
+            GraphModel.CurrentGraphChangeDescription?.AddChangedModels(references.Append<GraphElementModel>(this), ChangeHint.Data);
+
+            if (this.IsInputOrOutput())
+            {
+                foreach (var recursiveSubgraphNode in GraphModel.GetRecursiveSubgraphNodes())
+                    recursiveSubgraphNode.Update();
+            }
         }
 
         /// <summary>
@@ -115,6 +136,17 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_InitializationValue = null;
                 if (GraphModel.Stencil.RequiresInitialization(this))
                     CreateInitializationValue();
+
+                if (GraphModel != null)
+                {
+                    GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+
+                    var variableReferences = GraphModel.FindReferencesInGraph<VariableNodeModel>(this);
+                    foreach (var usage in variableReferences)
+                    {
+                        usage.UpdateTypeFromDeclaration();
+                    }
+                }
             }
         }
 
@@ -124,7 +156,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual bool IsExposed
         {
             get => m_IsExposed;
-            set => m_IsExposed = value;
+            set
+            {
+                if (m_IsExposed == value)
+                    return;
+                m_IsExposed = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <summary>
@@ -133,7 +171,18 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string Tooltip
         {
             get => m_Tooltip;
-            set => m_Tooltip = value;
+            set
+            {
+                if (m_Tooltip == value)
+                    return;
+                m_Tooltip = value;
+                if (GraphModel is { CurrentGraphChangeDescription: { } })
+                {
+                    GraphModel.CurrentGraphChangeDescription.AddChangedModel(this, ChangeHint.Style);
+                    var references = GraphModel.FindReferencesInGraph<VariableNodeModel>(this);
+                    GraphModel.CurrentGraphChangeDescription.AddChangedModels(references, ChangeHint.Style);
+                }
+            }
         }
 
         /// <summary>
@@ -142,7 +191,18 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual Constant InitializationModel
         {
             get => m_InitializationValue;
-            set => m_InitializationValue = value;
+            set
+            {
+                if (m_InitializationValue == value)
+                    return;
+                // Unregister ourselves as the owner of the old constant.
+                if (m_InitializationValue != null)
+                    m_InitializationValue.OwnerModel = null;
+                m_InitializationValue = value;
+                if (m_InitializationValue != null)
+                    m_InitializationValue.OwnerModel = this;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <inheritdoc />
@@ -215,6 +275,9 @@ namespace Unity.GraphToolsFoundation.Editor
                     m_Modifiers = (int)ModifierFlags.ReadWrite;
                 }
             }
+
+            if (InitializationModel != null)
+                InitializationModel.OwnerModel = this;
         }
     }
 }

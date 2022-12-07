@@ -34,7 +34,18 @@ namespace Unity.GraphToolsFoundation.Editor
         public Constant Value
         {
             get => m_Value;
-            set => m_Value = value;
+            set
+            {
+                if (m_Value == value)
+                    return;
+                // Unregister ourselves as the owner of the old constant.
+                if (m_Value != null)
+                    m_Value.OwnerModel = null;
+                m_Value = value;
+                if (m_Value != null)
+                    m_Value.OwnerModel = this;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <summary>
@@ -57,7 +68,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public bool IsLocked
         {
             get => m_IsLocked;
-            set => m_IsLocked = value;
+            set
+            {
+                if (m_IsLocked == value)
+                    return;
+                m_IsLocked = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         public ConstantNodeModel()
@@ -83,7 +100,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             var clone = Activator.CreateInstance(GetType());
             EditorUtility.CopySerializedManagedFieldsOnly(this, clone);
-            return (ConstantNodeModel)clone;
+            var clonedModel = (ConstantNodeModel)clone;
+            if (clonedModel.Value != null)
+                clonedModel.Value.OwnerModel = clonedModel;
+            return clonedModel;
         }
 
         /// <inheritdoc />
@@ -108,6 +128,14 @@ namespace Unity.GraphToolsFoundation.Editor
         protected override void OnDefineNode()
         {
             this.AddDataOutputPort(null, Value.GetTypeHandle(), k_OutputPortId);
+        }
+
+        public override void OnAfterDeserialize()
+        {
+            base.OnAfterDeserialize();
+
+            if (m_Value != null)
+                m_Value.OwnerModel = this;
         }
     }
 }

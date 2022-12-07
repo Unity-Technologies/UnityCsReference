@@ -16,10 +16,14 @@ namespace Unity.CommandStateObserver
         List<(IStateComponent, StateComponentVersion)> m_ObservedComponentVersions;
         List<IStateComponent> m_ModifiedStateComponents;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// The state components observed by the observer.
+        /// </summary>
         public IEnumerable<IStateComponent> ObservedStateComponents => m_ObservedComponentVersions.Select(t => t.Item1);
 
-        /// <inheritdoc />
+        /// <summary>
+        /// The state components that can be modified by the observer.
+        /// </summary>
         public IEnumerable<IStateComponent> ModifiedStateComponents => m_ModifiedStateComponents;
 
         /// <summary>
@@ -41,14 +45,22 @@ namespace Unity.CommandStateObserver
             m_ModifiedStateComponents = modifiedStateComponents.Distinct().ToList();
         }
 
-        /// <inheritdoc/>
+        /// <summary>
+        /// Gets the last observed component version of <paramref name="stateComponent"/>.
+        /// </summary>
+        /// <param name="stateComponent">The state component for which to get the last observed version.</param>
+        /// <returns>Returns the last observed component version of <paramref name="stateComponent"/>.</returns>
         StateComponentVersion IInternalStateObserver_Internal.GetLastObservedComponentVersion_Internal(IStateComponent stateComponent)
         {
             var index = m_ObservedComponentVersions.FindIndex(v => v.Item1 == stateComponent);
             return index >= 0 ? m_ObservedComponentVersions[index].Item2 : default;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Updates the observed version for component <paramref name="stateComponent"/> to <paramref name="newVersion"/>.
+        /// </summary>
+        /// <param name="stateComponent">The state component for which to update the version.</param>
+        /// <param name="newVersion">The new version.</param>
         void IInternalStateObserver_Internal.UpdateObservedVersion_Internal(IStateComponent stateComponent, StateComponentVersion newVersion)
         {
             var index = m_ObservedComponentVersions.FindIndex(v => v.Item1 == stateComponent);
@@ -56,7 +68,9 @@ namespace Unity.CommandStateObserver
                 m_ObservedComponentVersions[index] = (stateComponent, newVersion);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Observes the <see cref="IStateObserver.ObservedStateComponents"/> and modifies the <see cref="IStateObserver.ModifiedStateComponents"/>.
+        /// </summary>
         public abstract void Observe();
     }
 }

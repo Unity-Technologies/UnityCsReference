@@ -60,13 +60,14 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
 
                 using (var updater = graphModelState.UpdateScope)
+                using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
                 {
-                    foreach (var model in command.Models.Where(c => c.IsColorable()))
+                    var colorableModels = command.Models.Where(c => c.IsColorable());
+                    foreach (var model in colorableModels)
                     {
                         model.ResetColor();
                     }
-
-                    updater.MarkChanged(command.Models, ChangeHint.Style);
+                    updater.MarkUpdated(changeScope.ChangeDescription);
                 }
             }
         }
@@ -103,6 +104,16 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="color">The color to set</param>
         /// <param name="elementModels">Element models to affect</param>
+        public ChangeElementColorCommand(Color color, IEnumerable<Model> elementModels)
+            : base(k_UndoStringSingular, k_UndoStringPlural, color, elementModels?.OfType<GraphElementModel>().ToList() )
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChangeElementColorCommand" /> class.
+        /// </summary>
+        /// <param name="color">The color to set</param>
+        /// <param name="elementModels">Element models to affect</param>
         public ChangeElementColorCommand(Color color, params GraphElementModel[] elementModels)
             : this(color, (IReadOnlyList<GraphElementModel>)elementModels)
         {
@@ -124,13 +135,14 @@ namespace Unity.GraphToolsFoundation.Editor
             if (command.Models != null)
             {
                 using (var updater = graphModelState.UpdateScope)
+                using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
                 {
-                    foreach (var model in command.Models.Where(c => c.IsColorable()))
+                    var colorableModels = command.Models.Where(c => c.IsColorable()).ToList();
+                    foreach (var model in colorableModels)
                     {
                         model.Color = command.Value;
                     }
-
-                    updater.MarkChanged(command.Models, ChangeHint.Style);
+                    updater.MarkUpdated(changeScope.ChangeDescription);
                 }
             }
         }
@@ -207,9 +219,10 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
 
                 using (var stateUpdater = graphModelState.UpdateScope)
+                using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
                 {
-                    var changedModels = command.GraphView.PositionDependenciesManager_Internal.AlignNodes(command.Follow, command.Nodes);
-                    stateUpdater.MarkChanged(changedModels, ChangeHint.Layout);
+                    command.GraphView.PositionDependenciesManager_Internal.AlignNodes(command.Follow, command.Nodes);
+                    stateUpdater.MarkUpdated(changeScope.ChangeDescription);
                 }
             }
         }
@@ -435,9 +448,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 command.Model.PositionAndSize = command.Layout;
-                graphUpdater.MarkChanged(command.Model as GraphElementModel, ChangeHint.Layout);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }

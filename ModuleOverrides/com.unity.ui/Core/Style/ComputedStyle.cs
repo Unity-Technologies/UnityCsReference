@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
-using UnityEngine.Yoga;
 
 namespace UnityEngine.UIElements
 {
@@ -21,9 +21,6 @@ namespace UnityEngine.UIElements
 
         public void FinalizeApply(ref ComputedStyle parentStyle)
         {
-            if (yogaNode == null)
-                yogaNode = new YogaNode();
-
             // Calculate pixel font size
             if (fontSize.unit == LengthUnit.Percent)
             {
@@ -31,50 +28,6 @@ namespace UnityEngine.UIElements
                 float computedSize = parentSize * fontSize.value / 100;
                 inheritedData.Write().fontSize = new Length(computedSize);
             }
-
-            SyncWithLayout(yogaNode);
-        }
-
-        public void SyncWithLayout(YogaNode targetNode)
-        {
-            targetNode.Flex = float.NaN;
-
-            targetNode.FlexGrow = flexGrow;
-            targetNode.FlexShrink = flexShrink;
-            targetNode.FlexBasis = flexBasis.ToYogaValue();
-            targetNode.Left = left.ToYogaValue();
-            targetNode.Top = top.ToYogaValue();
-            targetNode.Right = right.ToYogaValue();
-            targetNode.Bottom = bottom.ToYogaValue();
-            targetNode.MarginLeft = marginLeft.ToYogaValue();
-            targetNode.MarginTop = marginTop.ToYogaValue();
-            targetNode.MarginRight = marginRight.ToYogaValue();
-            targetNode.MarginBottom = marginBottom.ToYogaValue();
-            targetNode.PaddingLeft = paddingLeft.ToYogaValue();
-            targetNode.PaddingTop = paddingTop.ToYogaValue();
-            targetNode.PaddingRight = paddingRight.ToYogaValue();
-            targetNode.PaddingBottom = paddingBottom.ToYogaValue();
-            targetNode.BorderLeftWidth = borderLeftWidth;
-            targetNode.BorderTopWidth = borderTopWidth;
-            targetNode.BorderRightWidth = borderRightWidth;
-            targetNode.BorderBottomWidth = borderBottomWidth;
-            targetNode.Width = width.ToYogaValue();
-            targetNode.Height = height.ToYogaValue();
-
-            targetNode.PositionType = (YogaPositionType)position;
-            targetNode.Overflow = (YogaOverflow)overflow;
-            targetNode.AlignSelf = (YogaAlign)alignSelf;
-            targetNode.MaxWidth = maxWidth.ToYogaValue();
-            targetNode.MaxHeight = maxHeight.ToYogaValue();
-            targetNode.MinWidth = minWidth.ToYogaValue();
-            targetNode.MinHeight = minHeight.ToYogaValue();
-
-            targetNode.FlexDirection = (YogaFlexDirection)flexDirection;
-            targetNode.AlignContent = (YogaAlign)alignContent;
-            targetNode.AlignItems = (YogaAlign)alignItems;
-            targetNode.JustifyContent = (YogaJustify)justifyContent;
-            targetNode.Wrap = (YogaWrap)flexWrap;
-            targetNode.Display = (YogaDisplay)display;
         }
 
         private bool ApplyGlobalKeyword(StylePropertyReader reader, ref ComputedStyle parentStyle)

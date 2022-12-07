@@ -2776,7 +2776,7 @@ namespace UnityEngine.TextCore.Text
 
             // Add new texture as sub asset to font asset
             Texture2D tex = m_AtlasTextures[m_AtlasTextureIndex];
-            tex.name = m_AtlasTexture.name + " " + m_AtlasTextureIndex;
+            tex.name = atlasTexture.name + " " + m_AtlasTextureIndex;
 
             OnFontAssetTextureChanged?.Invoke(tex, this);
         }

@@ -53,9 +53,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
             StickyNoteModel stickyNote;
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 stickyNote = graphModelState.GraphModel.CreateStickyNote(command.Position);
-                graphUpdater.MarkNew(stickyNote);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
                 graphUpdater.MarkForRename(stickyNote);
             }
 
@@ -128,6 +129,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 if (command.Title != null)
                     command.StickyNoteModel.Title = command.Title;
@@ -135,7 +137,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (command.Contents != null)
                     command.StickyNoteModel.Contents = command.Contents;
 
-                graphUpdater.MarkChanged(command.StickyNoteModel, ChangeHint.Data);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -187,13 +189,13 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 foreach (var noteModel in command.Models)
                 {
                     noteModel.Theme = command.Value;
                 }
-
-                graphUpdater.MarkChanged(command.Models, ChangeHint.Style);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -245,13 +247,13 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 foreach (var noteModel in command.Models)
                 {
                     noteModel.TextSize = command.Value;
                 }
-
-                graphUpdater.MarkChanged(command.Models, ChangeHint.Style);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }

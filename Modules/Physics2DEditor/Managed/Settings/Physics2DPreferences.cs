@@ -17,6 +17,7 @@ namespace UnityEditor
             public static readonly GUIContent ColliderAwakeFilledContent = EditorGUIUtility.TrTextContent("Awake Color (Filled)");
             public static readonly GUIContent ColliderAsleepFilledContent = EditorGUIUtility.TrTextContent("Asleep Color (Filled)");
             public static readonly GUIContent ColliderBoundsContent = EditorGUIUtility.TrTextContent("Bounds Color");
+            public static readonly GUIContent CompositedColorContent = EditorGUIUtility.TrTextContent("Composited Color");
             public static readonly GUIContent ColliderContactContent = EditorGUIUtility.TrTextContent("Contact Color");
             public static readonly GUIContent ContactArrowScaleContent = EditorGUIUtility.TrTextContent("Contact Arrow Scale");
 
@@ -32,7 +33,8 @@ namespace UnityEditor
         const string ColliderAsleepFilledColorKey = UniqueSettingsKey + "ColliderAsleepFilledColor";
         const string ColliderBoundsColorKey = UniqueSettingsKey + "ColliderBoundsColor";
         const string ColliderContactColorKey = UniqueSettingsKey + "ColliderContactColor";
-        const string ContactArrowScaleKey = UniqueSettingsKey + "ContactArrowScaleKey";
+        const string CompositedColorKey = UniqueSettingsKey + "CompositedColor";
+        const string ContactArrowScaleKey = UniqueSettingsKey + "ContactArrowScale";
 
         // These must match "GizmoDrawing.cpp" for the Physics2DEditor!
         static readonly Color DefaultColliderAwakeOutlineColor = new Color(0.568f, 0.956f, 0.545f, 1.0f);
@@ -41,6 +43,7 @@ namespace UnityEditor
         static readonly Color DefaultColliderAsleepFilledColor = new Color(0.254f, 0.501f, 0.243f, 0.2f);
         static readonly Color DefaultColliderBoundsColor = new Color(1.0f, 1.0f, 0.0f, 0.75f);
         static readonly Color DefaultColliderContactColor = new Color(1.0f, 0.0f, 1.0f, 1.0f);
+        static readonly Color DefaultCompositedColor = new Color(1.0f, 1.0f, 1.0f, 0.1f);
         static readonly float DefaultContactArrowScale = 0.2f;
 
         // Preference state.
@@ -50,6 +53,7 @@ namespace UnityEditor
         public Color colliderAsleepFilledColor;
         public Color colliderBoundsColor;
         public Color colliderContactColor;
+        public Color compositedColor;
         public float contactArrowScale;
 
         void OnEnable()
@@ -86,6 +90,7 @@ namespace UnityEditor
             colliderAsleepFilledColor = GetColor(ColliderAsleepFilledColorKey, DefaultColliderAsleepFilledColor);
             colliderBoundsColor = GetColor(ColliderBoundsColorKey, DefaultColliderBoundsColor);
             colliderContactColor = GetColor(ColliderContactColorKey, DefaultColliderContactColor);
+            compositedColor = GetColor(CompositedColorKey, DefaultCompositedColor);
             contactArrowScale = EditorPrefs.GetFloat(ContactArrowScaleKey, DefaultContactArrowScale);
         }
 
@@ -98,6 +103,7 @@ namespace UnityEditor
             SetColor(ColliderAsleepFilledColorKey, colliderAsleepFilledColor);
             SetColor(ColliderBoundsColorKey, colliderBoundsColor);
             SetColor(ColliderContactColorKey, colliderContactColor);
+            SetColor(CompositedColorKey, compositedColor);
             EditorPrefs.SetFloat(ContactArrowScaleKey, contactArrowScale);
         }
 
@@ -164,6 +170,17 @@ namespace UnityEditor
                         SetColor(ColliderBoundsColorKey, colliderBoundsColor = color);
                     }
                 }
+
+                // Composited Color.
+                {
+                    EditorGUI.BeginChangeCheck();
+                    var color = EditorGUILayout.ColorField(SettingsContent.CompositedColorContent, compositedColor);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(this, SettingsContent.CompositedColorContent.text);
+                        SetColor(CompositedColorKey, compositedColor = color);
+                    }
+                }
             }
 
             EditorGUILayout.Space();
@@ -205,6 +222,7 @@ namespace UnityEditor
                 SetColor(ColliderAsleepFilledColorKey, colliderAsleepFilledColor = DefaultColliderAsleepFilledColor);
                 SetColor(ColliderBoundsColorKey, colliderBoundsColor = DefaultColliderBoundsColor);
                 SetColor(ColliderContactColorKey, colliderContactColor = DefaultColliderContactColor);
+                SetColor(CompositedColorKey, compositedColor = DefaultCompositedColor);
                 EditorPrefs.SetFloat(ContactArrowScaleKey, contactArrowScale = DefaultContactArrowScale);
             }
 

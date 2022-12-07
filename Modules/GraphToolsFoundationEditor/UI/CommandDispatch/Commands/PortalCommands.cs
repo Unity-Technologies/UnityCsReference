@@ -60,13 +60,14 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var createdElements = new List<GraphElementModel>();
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 foreach (var portalModel in portalsToOpen)
                 {
                     var newPortal = graphModelState.GraphModel.CreateOppositePortal(portalModel);
-                    graphUpdater.MarkNew(newPortal);
                     createdElements.Add(newPortal);
                 }
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
             if (createdElements.Any())

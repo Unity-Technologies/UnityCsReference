@@ -22,8 +22,7 @@ namespace Unity.GraphToolsFoundation.Editor
         GraphView GraphView { get; }
         readonly Func<GraphModel, GhostWireModel> m_GhostWireViewModelCreator;
 
-        IVisualElementScheduledItem m_PanSchedule;
-        Vector2 m_PanDiff = Vector2.zero;
+        GraphViewPanHelper_Internal m_PanHelper = new GraphViewPanHelper_Internal();
 
         public WireDragHelper(GraphView graphView, Func<GraphModel, GhostWireModel> ghostWireViewModelCreator)
         {
@@ -96,7 +95,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 GraphView.RemoveElement(m_WireCandidate);
             }
 
-            m_PanSchedule?.Pause();
+            m_PanHelper.Stop();
 
             if (draggedPort != null)
             {
@@ -171,12 +170,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             m_WireCandidate.UpdateFromModel();
 
-            if (m_PanSchedule == null)
-            {
-                var panInterval = GraphView.panIntervalMs_Internal;
-                m_PanSchedule = GraphView.schedule.Execute(Pan).Every(panInterval).StartingIn(panInterval);
-                m_PanSchedule.Pause();
-            }
+            m_PanHelper.OnMouseDown(evt, GraphView, Pan);
 
             m_WireCandidate.Layer = Int32.MaxValue;
 
@@ -185,16 +179,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public void HandleMouseMove(MouseMoveEvent evt)
         {
-            m_PanDiff = GraphView.GetEffectivePanSpeed_Internal(evt.mousePosition);
-
-            if (m_PanDiff != Vector2.zero)
-            {
-                m_PanSchedule.Resume();
-            }
-            else
-            {
-                m_PanSchedule.Pause();
-            }
+            m_PanHelper.OnMouseMove(evt);
 
             var mousePosition = evt.mousePosition;
 
@@ -259,11 +244,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void Pan(TimerState timerState)
         {
-            var travelThisFrame = m_PanDiff * timerState.deltaTime;
-            var position = GraphView.ContentViewContainer.transform.position - (Vector3)travelThisFrame;
-            var scale = GraphView.ContentViewContainer.transform.scale;
-            GraphView.UpdateViewTransform(position, scale);
-
             WireCandidateModel.GetView<Wire>(GraphView)?.UpdateFromModel();
         }
 
@@ -315,7 +295,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         WireCandidateModel.ToPort = endPort.PortModel;
                 }
             }
-            
+
             // Let the first wire handle the batch command for all wires
             if (isFirstWire)
             {
@@ -357,6 +337,7 @@ namespace Unity.GraphToolsFoundation.Editor
             ClearWireCandidate();
             m_CompatiblePorts = null;
             m_AllPorts = null;
+            m_PanHelper.OnMouseUp(evt);
             Reset();
 
             OriginalWire = null;

@@ -29,11 +29,19 @@ namespace Unity.GraphToolsFoundation.Editor
 
         static readonly string k_DefaultStylePath = "ErrorBadge.uss";
 
+        private static CustomStyleProperty<float> s_TextSizeProperty = new CustomStyleProperty<float>("--error-text-size");
+        private static CustomStyleProperty<float> s_TextMaxWidthProperty = new CustomStyleProperty<float>("--error-text-max-width");
+
         protected Image m_TipElement;
         protected Image m_IconElement;
         protected Label m_TextElement;
 
         protected string m_BadgeType;
+
+        float m_LastZoom;
+
+        float ErrorTextSize { get; set; } = 12;
+        float ErrorTextMaxWidth { get; set; } = 240;
 
         protected string VisualStyle
         {
@@ -48,6 +56,29 @@ namespace Unity.GraphToolsFoundation.Editor
                     AddToClassList(ussClassName.WithUssModifier(m_BadgeType));
                 }
             }
+        }
+
+        /// <inheritdoc />
+        protected override void OnCustomStyleResolved(CustomStyleResolvedEvent e)
+        {
+            base.OnCustomStyleResolved(e);
+
+            var changed = false;
+            if (e.customStyle.TryGetValue(s_TextSizeProperty, out float textSize))
+            {
+                ErrorTextSize = textSize;
+                changed = true;
+            }
+
+            if (e.customStyle.TryGetValue(s_TextMaxWidthProperty, out float maxWidth))
+            {
+                ErrorTextMaxWidth = maxWidth;
+                changed = true;
+            }
+
+            if (changed && m_LastZoom != 0.0f)
+                // recompute text scale next frame when the localBound is known.
+                schedule.Execute(() => SetElementLevelOfDetail(m_LastZoom, GraphViewZoomMode.Unknown, GraphViewZoomMode.Unknown)).ExecuteLater(0);
         }
 
         /// <inheritdoc />
@@ -155,6 +186,18 @@ namespace Unity.GraphToolsFoundation.Editor
         void OnMouseLeave(MouseLeaveEvent evt)
         {
             HideText();
+        }
+
+        /// <inheritdoc />
+        public override void SetElementLevelOfDetail(float zoom, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode)
+        {
+            base.SetElementLevelOfDetail(zoom, newZoomMode, oldZoomMode);
+
+            var scale = 1.0f / zoom;
+
+            m_TextElement.style.fontSize = ErrorTextSize * scale;
+            m_TextElement.style.maxWidth = ErrorTextMaxWidth * scale;
+            m_LastZoom = zoom;
         }
 
         void PerformTipLayout()

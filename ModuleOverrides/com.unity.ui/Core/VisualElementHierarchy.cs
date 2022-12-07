@@ -478,7 +478,7 @@ namespace UnityEngine.UIElements
                     m_Owner.m_Children = VisualElementListPool.Get();
                 }
 
-                if (m_Owner.yogaNode.IsMeasureDefined)
+                if (m_Owner.layoutNode.IsMeasureDefined)
                 {
                     m_Owner.RemoveMeasureFunction();
                 }
@@ -566,7 +566,7 @@ namespace UnityEngine.UIElements
                     var elements = VisualElementListPool.Copy(m_Owner.m_Children);
 
                     ReleaseChildList();
-                    m_Owner.yogaNode.Clear();
+                    m_Owner.layoutNode.Clear();
 
                     if (m_Owner.requireMeasureFunction)
                         m_Owner.AssignMeasureFunction();
@@ -746,10 +746,10 @@ namespace UnityEngine.UIElements
                 {
                     m_Owner.m_Children.Sort(comp);
 
-                    m_Owner.yogaNode.Clear();
+                    m_Owner.layoutNode.Clear();
                     for (int i = 0; i < m_Owner.m_Children.Count; i++)
                     {
-                        m_Owner.yogaNode.Insert(i, m_Owner.m_Children[i].yogaNode);
+                        m_Owner.layoutNode.Insert(i, m_Owner.m_Children[i].layoutNode);
                     }
                     m_Owner.InvokeHierarchyChanged(HierarchyChangeType.Move);
                     m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
@@ -762,12 +762,12 @@ namespace UnityEngine.UIElements
                 if (index >= childCount)
                 {
                     m_Owner.m_Children.Add(child);
-                    m_Owner.yogaNode.Insert(m_Owner.yogaNode.Count, child.yogaNode);
+                    m_Owner.layoutNode.Insert(m_Owner.layoutNode.Count, child.layoutNode);
                 }
                 else
                 {
                     m_Owner.m_Children.Insert(index, child);
-                    m_Owner.yogaNode.Insert(index, child.yogaNode);
+                    m_Owner.layoutNode.Insert(index, child.layoutNode);
                 }
             }
 
@@ -775,7 +775,7 @@ namespace UnityEngine.UIElements
             private void RemoveChildAtIndex(int index)
             {
                 m_Owner.m_Children.RemoveAt(index);
-                m_Owner.yogaNode.RemoveAt(index);
+                m_Owner.layoutNode.RemoveAt(index);
             }
 
             private void ReleaseChildList()

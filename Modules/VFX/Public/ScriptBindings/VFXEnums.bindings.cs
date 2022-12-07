@@ -212,6 +212,7 @@ namespace UnityEngine.VFX
         TextureWidth,
         TextureHeight,
         TextureDepth,
+        TextureFormat,
 
         // Event attribute in spawner
         ReadEventAttribute,

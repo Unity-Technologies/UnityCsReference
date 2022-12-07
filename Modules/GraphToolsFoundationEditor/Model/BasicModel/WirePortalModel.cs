@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -45,8 +46,11 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             set
             {
+                if (m_DeclarationModel == value)
+                    return;
                 m_DeclarationModel = value;
                 m_DeclarationModelGuid = m_DeclarationModel.Guid;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
             }
         }
 
@@ -65,7 +69,13 @@ namespace Unity.GraphToolsFoundation.Editor
                     m_TypeHandle = TypeHandle.Create_Internal("");
                 return m_TypeHandle;
             }
-            set => m_TypeHandle = value;
+            set
+            {
+                if (m_TypeHandle == value)
+                    return;
+                m_TypeHandle = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <inheritdoc />
@@ -95,6 +105,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
 
             DeclarationModel?.Rename(newName);
+
+            var references = GraphModel.FindReferencesInGraph<WirePortalModel>(DeclarationModel).OfType<AbstractNodeModel>();
+            GraphModel.CurrentGraphChangeDescription?.AddChangedModels(references, ChangeHint.Data);
         }
 
         /// <inheritdoc />

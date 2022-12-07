@@ -7,6 +7,11 @@ using UnityEngine;
 
 namespace Unity.CommandStateObserver
 {
+    /// <summary>
+    /// A function to handle a command.
+    /// </summary>
+    /// <param name="command">The command that needs to be handled.</param>
+    /// <typeparam name="TCommand">The command type.</typeparam>
     delegate void CommandHandler<in TCommand>(TCommand command)
         where TCommand : ICommand;
 
@@ -67,6 +72,11 @@ namespace Unity.CommandStateObserver
     /// </summary>
     interface ICommandHandlerFunctor
     {
+        /// <summary>
+        /// Invokes the command handler.
+        /// </summary>
+        /// <param name="command">The command that triggered the invocation.</param>
+        /// <param name="logHandler">Whether to log the invocation.</param>
         void Invoke(ICommand command, bool logHandler);
     }
 
@@ -78,11 +88,19 @@ namespace Unity.CommandStateObserver
     {
         CommandHandler<TCommand> m_Callback;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommandHandlerFunctor{TCommand}"/> class.
+        /// </summary>
         public CommandHandlerFunctor(CommandHandler<TCommand> callback)
         {
             m_Callback = callback;
         }
 
+        /// <summary>
+        /// Invokes the command handler.
+        /// </summary>
+        /// <param name="command">The command that triggered the invocation.</param>
+        /// <param name="logHandler">Whether to log the invocation.</param>
         public void Invoke(ICommand command, bool logHandler)
         {
             if (logHandler)
@@ -104,12 +122,20 @@ namespace Unity.CommandStateObserver
         CommandHandler<TParam, TCommand> m_Callback;
         TParam m_HandlerParam;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommandHandlerFunctor{TParam, TCommand}"/> class.
+        /// </summary>
         public CommandHandlerFunctor(CommandHandler<TParam, TCommand> callback, TParam handlerParam)
         {
             m_Callback = callback;
             m_HandlerParam = handlerParam;
         }
 
+        /// <summary>
+        /// Invokes the command handler.
+        /// </summary>
+        /// <param name="command">The command that triggered the invocation.</param>
+        /// <param name="logHandler">Whether to log the invocation.</param>
         public void Invoke(ICommand command, bool logHandler)
         {
             if (logHandler)
@@ -132,6 +158,9 @@ namespace Unity.CommandStateObserver
         TParam1 m_HandlerParam1;
         TParam2 m_HandlerParam2;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommandHandlerFunctor{TParam1, TParam2, TCommand}"/> class.
+        /// </summary>
         public CommandHandlerFunctor(CommandHandler<TParam1, TParam2, TCommand> callback, TParam1 handlerParam1, TParam2 handlerParam2)
         {
             m_Callback = callback;
@@ -139,6 +168,11 @@ namespace Unity.CommandStateObserver
             m_HandlerParam2 = handlerParam2;
         }
 
+        /// <summary>
+        /// Invokes the command handler.
+        /// </summary>
+        /// <param name="command">The command that triggered the invocation.</param>
+        /// <param name="logHandler">Whether to log the invocation.</param>
         public void Invoke(ICommand command, bool logHandler)
         {
             if (logHandler)
@@ -162,6 +196,9 @@ namespace Unity.CommandStateObserver
         TParam2 m_HandlerParam2;
         TParam3 m_HandlerParam3;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommandHandlerFunctor{TParam1, TParam2, TParam3, TCommand}"/> class.
+        /// </summary>
         public CommandHandlerFunctor(CommandHandler<TParam1, TParam2, TParam3, TCommand> callback, TParam1 handlerParam1, TParam2 handlerParam2, TParam3 handlerParam3)
         {
             m_Callback = callback;
@@ -170,6 +207,11 @@ namespace Unity.CommandStateObserver
             m_HandlerParam3 = handlerParam3;
         }
 
+        /// <summary>
+        /// Invokes the command handler.
+        /// </summary>
+        /// <param name="command">The command that triggered the invocation.</param>
+        /// <param name="logHandler">Whether to log the invocation.</param>
         public void Invoke(ICommand command, bool logHandler)
         {
             if (logHandler)
@@ -194,6 +236,9 @@ namespace Unity.CommandStateObserver
         TParam3 m_HandlerParam3;
         TParam4 m_HandlerParam4;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommandHandlerFunctor{TParam1, TParam2, TParam3, TParam4, TCommand}"/> class.
+        /// </summary>
         public CommandHandlerFunctor(CommandHandler<TParam1, TParam2, TParam3, TParam4, TCommand> callback, TParam1 handlerParam1, TParam2 handlerParam2, TParam3 handlerParam3, TParam4 handlerParam4)
         {
             m_Callback = callback;
@@ -203,6 +248,11 @@ namespace Unity.CommandStateObserver
             m_HandlerParam4 = handlerParam4;
         }
 
+        /// <summary>
+        /// Invokes the command handler.
+        /// </summary>
+        /// <param name="command">The command that triggered the invocation.</param>
+        /// <param name="logHandler">Whether to log the invocation.</param>
         public void Invoke(ICommand command, bool logHandler)
         {
             if (logHandler)

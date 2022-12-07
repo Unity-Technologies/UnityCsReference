@@ -256,6 +256,12 @@ namespace Unity.UI.Builder
                     (e) => e.GetStyleComplexSelector() == newComplexSelector);
             if (newSelectorElement != null)
                 m_Selection.Select(null, newSelectorElement);
+
+            schedule.Execute(() =>
+            {
+                m_NewSelectorTextField.Blur();
+                m_NewSelectorTextField.SetValueWithoutNotify(BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage);
+            });
         }
 
         void SetUpAddUSSMenu()

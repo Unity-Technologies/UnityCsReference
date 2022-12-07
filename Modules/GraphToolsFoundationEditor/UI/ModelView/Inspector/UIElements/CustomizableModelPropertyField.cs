@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Unity.CommandStateObserver;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -21,12 +22,16 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         static CustomStyleProperty<float> s_LabelWidthRatioProperty = new CustomStyleProperty<float>("--unity-property-field-label-width-ratio");
         static CustomStyleProperty<float> s_LabelExtraPaddingProperty = new CustomStyleProperty<float>("--unity-property-field-label-extra-padding");
+        public static readonly string multilineModifier = "multiline";
 
         public static readonly string ussClassName = "ge-model-property-field";
         public static readonly string labelUssClassName = ussClassName + "__label";
         public static readonly string inputUssClassName = ussClassName + "__input";
+        public static readonly string multilineUssClassName = ussClassName.WithUssModifier(multilineModifier);
 
         static Dictionary<Type, Type> s_CustomPropertyFieldBuilders;
+
+        protected FieldInfo InspectedField { get; }
 
         /// <summary>
         /// Tries to create an instance of a custom property field builder provided by an implementation of <see cref="ICustomPropertyFieldBuilder{T}"/>.
@@ -95,10 +100,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="commandTarget">The view to use to dispatch commands when the field is edited.</param>
         /// <param name="label">The label for the field.</param>
-        protected CustomizableModelPropertyField(ICommandTarget commandTarget, string label)
+        /// <param name="inspectedField">The inspected <see cref="FieldInfo"/> or null.</param>
+        protected CustomizableModelPropertyField(ICommandTarget commandTarget, string label, FieldInfo inspectedField)
         : base(commandTarget)
         {
             Label = label ?? "";
+
+            InspectedField = inspectedField;
 
             AddToClassList(ussClassName);
         }
@@ -139,7 +147,17 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (type == typeof(string))
             {
-                return ConfigureField(new TextField { isDelayed = true, tooltip = fieldTooltip });
+                TextField field;
+                if (InspectedField != null && InspectedField.FieldType == typeof(string) && InspectedField.GetCustomAttribute<MultilineAttribute>() != null)
+                {
+                    AddToClassList(multilineUssClassName);
+                    field = new TextField() { isDelayed = true, tooltip = fieldTooltip, multiline = true };
+                }
+                else
+                {
+                    field = new TextField { isDelayed = true, tooltip = fieldTooltip };
+                }
+                return ConfigureField(field);
             }
 
             if (type == typeof(Color))

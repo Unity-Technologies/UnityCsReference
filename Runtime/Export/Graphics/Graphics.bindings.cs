@@ -1106,10 +1106,13 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
+    [Obsolete("D3DHDRDisplayBitDepth has been replaced by HDRDisplayBitDepth. (UnityUpgradable) -> HDRDisplayBitDepth", true)]
     public enum D3DHDRDisplayBitDepth
     {
-        D3DHDRDisplayBitDepth10,
-        D3DHDRDisplayBitDepth16
+        [Obsolete("D3DHDRDisplayBitDepth::D3DHDRDisplayBitDepth10 has been replaced by HDRDisplayBitDepth::BitDepth10 (UnityUpgradable) -> HDRDisplayBitDepth.BitDepth10", true)]
+        D3DHDRDisplayBitDepth10 = 0,
+        [Obsolete("D3DHDRDisplayBitDepth::D3DHDRDisplayBitDepth16 has been replaced by HDRDisplayBitDepth::BitDepth16 (UnityUpgradable) -> HDRDisplayBitDepth.BitDepth16", true)]
+        D3DHDRDisplayBitDepth16 = 1
     }
 
     [NativeHeader("Runtime/GfxDevice/HDROutputSettings.h")]
@@ -1212,6 +1215,18 @@ namespace UnityEngine
 
         [FreeFunction("HDROutputSettingsBindings::RequestHDRModeChange", HasExplicitThis = false, ThrowsException = true)]
         extern private static void RequestHDRModeChangeInternal(int displayIndex, bool enabled);
+    }
+
+    public class ColorGamutUtility
+    {
+        [FreeFunction(IsThreadSafe = true)]
+        extern public static ColorPrimaries GetColorPrimaries(ColorGamut gamut);
+
+        [FreeFunction(IsThreadSafe = true)]
+        extern public static WhitePoint GetWhitePoint(ColorGamut gamut);
+
+        [FreeFunction(IsThreadSafe = true)]
+        extern public static TransferFunction GetTransferFunction(ColorGamut gamut);
     }
 }
 

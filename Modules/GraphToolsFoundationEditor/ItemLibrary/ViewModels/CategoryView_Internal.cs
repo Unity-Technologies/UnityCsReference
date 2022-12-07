@@ -16,17 +16,17 @@ namespace Unity.ItemLibrary.Editor
         /// <summary>
         /// Name of the Item.
         /// </summary>
-        public string Name { get; }
+        public virtual string Name { get; }
 
         /// <summary>
         /// Parent of this item in the hierarchy.
         /// </summary>
-        public ICategoryView_Internal Parent { get; }
+        public virtual ICategoryView_Internal Parent { get; }
 
         /// <summary>
         /// Custom name used to generate USS styles when creating UI for this item.
         /// </summary>
-        public string StyleName { get; set; }
+        public virtual string StyleName { get; set; }
 
         /// <summary>
         /// Depth of this item in the hierarchy.
@@ -46,12 +46,12 @@ namespace Unity.ItemLibrary.Editor
         /// <summary>
         /// Path in the hierarchy of items.
         /// </summary>
-        public string Path => m_Path ??= this.GetPath();
+        public virtual string Path => m_Path ??= this.GetPath();
 
         /// <summary>
         /// Help content to display about this item.
         /// </summary>
-        public string Help { get; set; }
+        public virtual string Help { get; set; }
 
         /// <summary>
         /// Categories to display as children of this one.
@@ -146,6 +146,24 @@ namespace Unity.ItemLibrary.Editor
             }
 
             return rootCategory;
+        }
+
+        /// <summary>
+        /// Check if this category is part of an other <see cref="ICategoryView_Internal"/>.
+        /// </summary>
+        /// <param name="category">The other <see cref="ICategoryView_Internal"/>.</param>
+        /// <returns>True if it is part of the other <see cref="ICategoryView_Internal"/>, false otherwise.</returns>
+        public bool IsInCategory(ICategoryView_Internal category)
+        {
+            var parent = Parent;
+            while (parent != null)
+            {
+                if (parent == category)
+                    return true;
+                parent = parent.Parent;
+            }
+
+            return false;
         }
 
         static ICategoryView_Internal RetrieveOrCreatePath(ItemLibraryItem item,

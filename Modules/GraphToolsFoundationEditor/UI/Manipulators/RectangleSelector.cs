@@ -21,6 +21,8 @@ namespace Unity.GraphToolsFoundation.Editor
         readonly RectangleSelect m_Rectangle;
         bool m_Active;
 
+        GraphViewPanHelper_Internal m_PanHelper = new GraphViewPanHelper_Internal();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="RectangleSelector"/> class.
         /// </summary>
@@ -109,6 +111,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_Active = true;
                 target.CaptureMouse(); // We want to receive events even when mouse is not over ourself.
                 e.StopImmediatePropagation();
+                m_PanHelper.OnMouseDown(e, graphView, Pan);
             }
         }
 
@@ -176,6 +179,7 @@ namespace Unity.GraphToolsFoundation.Editor
             m_Active = false;
             target.ReleaseMouse();
             e.StopPropagation();
+            m_PanHelper.OnMouseUp(e);
         }
 
         static void RecurseAddGraphContainerChildren(PortNodeModel node, HashSet<PortNodeModel> nodeModels)
@@ -200,11 +204,20 @@ namespace Unity.GraphToolsFoundation.Editor
 
             m_Rectangle.End = graphView.ChangeCoordinatesTo(graphView.ContentViewContainer, e.localMousePosition);
             e.StopPropagation();
+            m_PanHelper.OnMouseMove(e);
         }
 
         public void MarkDirtyRepaint()
         {
             m_Rectangle?.MarkDirtyRepaint();
+        }
+
+        void Pan(TimerState timerState)
+        {
+            if (target is not GraphView graphView)
+                return;
+
+            m_Rectangle.End = graphView.ChangeCoordinatesTo(graphView.ContentViewContainer, m_PanHelper.LastLocalMousePosition);
         }
 
         class RectangleSelect : VisualElement

@@ -68,8 +68,7 @@ namespace UnityEditor.Search
             }
             else
             {
-                return SearchProposition.Fetch(context, options)
-                    .Concat(QueryAndOrBlock.BuiltInQueryBuilderPropositions()).OrderBy(p => p);
+                return SearchProposition.Fetch(context, options).OrderBy(p => p);
             }
         }
     }

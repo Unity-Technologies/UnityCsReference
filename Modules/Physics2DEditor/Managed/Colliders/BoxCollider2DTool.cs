@@ -33,7 +33,7 @@ namespace UnityEditor
                 handleMatrix.SetRow(1, Vector4.Scale(handleMatrix.GetRow(1), new Vector4(1f, 1f, 0f, 1f)));
                 handleMatrix.SetRow(2, new Vector4(0f, 0f, 1f, collider.transform.position.z));
 
-                if (collider.usedByComposite && collider.composite != null)
+                if (collider.compositeOperation != Collider2D.CompositeOperation.None && collider.composite != null)
                 {
                     // composite offset is rotated by composite's transformation matrix and projected back onto 2D plane
                     var compositeOffset = collider.composite.transform.rotation * collider.composite.offset;

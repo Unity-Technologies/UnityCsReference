@@ -125,7 +125,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string WireLabel
         {
             get => string.IsNullOrEmpty(m_WireLabel) ? GetWireOrderLabel() : m_WireLabel;
-            set => m_WireLabel = value;
+            set
+            {
+                if (m_WireLabel == value)
+                    return;
+                m_WireLabel = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         string GetWireOrderLabel()

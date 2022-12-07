@@ -70,7 +70,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (!this.IsMovable())
                     r.position = m_Position.position;
 
-                m_Position = r;
+                if (r != m_Position)
+                {
+                    GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Layout);
+                    m_Position = r;
+                }
             }
         }
 
@@ -85,7 +89,14 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string Title
         {
             get => m_Title;
-            set { if (value != null && m_Title != value) m_Title = value; }
+            set
+            {
+                if (value != null && m_Title != value)
+                {
+                    m_Title = value;
+                    GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+                }
+            }
         }
 
         /// <inheritdoc />
@@ -97,7 +108,14 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string Contents
         {
             get => m_Contents;
-            set { if (value != null && m_Contents != value) m_Contents = value; }
+            set
+            {
+                if (value != null && m_Contents != value)
+                {
+                    m_Contents = value;
+                    GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+                }
+            }
         }
 
         /// <summary>
@@ -106,7 +124,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string Theme
         {
             get => m_ThemeName;
-            set => m_ThemeName = value;
+            set
+            {
+                if (m_ThemeName == value)
+                    return;
+                m_ThemeName = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Style);
+            }
         }
 
         /// <summary>
@@ -115,7 +139,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string TextSize
         {
             get => m_TextSizeName;
-            set => m_TextSizeName = value;
+            set
+            {
+                if (m_TextSizeName == value)
+                    return;
+                m_TextSizeName = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Style);
+            }
         }
 
         /// <summary>

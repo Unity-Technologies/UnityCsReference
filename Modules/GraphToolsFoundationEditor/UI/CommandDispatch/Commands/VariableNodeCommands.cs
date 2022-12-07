@@ -99,24 +99,21 @@ namespace Unity.GraphToolsFoundation.Editor
                 undoStateUpdater.SaveState(selectionState);
             }
 
+            var graphModel = graphModelState.GraphModel;
             using (var graphUpdater = graphModelState.UpdateScope)
             using (var selectionUpdater = selectionState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                var graphModel = graphModelState.GraphModel;
-
                 foreach (var constantModel in command.ConstantNodeModels ?? Enumerable.Empty<ConstantNodeModel>())
                 {
                     var declarationModel = graphModel.CreateGraphVariableDeclaration(
                         constantModel.Type.GenerateTypeHandle(),
                         constantModel.Type.FriendlyName().CodifyString_Internal(), ModifierFlags.None,
                         true, null, -1, constantModel.Value.Clone());
-                    graphUpdater.MarkNew(declarationModel);
-                    graphUpdater.MarkChanged(declarationModel.ParentGroup, ChangeHint.Grouping);
 
                     var variableModel = graphModel.CreateVariableNode(declarationModel, constantModel.Position);
                     if (variableModel != null)
                     {
-                        graphUpdater.MarkNew(variableModel);
                         selectionUpdater.SelectElement(variableModel, true);
 
                         variableModel.State = constantModel.State;
@@ -124,18 +121,12 @@ namespace Unity.GraphToolsFoundation.Editor
                             variableModel.Color = constantModel.Color;
                         foreach (var wireModel in graphModel.GetWiresForPort(constantModel.OutputPort).ToList())
                         {
-                            var newWire = graphModel.CreateWire(wireModel.ToPort, variableModel.OutputPort);
-                            var deletedModels = graphModel.DeleteWire(wireModel);
-
-                            graphUpdater.MarkNew(newWire);
-                            graphUpdater.MarkDeleted(deletedModels);
-                            selectionUpdater.SelectElements(deletedModels, false);
+                            graphModel.CreateWire(wireModel.ToPort, variableModel.OutputPort);
+                            graphModel.DeleteWire(wireModel);
                         }
                     }
 
-                    var deletedElements = graphModel.DeleteNode(constantModel, deleteConnections: false);
-                    graphUpdater.MarkDeleted(deletedElements);
-                    selectionUpdater.SelectElements(deletedElements, false);
+                    graphModel.DeleteNode(constantModel, deleteConnections: false);
                 }
 
                 foreach (var variableModel in command.VariableNodeModels ?? Enumerable.Empty<VariableNodeModel>())
@@ -147,23 +138,20 @@ namespace Unity.GraphToolsFoundation.Editor
                     constantModel.State = variableModel.State;
                     if (variableModel.HasUserColor)
                         constantModel.Color = variableModel.Color;
-                    graphUpdater.MarkNew(constantModel);
                     selectionUpdater.SelectElement(constantModel, true);
 
                     var wireModels = graphModel.GetWiresForPort(variableModel.OutputPort).ToList();
                     foreach (var wireModel in wireModels)
                     {
-                        var newWire = graphModel.CreateWire(wireModel.ToPort, constantModel.OutputPort);
-                        var deletedModels = graphModel.DeleteWire(wireModel);
-                        graphUpdater.MarkNew(newWire);
-                        graphUpdater.MarkDeleted(deletedModels);
-                        selectionUpdater.SelectElements(deletedModels, false);
+                        graphModel.CreateWire(wireModel.ToPort, constantModel.OutputPort);
+                        graphModel.DeleteWire(wireModel);
                     }
 
-                    var deletedElements = graphModel.DeleteNode(variableModel, deleteConnections: false);
-                    graphUpdater.MarkDeleted(deletedElements);
-                    selectionUpdater.SelectElements(deletedElements, false);
+                    graphModel.DeleteNode(variableModel, deleteConnections: false);
                 }
+
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
+                selectionUpdater.SelectElements(changeScope.ChangeDescription.DeletedModels.ToList(), false);
             }
         }
     }
@@ -208,9 +196,10 @@ namespace Unity.GraphToolsFoundation.Editor
             bool undoPushed = false;
 
             var createdElements = new List<GraphElementModel>();
+            var graphModel = graphModelState.GraphModel;
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                var graphModel = graphModelState.GraphModel;
                 foreach (var model in command.Models.Where(m => m is VariableNodeModel || m is ConstantNodeModel))
                 {
                     var wireModels = graphModel.GetWiresForPort(model.OutputPort).ToList();
@@ -227,15 +216,13 @@ namespace Unity.GraphToolsFoundation.Editor
                         }
 
                         var newModel = graphModel.DuplicateNode(model as AbstractNodeModel, i * 50 * Vector2.up);
-                        graphUpdater.MarkNew(newModel);
                         createdElements.Add(newModel);
                         var wireModel = wireModels[i];
-                        var newWire = graphModel.CreateWire(wireModel.ToPort, ((ISingleOutputPortNodeModel)newModel).OutputPort);
-                        var deletedModels = graphModel.DeleteWire(wireModel);
-                        graphUpdater.MarkNew(newWire);
-                        graphUpdater.MarkDeleted(deletedModels);
+                        graphModel.CreateWire(wireModel.ToPort, ((ISingleOutputPortNodeModel)newModel).OutputPort);
+                        graphModel.DeleteWire(wireModel);
                     }
                 }
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
             if (createdElements.Any())
@@ -290,13 +277,13 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 foreach (var constantNodeModel in command.Models)
                 {
                     constantNodeModel.IsLocked = command.Value;
                 }
-
-                graphUpdater.MarkChanged(command.Models, ChangeHint.Data);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -347,16 +334,13 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 foreach (var model in command.Models)
                 {
                     model.DeclarationModel = command.Variable;
-
-                    var references = graphModelState.GraphModel.FindReferencesInGraph<VariableNodeModel>(command.Variable);
-                    graphUpdater.MarkChanged(references, ChangeHint.Data);
                 }
-
-                graphUpdater.MarkChanged(command.Models, ChangeHint.Data);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }

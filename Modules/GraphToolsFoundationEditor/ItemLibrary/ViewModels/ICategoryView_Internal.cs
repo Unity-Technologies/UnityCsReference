@@ -42,5 +42,12 @@ namespace Unity.ItemLibrary.Editor
         /// Remove every subcategory under this category.
         /// </summary>
         public void ClearSubCategories();
+
+        /// <summary>
+        /// Check if this category is part of an other <see cref="ICategoryView_Internal"/>.
+        /// </summary>
+        /// <param name="category">The other <see cref="ICategoryView_Internal"/>.</param>
+        /// <returns>True if it is part of the other <see cref="ICategoryView_Internal"/>, false otherwise.</returns>
+        public bool IsInCategory(ICategoryView_Internal category);
     }
 }

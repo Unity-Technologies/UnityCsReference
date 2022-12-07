@@ -84,7 +84,6 @@ namespace Unity.GraphToolsFoundation.Editor
                             AbstractNodeModel duplicateNodeModel = block.Clone();
 
                             duplicateNodeModel.GraphModel = GraphView.GraphModel;
-                            duplicateNodeModel.AssignNewGuid();
                             duplicateNodeModel.OnDuplicateNode(block);
 
                             m_DraggedHeight += blockUI.layout.height;

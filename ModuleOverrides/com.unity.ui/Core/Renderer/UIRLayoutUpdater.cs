@@ -11,10 +11,14 @@ using UnityEngine;
 namespace UnityEngine.UIElements
 {
     // This is basically the same as the standard layout update except for 1 thing :
-    // - Only call dirty repaint when the layout rect has changed instead of "yogaNode.HasNewLayout"
+    // - Only call dirty repaint when the layout rect has changed instead of "layoutNode.HasNewLayout"
     internal class UIRLayoutUpdater : BaseVisualTreeUpdater
     {
-        const int kMaxValidateLayoutCount = 5;
+         // When changing this value, we always consider that some controls may require multiple passes to compute their layout.
+         // We also consider that these controls can also be nested inside other similar controls.
+         // For example, a simple scroll view may need more than 2 passes to lay out the viewport and scrollers.
+         // Therefore, having a deep hierachy of scroll views can require a fair amount of layout passes.
+        const int kMaxValidateLayoutCount = 10;
 
         private static readonly string s_Description = "Update Layout";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
@@ -25,10 +29,10 @@ namespace UnityEngine.UIElements
             if ((versionChangeType & (VersionChangeType.Layout | VersionChangeType.Hierarchy)) == 0)
                 return;
 
-            var yogaNode = ve.yogaNode;
-            if (yogaNode != null && yogaNode.IsMeasureDefined)
+            var layoutNode = ve.layoutNode;
+            if (layoutNode != null && layoutNode.IsMeasureDefined)
             {
-                yogaNode.MarkDirty();
+                layoutNode.MarkDirty();
             }
         }
 
@@ -38,7 +42,7 @@ namespace UnityEngine.UIElements
         {
             // update flex once
             int validateLayoutCount = 0;
-            while (visualTree.yogaNode.IsDirty)
+            while (visualTree.layoutNode.IsDirty)
             {
                 changeEventsList.Clear();
 
@@ -48,7 +52,7 @@ namespace UnityEngine.UIElements
                     panel.ApplyStyles();
 
                 panel.duringLayoutPhase = true;
-                visualTree.yogaNode.CalculateLayout();
+                visualTree.layoutNode.CalculateLayout();
                 panel.duringLayoutPhase = false;
 
                 UpdateSubTree(visualTree, changeEventsList);
@@ -104,7 +108,7 @@ namespace UnityEngine.UIElements
             {
                 if (inheritedDisplayed)//for the element having a displayed parent and that just became in display:none
                 {
-                    // Make sure bounding box are re-computed (using yoga layout).
+                    // Make sure bounding box are re-computed (using layout).
                     ve.IncrementVersion(VersionChangeType.Size);
                 }
 
@@ -132,21 +136,21 @@ namespace UnityEngine.UIElements
             if (!ve.areAncestorsAndSelfDisplayed)
                 return;
 
-            Rect yogaLayoutRect = new Rect(ve.yogaNode.LayoutX, ve.yogaNode.LayoutY, ve.yogaNode.LayoutWidth, ve.yogaNode.LayoutHeight);
+            Rect layoutRect = new Rect(ve.layoutNode.LayoutX, ve.layoutNode.LayoutY, ve.layoutNode.LayoutWidth, ve.layoutNode.LayoutHeight);
 
             // we encode right/bottom into width/height
-            Rect rawPadding = new Rect(ve.yogaNode.LayoutPaddingLeft, ve.yogaNode.LayoutPaddingLeft, ve.yogaNode.LayoutPaddingRight, ve.yogaNode.LayoutPaddingBottom);
+            Rect rawPadding = new Rect(ve.layoutNode.LayoutPaddingLeft, ve.layoutNode.LayoutPaddingLeft, ve.layoutNode.LayoutPaddingRight, ve.layoutNode.LayoutPaddingBottom);
 
             // This is not the "real" padding rect: it may differ in size and position because the borders are ignored.
             // Alone, it cannot be used to identify padding size changes, because the bottom and right values depend on the
             // layout rect width/height. A change in layout rect width/height with a corresponding variation in
             // right/bottom values may yield the same pseudoPaddingRect. Fortunately, the layout rect size and padding rect
             // size change trigger the same code path which explains why we haven't seen any issue with this so far.
-            Rect yogaPseudoPaddingRect = new Rect(
+            Rect layoutPseudoPaddingRect = new Rect(
                rawPadding.x,
                 rawPadding.y,
-                yogaLayoutRect.width - (rawPadding.x + rawPadding.width),
-                yogaLayoutRect.height - (rawPadding.y + rawPadding.height));
+                layoutRect.width - (rawPadding.x + rawPadding.width),
+                layoutRect.height - (rawPadding.y + rawPadding.height));
             Rect lastLayoutRect = ve.lastLayout;
             Rect lastPseudoPaddingRect = ve.lastPseudoPadding;
 
@@ -154,26 +158,42 @@ namespace UnityEngine.UIElements
             // Changing the layout/padding size should trigger the following version changes:
             // - Size:    to update the clipping rect, when required
             // - Repaint: to update the geometry inside the new rect
-            bool layoutSizeChanged = lastLayoutRect.size != yogaLayoutRect.size;
-            bool pseudoPaddingSizeChanged = lastPseudoPaddingRect.size != yogaPseudoPaddingRect.size;
+            bool layoutSizeChanged = lastLayoutRect.size != layoutRect.size;
+            bool pseudoPaddingSizeChanged = lastPseudoPaddingRect.size != layoutPseudoPaddingRect.size;
             if (layoutSizeChanged || pseudoPaddingSizeChanged)
                 changeType |= VersionChangeType.Size | VersionChangeType.Repaint;
 
             // Changing the layout/padding position should trigger the following version change:
             // - Transform: to draw the element and content at the right position
-            bool layoutPositionChanged = yogaLayoutRect.position != lastLayoutRect.position;
-            bool paddingPositionChanged = yogaPseudoPaddingRect.position != lastPseudoPaddingRect.position;
+            bool layoutPositionChanged = layoutRect.position != lastLayoutRect.position;
+            bool paddingPositionChanged = layoutPseudoPaddingRect.position != lastPseudoPaddingRect.position;
             if (layoutPositionChanged || paddingPositionChanged || isDisplayedJustChanged)
                 changeType |= VersionChangeType.Transform;
+
+            // If the scale or rotate value of the style are not default, a change in the size will affect the resulting
+            // translation part of the local transform. Only when the transformOrigin is at (0, 0) we do not need to
+            // update the transform.
+            if (((changeType & VersionChangeType.Size) != 0) && ((changeType & VersionChangeType.Transform) == 0))
+            {
+                if (!ve.hasDefaultRotationAndScale)
+                {
+                    // if the pivot is not at the top left, update the transform
+                    if (!Mathf.Approximately(ve.resolvedStyle.transformOrigin.x, 0.0f) ||
+                        !Mathf.Approximately(ve.resolvedStyle.transformOrigin.y, 0.0f))
+                    {
+                        changeType |= VersionChangeType.Transform;
+                    }
+                }
+            }
 
             if (changeType != 0)
                 ve.IncrementVersion(changeType);
 
-            ve.lastLayout = yogaLayoutRect;
-            ve.lastPseudoPadding = yogaPseudoPaddingRect;
+            ve.lastLayout = layoutRect;
+            ve.lastPseudoPadding = layoutPseudoPaddingRect;
 
             // ignore clean sub trees
-            bool hasNewLayout = ve.yogaNode.HasNewLayout;
+            bool hasNewLayout = ve.layoutNode.HasNewLayout;
             if (hasNewLayout)
             {
                 var childCount = ve.hierarchy.childCount;
@@ -181,7 +201,7 @@ namespace UnityEngine.UIElements
                 {
                     var child = ve.hierarchy[i];
 
-                    if (child.yogaNode.HasNewLayout)
+                    if (child.layoutNode.HasNewLayout)
                         UpdateSubTree(child, changeEvents);
                 }
             }
@@ -195,12 +215,12 @@ namespace UnityEngine.UIElements
             // (padding changes don't affect the element's outer geometry).
             if ((layoutSizeChanged || layoutPositionChanged || isDisplayedJustChanged) && ve.HasEventCallbacksOrDefaultActions(GeometryChangedEvent.EventCategory))
             {
-                changeEvents.Add((isDisplayedJustChanged ? Rect.zero : lastLayoutRect, yogaLayoutRect, ve));
+                changeEvents.Add((isDisplayedJustChanged ? Rect.zero : lastLayoutRect, layoutRect, ve));
             }
 
             if (hasNewLayout)
             {
-                ve.yogaNode.MarkLayoutSeen();
+                ve.layoutNode.MarkLayoutSeen();
             }
         }
 

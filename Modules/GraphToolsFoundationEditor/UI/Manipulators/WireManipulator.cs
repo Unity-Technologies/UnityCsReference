@@ -280,13 +280,16 @@ namespace Unity.GraphToolsFoundation.Editor
             target.ReleaseMouse();
         }
 
-        bool MouseIsNearPorts(Port input, Port output, Vector2 referencePos, out float distanceFromInput, out float distanceFromOutput)
+        bool MouseIsNearPorts(Port input, Port output, Vector2 worldPos, out float distanceFromInput, out float distanceFromOutput)
         {
             distanceFromInput = float.NegativeInfinity;
             distanceFromOutput = float.NegativeInfinity;
+            
+            var reference = input.GraphView.ContentViewContainer;
 
-            var outputPos = new Vector2(output.GetGlobalCenter().x, output.GetGlobalCenter().y);
-            var inputPos = new Vector2(input.GetGlobalCenter().x, input.GetGlobalCenter().y);
+            var outputPos = reference.WorldToLocal(output.GetGlobalCenter());
+            var inputPos = reference.WorldToLocal(input.GetGlobalCenter());
+            var referencePos = reference.WorldToLocal(worldPos);
 
             distanceFromOutput = (referencePos - outputPos).sqrMagnitude;
             distanceFromInput = (referencePos - inputPos).sqrMagnitude;

@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.GraphToolsFoundation;
+using Unity.GraphToolsFoundation.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -55,6 +57,7 @@ namespace Unity.ItemLibrary.Editor
         Stack<ITreeItemView_Internal> m_RootItems;
 
         ItemLibraryItem m_LastFavoriteClicked;
+        ITreeItemView_Internal m_LastItemViewClicked;
 
         double m_LastFavoriteClickTime;
 
@@ -103,6 +106,21 @@ namespace Unity.ItemLibrary.Editor
             RefreshListView();
         }
 
+        internal void AddPortItemsToVisibleResults_Internal(IEnumerable<GraphNodeModelLibraryItem> portItems)
+        {
+            if (selectedItem is IItemView_Internal selectedItemView)
+            {
+                foreach (var portItem in portItems)
+                {
+                    if (selectedItemView.GetPortToConnect() != null)
+                        selectedItemView.Parent.AddItem(new ItemView_Internal(selectedItemView.Parent, portItem));
+                    else
+                        selectedItemView.AddItem(new ItemView_Internal(selectedItemView, portItem));
+                }
+            }
+            RegenerateVisibleResults();
+        }
+
         void RegenerateVisibleResults()
         {
             m_VisibleItems.Clear();
@@ -118,12 +136,27 @@ namespace Unity.ItemLibrary.Editor
                 m_RootItems.Push(m_ResultsHierarchy.SubCategories[i]);
             }
 
+            var selectedItemView = selectedItem as IItemView_Internal;
+
             if (ViewMode == ResultsViewMode.Hierarchy)
             {
                 m_FavoriteCategoryView.ClearItems();
                 foreach (var favoriteItem in m_Library.CurrentFavorites.Where(f => m_Results.Contains(f)))
                 {
-                    m_FavoriteCategoryView.AddItem(new ItemView_Internal(m_FavoriteCategoryView, favoriteItem));
+                    IItemView_Internal itemViewToAdd = null;
+                    if (selectedItemView != null && selectedItemView.IsInCategory(m_FavoriteCategoryView))
+                    {
+                        if (selectedItemView.GetPortToConnect() != null)
+                        {
+                            if (selectedItemView.Parent is IItemView_Internal parentItemView && parentItemView.Item == favoriteItem)
+                                itemViewToAdd = parentItemView;
+                        }
+                        else if (selectedItemView.Item == favoriteItem)
+                        {
+                            itemViewToAdd = selectedItemView;
+                        }
+                    }
+                    m_FavoriteCategoryView.AddItem(itemViewToAdd?? new ItemView_Internal(m_FavoriteCategoryView, favoriteItem));
                 }
 
                 m_RootItems.Push(m_FavoriteCategoryView);
@@ -133,6 +166,19 @@ namespace Unity.ItemLibrary.Editor
             {
                 var item = m_RootItems.Pop();
                 m_VisibleItems.Add(item);
+
+                if (item is IItemView_Internal itemView)
+                {
+                    if (itemView == selectedItemView)
+                        selectedIndex = m_VisibleItems.Count - 1;
+
+                    for (var i = itemView.Items.Count - 1; i >= 0; i--)
+                    {
+                        m_RootItems.Push(itemView.Items[i]);
+                    }
+                    itemView.ClearItems();
+                }
+
                 if (item is ICategoryView_Internal category && !m_Library.IsCollapsed_Internal(category))
                 {
                     for (var i = category.Items.Count - 1; i >= 0; i--)
@@ -168,8 +214,8 @@ namespace Unity.ItemLibrary.Editor
 
         void OnKeyDownEvent(KeyDownEvent evt)
         {
-            var categoryView = selectedItem as ICategoryView_Internal;
             var itemView = selectedItem as IItemView_Internal;
+            var categoryView = itemView is null ? selectedItem as ICategoryView_Internal : null;
 
             switch (evt.keyCode)
             {
@@ -225,8 +271,8 @@ namespace Unity.ItemLibrary.Editor
         {
             var treeItem = m_VisibleItems[index];
             target.AddToClassList(itemClassName);
-            var categoryView = treeItem as ICategoryView_Internal;
             var itemView = treeItem as IItemView_Internal;
+            var categoryView = itemView is null ? treeItem as ICategoryView_Internal : null;
             target.EnableInClassList(itemCategoryClassName, categoryView != null);
             if (!string.IsNullOrEmpty(treeItem.StyleName))
                 target.AddToClassList(GetItemCustomClassName(treeItem));
@@ -237,7 +283,6 @@ namespace Unity.ItemLibrary.Editor
             var expander = target.Q<VisualElement>("itemChildExpander");
 
             var icon = expander.Query("expanderIcon").First();
-            var iconElement = target.Q<VisualElement>("itemIconVisualElement");
 
             if (categoryView != null)
             {
@@ -245,9 +290,10 @@ namespace Unity.ItemLibrary.Editor
                 icon.EnableInClassList(collapseButtonCollapsedClassName, m_Library.IsCollapsed_Internal(categoryView));
             }
 
+            var iconElement = target.Q<VisualElement>("itemIconVisualElement");
             iconElement.AddToClassList(itemCategoryIconClassName);
 
-            if (!string.IsNullOrEmpty(treeItem.StyleName))
+            if (!TryAddCompatiblePortIcon(iconElement, itemView) && !string.IsNullOrEmpty(treeItem.StyleName))
                 iconElement.AddToClassList(GetItemCustomClassName(treeItem) + CategoryIconSuffix);
 
             var nameLabelsContainer = target.Q<VisualElement>("labelsContainer");
@@ -273,7 +319,7 @@ namespace Unity.ItemLibrary.Editor
             target.name = k_EntryName;
 
             var favButton = target.Q(k_FavoriteButtonname);
-            if (favButton != null && itemView != null)
+            if (favButton != null && itemView != null && itemView.GetPortToConnect() == null)
             {
                 favButton.AddToClassList(favoriteButtonClassName);
 
@@ -296,6 +342,75 @@ namespace Unity.ItemLibrary.Editor
                 }
             }
             target.RegisterCallback<MouseDownEvent>(ExpandOrCollapse);
+        }
+
+        bool TryAddCompatiblePortIcon(VisualElement iconElement, IItemView_Internal itemView)
+        {
+            var portToConnect = itemView?.GetPortToConnect();
+
+            if (portToConnect != null && m_Library.Adapter is GraphNodeLibraryAdapter nodeLibraryAdapter && nodeLibraryAdapter.PreviewGraphView != null)
+            {
+                if (portToConnect.DataTypeHandle == TypeHandle.ExecutionFlow)
+                {
+                    var portToConnectModelView = portToConnect.GetView_Internal(nodeLibraryAdapter.PreviewGraphView);
+                    if (portToConnectModelView is Port portToConnectUI)
+                    {
+                        iconElement.AddStylesheet_Internal("PortConnectorPart.uss");
+                        iconElement.AddStylesheet_Internal("Port.uss");
+                        iconElement.AddToClassList(Port.ussClassName);
+                        iconElement.AddToClassList(Port.ussClassName.WithUssElement(Port.connectorPartName));
+                        iconElement.AddToClassList(Port.outputModifierUssClassName);
+                        iconElement.AddToClassList(Port.notConnectedModifierUssClassName);
+                        iconElement.AddToClassList(Port.ussClassName.WithUssModifier("data-type-execution-flow"));
+                        iconElement.AddToClassList(Port.ussClassName.WithUssModifier("type-execution"));
+                        if (portToConnectUI.PortModel.Orientation == PortOrientation.Vertical)
+                            iconElement.AddToClassList(Port.verticalModifierUssClassName);
+
+                        var connectorBox = new VisualElement { name = PortConnectorPart.connectorUssName };
+                        connectorBox.AddToClassList(Port.ussClassName.WithUssElement(PortConnectorPart.connectorUssName));
+                        connectorBox.AddToClassList(PortConnectorPart.ussClassName.WithUssElement(PortConnectorPart.connectorUssName));
+                        iconElement.Add(connectorBox);
+
+                        portToConnectUI.RegisterCallback<CustomStyleResolvedEvent>(evt =>
+                        {
+                            if (evt.customStyle.TryGetValue(new CustomStyleProperty<Color>("--port-color"), out var portColorValue))
+                            {
+                                connectorBox.style.borderBottomColor = portColorValue;
+                                connectorBox.style.borderLeftColor = portColorValue;
+                                connectorBox.style.borderRightColor = portColorValue;
+                                connectorBox.style.borderTopColor = portColorValue;
+                            }
+                            if (evt.customStyle.TryGetValue(new CustomStyleProperty<Color>("--port-background"), out var portBackgroundValue))
+                            {
+                                connectorBox.style.backgroundColor = portBackgroundValue;
+                            }
+                        });
+                    }
+                }
+                else
+                {
+                    var imageIcon = new Image();
+                    imageIcon.AddStylesheet_Internal("TypeIcons.uss");
+                    var portToConnectModelView = portToConnect.GetView_Internal(nodeLibraryAdapter.PreviewGraphView);
+                    imageIcon.tintColor = Color.white;
+                    if (portToConnectModelView is Port portToConnectUI)
+                    {
+                        imageIcon.tintColor = portToConnectUI.PortColor;
+
+                        portToConnectUI.RegisterCallback<CustomStyleResolvedEvent>(evt =>
+                        {
+                            if (evt.customStyle.TryGetValue(new CustomStyleProperty<Color>("--port-color"), out var portColorValue))
+                                imageIcon.tintColor = portColorValue;
+                        });
+                    }
+                    imageIcon.PrefixEnableInClassList(Port.dataTypeClassPrefix, Port.GetClassNameSuffixForDataType_Internal(portToConnect.PortDataType));
+                    iconElement.Add(imageIcon);
+                }
+
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -328,6 +443,23 @@ namespace Unity.ItemLibrary.Editor
             icon.RemoveFromClassList(collapseButtonCollapsedClassName);
 
             iconElement.RemoveFromClassList(itemCategoryIconClassName);
+
+            if (index > 0 && index < m_VisibleItems.Count && m_VisibleItems[index] is IItemView_Internal itemView)
+            {
+                var portToConnect = itemView.GetPortToConnect();
+                if (portToConnect != null)
+                {
+                    iconElement.RemoveFromClassList(Port.dataTypeClassPrefix + Port.GetClassNameSuffixForDataType_Internal(portToConnect.PortDataType));
+                    for (var i = 0; i < iconElement.childCount; i++)
+                    {
+                        if (iconElement[i] is Image)
+                        {
+                            iconElement.RemoveAt(i);
+                            break;
+                        }
+                    }
+                }
+            }
             RemoveCustomClassIfFound(iconElement);
 
             var favButton = target.Q(k_FavoriteButtonname);
@@ -393,6 +525,12 @@ namespace Unity.ItemLibrary.Editor
         {
             if (SelectionIsInvalidOrAFavoriteClick())
                 return;
+
+            var selectedItemView = selectedItem as IItemView_Internal;
+            if (m_LastItemViewClicked == selectedItemView)
+                return;
+
+            m_LastItemViewClicked = selectedItemView;
 
             if (!selectedItems.Any())
                 m_ItemChosenCallback(null);
@@ -539,7 +677,7 @@ namespace Unity.ItemLibrary.Editor
             if (target.name != expandingItemName)
                 target = itemElement.Q(expandingItemName);
 
-            if (target == null || !(itemElement?.userData is ICategoryView_Internal item))
+            if (target == null || !(itemElement?.userData is ICategoryView_Internal item) || itemElement.userData is IItemView_Internal)
                 return;
 
             if (m_Library.IsCollapsed_Internal(item))

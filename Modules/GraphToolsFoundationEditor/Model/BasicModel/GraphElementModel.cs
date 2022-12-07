@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -26,6 +27,7 @@ namespace Unity.GraphToolsFoundation.Editor
         SerializationVersion m_Version;
 
         protected List<Capabilities> m_Capabilities = new();
+        GraphModel m_GraphModel;
 
         /// <summary>
         /// Serialized version, used for backward compatibility
@@ -35,7 +37,24 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The graph model to which the element belongs.
         /// </summary>
-        public virtual GraphModel GraphModel { get; set; }
+        public virtual GraphModel GraphModel
+        {
+            get => m_GraphModel;
+            set
+            {
+                m_GraphModel = value;
+
+                foreach (var subModel in DependentModels.Where(m => m != null))
+                {
+                    subModel.GraphModel = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The dependent models for this model (for example, ports on a node, blocks in context node).
+        /// </summary>
+        public virtual IEnumerable<GraphElementModel> DependentModels => Enumerable.Empty<GraphElementModel>();
 
         /// <summary>
         /// The list of capabilities of the element.
@@ -63,11 +82,15 @@ namespace Unity.GraphToolsFoundation.Editor
             get => HasUserColor ? m_Color : DefaultColor;
             set
             {
-                if (this.IsColorable())
-                {
-                    m_HasUserColor = true;
-                    m_Color = value;
-                }
+                if (!this.IsColorable())
+                    return;
+
+                m_HasUserColor = true;
+                if (m_Color == value)
+                    return;
+
+                m_Color = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Style);
             }
         }
 
@@ -116,7 +139,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </remarks>
         public virtual void ResetColor()
         {
+            if (!m_HasUserColor)
+                return;
             m_HasUserColor = false;
+            GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Style);
         }
 
         /// <inheritdoc />
@@ -128,6 +154,19 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual void OnAfterDeserialize()
         {
             GraphModel = null;
+        }
+
+        /// <summary>
+        /// Recursively assign a new guid to this model and its <see cref="DependentModels"/>.
+        /// </summary>
+        public void AssignNewGuidRecursively()
+        {
+            AssignNewGuid();
+
+            foreach (var model in DependentModels)
+            {
+                model.AssignNewGuidRecursively();
+            }
         }
     }
 }

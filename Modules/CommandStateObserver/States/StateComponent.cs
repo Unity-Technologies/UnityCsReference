@@ -15,14 +15,16 @@ namespace Unity.CommandStateObserver
     /// </summary>
     /// <remarks>
     /// <p>
-    /// State components should expose a readonly interface. All updates to a state component
+    /// <see cref="StateComponent{TUpdater}"/> should expose a readonly interface to the data they hold.
+    /// All updates to a <see cref="StateComponent{TUpdater}"/>
     /// should be done through an updater, which is an instance of a class deriving from <see cref="BaseUpdater{T}"/>.
     /// This ensures that change tracking is done properly.
     /// </p>
     /// <p>
-    /// State components are serialized and deserialized on undo/redo. Make sure that their fields behave properly
-    /// under these conditions. Either put the Serialized attribute on them or check that they are initialized
-    /// before accessing them.
+    /// <see cref="StateComponent{TUpdater}"/>s are serialized and deserialized on undo/redo.
+    /// Make sure that their fields behave properly
+    /// under these conditions. Either put the <see cref="SerializeField"/> attribute on them or check that
+    /// they are initialized before accessing them.
     /// </p>
     /// </remarks>
     [Serializable]
@@ -42,7 +44,10 @@ namespace Unity.CommandStateObserver
 
             string m_StackTrace;
 
-            /// <inheritdoc />
+            /// <summary>
+            /// Initializes the updater with the state to update.
+            /// </summary>
+            /// <param name="state">The state to update.</param>
             public void Initialize(IStateComponent state)
             {
                 if (m_State != null)
@@ -51,8 +56,15 @@ namespace Unity.CommandStateObserver
                     m_StackTrace = Environment.StackTrace;
                 }
 
-                m_State = state as TStateComponent;
-                BeginStateChange();
+                m_State = (TStateComponent)state;
+
+                if (StateObserverHelper_Internal.CurrentObserver_Internal != null &&
+                    !StateObserverHelper_Internal.CurrentObserver_Internal.ModifiedStateComponents.Contains(m_State))
+                {
+                    Debug.LogError($"Observer {StateObserverHelper_Internal.CurrentObserver_Internal?.GetType()} does not specify that it modifies {m_State}. Please add the state component to its {nameof(IStateObserver.ModifiedStateComponents)}.");
+                }
+
+                m_State.BeginChangeScope();
             }
 
             ~BaseUpdater()
@@ -77,7 +89,7 @@ namespace Unity.CommandStateObserver
                 if (disposing)
                 {
                     Assert.IsNotNull(m_State, "Missing Initialize call.");
-                    EndStateChange();
+                    m_State.EndChangeScope();
                     m_State = null;
                 }
             }
@@ -92,28 +104,8 @@ namespace Unity.CommandStateObserver
                 return m_State == stateComponent;
             }
 
-            void BeginStateChange()
-            {
-                if (StateObserverHelper_Internal.CurrentObserver_Internal != null &&
-                    !StateObserverHelper_Internal.CurrentObserver_Internal.ModifiedStateComponents.Contains(m_State))
-                {
-                    Debug.LogError($"Observer {StateObserverHelper_Internal.CurrentObserver_Internal?.GetType()} does not specify that it modifies {m_State}. Please add the state component to its {nameof(IStateObserver.ModifiedStateComponents)}.");
-                }
-
-                m_State.PushChangeset(m_State.CurrentVersion);
-            }
-
-            void EndStateChange()
-            {
-                // unchecked: wrap around on overflow without exception.
-                unchecked
-                {
-                    m_State.CurrentVersion++;
-                }
-            }
-
             /// <summary>
-            /// Force the state component to ask its observers to do a complete update.
+            /// Force the state component to tell its observers to do a complete update.
             /// </summary>
             public void ForceCompleteUpdate()
             {
@@ -121,10 +113,13 @@ namespace Unity.CommandStateObserver
             }
 
             /// <summary>
-            /// Moves data from <paramref name="other"/> into this state component. After the operation,
-            /// <paramref name="other"/> must be in a valid state but does not have to contain its original data.
+            /// Moves the content of a state component loaded from persistent storage into this state component.
             /// </summary>
-            /// <param name="other">The state component from which data is moved.</param>
+            /// <param name="other">The source state component.</param>
+            /// <remarks>The <paramref name="other"/> state components will be discarded after the call to
+            /// <see cref="RestoreFromPersistedState"/>.
+            /// This means you do not need to make a deep copy of the data: just copying the references is sufficient.
+            /// </remarks>
             public void RestoreFromPersistedState(IStateComponent other)
             {
                 m_State.Move(other, null);
@@ -132,11 +127,14 @@ namespace Unity.CommandStateObserver
             }
 
             /// <summary>
-            /// Moves data from <paramref name="other"/> into this state component. After the operation,
-            /// <paramref name="other"/> must be in a valid state but does not have to contain its original data.
+            /// Moves the content of a state component obtained from the undo stack into this state component.
             /// </summary>
-            /// <param name="other">The state component from which data is moved.</param>
-            /// <param name="changeset">The description of what is changing between the current state and <paramref name="other"/>. If null, assume everything changed.</param>
+            /// <param name="other">The source state component.</param>
+            /// <param name="changeset">A description of what changed between this and <paramref name="other"/>.</param>
+            /// <remarks>The <paramref name="other"/> state components will be discarded after the call to
+            /// <see cref="RestoreFromUndo"/>.
+            /// This means you do not need to make a deep copy of the data: just copying the references is sufficient.
+            /// </remarks>
             public void RestoreFromUndo(IStateComponent other, IChangeset changeset)
             {
                 m_State.Move(other, changeset);
@@ -150,11 +148,13 @@ namespace Unity.CommandStateObserver
         [SerializeField]
         uint m_Version;
 
-        UpdateType m_UpdateType = UpdateType.None;
+        UpdateType m_ScopeUpdateType = UpdateType.None;
 
         TUpdater m_Updater;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// A unique id for the state component.
+        /// </summary>
         public Hash128 Guid => m_Guid;
 
         /// <summary>
@@ -173,24 +173,20 @@ namespace Unity.CommandStateObserver
         public virtual string ComponentName => GetType().FullName;
 
         /// <summary>
-        /// The earliest changeset version held by this state component.
+        /// The current version of the state component.
         /// </summary>
-        protected uint EarliestChangeSetVersion { get; set; }
-
-        /// <inheritdoc />
         public uint CurrentVersion { get; private set; } = 1;
 
         /// <summary>
         /// The updater for the state component.
         /// </summary>
-        /// <remarks>Since state component expose a read only interfaces, all modifications
+        /// <remarks>Since state component expose a read only interface, all modifications
         /// to a state component need to be done through this Updater.</remarks>
         public TUpdater UpdateScope
         {
             get
             {
-                if (m_Updater == null)
-                    m_Updater = new TUpdater();
+                m_Updater ??= new TUpdater();
 
                 m_Updater.Initialize(this);
                 return m_Updater;
@@ -207,101 +203,139 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Push the current changeset and tag it with <paramref name="version"/>.
+        /// Prepares the <see cref="StateComponent{TUpdater}"/> to accept changes.
         /// </summary>
-        /// <param name="version">The version number associated with the changeset.</param>
-        protected virtual void PushChangeset(uint version)
+        protected virtual void BeginChangeScope()
         {
-            // If update type is Complete, there is no need to push the changeset, as they cannot be used for an update.
-            if (m_UpdateType != UpdateType.Complete)
-                ChangesetManager?.PushChangeset(version);
-        }
-
-        /// <inheritdoc />
-        public virtual void PurgeOldChangesets(uint untilVersion)
-        {
-            // StateComponent default implementation does not record changesets,
-            // so m_EarliestChangeSetVersion is set to the CurrentVersion.
-            EarliestChangeSetVersion = ChangesetManager?.PurgeOldChangesets(untilVersion, CurrentVersion) ?? CurrentVersion;
-            ResetUpdateType();
-        }
-
-        /// <inheritdoc/>
-        public bool HasChanges()
-        {
-            return EarliestChangeSetVersion != CurrentVersion;
+            m_ScopeUpdateType = UpdateType.None;
         }
 
         /// <summary>
-        /// Clears the update type if there are no pending changes.
+        /// Does housekeeping after changes are done on the <see cref="StateComponent{TUpdater}"/>.
         /// </summary>
-        protected void ResetUpdateType()
+        protected virtual void EndChangeScope()
         {
-            if (EarliestChangeSetVersion == CurrentVersion)
-                m_UpdateType = UpdateType.None;
+            if (m_ScopeUpdateType != UpdateType.None)
+            {
+                CurrentVersion++;
+
+                if (ChangesetManager != null)
+                {
+                    // If update type is Complete, there is no need to push the changeset, as they cannot be used for an update.
+                    if (m_ScopeUpdateType != UpdateType.Complete)
+                    {
+                        ChangesetManager.PushChangeset(CurrentVersion);
+                    }
+                    else
+                    {
+                        ChangesetManager.PurgeChangesets(uint.MaxValue, CurrentVersion);
+                    }
+                }
+            }
         }
 
         /// <summary>
-        /// Set how the observers should update themselves. Unless <paramref name="force"/> is true,
+        /// Purges the changesets that track changes up to and including <paramref name="upToAndIncludingVersion"/>.
+        /// </summary>
+        /// <remarks>
+        /// The state component can choose to purge more recent changesets.
+        /// </remarks>
+        /// <param name="upToAndIncludingVersion">Version up to which we should purge changesets. Pass uint.MaxValue to purge all changesets.</param>
+        public virtual void PurgeObsoleteChangesets(uint upToAndIncludingVersion)
+        {
+            ChangesetManager?.PurgeChangesets(upToAndIncludingVersion, CurrentVersion);
+        }
+
+        /// <summary>
+        /// Sets the kind of update that was done on the state component. Unless <paramref name="force"/> is true,
         /// if the update type is already set, it will be changed only
         /// if the new update type has a higher value than the current one.
         /// </summary>
         /// <param name="type">The update type.</param>
         /// <param name="force">Set the update type even if the new value is lower than the current one.</param>
-        public virtual void SetUpdateType(UpdateType type, bool force = false)
+        protected internal void SetUpdateType(UpdateType type, bool force = false)
         {
-            if (type > m_UpdateType || force)
-                m_UpdateType = type;
-
-            // If update type is Complete, there is no need to keep the changesets, as they cannot be used for an update.
-            if (m_UpdateType == UpdateType.Complete)
-            {
-                ChangesetManager?.PurgeOldChangesets(CurrentVersion, CurrentVersion);
-            }
+            if (type > m_ScopeUpdateType || force)
+                m_ScopeUpdateType = type;
         }
 
-        /// <inheritdoc/>
-        public UpdateType GetUpdateType(StateComponentVersion observerVersion)
+        /// <summary>
+        /// Gets the type of update an observer should do.
+        /// </summary>
+        /// <param name="observerVersion">The last state component version observed by the observer.</param>
+        /// <returns>Returns the type of update an observer should do.</returns>
+        public UpdateType GetObserverUpdateType(StateComponentVersion observerVersion)
         {
+            // Version does not match the state component.
             if (observerVersion.HashCode != GetHashCode())
             {
                 return UpdateType.Complete;
             }
 
-            // If view is new or too old, tell it to rebuild itself completely.
-            if (observerVersion.Version == 0 || observerVersion.Version < EarliestChangeSetVersion)
+            // If the observer is new, force a complete update.
+            if (observerVersion.Version == 0)
             {
                 return UpdateType.Complete;
             }
 
-            // This is safe even if Version wraps around after an overflow.
-            return observerVersion.Version == CurrentVersion ? UpdateType.None : m_UpdateType;
+            if (observerVersion.Version == CurrentVersion)
+            {
+                return UpdateType.None;
+            }
+
+            if (ChangesetManager == null)
+            {
+                return UpdateType.Complete;
+            }
+
+            var earliestChangeSetVersion = ChangesetManager.GetEarliestChangesetVersion();
+            if (earliestChangeSetVersion == uint.MaxValue)
+            {
+                // observerVersion.Version != CurrentVersion, but ChangesetManager does not have any changeset for us.
+                // Let's do a complete update.
+                return UpdateType.Complete;
+            }
+
+            // If ChangesetManager has changesets to go from observerVersion.Version to CurrentVersion,
+            // do a partial update. Otherwise do a complete update.
+            return observerVersion.Version >= earliestChangeSetVersion - 1 ? UpdateType.Partial : UpdateType.Complete;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Called when the state component has been added to the state.
+        /// </summary>
+        /// <param name="state">The state to which the state component was added.</param>
         public virtual void OnAddedToState(IState state)
         {
             State = state;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Called when the state component has been removed from the state.
+        /// </summary>
+        /// <param name="state">The state from which the state component was removed.</param>
         public virtual void OnRemovedFromState(IState state)
         {
             State = null;
-            ChangesetManager?.PurgeOldChangesets(uint.MaxValue, CurrentVersion);
+            ChangesetManager?.PurgeChangesets(uint.MaxValue, CurrentVersion);
         }
 
         /// <summary>
         /// Moves the content of another state component into this state component.
         /// </summary>
         /// <param name="other">The source state component.</param>
-        /// <param name="changeset">Details about what changed between <paramref name="other"/> state (considered the ancestor) and the current state.</param>
-        /// <remarks>This should only be called from <see cref="IStateComponentUpdater.RestoreFromPersistedState"/> or <see cref="IStateComponentUpdater.RestoreFromUndo"/>.
-        ///
+        /// <param name="changeset">Details about what changed between <paramref name="other"/>
+        /// state (considered the ancestor) and the current state.</param>
+        /// <remarks>
+        /// <p>
+        /// This should only be called from <see cref="IStateComponentUpdater.RestoreFromPersistedState"/>
+        /// or <see cref="IStateComponentUpdater.RestoreFromUndo"/>.
+        /// </p><p>
         /// Overrides should call <see cref="SetUpdateType"/> as necessary, since the state updater will not call it.
-        ///
+        /// </p><p>
         /// The <paramref name="other"/> state component will be discarded after the call to Move.
         /// This means you do not need to make a deep copy of the data: just copying the references is sufficient.
+        /// </p>
         /// </remarks>
         protected virtual void Move(IStateComponent other, IChangeset changeset)
         {
@@ -311,7 +345,11 @@ namespace Unity.CommandStateObserver
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Called before the state component is pushed on the undo stack.
+        /// Use this to push additional objects on the stack.
+        /// </summary>
+        /// <param name="undoString">The name of the undo operation.</param>
         public virtual void WillPushOnUndoStack(string undoString)
         {
         }
@@ -329,10 +367,11 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Applies undo data to this state component.
+        /// Replaces serialized values of this component by values from <paramref name="undoData"/>.
         /// </summary>
-        /// <param name="undoData">The undo data to apply.</param>
-        /// <param name="changeset"></param>
+        /// <param name="undoData">The state component from which to take the values.</param>
+        /// <param name="changeset">A description of the changes brought in by <paramref name="undoData"/>.
+        /// If null, anything may have change.</param>
         public virtual void ApplyUndoData(IStateComponent undoData, IChangeset changeset)
         {
             if (undoData != null)
@@ -344,7 +383,10 @@ namespace Unity.CommandStateObserver
             }
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Called after an undo/redo operation, when the state component can be affected by the operation.
+        /// </summary>
+        /// <param name="isRedo">True if the operation is a redo, false if the operation is an undo.</param>
         public virtual void UndoRedoPerformed(bool isRedo)
         {
         }

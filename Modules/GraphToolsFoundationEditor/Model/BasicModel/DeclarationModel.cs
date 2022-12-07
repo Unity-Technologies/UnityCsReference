@@ -26,7 +26,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string Title
         {
             get => m_Name;
-            set => m_Name = value;
+            set
+            {
+                if (m_Name == value)
+                    return;
+                m_Name = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <inheritdoc />

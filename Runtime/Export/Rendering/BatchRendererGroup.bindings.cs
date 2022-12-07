@@ -528,6 +528,9 @@ namespace UnityEngine.Rendering
         private extern static BatchBufferTarget GetBufferTarget();
         public static BatchBufferTarget BufferTarget => GetBufferTarget();
 
+        public extern static int GetConstantBufferMaxWindowSize();
+        public extern static int GetConstantBufferOffsetAlignment();
+
         static extern unsafe IntPtr Create(BatchRendererGroup group, void* userContext);
         static extern void Destroy(IntPtr groupHandle);
 

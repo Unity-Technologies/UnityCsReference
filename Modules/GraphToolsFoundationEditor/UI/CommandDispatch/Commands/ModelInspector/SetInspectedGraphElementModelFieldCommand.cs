@@ -39,6 +39,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (command.InspectedModels != null && command.InspectedObjects != null && command.Field != null)
             {
+                using var changeScope = graphModelState.GraphModel.ChangeDescriptionScope;
                 using (var undoStateUpdater = undoState.UpdateScope)
                 {
                     undoStateUpdater.SaveState(graphModelState);
@@ -53,6 +54,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     updater.MarkNew(newModels);
                     updater.MarkChanged(changedModels);
                     updater.MarkDeleted(deletedModels);
+                    updater.MarkUpdated(changeScope.ChangeDescription);
                 }
             }
         }

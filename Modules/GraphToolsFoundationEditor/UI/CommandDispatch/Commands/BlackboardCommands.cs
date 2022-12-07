@@ -69,6 +69,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public static void DefaultCommandHandler(UndoStateComponent undoState, BlackboardViewStateComponent blackboardViewState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, BlackboardGroupCreateCommand command)
         {
             using var graphUpdater = graphModelState.UpdateScope;
+            using var changeScope = graphModelState.GraphModel.ChangeDescriptionScope;
 
             var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
             using var selectionUpdaters = selectionHelper.UpdateScopes;
@@ -100,32 +101,21 @@ namespace Unity.GraphToolsFoundation.Editor
                 selectionUpdater.ClearSelection();
             }
 
-            GroupModel newGroup = command.ContainingGroup.GraphModel.CreateGroup(title);
-            if (command.GroupItemModels != null)
-            {
-                var changedModels = new List<GraphElementModel>();
-                foreach (var subItem in command.GroupItemModels)
-                {
-                    changedModels.AddRange(newGroup.InsertItem(subItem));
-                }
-
-                graphUpdater.MarkChanged(changedModels, ChangeHint.Grouping);
-            }
+            GroupModel newGroup = command.ContainingGroup.GraphModel.CreateGroup(title, command.GroupItemModels);
 
             int index = command.ContainingGroup.Items.IndexOf_Internal(command.InsertAfter);
-            var changedModelsFromInsert = command.ContainingGroup.InsertItem(newGroup, index < 0 ? (command.InsertAfter == null ? 0 : int.MaxValue) : index + 1);
-            graphUpdater.MarkChanged(changedModelsFromInsert, ChangeHint.Grouping);
+            command.ContainingGroup.InsertItem(newGroup, index < 0 ? (command.InsertAfter == null ? 0 : int.MaxValue) : index + 1);
 
             foreach (var recursiveSubgraphNode in graphModelState.GraphModel.GetRecursiveSubgraphNodes())
-                graphUpdater.MarkChanged(recursiveSubgraphNode.Update(), ChangeHint.Data);
+                recursiveSubgraphNode.Update();
 
             using (var bbUpdater = blackboardViewState.UpdateScope)
             {
                 bbUpdater.SetGroupModelExpanded(command.ContainingGroup,true);
             }
 
-            graphUpdater.MarkNew(newGroup);
             graphUpdater.MarkForRename(newGroup);
+            graphUpdater.MarkUpdated(changeScope.ChangeDescription);
 
             selectionUpdaters.MainUpdateScope.SelectElement(newGroup, true);
 
@@ -267,7 +257,7 @@ namespace Unity.GraphToolsFoundation.Editor
         // Copies the original list of Group Items. If the items do not belong in the same section as the target group, duplicate groups and convert variables.
         // So that the resulting copy contains only elements from the target group section.
         // return whether at least one variable was converted.
-        bool TransferOrCopyGroupItemHierarchy(IReadOnlyList<IGroupItemModel> original, List<GroupModel> duplicatedGroups, GraphChangeDescription changeDescription, List<IGroupItemModel> copy)
+        bool TransferOrCopyGroupItemHierarchy(IReadOnlyList<IGroupItemModel> original, List<GroupModel> duplicatedGroups, List<IGroupItemModel> copy)
         {
             bool duplicated = false;
             var sectionName = Group.GetSection().Title;
@@ -282,7 +272,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         // if the section is different recursively call this method on the content of the group.
                         List<IGroupItemModel> listCopy = new List<IGroupItemModel>();
-                        if (!TransferOrCopyGroupItemHierarchy(group.Items, duplicatedGroups, changeDescription, listCopy))
+                        if (!TransferOrCopyGroupItemHierarchy(group.Items, duplicatedGroups, listCopy))
                             copy.Add(group);
                         else
                         {
@@ -302,8 +292,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         copy.Add(variable);
                     else if(Group.GraphModel.Stencil.CanConvertVariable(variable, sectionName))
                     {
-                        var deleteVarChanges = Group.GraphModel.DeleteVariableDeclarations(new[] {variable});
-                        changeDescription.Union(deleteVarChanges);
+                        Group.GraphModel.DeleteVariableDeclarations(new[] {variable});
 
                         //If the variable can be converted to the new section, convert the variable then mark the original for deletion.
                         var newVariable = Group.GraphModel.Stencil.ConvertVariable(variable, sectionName);
@@ -337,38 +326,20 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
-                var previousGroups = new HashSet<GroupModel>(command.GroupItemModels.Select(t => t.ParentGroup));
-
                 var duplicatedGroups = new List<GroupModel>();
-                var changes = new GraphChangeDescription();
                 var newItems = new List<IGroupItemModel>();
-                command.TransferOrCopyGroupItemHierarchy(command.GroupItemModels, duplicatedGroups, changes, newItems);
-                graphUpdater.MarkNew(changes.NewModels);
-                graphUpdater.MarkChanged(changes.ChangedModels);
-                graphUpdater.MarkDeleted(changes.DeletedModels);
+                command.TransferOrCopyGroupItemHierarchy(command.GroupItemModels, duplicatedGroups, newItems);
 
-                var changedModels = command.Group.MoveItemsAfter(newItems, command.InsertAfter);
+                command.Group.MoveItemsAfter(newItems, command.InsertAfter);
 
-                if (changedModels != null)
-                {
-                    graphUpdater.MarkChanged(previousGroups, ChangeHint.Grouping);
-                    graphUpdater.MarkChanged(changedModels, ChangeHint.Grouping);
-                    graphUpdater.MarkChanged(command.Group, ChangeHint.Grouping);
-                }
-
-                foreach (var duplicatedGroup in duplicatedGroups)
-                {
-                    if (!duplicatedGroup.Items.Any() && duplicatedGroup.IsDeletable())
-                    {
-                        changedModels = duplicatedGroup.ParentGroup.RemoveItem(duplicatedGroup);
-                        graphUpdater.MarkChanged(changedModels, ChangeHint.Grouping);
-                        graphUpdater.MarkDeleted(duplicatedGroup);
-                    }
-                }
+                graphModelState.GraphModel.DeleteGroups(duplicatedGroups.Where(g => !g.Items.Any() && g.IsDeletable()).ToList());
 
                 foreach (var recursiveSubgraphNode in graphModelState.GraphModel.GetRecursiveSubgraphNodes())
-                    graphUpdater.MarkChanged(recursiveSubgraphNode.Update(), ChangeHint.Data);
+                    recursiveSubgraphNode.Update();
+
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
             using (var bbUpdater = blackboardViewState.UpdateScope)
             {

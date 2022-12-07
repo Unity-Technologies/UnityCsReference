@@ -9,29 +9,26 @@ using UnityEngine;
 namespace Unity.CommandStateObserver
 {
     /// <summary>
-    /// Defines a tool that uses a dispatcher and a state.
+    /// Holds and binds together the tool's <see cref="State"/>, its <see cref="Dispatcher"/> and the <see cref="ObserverManager"/>.
     /// </summary>
     abstract class CsoTool : IDisposable, ICommandTarget
     {
         /// <summary>
-        /// Creates and initializes a new tool.
+        /// Creates and initializes a new <see cref="CsoTool"/>.
         /// </summary>
         /// <typeparam name="T">The type of tool to create.</typeparam>
         /// <returns>The newly created tool.</returns>
-        public static T Create<T>(Hash128 windowID) where T : CsoTool, new()
+        public static T Create<T>() where T : CsoTool, new()
         {
             var tool = new T();
-            tool.WindowID = windowID;
             tool.Initialize();
             return tool;
         }
 
-        protected Hash128 WindowID { get; private set; }
-
         /// <summary>
         /// The command dispatcher.
         /// </summary>
-        protected Dispatcher Dispatcher { get; set; }
+        public Dispatcher Dispatcher { get; protected set; }
 
         /// <summary>
         /// The observer manager.
@@ -44,7 +41,7 @@ namespace Unity.CommandStateObserver
         public IState State { get; protected set; }
 
         /// <summary>
-        /// Creates and initializes a command dispatcher.
+        /// Creates and initializes the tool's command dispatcher.
         /// </summary>
         protected virtual void InitDispatcher()
         {
@@ -52,7 +49,7 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Creates and initializes an observer manager.
+        /// Creates and initializes the tool's observer manager.
         /// </summary>
         protected virtual void InitObserverManager()
         {
@@ -60,10 +57,11 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Creates and initializes the state.
+        /// Creates and initializes the tool's state.
         /// </summary>
         /// <remarks>
-        /// Derived tool classes should override this method to create the tool state components and add them to the <see cref="State"/>
+        /// Derived classes should override this method to create the tool
+        /// state components and add them to the <see cref="State"/>
         /// </remarks>
         protected virtual void InitState()
         {
@@ -115,19 +113,43 @@ namespace Unity.CommandStateObserver
             }
         }
 
+        /// <summary>
+        /// Updates the state by running the observers.
+        /// </summary>
+        public virtual void Update()
+        {
+            ObserverManager.NotifyObservers(State);
+        }
+
         /// <inheritdoc />
+        /// <summary>
+        /// Dispatches a command to the tool.
+        /// </summary>
+        /// <param name="command">The command to dispatch.</param>
+        /// <param name="diagnosticsFlags">Diagnostic flags for the dispatch process.</param>
         public virtual void Dispatch(ICommand command, Diagnostics diagnosticsFlags = Diagnostics.None)
         {
             Dispatcher?.Dispatch(command, diagnosticsFlags);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Registers a handler for a command type. Replaces any previously registered handler for the command type.
+        /// </summary>
+        /// <param name="commandHandlerFunctor">The command handler.</param>
+        /// <typeparam name="TCommand">The command type.</typeparam>
         public void RegisterCommandHandler<TCommand>(ICommandHandlerFunctor commandHandlerFunctor) where TCommand : ICommand
         {
             Dispatcher?.RegisterCommandHandler<TCommand>(commandHandlerFunctor);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Unregisters the command handler for a command type.
+        /// </summary>
+        /// <remarks>
+        /// Since there is only one command handler registered for a command type, it is not necessary
+        /// to specify the command handler to unregister.
+        /// </remarks>
+        /// <typeparam name="TCommand">The command type.</typeparam>
         public void UnregisterCommandHandler<TCommand>() where TCommand : ICommand
         {
             Dispatcher?.UnregisterCommandHandler<TCommand>();

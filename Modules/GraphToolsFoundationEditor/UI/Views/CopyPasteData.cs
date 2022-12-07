@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -17,10 +16,10 @@ namespace Unity.GraphToolsFoundation.Editor
     class CopyPasteData
     {
         [SerializeReference]
-        internal List<AbstractNodeModel> m_Nodes_Internal;
+        List<AbstractNodeModel> m_Nodes;
 
-        [SerializeReference, FormerlySerializedAs("edges")]
-        internal List<WireModel> m_Wires_Internal;
+        [SerializeReference]
+        List<WireModel> m_Wires;
 
         [Serializable]
         internal struct VariableDeclaration_Internal
@@ -55,26 +54,65 @@ namespace Unity.GraphToolsFoundation.Editor
         List<GroupPath_Internal> m_VariableGroupPaths;
 
         [SerializeField]
-        internal List<VariableDeclaration_Internal> m_VariableDeclarations_Internal;
+        List<VariableDeclaration_Internal> m_VariableDeclarations;
 
         [SerializeReference]
-        internal List<VariableDeclarationModel> m_ImplicitVariableDeclarations_Internal;
+        List<VariableDeclarationModel> m_ImplicitVariableDeclarations;
 
         [SerializeField]
-        internal Vector2 m_TopLeftNodePosition_Internal;
+        Vector2 m_TopLeftNodePosition;
 
         [SerializeReference]
-        internal List<StickyNoteModel> m_StickyNotes_Internal;
+        List<StickyNoteModel> m_StickyNotes;
 
         [SerializeReference]
-        internal List<PlacematModel> m_Placemats_Internal;
+        List<PlacematModel> m_Placemats;
 
-        internal bool IsEmpty_Internal() => (!m_Nodes_Internal.Any() && !m_Wires_Internal.Any() &&
-            !m_VariableDeclarations_Internal.Any() && !m_StickyNotes_Internal.Any() && !m_Placemats_Internal.Any() && !m_VariableGroupPaths.Any());
+        /// <summary>
+        /// The position where the top-left-most node will be created.
+        /// </summary>
+        public Vector2 TopLeftNodePosition => m_TopLeftNodePosition;
+
+        /// <summary>
+        /// The <see cref="AbstractNodeModel"/>s to paste.
+        /// </summary>
+        public IReadOnlyList<AbstractNodeModel> Nodes => m_Nodes;
+
+        /// <summary>
+        /// The <see cref="WireModel"/>s to paste.
+        /// </summary>
+        public IReadOnlyList<WireModel> Wires => m_Wires;
+
+        /// <summary>
+        /// The <see cref="StickyNoteModel"/>s to paste.
+        /// </summary>
+        public IReadOnlyList<StickyNoteModel> StickyNotes => m_StickyNotes;
+
+        /// <summary>
+        /// The <see cref="PlacematModel"/>s to paste.
+        /// </summary>
+        public IReadOnlyList<PlacematModel> Placemats => m_Placemats;
+
+        /// <summary>
+        /// The explicitly selected <see cref="VariableDeclarationModel"/>s to paste.
+        /// </summary>
+        public IReadOnlyList<VariableDeclarationModel> VariableDeclarations => m_VariableDeclarations.Select(v => v.m_Model).ToList();
+
+        /// <summary>
+        /// The implicitly selected <see cref="VariableDeclarationModel"/>s to paste, usually from <see cref="VariableNodeModel"/>s.
+        /// </summary>
+        public IReadOnlyList<VariableDeclarationModel> ImplicitVariableDeclarations => m_ImplicitVariableDeclarations;
+
+        /// <summary>
+        /// Whether there is any model to paste.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsEmpty() => (!m_Nodes.Any() && !m_Wires.Any() &&
+            !m_VariableDeclarations.Any() && !m_StickyNotes.Any() && !m_Placemats.Any() && !m_VariableGroupPaths.Any());
 
         internal bool HasVariableContent_Internal()
         {
-            return m_VariableDeclarations_Internal.Any() || m_VariableGroupPaths.Any();
+            return m_VariableDeclarations.Any() || m_VariableGroupPaths.Any();
         }
 
         internal static CopyPasteData GatherCopiedElementsData_Internal(BlackboardViewStateComponent bbState, IReadOnlyCollection<Model> graphElementModels)
@@ -213,14 +251,14 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var copyPasteData = new CopyPasteData
             {
-                m_TopLeftNodePosition_Internal = topLeftNodePosition,
-                m_Nodes_Internal = originalNodes,
-                m_Wires_Internal = wiresToCopy,
-                m_VariableDeclarations_Internal = declarations,
-                m_ImplicitVariableDeclarations_Internal = implicitVariableDeclarations,
+                m_TopLeftNodePosition = topLeftNodePosition,
+                m_Nodes = originalNodes,
+                m_Wires = wiresToCopy,
+                m_VariableDeclarations = declarations,
+                m_ImplicitVariableDeclarations = implicitVariableDeclarations,
                 m_VariableGroupPaths = groupPaths,
-                m_StickyNotes_Internal = stickyNotesToCopy,
-                m_Placemats_Internal = placematsToCopy
+                m_StickyNotes = stickyNotesToCopy,
+                m_Placemats = placematsToCopy
             };
 
             return copyPasteData;
@@ -249,8 +287,21 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
         }
 
-        internal static void PasteSerializedData_Internal(PasteOperation operation, Vector2 delta,
-            GraphModelStateComponent.StateUpdater graphViewUpdater,
+        /// <summary>
+        /// Paste the data into a graph.
+        /// </summary>
+        /// <param name="operation">The kind of operation.</param>
+        /// <param name="delta">The position delta to apply to new elements.</param>
+        /// <param name="graphModelStateUpdater">The graph model updater.</param>
+        /// <param name="bbUpdater">The blackboard updater.</param>
+        /// <param name="selectionStateUpdater">The selection updater.</param>
+        /// <param name="copyPasteData">The data to paste.</param>
+        /// <param name="graphModel">The graph model.</param>
+        /// <param name="selectedGroup">The currently selected group, which will receive pasted variables.</param>
+        /// <returns>A dictionary that maps original element guids to newly pasted models.</returns>
+        public static Dictionary<string, GraphElementModel> PasteSerializedData(
+            PasteOperation operation, Vector2 delta,
+            GraphModelStateComponent.StateUpdater graphModelStateUpdater,
             BlackboardViewStateComponent.StateUpdater bbUpdater,
             SelectionStateComponent.StateUpdater selectionStateUpdater,
             CopyPasteData copyPasteData, GraphModel graphModel, GroupModel selectedGroup)
@@ -260,6 +311,8 @@ namespace Unity.GraphToolsFoundation.Editor
             var declarationMapping = new Dictionary<string, VariableDeclarationModel>();
 
             List<GroupModel> createdGroups = new List<GroupModel>();
+
+            using var changeScope = graphModel.ChangeDescriptionScope;
 
             if (copyPasteData.m_VariableGroupPaths != null)
             {
@@ -275,18 +328,18 @@ namespace Unity.GraphToolsFoundation.Editor
                             if (originalGroup != null) // If we duplicate try to put the new group next to the duplicated one.
                             {
                                 var parentGroup = originalGroup.ParentGroup;
-                                graphViewUpdater.MarkChanged(parentGroup.InsertItem(newGroup, parentGroup.Items.IndexOf_Internal(originalGroup) + 1));
+                                parentGroup.InsertItem(newGroup, parentGroup.Items.IndexOf_Internal(originalGroup) + 1);
                             }
                             else
                             {
                                 var parentGroup = selectedGroup ?? graphModel.GetSectionModel(groupPath.m_Path[0]) ?? graphModel.SectionModels.First();
-                                graphViewUpdater.MarkChanged(parentGroup.InsertItem(newGroup));
+                                parentGroup.InsertItem(newGroup);
                             }
                         }
                         else
                         {
                             var parentGroup = selectedGroup ?? graphModel.GetSectionModel(groupPath.m_Path[0]) ?? graphModel.SectionModels.First();
-                            graphViewUpdater.MarkChanged(parentGroup.InsertItem(newGroup));
+                            parentGroup.InsertItem(newGroup);
                             bbUpdater?.SetGroupModelExpanded(parentGroup, true);
                         }
                     }
@@ -294,20 +347,19 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         int j = copyPasteData.m_VariableGroupPaths.FindLastIndex(i - 1, t => t.m_Path.Length == groupPath.m_Path.Length - 1); // our parent group is always the first item above us that have one less path element.
                         var parentGroup = createdGroups[j];
-                        graphViewUpdater.MarkChanged(parentGroup.InsertItem(newGroup));
+                        parentGroup.InsertItem(newGroup);
                     }
 
-                    graphViewUpdater.MarkNew(newGroup);
                     bbUpdater?.SetGroupModelExpanded(newGroup, groupPath.m_Expanded);
                     createdGroups.Add(newGroup);
                     selectionStateUpdater.SelectElement(newGroup, true);
                 }
             }
 
-            if (copyPasteData.m_VariableDeclarations_Internal.Any())
+            if (copyPasteData.m_VariableDeclarations.Any())
             {
                 List<VariableDeclaration_Internal> variableDeclarationModels =
-                    copyPasteData.m_VariableDeclarations_Internal.ToList();
+                    copyPasteData.m_VariableDeclarations.ToList();
                 List<VariableDeclarationModel> duplicatedModels = new List<VariableDeclarationModel>();
 
                 foreach (var source in variableDeclarationModels)
@@ -333,7 +385,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 var duplicatedParents = new HashSet<GroupModel>(duplicatedModels.Select(t => t.ParentGroup));
 
-                graphViewUpdater.MarkChanged(duplicatedParents, ChangeHint.Grouping);
                 foreach (var duplicatedParent in duplicatedParents)
                 {
                     var current = duplicatedParent;
@@ -343,14 +394,13 @@ namespace Unity.GraphToolsFoundation.Editor
                         current = current.ParentGroup;
                     }
                 }
-                graphViewUpdater.MarkNew(duplicatedModels);
                 selectionStateUpdater?.SelectElements(duplicatedModels, true);
             }
 
-            if (copyPasteData.m_ImplicitVariableDeclarations_Internal.Any())
+            if (copyPasteData.m_ImplicitVariableDeclarations.Any())
             {
                 List<VariableDeclarationModel> variableDeclarationModels =
-                    copyPasteData.m_ImplicitVariableDeclarations_Internal.ToList();
+                    copyPasteData.m_ImplicitVariableDeclarations.ToList();
                 List<VariableDeclarationModel> duplicatedModels = new List<VariableDeclarationModel>();
 
                 foreach (var source in variableDeclarationModels)
@@ -368,10 +418,6 @@ namespace Unity.GraphToolsFoundation.Editor
                         declarationMapping[source.Guid.ToString()] = variable;
                     }
                 }
-
-                graphViewUpdater.MarkChanged(duplicatedModels.Select(t => t.ParentGroup),
-                    ChangeHint.Grouping);
-                graphViewUpdater.MarkNew(duplicatedModels);
                 selectionStateUpdater?.SelectElements(duplicatedModels, true);
             }
 
@@ -379,7 +425,7 @@ namespace Unity.GraphToolsFoundation.Editor
             List<WirePortalModel> portalModels = new List<WirePortalModel>();
             List<WirePortalModel> existingPortalNodes = graphModel.NodeModels.OfType<WirePortalModel>().ToList();
 
-            foreach (var originalModel in copyPasteData.m_Nodes_Internal)
+            foreach (var originalModel in copyPasteData.m_Nodes)
             {
                 if (!graphModel.Stencil.CanPasteNode(originalModel, graphModel))
                     continue;
@@ -406,7 +452,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                     else if (!portalNodeModel.CanHaveAnotherPortalWithSameDirectionAndDeclaration() ||
                              (portalNodeModel is ISingleInputPortNodeModel &&
-                                 copyPasteData.m_Nodes_Internal.Any(t=> t is ISingleOutputPortNodeModel and WirePortalModel exit &&
+                                 copyPasteData.m_Nodes.Any(t=> t is ISingleOutputPortNodeModel and WirePortalModel exit &&
                                      ReferenceEquals(exit.DeclarationModel, portalNodeModel.DeclarationModel))))
                     {
                         var declaration = graphModel.DuplicatePortal(portalNodeModel.DeclarationModel);
@@ -425,7 +471,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     ((VariableNodeModel)pastedNode).VariableDeclarationModel = declarationModel;
                 }
 
-                graphViewUpdater?.MarkNew(pastedNode);
                 selectionStateUpdater?.SelectElements(new[] { pastedNode }, true);
                 RecurseAddMapping(elementMapping, originalModel, pastedNode);
             }
@@ -454,7 +499,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             // Avoid using sourceWire.FromPort and sourceWire.ToPort since the wire does not have sufficient context
             // to resolve the PortModel from the PortReference (the wire is not in a GraphModel).
-            foreach (var wire in copyPasteData.m_Wires_Internal)
+            foreach (var wire in copyPasteData.m_Wires)
             {
                 elementMapping.TryGetValue(wire.ToNodeGuid.ToString(), out var newInput);
                 elementMapping.TryGetValue(wire.FromNodeGuid.ToString(), out var newOutput);
@@ -463,12 +508,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (copiedWire != null)
                 {
                     elementMapping.Add(wire.Guid.ToString(), copiedWire);
-                    graphViewUpdater?.MarkNew(copiedWire);
                     selectionStateUpdater?.SelectElements(new[] { copiedWire }, true);
                 }
             }
 
-            foreach (var stickyNote in copyPasteData.m_StickyNotes_Internal)
+            foreach (var stickyNote in copyPasteData.m_StickyNotes)
             {
                 var newPosition = new Rect(stickyNote.PositionAndSize.position + delta, stickyNote.PositionAndSize.size);
                 var pastedStickyNote = graphModel.CreateStickyNote(newPosition);
@@ -476,46 +520,24 @@ namespace Unity.GraphToolsFoundation.Editor
                 pastedStickyNote.Contents = stickyNote.Contents;
                 pastedStickyNote.Theme = stickyNote.Theme;
                 pastedStickyNote.TextSize = stickyNote.TextSize;
-                graphViewUpdater?.MarkNew(pastedStickyNote);
                 selectionStateUpdater?.SelectElements(new[] { pastedStickyNote }, true);
                 elementMapping.Add(stickyNote.Guid.ToString(), pastedStickyNote);
             }
 
-            List<PlacematModel> pastedPlacemats = new List<PlacematModel>();
-
             // Keep placemats relative order
-            foreach (var placemat in copyPasteData.m_Placemats_Internal)
+            foreach (var placemat in copyPasteData.m_Placemats)
             {
                 var newPosition = new Rect(placemat.PositionAndSize.position + delta, placemat.PositionAndSize.size);
                 var newTitle = "Copy of " + placemat.Title;
                 var pastedPlacemat = graphModel.CreatePlacemat(newPosition);
+                PlacematModel.CopyPlacematParameters(placemat,pastedPlacemat);
                 pastedPlacemat.Title = newTitle;
-                pastedPlacemat.Color = placemat.Color;
-                pastedPlacemat.Collapsed = placemat.Collapsed;
-                pastedPlacemat.HiddenElements = placemat.HiddenElements;
-                graphViewUpdater?.MarkNew(pastedPlacemat);
                 selectionStateUpdater?.SelectElements(new[] { pastedPlacemat }, true);
-                pastedPlacemats.Add(pastedPlacemat);
                 elementMapping.Add(placemat.Guid.ToString(), pastedPlacemat);
             }
 
-            // Update hidden content to new node ids.
-            foreach (var pastedPlacemat in pastedPlacemats)
-            {
-                if (pastedPlacemat.Collapsed)
-                {
-                    List<GraphElementModel> pastedHiddenContent = new List<GraphElementModel>();
-                    foreach (var elementGuid in pastedPlacemat.HiddenElements.Select(t => t.Guid.ToString()))
-                    {
-                        if (elementMapping.TryGetValue(elementGuid, out var pastedElement))
-                        {
-                            pastedHiddenContent.Add(pastedElement);
-                        }
-                    }
-
-                    pastedPlacemat.HiddenElements = pastedHiddenContent;
-                }
-            }
+            graphModelStateUpdater?.MarkUpdated(changeScope.ChangeDescription);
+            return elementMapping;
         }
     }
 }

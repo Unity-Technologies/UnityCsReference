@@ -32,6 +32,16 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual AllowMultipleDataOutputInstances AllowMultipleDataOutputInstances => AllowMultipleDataOutputInstances.AllowWithWarning;
 
         /// <summary>
+        /// Performs tasks that need to be done when the <see cref="GraphModel"/> is enabled.
+        /// </summary>
+        public virtual void OnGraphModelEnabled() { }
+
+        /// <summary>
+        /// Performs tasks that need to be done when the <see cref="GraphModel"/> is disabled.
+        /// </summary>
+        public virtual void OnGraphModelDisabled() { }
+
+        /// <summary>
         /// Indicates whether a <see cref="VariableDeclarationModel"/> requires initialization.
         /// </summary>
         /// <param name="decl">The variable declaration model to query.</param>
@@ -228,6 +238,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual bool CanAssignTo(TypeHandle destination, TypeHandle source)
         {
             return destination == TypeHandle.Unknown || source.IsAssignableFrom(destination, this);
+        }
+
+        public virtual IEnumerable<GraphElementModel> GetModelsDisplayableInInspector(IEnumerable<GraphElementModel> models)
+        {
+            return models.Where(t => t is AbstractNodeModel || t is VariableDeclarationModel || t is PlacematModel || t is WireModel);
         }
     }
 }

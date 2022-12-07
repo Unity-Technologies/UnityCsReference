@@ -32,30 +32,6 @@ namespace Unity.GraphToolsFoundation.Editor
             pickingMode = PickingMode.Ignore;
         }
 
-        public bool GetPortCenterOverride(Port port, out Vector2 overriddenPosition)
-        {
-            var rootNode = port.PortModel.NodeModel.GetView<GraphElement>(port.RootView);
-            if (m_GraphView.GraphModel != null && rootNode != null)
-            {
-                //Find the furthest placemat containing the rootNode and that is collapsed (if any)
-                for (var i = 0; i < m_GraphView.GraphModel.PlacematModels.Count; i++)
-                {
-                    var placematModel = m_GraphView.GraphModel.PlacematModels[i];
-                    if (placematModel.Collapsed)
-                    {
-                        var placemat = placematModel.GetView<Placemat>(m_GraphView);
-                        if (placemat?.WillDragNode_Internal(rootNode) ?? false)
-                        {
-                            return placemat.GetPortCenterOverride_Internal(port.PortModel, out overriddenPosition);
-                        }
-                    }
-                }
-            }
-
-            overriddenPosition = Vector3.zero;
-            return false;
-        }
-
         /// <summary>
         /// Sort the placemat visual elements by their model Z order.
         /// </summary>

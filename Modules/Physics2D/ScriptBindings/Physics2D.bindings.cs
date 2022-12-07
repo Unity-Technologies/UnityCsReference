@@ -3840,6 +3840,9 @@ namespace UnityEngine
     [RequiredByNativeCode(Optional = true)]
     public partial class Collider2D : Behaviour
     {
+        // The composition operation.
+        public enum CompositeOperation { None = 0, Merge = 1, Intersect = 2, Difference = 3, Flip = 4 };
+
         // The density of the collider.
         extern public float density { get; set; }
 
@@ -3849,8 +3852,11 @@ namespace UnityEngine
         // Whether the collider is used by an attached effector or not.
         extern public bool usedByEffector { get; set; }
 
-        // Whether the collider can be used by an attached composite collider or not.
-        extern public bool usedByComposite { get; set; }
+        // Set the composite operation to be used by an attached composite collider.
+        extern public CompositeOperation compositeOperation { get; set; }
+
+        // The composite operation order. Lower values are executed earlier than higher values. Same values result in an undefined composite operation order.
+        extern public int compositeOrder { get; set; }
 
         // Gets the attached composite.
         extern public CompositeCollider2D composite { get; }
@@ -3912,7 +3918,7 @@ namespace UnityEngine
         extern public ColliderErrorState2D errorState { get; }
 
         // Is the collider capable of being composited?
-        extern internal bool compositeCapable {[NativeMethod("GetCompositeCapable_Binding")] get; }
+        extern public bool compositeCapable {[NativeMethod("GetCompositeCapable_Binding")] get; }
 
         // The shared physics material of this collider.
         extern public PhysicsMaterial2D sharedMaterial

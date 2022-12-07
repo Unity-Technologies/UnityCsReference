@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements.StyleSheets;
-using UnityEngine.Yoga;
+using UnityEngine.UIElements.Layout;
 
 namespace UnityEngine.UIElements
 {
@@ -25,7 +25,6 @@ namespace UnityEngine.UIElements
         public StyleDataRef<TransitionData> transitionData;
         public StyleDataRef<VisualData> visualData;
 
-        public YogaNode yogaNode;
         public Dictionary<string, StylePropertyValue> customProperties;
         public Int64 matchingRulesHash;
         public float dpiScaling;
@@ -168,7 +167,6 @@ namespace UnityEngine.UIElements
             transitionData.CopyFrom(other.transitionData);
             visualData.CopyFrom(other.visualData);
 
-            yogaNode = other.yogaNode;
             customProperties = other.customProperties;
             matchingRulesHash = other.matchingRulesHash;
             dpiScaling = other.dpiScaling;
@@ -1033,12 +1031,12 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Bottom:
                     layoutData.Write().bottom = newValue;
-                    ve.yogaNode.Bottom = newValue.ToYogaValue();
+                    ve.layoutNode.Bottom = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.FlexBasis:
                     layoutData.Write().flexBasis = newValue;
-                    ve.yogaNode.FlexBasis = newValue.ToYogaValue();
+                    ve.layoutNode.FlexBasis = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.FontSize:
@@ -1047,12 +1045,12 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Height:
                     layoutData.Write().height = newValue;
-                    ve.yogaNode.Height = newValue.ToYogaValue();
+                    ve.layoutNode.Height = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Left:
                     layoutData.Write().left = newValue;
-                    ve.yogaNode.Left = newValue.ToYogaValue();
+                    ve.layoutNode.Left = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.LetterSpacing:
@@ -1061,72 +1059,72 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.MarginBottom:
                     layoutData.Write().marginBottom = newValue;
-                    ve.yogaNode.MarginBottom = newValue.ToYogaValue();
+                    ve.layoutNode.MarginBottom = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MarginLeft:
                     layoutData.Write().marginLeft = newValue;
-                    ve.yogaNode.MarginLeft = newValue.ToYogaValue();
+                    ve.layoutNode.MarginLeft = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MarginRight:
                     layoutData.Write().marginRight = newValue;
-                    ve.yogaNode.MarginRight = newValue.ToYogaValue();
+                    ve.layoutNode.MarginRight = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MarginTop:
                     layoutData.Write().marginTop = newValue;
-                    ve.yogaNode.MarginTop = newValue.ToYogaValue();
+                    ve.layoutNode.MarginTop = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MaxHeight:
                     layoutData.Write().maxHeight = newValue;
-                    ve.yogaNode.MaxHeight = newValue.ToYogaValue();
+                    ve.layoutNode.MaxHeight = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MaxWidth:
                     layoutData.Write().maxWidth = newValue;
-                    ve.yogaNode.MaxWidth = newValue.ToYogaValue();
+                    ve.layoutNode.MaxWidth = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MinHeight:
                     layoutData.Write().minHeight = newValue;
-                    ve.yogaNode.MinHeight = newValue.ToYogaValue();
+                    ve.layoutNode.MinHeight = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.MinWidth:
                     layoutData.Write().minWidth = newValue;
-                    ve.yogaNode.MinWidth = newValue.ToYogaValue();
+                    ve.layoutNode.MinWidth = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingBottom:
                     layoutData.Write().paddingBottom = newValue;
-                    ve.yogaNode.PaddingBottom = newValue.ToYogaValue();
+                    ve.layoutNode.PaddingBottom = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingLeft:
                     layoutData.Write().paddingLeft = newValue;
-                    ve.yogaNode.PaddingLeft = newValue.ToYogaValue();
+                    ve.layoutNode.PaddingLeft = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingRight:
                     layoutData.Write().paddingRight = newValue;
-                    ve.yogaNode.PaddingRight = newValue.ToYogaValue();
+                    ve.layoutNode.PaddingRight = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.PaddingTop:
                     layoutData.Write().paddingTop = newValue;
-                    ve.yogaNode.PaddingTop = newValue.ToYogaValue();
+                    ve.layoutNode.PaddingTop = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Right:
                     layoutData.Write().right = newValue;
-                    ve.yogaNode.Right = newValue.ToYogaValue();
+                    ve.layoutNode.Right = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Top:
                     layoutData.Write().top = newValue;
-                    ve.yogaNode.Top = newValue.ToYogaValue();
+                    ve.layoutNode.Top = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.UnityParagraphSpacing:
@@ -1135,7 +1133,7 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Width:
                     layoutData.Write().width = newValue;
-                    ve.yogaNode.Width = newValue.ToYogaValue();
+                    ve.layoutNode.Width = newValue.ToLayoutValue();
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.WordSpacing:
@@ -1153,32 +1151,32 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.BorderBottomWidth:
                     layoutData.Write().borderBottomWidth = newValue;
-                    ve.yogaNode.BorderBottomWidth = newValue;
+                    ve.layoutNode.BorderBottomWidth = newValue;
                     ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderLeftWidth:
                     layoutData.Write().borderLeftWidth = newValue;
-                    ve.yogaNode.BorderLeftWidth = newValue;
+                    ve.layoutNode.BorderLeftWidth = newValue;
                     ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderRightWidth:
                     layoutData.Write().borderRightWidth = newValue;
-                    ve.yogaNode.BorderRightWidth = newValue;
+                    ve.layoutNode.BorderRightWidth = newValue;
                     ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.BorderTopWidth:
                     layoutData.Write().borderTopWidth = newValue;
-                    ve.yogaNode.BorderTopWidth = newValue;
+                    ve.layoutNode.BorderTopWidth = newValue;
                     ve.IncrementVersion(VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint);
                     break;
                 case StylePropertyId.FlexGrow:
                     layoutData.Write().flexGrow = newValue;
-                    ve.yogaNode.FlexGrow = newValue;
+                    ve.layoutNode.FlexGrow = newValue;
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.FlexShrink:
                     layoutData.Write().flexShrink = newValue;
-                    ve.yogaNode.FlexShrink = newValue;
+                    ve.layoutNode.FlexShrink = newValue;
                     ve.IncrementVersion(VersionChangeType.Layout);
                     break;
                 case StylePropertyId.Opacity:
@@ -1206,7 +1204,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().alignContent != (Align)newValue)
                     {
                         layoutData.Write().alignContent = (Align)newValue;
-                        ve.yogaNode.AlignContent = (YogaAlign)newValue;
+                        ve.layoutNode.AlignContent = (LayoutAlign)newValue;
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1215,7 +1213,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().alignItems != (Align)newValue)
                     {
                         layoutData.Write().alignItems = (Align)newValue;
-                        ve.yogaNode.AlignItems = (YogaAlign)newValue;
+                        ve.layoutNode.AlignItems = (LayoutAlign)newValue;
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1224,7 +1222,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().alignSelf != (Align)newValue)
                     {
                         layoutData.Write().alignSelf = (Align)newValue;
-                        ve.yogaNode.AlignSelf = (YogaAlign)newValue;
+                        ve.layoutNode.AlignSelf = (LayoutAlign)newValue;
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1233,7 +1231,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().display != (DisplayStyle)newValue)
                     {
                         layoutData.Write().display = (DisplayStyle)newValue;
-                        ve.yogaNode.Display = (YogaDisplay)newValue;
+                        ve.layoutNode.Display = (LayoutDisplay)newValue;
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1242,7 +1240,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().flexDirection != (FlexDirection)newValue)
                     {
                         layoutData.Write().flexDirection = (FlexDirection)newValue;
-                        ve.yogaNode.FlexDirection = (YogaFlexDirection)newValue;
+                        ve.layoutNode.FlexDirection = (LayoutFlexDirection)newValue;
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1251,7 +1249,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().flexWrap != (Wrap)newValue)
                     {
                         layoutData.Write().flexWrap = (Wrap)newValue;
-                        ve.yogaNode.Wrap = (YogaWrap)newValue;
+                        ve.layoutNode.Wrap = (LayoutWrap)newValue;
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1260,7 +1258,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().justifyContent != (Justify)newValue)
                     {
                         layoutData.Write().justifyContent = (Justify)newValue;
-                        ve.yogaNode.JustifyContent = (YogaJustify)newValue;
+                        ve.layoutNode.JustifyContent = (LayoutJustify)newValue;
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -1269,7 +1267,7 @@ namespace UnityEngine.UIElements
                     if (visualData.Read().overflow != (OverflowInternal)newValue)
                     {
                         visualData.Write().overflow = (OverflowInternal)newValue;
-                        ve.yogaNode.Overflow = (YogaOverflow)newValue;
+                        ve.layoutNode.Overflow = (LayoutOverflow)newValue;
                         ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Overflow);
                     }
 
@@ -1278,7 +1276,7 @@ namespace UnityEngine.UIElements
                     if (layoutData.Read().position != (Position)newValue)
                     {
                         layoutData.Write().position = (Position)newValue;
-                        ve.yogaNode.PositionType = (YogaPositionType)newValue;
+                        ve.layoutNode.PositionType = (LayoutPositionType)newValue;
                         ve.IncrementVersion(VersionChangeType.Layout);
                     }
 
@@ -3331,7 +3329,8 @@ namespace UnityEngine.UIElements
             VersionChangeType changes = VersionChangeType.Styles;
             if (!x.layoutData.ReferenceEquals(y.layoutData))
             {
-                if (x.flexGrow != y.flexGrow ||
+                if (x.display != y.display ||
+                    x.flexGrow != y.flexGrow ||
                     x.flexShrink != y.flexShrink ||
                     x.flexWrap != y.flexWrap ||
                     x.flexDirection != y.flexDirection ||
@@ -3369,11 +3368,6 @@ namespace UnityEngine.UIElements
                     x.borderTopWidth != y.borderTopWidth)
                 {
                     changes |= VersionChangeType.BorderWidth | VersionChangeType.Layout | VersionChangeType.Repaint;
-                }
-
-                if (x.display != y.display)
-                {
-                    changes |= VersionChangeType.Layout | VersionChangeType.Repaint;
                 }
             }
 

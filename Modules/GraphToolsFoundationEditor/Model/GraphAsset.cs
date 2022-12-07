@@ -101,9 +101,13 @@ namespace Unity.GraphToolsFoundation.Editor
                     path = AssetDatabase.GenerateUniqueAssetPath(path);
                 }
 
-                Directory.CreateDirectory(Path.GetDirectoryName(path) ?? "");
+                var directory = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(directory))
+                    Directory.CreateDirectory(directory);
+
                 if (File.Exists(path))
                     AssetDatabase.DeleteAsset(path);
+
                 AssetDatabase.CreateAsset(this, path);
             }
 

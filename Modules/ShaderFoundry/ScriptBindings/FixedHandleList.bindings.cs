@@ -40,6 +40,16 @@ namespace UnityEditor.ShaderFoundry
             return listHandle;
         }
 
+        public static FoundryHandle Build<T>(ShaderContainer container, List<T> items) where T : struct, IPublicType<T>
+        {
+            if ((items == null) || (items.Count <= 0))
+                return FoundryHandle.Invalid();
+            var listHandle = container.AddHandleBlob((uint)items.Count);
+            for (var i = 0; i < items.Count; ++i)
+                container.SetHandleBlobElement(listHandle, (uint)i, items[i].Handle);
+            return listHandle;
+        }
+
         public static FoundryHandle Build<T>(ShaderContainer container, List<T> items, Func<T, FoundryHandle> indexFunc)
         {
             if ((items == null) || (items.Count <= 0))
@@ -57,6 +67,17 @@ namespace UnityEditor.ShaderFoundry
             {
                 var handle = GetElement(container, i);
                 yield return func(handle);
+            }
+        }
+
+        public static IEnumerable<T> Enumerate<T>(ShaderContainer container, FoundryHandle listHandle) where T : struct, IPublicType<T>
+        {
+            var list = new FixedHandleListInternal(listHandle);
+            var size = list.GetSize(container);
+            for (uint i = 0; i < size; i++)
+            {
+                var handle = list.GetElement(container, i);
+                yield return PublicTypeStatic<T>.ConstructFromHandle(container, handle);
             }
         }
     }

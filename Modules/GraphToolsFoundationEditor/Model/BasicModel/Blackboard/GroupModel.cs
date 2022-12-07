@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.Serialization;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -17,9 +18,21 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeReference]
         List<IGroupItemModel> m_Items = new();
 
+        [SerializeField, FormerlySerializedAs("Title")]
+        string m_Title;
+
         /// <inheritdoc />
-        [field: SerializeField]
-        public virtual string Title { get; set; }
+        public virtual string Title
+        {
+            get => m_Title;
+            set
+            {
+                if (m_Title == value)
+                    return;
+                m_Title = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
+        }
 
         /// <inheritdoc />
         public virtual string DisplayTitle => Title;
@@ -34,6 +47,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         /// <inheritdoc />
         public IEnumerable<GraphElementModel> GraphElementModels => Items.OfType<GraphElementModel>();
+
+        /// <inheritdoc />
+        public override IEnumerable<GraphElementModel> DependentModels => base.DependentModels.Concat(GraphElementModels);
 
         /// <inheritdoc />
         public override IGraphElementContainer Container => ParentGroup;
@@ -62,28 +78,22 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="itemModel">The item.</param>
         /// <param name="index">The index at which insert the item. For index &lt;= 0, The item will be added at the beginning. For index &gt;= Items.Count, items will be added at the end./</param>
-        /// <returns>The graph elements changed by this method.</returns>
-        public virtual IEnumerable<GraphElementModel> InsertItem(IGroupItemModel itemModel, int index = int.MaxValue)
+        public virtual void InsertItem(IGroupItemModel itemModel, int index = int.MaxValue)
         {
-            HashSet<GraphElementModel> changedModels = new HashSet<GraphElementModel>();
-
             GroupModel current = this;
             while (current != null)
             {
                 if (ReferenceEquals(current, itemModel))
-                    return Enumerable.Empty<GraphElementModel>();
+                    return;
                 current = current.ParentGroup;
             }
 
-            if (itemModel.ParentGroup != null)
-                changedModels.UnionWith(itemModel.ParentGroup.RemoveItem(itemModel));
+            itemModel.ParentGroup?.RemoveItem(itemModel);
 
-            changedModels.Add(this);
+            GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Grouping);
             itemModel.ParentGroup = this;
             index = Math.Clamp(index, 0, m_Items.Count);
             m_Items.Insert(index, itemModel);
-
-            return changedModels;
         }
 
         /// <summary>
@@ -91,20 +101,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="items">The items.</param>
         /// <param name="insertAfter">The item after which the new items will be added. To add the items at the end, pass null.</param>
-        /// <returns>The graph elements changed by this method.</returns>
-        public virtual IEnumerable<GraphElementModel> MoveItemsAfter(IReadOnlyList<IGroupItemModel> items, IGroupItemModel insertAfter)
+        public virtual void MoveItemsAfter(IReadOnlyList<IGroupItemModel> items, IGroupItemModel insertAfter)
         {
             if (insertAfter != null && !m_Items.Contains(insertAfter))
-                return null;
+                return;
 
             if (items.Contains((insertAfter)))
-                return null;
+                return;
 
-            HashSet<GraphElementModel> changedModels = new HashSet<GraphElementModel>();
             foreach (var model in items)
             {
-                if (model.ParentGroup != null)
-                    changedModels.UnionWith(model.ParentGroup.RemoveItem(model));
+                model.ParentGroup?.RemoveItem(model);
             }
 
             // remove items from m_Items
@@ -122,29 +129,23 @@ namespace Unity.GraphToolsFoundation.Editor
             int insertIndex = m_Items.IndexOf(insertAfter);
 
             foreach (var model in items)
-                changedModels.UnionWith(InsertItem(model, ++insertIndex));
-            return changedModels;
+                InsertItem(model, ++insertIndex);
         }
 
         /// <summary>
         /// Removes an item from the group.
         /// </summary>
         /// <param name="itemModel">The item.</param>
-        /// <returns>The graph elements changed by this method.</returns>
-        public virtual IEnumerable<GraphElementModel> RemoveItem(IGroupItemModel itemModel)
+        public virtual void RemoveItem(IGroupItemModel itemModel)
         {
-            HashSet<GraphElementModel> changedModels = new HashSet<GraphElementModel>();
-
             if (m_Items.Contains(itemModel))
             {
                 itemModel.ParentGroup = null;
 
                 m_Items.Remove(itemModel);
 
-                changedModels.Add(this);
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Grouping);
             }
-
-            return changedModels;
         }
 
         /// <inheritdoc />

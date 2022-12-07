@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Unity.CommandStateObserver
 {
     /// <summary>
-    /// Interface for state.
+    /// Interface for states.
     /// </summary>
     interface IState
     {

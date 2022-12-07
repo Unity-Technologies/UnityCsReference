@@ -1937,25 +1937,6 @@ namespace UnityEngine
             return OverlapCapsuleNonAlloc(point0, point1, radius, results, AllLayers, QueryTriggerInteraction.UseGlobal);
         }
 
-        [NativeName("RebuildBroadphaseRegions")]
-        [StaticAccessor("GetPhysicsManager()")]
-        private static extern void Internal_RebuildBroadphaseRegions(Bounds bounds, int subdivisions);
-
-        public static void RebuildBroadphaseRegions(Bounds worldBounds, int subdivisions)
-        {
-            if (subdivisions < 1 || subdivisions > 16)
-            {
-                throw new ArgumentException("Physics.RebuildBroadphaseRegions requires the subdivisions to be greater than zero and less than 17.");
-            }
-
-            if (worldBounds.extents.x <= 0 || worldBounds.extents.y <= 0 || worldBounds.extents.z <= 0)
-            {
-                throw new ArgumentException("Physics.RebuildBroadphaseRegions requires the world bounds to be non-empty, and have positive extents.");
-            }
-
-            Internal_RebuildBroadphaseRegions(worldBounds, subdivisions);
-        }
-
         [StaticAccessor("GetPhysicsManager()")]
         [ThreadSafe]
         public static extern void BakeMesh(int meshID, bool convex, MeshColliderCookingOptions cookingOptions);

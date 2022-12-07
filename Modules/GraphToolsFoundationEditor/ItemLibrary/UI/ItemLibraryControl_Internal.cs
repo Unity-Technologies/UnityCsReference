@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.GraphToolsFoundation.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEditor.UIElements;
@@ -182,8 +183,45 @@ namespace Unity.ItemLibrary.Editor
             m_Library.Adapter.OnSelectionChanged(selectedItems);
             if (m_Library.Adapter.HasDetailsPanel)
             {
-                m_Library.Adapter.UpdateDetailsPanel(selectedItems.FirstOrDefault());
+                var selectedItem = selectedItems.FirstOrDefault();
+                m_Library.Adapter.UpdateDetailsPanel(selectedItem);
+                if (m_Library.SourcePort != null && selectedItem is GraphNodeModelLibraryItem)
+                    AddPortSubItems(selectedItem);
             }
+        }
+
+        void AddPortSubItems(ItemLibraryItem selectedItem)
+        {
+            if (selectedItem is not GraphNodeModelLibraryItem nodeItem)
+                return;
+
+            var currentGraphElement = (m_Library.Adapter as GraphNodeLibraryAdapter)?.CurrentElement;
+            if (currentGraphElement == null
+                || m_Library.SourcePort == null
+                || currentGraphElement.Model is not NodeModel nodeModel
+                || nodeModel is ISingleOutputPortNodeModel
+                || nodeModel is ISingleInputPortNodeModel)
+                return;
+
+            var graphModel = nodeModel.GraphModel;
+            var ports = m_Library.SourcePort.Direction == PortDirection.Input ? nodeModel.OutputsByDisplayOrder : nodeModel.InputsByDisplayOrder;
+            var compatiblePorts = graphModel.GetCompatiblePorts(ports, m_Library.SourcePort);
+
+            var portItems = new List<GraphNodeModelLibraryItem>();
+            var portWithEmptyTitleCount = 0;
+            foreach (var portToAdd in compatiblePorts)
+            {
+                var type = nodeModel.GetType();
+                var portEntryName = string.IsNullOrEmpty(portToAdd.DisplayTitle) ? $"Port {portWithEmptyTitleCount++}" : portToAdd.DisplayTitle;
+                var portItem = new GraphNodeModelLibraryItem(new NodeItemLibraryData(type, portToAdd), nodeItem.CreateElement)
+                {
+                    FullName = selectedItem.FullName + "/" + portEntryName,
+                    Help = selectedItem.Help,
+                    StyleName = selectedItem.StyleName
+                };
+                portItems.Add(portItem);
+            }
+            m_TreeView.AddPortItemsToVisibleResults_Internal(portItems);
         }
 
         void HackDueToListViewScrollViewStealingFocus()

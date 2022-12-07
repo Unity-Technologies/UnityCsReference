@@ -257,6 +257,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(scrollView, scrollView == currentView);
 
             packageLoadBar.UpdateVisibility();
+
+            var page = m_PageManager.GetPage();
+            var selection = page.GetSelection();
+            if (!selection.Any() && selection.previousSelections.Any())
+                page.SetNewSelection(selection.previousSelections);
+
             if (rebuild)
                 currentView.OnListRebuild(m_PageManager.GetPage());
         }

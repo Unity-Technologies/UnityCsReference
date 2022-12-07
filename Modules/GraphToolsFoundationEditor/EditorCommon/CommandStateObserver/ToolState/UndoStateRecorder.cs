@@ -217,7 +217,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 for (var i = 0; i < m_StateComponents.Count; i++)
                 {
                     var component = m_StateComponents[i];
-                    var changeset = component.ChangesetManager?.CurrentChangeset;
+                    var changeset = component.ChangesetManager?.GetAggregatedChangeset(m_StateComponentVersions[i], component.CurrentVersion);
                     var serializedChangeset = new SerializedChangeset(changeset);
                     s_ToNextVersionChangesets.TryAdd((component.Guid, m_StateComponentVersions[i]), serializedChangeset);
                     s_FromPreviousVersionChangesets.TryAdd((component.Guid, component.CurrentVersion), serializedChangeset);

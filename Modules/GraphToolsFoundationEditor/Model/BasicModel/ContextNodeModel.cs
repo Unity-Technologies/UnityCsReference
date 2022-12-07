@@ -39,6 +39,9 @@ namespace Unity.GraphToolsFoundation.Editor
             this.SetCapability(Editor.Capabilities.Collapsible, false);
         }
 
+        /// <inheritdoc />
+        public override IEnumerable<GraphElementModel> DependentModels => base.DependentModels.Concat(m_Blocks);
+
         /// <summary>
         /// Inserts a block in the context.
         /// </summary>
@@ -51,11 +54,23 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_BlockPlaceholders.Add(placeholder);
             else
             {
-                if ((spawnFlags & SpawnFlags.Orphan) == 0)
-                    GraphModel.RegisterElement(blockModel);
-
+                // Remove the block model from its former context node model first as it will unregister the block.
+                var wasRemoved = false;
                 if (blockModel.ContextNodeModel != null)
+                {
                     blockModel.ContextNodeModel.RemoveElements(new[] { blockModel });
+                    wasRemoved = true;
+                }
+
+                if ((spawnFlags & SpawnFlags.Orphan) == 0)
+                {
+                    GraphModel.RegisterBlockNode(blockModel);
+
+                    // RemoveElements potentially removed the block from the graph. Since we are inserting it inside this context node
+                    // instead, it is not technically removed.
+                    if (wasRemoved)
+                        GraphModel.CurrentGraphChangeDescription?.RemoveDeletedModels(blockModel);
+                }
 
                 if (index > m_Blocks.Count)
                     throw new ArgumentException(nameof(index));
@@ -77,6 +92,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             blockModel.GraphModel = GraphModel;
             blockModel.ContextNodeModel = this;
+            GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.GraphTopology);
         }
 
         /// <inheritdoc />
@@ -106,6 +122,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
             InsertBlock(block, index, spawnFlags);
 
+            if (!spawnFlags.IsOrphan())
+                GraphModel.CurrentGraphChangeDescription?.AddNewModels(block);
+
             return block;
         }
 
@@ -124,13 +143,20 @@ namespace Unity.GraphToolsFoundation.Editor
             return (T)CreateAndInsertBlock(typeof(T), index, guid, initializationCallback, spawnFlags);
         }
 
+        /// <inheritdoc />
         public IEnumerable<GraphElementModel> GraphElementModels => m_Blocks;
 
+        /// <inheritdoc />
         public void RemoveElements(IReadOnlyCollection<GraphElementModel> elementModels)
         {
             foreach (var blockNodeModel in elementModels.OfType<BlockNodeModel>())
             {
-                GraphModel?.UnregisterElement(blockNodeModel);
+                if (GraphModel?.TryGetModelFromGuid(blockNodeModel.Guid, out _) ?? false)
+                {
+                    GraphModel.CurrentGraphChangeDescription?.AddDeletedModels(blockNodeModel);
+                    GraphModel?.UnregisterBlockNode(blockNodeModel);
+                }
+
                 if (!RemoveBlock(blockNodeModel))
                 {
                     throw new ArgumentException(nameof(blockNodeModel));
@@ -140,6 +166,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (!m_BlockPlaceholders.Any())
                 this.SetCapability(Editor.Capabilities.Copiable, true);
+            GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.GraphTopology);
         }
 
         /// <inheritdoc/>

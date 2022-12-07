@@ -33,6 +33,12 @@ namespace Unity.GraphToolsFoundation.Editor
             RootView uiContext, IEnumerable<GraphElementModel> ownerModels, IEnumerable<Constant> constants,
             bool modelIsLocked, string label = null)
         {
+            // PF FIXME the extension method mechanism is not really useful to select a method on a per constant-type
+            // basis, since `constants` is always of type IEnumerable<Constant>.
+
+            if (constants == null || !constants.Any())
+                return null;
+
             var ext = ExtensionMethodCache<ConstantEditorBuilder>.GetExtensionMethod(
                 uiContext.GetType(), constants.GetType(),
                 ConstantEditorBuilder.FilterMethods, ConstantEditorBuilder.KeySelector);

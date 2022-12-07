@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.Overlays;
 using UnityEditor.Rendering;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.UIElements;
@@ -24,6 +23,7 @@ namespace UnityEditor
         const string k_SliderRowClass = "unity-pbr-slider-row";
         const string k_SliderClass = "unity-pbr-slider";
         const string k_SliderFloatFieldClass = "unity-pbr-slider-float-field";
+        const string k_SwatchColorContent = "color-content";
 
         static readonly PrefColor kSceneViewMaterialValidateLow = new PrefColor("Scene/Material Validator Value Too Low", 255.0f / 255.0f, 0.0f, 0.0f, 1.0f);
         static readonly PrefColor kSceneViewMaterialValidateHigh = new PrefColor("Scene/Material Validator Value Too High", 0.0f, 0.0f, 255.0f / 255.0f, 1.0f);
@@ -32,6 +32,10 @@ namespace UnityEditor
         static readonly PrefColor kSceneViewMaterialNoContributeGI = new PrefColor("Scene/Contribute GI: Off / Receive GI: Light Probes", 229.0f / 255.0f, 203.0f / 255.0f, 132.0f / 255.0f, 1.0f);
         static readonly PrefColor kSceneViewMaterialReceiveGILightmaps = new PrefColor("Scene/Contribute GI: On / Receive GI: Lightmaps", 89.0f / 255.0f, 148.0f / 255.0f, 161.0f / 255.0f, 1.0f);
         static readonly PrefColor kSceneViewMaterialReceiveGILightProbes = new PrefColor("Scene/Contribute GI: On / Receive GI: Light Probes", 221.0f / 255.0f, 115.0f / 255.0f, 91.0f / 255.0f, 1.0f);
+
+        // material validation, contribute GI, and albedo swatches are represented in this array. it is used to update
+        // the colors when preferences are changed.
+        Dictionary<PrefColor, VisualElement> m_PrefColorSwatches = new Dictionary<PrefColor, VisualElement>();
 
         SceneView m_SceneView;
         SceneView sceneView => m_SceneView;
@@ -69,6 +73,7 @@ namespace UnityEditor
         {
             CreateAlbedoSwatchData();
             collapsedChanged += OnCollapsedChanged;
+            PrefSettings.settingChanged += UpdatePrefColors;
         }
 
         public override void OnCreated()
@@ -128,7 +133,7 @@ namespace UnityEditor
                 case DrawCameraMode.ValidateAlbedo:
                 case DrawCameraMode.ValidateMetalSpecular:
                     displayName = "PBR Validation Settings";
-                    m_AlbedoContent.Q<HelpBox>().EnableInClassList(k_UnityHiddenClass, PlayerSettings.colorSpace != ColorSpace.Gamma);
+                    m_AlbedoContent.Q<HelpBox>()?.EnableInClassList(k_UnityHiddenClass, PlayerSettings.colorSpace != ColorSpace.Gamma);
                     m_SceneView.SetOverlayVisible(k_OverlayID, true);
                     break;
 
@@ -233,9 +238,9 @@ namespace UnityEditor
             // string receiveGILightmaps = L10r.Tr("Contribute GI: On / Receive GI: Lightmaps");
             // string receiveGILightProbes = L10r.Tr("Contribute GI: On / Receive GI: Light Probes");
 
-            root.Add(CreateColorSwatch(contributeGIOff, kSceneViewMaterialNoContributeGI));
-            root.Add(CreateColorSwatch(receiveGILightmaps, kSceneViewMaterialReceiveGILightmaps));
-            root.Add(CreateColorSwatch(receiveGILightProbes, kSceneViewMaterialReceiveGILightProbes));
+            root.Add(m_PrefColorSwatches[kSceneViewMaterialNoContributeGI] = CreateColorSwatch(contributeGIOff, kSceneViewMaterialNoContributeGI));
+            root.Add(m_PrefColorSwatches[kSceneViewMaterialReceiveGILightmaps] = CreateColorSwatch(receiveGILightmaps, kSceneViewMaterialReceiveGILightmaps));
+            root.Add(m_PrefColorSwatches[kSceneViewMaterialReceiveGILightProbes] = CreateColorSwatch(receiveGILightProbes, kSceneViewMaterialReceiveGILightProbes));
 
             return root;
         }
@@ -320,9 +325,9 @@ namespace UnityEditor
                 ? "Luminance"
                 : "Specular";
 
-            root.Add(CreateColorSwatch($"Below Minimum {modeString} Value", kSceneViewMaterialValidateLow.Color));
-            root.Add(CreateColorSwatch($"Above Maximum {modeString} Value", kSceneViewMaterialValidateHigh.Color));
-            root.Add(CreateColorSwatch($"Not A Pure Metal", kSceneViewMaterialValidatePureMetal.Color));
+            root.Add(m_PrefColorSwatches[kSceneViewMaterialValidateLow] = CreateColorSwatch($"Below Minimum {modeString} Value", kSceneViewMaterialValidateLow.Color));
+            root.Add(m_PrefColorSwatches[kSceneViewMaterialValidateHigh] = CreateColorSwatch($"Above Maximum {modeString} Value", kSceneViewMaterialValidateHigh.Color));
+            root.Add(m_PrefColorSwatches[kSceneViewMaterialValidatePureMetal] = CreateColorSwatch($"Not A Pure Metal", kSceneViewMaterialValidatePureMetal.Color));
 
             return root;
         }
@@ -336,7 +341,7 @@ namespace UnityEditor
             swatchContainer.AddToClassList("unity-base-field__label");
             swatchContainer.AddToClassList("unity-pbr-validation-color-swatch");
 
-            var colorContent = new VisualElement() { name = "color-content" };
+            var colorContent = new VisualElement() { name = k_SwatchColorContent };
             colorContent.style.backgroundColor = new StyleColor(color);
             swatchContainer.Add(colorContent);
             row.Add(swatchContainer);
@@ -468,7 +473,6 @@ namespace UnityEditor
         {
             if (PlayerSettings.colorSpace != m_LastKnownColorSpace)
                 UpdatePBRColorLegend();
-            UpdateAlbedoSwatch();
             SelectedAlbedoSwatchChanged();
         }
 
@@ -505,7 +509,7 @@ namespace UnityEditor
 
         void SelectedAlbedoSwatchChanged()
         {
-            var color = m_AlbedoContent.Q("color-content");
+            var color = m_AlbedoContent.Q(k_SwatchColorContent);
             var label = m_AlbedoContent.Q<Label>("color-label");
 
             bool colorCorrect = PlayerSettings.colorSpace == ColorSpace.Linear;
@@ -559,6 +563,26 @@ namespace UnityEditor
 
                 Gizmos.exposure = s_EmptyExposureTexture;
             }
+        }
+
+        void UpdatePrefColors(string key, Type prefType)
+        {
+            if (m_ContentRoot == null || prefType != typeof(PrefColor))
+                return;
+
+            foreach(var color in m_PrefColorSwatches)
+            {
+                if (color.Key.Name == key)
+                {
+                    var swatch = color.Value.Q(k_SwatchColorContent);
+                    if(swatch != null)
+                        swatch.style.backgroundColor = new StyleColor(color.Key.Color);
+                    break;
+                }
+            }
+
+            UpdatePBRColorLegend();
+            SelectedAlbedoSwatchChanged();
         }
     }
 }

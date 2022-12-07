@@ -38,7 +38,7 @@ namespace UnityEditor.ShaderFoundry
 
         // public API
         public ShaderContainer Container => container;
-        public bool IsValid => (container != null);
+        public bool IsValid => (container != null && handle.IsValid);
         public CustomizationPoint CustomizationPoint => new CustomizationPoint(container, customizationPointImplementation.m_CustomizationPointHandle);
 
         public IEnumerable<BlockSequenceElement> BlockSequenceElements

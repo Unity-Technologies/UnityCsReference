@@ -260,27 +260,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var selection = GetSelection();
 
-            var toAddOrUpdate = new List<PackageAndVersionIdPair>();
-            var toRemove = new List<PackageAndVersionIdPair>();
+            var invalidSelectionsToRemove = new List<PackageAndVersionIdPair>();
             foreach (var item in selection)
             {
                 m_PackageDatabase.GetPackageAndVersion(item, out var package, out var version);
                 var visualState = visualStates.Get(item.packageUniqueId);
                 if (package == null || visualState?.visible != true)
-                    toRemove.Add(item);
+                    invalidSelectionsToRemove.Add(item);
             }
 
-            if (selection.Count > 0 && toAddOrUpdate.Count + toRemove.Count == 0)
+            if (selection.Count > 0 && invalidSelectionsToRemove.Count == 0)
                 return false;
 
-            if (toRemove.Count == selection.Count)
+            var newSelectionToAdd = new List<PackageAndVersionIdPair>();
+            if (invalidSelectionsToRemove.Count == selection.Count)
             {
                 var firstVisible = visualStates.FirstOrDefault(v => v.visible && !selection.Contains(v.packageUniqueId));
                 if (firstVisible != null)
-                    toAddOrUpdate.Add(new PackageAndVersionIdPair(firstVisible.packageUniqueId));
+                    newSelectionToAdd.Add(new PackageAndVersionIdPair(firstVisible.packageUniqueId));
             }
 
-            return AmendSelection(toAddOrUpdate, toRemove);
+            return AmendSelection(newSelectionToAdd, invalidSelectionsToRemove);
         }
 
         public bool IsGroupExpanded(string groupName)

@@ -78,9 +78,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             var createdElements = new List<GraphElementModel>();
+            var graphModel = graphModelState.GraphModel;
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                var graphModel = graphModelState.GraphModel;
 
                 var fromPortModel = command.FromPortModel;
                 var toPortModel = command.ToPortModel;
@@ -90,28 +91,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     .ToList();
 
                 if (wiresToDelete.Count > 0)
-                {
-                    var deletedElements = graphModel.DeleteWires(wiresToDelete);
-
-                    foreach (var wireToDelete in wiresToDelete)
-                    {
-                        var toPort = wireToDelete.ToPort;
-                        var fromPort = wireToDelete.FromPort;
-                        if (toPort.NodeModel is SubgraphNodeModel && toPort.PortType == PortType.MissingPort && !toPort.GetConnectedWires().Any())
-                        {
-                            if (toPort.NodeModel.RemoveUnusedMissingPort(toPort))
-                                graphUpdater.MarkChanged(toPort.NodeModel, ChangeHint.GraphTopology);
-                        }
-
-                        if (fromPort.NodeModel is SubgraphNodeModel && fromPort.PortType == PortType.MissingPort && !fromPort.GetConnectedWires().Any())
-                        {
-                            if (fromPort.NodeModel.RemoveUnusedMissingPort(fromPort))
-                                graphUpdater.MarkChanged(fromPort.NodeModel, ChangeHint.GraphTopology);
-                        }
-                    }
-
-                    graphUpdater.MarkDeleted(deletedElements);
-                }
+                    graphModel.DeleteWires(wiresToDelete);
 
                 WireModel wireModel;
                 // Auto-itemization preferences will determine if a new node is created or not
@@ -121,7 +101,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     var itemizedNode = graphModel.CreateItemizedNode(WireCommandConfig_Internal.nodeOffset, ref fromPortModel);
                     if (itemizedNode != null)
                     {
-                        graphUpdater.MarkNew(itemizedNode);
                         createdElements.Add(itemizedNode);
                     }
                     wireModel = graphModel.CreateWire(toPortModel, fromPortModel);
@@ -131,22 +110,13 @@ namespace Unity.GraphToolsFoundation.Editor
                     wireModel = graphModel.CreateWire(toPortModel, fromPortModel);
                     createdElements.Add(wireModel);
                 }
-                graphUpdater.MarkNew(wireModel);
-
-                if (toPortModel != null)
-                {
-                    graphUpdater.MarkChanged(toPortModel, ChangeHint.GraphTopology);
-                }
-
-                if (fromPortModel != null)
-                {
-                    graphUpdater.MarkChanged(fromPortModel, ChangeHint.GraphTopology);
-                }
 
                 if (command.AlignFromNode)
                 {
                     graphUpdater.MarkModelToAutoAlign(wireModel);
                 }
+
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
             if (createdElements.Any())
@@ -268,27 +238,17 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
-                PortModel oldPort = null;
                 var wiresToMove = command.Models;
                 wiresToMove = wiresToMove.OrderBy(w => w, WiresOrderComparer.Default).ToList();
 
                 foreach (var wire in wiresToMove)
                 {
-                    oldPort ??= wire.GetPort(command.WireSideToMove);
                     wire.SetPort(command.WireSideToMove, command.NewPortModel);
-
-                    if (oldPort.PortType == PortType.MissingPort)
-                    {
-                        var nodeModel = oldPort.NodeModel;
-                        if (nodeModel != null && nodeModel.RemoveUnusedMissingPort(oldPort))
-                            graphUpdater.MarkChanged(nodeModel, ChangeHint.GraphTopology);
-                    }
-                    graphUpdater.MarkChanged(wire, ChangeHint.GraphTopology);
                 }
 
-                graphUpdater.MarkChanged(oldPort, ChangeHint.GraphTopology);
-                graphUpdater.MarkChanged(command.NewPortModel, ChangeHint.GraphTopology);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
 
@@ -353,23 +313,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 undoStateUpdater.SaveState(graphModelState);
             }
 
+            var graphModel = graphModelState.GraphModel;
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                foreach (var wire in command.Models)
-                {
-                    if (wire.ToPort != null)
-                    {
-                        graphUpdater.MarkChanged(wire.ToPort, ChangeHint.GraphTopology);
-                    }
-
-                    if (wire.FromPort != null)
-                    {
-                        graphUpdater.MarkChanged(wire.FromPort, ChangeHint.GraphTopology);
-                    }
-                }
-
-                var deletedElements = graphModelState.GraphModel.DeleteWires(command.Models);
-                graphUpdater.MarkDeleted(deletedElements);
+                graphModel.DeleteWires(command.Models);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -444,11 +393,10 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
 
                 using (var graphUpdater = graphModelState.UpdateScope)
+                using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
                 {
                     fromPort.ReorderWire(command.WireModel, command.Type);
-
-                    graphUpdater.MarkChanged(siblingWires, ChangeHint.GraphTopology);
-                    graphUpdater.MarkChanged(fromPort.NodeModel, ChangeHint.GraphTopology);
+                    graphUpdater.MarkUpdated(changeScope.ChangeDescription);
                 }
             }
         }
@@ -497,18 +445,17 @@ namespace Unity.GraphToolsFoundation.Editor
                 undoStateUpdater.SaveState(graphModelState);
             }
 
+            var graphModel = graphModelState.GraphModel;
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                var graphModel = graphModelState.GraphModel;
                 var wireInput = command.WireModel.ToPort;
                 var wireOutput = command.WireModel.FromPort;
-                var deletedModels = graphModel.DeleteWire(command.WireModel);
-                var wire1 = graphModel.CreateWire(wireInput, command.NodeModel.OutputsByDisplayOrder.First(p => p?.PortType == wireInput?.PortType));
-                var wire2 = graphModel.CreateWire(command.NodeModel.InputsByDisplayOrder.First(p => p?.PortType == wireOutput?.PortType), wireOutput);
+                graphModel.DeleteWire(command.WireModel);
+                graphModel.CreateWire(wireInput, command.NodeModel.OutputsByDisplayOrder.First(p => p?.PortType == wireInput?.PortType));
+                graphModel.CreateWire(command.NodeModel.InputsByDisplayOrder.First(p => p?.PortType == wireOutput?.PortType), wireOutput);
 
-                graphUpdater.MarkDeleted(deletedModels);
-                graphUpdater.MarkNew(wire1);
-                graphUpdater.MarkNew(wire2);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -566,39 +513,20 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             var createdElements = new List<GraphElementModel>();
+            var graphModel = graphModelState.GraphModel;
             using (var updater = graphModelState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                var graphModel = graphModelState.GraphModel;
                 var existingPortalEntries = new Dictionary<PortModel, WirePortalModel>();
                 var existingPortalExits = new Dictionary<PortModel, List<WirePortalModel>>();
 
-                var newModels = new List<GraphElementModel>(command.WireData.Count * 5); // Estimate of the list size to avoid reallocation. There will usually be 5 elements created per wire: two portals, two new wires and a portal declaration model.
-                var modelsToDelete = new List<GraphElementModel>();
-                var modelsToChange = new List<GraphElementModel>();
-                var changeHintList = new List<ChangeHint>();
-
-                foreach (var changeDescription in command.WireData.Select(wireModel =>
+                foreach (var wireModel in command.WireData)
                     graphModel.CreatePortalsFromWire(
                         wireModel.wire,
                         wireModel.startPortPos + k_EntryPortalBaseOffset,
                         wireModel.endPortPos + k_ExitPortalBaseOffset,
-                        k_PortalHeight, existingPortalEntries, existingPortalExits)))
-                {
-                    newModels.AddRange(changeDescription.NewModels);
+                        k_PortalHeight, existingPortalEntries, existingPortalExits);
 
-                    if (changeDescription.DeletedModels != null)
-                        modelsToDelete.AddRange(changeDescription.DeletedModels);
-
-                    if (changeDescription.ChangedModels != null)
-                    {
-                        var (model, changeHints) = changeDescription.ChangedModels.FirstOrDefault();
-                        if (model != null && changeHints != null)
-                        {
-                            modelsToChange.Add(model);
-                            changeHintList.AddRange(changeHints);
-                        }
-                    }
-                }
 
                 // Adjust placement in case of multiple incoming exit portals so they don't overlap
                 foreach (var portalList in existingPortalExits.Values.Where(l => l.Count > 1))
@@ -614,10 +542,8 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                 }
 
-                updater.MarkDeleted(modelsToDelete);
-                updater.MarkChanged(modelsToChange, changeHintList);
-                updater.MarkNew(newModels);
-                createdElements.AddRange(newModels.OfType<AbstractNodeModel>());
+                updater.MarkUpdated(changeScope.ChangeDescription);
+                createdElements.AddRange(changeScope.ChangeDescription.NewModels.OfType<AbstractNodeModel>());
             }
 
             if (createdElements.Any())

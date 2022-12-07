@@ -151,6 +151,12 @@ namespace UnityEngine
             get { return simulationMode != SimulationMode.Script; }
             set { simulationMode = value ? SimulationMode.FixedUpdate : SimulationMode.Script; }
         }
+
+        [Obsolete("Physics.RebuildBroadphaseRegions has been deprecated alongside Multi Box Pruning. Use Automatic Box Pruning instead.", false)]
+        public static void RebuildBroadphaseRegions(Bounds worldBounds, int subdivisions)
+        {
+            return;
+        }
     }
 
     // The [[ConfigurableJoint]] attempts to attain position / velocity targets based on this flag

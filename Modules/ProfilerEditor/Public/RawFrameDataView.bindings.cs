@@ -7,8 +7,10 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Profiling;
 using Unity.Profiling.LowLevel;
+using Unity.Collections;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEditor.Profiling
 {
@@ -76,6 +78,21 @@ namespace UnityEditor.Profiling
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern double GetSampleMetadataAsDouble(int sampleIndex, int metadataIndex);
+
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        private unsafe extern FrameDataView.Data GetSampleMetadataAsSpanInternal(int sampleIndex, int metadataIndex);
+
+        public Span<T> GetSampleMetadataAsSpan<T>(int sampleIndex, int metadataIndex) where T : unmanaged
+        {
+            unsafe
+            {
+                var data = GetSampleMetadataAsSpanInternal(sampleIndex, metadataIndex);
+                int sizeT = UnsafeUtility.SizeOf<T>();
+                // As len is given with size in bytes and we want number of elments in span
+                // we need to divide by the size of the type
+                return new Span<T>((void*)data.ptr, data.size / sizeT);
+            }
+        }
 
         public void GetSampleCallstack(int sampleIndex, List<ulong> outCallstack)
         {

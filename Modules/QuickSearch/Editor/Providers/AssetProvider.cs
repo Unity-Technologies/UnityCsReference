@@ -386,6 +386,8 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerable<SearchProposition> FetchQueryBuilderPropositions()
         {
+            foreach (var p in QueryAndOrBlock.BuiltInQueryBuilderPropositions())
+                yield return p;
             foreach (var p in SearchUtils.FetchTypePropositions<Object>())
                 yield return p;
             foreach (var p in FetchIndexPropositions())

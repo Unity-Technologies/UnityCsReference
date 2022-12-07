@@ -12,6 +12,14 @@ namespace Unity.GraphToolsFoundation.Editor
     [Serializable]
     abstract class Constant
     {
+        GraphElementModel m_OwnerModel;
+
+        public virtual GraphElementModel OwnerModel
+        {
+            get => m_OwnerModel;
+            set => m_OwnerModel = value;
+        }
+
         /// <summary>
         /// The current value.
         /// </summary>

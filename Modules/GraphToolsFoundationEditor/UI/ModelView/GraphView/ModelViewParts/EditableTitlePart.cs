@@ -20,8 +20,8 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string ussClassName = "ge-editable-title-part";
         public static readonly string titleLabelName = "title";
 
-        static readonly CustomStyleProperty<float> k_LodMinTextSize = new CustomStyleProperty<float>("--lod-min-text-size");
-        static readonly CustomStyleProperty<float> k_WantedTextSize = new CustomStyleProperty<float>("--wanted-text-size");
+        protected static readonly CustomStyleProperty<float> k_LodMinTextSize = new CustomStyleProperty<float>("--lod-min-text-size");
+        protected static readonly CustomStyleProperty<float> k_WantedTextSize = new CustomStyleProperty<float>("--wanted-text-size");
 
         static UnityEngine.TextCore.Text.TextGenerationSettings s_TextGenerationSettings = new();
 
@@ -100,12 +100,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The minimum readable size of the text, lod will try to make the text at least this size.
         /// </summary>
-        public float LodMinTextSize { get; private set; } = 12;
+        public float LodMinTextSize { get; protected internal set; } = 12;
 
         /// <summary>
         /// The wanted text size at 100% zoom.
         /// </summary>
-        public float WantedTextSize { get; private set; }
+        public float WantedTextSize { get; protected set; }
 
         /// <inheritdoc />
         public override VisualElement Root => TitleContainer;
@@ -178,19 +178,33 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void UpdatePartFromModel()
         {
-            if (TitleLabel != null)
-            {
-                var value = (m_Model as IHasTitle)?.DisplayTitle ?? String.Empty;
+            if (TitleLabel == null)
+                return;
 
-                if (value == m_PreviousTitle)
-                    return;
-                m_PreviousTitle = value;
-                if (TitleLabel is EditableLabel editableLabel)
-                    editableLabel.SetValueWithoutNotify(value);
-                else if (TitleLabel is Label label)
-                    label.text = value;
-                SetupWidthFromOriginalSize();
+            bool labelTypeChanged = false;
+            if ((TitleLabel is EditableLabel && !HasEditableLabel) ||
+                (TitleLabel is Label && HasEditableLabel))
+
+            {
+                TitleContainer.Remove(m_UseEllipsis ? TitleLabel.parent : TitleLabel);
+                CreateTitleLabel();
+                labelTypeChanged = true;
             }
+
+            var value = (m_Model as IHasTitle)?.DisplayTitle ?? String.Empty;
+
+            if (value == m_PreviousTitle && !labelTypeChanged)
+                return;
+
+            m_PreviousTitle = value;
+            if (TitleLabel is EditableLabel editableLabel)
+                editableLabel.SetValueWithoutNotify(value);
+            else if (TitleLabel is Label label)
+                label.text = value;
+            SetupWidthFromOriginalSize();
+
+            if (labelTypeChanged)
+                SetupLod();
         }
 
         /// <inheritdoc />
@@ -251,38 +265,38 @@ namespace Unity.GraphToolsFoundation.Editor
                 Root.schedule.Execute(SetupLod).ExecuteLater(0);
         }
 
-        void SetupLod()
-        {
-            if (WantedTextSize != 0 && m_CurrentZoom != 0)
+            void SetupLod()
             {
-                TextElement te = null;
-                if (TitleLabel is EditableLabel editableLabel)
-                    te = editableLabel.MandatoryQ<Label>();
-                else if (TitleLabel is Label label)
-                    te = label;
-
-                if (!string.IsNullOrEmpty(te?.text))
+            if (WantedTextSize != 0 && m_CurrentZoom != 0)
                 {
+                    TextElement te = null;
+                    if (TitleLabel is EditableLabel editableLabel)
+                        te = editableLabel.MandatoryQ<Label>();
+                    else if (TitleLabel is Label label)
+                        te = label;
+
+                    if (!string.IsNullOrEmpty(te?.text))
+                    {
                     float inverseZoom = 1 / m_CurrentZoom;
 
-                    if (inverseZoom * LodMinTextSize > WantedTextSize)
-                    {
-                        TitleLabel.style.fontSize = LodMinTextSize * inverseZoom;
+                        if (inverseZoom * LodMinTextSize > WantedTextSize)
+                        {
+                            TitleLabel.style.fontSize = LodMinTextSize * inverseZoom;
+                        }
+                        else
+                        {
+                            if (TitleLabel.style.fontSize.value != WantedTextSize)
+                            {
+                                TitleLabel.style.fontSize = WantedTextSize;
+                            }
+                        }
                     }
                     else
                     {
-                        if (TitleLabel.style.fontSize.value != WantedTextSize)
-                        {
-                            TitleLabel.style.fontSize = WantedTextSize;
-                        }
+                        TitleLabel.style.fontSize = WantedTextSize;
                     }
                 }
-                else
-                {
-                    TitleLabel.style.fontSize = WantedTextSize;
-                }
             }
-        }
 
         void SetupWidthFromOriginalSize()
         {

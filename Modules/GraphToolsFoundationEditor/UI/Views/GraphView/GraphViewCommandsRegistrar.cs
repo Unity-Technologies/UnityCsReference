@@ -91,7 +91,6 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCommandHandler<ChangeElementLayoutCommand>(ChangeElementLayoutCommand.DefaultCommandHandler);
             RegisterCommandHandler<CreatePlacematCommand>(CreatePlacematCommand.DefaultCommandHandler);
             RegisterCommandHandler<ChangePlacematOrderCommand>(ChangePlacematOrderCommand.DefaultCommandHandler);
-            RegisterCommandHandler<CollapsePlacematCommand>(CollapsePlacematCommand.DefaultCommandHandler);
             RegisterCommandHandler<CreateStickyNoteCommand>(CreateStickyNoteCommand.DefaultCommandHandler);
             RegisterCommandHandler<UpdateStickyNoteCommand>(UpdateStickyNoteCommand.DefaultCommandHandler);
             RegisterCommandHandler<UpdateStickyNoteThemeCommand>(UpdateStickyNoteThemeCommand.DefaultCommandHandler);

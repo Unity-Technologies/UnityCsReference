@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.CommandStateObserver;
@@ -102,6 +102,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 using (var selected = selectionState.UpdateScope)
                 {
@@ -116,7 +117,6 @@ namespace Unity.GraphToolsFoundation.Editor
                                 var context = block.ContextNodeModel;
                                 if (context != null)
                                 {
-                                    graphUpdater.MarkChanged(context, ChangeHint.GraphTopology);
                                     context.RemoveElements(new[] {block});
                                 }
                             }
@@ -130,7 +130,6 @@ namespace Unity.GraphToolsFoundation.Editor
                             {
                                 var blockNodeModel = block.Clone();
 
-                                blockNodeModel.AssignNewGuid();
                                 blockNodeModel.ContextNodeModel = null;
 
                                 duplicatedNodes.Add(blockNodeModel);
@@ -145,7 +144,13 @@ namespace Unity.GraphToolsFoundation.Editor
                             if (block.IsCompatibleWith(contextData.Context))
                             {
                                 contextData.Context.InsertBlock(block, currentIndex++);
-                                graphUpdater.MarkNew(block);
+
+                                // If the block was duplicated, mark it as new, otherwise remove it from the deleted model
+                                // as the block was only moved, i.e. not deleted nor added.
+                                if (command.Duplicate)
+                                    graphUpdater.MarkNew(block);
+                                else
+                                    changeScope.ChangeDescription.RemoveDeletedModels(block);
                             }
                         }
 
@@ -173,10 +178,10 @@ namespace Unity.GraphToolsFoundation.Editor
                                 }
                             }
                         }
-
-                        graphUpdater.MarkChanged(contextData.Context, ChangeHint.GraphTopology);
                     }
                 }
+
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }

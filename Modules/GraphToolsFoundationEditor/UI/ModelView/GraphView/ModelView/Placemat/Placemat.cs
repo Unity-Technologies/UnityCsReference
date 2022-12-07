@@ -21,22 +21,12 @@ namespace Unity.GraphToolsFoundation.Editor
             DoNotEnsureMinSize
         }
 
-        protected internal static readonly Vector2 k_DefaultCollapsedSize_Internal = new Vector2(200, 42);
-
-        /// <summary>
-        /// The offset added when computing if a <see cref="GraphElement"/> is in the placemat.
-        /// </summary>
-        protected static readonly int k_SelectRectOffset = 3;
+        Vector2 m_LastModelSize;
 
         /// <summary>
         /// The uss class name added to <see cref="Placemat"/>.
         /// </summary>
         public new static readonly string ussClassName = "ge-placemat";
-
-        /// <summary>
-        /// The uss class name of a <see cref="Placemat"/> when collapsed.
-        /// </summary>
-        public static readonly string collapsedModifierUssClassName = ussClassName.WithUssModifier("collapsed");
 
         /// <summary>
         /// The name of the <see cref="SelectionBorder"/>.
@@ -49,17 +39,12 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string titleContainerPartName = "title-container";
 
         /// <summary>
-        /// The name of the <see cref="Button"/> for collapsing the <see cref="Placemat"/>.
-        /// </summary>
-        public static readonly string collapseButtonPartName = "collapse-button";
-
-        /// <summary>
         /// The name for the <see cref="ResizableElement"/>
         /// </summary>
         public static readonly string resizerPartName = "resizer";
 
         protected internal static readonly float k_Bounds_Internal = 9.0f;
-        protected internal static readonly float k_BoundTop_Internal = 44.0f; // Current height of Title
+        protected internal static readonly float k_BoundTop_Internal = 64.0f; // Current height of Title
 
         // The next two values need to be the same as USS... however, we can't get the values from there as we need them in a static
         // methods used to create new placemats
@@ -70,11 +55,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// The container for the content of the <see cref="Placemat"/>.
         /// </summary>
         protected VisualElement m_ContentContainer;
-
-        /// <summary>
-        /// The elements that are collapsed within the element, if the <see cref="Placemat"/> is collapsed.
-        /// </summary>
-        protected HashSet<GraphElement> m_CollapsedElements = new HashSet<GraphElement>();
 
         /// <summary>
         /// The model that this <see cref="Placemat"/> displays.
@@ -92,64 +72,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public VisualElement TitleContainer { get; private set; }
 
         /// <summary>
-        /// The size of the placemat in its uncollapsed state.
-        /// </summary>
-        protected Vector2 UncollapsedSize => PlacematModel.PositionAndSize.size;
-
-        /// <summary>
-        /// The size of the placemat in its collapsed state.
-        /// </summary>
-        protected Vector2 CollapsedSize
-        {
-            get
-            {
-                var actualCollapsedSize = k_DefaultCollapsedSize_Internal;
-                if (UncollapsedSize.x < k_DefaultCollapsedSize_Internal.x)
-                    actualCollapsedSize.x = UncollapsedSize.x;
-
-                return actualCollapsedSize;
-            }
-        }
-
-        /// <summary>
-        /// The area where the <see cref="Placemat"/> acts, that is its uncollapsed area even if the <see cref="Placemat"/> is collapsed.
-        /// </summary>
-        protected Rect EffectArea => PlacematModel.Collapsed ? new Rect(layout.position, UncollapsedSize) : layout;
-
-        /// <summary>
-        /// The graph elements that are currently being hidden by the placemat.
-        /// </summary>
-        protected IEnumerable<GraphElement> CollapsedElements
-        {
-            get => m_CollapsedElements;
-            set
-            {
-                foreach (var collapsedElement in m_CollapsedElements)
-                {
-                    collapsedElement.style.visibility = StyleKeyword.Null;
-                }
-
-                m_CollapsedElements.Clear();
-
-                if (value == null)
-                    return;
-
-                foreach (var collapsedElement in value)
-                {
-                    collapsedElement.style.visibility = Visibility.Hidden;
-                    m_CollapsedElements.Add(collapsedElement);
-                }
-            }
-        }
-
-        /// <summary>
         /// Creates an instance of the <see cref="Placemat"/> class.
         /// </summary>
         public Placemat()
         {
             focusable = true;
-
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
         /// <inheritdoc />
@@ -157,8 +84,6 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var editableTitlePart = PlacematTitlePart.Create(titleContainerPartName, Model, this, ussClassName, false, true, false);
             PartList.AppendPart(editableTitlePart);
-            var collapseButtonPart = CollapseButtonPart.Create(collapseButtonPartName, Model, this, ussClassName);
-            editableTitlePart.PartList.AppendPart(collapseButtonPart);
             PartList.AppendPart(FourWayResizerPart.Create(resizerPartName, Model, this, ussClassName));
         }
 
@@ -202,9 +127,6 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             base.PostBuildUI();
 
-            var collapseButton = this.SafeQ(collapseButtonPartName);
-            collapseButton?.RegisterCallback<ChangeEvent<bool>>(OnCollapseChangeEvent);
-
             TitleContainer = PartList.GetPart(titleContainerPartName)?.Root;
 
             this.AddStylesheet_Internal("Placemat.uss");
@@ -220,29 +142,6 @@ namespace Unity.GraphToolsFoundation.Editor
             style.backgroundColor = color;
 
             SetPositionAndSize(PlacematModel.PositionAndSize);
-
-            EnableInClassList(collapsedModifierUssClassName, PlacematModel.Collapsed);
-
-            if (PlacematModel.Collapsed)
-            {
-                var collapsedElements = new List<GraphElement>();
-                if (PlacematModel.HiddenElements != null)
-                {
-                    foreach (var elementModel in PlacematModel.HiddenElements)
-                    {
-                        var graphElement = elementModel.GetView<GraphElement>(RootView);
-                        if (graphElement != null)
-                            collapsedElements.Add(graphElement);
-                    }
-                }
-
-                GatherCollapsedWires(collapsedElements);
-                CollapsedElements = collapsedElements;
-            }
-            else
-            {
-                CollapsedElements = null;
-            }
         }
 
         // PF FIXME: we can probably improve the performance of this.
@@ -250,23 +149,9 @@ namespace Unity.GraphToolsFoundation.Editor
         // PF TODO: also revisit Placemat other recursive functions for perf improvements.
         protected static void GatherDependencies(Placemat currentPlacemat, IList<ModelView> graphElements, ICollection<ModelView> dependencies)
         {
-            if (currentPlacemat.PlacematModel.Collapsed)
-            {
-                foreach (var cge in currentPlacemat.CollapsedElements)
-                {
-                    dependencies.Add(cge);
-                    if (cge is Placemat placemat)
-                        GatherDependencies(placemat, graphElements, dependencies);
-                }
-
-                return;
-            }
-
             // We want gathering dependencies to work even if the placemat layout is not up to date, so we use the
             // currentPlacemat.PlacematModel.PositionAndSize to do our overlap test.
-            var currRect = currentPlacemat.PlacematModel.PositionAndSize;
-            var currentActivePlacematRect = RectUtils_Internal.Inflate(currRect, -k_SelectRectOffset, -k_SelectRectOffset,
-                -k_SelectRectOffset, -k_SelectRectOffset);
+            var currentActivePlacematRect = currentPlacemat.PlacematModel.PositionAndSize;
 
             var currentPlacematZOrder = currentPlacemat.PlacematModel.GetZOrder();
             foreach (var elem in graphElements)
@@ -306,27 +191,8 @@ namespace Unity.GraphToolsFoundation.Editor
             var dependencies = new List<ModelView>();
             GatherDependencies(this, k_AddForwardDependenciesAllUIs, dependencies);
             k_AddForwardDependenciesAllUIs.Clear();
-
-            var nodeModels = dependencies.Select(e => e.Model).OfType<AbstractNodeModel>();
-            foreach (var wireModel in nodeModels.SelectMany(n => n.GetConnectedWires()))
-            {
-                var ui = wireModel.GetView_Internal(RootView);
-                if (ui != null)
-                {
-                    // Wire models endpoints need to be updated when the placemat is collapsed/uncollapsed.
-                    Dependencies.AddForwardDependency(ui, DependencyTypes.Geometry | DependencyTypes.Removal);
-                }
-            }
         }
 
-        /// <summary>
-        /// Called when the collapsed button changes value.
-        /// </summary>
-        /// <param name="evt"></param>
-        protected void OnCollapseChangeEvent(ChangeEvent<bool> evt)
-        {
-            this.CollapsePlacemat(evt.newValue);
-        }
 
         /// <summary>
         /// Sets the position and the size of the placemat.
@@ -334,144 +200,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="positionAndSize">The position and size.</param>
         public void SetPositionAndSize(Rect positionAndSize)
         {
-            if (PlacematModel.Collapsed)
-                positionAndSize.size = CollapsedSize;
-
             SetPosition(positionAndSize.position);
             if (!PositionIsOverriddenByManipulator)
             {
+                if (m_LastModelSize.x != positionAndSize.width || m_LastModelSize.y != positionAndSize.height)
+                {
+                    GraphView.SelectionDragger.SetSelectionDirty();
+                    m_LastModelSize = new Vector2(positionAndSize.width, positionAndSize.height);
+                }
                 style.height = positionAndSize.height;
                 style.width = positionAndSize.width;
             }
-        }
-
-        /// <summary>
-        /// Recursively finds all the elements actually collapsed within this <see cref="Placemat"/>.
-        /// </summary>
-        /// <param name="collapsedElements">The directly collapsed elements.</param>
-        /// <returns>The elements actually collapsed within this <see cref="Placemat"/>.</returns>
-        protected static IEnumerable<GraphElement> AllCollapsedElements(IEnumerable<GraphElement> collapsedElements)
-        {
-            if (collapsedElements != null)
-            {
-                foreach (var element in collapsedElements)
-                {
-                    switch (element)
-                    {
-                        case Placemat placemat when placemat.PlacematModel.Collapsed:
-                        {
-                            // TODO: evaluate performance of this recursive call.
-                            foreach (var subElement in AllCollapsedElements(placemat.CollapsedElements))
-                                yield return subElement;
-                            yield return element;
-                            break;
-                        }
-                        case Placemat placemat when !placemat.PlacematModel.Collapsed:
-                            yield return element;
-                            break;
-                        case {} e when e.IsMovable():
-                            yield return element;
-                            break;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gathers all the wires that are collapsed by this <see cref="Placemat"/>. That is the wires that starts and ends in nodes collapsed by this <see cref="Placemat"/>.
-        /// </summary>
-        /// <param name="collapsedElements"></param>
-        protected void GatherCollapsedWires(ICollection<GraphElement> collapsedElements)
-        {
-            var allCollapsedNodes = AllCollapsedElements(collapsedElements)
-                .Select(e => e.Model)
-                .OfType<AbstractNodeModel>()
-                .ToList();
-            foreach (var wireModel in PlacematModel.GraphModel.WireModels)
-            {
-                if (AnyNodeIsConnectedToPort(allCollapsedNodes, wireModel.ToPort) && AnyNodeIsConnectedToPort(allCollapsedNodes, wireModel.FromPort))
-                {
-                    var wireView = wireModel.GetView<GraphElement>(RootView);
-                    if (!collapsedElements.Contains(wireView))
-                    {
-                        collapsedElements.Add(wireView);
-                    }
-                }
-            }
-        }
-
-        static readonly List<ModelView> k_GatherCollapsedElementsAllUIs = new List<ModelView>();
-
-        protected internal List<GraphElementModel> GatherCollapsedElements_Internal()
-        {
-            List<GraphElement> collapsedElements = new List<GraphElement>();
-
-            var graphView = GraphView;
-            graphView.GraphModel.GraphElementModels
-                .Where(ge => ge.IsSelectable() && !(ge is WireModel))
-                .GetAllViewsInList_Internal(GraphView, e => e.parent is GraphView.Layer, k_GatherCollapsedElementsAllUIs);
-
-            var collapsedElementsElsewhere = new List<GraphElement>();
-            RecurseGatherCollapsedElements(this, k_GatherCollapsedElementsAllUIs.OfType<GraphElement>(), collapsedElementsElsewhere);
-            k_GatherCollapsedElementsAllUIs.Clear();
-
-            var nodes = new HashSet<AbstractNodeModel>(AllCollapsedElements(collapsedElements).Select(e => e.Model).OfType<AbstractNodeModel>());
-
-            for (var index = 0; index < graphView.GraphModel.WireModels.Count; index++)
-            {
-                var wireModel = graphView.GraphModel.WireModels[index];
-                if (AnyNodeIsConnectedToPort(nodes, wireModel.ToPort) && AnyNodeIsConnectedToPort(nodes, wireModel.FromPort))
-                    collapsedElements.Add(wireModel.GetView<Wire>(graphView));
-            }
-
-            foreach (var ge in collapsedElementsElsewhere)
-                collapsedElements.Remove(ge);
-
-            return collapsedElements.Select(e => e.GraphElementModel).ToList();
-
-            void RecurseGatherCollapsedElements(Placemat currentPlacemat, IEnumerable<GraphElement> graphElementsParam,
-                List<GraphElement> collapsedElementsElsewhereParam)
-            {
-                var currRect = currentPlacemat.EffectArea;
-                var currentActivePlacematRect = RectUtils_Internal.Inflate(currRect, -k_SelectRectOffset, -k_SelectRectOffset, -k_SelectRectOffset, -k_SelectRectOffset);
-
-                var currentPlacematZOrder = currentPlacemat.PlacematModel.GetZOrder();
-                foreach (var elem in graphElementsParam)
-                {
-                    if (elem.layout.Overlaps(currentActivePlacematRect))
-                    {
-                        var placemat = elem as Placemat;
-                        if (placemat != null && placemat.PlacematModel.GetZOrder() > currentPlacematZOrder)
-                        {
-                            if (placemat.PlacematModel.Collapsed)
-                                foreach (var cge in placemat.CollapsedElements)
-                                    collapsedElementsElsewhereParam.Add(cge);
-                            else
-                                RecurseGatherCollapsedElements(placemat, graphElementsParam, collapsedElementsElsewhereParam);
-                        }
-
-                        if (placemat == null || placemat.PlacematModel.GetZOrder() > currentPlacematZOrder)
-                            if (elem.resolvedStyle.visibility == Visibility.Visible)
-                                collapsedElements.Add(elem);
-                    }
-                }
-            }
-        }
-
-        static bool AnyNodeIsConnectedToPort(IEnumerable<AbstractNodeModel> nodes, PortModel port)
-        {
-            if (port.NodeModel == null)
-            {
-                return false;
-            }
-
-            foreach (var node in nodes)
-            {
-                if (node == port.NodeModel)
-                    return true;
-            }
-
-            return false;
         }
 
         /// <inheritdoc />
@@ -483,10 +222,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (mde.clickCount == 2 && mde.button == (int)MouseButton.LeftMouse)
                 {
                     var models = new List<GraphElementModel>();
-                    ActOnGraphElementsOver(e =>
+                    ActOnGraphElementsInside_Internal(e =>
                     {
                         models.Add(e.GraphElementModel);
-                    });
+                        return true;
+                    },true);
                     GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, models));
                 }
         }
@@ -497,7 +237,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Executes an <see cref="Action"/> on each <see cref="GraphElement"/> within this <see cref="Placemat"/>.
         /// </summary>
         /// <param name="act">The action that will be executed.</param>
-        protected void ActOnGraphElementsOver(Action<GraphElement> act)
+        protected internal void ActOnGraphElementsOver_Internal(Action<GraphElement> act)
         {
             GraphView.GraphModel.GraphElementModels
                 .Where(ge => ge.IsSelectable() && !(ge is WireModel))
@@ -513,7 +253,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         static readonly List<ModelView> k_ActOnGraphElementsOver2AllUIs = new List<ModelView>();
-        protected internal bool ActOnGraphElementsOver_Internal(Func<GraphElement, bool> act, bool includePlacemats)
+        protected internal bool ActOnGraphElementsInside_Internal(Func<GraphElement, bool> act, bool includePlacemats)
         {
             GraphView.GraphModel.GraphElementModels
                 .Where(ge => ge.IsSelectable() && !(ge is WireModel) && ge is not IPlaceholder)
@@ -525,10 +265,13 @@ namespace Unity.GraphToolsFoundation.Editor
 
             bool RecurseActOnGraphElementsOver(Placemat currentPlacemat)
             {
-                if (currentPlacemat.PlacematModel.Collapsed)
+                var currentActivePlacematRect = currentPlacemat.layout;
+
+                var currentPlacematZOrder = currentPlacemat.PlacematModel.GetZOrder();
+                foreach (var elem in k_ActOnGraphElementsOver2AllUIs.OfType<GraphElement>())
                 {
-                    var currentPlacematZOrder = currentPlacemat.PlacematModel.GetZOrder();
-                    foreach (var elem in currentPlacemat.CollapsedElements)
+                    var elemLayout = elem.layout;
+                    if (currentActivePlacematRect.Contains(elemLayout.position) && currentActivePlacematRect.Contains(elemLayout.position + elemLayout.size))
                     {
                         var placemat = elem as Placemat;
                         if (placemat != null && placemat.PlacematModel.GetZOrder() > currentPlacematZOrder)
@@ -536,34 +279,9 @@ namespace Unity.GraphToolsFoundation.Editor
                                 return true;
 
                         if (placemat == null || (includePlacemats && placemat.PlacematModel.GetZOrder() > currentPlacematZOrder))
-                            if (act(elem))
-                                return true;
-                    }
-                }
-                else
-                {
-                    var currRect = currentPlacemat.EffectArea;
-                    var currentActivePlacematRect = new Rect(
-                        currRect.x + k_SelectRectOffset,
-                        currRect.y + k_SelectRectOffset,
-                        currRect.width - 2 * k_SelectRectOffset,
-                        currRect.height - 2 * k_SelectRectOffset);
-
-                    var currentPlacematZOrder = currentPlacemat.PlacematModel.GetZOrder();
-                    foreach (var elem in k_ActOnGraphElementsOver2AllUIs.OfType<GraphElement>())
-                    {
-                        if (elem.layout.Overlaps(currentActivePlacematRect))
-                        {
-                            var placemat = elem as Placemat;
-                            if (placemat != null && placemat.PlacematModel.GetZOrder() > currentPlacematZOrder)
-                                if (RecurseActOnGraphElementsOver(placemat))
+                            if (elem.resolvedStyle.visibility != Visibility.Hidden)
+                                if (act(elem))
                                     return true;
-
-                            if (placemat == null || (includePlacemats && placemat.PlacematModel.GetZOrder() > currentPlacematZOrder))
-                                if (elem.resolvedStyle.visibility != Visibility.Hidden)
-                                    if (act(elem))
-                                        return true;
-                        }
                     }
                 }
 
@@ -573,10 +291,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected internal bool WillDragNode_Internal(GraphElement node)
         {
-            if (PlacematModel.Collapsed)
-                return AllCollapsedElements(CollapsedElements).Contains(node);
-
-            return ActOnGraphElementsOver_Internal(t => node == t, true);
+            return ActOnGraphElementsInside_Internal(t => node == t, true);
         }
 
         internal Rect ComputeGrowToFitElementsRect_Internal(List<GraphElement> elements = null)
@@ -615,50 +330,10 @@ namespace Unity.GraphToolsFoundation.Editor
             return pos;
         }
 
-        Rect ComputeResizeToIncludeSelectedNodesRect()
-        {
-            var nodes = GraphView.GetSelection().
-                OfType<AbstractNodeModel>().
-                Select(n => n.GetView<GraphElement>(RootView)).
-                ToList();
-
-            // Now include the selected nodes
-            var pos = new Rect();
-            if (ComputeElementBounds(ref pos, nodes, MinSizePolicy.DoNotEnsureMinSize))
-            {
-                // We don't resize to be snug: we only resize enough to contain the selected nodes.
-                var currentRect = layout;
-                if (pos.xMin > currentRect.xMin)
-                    pos.xMin = currentRect.xMin;
-
-                if (pos.xMax < currentRect.xMax)
-                    pos.xMax = currentRect.xMax;
-
-                if (pos.yMin > currentRect.yMin)
-                    pos.yMin = currentRect.yMin;
-
-                if (pos.yMax < currentRect.yMax)
-                    pos.yMax = currentRect.yMax;
-
-                MakeRectAtLeastMinimalSize(ref pos);
-            }
-
-            return pos;
-        }
-
         internal void GetElementsToMove_Internal(bool moveOnlyPlacemat, HashSet<GraphElement> collectedElementsToMove)
-        {
-            if (PlacematModel.Collapsed)
+        {if (!moveOnlyPlacemat)
             {
-                var collapsedElements = AllCollapsedElements(CollapsedElements);
-                foreach (var element in collapsedElements)
-                {
-                    collectedElementsToMove.Add(element);
-                }
-            }
-            else if (!moveOnlyPlacemat)
-            {
-                ActOnGraphElementsOver_Internal(e =>
+                ActOnGraphElementsInside_Internal(e =>
                 {
                     collectedElementsToMove.Add(e);
                     return false;
@@ -680,8 +355,16 @@ namespace Unity.GraphToolsFoundation.Editor
             if (!selectedPlacemats.Skip(1).Any()) // If there is only one placemat selected
             {
                 evt.menu.AppendAction("Select Placemat Contents",
-                    _ => GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, GatherCollapsedElements_Internal()))
-                );
+                    _ =>
+                    {
+                        var elements = new List<GraphElementModel>();
+                        ActOnGraphElementsInside_Internal(element =>
+                        {
+                            elements.Add(element.GraphElementModel);
+                            return true;
+                        },true);
+                        GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, elements));
+                    });
             }
 
             var placemats = GraphView.GraphModel.PlacematModels;
@@ -730,34 +413,16 @@ namespace Unity.GraphToolsFoundation.Editor
         protected List<GraphElement> GetNodesOverThisPlacemat()
         {
             var potentialElements = new List<ModelView>();
-            ActOnGraphElementsOver(e => potentialElements.Add(e));
+            ActOnGraphElementsOver_Internal(e => potentialElements.Add(e));
 
             return potentialElements.OfType<GraphElement>().Where(e => e.Model is AbstractNodeModel).ToList();
         }
 
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
-        {
-            CollapsedElements = null;
-        }
-
         protected internal bool GetPortCenterOverride_Internal(PortModel port, out Vector2 overriddenPosition)
         {
-            if (!PlacematModel.Collapsed || parent == null)
-            {
                 overriddenPosition = Vector2.zero;
                 return false;
             }
-
-            const int xOffset = 6;
-            const int yOffset = 3;
-            var halfSize = CollapsedSize * 0.5f;
-            var offset = port.Orientation == PortOrientation.Horizontal
-                ? new Vector2(port.Direction == PortDirection.Input ? -halfSize.x + xOffset : halfSize.x - xOffset, 0)
-                : new Vector2(0, port.Direction == PortDirection.Input ? -halfSize.y + yOffset : halfSize.y - yOffset);
-
-            overriddenPosition = parent.LocalToWorld(layout.center + offset);
-            return true;
-        }
 
         // Helper method that calculates how big a Placemat should be to fit the nodes on top of it currently.
         // Returns false if bounds could not be computed.

@@ -16,9 +16,25 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class BaseGraphTool : CsoTool, IHierarchicalCommandTarget
     {
+        /// <summary>
+        /// Creates and initializes a new <see cref="BaseGraphTool"/>.
+        /// </summary>
+        /// <param name="windowID">A hash representing the tool's main window.</param>
+        /// <typeparam name="T">The type of tool to create.</typeparam>
+        /// <returns>The newly created tool.</returns>
+        public static T Create<T>(Hash128 windowID) where T : BaseGraphTool, new()
+        {
+            var tool = new T();
+            tool.WindowID = windowID;
+            tool.Initialize();
+            return tool;
+        }
+
         string m_InstantiationStackTrace;
 
         protected Dictionary<string, OverlayToolbarProvider> m_ToolbarProviders;
+
+        protected Hash128 WindowID { get; private set; }
 
         /// <summary>
         /// The name of the tool.
@@ -171,10 +187,8 @@ namespace Unity.GraphToolsFoundation.Editor
             Dispatcher.Dispatch(command, diagnosticsFlags);
         }
 
-        /// <summary>
-        /// Updates the state components by running the observers.
-        /// </summary>
-        public void Update()
+        /// <inheritdoc />
+        public override void Update()
         {
             if (Dispatcher is CommandDispatcher commandDispatcher)
             {
@@ -191,7 +205,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 commandDispatcher.DiagnosticFlags = diagnosticFlags;
             }
 
-            ObserverManager.NotifyObservers(State);
+            base.Update();
         }
 
         void UndoRedoPerformed(in UndoRedoInfo info)

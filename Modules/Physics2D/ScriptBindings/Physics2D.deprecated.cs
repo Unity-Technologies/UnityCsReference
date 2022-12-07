@@ -38,6 +38,11 @@ namespace UnityEngine
         [Obsolete("OverlapCollider has been renamed to Overlap (UnityUpgradable) -> Overlap(*)", false)]
         [ExcludeFromDocs]
         public int OverlapCollider(ContactFilter2D contactFilter, List<Collider2D> results) { return Overlap(contactFilter, results); }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("usedByComposite has been deprecated. Use Collider2D.compositeOperation instead", false)]
+        [ExcludeFromDocs]
+        public bool usedByComposite { get { return compositeOperation != CompositeOperation.None; } set { compositeOperation = value ? CompositeOperation.Merge : CompositeOperation.None; } }
     }
 
     partial class CircleCollider2D

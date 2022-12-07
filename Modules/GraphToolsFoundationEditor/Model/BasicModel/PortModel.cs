@@ -97,9 +97,12 @@ namespace Unity.GraphToolsFoundation.Editor
             get => m_Title;
             set
             {
+                if (m_Title == value)
+                    return;
                 var oldUniqueName = UniqueName;
                 m_Title = value;
                 OnUniqueNameChanged(oldUniqueName, UniqueName);
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
             }
         }
 
@@ -115,9 +118,12 @@ namespace Unity.GraphToolsFoundation.Editor
             get => m_UniqueId ?? Title ?? Guid.ToString();
             set
             {
+                if (m_UniqueId == value)
+                    return;
                 var oldUniqueName = UniqueName;
                 m_UniqueId = value;
                 OnUniqueNameChanged(oldUniqueName, UniqueName);
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
             }
         }
 
@@ -135,7 +141,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual PortModelOptions Options
         {
             get => m_Options;
-            set => m_Options = value;
+            set
+            {
+                if (m_Options == value)
+                    return;
+                m_Options = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <summary>
@@ -146,9 +158,12 @@ namespace Unity.GraphToolsFoundation.Editor
             get => m_PortType;
             set
             {
+                if (m_PortType == value)
+                    return;
                 m_PortType = value;
                 // Invalidate cache.
                 m_TooltipCache = null;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
             }
         }
 
@@ -160,9 +175,14 @@ namespace Unity.GraphToolsFoundation.Editor
             get => m_Direction;
             set
             {
+                if (m_Direction == value)
+                    return;
                 var oldDirection = m_Direction;
                 m_Direction = value;
+                // Invalidate cache.
+                m_TooltipCache = null;
                 OnDirectionChanged(oldDirection,value);
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
             }
         }
 
@@ -172,7 +192,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual PortOrientation Orientation
         {
             get => m_Orientation;
-            set => m_Orientation = value;
+            set
+            {
+                if (m_Orientation == value)
+                    return;
+                m_Orientation = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <summary>
@@ -188,7 +214,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 // If not set, fallback to default behavior.
                 return PortType == PortType.Data && Direction == PortDirection.Input ? PortCapacity.Single : PortCapacity.Multi;
             }
-            set => m_PortCapacity = value;
+            set
+            {
+                if (m_PortCapacity == value)
+                    return;
+                m_PortCapacity = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <summary>
@@ -199,8 +231,11 @@ namespace Unity.GraphToolsFoundation.Editor
             get => m_DataTypeHandle;
             set
             {
+                if (m_DataTypeHandle == value)
+                    return;
                 m_DataTypeHandle = value;
                 m_PortDataTypeCache = null;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
             }
         }
 
@@ -380,7 +415,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 return m_TooltipCache;
             }
 
-            set => m_TooltipOverride = value;
+            set
+            {
+                if (m_TooltipOverride == value)
+                    return;
+                m_TooltipOverride = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Style);
+            }
         }
 
         /// <summary>
