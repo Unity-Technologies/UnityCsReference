@@ -2,249 +2,209 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEditorInternal;
-using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.Rendering;
-using AlwaysIncludedShadersEditor = UnityEditor.GraphicsSettingsWindow.AlwaysIncludedShadersEditor;
-using BuiltinShadersEditor = UnityEditor.GraphicsSettingsWindow.BuiltinShadersEditor;
-using Object = UnityEngine.Object;
-using ShaderPreloadEditor = UnityEditor.GraphicsSettingsWindow.ShaderPreloadEditor;
-using ShaderStrippingEditor = UnityEditor.GraphicsSettingsWindow.ShaderStrippingEditor;
-using TierSettingsEditor = UnityEditor.GraphicsSettingsWindow.TierSettingsEditor;
-using VideoShadersEditor = UnityEditor.GraphicsSettingsWindow.VideoShadersEditor;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
-    [CustomEditor(typeof(UnityEngine.Rendering.GraphicsSettings))]
+    [CustomEditor(typeof(GraphicsSettings))]
     internal class GraphicsSettingsInspector : ProjectSettingsBaseEditor
     {
-        internal class Styles
+        internal class ResourcesPaths
         {
-            public static readonly GUIContent showEditorWindow = EditorGUIUtility.TrTextContent("Open Editor...");
-            public static readonly GUIContent closeEditorWindow = EditorGUIUtility.TrTextContent("Close Editor");
-            public static readonly GUIContent tierSettings = EditorGUIUtility.TrTextContent("Tier Settings");
-            public static readonly GUIContent builtinSettings = EditorGUIUtility.TrTextContent("Built-in Shader Settings");
-            public static readonly GUIContent shaderStrippingSettings = EditorGUIUtility.TrTextContent("Shader Stripping");
-            public static readonly GUIContent shaderPreloadSettings = EditorGUIUtility.TrTextContent("Shader Loading");
-            public static readonly GUIContent logWhenShaderIsCompiled = EditorGUIUtility.TrTextContent("Log Shader Compilation", "When enabled, the player will print shader information each time a shader is being compiled (development and debug mode only).");
-            public static readonly GUIContent lightProbeOutsideHullStrategy = EditorGUIUtility.TrTextContent("Renderer Light Probe Selection", "Finding the Light Probes closest to a Renderer positioned outside of the tetrahedral Light Probe hull can be very expensive in terms of CPU cycles. Use this option to configure if Unity should spend time searching the hull to find the closest probe, or if it should use the global Ambient Probe instead.");
-            public static readonly int[] lightProbeOutsideHullStrategyValues =
+            internal const string graphicsSettings = "StyleSheets/ProjectSettings/GraphicsSettings.uss";
+            internal const string bodyTemplate = "UXML/ProjectSettings/GraphicsSettingsEditor.uxml";
+        }
+
+        readonly VisibilityControllerBasedOnRenderPipeline m_VisibilityController = new();
+
+        internal void CreateInspectorUI(VisualElement root)
+        {
+            root.Add(ObjectUpdater());
+            root.Add(CreateGUI());
+        }
+
+        // As we use multiple IMGUI container while porting everything to UITK we will call serializedObject.Update in first separate IMGUI container.
+        // This way we don't need to do it in each following containers.
+        VisualElement ObjectUpdater()
+        {
+            return new IMGUIContainer(() =>
             {
-                (int)LightProbeOutsideHullStrategy.kLightProbeSearchTetrahedralHull,
-                (int)LightProbeOutsideHullStrategy.kLightProbeUseAmbientProbe
-            };
-            public static readonly GUIContent[] lightProbeOutsideHullStrategyStrings =
+                m_VisibilityController.Update();
+                serializedObject.Update();
+            });
+        }
+
+        VisualElement CreateGUI()
+        {
+            var visualTreeAsset = EditorGUIUtility.Load(ResourcesPaths.bodyTemplate) as VisualTreeAsset;
+            var template = visualTreeAsset.Instantiate();
+            template
+                .Query<GraphicsSettingsElement>()
+                .ForEach(d => d.Initialize(serializedObject));
+
+            m_VisibilityController.RegisterVisualElementTree(template);
+            return template;
+        }
+
+        void OnEnable()
+        {
+            m_VisibilityController.Initialize();
+        }
+
+        void OnDisable()
+        {
+            m_VisibilityController.Clear();
+            m_VisibilityController.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Control visibility of UI elements depends on active Render Pipeline.
+    /// For one it stays specific for GraphicsSettings as it requires a way to determine BuiltinOnly elements and there is no generic way to do it.
+    /// </summary>
+    internal class VisibilityControllerBasedOnRenderPipeline : IDisposable
+    {
+        readonly List<ValueTuple<GraphicsSettingsElement, SupportedOnRenderPipelineAttribute>> m_TrackedElements = new();
+
+        RenderPipelineAsset m_PreviousAsset;
+
+        public void Initialize()
+        {
+            RenderPipelineManager.activeRenderPipelineAssetChanged += RenderPipelineAssetChanged;
+        }
+
+        public bool RegisterVisualElement(GraphicsSettingsElement element)
+        {
+            if (m_TrackedElements.Any(t => t.Item1 == element))
+                return false;
+
+            var type = element.GetType();
+            var attribute = type.GetCustomAttribute<SupportedOnRenderPipelineAttribute>(false);
+
+            UpdateElementVisibility (element, attribute);
+            m_TrackedElements.Add(new ValueTuple<GraphicsSettingsElement, SupportedOnRenderPipelineAttribute>(element, attribute));
+
+            return true;
+        }
+
+        public void RegisterVisualElementTree(VisualElement element)
+        {
+            element.Query<GraphicsSettingsElement>().ForEach(RegisterVisualElement);
+        }
+
+        public bool UnregisterVisualElement(GraphicsSettingsElement element)
+        {
+            var type = element.GetType();
+            var attribute = type.GetCustomAttribute<SupportedOnRenderPipelineAttribute>(false);
+            if (attribute == null)
+                return false;
+
+            var index = m_TrackedElements.FindIndex(t => element == t.Item1);
+            if (index < 0)
+                return false;
+
+            m_TrackedElements.RemoveAt(index);
+            return true;
+        }
+
+        public void Update()
+        {
+            if (GraphicsSettings.currentRenderPipeline == m_PreviousAsset)
+                return;
+
+            for (var i = 0; i < m_TrackedElements.Count; i++)
             {
-                EditorGUIUtility.TrTextContent("Find closest Light Probe"),
-                EditorGUIUtility.TrTextContent("Use Ambient Probe"),
-            };
-            public static readonly GUIContent cameraSettings = EditorGUIUtility.TrTextContent("Camera Settings");
-            public static readonly GUIContent renderPipeSettings = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline Settings", "This defines the default render pipeline, which Unity uses when there is no override for a given quality level.");
-            public static readonly GUIContent renderPipeLabel = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline");
-            public static readonly GUIContent cullingSettings = EditorGUIUtility.TrTextContent("Culling Settings");
-            public static readonly GUIContent cameraRelativeSettings = EditorGUIUtility.TrTextContent("Camera-Relative Culling");
-            public static readonly GUIContent cameraRelativeLightCulling = EditorGUIUtility.TrTextContent("Lights", "When enabled, Unity uses the camera position as the reference point for culling lights instead of the world space origin.");
-            public static readonly GUIContent cameraRelativeShadowCulling = EditorGUIUtility.TrTextContent("Shadows", "When enabled, Unity uses the camera position as the reference point for culling shadows instead of the world space origin.");
-        }
-
-        Editor m_TierSettingsEditor;
-        Editor m_BuiltinShadersEditor;
-        Editor m_VideoShadersEditor;
-        Editor m_AlwaysIncludedShadersEditor;
-        Editor m_ShaderStrippingEditor;
-        Editor m_ShaderPreloadEditor;
-        SerializedProperty m_TransparencySortMode;
-        SerializedProperty m_TransparencySortAxis;
-        SerializedProperty m_ScriptableRenderLoop;
-        SerializedProperty m_LogWhenShaderIsCompiled;
-        SerializedProperty m_LightProbeOutsideHullStrategy;
-        SerializedProperty m_CameraRelativeLightCulling;
-        SerializedProperty m_CameraRelativeShadowCulling;
-
-        Object graphicsSettings
-        {
-            get { return UnityEngine.Rendering.GraphicsSettings.GetGraphicsSettings(); }
-        }
-
-        Editor tierSettingsEditor
-        {
-            get
-            {
-                Editor.CreateCachedEditor(graphicsSettings, typeof(TierSettingsEditor), ref m_TierSettingsEditor);
-                ((TierSettingsEditor)m_TierSettingsEditor).verticalLayout = true;
-                return m_TierSettingsEditor;
-            }
-        }
-        Editor builtinShadersEditor
-        {
-            get { Editor.CreateCachedEditor(graphicsSettings, typeof(BuiltinShadersEditor), ref m_BuiltinShadersEditor); return m_BuiltinShadersEditor; }
-        }
-        Editor videoShadersEditor
-        {
-            get { Editor.CreateCachedEditor(graphicsSettings, typeof(VideoShadersEditor), ref m_VideoShadersEditor); return m_VideoShadersEditor; }
-        }
-        Editor alwaysIncludedShadersEditor
-        {
-            get { Editor.CreateCachedEditor(graphicsSettings, typeof(AlwaysIncludedShadersEditor), ref m_AlwaysIncludedShadersEditor); return m_AlwaysIncludedShadersEditor; }
-        }
-        Editor shaderStrippingEditor
-        {
-            get { Editor.CreateCachedEditor(graphicsSettings, typeof(ShaderStrippingEditor), ref m_ShaderStrippingEditor); return m_ShaderStrippingEditor; }
-        }
-        Editor shaderPreloadEditor
-        {
-            get { Editor.CreateCachedEditor(graphicsSettings, typeof(ShaderPreloadEditor), ref m_ShaderPreloadEditor); return m_ShaderPreloadEditor; }
-        }
-
-        public void OnEnable()
-        {
-            m_TransparencySortMode = serializedObject.FindProperty("m_TransparencySortMode");
-            m_TransparencySortAxis = serializedObject.FindProperty("m_TransparencySortAxis");
-            m_ScriptableRenderLoop = serializedObject.FindProperty("m_CustomRenderPipeline");
-            m_LogWhenShaderIsCompiled = serializedObject.FindProperty("m_LogWhenShaderIsCompiled");
-            m_LightProbeOutsideHullStrategy = serializedObject.FindProperty("m_LightProbeOutsideHullStrategy");
-            tierSettingsAnimator = new AnimatedValues.AnimBool(showTierSettingsUI, Repaint);
-            m_CameraRelativeLightCulling = serializedObject.FindProperty("m_CameraRelativeLightCulling");
-            m_CameraRelativeShadowCulling = serializedObject.FindProperty("m_CameraRelativeShadowCulling");
-        }
-
-        private void HandleEditorWindowButton()
-        {
-            TierSettingsWindow window = TierSettingsWindow.GetInstance();
-            GUIContent text = window == null ? Styles.showEditorWindow : Styles.closeEditorWindow;
-            if (GUILayout.Button(text, EditorStyles.miniButton, GUILayout.Width(110)))
-            {
-                if (window)
-                {
-                    window.Close();
-                }
-                else
-                {
-                    TierSettingsWindow.CreateWindow();
-                    TierSettingsWindow.GetInstance().Show();
-                }
-            }
-        }
-
-        // this is category animation is blatantly copied from PlayerSettingsEditor.cs
-        private bool showTierSettingsUI = true; // show by default, as otherwise users are confused
-        private UnityEditor.AnimatedValues.AnimBool tierSettingsAnimator = null;
-
-        private void TierSettingsGUI()
-        {
-            bool enabled = GUI.enabled;
-            GUI.enabled = true; // we don't want to disable the expand behavior
-            EditorGUILayout.BeginVertical(EditorStyles.helpBox, GUILayout.Height(20));
-
-            EditorGUILayout.BeginHorizontal();
-            Rect r = GUILayoutUtility.GetRect(20, 21); r.x += 3; r.width += 6;
-            showTierSettingsUI = EditorGUI.FoldoutTitlebar(r, Styles.tierSettings, showTierSettingsUI, true, EditorStyles.inspectorTitlebarFlat, EditorStyles.inspectorTitlebarText);
-            HandleEditorWindowButton();
-            EditorGUILayout.EndHorizontal();
-
-            tierSettingsAnimator.target = showTierSettingsUI;
-            GUI.enabled = enabled;
-
-            if (EditorGUILayout.BeginFadeGroup(tierSettingsAnimator.faded) && TierSettingsWindow.GetInstance() == null)
-                tierSettingsEditor.OnInspectorGUI();
-            EditorGUILayout.EndFadeGroup();
-            EditorGUILayout.EndVertical();
-        }
-
-        public override void OnInspectorGUI()
-        {
-            serializedObject.Update();
-
-            GUILayout.Label(Styles.renderPipeSettings, EditorStyles.boldLabel);
-            EditorGUI.RenderPipelineAssetField(serializedObject, m_ScriptableRenderLoop);
-            EditorGUILayout.Space();
-
-            bool usingSRP = GraphicsSettings.currentRenderPipeline != null;
-            if (usingSRP)
-                EditorGUILayout.HelpBox("A Scriptable Render Pipeline is in use, some settings will not be used and are hidden", MessageType.Info);
-
-            if (!usingSRP)
-            {
-                GUILayout.Label(Styles.cameraSettings, EditorStyles.boldLabel);
-                EditorGUILayout.PropertyField(m_TransparencySortMode);
-                if ((TransparencySortMode) m_TransparencySortMode.intValue == TransparencySortMode.CustomAxis)
-                    EditorGUILayout.PropertyField(m_TransparencySortAxis);
-
-                EditorGUILayout.Space();
+                var trackedElement = m_TrackedElements[i];
+                UpdateElementVisibility(trackedElement.Item1, trackedElement.Item2);
             }
 
-            float labelWidth = EditorGUIUtility.labelWidth;
+            m_PreviousAsset = GraphicsSettings.currentRenderPipeline;
+        }
 
-            // Hide tier settings for SRPs and close tier settings window if open
-            if (usingSRP)
-            {
-                TierSettingsWindow window = TierSettingsWindow.GetInstance();
-                if (window != null)
-                    window.Close();
-            }
+        void RenderPipelineAssetChanged(RenderPipelineAsset previous, RenderPipelineAsset next)
+        {
+            Update();
+        }
+
+        bool ShouldDisplayElement(GraphicsSettingsElement element, SupportedOnRenderPipelineAttribute attribute)
+        {
+            if (attribute is { isSupportedOnCurrentPipeline: true })
+                return true;
+            return element.BuiltinOnly && !GraphicsSettings.isScriptableRenderPipelineEnabled || !element.BuiltinOnly;
+        }
+
+        void UpdateElementVisibility(GraphicsSettingsElement element, SupportedOnRenderPipelineAttribute attribute)
+        {
+            if (ShouldDisplayElement(element, attribute))
+                Show(element);
             else
-            {
-                TierSettingsGUI();
-            }
-
-            EditorGUIUtility.labelWidth = labelWidth;
-
-            GUILayout.Label(Styles.builtinSettings, EditorStyles.boldLabel);
-            if (!usingSRP)
-                builtinShadersEditor.OnInspectorGUI();
-            videoShadersEditor.OnInspectorGUI();
-            alwaysIncludedShadersEditor.OnInspectorGUI();
-
-            EditorGUILayout.Space();
-            GUILayout.Label(Styles.shaderStrippingSettings, EditorStyles.boldLabel);
-            shaderStrippingEditor.OnInspectorGUI();
-
-            EditorGUILayout.Space();
-            GUILayout.Label(Styles.shaderPreloadSettings, EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(m_LogWhenShaderIsCompiled, Styles.logWhenShaderIsCompiled);
-            EditorGUILayout.IntPopup(m_LightProbeOutsideHullStrategy, Styles.lightProbeOutsideHullStrategyStrings, Styles.lightProbeOutsideHullStrategyValues, Styles.lightProbeOutsideHullStrategy);
-
-            shaderPreloadEditor.OnInspectorGUI();
-
-            EditorGUILayout.Space();
-            GUILayout.Label(Styles.cullingSettings, EditorStyles.boldLabel);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.LabelField(Styles.cameraRelativeSettings, EditorStyles.label);
-            EditorGUI.indentLevel++;
-            EditorGUILayout.PropertyField(m_CameraRelativeLightCulling, Styles.cameraRelativeLightCulling);
-            EditorGUILayout.PropertyField(m_CameraRelativeShadowCulling, Styles.cameraRelativeShadowCulling);
-            EditorGUI.indentLevel--;
-            EditorGUI.indentLevel--;
-
-            serializedObject.ApplyModifiedProperties();
+                Hide(element);
         }
 
-        public void SetSectionOpenListener(UnityAction action)
+        void Show(GraphicsSettingsElement element)
         {
-            tierSettingsAnimator.valueChanged.RemoveAllListeners();
-            tierSettingsAnimator.valueChanged.AddListener(action);
+            element.style.display = DisplayStyle.Flex;
         }
 
+        void Hide(GraphicsSettingsElement element)
+        {
+            element.style.display = DisplayStyle.None;
+        }
+
+        public void Clear()
+        {
+            m_TrackedElements.Clear();
+        }
+
+        public void Dispose()
+        {
+            RenderPipelineManager.activeRenderPipelineAssetChanged -= RenderPipelineAssetChanged;
+        }
+    }
+
+    internal class GraphicsSettingsProvider : SettingsProvider
+    {
         [SettingsProvider]
-        static SettingsProvider CreateProjectSettingsProvider()
+        public static SettingsProvider CreateUserSettingsProvider()
         {
-            var provider = AssetSettingsProvider.CreateProviderFromAssetPath("Project/Graphics", "ProjectSettings/GraphicsSettings.asset");
-            provider.keywords = SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Styles>()
-                .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<TierSettingsEditor.Styles>())
-                .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<BuiltinShadersEditor.Styles>())
-                .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<ShaderStrippingEditor.Styles>())
-                .Concat(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<ShaderPreloadEditor.Styles>())
-                .Concat(SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/GraphicsSettings.asset"));
-
-            provider.activateHandler = (searchContext, rootElement) =>
+            var graphicsSettingsProvider = new GraphicsSettingsProvider("Project/Graphics", SettingsScope.Project)
             {
-                (provider.settingsEditor as GraphicsSettingsInspector)?.SetSectionOpenListener(provider.Repaint);
+                keywords = GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorTitleBar.Styles>()
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorBuiltinShaders.Styles>())
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorCameraSettings.Styles>())
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorLightProbe.Styles>())
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorRenderPipelineAsset.Styles>())
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorShaderLog.Styles>())
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorCullingSettings.Styles>())
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorTierSettings.Styles>())
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorBuiltinShaders.Styles>())
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorShaderStripping.Styles>())
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorVideoShader.Styles>())
+                    .Concat(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorShaderPreload.Styles>())
+                    .Concat(GetSearchKeywordsFromPath("ProjectSettings/GraphicsSettings.asset")),
+                icon = EditorGUIUtility.FindTexture("UnityEngine/UI/GraphicRaycaster Icon")
             };
+            return graphicsSettingsProvider;
+        }
 
-            provider.icon = EditorGUIUtility.FindTexture("UnityEngine/UI/GraphicRaycaster Icon");
-            return provider;
+        internal GraphicsSettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null) : base(path, scopes, keywords)
+        {
+            activateHandler = (text, element) =>
+            {
+                var settingsObj = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/GraphicsSettings.asset");
+                if (settingsObj == null)
+                    return;
+
+                var editor = Editor.CreateEditor(settingsObj) as GraphicsSettingsInspector;
+                element.styleSheets.Add(EditorGUIUtility.Load(GraphicsSettingsInspector.ResourcesPaths.graphicsSettings) as StyleSheet);
+                editor.CreateInspectorUI(element);
+            };
         }
     }
 }

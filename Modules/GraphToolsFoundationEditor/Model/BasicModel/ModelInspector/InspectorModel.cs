@@ -32,6 +32,9 @@ namespace Unity.GraphToolsFoundation.Editor
         const string k_AdvancedWirePropertiesTitle = "Advanced Properties";
         const string k_GraphSettingsTitle = "Graph Settings";
         const string k_AdvancedGraphSettingsTitle = "Advanced Settings";
+        const string k_PlacematInspectorTitle = "Placemat Inspector";
+        const string k_PlacematsInspectorTitle = "Placemats Inspector";
+        const string k_PlacematPropertiesTitle = "Placemat Properties";
 
         [SerializeField]
         string m_Title;
@@ -152,6 +155,14 @@ namespace Unity.GraphToolsFoundation.Editor
                             SectionType = SectionType.Advanced
                         });
                         break;
+                    case PlacematModel _:
+                        m_SectionModels.Add(new InspectorSectionModel()
+                        {
+                            Title = k_PlacematPropertiesTitle,
+                            Collapsed = false,
+                            SectionType = SectionType.Settings
+                        });
+                        break;
                     case GraphModel _:
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
@@ -228,6 +239,15 @@ namespace Unity.GraphToolsFoundation.Editor
                         SectionType = SectionType.Advanced
                     });
                 }
+                else if (typeof(PlacematModel).IsAssignableFrom(type))
+                {
+                    m_SectionModels.Add(new InspectorSectionModel()
+                    {
+                        Title = k_PlacematPropertiesTitle,
+                        Collapsed = false,
+                        SectionType = SectionType.Settings
+                    });
+                }
                 else if (typeof(GraphModel).IsAssignableFrom(type))
                 {
                     m_SectionModels.Add(new InspectorSectionModel()
@@ -274,6 +294,9 @@ namespace Unity.GraphToolsFoundation.Editor
                         case GraphModel _:
                             m_Title = k_GraphInspectorTitle;
                             break;
+                        case PlacematModel _:
+                            m_Title = k_PlacematInspectorTitle;
+                            break;
                         default:
                             m_Title = k_InspectorTitle;
                             break;
@@ -286,10 +309,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 if (typeof(AbstractNodeModel).IsAssignableFrom(type))
                     m_Title = k_NodesInspectorTitle;
-                if (typeof(VariableDeclarationModel).IsAssignableFrom(type))
+                else if (typeof(VariableDeclarationModel).IsAssignableFrom(type))
                     m_Title = k_VariablesInspectorTitle;
-                if (typeof(WireModel).IsAssignableFrom(type))
+                else if (typeof(WireModel).IsAssignableFrom(type))
                     m_Title = k_WiresInspectorTitle;
+                else if (typeof(PlacematModel).IsAssignableFrom(type))
+                    m_Title = k_PlacematsInspectorTitle;
                 else
                     m_Title = k_InspectorTitle;
             }

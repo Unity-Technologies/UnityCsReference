@@ -124,7 +124,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc/>
         protected override void UpdatePartFromModel()
         {
-            Dictionary<int, BlockNodeModel> blockModels = ContextNodeModel.GraphElementModels.Cast<BlockNodeModel>()
+            Dictionary<int, BlockNodeModel> blockModels = ContextNodeModel.GraphElementModels.OfType<BlockNodeModel>()
                 .Where(t => t != null && t is not IPlaceholder).Select((t, i) => new { index = i, value = t })
                 .ToDictionary(t => t.index, t => t.value);
 

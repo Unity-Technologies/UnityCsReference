@@ -25,6 +25,9 @@ namespace Unity.CommandStateObserver
 
     static class StateObserverHelper_Internal
     {
+        /// <summary>
+        /// The currently active observer.
+        /// </summary>
         internal static IStateObserver CurrentObserver_Internal { get; set; }
     }
 }

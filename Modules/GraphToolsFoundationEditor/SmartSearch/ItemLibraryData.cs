@@ -54,14 +54,17 @@ namespace Unity.GraphToolsFoundation.Editor
     readonly struct NodeItemLibraryData : IItemLibraryData
     {
         public Type Type { get; }
+        public PortModel PortToConnect { get; }
 
         /// <summary>
         /// Initializes a new instance of the NodeItemLibraryData class.
         /// </summary>
         /// <param name="type">Type of the node represented by the item.</param>
-        public NodeItemLibraryData(Type type)
+        /// <param name="portToConnect">The port to which the node will be connected, if created.</param>
+        public NodeItemLibraryData(Type type, PortModel portToConnect = null)
         {
             Type = type;
+            PortToConnect = portToConnect;
         }
     }
 }

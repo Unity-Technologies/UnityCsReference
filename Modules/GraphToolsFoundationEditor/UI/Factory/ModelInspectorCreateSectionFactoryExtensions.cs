@@ -163,5 +163,28 @@ namespace Unity.GraphToolsFoundation.Editor
 
             return ui;
         }
+
+        /// <summary>
+        /// Creates a new inspector for some <see cref="PlacematModel"/>s.
+        /// </summary>
+        /// <param name="elementBuilder">The element builder.</param>
+        /// <param name="models">The models for which we want to create an inspector UI.</param>
+        /// <returns>An inspector UI for the node.</returns>
+        public static MultipleModelsView CreateSectionInspector(this ElementBuilder elementBuilder, IEnumerable<PlacematModel> models)
+        {
+            var ui = new ModelInspector();
+            ui.Setup(models, elementBuilder.View as ModelInspectorView, elementBuilder.Context);
+
+            if (elementBuilder.Context is InspectorSectionContext && models.Any())
+            {
+                var inspectorFields = PlacematFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.AdvancedSettingsFilter);
+                ui.PartList.AppendPart(inspectorFields);
+            }
+
+            ui.BuildUI();
+            ui.UpdateFromModel();
+
+            return ui;
+        }
     }
 }

@@ -218,6 +218,18 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_State.SetUpdateType(UpdateType.Complete);
             }
+
+            /// <summary>
+            /// Mark all the models as added, deleted or changed.
+            /// </summary>
+            /// <param name="changes">The <see cref="GraphChangeDescription"/> that contains the updated models.</param>
+            public void MarkUpdated(GraphChangeDescription changes)
+            {
+                var somethingChanged = m_State.CurrentChangeset.AddNewModels(changes.NewModels);
+                somethingChanged |= m_State.CurrentChangeset.AddChangedModels(changes.ChangedModels);
+                somethingChanged |= m_State.CurrentChangeset.AddDeletedModels(changes.DeletedModels);
+                SetDirty(somethingChanged);
+            }
         }
 
         /// <summary>
@@ -558,27 +570,60 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 Clear();
 
-                foreach (var changeset in changesets.OfType<Changeset>())
-                {
-                    m_NewModels.UnionWith(changeset.m_NewModels);
-                    m_DeletedModels.UnionWith(changeset.m_DeletedModels);
-                    m_ModelsToAutoAlign.UnionWith(changeset.m_ModelsToAutoAlign);
-                    m_ModelsToRepositionAtCreation.UnionWith(changeset.m_ModelsToRepositionAtCreation);
+                // The pattern of how changes should be accumulated is the following:
+                // Legend: N=New model, C=Changed model, D=Deleted model, 0=No change
+                //
+                // N + N = N
+                // N + C = N
+                // N + D = 0
+                // C + N = N
+                // C + C = C
+                // C + D = D
+                // D + N = N
+                // D + C = D
+                // D + D = D
+                //
+                // Notice D + N = N. This prevents any changes happening before hand to not get completely lost, for example C + D + N will become N instead
+                // of 0 if D + N had equal 0. Furthermore, we are applying the pairwise comparison in reverse to handle some special cases, like D + N + D = D.
+                // When doing a forward comparison, (D + N) + D => N + D => 0, but in reverse it becomes D + (N + D) => D + 0 => D.
 
+                foreach (var changeset in changesets.OfType<Changeset>().Reverse())
+                {
+                    foreach (var newModel in changeset.m_NewModels)
+                    {
+                        // N + D = 0
+                        if (m_DeletedModels.Contains(newModel))
+                            m_DeletedModels.Remove(newModel);
+                        else
+                        {
+                            // N + N/C = N
+                            if (m_ChangedModelsAndHints.ContainsKey(newModel))
+                                m_ChangedModelsAndHints.Remove(newModel);
+                            m_NewModels.Add(newModel);
+                        }
+                    }
+
+                    // C + N/D = N/D
                     foreach (var kv in changeset.m_ChangedModelsAndHints)
                     {
-                        AddChangedModel(kv.Key, kv.Value);
+                        if (!m_NewModels.Contains(kv.Key) && !m_DeletedModels.Contains(kv.Key))
+                            AddChangedModel(kv.Key, kv.Value);
                     }
-                }
 
-                m_NewModels.RemoveWhere(m => m_DeletedModels.Contains(m));
-
-                foreach (var model in m_ChangedModelsAndHints.Keys.ToList())
-                {
-                    if (m_NewModels.Contains(model) || m_DeletedModels.Contains(model))
+                    foreach (var deletedModel in changeset.m_DeletedModels)
                     {
-                        m_ChangedModelsAndHints.Remove(model);
+                        // D + N = N
+                        if (m_NewModels.Contains(deletedModel))
+                            continue;
+
+                        // D + C/D = D
+                        if (m_ChangedModelsAndHints.ContainsKey(deletedModel))
+                            m_ChangedModelsAndHints.Remove(deletedModel);
+                        m_DeletedModels.Add(deletedModel);
                     }
+
+                    m_ModelsToAutoAlign.UnionWith(changeset.m_ModelsToAutoAlign);
+                    m_ModelsToRepositionAtCreation.UnionWith(changeset.m_ModelsToRepositionAtCreation);
                 }
 
                 m_ModelsToAutoAlign.RemoveWhere(m => m_DeletedModels.Contains(m));

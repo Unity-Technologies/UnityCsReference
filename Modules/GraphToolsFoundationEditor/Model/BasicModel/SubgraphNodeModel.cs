@@ -32,6 +32,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
             set
             {
+                if ((m_Subgraph == null && value != null) || (m_Subgraph != null && value == null))
+                    GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+
                 if (value != null)
                 {
                     m_Subgraph ??= new Subgraph(value.Asset);
@@ -93,6 +96,8 @@ namespace Unity.GraphToolsFoundation.Editor
                     elementsToUpdate.Add(wireModel);
                 }
             }
+
+            GraphModel.CurrentGraphChangeDescription?.AddChangedModels(elementsToUpdate, ChangeHint.Data);
 
             return elementsToUpdate;
         }

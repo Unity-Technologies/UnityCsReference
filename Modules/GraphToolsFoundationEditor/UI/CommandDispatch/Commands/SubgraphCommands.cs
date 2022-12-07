@@ -109,6 +109,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             SubgraphNodeModel subgraphNodeModel;
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 var elementsToAddToSubgraph = SubgraphCreationHelpers_Internal.GraphElementsToAddToSubgraph_Internal.ConvertToGraphElementsToAdd_Internal(command.ElementsToAddToSubgraph);
 
@@ -162,23 +163,20 @@ namespace Unity.GraphToolsFoundation.Editor
                 SubgraphCreationHelpers_Internal.PopulateSubgraph_Internal(graphAsset.GraphModel, elementsToAddToSubgraph, allWireModels, inputWireConnections, outputWireConnections);
 
                 // Delete the graph elements that will be created in the local subgraph
-                var deletedModels = new List<GraphElementModel>();
-
                 var graphModel = graphModelState.GraphModel;
-                deletedModels.AddRange(graphModel.DeletePlacemats(elementsToAddToSubgraph.PlacematModels));
-                deletedModels.AddRange(graphModel.DeleteStickyNotes(elementsToAddToSubgraph.StickyNoteModels));
-                deletedModels.AddRange(graphModel.DeleteNodes(elementsToAddToSubgraph.NodeModels, true));
-                deletedModels.AddRange(graphModel.DeleteWires(allWireModels));
-
-                graphUpdater.MarkDeleted(deletedModels);
+                graphModel.DeletePlacemats(elementsToAddToSubgraph.PlacematModels);
+                graphModel.DeleteStickyNotes(elementsToAddToSubgraph.StickyNoteModels);
+                graphModel.DeleteNodes(elementsToAddToSubgraph.NodeModels, true);
+                graphModel.DeleteWires(allWireModels);
 
                 // Create the subgraph node
                 var position = SubgraphNode.ComputeSubgraphNodePosition_Internal(command.ElementsToAddToSubgraph, command.GraphView);
                 subgraphNodeModel = graphModel.CreateSubgraphNode(graphAsset.GraphModel, position, command.Guid);
-                graphUpdater.MarkNew(subgraphNodeModel);
 
                 // Create new wires linking the subgraph node to other nodes
-                graphUpdater.MarkNew(SubgraphCreationHelpers_Internal.CreateWiresConnectedToSubgraphNode_Internal(graphModel, subgraphNodeModel, inputWireConnections, outputWireConnections));
+                SubgraphCreationHelpers_Internal.CreateWiresConnectedToSubgraphNode_Internal(graphModel, subgraphNodeModel, inputWireConnections, outputWireConnections);
+
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
 
             if (subgraphNodeModel != null)

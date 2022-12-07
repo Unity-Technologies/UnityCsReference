@@ -46,6 +46,10 @@ namespace UnityEditor.ShaderFoundry
         BlockSequenceElement,
         CustomizationPointImplementation,
         StageDescription,
+        BlockShaderInterface,
+        BlockShader,
+        InterfaceRegistrationStatement,
+        RegisterTemplatesWithInterface,
         // THIS ENUM MUST BE KEPT IN SYNC WITH THE ENUM IN DataType.h -- ALSO ADD THE TYPE MAPPING TO Initialize() BELOW
         // ALSO ADD THE TYPE MAPPING TO DataTypeStatic.Initialize()
     };

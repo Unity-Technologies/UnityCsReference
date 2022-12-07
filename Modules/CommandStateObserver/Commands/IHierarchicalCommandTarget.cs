@@ -5,7 +5,7 @@
 namespace Unity.CommandStateObserver
 {
     /// <summary>
-    /// A command target that also send the command to its parent.
+    /// A <see cref="ICommandTarget"/> that also send the command to its parent.
     /// </summary>
     interface IHierarchicalCommandTarget : ICommandTarget
     {

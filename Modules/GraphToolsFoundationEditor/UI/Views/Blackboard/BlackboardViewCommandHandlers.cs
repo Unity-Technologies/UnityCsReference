@@ -19,7 +19,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public static void PasteSerializedDataCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState,
             SelectionStateComponent selectionState, BlackboardViewStateComponent blackboardState, PasteSerializedDataCommand command)
         {
-            if (!command.Data.IsEmpty_Internal())
+            if (!command.Data.IsEmpty())
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
 
@@ -38,7 +38,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         selectionUpdater.ClearSelection();
                     }
 
-                    CopyPasteData.PasteSerializedData_Internal(command.Operation, command.Delta, graphViewUpdater,
+                    CopyPasteData.PasteSerializedData(command.Operation, command.Delta, graphViewUpdater,
                         blackboardUpdater, selectionUpdaters.MainUpdateScope, command.Data, graphModelState.GraphModel, command.SelectedGroup);
                 }
             }

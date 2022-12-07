@@ -47,64 +47,68 @@ namespace Unity.GraphToolsFoundation.Editor
             m_GraphProcessingStateComponent = graphProcessingState;
         }
 
+        void DoGraphObservation()
+        {
+            using var graphObservation = this.ObserveState(m_GraphModelStateComponent);
+            var gvUpdateType = graphObservation.UpdateType;
+            GraphModelStateComponent.Changeset changeset = null;
+            IReadOnlyList<GraphProcessingResult> results = null;
+
+            if (gvUpdateType == UpdateType.Partial)
+            {
+                changeset = m_GraphModelStateComponent.GetAggregatedChangeset(graphObservation.LastObservedVersion);
+            }
+
+            if (gvUpdateType != UpdateType.None)
+            {
+                results = GraphProcessingHelper.ProcessGraph(m_GraphModelStateComponent.GraphModel, changeset, RequestGraphProcessingOptions.Default);
+            }
+
+            // Avoid using an updater if we do not need to.
+            if (results != null || m_GraphProcessingStateComponent.GraphProcessingPending)
+            {
+                using var updater = m_GraphProcessingStateComponent.UpdateScope;
+                updater.GraphProcessingPending = false;
+
+                if (results != null)
+                    updater.SetResults(results,
+                        GraphProcessingHelper.GetErrors((Stencil)m_GraphModelStateComponent.GraphModel.Stencil, results));
+            }
+        }
+
         /// <inheritdoc/>
         public override void Observe()
         {
-            using (var idleObservation = this.ObserveState(m_ProcessOnIdleStateComponent))
+            if (m_Preferences.GetBool(BoolPref.OnlyProcessWhenIdle))
             {
-                if (!m_Preferences.GetBool(BoolPref.OnlyProcessWhenIdle) || idleObservation.UpdateType != UpdateType.None)
+                using var idleObservation = this.ObserveState(m_ProcessOnIdleStateComponent);
+                if (idleObservation.UpdateType != UpdateType.None)
                 {
-                    // Either we should process as soon as there is a change, or the idle timer was triggerred.
-
-                    using (var gvObservation = this.ObserveState(m_GraphModelStateComponent))
-                    {
-                        var gvUpdateType = gvObservation.UpdateType;
-                        GraphModelStateComponent.Changeset changeset = null;
-                        IReadOnlyList<GraphProcessingResult> results = null;
-
-                        if (gvUpdateType == UpdateType.Partial)
-                        {
-                            changeset = m_GraphModelStateComponent.GetAggregatedChangeset(gvObservation.LastObservedVersion);
-                        }
-
-                        if (gvUpdateType != UpdateType.None)
-                        {
-                            results = GraphProcessingHelper.ProcessGraph(m_GraphModelStateComponent.GraphModel, changeset, RequestGraphProcessingOptions.Default);
-                        }
-
-                        if (results != null || m_GraphProcessingStateComponent.GraphProcessingPending)
-                        {
-                            using (var updater = m_GraphProcessingStateComponent.UpdateScope)
-                            {
-                                updater.GraphProcessingPending = false;
-
-                                if (results != null)
-                                    updater.SetResults(results,
-                                        GraphProcessingHelper.GetErrors((Stencil)m_GraphModelStateComponent.GraphModel.Stencil, results));
-                            }
-                        }
-                    }
+                    DoGraphObservation();
                 }
-                else if (m_Preferences.GetBool(BoolPref.OnlyProcessWhenIdle) && idleObservation.UpdateType == UpdateType.None)
+                else
                 {
                     // We should only process the graph at idle time, but the idle timer was not triggered yet.
-                    // Thus we only want to display a notification that we will process the graph.
+                    // Thus we only want to display a notification that we will process the graph soon.
 
-                    // We need to check if the state component was modified, but
-                    // without updating our internal version numbers (they will be
+                    // We need to check if the graph was modified, but
+                    // without updating our last observed version number (it will be
                     // updated when we actually process the graph). We use PeekAtState.
-                    using (var gvObservation = this.PeekAtState(m_GraphModelStateComponent))
+                    using var graphObservation = this.PeekAtState(m_GraphModelStateComponent);
+                    var needsProcessing = graphObservation.UpdateType != UpdateType.None;
+                    if (m_GraphProcessingStateComponent.GraphProcessingPending != needsProcessing)
                     {
-                        var shouldRebuild = gvObservation.UpdateType != UpdateType.None;
-                        if (m_GraphProcessingStateComponent.GraphProcessingPending != shouldRebuild)
-                        {
-                            using (var updater = m_GraphProcessingStateComponent.UpdateScope)
-                            {
-                                updater.GraphProcessingPending = shouldRebuild;
-                            }
-                        }
+                        using var updater = m_GraphProcessingStateComponent.UpdateScope;
+                        updater.GraphProcessingPending = needsProcessing;
                     }
                 }
+            }
+            else
+            {
+                // Observe m_ProcessOnIdleStateComponent to sync our last observed version.
+                using (this.ObserveState(m_ProcessOnIdleStateComponent)) { }
+
+                DoGraphObservation();
             }
         }
     }

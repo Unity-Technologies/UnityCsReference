@@ -41,7 +41,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public ConstantField(IEnumerable<Constant> constantModels, IEnumerable<GraphElementModel> owners,
             ICommandTarget commandTarget, string label = null)
-            : base(commandTarget, label)
+            : base(commandTarget, label, null)
         {
             ConstantModels = constantModels;
             Owners = owners;
@@ -57,10 +57,33 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        void OnLabelMouseCapture(MouseCaptureEvent e)
+        {
+            (CommandTarget as IUndoableCommandMerger)?.StartMerging();
+        }
+
+        void OnLabelMouseRelease(MouseCaptureOutEvent e)
+        {
+            (CommandTarget as IUndoableCommandMerger)?.StopMerging();
+        }
+
         void SetFieldChangedCallback()
         {
             if (m_Field == null)
                 return;
+
+            foreach (var numericField in m_Field.Query<FloatField>().ToList().Cast<VisualElement>()
+                                .Concat(m_Field.Query<IntegerField>().ToList())
+                                .Concat(m_Field.Query<LongField>().ToList())
+                                .Concat(m_Field.Query<DoubleField>().ToList()))
+            {
+                var label = numericField.Q<Label>();
+                if (label != null)
+                {
+                    label.RegisterCallback<MouseCaptureEvent>(OnLabelMouseCapture);
+                    label.RegisterCallback<MouseCaptureOutEvent>(OnLabelMouseRelease);
+                }
+            }
 
             var registerCallbackMethod = GetRegisterCallback_Internal();
             if (registerCallbackMethod != null)
@@ -104,7 +127,9 @@ namespace Unity.GraphToolsFoundation.Editor
             if (registerCallbackMethod == null)
                 return null;
 
-            var t = ConstantModels.First().Type == typeof(EnumValueReference) ? typeof(Enum) : ModelHelpers.GetCommonBaseType(ConstantModels.Select(t => t.ObjectValue));
+            var t = ConstantModels.First().Type == typeof(EnumValueReference) ? typeof(Enum) :
+                ModelHelpers.GetCommonBaseType(ConstantModels.Select(
+                    t => t.ObjectValue != null ? t.ObjectValue.GetType() : t.Type));
 
             // Fix for: https://jira.unity3d.com/projects/GTF/issues/GTF-748
             // objects such as Texture2D that inherit from UnityEngine.Object send a ChangeEvent<UnityEngine.Object>

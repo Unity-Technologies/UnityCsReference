@@ -191,10 +191,18 @@ namespace UnityEngine
             return lhs.x == rhs.x && lhs.y == rhs.y && lhs.width == rhs.width && lhs.height == rhs.height;
         }   
 
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override int GetHashCode()
         {
-            return x.GetHashCode() ^ (width.GetHashCode() << 2) ^ (y.GetHashCode() >> 2) ^ (height.GetHashCode() >> 1);
-        }        
+            var xHash = x.GetHashCode();
+            var yHash = y.GetHashCode();
+            var wHash = width.GetHashCode();
+            var hHash = height.GetHashCode();
+            return xHash ^ 
+                (yHash << 4) ^ (yHash >> 28) ^ 
+                (wHash >> 4) ^ (wHash << 28) ^
+                (hHash >> 4) ^ (hHash << 28);
+        }      
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override bool Equals(object other)

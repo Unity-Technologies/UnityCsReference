@@ -37,7 +37,7 @@ namespace UnityEditor
         {
             serializedObject.Update();
             EditorGUILayout.PropertyField(m_MaximumTileChangeCount, Styles.maximumTileChangeCountLabel);
-            using (new EditorGUI.DisabledScope(!(target as TilemapCollider2D).usedByComposite))
+            using (new EditorGUI.DisabledScope((target as TilemapCollider2D).compositeOperation == Collider2D.CompositeOperation.None))
                 EditorGUILayout.PropertyField(m_ExtrusionFactor, Styles.extrusionFactorLabel);
             EditorGUILayout.PropertyField(m_UseDelaunayMesh);
             base.OnInspectorGUI();

@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using Unity.ItemLibrary.Editor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,17 +18,20 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         readonly GraphModel m_GraphModel;
 
-                /// <summary>
+        /// <summary>
         /// The <see cref="GraphView"/> calling the search.
         /// </summary>
         GraphView m_HostGraphView;
 
         /// <summary>
+        /// The <see cref="GraphElement"/> of the current selected item.
+        /// </summary>
+        public GraphElement CurrentElement { get; private set; }
+
+        /// <summary>
         /// The <see cref="GraphView"/> displaying the preview in the details panel.
         /// </summary>
-        GraphView m_PreviewGraphView;
-
-        GraphElement m_CurrentElement;
+        public GraphView PreviewGraphView { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GraphNodeLibraryAdapter"/> class.
@@ -65,8 +70,8 @@ namespace Unity.GraphToolsFoundation.Editor
         protected override ScrollView MakeDetailsPreviewContainer()
         {
             var scrollView = base.MakeDetailsPreviewContainer();
-            m_PreviewGraphView = CreatePreviewGraphView();
-            scrollView.Add(m_PreviewGraphView);
+            PreviewGraphView = CreatePreviewGraphView();
+            scrollView.Add(PreviewGraphView);
             return scrollView;
         }
 
@@ -74,17 +79,17 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             base.UpdateDetailsPanel(item);
 
-            m_PreviewGraphView.RemoveElement(m_CurrentElement);
+            PreviewGraphView.RemoveElement(CurrentElement);
 
             if (ItemHasPreview(item))
             {
                 var graphItem = item as GraphNodeModelLibraryItem;
                 var model = CreateGraphElementModel(m_GraphModel, graphItem);
-                m_CurrentElement = ModelViewFactory.CreateUI<GraphElement>(m_PreviewGraphView, model);
-                if (m_CurrentElement != null)
+                CurrentElement = ModelViewFactory.CreateUI<GraphElement>(PreviewGraphView, model);
+                if (CurrentElement != null)
                 {
-                    m_CurrentElement.style.position = Position.Relative;
-                    m_PreviewGraphView.AddElement(m_CurrentElement);
+                    CurrentElement.style.position = Position.Relative;
+                    PreviewGraphView.AddElement(CurrentElement);
                 }
             }
         }

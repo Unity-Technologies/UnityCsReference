@@ -12,6 +12,10 @@ namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
     /// Inspector for the serializable fields of a <see cref="GraphElementModel"/> or its surrogate, if it implements <see cref="IHasInspectorSurrogate"/>.
+    /// Will Display in this order:
+    /// - Fields without [MoveAfterInspectorAttribute] matching m_Filter.
+    /// - Fields from GetCustomFields.
+    /// - Ordered Fields With [MoveAfterInspectorAttribute] matching m_Filter.
     /// </summary>
     class SerializedFieldsInspector : FieldsInspector
     {
@@ -87,6 +91,15 @@ namespace Unity.GraphToolsFoundation.Editor
             return m_Models.Select(t => t is IHasInspectorSurrogate surrogate ? surrogate.Surrogate: t);
         }
 
+        /// <summary>
+        /// Allow adding field to display between the default fields and the default field with a <see cref="InspectorFieldOrderAttribute"/>.
+        /// </summary>
+        /// <returns>An optional list of <see cref="BaseModelPropertyField"/>.</returns>
+        protected virtual List<BaseModelPropertyField> GetCustomFields()
+        {
+            return null;
+        }
+
         /// <inheritdoc />
         protected override IEnumerable<BaseModelPropertyField> GetFields()
         {
@@ -108,22 +121,59 @@ namespace Unity.GraphToolsFoundation.Editor
                 type = type.BaseType;
             }
 
+            SortedDictionary<int, List<FieldInfo>> inspectorOrderAttributeFields = new SortedDictionary<int, List<FieldInfo>>();
+
+            BaseModelPropertyField GetFieldFromFieldInfo(FieldInfo fieldInfo1)
+            {
+                var tooltip = "";
+                var tooltipAttribute = fieldInfo1.GetCustomAttribute<TooltipAttribute>();
+                if (tooltipAttribute != null)
+                {
+                    tooltip = tooltipAttribute.tooltip;
+                }
+
+                var modelFieldFieldType = typeof(ModelSerializedFieldField_Internal<>).MakeGenericType(fieldInfo1.FieldType);
+                var baseModelPropertyField = Activator.CreateInstance(
+                        modelFieldFieldType, RootView, m_Models, targets, fieldInfo1, tooltip)
+                    as BaseModelPropertyField;
+                return baseModelPropertyField;
+            }
+
             foreach (var t in typeList)
             {
                 var fields = t.GetFields(k_FieldFlags);
                 foreach (var fieldInfo in fields.Where(m_Filter))
                 {
-                    var tooltip = "";
-                    var tooltipAttribute = fieldInfo.GetCustomAttribute<TooltipAttribute>();
-                    if (tooltipAttribute != null)
+                    var moveAfter = fieldInfo.GetCustomAttribute<InspectorFieldOrderAttribute>();
+
+                    if (moveAfter != null)
                     {
-                        tooltip = tooltipAttribute.tooltip;
+                        if (!inspectorOrderAttributeFields.TryGetValue(moveAfter.Order, out var fieldInfosAtPosition))
+                        {
+                            fieldInfosAtPosition = new List<FieldInfo>();
+                            inspectorOrderAttributeFields[moveAfter.Order] = fieldInfosAtPosition;
+                        }
+                        fieldInfosAtPosition.Add(fieldInfo);
+
+                        continue;
                     }
 
-                    var modelFieldFieldType = typeof(ModelSerializedFieldField_Internal<>).MakeGenericType(fieldInfo.FieldType);
-                    yield return Activator.CreateInstance(
-                            modelFieldFieldType, RootView, m_Models, targets, fieldInfo, tooltip)
-                        as BaseModelPropertyField;
+                    yield return GetFieldFromFieldInfo(fieldInfo);
+                }
+            }
+
+            var customFields = GetCustomFields();
+            if (customFields != null)
+            {
+                foreach (var field in customFields)
+                    yield return field;
+            }
+
+            foreach (var fieldInfosAtPosition in inspectorOrderAttributeFields.Values)
+            {
+                foreach (var fieldInfo in fieldInfosAtPosition)
+                {
+                    yield return GetFieldFromFieldInfo(fieldInfo);
                 }
             }
         }

@@ -59,7 +59,7 @@ namespace UnityEngine.Rendering
         public bool reflectionProbes { get; set; } = true;
         public bool reflectionProbesBlendDistance { get; set; } = true;
         public bool rendererPriority { get; set; } = false;
-        public bool rendersUIOverlay { get; set; }
+        public bool rendersUIOverlay { get; set; } = false;
         public bool overridesEnvironmentLighting { get; set; } = false;
         public bool overridesFog { get; set; } = false;
         public bool overridesRealtimeReflectionProbes { get; set; } = false;
@@ -74,6 +74,7 @@ namespace UnityEngine.Rendering
         public bool autoDefaultReflectionProbeBaking { get; set; } = true;
         public bool overridesShadowmask { get; set; } = false;
         public bool overridesLightProbeSystem { get; set; } = false;
+        public bool supportsHDR { get; set; } = false;
         public string overridesLightProbeSystemWarningMessage { get; set; } = "The rendering pipeline used has an alternative method to handle light probes. Please consult the documentation for the used SRP to setup the alternative.";
 
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()

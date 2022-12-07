@@ -28,7 +28,6 @@ namespace UnityEditor
             Rendering = 2,
             Contacts = 3,
             Queries = 4,
-            Other = 5
         }
 
         [SerializeField] Vector2 m_MainScrollPos = Vector2.zero;
@@ -147,13 +146,6 @@ namespace UnityEditor
             public static readonly GUIContent maxNumberOfQueries = EditorGUIUtility.TrTextContent("Max Queries", "Maximum number of queries that will be visualized");
             #endregion
 
-            #region Other
-            public static readonly GUIContent devOptions = EditorGUIUtility.TrTextContent("devOptions");
-            public static readonly GUIContent forceDot = EditorGUIUtility.TrTextContent("Force Dot");
-            public static readonly GUIContent dotAlpha = EditorGUIUtility.TrTextContent("DotAlpha");
-            public static readonly GUIContent toolsHidden = EditorGUIUtility.TrTextContent("Hide tools");
-            #endregion
-
             #region Overlay
             public static readonly GUIContent showCollisionGeometry = EditorGUIUtility.TrTextContent("Collision Geometry");
             public static readonly GUIContent enableMouseSelect = EditorGUIUtility.TrTextContent("Mouse Select");
@@ -192,8 +184,7 @@ namespace UnityEditor
             #endregion
 
             public static readonly GUIStyle tabBarStyle             = GUI.skin.button;
-            public static readonly string[] tabs                    = new string[] { "Info", "Filtering", "Rendering", "Contacts", "Queries", "Other" };
-            public static readonly string[] tabsDev                 = new string[] { "Info", "Filtering", "Rendering", "Contacts", "Queries" };
+            public static readonly string[] tabs                    = new string[] { "Info", "Filtering", "Rendering", "Contacts", "Queries" };
 
             static Style()
             {
@@ -415,9 +406,7 @@ namespace UnityEditor
 
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            m_CurrentTab.value = GUILayout.Toolbar(m_CurrentTab.value
-                , (Unsupported.IsDeveloperMode() || PhysicsVisualizationSettings.devOptions) ? Style.tabsDev : Style.tabs
-                , Style.tabBarStyle);
+            m_CurrentTab.value = GUILayout.Toolbar(m_CurrentTab.value, Style.tabs, Style.tabBarStyle);
 
             if (GUILayout.Button(Style.resetButton, EditorStyles.toolbarButton, Style.maxWidth75))
             {
@@ -446,9 +435,6 @@ namespace UnityEditor
                     break;
                 case Tabs.Queries:
                     DrawQueriesTab();
-                    break;
-                case Tabs.Other:
-                    DrawMiscTab();
                     break;
             }
 
@@ -668,27 +654,6 @@ namespace UnityEditor
             RemoveLockedObjects();
         }
 
-        private void DrawMiscTab()
-        {
-            if (Unsupported.IsDeveloperMode() || PhysicsVisualizationSettings.devOptions)
-            {
-                PhysicsVisualizationSettings.devOptions = EditorGUILayout.Toggle(Style.devOptions
-                    , PhysicsVisualizationSettings.devOptions);
-            }
-
-            if (PhysicsVisualizationSettings.devOptions)
-            {
-                PhysicsVisualizationSettings.dotAlpha = EditorGUILayout.Slider(Style.dotAlpha
-                    , PhysicsVisualizationSettings.dotAlpha, -1f, 1f);
-
-                PhysicsVisualizationSettings.forceDot = EditorGUILayout.Toggle(Style.forceDot
-                    , PhysicsVisualizationSettings.forceDot);
-
-                Tools.hidden = EditorGUILayout.Toggle(Style.toolsHidden
-                    , Tools.hidden);
-            }
-        }
-
         [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName)]
         class SceneViewPhysicsDebuggerOverlay : TransientSceneViewOverlay
         {
@@ -709,12 +674,6 @@ namespace UnityEditor
                 }
                 if (EditorGUI.EndChangeCheck())
                     SetPickingEnabled(PhysicsVisualizationSettings.showCollisionGeometry && PhysicsVisualizationSettings.enableMouseSelect);
-
-                if (PhysicsVisualizationSettings.devOptions)
-                {
-                    PhysicsVisualizationSettings.useSceneCam = EditorGUILayout.Toggle(Style.useSceneCam
-                        , PhysicsVisualizationSettings.useSceneCam);
-                }
 
                 if (dirtyCount != PhysicsVisualizationSettings.dirtyCount)
                     RepaintSceneAndGameViews();

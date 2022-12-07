@@ -26,22 +26,32 @@ namespace Unity.GraphToolsFoundation.Editor
         bool m_UnsavedChangesWindowIsEnabled;
 
         /// <summary>
+        /// Finds an empty window of type <typeparamref name="TWindow"/>. If none is found, creates a new one.
+        /// </summary>
+        /// <typeparam name="TWindow">The type of the window to find or create.</typeparam>
+        /// <returns>The window.</returns>
+        public static TWindow FindOrCreateGraphWindow<TWindow>() where TWindow : GraphViewEditorWindow
+        {
+            return ShowGraphInExistingOrNewWindow<TWindow>(null);
+        }
+
+        /// <summary>
         /// Finds a graph asset's opened window of type <typeparamref name="TWindow"/>. If no window is found, create a new one.
         /// The window is then opened and focused.
         /// </summary>
-        /// <param name="assetPath">The path of the graph asset to open.</param>
+        /// <param name="graphAsset">The graph asset to display in the window. Pass null if you are looking for an empty window of type <typeparamref name="TWindow"/>.</param>
         /// <typeparam name="TWindow">The window type, which should derive from <see cref="GraphViewEditorWindow"/>.</typeparam>
         /// <returns>A window.</returns>
-        public static TWindow FindOrCreateGraphWindow<TWindow>(string assetPath = null) where TWindow : GraphViewEditorWindow
+        public static TWindow ShowGraphInExistingOrNewWindow<TWindow>(GraphAsset graphAsset) where TWindow : GraphViewEditorWindow
         {
             TWindow window = null;
 
             var windowList = Resources.FindObjectsOfTypeAll<TWindow>();
-            if (assetPath != null)
+            if (graphAsset != null)
             {
                 window = windowList.FirstOrDefault(w =>
-                        w.GraphTool.ToolState.CurrentGraph.GetGraphAssetPath() == assetPath ||
-                        w.GraphTool.ToolState.SubGraphStack.FirstOrDefault().GetGraphAssetPath() == assetPath);
+                        w.GraphTool.ToolState.CurrentGraph.GetGraphAsset() == graphAsset ||
+                        w.GraphTool.ToolState.SubGraphStack.FirstOrDefault().GetGraphAsset() == graphAsset);
             }
 
             if (window == null)
@@ -55,25 +65,15 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             window.Show();
+
+            if (graphAsset != null)
+            {
+                window.GraphTool.Dispatch(new LoadGraphCommand(graphAsset.GraphModel));
+            }
+
             window.Focus();
 
             return window;
-        }
-
-        /// <summary>
-        /// Ways of opening a graph when selection changes.
-        /// </summary>
-        public enum OpenMode
-        {
-            /// <summary>
-            /// Just open the graph in the window.
-            /// </summary>
-            Open,
-
-            /// <summary>
-            /// Show the graph and focus the window.
-            /// </summary>
-            OpenAndFocus
         }
 
         public static readonly string graphProcessingPendingUssClassName = "graph-processing-pending";
@@ -126,7 +126,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected virtual BaseGraphTool CreateGraphTool()
         {
-            return CsoTool.Create<BaseGraphTool>(WindowID);
+            return BaseGraphTool.Create<BaseGraphTool>(WindowID);
         }
 
         protected virtual BlankPage CreateBlankPage()
@@ -489,46 +489,6 @@ namespace Unity.GraphToolsFoundation.Editor
                             overlay.displayed = false;
                         }
                     }
-                }
-            }
-        }
-
-        public void SetCurrentSelection(GraphAsset graphAsset, OpenMode mode, GameObject boundObject = null)
-        {
-            var windows = (GraphViewEditorWindow[])Resources.FindObjectsOfTypeAll(typeof(GraphViewEditorWindow));
-
-            // Only the last focused editor should try to answer a change to the current selection.
-            if (s_LastFocusedEditor != GetInstanceID() && windows.Length > 1)
-                return;
-
-            var currentOpenedGraph = GraphTool?.ToolState.CurrentGraph ?? default;
-            // don't load if same graph and same bound object
-            if (GraphTool?.ToolState.GraphModel != null &&
-                graphAsset == currentOpenedGraph.GetGraphAsset() &&
-                currentOpenedGraph.BoundObject == boundObject)
-                return;
-
-            // If there is no graph asset, unload the current one.
-            if (graphAsset.GraphModel == null)
-            {
-                return;
-            }
-
-            // Load this graph asset.
-            GraphTool?.Dispatch(new LoadGraphCommand(graphAsset.GraphModel, boundObject));
-
-            UpdateWindowTitle_Internal();
-
-            if (mode != OpenMode.OpenAndFocus)
-                return;
-
-            // Check if an existing window already has this asset, if yes give it the focus.
-            foreach (var window in windows)
-            {
-                if (window.GraphTool.ToolState.GraphModel == graphAsset.GraphModel)
-                {
-                    window.Focus();
-                    return;
                 }
             }
         }

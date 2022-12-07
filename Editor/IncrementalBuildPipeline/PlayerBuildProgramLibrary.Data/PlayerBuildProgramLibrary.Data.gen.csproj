@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
     <LangVersion>latest</LangVersion>
-    <NoWarn>1071</NoWarn>
+    <NoWarn>1701</NoWarn>
     <AssemblyName>PlayerBuildProgramLibrary.Data</AssemblyName>
   </PropertyGroup>
   <ItemGroup>

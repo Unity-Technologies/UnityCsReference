@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace Unity.CommandStateObserver
@@ -24,18 +25,20 @@ namespace Unity.CommandStateObserver
         readonly HashSet<IStateComponent> m_DirtyComponentSet = new HashSet<IStateComponent>();
         readonly List<IStateObserver> m_NewObservers = new List<IStateObserver>();
 
+        int m_MarkerUniqueId = 0;
+        Dictionary<IStateObserver, ProfilerMarker> m_ProfilerMarkers = new ();
+
         /// <summary>
         /// Returns true if the observers are being notified.
         /// </summary>
         bool IsObserving { get; set; }
 
         /// <summary>
-        /// Registers a state observer.
+        /// Registers a state observer to the manager.
         /// </summary>
         /// <remarks>
-        /// The content of <see cref="StateObserver.ObservedStateComponents"/> and
-        /// <see cref="StateObserver.ModifiedStateComponents"/> should not change once the
-        /// observer is registered.
+        /// If the content of <see cref="StateObserver.ObservedStateComponents"/> is modified after
+        /// the observer is registered, the observer should be unregistered and registered again.
         /// </remarks>
         /// <param name="observer">The observer.</param>
         /// <exception cref="InvalidOperationException">Thrown when the observer is already registered.</exception>
@@ -45,6 +48,7 @@ namespace Unity.CommandStateObserver
                 return;
 
             m_NewObservers.Add(observer);
+            m_ProfilerMarkers[observer] = new ProfilerMarker($"{observer.GetType()}_{m_MarkerUniqueId++}.Observe");
 
             foreach (var component in observer.ObservedStateComponents)
             {
@@ -63,7 +67,7 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Unregisters a state observer.
+        /// Unregisters a state observer from the manager.
         /// </summary>
         /// <param name="observer">The observer.</param>
         public void UnregisterObserver(IStateObserver observer)
@@ -80,6 +84,7 @@ namespace Unity.CommandStateObserver
             }
 
             m_NewObservers.Remove(observer);
+            m_ProfilerMarkers.Remove(observer);
         }
 
         void SortObservers()
@@ -92,6 +97,7 @@ namespace Unity.CommandStateObserver
         }
 
         // Will modify observersToSort.
+        // Internal for tests.
         internal static void SortObservers_Internal(List<IStateObserver> observersToSort, out List<IStateObserver> sortedObservers)
         {
             sortedObservers = new List<IStateObserver>(observersToSort.Count);
@@ -132,12 +138,9 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Notifies state observers that the state has changed.
+        /// Notifies state observers that the state they observe has changed.
         /// </summary>
-        /// <remarks>
-        /// State observers will only be notified if the state components they are observing have changed.
-        /// </remarks>
-        /// <param name="state">The observed state.</param>
+        /// <param name="state">The state.</param>
         public virtual void NotifyObservers(IState state)
         {
             if (!IsObserving)
@@ -150,31 +153,38 @@ namespace Unity.CommandStateObserver
                         SortObservers();
 
                     m_ObserverCallList.Clear();
-                    if (m_SortedObservers.Count > 0)
+                    if (m_SortedObservers!.Count > 0)
                     {
                         m_DirtyComponentSet.Clear();
 
-                        foreach (var component in state.AllStateComponents)
+                        foreach (var observer in m_SortedObservers)
                         {
-                            if (component.HasChanges())
-                            {
-                                m_DirtyComponentSet.Add(component);
-                            }
-                        }
+                            var addToCallList =
+                                m_DirtyComponentSet.Overlaps(observer.ObservedStateComponents) ||
+                                m_NewObservers.Contains(observer);
 
-                        if (m_DirtyComponentSet.Count > 0 || m_NewObservers.Count > 0)
-                        {
-                            foreach (var observer in m_SortedObservers)
+                            if (!addToCallList)
                             {
-                                if (m_DirtyComponentSet.Overlaps(observer.ObservedStateComponents) || m_NewObservers.Contains(observer))
+                                foreach (var observedStateComponent in observer.ObservedStateComponents)
                                 {
-                                    m_ObserverCallList.Add(observer);
-                                    m_DirtyComponentSet.UnionWith(observer.ModifiedStateComponents);
+                                    var lastObservedVersion = (observer as IInternalStateObserver_Internal)?.GetLastObservedComponentVersion_Internal(observedStateComponent) ?? default;
+                                    var updateType = observedStateComponent.GetObserverUpdateType(lastObservedVersion);
+                                    if (updateType != UpdateType.None)
+                                    {
+                                        addToCallList = true;
+                                        break;
+                                    }
                                 }
                             }
 
-                            m_NewObservers.Clear();
+                            if (addToCallList)
+                            {
+                                m_ObserverCallList.Add(observer);
+                                m_DirtyComponentSet.UnionWith(observer.ModifiedStateComponents);
+                            }
                         }
+
+                        m_NewObservers.Clear();
                     }
 
                     if (m_ObserverCallList.Any())
@@ -184,7 +194,10 @@ namespace Unity.CommandStateObserver
                             foreach (var observer in m_ObserverCallList)
                             {
                                 StateObserverHelper_Internal.CurrentObserver_Internal = observer;
-                                observer.Observe();
+                                using (m_ProfilerMarkers[observer].Auto())
+                                {
+                                    observer.Observe();
+                                }
                             }
                         }
                         finally
@@ -192,7 +205,7 @@ namespace Unity.CommandStateObserver
                             StateObserverHelper_Internal.CurrentObserver_Internal = null;
                         }
 
-                        // If m_ObserverCallSet is empty, observed versions did not change, so changesets do not need to be purged.
+                        // If m_ObserverCallList is empty, observed versions did not change, so changesets do not need to be purged.
 
                         // For each state component, find the earliest observed version in all observers and purge the
                         // changesets that are earlier than this earliest version.
@@ -213,7 +226,7 @@ namespace Unity.CommandStateObserver
                                 }
                             }
 
-                            editorStateComponent.PurgeOldChangesets(earliestObservedVersion);
+                            editorStateComponent.PurgeObsoleteChangesets(earliestObservedVersion);
                         }
                     }
                 }

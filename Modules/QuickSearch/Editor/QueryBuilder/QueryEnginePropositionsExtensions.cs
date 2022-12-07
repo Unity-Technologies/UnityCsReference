@@ -9,9 +9,35 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    static class QueryEnginePropositionsExtenstion
+    static class CombiningOperatorPropositionsExtensions
+    {
+        public static bool HasAny(this QueryEnginePropositionsExtension.CombiningOperatorPropositions flags, QueryEnginePropositionsExtension.CombiningOperatorPropositions f) => (flags & f) != 0;
+        public static bool HasAll(this QueryEnginePropositionsExtension.CombiningOperatorPropositions flags, QueryEnginePropositionsExtension.CombiningOperatorPropositions all) => (flags & all) == all;
+    }
+
+    static class QueryEnginePropositionsExtension
     {
         const string k_BaseSearchPropositionDataKey = "searchproposition_";
+
+        [Flags]
+        public enum CombiningOperatorPropositions
+        {
+            None = 0,
+            And = 1 << 0,
+            Or = 1 << 1,
+            Default = And | Or
+        }
+
+        public static IEnumerable<SearchProposition> GetCombiningOperatorPropositions(CombiningOperatorPropositions props, string category = "Operators")
+        {
+            var icon = Utils.LoadIcon("LayoutElement Icon");
+
+            if (props.HasAny(CombiningOperatorPropositions.Or))
+                yield return new SearchProposition(category: category, label: "OR", replacement: "or", icon: icon, color: QueryColors.combine);
+
+            if (props.HasAny(CombiningOperatorPropositions.And))
+                yield return new SearchProposition(category: category, label: "AND", replacement: "and", icon: icon, color: QueryColors.combine);
+        }
 
         [Serializable]
         class SearchPropositionDescription
@@ -148,15 +174,15 @@ namespace UnityEditor.Search
             return propositionDescription.ToSearchProposition();
         }
 
-        public static IEnumerable<SearchProposition> GetPropositions(this QueryEngine queryEngine)
+        public static IEnumerable<SearchProposition> GetPropositions(this QueryEngine queryEngine, CombiningOperatorPropositions props = CombiningOperatorPropositions.Default)
         {
-            return queryEngine.GetPropositions<object>();
+            return queryEngine.GetPropositions<object>(props);
         }
 
-        public static IEnumerable<SearchProposition> GetPropositions<TData>(this QueryEngine<TData> queryEngine)
+        public static IEnumerable<SearchProposition> GetPropositions<TData>(this QueryEngine<TData> queryEngine, CombiningOperatorPropositions props = CombiningOperatorPropositions.Default)
         {
             var filters = queryEngine.GetAllFilters();
-            return filters.SelectMany(f => f.GetPropositions());
+            return GetCombiningOperatorPropositions(props).Concat(filters.SelectMany(f => f.GetPropositions()));
         }
 
         public static IEnumerable<SearchProposition> GetPropositions(this IQueryEngineFilter filter)

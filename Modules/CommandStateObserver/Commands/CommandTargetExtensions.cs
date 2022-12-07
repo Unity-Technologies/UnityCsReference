@@ -6,6 +6,9 @@ using System;
 
 namespace Unity.CommandStateObserver
 {
+    /// <summary>
+    /// Extension methods for <see cref="ICommandTarget"/>.
+    /// </summary>
     static class CommandTargetExtensions
     {
         /// <summary>

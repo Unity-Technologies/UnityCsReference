@@ -185,13 +185,25 @@ namespace UnityEngine
         internal extern bool realtimeForceUpdates { get; set; }
 
         [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is obsolete.", true)]
-        public extern bool finalGather { get; set; }
+        public bool finalGather
+        {
+            get { return false; }
+            set { finalGather = false; }
+        }
+        
+        [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is obsolete.", true)]
+        public float finalGatherRayCount
+        {
+            get { return 0; }
+            set { finalGatherRayCount = 0; }
+        }
 
         [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is obsolete.", true)]
-        public extern float finalGatherRayCount { get; set; }
-
-        [Obsolete("Bake with the Progressive Lightmapper. The backend that uses Enlighten to bake is obsolete.", true)]
-        public extern bool finalGatherFiltering { get; set; }
+        public bool finalGatherFiltering
+        {
+            get { return false; }
+            set { finalGatherFiltering = false; }
+        }
 
         [NativeName("PVRSampling")]
         public extern Sampling sampling { get; set; }

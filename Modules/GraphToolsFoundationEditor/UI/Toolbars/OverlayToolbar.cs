@@ -27,7 +27,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         public override VisualElement CreatePanelContent()
         {
-            return new EditorToolbar(toolbarElements, containerWindow).rootVisualElement;
+            return EditorToolbar.CreateOverlay(toolbarElements, containerWindow);
         }
 
         /// <summary>

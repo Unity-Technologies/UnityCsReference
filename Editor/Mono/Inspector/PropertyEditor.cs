@@ -1858,11 +1858,8 @@ namespace UnityEditor
                         if (!(editor.target is ParticleSystemRenderer) && (mapping == null || !mapping.TryGetValue(editor.target.GetInstanceID(),
                             out var culledEditorContainer)))
                         {
-                            string editorTitle = editorTarget == null
-                                ? "Nothing Selected"
-                                : ObjectNames.GetInspectorTitle(editorTarget);
                             culledEditorContainer =
-                                new UIElements.EditorElement(editorIndex, this, editors, true) { name = editorTitle };
+                                new UIElements.EditorElement(editorIndex, this, editors, true);
                             editorsElement.Add(culledEditorContainer as VisualElement);
 
                             if (!InspectorElement.disabledThrottling)
@@ -1874,10 +1871,7 @@ namespace UnityEditor
 
                     if (mapping == null || !mapping.TryGetValue(editors[editorIndex].target.GetInstanceID(), out var editorContainer))
                     {
-                        string editorTitle = editorTarget == null ?
-                            "Nothing Selected" :
-                            $"{editor.GetType().Name}_{editorTarget.GetType().Name}_{editorTarget.GetInstanceID()}";
-                        editorContainer = new UIElements.EditorElement(editorIndex, this, editors) { name = editorTitle };
+                        editorContainer = new UIElements.EditorElement(editorIndex, this, editors);
                         editorsElement.Add(editorContainer as VisualElement);
                         if (!InspectorElement.disabledThrottling)
                             m_EditorElementUpdater.Add(editorContainer);

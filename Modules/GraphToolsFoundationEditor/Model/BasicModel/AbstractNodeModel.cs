@@ -45,7 +45,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string Title
         {
             get => m_Title;
-            set => m_Title = value;
+            set
+            {
+                if (m_Title == value)
+                    return;
+                m_Title = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <inheritdoc />
@@ -57,7 +63,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string Tooltip
         {
             get => string.IsNullOrEmpty(m_Tooltip)?DisplayTitle:m_Tooltip;
-            set => m_Tooltip = value;
+            set
+            {
+                if (m_Tooltip == value)
+                    return;
+                m_Tooltip = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Style);
+            }
         }
 
         /// <inheritdoc />
@@ -69,7 +81,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (!this.IsMovable())
                     return;
 
+                if (m_Position == value)
+                    return;
+
                 m_Position = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Layout);
             }
         }
 

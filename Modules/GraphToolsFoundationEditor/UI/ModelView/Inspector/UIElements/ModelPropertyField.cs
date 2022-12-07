@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Unity.CommandStateObserver;
 using UnityEditor;
 using UnityEngine;
@@ -65,15 +66,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="models">The models that owns the field.</param>
         /// <param name="propertyName">The name of the property to edit.</param>
         /// <param name="label">The label for the field. If null, the <paramref name="propertyName"/> will be used.</param>
+        /// <param name="inspectedField">The inspected <see cref="FieldInfo"/> or null.</param>
         /// <param name="fieldTooltip">The tooltip for the field.</param>
         protected ModelPropertyField(
             ICommandTarget commandTarget,
             IEnumerable<Model> models,
             string propertyName,
             string label,
+            FieldInfo inspectedField,
             string fieldTooltip
         )
-            : base(commandTarget, label ?? ObjectNames.NicifyVariableName(propertyName))
+            : base(commandTarget, label ?? ObjectNames.NicifyVariableName(propertyName), inspectedField)
         {
             Models = models;
             m_Field = CreateFieldFromProperty(propertyName, fieldTooltip);
@@ -99,7 +102,7 @@ namespace Unity.GraphToolsFoundation.Editor
             string fieldTooltip,
             Action<TValue, ModelPropertyField<TValue>> onValueChanged = null,
             Func<Model, TValue> valueGetter = null)
-            : this(commandTarget, models, propertyName, label, fieldTooltip)
+            : this(commandTarget, models, propertyName, label, null, fieldTooltip)
         {
             SetValueGetterOrDefault(propertyName, valueGetter);
 

@@ -7,7 +7,7 @@ using System;
 namespace Unity.CommandStateObserver
 {
     /// <summary>
-    /// Interface that defines the target of a command.
+    /// Interface for the target of a command.
     /// </summary>
     interface ICommandTarget
     {
@@ -19,7 +19,7 @@ namespace Unity.CommandStateObserver
         void Dispatch(ICommand command, Diagnostics diagnosticsFlags = Diagnostics.None);
 
         /// <summary>
-        /// Registers a handler for a command type.
+        /// Registers a handler for a command type. Replaces any previously registered handler for the command type.
         /// </summary>
         /// <param name="commandHandlerFunctor">The command handler.</param>
         /// <typeparam name="TCommand">The command type.</typeparam>

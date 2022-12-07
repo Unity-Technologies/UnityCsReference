@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -15,23 +16,26 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     [Serializable]
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Model")]
-    class PlacematModel : GraphElementModel, IHasTitle, IMovable, ICollapsible, IResizable, IRenamable
+    class PlacematModel : GraphElementModel, IHasTitle, IMovable, IResizable, IRenamable
     {
         const string k_DefaultPlacematName = "Placemat";
+        const int k_MinTitleFontSize = 16;
+        const int k_MaxTitleFontSize = 150;
 
         [SerializeField]
         string m_Title;
 
+        [SerializeField, InspectorUseProperty(nameof(TitleFontSize))]
+        int m_TitleFontSize;
+
         [SerializeField]
+        TextAlignment m_TitleAlignment;
+
+        [SerializeField, HideInInspector]
         Rect m_Position;
 
-        [SerializeField]
-        bool m_Collapsed;
-
-        [SerializeField]
-        List<string> m_HiddenElements;
-
-        List<GraphElementModel> m_CachedHiddenElementModels;
+        [SerializeField, Multiline]
+        string m_Comment;
 
         public override Color DefaultColor => new Color(74.0f/255.0f, 88.0f/255.0f, 91.0f / 255.0f);
 
@@ -42,7 +46,31 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual string Title
         {
             get => m_Title;
-            set => m_Title = value;
+            set
+            {
+                if (m_Title == value)
+                    return;
+                m_Title = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
+        }
+
+        public int TitleFontSize
+        {
+            get => m_TitleFontSize;
+            set => m_TitleFontSize = value > k_MaxTitleFontSize ? k_MaxTitleFontSize : (value < k_MinTitleFontSize ? k_MinTitleFontSize : value);
+        }
+
+        public TextAlignment TitleAlignment
+        {
+            get => m_TitleAlignment;
+            set => m_TitleAlignment = value;
+        }
+
+        public string Comment
+        {
+            get => m_Comment;
+            set => m_Comment = value;
         }
 
         /// <inheritdoc />
@@ -61,6 +89,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (!this.IsMovable())
                     r.position = m_Position.position;
 
+                if (r != m_Position)
+                    GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Layout);
+
                 m_Position = r;
             }
         }
@@ -70,30 +101,6 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             get => PositionAndSize.position;
             set => PositionAndSize = new Rect(value, PositionAndSize.size);
-        }
-
-        /// <inheritdoc />
-        public virtual bool Collapsed
-        {
-            get => m_Collapsed;
-            set
-            {
-                if (!this.IsCollapsible())
-                    return;
-
-                m_Collapsed = value;
-                this.SetCapability(Editor.Capabilities.Resizable, !m_Collapsed);
-            }
-        }
-
-        public List<string> HiddenElementsGuid
-        {
-            get => m_HiddenElements;
-            set
-            {
-                m_HiddenElements = value;
-                m_CachedHiddenElementModels = null;
-            }
         }
 
         /// <summary>
@@ -146,64 +153,6 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// Elements hidden in the placemat.
-        /// </summary>
-        public virtual IEnumerable<GraphElementModel> HiddenElements
-        {
-            get
-            {
-                if (m_CachedHiddenElementModels == null)
-                {
-                    if (HiddenElementsGuid != null)
-                    {
-                        m_CachedHiddenElementModels = new List<GraphElementModel>();
-                        foreach (var elementModelGuid in HiddenElementsGuid)
-                        {
-                            foreach (var node in GraphModel.NodeModels)
-                            {
-                                if (node != null && node.Guid.ToString() == elementModelGuid)
-                                {
-                                    m_CachedHiddenElementModels.Add(node);
-                                }
-                            }
-
-                            foreach (var sticky in GraphModel.StickyNoteModels)
-                            {
-                                if (sticky.Guid.ToString() == elementModelGuid)
-                                {
-                                    m_CachedHiddenElementModels.Add(sticky);
-                                }
-                            }
-
-                            foreach (var placemat in GraphModel.PlacematModels)
-                            {
-                                if (placemat.Guid.ToString() == elementModelGuid)
-                                {
-                                    m_CachedHiddenElementModels.Add(placemat);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                return m_CachedHiddenElementModels ?? Enumerable.Empty<GraphElementModel>();
-            }
-            set
-            {
-                if (value == null)
-                {
-                    m_HiddenElements = null;
-                }
-                else
-                {
-                    m_HiddenElements = new List<string>(value.Select(e => e.Guid.ToString()));
-                }
-
-                m_CachedHiddenElementModels = null;
-            }
-        }
-
-        /// <summary>
         /// Returns the Z-order of the placemat in the graph.
         /// </summary>
         /// <returns>The Z-order of the placemat in the graph.</returns>
@@ -214,8 +163,6 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             base.OnAfterDeserialize();
 
-            m_CachedHiddenElementModels = null;
-
             if (Version <= SerializationVersion.GTF_V_0_8_2)
             {
                 if (DefaultColor != SerializedColor_Internal)
@@ -224,6 +171,15 @@ namespace Unity.GraphToolsFoundation.Editor
                     Color = SerializedColor_Internal;
                 }
             }
+        }
+
+        public static void CopyPlacematParameters(PlacematModel source, PlacematModel destination)
+        {
+            destination.Title = source.Title;
+            destination.Color = source.Color;
+            destination.TitleFontSize = source.TitleFontSize;
+            destination.TitleAlignment = source.TitleAlignment;
+            destination.Comment = source.Comment;
         }
     }
 }

@@ -43,7 +43,8 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         var graphModel = m_GraphModelStateComponent.GraphModel;
                         var selection = m_SelectionStates.SelectMany(s => s.GetSelection(graphModel));
-                        var selectedModels = selection.OfType<Model>().Where(t => t is AbstractNodeModel || t is VariableDeclarationModel || t is WireModel).Distinct().ToList();
+                        var selectedModels = m_ToolState.CurrentGraph.GetGraphModel().Stencil.GetModelsDisplayableInInspector(selection).Distinct().ToList();
+
                         using (var updater = m_ModelInspectorState.UpdateScope)
                         {
                             updater.SetInspectedModels(selectedModels, graphModel);

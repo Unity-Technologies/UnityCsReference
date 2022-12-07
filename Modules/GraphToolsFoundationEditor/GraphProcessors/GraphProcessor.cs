@@ -12,6 +12,16 @@ namespace Unity.GraphToolsFoundation.Editor
     abstract class GraphProcessor
     {
         /// <summary>
+        /// Performs tasks that need to be done when the <see cref="GraphModel"/> is enabled.
+        /// </summary>
+        public virtual void OnGraphModelEnabled() { }
+
+        /// <summary>
+        /// Performs tasks that need to be done when the <see cref="GraphModel"/> is disabled.
+        /// </summary>
+        public virtual void OnGraphModelDisabled() { }
+
+        /// <summary>
         /// Processes the graph.
         /// </summary>
         /// <param name="graphModel">The graph to process.</param>

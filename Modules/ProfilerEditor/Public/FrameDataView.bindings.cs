@@ -232,7 +232,7 @@ namespace UnityEditor.Profiling
         internal static extern UnityEngine.Color32 GetMarkerCategoryColor(ushort category);
 
         [StructLayout(LayoutKind.Sequential)]
-        struct Data
+        internal struct Data
         {
             public IntPtr ptr;
             public int size;

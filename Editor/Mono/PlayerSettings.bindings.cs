@@ -594,9 +594,11 @@ namespace UnityEditor
         public static extern bool enableOpenGLProfilerGPURecorders { get; set; }
 
         public static extern bool useHDRDisplay { get; set; }
-
-        public static extern D3DHDRDisplayBitDepth D3DHDRBitDepth { get; set; }
-
+        
+        [Obsolete("D3DHDRBitDepth has been replaced by hdrBitDepth. (UnityUpgradable) -> hdrBitDepth", true)]
+        public static extern D3DHDRDisplayBitDepth D3DHDRBitDepth { [NativeName("GetHDRBitDepthForObseleteEnum")] get; [NativeName("SetHDRBitDepthForObseleteEnum")] set; }
+        
+        public static extern HDRDisplayBitDepth hdrBitDepth { get; set; }
 
         // What happens with the fullscreen Window when it runs in the background
 

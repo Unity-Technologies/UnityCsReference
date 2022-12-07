@@ -73,6 +73,7 @@ namespace Unity.GraphToolsFoundation.Editor
             this.RegisterCommandHandler<UndoStateComponent, GraphModelStateComponent, SetInspectedGraphModelFieldCommand>(SetInspectedGraphModelFieldCommand.DefaultCommandHandler, GraphTool.UndoStateComponent, ModelInspectorViewModel.GraphModelState);
 
             this.RegisterCommandHandler<UndoStateComponent, GraphModelStateComponent, SetInspectedGraphElementModelFieldCommand>(SetInspectedGraphElementModelFieldCommand.DefaultCommandHandler, GraphTool.UndoStateComponent, ModelInspectorViewModel.GraphModelState);
+            this.RegisterCommandHandler<UndoStateComponent, GraphModelStateComponent, ChangeElementColorCommand>(ChangeElementColorCommand.DefaultCommandHandler, GraphTool.UndoStateComponent, ModelInspectorViewModel.GraphModelState);
 
             this.RegisterCommandHandler<UndoStateComponent, GraphModelStateComponent, UpdateConstantValueCommand>(UpdateConstantValueCommand.DefaultCommandHandler, GraphTool.UndoStateComponent, ModelInspectorViewModel.GraphModelState);
             this.RegisterCommandHandler<UndoStateComponent, GraphModelStateComponent, UpdateConstantsValueCommand>(UpdateConstantsValueCommand.DefaultCommandHandler, GraphTool.UndoStateComponent, ModelInspectorViewModel.GraphModelState);
@@ -304,7 +305,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             // We need to recreate the m_InspectorContainer to be able to set the scroll offset to any value.
             // If we reuse the existing m_InspectorContainer, offset will be clamped according to the last layout of the scrollView.
-            m_InspectorContainer = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
+            m_InspectorContainer = new ScrollView(ScrollViewMode.Vertical);
             m_InspectorContainer.AddToClassList(containerUssClassName);
 
             if (ModelInspectorViewModel == null)

@@ -3,13 +3,20 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace Unity.GraphToolsFoundation.Editor;
 
 class PlacematTitlePart : EditableTitlePart
 {
+    const float k_TitleToHeight = 4;
+    const float k_MinHeightAt12pt = 57;
+
+    float m_LastZoom;
+
     /// <summary>
-    /// Creates a new instance of the <see cref="EditableTitlePart"/> class.
+    /// Creates a new instance of the <see cref="PlacematTitlePart"/> class.
     /// </summary>
     /// <param name="name">The name of the part.</param>
     /// <param name="model">The model displayed in this part.</param>
@@ -28,7 +35,7 @@ class PlacematTitlePart : EditableTitlePart
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="EditableTitlePart"/> class.
+    /// Initializes a new instance of the <see cref="PlacematTitlePart"/> class.
     /// </summary>
     /// <param name="name">The name of the part.</param>
     /// <param name="model">The model displayed in this part.</param>
@@ -40,6 +47,10 @@ class PlacematTitlePart : EditableTitlePart
     {
     }
 
+
+    public static readonly string leftAlignClassName = ussClassName.WithUssModifier("left-align");
+    public static readonly string rightAlignClassName = ussClassName.WithUssModifier("right-align");
+
     /// <inheritdoc />
     protected override void UpdatePartFromModel()
     {
@@ -50,6 +61,31 @@ class PlacematTitlePart : EditableTitlePart
             var color = placematModel.Color;
             color.a = 0.5f;
             TitleContainer.style.backgroundColor = color;
+
+            WantedTextSize = placematModel.TitleFontSize;
+
+
+            TitleLabel.style.height = Mathf.Max(k_MinHeightAt12pt, k_TitleToHeight + WantedTextSize*1.22f);
+
+            TitleLabel.EnableInClassList(leftAlignClassName,placematModel.TitleAlignment == TextAlignment.Left );
+            TitleLabel.EnableInClassList(rightAlignClassName,placematModel.TitleAlignment == TextAlignment.Right );
+
+            if( m_LastZoom != 0 )
+                base.SetLevelOfDetail(m_LastZoom, GraphViewZoomMode.Normal, GraphViewZoomMode.Normal);
         }
+    }
+
+    /// <inheritdoc />
+    protected override void OnCustomStyleResolved(CustomStyleResolvedEvent e)
+    {
+        if (e.customStyle.TryGetValue(k_LodMinTextSize, out var value))
+            LodMinTextSize = value;
+    }
+
+    /// <inheritdoc />
+    public override void SetLevelOfDetail(float zoom, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode)
+    {
+        m_LastZoom = zoom;
+        base.SetLevelOfDetail(zoom, newZoomMode, oldZoomMode);
     }
 }

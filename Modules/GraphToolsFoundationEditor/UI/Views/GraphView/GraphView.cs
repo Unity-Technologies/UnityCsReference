@@ -457,6 +457,11 @@ namespace Unity.GraphToolsFoundation.Editor
                         graphElement.SetLevelOfDetail(zoom.x, m_ZoomMode, oldMode);
                     }
 
+                    foreach (var badge in m_BadgesParent.Children().OfType<Badge>())
+                    {
+                        badge.SetLevelOfDetail(zoom.x, m_ZoomMode, oldMode);
+                    }
+
                     k_UpdateAllUIs.Clear();
                 }
             }
@@ -554,15 +559,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 return selectionDropperDropHandler;
 
             return null;
-        }
-
-        public bool GetPortCenterOverride(Port port, out Vector2 overriddenPosition)
-        {
-            if (PlacematContainer.GetPortCenterOverride(port, out overriddenPosition))
-                return true;
-
-            overriddenPosition = Vector3.zero;
-            return false;
         }
 
         void AddLayer(Layer layer, int index)
@@ -1026,6 +1022,8 @@ namespace Unity.GraphToolsFoundation.Editor
                     model => model is IHasDeclarationModel hasDeclarationModel ? hasDeclarationModel.DeclarationModel : null);
                 GraphTool.ObserverManager.RegisterObserver(m_DeclarationHighlighter);
             }
+
+            SelectionDragger?.RegisterObservers(GraphTool.ObserverManager);
         }
 
         /// <inheritdoc />
@@ -1033,6 +1031,8 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (GraphTool?.ObserverManager == null)
                 return;
+
+            SelectionDragger?.UnregisterObservers(GraphTool.ObserverManager);
 
             if (m_GraphViewGraphLoadedObserver != null)
             {
@@ -1578,9 +1578,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (rebuildType == UpdateType.Complete)
             {
-                // This happens on undo, amongst other cases.
-                // Undo replaces the GraphModel object by a new object.
-                // We need to recreate the all the UI so it does not reference the old graph model.
 
                 // Sad. We lose the focused element.
                 Focus();
@@ -1682,10 +1679,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 schedule.Execute(() =>
                 {
                     using (var graphUpdater = GraphViewModel.GraphModelState.UpdateScope)
+                    using (var changeScope = GraphModel.ChangeDescriptionScope)
                     {
                         var models = elementsToAlign.Select(GraphModel.GetModel).Where(m => m != null).ToList();
-                        var alignedModels = PositionDependenciesManager_Internal.AlignNodes(true, models);
-                        graphUpdater.MarkChanged(alignedModels, ChangeHint.Layout);
+                        PositionDependenciesManager_Internal.AlignNodes(true, models);
+                        graphUpdater.MarkUpdated(changeScope.ChangeDescription);
                     }
                 });
             }
@@ -2147,6 +2145,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void RepositionModelsAtCreation(IEnumerable<GraphModelStateComponent.Changeset.ModelToReposition> modelsToReposition, GraphModelStateComponent.StateUpdater graphUpdater)
         {
+            using var changeScope = GraphModel.ChangeDescriptionScope;
             foreach (var modelToReposition in modelsToReposition)
             {
                 GraphModel.TryGetModelFromGuid(modelToReposition.Model, out AbstractNodeModel nodeModel);
@@ -2204,10 +2203,9 @@ namespace Unity.GraphToolsFoundation.Editor
                         wireUI.visible = true;
                         graphUpdater.MarkChanged(wireModel, ChangeHint.Layout);
                     }
-
-                    graphUpdater.MarkChanged(nodeModel, ChangeHint.Layout);
                 }
             }
+            graphUpdater.MarkUpdated(changeScope.ChangeDescription);
         }
     }
 }

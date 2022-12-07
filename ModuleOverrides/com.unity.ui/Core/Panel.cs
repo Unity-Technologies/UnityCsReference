@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
-using UnityEngine.Yoga;
+using UnityEngine.UIElements.Layout;
 
 namespace UnityEngine.UIElements
 {
@@ -266,8 +266,8 @@ namespace UnityEngine.UIElements
 
         protected BaseVisualElementPanel()
         {
-            yogaConfig = new YogaConfig();
-            yogaConfig.UseWebDefaults = YogaConfig.Default.UseWebDefaults;
+            layoutConfig = LayoutManager.SharedManager.CreateConfig();
+            layoutConfig.UseWebDefaults = false;
             m_UIElementsBridge = new RuntimeUIElementsBridge();
         }
 
@@ -298,7 +298,7 @@ namespace UnityEngine.UIElements
                 DisposeHelper.NotifyMissingDispose(this);
 
             panelDisposed?.Invoke(this);
-            yogaConfig = null;
+            LayoutManager.SharedManager.DestroyConfig(ref layoutConfig);
             disposed = true;
         }
 
@@ -331,7 +331,7 @@ namespace UnityEngine.UIElements
 
                     //we need to update the yoga config
                     visualTree.IncrementVersion(VersionChangeType.Layout);
-                    yogaConfig.PointScaleFactor = scaledPixelsPerPoint;
+                    layoutConfig.PointScaleFactor = scaledPixelsPerPoint;
 
                     // if the surface DPI changes we need to invalidate styles
                     visualTree.IncrementVersion(VersionChangeType.StyleSheet);
@@ -340,7 +340,7 @@ namespace UnityEngine.UIElements
         }
 
 
-        internal YogaConfig yogaConfig;
+        internal LayoutConfig layoutConfig;
 
         private float m_PixelsPerPoint = 1;
         internal float pixelsPerPoint
@@ -354,7 +354,7 @@ namespace UnityEngine.UIElements
 
                     //we need to update the yoga config
                     visualTree.IncrementVersion(VersionChangeType.Layout);
-                    yogaConfig.PointScaleFactor = scaledPixelsPerPoint;
+                    layoutConfig.PointScaleFactor = scaledPixelsPerPoint;
 
                     // if the surface DPI changes we need to invalidate styles
                     visualTree.IncrementVersion(VersionChangeType.StyleSheet);

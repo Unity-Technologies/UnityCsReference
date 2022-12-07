@@ -775,11 +775,7 @@ namespace UnityEditor
 
         private void RevertColors()
         {
-            foreach (KeyValuePair<string, PrefColor> kvp in PrefSettings.Prefs<PrefColor>())
-            {
-                kvp.Value.ResetToDefault();
-                EditorPrefs.SetString(kvp.Value.Name, kvp.Value.ToUniqueString());
-            }
+            PrefSettings.RevertAll<PrefColor>();
         }
 
         private void ShowColors(string searchContext)

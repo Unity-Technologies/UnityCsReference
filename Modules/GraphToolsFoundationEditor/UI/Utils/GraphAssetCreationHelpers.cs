@@ -13,20 +13,19 @@ namespace Unity.GraphToolsFoundation.Editor
 {
     class DoCreateAsset_Internal : EndNameEditAction
     {
-        ICommandTarget m_CommandTarget;
         GraphAsset m_Asset;
         GraphTemplate m_Template;
-        Action m_Callback;
+        Action<GraphAsset> m_Callback;
 
-        public void SetUp(ICommandTarget target, GraphAsset asset, GraphTemplate template, Action callback = null)
+        public void SetUp(GraphAsset asset, GraphTemplate template, Action<GraphAsset> callback = null)
         {
-            m_CommandTarget = target;
             m_Template = template;
             m_Asset = asset;
             m_Callback = callback;
         }
 
-        internal void CreateAndLoadAsset_Internal(string pathName)
+        // internal for tests
+        internal void CreateAsset_Internal(string pathName)
         {
             m_Asset.CreateGraph(m_Template.StencilType);
 
@@ -34,14 +33,12 @@ namespace Unity.GraphToolsFoundation.Editor
             m_Template?.InitBasicGraph(m_Asset.GraphModel);
             m_Asset.Save();
             m_Asset = m_Asset.Import();
-
-            m_CommandTarget?.Dispatch(new LoadGraphCommand(m_Asset.GraphModel));
         }
 
         public override void Action(int instanceId, string pathName, string resourceFile)
         {
-            CreateAndLoadAsset_Internal(pathName);
-            m_Callback?.Invoke();
+            CreateAsset_Internal(pathName);
+            m_Callback?.Invoke(m_Asset);
         }
 
         public override void Cancelled(int instanceId, string pathName, string resourceFile)
@@ -55,13 +52,20 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     static class GraphAssetCreationHelpers
     {
-        public static void CreateInProjectWindow<TGraphAssetType>(GraphTemplate template, ICommandTarget target, string path, Action endActionCallback = null)
+        /// <summary>
+        /// Creates a new graph asset and starts the process of renaming it in the Project window.
+        /// </summary>
+        /// <param name="template">The <see cref="GraphTemplate"/> to use.</param>
+        /// <param name="path">The path at which to create the graph.</param>
+        /// <param name="endActionCallback">Action to call after asset renaming is finished. Typically used to open the new graph in an EditorWindow.</param>
+        /// <typeparam name="TGraphAssetType">The graph asset type to create.</typeparam>
+        public static void CreateInProjectWindow<TGraphAssetType>(GraphTemplate template, string path, Action<GraphAsset> endActionCallback = null)
             where TGraphAssetType : GraphAsset
         {
             var asset = ScriptableObject.CreateInstance<TGraphAssetType>();
 
             var endAction = ScriptableObject.CreateInstance<DoCreateAsset_Internal>();
-            endAction.SetUp(target, asset, template, endActionCallback);
+            endAction.SetUp(asset, template, endActionCallback);
 
             ProjectWindowUtil.StartNameEditingIfProjectWindowExists(
                 asset.GetInstanceID(),

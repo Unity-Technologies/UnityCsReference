@@ -6,11 +6,13 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor.SceneManagement;
+using UnityEditorInternal;
 using UnityEngine;
 
 
@@ -195,6 +197,8 @@ namespace UnityEditor.Search
 
         public static bool pending => s_UpdatedItems.Count > 0 || s_RemovedItems.Count > 0 || s_MovedItems.Count > 0;
 
+        internal static bool enabled => InternalEditorUtility.isHumanControllingUs || File.Exists("Assets/Editor/test_search_monitor.txt");
+
         public static event Action sceneChanged;
         public static event ObjectChangeEvents.ObjectChangeEventsHandler objectChanged;
         public static event Action documentsInvalidated;
@@ -241,7 +245,7 @@ namespace UnityEditor.Search
 
         static SearchMonitor()
         {
-            if (!Utils.IsMainProcess())
+            if (!Utils.IsMainProcess() || !enabled)
                 return;
 
             if (!EditorApplication.isPlayingOrWillChangePlaymode)

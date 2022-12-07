@@ -166,6 +166,22 @@ namespace UnityEngine.UIElements
                     SendFocusBasedEvent(self => UIElementsRuntimeUtility.CreateEvent(self.m_Event), this);
                     ProcessTabEvent(m_Event, m_CurrentModifiers);
                 }
+                else if (m_Event.type == EventType.ScrollWheel)
+                {
+                    // There's different scrollDelta rates between Input Manager, New Input and IMGUI. UITK events use
+                    // IMGUI conventions. Factors can vary between platforms (they come from PlatformDependent code).
+                    // For example, InputEvent::InputEvent (InputEventWin.cpp) and NewInput::OnMessage (NewInput.cpp)
+                    // read data differently from the WM_MOUSEWHEEL message.
+                    // Since we want to rely as little as possible on IMGUI event position for multiple display support,
+                    // we use the mouse position from input and combine it with the scroll delta from IMGUI.
+                    var position = UIElementsRuntimeUtility.MultiDisplayBottomLeftToPanelPosition(input.mousePosition, out var targetDisplay);
+                    var delta = position - m_LastMousePosition;
+                    var scrollDelta = m_Event.delta;
+
+                    SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
+                        (panelPosition, _, t) => WheelEvent.GetPooled(t.scrollDelta, panelPosition, t.modifiers),
+                        (modifiers: m_CurrentModifiers, scrollDelta));
+                }
                 else if (!m_SendingTouchEvents && !m_SendingPenEvent && m_Event.pointerType != UnityEngine.PointerType.Mouse ||
                          m_Event.type == EventType.MouseEnterWindow || m_Event.type == EventType.MouseLeaveWindow)
                 {
@@ -198,7 +214,6 @@ namespace UnityEngine.UIElements
 
             var position = UIElementsRuntimeUtility.MultiDisplayBottomLeftToPanelPosition(input.mousePosition, out var targetDisplay);
             var delta = position - m_LastMousePosition;
-            var scrollDelta = input.mouseScrollDelta;
 
             if (!m_MouseProcessedAtLeastOnce)
             {
@@ -217,13 +232,6 @@ namespace UnityEngine.UIElements
                         (panelPosition, panelDelta, self) => PointerMoveEvent.GetPooled(EventType.MouseMove,
                             panelPosition, panelDelta, -1, 0, self.m_CurrentModifiers), this);
                 }
-
-                if (!Mathf.Approximately(scrollDelta.x, 0f) || !Mathf.Approximately(scrollDelta.y, 0f))
-                {
-                    SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
-                        (panelPosition, _, t) => WheelEvent.GetPooled(panelPosition, -1, 0, t.scrollDelta, t.modifiers),
-                        (modifiers: m_CurrentModifiers, scrollDelta));
-                }
             }
 
             int mouseButtonCount = input.mouseButtonCount;
@@ -231,14 +239,15 @@ namespace UnityEngine.UIElements
             {
                 if (input.GetMouseButtonDown(button))
                 {
-                    if (m_LastMousePressButton != button || Time.unscaledTime >= m_NextMousePressTime)
+                    if (m_LastMousePressButton != button || input.unscaledTime >= m_NextMousePressTime)
                     {
                         m_LastMousePressButton = button;
                         m_LastMouseClickCount = 0;
-                        m_NextMousePressTime = Time.unscaledTime + Event.GetDoubleClickTime();
                     }
 
                     var clickCount = ++m_LastMouseClickCount;
+
+                    m_NextMousePressTime = input.unscaledTime + input.doubleClickTime;
 
                     SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
                         (panelPosition, panelDelta, t) => PointerEventHelper.GetPooled(EventType.MouseDown,
@@ -537,7 +546,7 @@ namespace UnityEngine.UIElements
 
         private bool ShouldSendMoveFromInput()
         {
-            float time = Time.unscaledTime;
+            float time = input.unscaledTime;
 
             Vector2 movement = GetRawMoveVector();
             if (Mathf.Approximately(movement.x, 0f) && Mathf.Approximately(movement.y, 0f))
@@ -612,6 +621,8 @@ namespace UnityEngine.UIElements
             Vector2 mouseScrollDelta { get; }
             int mouseButtonCount { get; }
             bool anyKey { get; }
+            float unscaledTime { get; } // overriden in unit tests
+            float doubleClickTime { get; }
         }
 
         private class Input : IInput
@@ -632,6 +643,8 @@ namespace UnityEngine.UIElements
             public Vector2 mouseScrollDelta => UnityEngine.Input.mouseScrollDelta;
             public int mouseButtonCount => 3;
             public bool anyKey => UnityEngine.Input.anyKey;
+            public float unscaledTime => Time.unscaledTime;
+            public float doubleClickTime => Event.GetDoubleClickTime() * 0.001f;
         }
 
         private class NoInput : IInput
@@ -652,6 +665,8 @@ namespace UnityEngine.UIElements
             public Vector2 mouseScrollDelta => default;
             public int mouseButtonCount => 0;
             public bool anyKey => false;
+            public float unscaledTime => 0;
+            public float doubleClickTime => Mathf.Infinity;
         }
     }
 }

@@ -26,9 +26,11 @@ namespace Unity.CommandStateObserver
         /// <summary>
         /// Reverse the direction of the changeset.
         /// </summary>
+        /// <returns>True it the changeset could be reversed, false otherwise.</returns>
         /// <remarks>
-        /// For example, if the changeset contains a list of created objects and a list of deleted objects,
-        /// the two lists should be swapped.
+        /// For example, if the changeset contains a list of created objects, a list of changed objects
+        /// and a list of deleted objects, the created and deleted lists should be swapped, and the
+        /// changed list remains the same.
         /// </remarks>
         bool Reverse();
     }

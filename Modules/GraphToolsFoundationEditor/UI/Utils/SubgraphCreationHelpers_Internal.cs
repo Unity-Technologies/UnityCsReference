@@ -110,17 +110,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="subgraphNode">The selected graph elements to be recreated in the subgraph.</param>
         /// <param name="inputWireConnections">A dictionary of input wire connections to their corresponding subgraph node port's unique name.</param>
         /// <param name="outputWireConnections">A dictionary of output wire connections to their corresponding subgraph node port's unique name.</param>
-        internal static IEnumerable<WireModel> CreateWiresConnectedToSubgraphNode_Internal(GraphModel graphModel, SubgraphNodeModel subgraphNode, Dictionary<WireModel, string> inputWireConnections, Dictionary<WireModel, string> outputWireConnections)
+        internal static void CreateWiresConnectedToSubgraphNode_Internal(GraphModel graphModel, SubgraphNodeModel subgraphNode, Dictionary<WireModel, string> inputWireConnections, Dictionary<WireModel, string> outputWireConnections)
         {
-            var newWires = new List<WireModel>();
-
             var subgraphNodeInputPorts = subgraphNode.DataInputPortToVariableDeclarationDictionary.Keys.Concat(subgraphNode.ExecutionInputPortToVariableDeclarationDictionary.Keys).ToList();
             var subgraphNodeOutputPorts = subgraphNode.DataOutputPortToVariableDeclarationDictionary.Keys.Concat(subgraphNode.ExecutionOutputPortToVariableDeclarationDictionary.Keys).ToList();
 
-            CreateWiresConnectedToSubgraphNode_Internal(newWires, graphModel, subgraphNodeInputPorts, inputWireConnections, true);
-            CreateWiresConnectedToSubgraphNode_Internal(newWires, graphModel, subgraphNodeOutputPorts, outputWireConnections, false);
-
-            return newWires;
+            CreateWiresConnectedToSubgraphNode_Internal(graphModel, subgraphNodeInputPorts, inputWireConnections, true);
+            CreateWiresConnectedToSubgraphNode_Internal(graphModel, subgraphNodeOutputPorts, outputWireConnections, false);
         }
 
         internal static void CreateVariableDeclaration_Internal(GraphModel graphModel, Dictionary<WireModel, string> wireConnections, bool isInput)
@@ -262,26 +258,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     var newPosition = new Rect(placemat.PositionAndSize.position, placemat.PositionAndSize.size);
                     var pastedPlacemat = graphModel.CreatePlacemat(newPosition);
-                    pastedPlacemat.Title = placemat.Title;
-                    pastedPlacemat.Color = placemat.Color;
-                    pastedPlacemat.Collapsed = placemat.Collapsed;
-                    pastedPlacemat.HiddenElements = (placemat).HiddenElements;
+                    PlacematModel.CopyPlacematParameters(placemat, pastedPlacemat);
                     pastedPlacemats.Add(pastedPlacemat);
                     elementMapping.Add(placemat.Guid.ToString(), pastedPlacemat);
-                }
-                // Update hidden content to new node ids.
-                foreach (var pastedPlacemat in pastedPlacemats)
-                {
-                    if (pastedPlacemat.Collapsed)
-                    {
-                        foreach (var hiddenElement in pastedPlacemat.HiddenElements)
-                        {
-                            if (elementMapping.TryGetValue(hiddenElement.Guid.ToString(), out var pastedElement))
-                            {
-                                hiddenElement.SetGuid(pastedElement.Guid);
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -298,14 +277,17 @@ namespace Unity.GraphToolsFoundation.Editor
             return position;
         }
 
-        internal static void CreateWiresConnectedToSubgraphNode_Internal(List<WireModel> newWires, GraphModel graphModel, List<PortModel> portsOnSubgraphNode, Dictionary<WireModel, string> wireConnections, bool isInput)
+        internal static void CreateWiresConnectedToSubgraphNode_Internal(GraphModel graphModel, List<PortModel> portsOnSubgraphNode, Dictionary<WireModel, string> wireConnections, bool isInput)
         {
             foreach (var wireConnection in wireConnections)
             {
                 var portOnSubgraphNode = portsOnSubgraphNode.FirstOrDefault(p => p.UniqueName == wireConnection.Value);
                 var wire = wireConnection.Key;
 
-                newWires.Add(isInput ? graphModel.CreateWire(portOnSubgraphNode, wire.FromPort) : graphModel.CreateWire(wire.ToPort, portOnSubgraphNode));
+                if (isInput)
+                    graphModel.CreateWire(portOnSubgraphNode, wire.FromPort);
+                else
+                    graphModel.CreateWire(wire.ToPort, portOnSubgraphNode);
             }
         }
     }

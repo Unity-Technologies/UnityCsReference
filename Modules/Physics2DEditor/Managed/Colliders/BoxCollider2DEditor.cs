@@ -14,7 +14,6 @@ namespace UnityEditor
     {
         SerializedProperty m_Size;
         SerializedProperty m_EdgeRadius;
-        SerializedProperty m_UsedByComposite;
         readonly AnimBool m_ShowCompositeRedundants = new AnimBool();
 
         public override void OnEnable()
@@ -23,9 +22,8 @@ namespace UnityEditor
 
             m_Size = serializedObject.FindProperty("m_Size");
             m_EdgeRadius = serializedObject.FindProperty("m_EdgeRadius");
-            m_UsedByComposite = serializedObject.FindProperty("m_UsedByComposite");
             m_AutoTiling = serializedObject.FindProperty("m_AutoTiling");
-            m_ShowCompositeRedundants.value = !m_UsedByComposite.boolValue;
+            m_ShowCompositeRedundants.value = !isUsedByComposite;
             m_ShowCompositeRedundants.valueChanged.AddListener(Repaint);
         }
 
@@ -57,7 +55,7 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_Size);
 
-            m_ShowCompositeRedundants.target = !m_UsedByComposite.boolValue;
+            m_ShowCompositeRedundants.target = !isUsedByComposite;
             if (EditorGUILayout.BeginFadeGroup(m_ShowCompositeRedundants.faded))
                 EditorGUILayout.PropertyField(m_EdgeRadius);
             EditorGUILayout.EndFadeGroup();

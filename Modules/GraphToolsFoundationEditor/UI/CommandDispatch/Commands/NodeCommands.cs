@@ -62,14 +62,13 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 foreach (var model in command.Models.OfType<ICollapsible>())
                 {
                     model.Collapsed = command.Value;
                 }
-
-                graphUpdater.MarkChanged(command.Models.OfType<ICollapsible>().OfType<GraphElementModel>(),
-                    ChangeHint.Layout);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -121,44 +120,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 command.Model.Rename(command.ElementName);
-
-                var graphModel = graphModelState.GraphModel;
-
-                if (command.Model is VariableDeclarationModel variableDeclarationModel)
-                {
-                    var references = graphModel.FindReferencesInGraph<VariableNodeModel>(variableDeclarationModel).OfType<AbstractNodeModel>();
-
-                    graphUpdater.MarkChanged(references, ChangeHint.Data);
-                    graphUpdater.MarkChanged(variableDeclarationModel, ChangeHint.Data);
-
-                    if (variableDeclarationModel.IsInputOrOutput())
-                    {
-                        foreach (var recursiveSubgraphNode in graphModel.GetRecursiveSubgraphNodes())
-                            graphUpdater.MarkChanged(recursiveSubgraphNode.Update(), ChangeHint.Data);
-                    }
-                }
-                else if (command.Model is VariableNodeModel variableModel)
-                {
-                    variableDeclarationModel = variableModel.VariableDeclarationModel;
-                    var references = graphModel.FindReferencesInGraph<VariableNodeModel>(variableDeclarationModel).OfType<AbstractNodeModel>();
-
-                    graphUpdater.MarkChanged(references, ChangeHint.Data);
-                    graphUpdater.MarkChanged(variableDeclarationModel, ChangeHint.Data);
-                }
-                else if (command.Model is WirePortalModel wirePortalModel)
-                {
-                    var declarationModel = wirePortalModel.DeclarationModel as GraphElementModel;
-                    var references = graphModel.FindReferencesInGraph<WirePortalModel>(wirePortalModel.DeclarationModel).OfType<AbstractNodeModel>();
-
-                    graphUpdater.MarkChanged(references, ChangeHint.Data);
-                    graphUpdater.MarkChanged(declarationModel, ChangeHint.Data);
-                }
-                else
-                {
-                    graphUpdater.MarkChanged(command.Model as GraphElementModel, ChangeHint.Data);
-                }
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -216,12 +181,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 command.Constant.ObjectValue = command.Value;
-                if (command.OwnerModel != null)
-                {
-                    graphUpdater.MarkChanged(command.OwnerModel, ChangeHint.Data);
-                }
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -281,16 +244,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
 
                 using (var graphUpdater = graphModelState.UpdateScope)
+                using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
                 {
                     foreach (var constant in command.Constants)
                     {
                         constant.ObjectValue = command.Value;
                     }
-
-                    if (command.OwnerModels != null)
-                    {
-                        graphUpdater.MarkChanged(command.OwnerModels, ChangeHint.Data);
-                    }
+                    graphUpdater.MarkUpdated(changeScope.ChangeDescription);
                 }
             }
         }
@@ -340,16 +300,16 @@ namespace Unity.GraphToolsFoundation.Editor
                 undoStateUpdater.SaveState(graphModelState);
             }
 
+            var graphModel = graphModelState.GraphModel;
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                var graphModel = graphModelState.GraphModel;
-
                 foreach (var nodeModel in command.Models)
                 {
                     var connectedWires = nodeModel.GetConnectedWires().ToList();
-                    var deletedModels = graphModel.DeleteWires(connectedWires);
-                    graphUpdater.MarkDeleted(deletedModels);
+                    graphModel.DeleteWires(connectedWires);
                 }
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -400,10 +360,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             var graphModel = graphModelState.GraphModel;
-            IReadOnlyCollection<GraphElementModel> deletedModels;
 
             using (var selectionUpdater = selectionState.UpdateScope)
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
                 foreach (var model in command.NodesToBypass)
                 {
@@ -425,21 +385,18 @@ namespace Unity.GraphToolsFoundation.Editor
                     if (!outputWireModels.Any())
                         continue;
 
-                    deletedModels = graphModel.DeleteWires(inputWireModel);
-                    graphUpdater.MarkDeleted(deletedModels);
-                    deletedModels = graphModel.DeleteWires(outputWireModels);
-                    graphUpdater.MarkDeleted(deletedModels);
+                    graphModel.DeleteWires(inputWireModel);
+                    graphModel.DeleteWires(outputWireModels);
 
-                    var wire = graphModel.CreateWire(outputWireModels[0].ToPort, inputWireModel[0].FromPort);
-                    graphUpdater.MarkNew(wire);
+                    graphModel.CreateWire(outputWireModels[0].ToPort, inputWireModel[0].FromPort);
                 }
 
                 // [GTF-663] We delete nodes with deleteConnection = true because it may happens that one of the newly
                 // added wire is connected to a node that will be deleted.
-                deletedModels = graphModel.DeleteNodes(command.Models, deleteConnections: true);
-                graphUpdater.MarkDeleted(deletedModels);
+                graphModel.DeleteNodes(command.Models, deleteConnections: true);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
 
-                var selectedModels = deletedModels.Where(selectionState.IsSelected).ToList();
+                var selectedModels = changeScope.ChangeDescription.DeletedModels.Where(selectionState.IsSelected).ToList();
                 if (selectedModels.Any())
                 {
                     selectionUpdater.SelectElements(selectedModels, false);
@@ -495,13 +452,13 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 foreach (var nodeModel in command.Models)
                 {
                     nodeModel.State = command.Value;
                 }
-
-                graphUpdater.MarkChanged(command.Models, ChangeHint.Data);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }

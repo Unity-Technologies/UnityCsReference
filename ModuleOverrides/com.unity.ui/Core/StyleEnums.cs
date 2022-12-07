@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.Yoga;
+using UnityEngine.UIElements.Layout;
 
 namespace UnityEngine.UIElements
 {
@@ -14,11 +14,11 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The element is positioned in relation to its default box as calculated by layout.
         /// </summary>
-        Relative = YogaPositionType.Relative,
+        Relative = LayoutPositionType.Relative,
         /// <summary>
         /// The element is positioned in relation to its parent box and does not contribute to the layout anymore.
         /// </summary>
-        Absolute = YogaPositionType.Absolute,
+        Absolute = LayoutPositionType.Absolute,
     }
 
     /// <summary>
@@ -29,18 +29,18 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The overflow is not clipped. It renders outside the element's box. Default Value.
         /// </summary>
-        Visible = YogaOverflow.Visible,
+        Visible = LayoutOverflow.Visible,
         /// <summary>
         /// The overflow is clipped, and the rest of the content will be invisible.
         /// </summary>
-        Hidden = YogaOverflow.Hidden
+        Hidden = LayoutOverflow.Hidden
     }
 
     internal enum OverflowInternal
     {
-        Visible = YogaOverflow.Visible,
-        Hidden = YogaOverflow.Hidden,
-        Scroll = YogaOverflow.Scroll,
+        Visible = LayoutOverflow.Visible,
+        Hidden = LayoutOverflow.Hidden,
+        Scroll = LayoutOverflow.Scroll,
     }
 
     /// <summary>
@@ -66,19 +66,19 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Top to Bottom.
         /// </summary>
-        Column = YogaFlexDirection.Column,
+        Column = LayoutFlexDirection.Column,
         /// <summary>
         /// Bottom to Top.
         /// </summary>
-        ColumnReverse = YogaFlexDirection.ColumnReverse,
+        ColumnReverse = LayoutFlexDirection.ColumnReverse,
         /// <summary>
         /// Left to Right.
         /// </summary>
-        Row = YogaFlexDirection.Row,
+        Row = LayoutFlexDirection.Row,
         /// <summary>
         /// Right to Left.
         /// </summary>
-        RowReverse = YogaFlexDirection.RowReverse
+        RowReverse = LayoutFlexDirection.RowReverse
     }
 
     /// <summary>
@@ -89,15 +89,15 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// All items will be on one line. Default Value.
         /// </summary>
-        NoWrap = YogaWrap.NoWrap,
+        NoWrap = LayoutWrap.NoWrap,
         /// <summary>
         /// All items will be on one line. Default Value.
         /// </summary>
-        Wrap = YogaWrap.Wrap,
+        Wrap = LayoutWrap.Wrap,
         /// <summary>
         /// Items will wrap onto multiple lines from bottom to top.
         /// </summary>
-        WrapReverse = YogaWrap.WrapReverse
+        WrapReverse = LayoutWrap.WrapReverse
     }
 
     /// <summary>
@@ -108,23 +108,23 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Let Flex decide.
         /// </summary>
-        Auto = YogaAlign.Auto,
+        Auto = LayoutAlign.Auto,
         /// <summary>
         /// Start margin of the item is placed at the start of the axis.
         /// </summary>
-        FlexStart = YogaAlign.FlexStart,
+        FlexStart = LayoutAlign.FlexStart,
         /// <summary>
         /// Items are centered on the axis.
         /// </summary>
-        Center = YogaAlign.Center,
+        Center = LayoutAlign.Center,
         /// <summary>
         /// End margin of the item is placed at the end of the axis.
         /// </summary>
-        FlexEnd = YogaAlign.FlexEnd,
+        FlexEnd = LayoutAlign.FlexEnd,
         /// <summary>
         /// Default. stretch to fill the axis while respecting min/max values.
         /// </summary>
-        Stretch = YogaAlign.Stretch
+        Stretch = LayoutAlign.Stretch
     }
 
     /// <summary>
@@ -135,27 +135,27 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Items are packed toward the start line. Default Value.
         /// </summary>
-        FlexStart = YogaJustify.FlexStart,
+        FlexStart = LayoutJustify.FlexStart,
         /// <summary>
         /// Items are centered along the line.
         /// </summary>
-        Center = YogaJustify.Center,
+        Center = LayoutJustify.Center,
         /// <summary>
         /// Items are packed toward the end line.
         /// </summary>
-        FlexEnd = YogaJustify.FlexEnd,
+        FlexEnd = LayoutJustify.FlexEnd,
         /// <summary>
         /// Items are evenly distributed in the line; first item is on the start line, last item on the end line.
         /// </summary>
-        SpaceBetween = YogaJustify.SpaceBetween,
+        SpaceBetween = LayoutJustify.SpaceBetween,
         /// <summary>
         /// Items are evenly distributed in the line with equal space around them. Space on the edge is half of the space between objects.
         /// </summary>
-        SpaceAround = YogaJustify.SpaceAround,
+        SpaceAround = LayoutJustify.SpaceAround,
         /// <summary>
         /// Items are evenly distributed in the line with equal space around them.
         /// </summary>
-        SpaceEvenly = YogaJustify.SpaceEvenly,
+        SpaceEvenly = LayoutJustify.SpaceEvenly,
 
     }
 
@@ -264,11 +264,11 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The element displays normally.
         /// </summary>
-        Flex = YogaDisplay.Flex,
+        Flex = LayoutDisplay.Flex,
         /// <summary>
         /// The element is not visible and absent from the layout.
         /// </summary>
-        None = YogaDisplay.None
+        None = LayoutDisplay.None
     }
 
     /// <summary>

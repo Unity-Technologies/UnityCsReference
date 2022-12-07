@@ -18,7 +18,7 @@ namespace Unity.CommandStateObserver
         IEnumerable<IStateComponent> ObservedStateComponents { get; }
 
         /// <summary>
-        /// The state components modified by the observer.
+        /// The state components that can be modified by the observer.
         /// </summary>
         IEnumerable<IStateComponent> ModifiedStateComponents { get; }
 

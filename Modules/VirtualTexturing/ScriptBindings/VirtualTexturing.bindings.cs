@@ -47,7 +47,7 @@ namespace UnityEngine.Rendering
 
             [NativeThrows] extern internal static StackValidationResult[] ValidateMaterialTextureStacks([NotNull] Material mat);
 
-            [NativeConditional("UNITY_EDITOR", "{}")]
+            [NativeConditional("UNITY_EDITOR")]
             [NativeThrows] extern public static GraphicsFormat[] QuerySupportedFormats();
         }
 

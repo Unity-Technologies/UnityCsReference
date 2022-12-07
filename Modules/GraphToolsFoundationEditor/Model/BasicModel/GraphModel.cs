@@ -217,11 +217,30 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public virtual string Name => Asset != null ? Asset.Name : "";
 
+        Stack<GraphChangeDescription> m_GraphChangeDescriptionStack;
+
+        /// <summary>
+        /// The current <see cref="GraphChangeDescription"/>. This object contains the current changes applied to the graph up until now. Can be null.
+        /// </summary>
+        public GraphChangeDescription CurrentGraphChangeDescription => m_GraphChangeDescriptionStack.Count > 0 ? m_GraphChangeDescriptionStack.Peek() : null;
+
+        /// <summary>
+        /// A <see cref="GraphChangeDescriptionScope"/>. Use this to gather a <see cref="GraphChangeDescription"/>. <see cref="GraphChangeDescriptionScope"/> can be nested
+        /// and each scope provide the <see cref="GraphChangeDescription"/> related to their scope only. When a scope is disposed, their related <see cref="GraphChangeDescription"/>
+        /// is merged back into the parent scope, if any.
+        /// </summary>
+        public GraphChangeDescriptionScope ChangeDescriptionScope => new(this);
+
         public virtual Type GetSectionModelType()
         {
             return typeof(SectionModel);
         }
 
+        /// <summary>
+        /// Instantiates a new <see cref="SectionModel"/>.
+        /// </summary>
+        /// <param name="sectionName">The name of the section.</param>
+        /// <returns>A new <see cref="SectionModel"/>.</returns>
         protected virtual SectionModel InstantiateSection(string sectionName)
         {
             var section = Instantiate<SectionModel>(GetSectionModelType());
@@ -230,6 +249,11 @@ namespace Unity.GraphToolsFoundation.Editor
             return section;
         }
 
+        /// <summary>
+        /// Creates a new <see cref="SectionModel"/> and adds it to the graph.
+        /// </summary>
+        /// <param name="sectionName">The name of the section.</param>
+        /// <returns>A new <see cref="SectionModel"/>.</returns>
         public virtual SectionModel CreateSection(string sectionName)
         {
             var section = InstantiateSection(sectionName);
@@ -237,10 +261,26 @@ namespace Unity.GraphToolsFoundation.Editor
             return section;
         }
 
+        /// <summary>
+        /// Adds a new <see cref="SectionModel"/> to the graph.
+        /// </summary>
+        /// <param name="section">The section model to add.</param>
         protected virtual void AddSection(SectionModel section)
         {
             RegisterElement(section);
             m_SectionModels.Add(section);
+            CurrentGraphChangeDescription?.AddNewModels(section);
+        }
+
+        /// <summary>
+        /// Removes a <see cref="SectionModel"/> from the graph.
+        /// </summary>
+        /// <param name="section">The section model to remove.</param>
+        protected virtual void RemoveSection(SectionModel section)
+        {
+            UnregisterElement(section);
+            m_SectionModels.Remove(section);
+            CurrentGraphChangeDescription?.AddDeletedModels(section);
         }
 
         /// <summary>
@@ -305,8 +345,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         protected GraphModel()
         {
-            AssignNewGuid();
-
             m_GraphNodeModels = new List<AbstractNodeModel>();
             m_GraphWireModels = new List<WireModel>();
             m_BadgeModels = new List<BadgeModel>();
@@ -322,6 +360,8 @@ namespace Unity.GraphToolsFoundation.Editor
             m_PortWireIndex = new PortWireIndex_Internal(this);
             m_Placeholders = new List<IPlaceholder>();
             m_PlaceholderData = new SerializedValueDictionary<SerializableGUID, PlaceholderData>();
+
+            m_GraphChangeDescriptionStack = new Stack<GraphChangeDescription>();
         }
 
         /// <summary>
@@ -346,6 +386,10 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 PortWireIndex_Internal.ReorderWire(wireModel, reorderType);
                 ApplyReorderToGraph(fromPort);
+
+                var siblingWires = fromPort.GetConnectedWires().ToList();
+                CurrentGraphChangeDescription?.AddChangedModels(siblingWires, ChangeHint.GraphTopology);
+                CurrentGraphChangeDescription?.AddChangedModel(fromPort, ChangeHint.GraphTopology);
             }
         }
 
@@ -358,6 +402,17 @@ namespace Unity.GraphToolsFoundation.Editor
         internal void UpdateWire_Internal(WireModel wireModel, PortModel oldPort, PortModel port)
         {
             PortWireIndex_Internal.UpdateWire(wireModel, oldPort, port);
+
+            if (oldPort != null)
+            {
+                CurrentGraphChangeDescription?.AddChangedModel(oldPort, ChangeHint.GraphTopology);
+                if (oldPort.PortType == PortType.MissingPort && !oldPort.GetConnectedWires().Any())
+                    oldPort.NodeModel?.RemoveUnusedMissingPort(oldPort);
+            }
+            if (port != null)
+                CurrentGraphChangeDescription?.AddChangedModel(port, ChangeHint.GraphTopology);
+            if (wireModel != null)
+                CurrentGraphChangeDescription?.AddChangedModel(wireModel, ChangeHint.GraphTopology);
 
             // when moving a wire to a new node, make sure it gets stored matching its new place.
             if (oldPort != null && port != null
@@ -377,6 +432,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual void ReorderPlacemats(IReadOnlyList<PlacematModel> models, ZOrderMove reorderType)
         {
             m_GraphPlacematModels.ReorderElements(models, (ReorderType)reorderType);
+            CurrentGraphChangeDescription?.AddChangedModels(models, ChangeHint.Layout);
         }
 
         /// <summary>
@@ -410,6 +466,15 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_GraphWireModels[indices[i]] = orderedList[i];
             }
+        }
+
+        /// <summary>
+        /// Gets all ports in the graph.
+        /// </summary>
+        /// <returns>All ports in the graph.</returns>
+        public IEnumerable<PortModel> GetPortModels()
+        {
+            return GetElementsByGuid().Values.OfType<PortModel>();
         }
 
         /// <summary>
@@ -479,18 +544,35 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Registers an element so that the GraphModel can find it through its GUID.
         /// </summary>
         /// <param name="model">The model.</param>
-        public virtual void RegisterElement(GraphElementModel model)
+        protected virtual void RegisterElement(GraphElementModel model)
         {
-            GetElementsByGuid().TryAdd(model.Guid, model);
+            if (model == null)
+                return;
+
+            if (!GetElementsByGuid().TryAdd(model.Guid, model))
+            {
+                if (GetElementsByGuid()[model.Guid] != model)
+                    Debug.LogError("A model is already registered with this GUID");
+            }
+
+            foreach (var subModel in model.DependentModels)
+            {
+                RegisterElement(subModel);
+            }
         }
 
         /// <summary>
         /// Unregisters an element so that the GraphModel can no longer find it through its GUID.
         /// </summary>
         /// <param name="model">The model.</param>
-        public virtual void UnregisterElement(GraphElementModel model)
+        protected virtual void UnregisterElement(GraphElementModel model)
         {
             GetElementsByGuid().Remove(model.Guid);
+
+            foreach (var subModel in model.DependentModels)
+            {
+                UnregisterElement(subModel);
+            }
         }
 
         /// <summary>
@@ -529,6 +611,7 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterElement(nodeModel);
             AddMetaData(nodeModel, m_GraphNodeModels.Count);
             m_GraphNodeModels.Add(nodeModel);
+            CurrentGraphChangeDescription?.AddNewModels(nodeModel);
         }
 
         void AddMetaData(Model model, int index = -1)
@@ -543,12 +626,18 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="nodeModel">The new node model.</param>
         protected virtual void ReplaceNode(int index, AbstractNodeModel nodeModel)
         {
-            UnregisterElement(nodeModel);
+            if (index < 0 || index >= m_GraphNodeModels.Count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+
+            var oldModel = m_GraphNodeModels[index];
+            UnregisterElement(oldModel);
             RegisterElement(nodeModel);
             var indexInMetadata = m_GraphElementMetaData.FindIndex(m => m.Index == index);
 
             m_GraphElementMetaData[indexInMetadata] = new GraphElementMetaData(nodeModel, index);
             m_GraphNodeModels[index] = nodeModel;
+            CurrentGraphChangeDescription?.AddNewModels(nodeModel)
+                ?.AddDeletedModels(oldModel);
         }
 
         /// <summary>
@@ -567,6 +656,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 RemoveFromMetadata(indexToRemove, PlaceholderModelHelper.ModelToMissingTypeCategory_Internal(nodeModel));
                 m_GraphNodeModels.RemoveAt(indexToRemove);
+                CurrentGraphChangeDescription?.AddDeletedModels(nodeModel);
             }
         }
 
@@ -597,6 +687,26 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        public void RegisterBlockNode(BlockNodeModel blockNodeModel)
+        {
+            RegisterElement(blockNodeModel);
+        }
+
+        public void UnregisterBlockNode(BlockNodeModel blockNodeModel)
+        {
+            UnregisterElement(blockNodeModel);
+        }
+
+        public void RegisterPort(PortModel portModel)
+        {
+            RegisterElement(portModel);
+        }
+
+        public void UnregisterPort(PortModel portModel)
+        {
+            UnregisterElement(portModel);
+        }
+
         /// <inheritdoc />
         public virtual void RemoveElements(IReadOnlyCollection<GraphElementModel> elementModels)
         {
@@ -619,11 +729,26 @@ namespace Unity.GraphToolsFoundation.Editor
                     case WireModel wireModel:
                         RemoveWire(wireModel);
                         break;
+                    case BlockNodeModel blockNodeModel:
+                        UnregisterBlockNode(blockNodeModel);
+                        break;
                     case AbstractNodeModel nodeModel:
                         RemoveNode(nodeModel);
                         break;
                     case BadgeModel badgeModel:
                         RemoveBadge(badgeModel);
+                        break;
+                    case PortModel portModel:
+                        UnregisterPort(portModel);
+                        break;
+                    case SectionModel sectionModel:
+                        RemoveSection(sectionModel);
+                        break;
+                    case GroupModel groupModel:
+                        RemoveGroup(groupModel);
+                        break;
+                    default:
+                        UnregisterElement(element);
                         break;
                 }
             }
@@ -638,12 +763,14 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterElement(declarationModel);
             AddMetaData(declarationModel, m_GraphPortalModels.Count);
             m_GraphPortalModels.Add(declarationModel);
+            CurrentGraphChangeDescription?.AddNewModels(declarationModel);
         }
 
         /// <summary>
         /// Duplicates a portal declaration model and adds it to the graph.
         /// </summary>
         /// <param name="declarationModel">The portal declaration to duplicate.</param>
+        /// <returns>The new portal declaration model.</returns>
         public virtual DeclarationModel DuplicatePortal(DeclarationModel declarationModel)
         {
             var newDeclarationModel = declarationModel.Clone();
@@ -651,6 +778,7 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterElement(newDeclarationModel);
             m_GraphPortalModels.Add(newDeclarationModel);
             newDeclarationModel.GraphModel = this;
+            CurrentGraphChangeDescription?.AddNewModels(newDeclarationModel);
             return newDeclarationModel;
         }
 
@@ -670,6 +798,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_GraphPortalModels.RemoveAt(indexToRemove);
                 RemoveFromMetadata(indexToRemove, ManagedMissingTypeModelCategory.PortalDeclaration);
+                CurrentGraphChangeDescription?.AddDeletedModels(declarationModel);
             }
         }
 
@@ -683,6 +812,7 @@ namespace Unity.GraphToolsFoundation.Editor
             AddMetaData(wireModel, m_GraphWireModels.Count);
             m_GraphWireModels.Add(wireModel);
             m_PortWireIndex.AddWire(wireModel);
+            CurrentGraphChangeDescription?.AddNewModels(wireModel);
         }
 
         /// <summary>
@@ -701,6 +831,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_GraphWireModels.RemoveAt(indexToRemove);
                 RemoveFromMetadata(indexToRemove, ManagedMissingTypeModelCategory.Wire);
+                CurrentGraphChangeDescription?.AddDeletedModels(wireModel);
             }
             m_PortWireIndex.RemoveWire(wireModel);
         }
@@ -714,6 +845,7 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterElement(badgeModel);
             badgeModel.GraphModel = this;
             m_BadgeModels.Add(badgeModel);
+            CurrentGraphChangeDescription?.AddNewModels(badgeModel);
         }
 
         /// <summary>
@@ -725,6 +857,7 @@ namespace Unity.GraphToolsFoundation.Editor
             UnregisterElement(badgeModel);
             badgeModel.GraphModel = null;
             m_BadgeModels.Remove(badgeModel);
+            CurrentGraphChangeDescription?.AddDeletedModels(badgeModel);
         }
 
         /// <summary>
@@ -735,6 +868,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             RegisterElement(stickyNoteModel);
             m_GraphStickyNoteModels.Add(stickyNoteModel);
+            CurrentGraphChangeDescription?.AddNewModels(stickyNoteModel);
         }
 
         /// <summary>
@@ -745,6 +879,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             UnregisterElement(stickyNoteModel);
             m_GraphStickyNoteModels.Remove(stickyNoteModel);
+            CurrentGraphChangeDescription?.AddDeletedModels(stickyNoteModel);
         }
 
         /// <summary>
@@ -755,6 +890,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             RegisterElement(placematModel);
             m_GraphPlacematModels.Add(placematModel);
+            CurrentGraphChangeDescription?.AddNewModels(placematModel);
         }
 
         /// <summary>
@@ -765,6 +901,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             UnregisterElement(placematModel);
             m_GraphPlacematModels.Remove(placematModel);
+            CurrentGraphChangeDescription?.AddDeletedModels(placematModel);
         }
 
         /// <summary>
@@ -777,6 +914,7 @@ namespace Unity.GraphToolsFoundation.Editor
             AddMetaData(variableDeclarationModel, m_GraphVariableModels.Count);
             m_GraphVariableModels.Add(variableDeclarationModel);
             m_ExistingVariableNames.Add(variableDeclarationModel.Title);
+            CurrentGraphChangeDescription?.AddNewModels(variableDeclarationModel);
         }
 
         /// <summary>
@@ -795,26 +933,13 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 RemoveFromMetadata(indexToRemove, ManagedMissingTypeModelCategory.VariableDeclaration);
                 m_GraphVariableModels.RemoveAt(indexToRemove);
+                CurrentGraphChangeDescription?.AddDeletedModels(variableDeclarationModel);
             }
             m_ExistingVariableNames.Remove(variableDeclarationModel.Title);
 
             var parent = variableDeclarationModel.ParentGroup;
             parent?.RemoveItem(variableDeclarationModel);
             return parent;
-        }
-
-        void RecursiveBuildElementByGuid(GraphElementModel model)
-        {
-            if (model == null)
-                return;
-
-            GetElementsByGuid().TryAdd(model.Guid, model);
-
-            if (model is IGraphElementContainer container)
-            {
-                foreach (var element in container.GraphElementModels)
-                    RecursiveBuildElementByGuid(element);
-            }
         }
 
         /// <summary>
@@ -852,43 +977,43 @@ namespace Unity.GraphToolsFoundation.Editor
 
             foreach (var model in m_GraphNodeModels)
             {
-                RecursiveBuildElementByGuid(model);
+                RegisterElement(model);
             }
 
             foreach (var model in m_BadgeModels)
             {
-                RecursiveBuildElementByGuid(model);
+                RegisterElement(model);
             }
 
             foreach (var model in m_GraphWireModels)
             {
-                RecursiveBuildElementByGuid(model);
+                RegisterElement(model);
             }
 
             foreach (var model in m_GraphStickyNoteModels)
             {
-                RecursiveBuildElementByGuid(model);
+                RegisterElement(model);
             }
 
             foreach (var model in m_GraphPlacematModels)
             {
-                RecursiveBuildElementByGuid(model);
+                RegisterElement(model);
             }
 
             // Some variables may not be under any section.
             foreach (var model in m_GraphVariableModels)
             {
-                RecursiveBuildElementByGuid(model);
+                RegisterElement(model);
             }
 
             foreach (var model in m_GraphPortalModels)
             {
-                RecursiveBuildElementByGuid(model);
+                RegisterElement(model);
             }
 
             foreach (var model in m_SectionModels)
             {
-                RecursiveBuildElementByGuid(model);
+                RegisterElement(model);
             }
         }
 
@@ -1033,8 +1158,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Deletes all badges from the graph.
         /// </summary>
-        /// <returns>The graph elements affected by this operation.</returns>
-        public virtual IReadOnlyCollection<GraphElementModel> DeleteBadges()
+        public virtual void DeleteBadges()
         {
             var deletedBadges = new List<GraphElementModel>(m_BadgeModels);
 
@@ -1044,15 +1168,13 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             m_BadgeModels.Clear();
-
-            return deletedBadges;
+            CurrentGraphChangeDescription?.AddDeletedModels(deletedBadges);
         }
 
         /// <summary>
         /// Deletes all badges of type <typeparamref name="T"/> from the graph.
         /// </summary>
-        /// <returns>The graph elements affected by this operation.</returns>
-        public virtual IReadOnlyCollection<GraphElementModel> DeleteBadgesOfType<T>() where T : BadgeModel
+        public virtual void DeleteBadgesOfType<T>() where T : BadgeModel
         {
             var deletedBadges = m_BadgeModels
                 .Where(b => b is T)
@@ -1067,7 +1189,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 .Where(b => !(b is T))
                 .ToList();
 
-            return deletedBadges;
+            CurrentGraphChangeDescription?.AddDeletedModels(deletedBadges);
         }
 
         /// <summary>
@@ -1082,30 +1204,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
             // Set graphmodel BEFORE define node as it is commonly use during Define
             pastedNodeModel.GraphModel = this;
-            pastedNodeModel.AssignNewGuid();
             pastedNodeModel.OnDuplicateNode(sourceNode);
 
             AddNode(pastedNodeModel);
             pastedNodeModel.Position += delta;
 
-            if (pastedNodeModel is IGraphElementContainer container)
-            {
-                foreach (var element in container.GraphElementModels)
-                    RecursivelyRegisterAndAssignNewGuid(element);
-            }
-
             return pastedNodeModel;
-        }
-
-        protected void RecursivelyRegisterAndAssignNewGuid(GraphElementModel model)
-        {
-            model.AssignNewGuid();
-            RegisterElement(model);
-            if (model is IGraphElementContainer c)
-            {
-                foreach (var element in c.GraphElementModels)
-                    RecursivelyRegisterAndAssignNewGuid(element);
-            }
         }
 
         /// <summary>
@@ -1171,10 +1275,13 @@ namespace Unity.GraphToolsFoundation.Editor
             return null;
         }
 
-        public virtual IReadOnlyCollection<GraphElementModel> DeleteNodes(IReadOnlyCollection<AbstractNodeModel> nodeModels, bool deleteConnections)
+        /// <summary>
+        /// Deletes a collection of nodes from the graph.
+        /// </summary>
+        /// <param name="nodeModels">The nodes to delete.</param>
+        /// <param name="deleteConnections">Whether or not to delete the wires connected to the nodes.</param>
+        public virtual void DeleteNodes(IReadOnlyCollection<AbstractNodeModel> nodeModels, bool deleteConnections)
         {
-            var deletedModels = new List<GraphElementModel>();
-
             var deletedElementsByContainer = new Dictionary<IGraphElementContainer, List<GraphElementModel>>();
 
             foreach (var nodeModel in nodeModels.Where(n => n.IsDeletable()))
@@ -1187,12 +1294,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 deletedElements.Add(nodeModel);
 
-                deletedModels.Add(nodeModel);
-
                 if (deleteConnections)
                 {
                     var connectedWires = nodeModel.GetConnectedWires().ToList();
-                    deletedModels.AddRange(DeleteWires(connectedWires));
+                    DeleteWires(connectedWires);
                 }
 
                 // If this all the portals with the given declaration are deleted, delete the declaration.
@@ -1208,7 +1313,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         RemovePortal(wirePortalModel.DeclarationModel);
                     }
-                    deletedModels.Add(wirePortalModel.DeclarationModel);
                 }
 
                 nodeModel.Destroy();
@@ -1218,8 +1322,6 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 container.Key.RemoveElements(container.Value);
             }
-
-            return deletedModels;
         }
 
         /// <summary>
@@ -1274,12 +1376,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Deletes wires from the graph.
         /// </summary>
         /// <param name="wireModels">The list of wires to delete.</param>
-        /// <returns>A list of graph element models that were deleted by this operation.</returns>
-        public virtual IReadOnlyCollection<GraphElementModel> DeleteWires(IReadOnlyCollection<WireModel> wireModels)
+        public virtual void DeleteWires(IReadOnlyCollection<WireModel> wireModels)
         {
-            var deletedModels = new List<GraphElementModel>();
-
-            foreach (var wireModel in wireModels.Where(e => e != null && e.IsDeletable()))
+            // Call ToList on the collection to prevent iteration over the PortWireIndex.m_WiresByPort
+            foreach (var wireModel in wireModels.Where(e => e != null && e.IsDeletable()).ToList())
             {
                 if (wireModel is WirePlaceholder placeholder)
                 {
@@ -1290,12 +1390,21 @@ namespace Unity.GraphToolsFoundation.Editor
                     wireModel.ToPort?.NodeModel?.OnDisconnection(wireModel.ToPort, wireModel.FromPort);
                     wireModel.FromPort?.NodeModel?.OnDisconnection(wireModel.FromPort, wireModel.ToPort);
 
+                    CurrentGraphChangeDescription?.AddChangedModel(wireModel.ToPort, ChangeHint.GraphTopology);
+                    CurrentGraphChangeDescription?.AddChangedModel(wireModel.FromPort, ChangeHint.GraphTopology);
+
+                    if (wireModel.ToPort?.PortType == PortType.MissingPort && (!wireModel.ToPort?.GetConnectedWires().Any() ?? false))
+                    {
+                        wireModel.ToPort?.NodeModel.RemoveUnusedMissingPort(wireModel.ToPort);
+                    }
+                    if (wireModel.FromPort?.PortType == PortType.MissingPort && (!wireModel.FromPort?.GetConnectedWires().Any() ?? false))
+                    {
+                        wireModel.FromPort?.NodeModel.RemoveUnusedMissingPort(wireModel.FromPort);
+                    }
+
                     RemoveWire(wireModel);
                 }
-                deletedModels.Add(wireModel);
             }
-
-            return deletedModels;
         }
 
         /// <summary>
@@ -1342,19 +1451,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Removes and destroys sticky notes from the graph.
         /// </summary>
         /// <param name="stickyNoteModels">The sticky notes to remove.</param>
-        /// <returns>The graph elements affected by this operation.</returns>
-        public IReadOnlyCollection<GraphElementModel> DeleteStickyNotes(IReadOnlyCollection<StickyNoteModel> stickyNoteModels)
+        public void DeleteStickyNotes(IReadOnlyCollection<StickyNoteModel> stickyNoteModels)
         {
-            var deletedModels = new List<GraphElementModel>();
-
             foreach (var stickyNoteModel in stickyNoteModels.Where(s => s.IsDeletable()))
             {
                 RemoveStickyNote(stickyNoteModel);
                 stickyNoteModel.Destroy();
-                deletedModels.Add(stickyNoteModel);
             }
-
-            return deletedModels;
         }
 
         protected virtual Type GetPlacematType()
@@ -1390,6 +1493,8 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var placematModelType = GetPlacematType();
             var placematModel = Instantiate<PlacematModel>(placematModelType);
+            placematModel.TitleFontSize = 18;
+            placematModel.TitleAlignment = TextAlignment.Center;
             placematModel.PositionAndSize = position;
             placematModel.GraphModel = this;
             if (guid.Valid)
@@ -1401,19 +1506,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Deletes placemats from the graph.
         /// </summary>
         /// <param name="placematModels">The list of placemats to delete.</param>
-        /// <returns>A list of graph element models that were deleted by this operation.</returns>
-        public IReadOnlyCollection<GraphElementModel> DeletePlacemats(IReadOnlyCollection<PlacematModel> placematModels)
+        public void DeletePlacemats(IReadOnlyCollection<PlacematModel> placematModels)
         {
-            var deletedModels = new List<GraphElementModel>();
-
             foreach (var placematModel in placematModels.Where(p => p.IsDeletable()))
             {
                 RemovePlacemat(placematModel);
                 placematModel.Destroy();
-                deletedModels.Add(placematModel);
             }
-
-            return deletedModels;
         }
 
         protected virtual Type GetVariableNodeType()
@@ -1589,7 +1688,15 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected virtual void AddGroup(GroupModel group)
         {
+            // Group is not added to the graph: it will be added to a section.
             RegisterElement(group);
+            CurrentGraphChangeDescription?.AddNewModels(group);
+        }
+
+        protected virtual void RemoveGroup(GroupModel group)
+        {
+            UnregisterElement(group);
+            CurrentGraphChangeDescription?.AddDeletedModels(group);
         }
 
         /// <summary>
@@ -1651,73 +1758,54 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <remarks>If <paramref name="deleteUsages"/> is <c>false</c>, the user has to take care of deleting the corresponding variable models prior to this call.</remarks>
         /// <param name="variableModels">The variable declaration models to delete.</param>
         /// <param name="deleteUsages">Whether or not to delete the corresponding variable models.</param>
-        /// <returns>The list of deleted models.</returns>
-        public virtual GraphChangeDescription DeleteVariableDeclarations(IReadOnlyCollection<VariableDeclarationModel> variableModels, bool deleteUsages = true)
+        public virtual void DeleteVariableDeclarations(IReadOnlyCollection<VariableDeclarationModel> variableModels, bool deleteUsages = true)
         {
-            var changedModelsDict = new Dictionary<GraphElementModel, IReadOnlyList<ChangeHint>>();
-            var deletedModels = new List<GraphElementModel>();
-
             foreach (var variableModel in variableModels.Where(v => v.IsDeletable()))
             {
                 if (variableModel is VariableDeclarationPlaceholder placeholderModel)
                     RemovePlaceholder(placeholderModel);
 
-                var parent = RemoveVariableDeclaration(variableModel);
-
-                changedModelsDict[parent] = s_GroupingChangeHint;
-                deletedModels.Add(variableModel);
+                RemoveVariableDeclaration(variableModel);
 
                 if (deleteUsages)
                 {
                     var nodesToDelete = this.FindReferencesInGraph(variableModel).Cast<AbstractNodeModel>().ToList();
-                    deletedModels.AddRange(DeleteNodes(nodesToDelete, deleteConnections: true));
+                    DeleteNodes(nodesToDelete, deleteConnections: true);
                 }
             }
-
-            return new GraphChangeDescription(null, changedModelsDict, deletedModels);
         }
 
         /// <summary>
         /// Deletes the given group models.
         /// </summary>
         /// <param name="groupModels">The group models to delete.</param>
-        /// <returns>The list of deleted models.</returns>
-        public GraphChangeDescription DeleteGroups(IReadOnlyCollection<GroupModel> groupModels)
+        public void DeleteGroups(IReadOnlyCollection<GroupModel> groupModels)
         {
-            var changedModelsDict = new Dictionary<GraphElementModel, IReadOnlyList<ChangeHint>>();
             var deletedModels = new List<GraphElementModel>();
             var deletedVariables = new List<VariableDeclarationModel>();
 
-            void RecurseAddVariables(GroupModel groupModel)
+            void RecurseRemoveGroup(GroupModel groupModel)
             {
+                RemoveGroup(groupModel);
                 foreach (var item in groupModel.Items)
                 {
-                    deletedModels.Add(item as GraphElementModel);
                     if (item is VariableDeclarationModel variable)
                         deletedVariables.Add(variable);
                     else if (item is GroupModel group)
-                        RecurseAddVariables(group);
+                        RecurseRemoveGroup(group);
+                    else
+                        deletedModels.Add(item as GraphElementModel);
                 }
             }
 
             foreach (var groupModel in groupModels.Where(v => v.IsDeletable()))
             {
-                if (groupModel.ParentGroup != null)
-                {
-                    var changedModels = groupModel.ParentGroup.RemoveItem(groupModel);
-                    foreach (var changedModel in changedModels)
-                    {
-                        changedModelsDict[changedModel] = s_GroupingChangeHint;
-                    }
-                }
-
-                RecurseAddVariables(groupModel);
-                deletedModels.Add(groupModel);
+                groupModel.ParentGroup?.RemoveItem(groupModel);
+                RecurseRemoveGroup(groupModel);
             }
 
-            var result = DeleteVariableDeclarations(deletedVariables);
-            result.Union(null, changedModelsDict, deletedModels);
-            return result;
+            DeleteVariableDeclarations(deletedVariables);
+            CurrentGraphChangeDescription?.AddDeletedModels(deletedModels);
         }
 
         protected virtual Type GetPortalType()
@@ -1806,28 +1894,25 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="portalHeight">The desired height of the portals.</param>
         /// <param name="existingPortalEntries">The existing portal entries.</param>
         /// <param name="existingPortalExits">The existing portal exits.</param>
-        /// <returns>The new, changed and/or deleted models.</returns>
-        public virtual GraphChangeDescription CreatePortalsFromWire(WireModel wireModel, Vector2 entryPortalPosition, Vector2 exitPortalPosition, int portalHeight,
+        public virtual void CreatePortalsFromWire(WireModel wireModel, Vector2 entryPortalPosition, Vector2 exitPortalPosition, int portalHeight,
             Dictionary<PortModel, WirePortalModel> existingPortalEntries, Dictionary<PortModel, List<WirePortalModel>> existingPortalExits)
         {
-            var newModels = new List<GraphElementModel>();
             var inputPortModel = wireModel.ToPort;
             var outputPortModel = wireModel.FromPort;
 
             // Only a single portal per output port. Don't recreate if we already created one.
             WirePortalModel portalEntry = null;
 
-            var shouldDeleteWire = false;
             if (outputPortModel != null && !existingPortalEntries.TryGetValue(wireModel.FromPort, out portalEntry))
             {
-                portalEntry = CreateEntryPortalFromPort(outputPortModel, entryPortalPosition, portalHeight, newModels);
+                portalEntry = CreateEntryPortalFromPort(outputPortModel, entryPortalPosition, portalHeight);
                 wireModel.SetPort(WireSide.To, (portalEntry as ISingleInputPortNodeModel)?.InputPort);
                 existingPortalEntries[outputPortModel] = portalEntry;
+                CurrentGraphChangeDescription?.AddChangedModel(wireModel, ChangeHint.Layout);
             }
             else
             {
                 DeleteWires(new[] { wireModel });
-                shouldDeleteWire = true;
             }
 
             // We can have multiple portals on input ports however
@@ -1837,15 +1922,10 @@ namespace Unity.GraphToolsFoundation.Editor
                 existingPortalExits[wireModel.ToPort] = portalExits;
             }
 
-            var portalExit = CreateExitPortalToPort(inputPortModel, exitPortalPosition, portalHeight, portalEntry, newModels);
+            var portalExit = CreateExitPortalToPort(inputPortModel, exitPortalPosition, portalHeight, portalEntry);
             portalExits.Add(portalExit);
 
-            var newExitWire = CreateWire(inputPortModel, (portalExit as ISingleOutputPortNodeModel)?.OutputPort);
-            newModels.Add(newExitWire);
-
-            return shouldDeleteWire ?
-                new GraphChangeDescription(newModels, null, new[] { wireModel }) :
-                new GraphChangeDescription(newModels, new Dictionary<GraphElementModel, IReadOnlyList<ChangeHint>> { { wireModel, new[] { ChangeHint.Layout } } }, null);
+            CreateWire(inputPortModel, (portalExit as ISingleOutputPortNodeModel)?.OutputPort);
         }
 
         /// <summary>
@@ -1854,9 +1934,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="outputPortModel">The output port model to which the portal will be connected.</param>
         /// <param name="position">The desired position of the entry portal.</param>
         /// <param name="height">The desired height of the entry portal.</param>
-        /// <param name="newModels">On exit, contains the newly created models will have been appended to this list.</param>
         /// <returns>The created entry portal.</returns>
-        public virtual WirePortalModel CreateEntryPortalFromPort(PortModel outputPortModel, Vector2 position, int height, List<GraphElementModel> newModels = null)
+        public virtual WirePortalModel CreateEntryPortalFromPort(PortModel outputPortModel, Vector2 position, int height)
         {
             WirePortalModel portalEntry;
 
@@ -1867,8 +1946,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 portalEntry = this.CreateNode<ExecutionWirePortalEntryModel>();
             else
                 portalEntry = this.CreateNode<DataWirePortalEntryModel>(initializationCallback: n => n.PortDataTypeHandle = outputPortModel.DataTypeHandle);
-
-            newModels?.Add(portalEntry);
 
             portalEntry.Position = position;
 
@@ -1888,7 +1965,6 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             portalEntry.DeclarationModel = CreateGraphPortalDeclaration(portalName);
-            newModels?.Add(portalEntry.DeclarationModel);
 
             return portalEntry;
         }
@@ -1900,9 +1976,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="position">The desired position of the exit portal.</param>
         /// <param name="height">The desired height of the exit portal.</param>
         /// <param name="entryPortal">The corresponding entry portal.</param>
-        /// <param name="newModels">On exit, contains the newly created models will have been appended to this list.</param>
         /// <returns>The created exit portal.</returns>
-        public virtual WirePortalModel CreateExitPortalToPort(PortModel inputPortModel, Vector2 position, int height, WirePortalModel entryPortal, List<GraphElementModel> newModels = null)
+        public virtual WirePortalModel CreateExitPortalToPort(PortModel inputPortModel, Vector2 position, int height, WirePortalModel entryPortal)
         {
             WirePortalModel portalExit;
 
@@ -1910,8 +1985,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 portalExit = this.CreateNode<ExecutionWirePortalExitModel>();
             else
                 portalExit = this.CreateNode<DataWirePortalExitModel>(initializationCallback: n => n.PortDataTypeHandle = inputPortModel.DataTypeHandle);
-
-            newModels?.Add(portalExit);
 
             portalExit.Position = position;
             {
@@ -1949,12 +2022,17 @@ namespace Unity.GraphToolsFoundation.Editor
             MigrateNodes();
 
             CheckGroupConsistency_Internal();
+
+            Stencil.OnGraphModelEnabled();
         }
 
         /// <summary>
         /// Tasks to perform when the <see cref="GraphAsset"/> is disabled.
         /// </summary>
-        public virtual void OnDisable() { }
+        public virtual void OnDisable()
+        {
+            Stencil.OnGraphModelDisabled();
+        }
 
         void RecurseDefineNode(AbstractNodeModel nodeModel)
         {
@@ -1978,7 +2056,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public virtual void UndoRedoPerformed()
         {
-            OnEnable();
+            foreach (var nodeModel in NodeModels)
+            {
+                RecurseDefineNode(nodeModel);
+            }
+
             Asset.Dirty = true;
         }
 
@@ -2184,44 +2266,44 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_GraphNodeModels = new List<AbstractNodeModel>();
 
             // Set the graph model on all elements.
-            foreach (var model in m_GraphNodeModels)
+            foreach (var model in m_GraphNodeModels.Where(m => m != null))
             {
-                RecursiveSetGraphModel(model);
+                model.GraphModel = this;
             }
 
-            foreach (var model in m_BadgeModels)
+            foreach (var model in m_BadgeModels.Where(m => m != null))
             {
-                RecursiveSetGraphModel(model);
+                model.GraphModel = this;
             }
 
-            foreach (var model in m_GraphWireModels)
+            foreach (var model in m_GraphWireModels.Where(m => m != null))
             {
-                RecursiveSetGraphModel(model);
+                model.GraphModel = this;
             }
 
-            foreach (var model in m_GraphStickyNoteModels)
+            foreach (var model in m_GraphStickyNoteModels.Where(m => m != null))
             {
-                RecursiveSetGraphModel(model);
+                model.GraphModel = this;
             }
 
-            foreach (var model in m_GraphPlacematModels)
+            foreach (var model in m_GraphPlacematModels.Where(m => m != null))
             {
-                RecursiveSetGraphModel(model);
+                model.GraphModel = this;
             }
 
-            foreach (var model in m_GraphVariableModels)
+            foreach (var model in m_GraphVariableModels.Where(m => m != null))
             {
-                RecursiveSetGraphModel(model);
+                model.GraphModel = this;
             }
 
-            foreach (var model in m_GraphPortalModels)
+            foreach (var model in m_GraphPortalModels.Where(m => m != null))
             {
-                RecursiveSetGraphModel(model);
+                model.GraphModel = this;
             }
 
-            foreach (var model in m_SectionModels)
+            foreach (var model in m_SectionModels.Where(m => m != null))
             {
-                RecursiveSetGraphModel(model);
+                model.GraphModel = this;
             }
 
             m_ExistingVariableNames = new HashSet<string>(VariableDeclarations.Count);
@@ -2232,20 +2314,6 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             ResetCaches();
-        }
-
-        protected void RecursiveSetGraphModel(GraphElementModel model)
-        {
-            if (model == null)
-                return;
-
-            model.GraphModel = this;
-
-            if (model is IGraphElementContainer container)
-            {
-                foreach (var element in container.GraphElementModels)
-                    RecursiveSetGraphModel(element);
-            }
         }
 
         /// <summary>
@@ -2269,7 +2337,9 @@ namespace Unity.GraphToolsFoundation.Editor
             foreach (var section in m_SectionModels.ToList())
             {
                 if (!sectionHash.Contains(section.Title))
-                    m_SectionModels.Remove(section);
+                {
+                    RemoveSection(section);
+                }
             }
 
             foreach (var sectionName in sectionNames)
@@ -2359,28 +2429,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 var pastedPlacemat = CreatePlacemat(newPosition);
                 pastedPlacemat.Title = placemat.Title;
                 pastedPlacemat.Color = placemat.Color;
-                pastedPlacemat.Collapsed = placemat.Collapsed;
-                pastedPlacemat.HiddenElementsGuid = placemat.HiddenElementsGuid;
                 pastedPlacemats.Add(pastedPlacemat);
                 elementMapping.Add(placemat.Guid.ToString(), pastedPlacemat);
-            }
-
-            // Update hidden content to new node ids.
-            foreach (var pastedPlacemat in pastedPlacemats)
-            {
-                if (pastedPlacemat.Collapsed)
-                {
-                    List<string> pastedHiddenContent = new List<string>();
-                    foreach (var guid in pastedPlacemat.HiddenElementsGuid)
-                    {
-                        if (elementMapping.TryGetValue(guid, out GraphElementModel pastedElement))
-                        {
-                            pastedHiddenContent.Add(pastedElement.Guid.ToString());
-                        }
-                    }
-
-                    pastedPlacemat.HiddenElementsGuid = pastedHiddenContent;
-                }
             }
         }
 
@@ -2517,7 +2567,10 @@ namespace Unity.GraphToolsFoundation.Editor
         void RemovePlaceholder(IPlaceholder placeholder)
         {
             if (TryGetModelFromGuid(placeholder.Guid, out var model))
+            {
                 UnregisterElement(model);
+                CurrentGraphChangeDescription?.AddDeletedModels(model);
+            }
 
             // Clear the serialized data related to the null object the user wants to remove.
             SerializationUtility.ClearManagedReferenceWithMissingType(Asset, placeholder.ReferenceId);
@@ -2562,6 +2615,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var node = InstantiateNode(typeof(NodePlaceholder), nodeName, position, guid) as NodePlaceholder;
             RegisterElement(node);
+            CurrentGraphChangeDescription?.AddNewModels(node);
 
             if (node != null && referenceId != -1)
                 node.ReferenceId = referenceId;
@@ -2575,6 +2629,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var contextNode = InstantiateNode(typeof(ContextNodePlaceholder), nodeName, position, guid) as ContextNodePlaceholder;
             RegisterElement(contextNode);
+            CurrentGraphChangeDescription?.AddNewModels(contextNode);
 
             if (contextNode != null && referenceId != -1)
                 contextNode.ReferenceId = referenceId;
@@ -2613,6 +2668,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var node = InstantiateNode(typeof(BlockNodePlaceholder), nodeName, Vector2.zero, guid) as BlockNodePlaceholder;
             RegisterElement(node);
+            CurrentGraphChangeDescription?.AddNewModels(node);
 
             if (node != null && referenceId != -1)
                 node.ReferenceId = referenceId;
@@ -2629,6 +2685,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 variableName, ModifierFlags.None, false, null, guid) as VariableDeclarationPlaceholder;
 
             RegisterElement(variableDeclaration);
+            CurrentGraphChangeDescription?.AddNewModels(variableDeclaration);
 
             if (variableDeclaration != null && referenceId != -1)
                 variableDeclaration.ReferenceId = referenceId;
@@ -2652,6 +2709,7 @@ namespace Unity.GraphToolsFoundation.Editor
             portalModel.GraphModel = this;
 
             RegisterElement(portalModel);
+            CurrentGraphChangeDescription?.AddNewModels(portalModel);
 
             if (referenceId != -1)
                 portalModel.ReferenceId = referenceId;
@@ -2676,6 +2734,7 @@ namespace Unity.GraphToolsFoundation.Editor
             wireModel.SetPorts(toPort, fromPort);
 
             RegisterElement(wireModel);
+            CurrentGraphChangeDescription?.AddNewModels(wireModel);
 
             if (referenceId != -1)
                 wireModel.ReferenceId = referenceId;
@@ -2728,5 +2787,21 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </remarks>
         /// <returns>True if the Asset Graph can be a subgraph, false otherwise.</returns>
         public virtual bool CanBeSubgraph() => !IsContainerGraph();
+
+        internal GraphChangeDescription PushNewGraphChangeDescription_Internal()
+        {
+            var changes = new GraphChangeDescription();
+            m_GraphChangeDescriptionStack.Push(changes);
+            return changes;
+        }
+
+        internal void PopGraphChangeDescription_Internal()
+        {
+            if (!m_GraphChangeDescriptionStack.TryPop(out var currentScopeChange))
+                return;
+            if (!m_GraphChangeDescriptionStack.TryPeek(out var outerScopeChanges))
+                return;
+            outerScopeChanges.Union(currentScopeChange);
+        }
     }
 }

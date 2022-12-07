@@ -150,6 +150,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 CheckUpdateForUncheckedLocalInfos();
             }
         }
+
         public virtual void AddToFetchProductInfoQueue(long productId)
         {
             m_FetchProductInfoQueue.Enqueue(productId);
@@ -184,6 +185,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_AssetStoreClient.FetchProductInfo(productId, () => m_CurrentFetchProductInfo.Remove(productId));
             }
         }
+
         private void CheckUpdateFromStack()
         {
             if (!m_UnityConnect.isUserLoggedIn || m_CheckUpdateInProgress || !m_CheckUpdateStack.Any())
@@ -249,7 +251,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void CheckUpdateForUncheckedLocalInfos()
         {
-            InsertToCheckUpdateQueue(m_AssetStoreCache.localInfos.Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId) == null).Select(info => info.productId));
+            var missingLocalInfos = m_AssetStoreCache.localInfos
+                .Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId) == null)
+                .Select(info => info.productId).ToArray();
+
+            if (!missingLocalInfos.Any())
+                return;
+
+            InsertToCheckUpdateQueue(missingLocalInfos);
             m_RefreshAfterCheckUpdates = true;
         }
 

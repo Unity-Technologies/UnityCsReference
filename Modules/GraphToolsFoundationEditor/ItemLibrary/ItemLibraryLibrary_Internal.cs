@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.GraphToolsFoundation.Editor;
 
 namespace Unity.ItemLibrary.Editor
 {
@@ -113,8 +114,9 @@ namespace Unity.ItemLibrary.Editor
         /// <param name="adapter">An adapter specifying several preferences for the search.</param>
         /// <param name="filter">A filter to ignore certain items.</param>
         /// <param name="context">The name of the context using the library. Used to separate preferences.</param>
-        public ItemLibraryLibrary_Internal(IEnumerable<ItemLibraryDatabaseBase> databases, IItemLibraryAdapter adapter = null, ItemLibraryFilter filter = null, string context = null)
-            : this(databases, null, adapter, filter, context)
+        /// <param name="sourcePort">The port from which the library is created, if any.</param>
+        public ItemLibraryLibrary_Internal(IEnumerable<ItemLibraryDatabaseBase> databases, IItemLibraryAdapter adapter = null, ItemLibraryFilter filter = null, string context = null, PortModel sourcePort = null)
+            : this(databases, null, adapter, filter, context, sourcePort)
         {}
 
         internal ItemLibraryPreferences_Internal Preferences_Internal { get; }
@@ -126,6 +128,12 @@ namespace Unity.ItemLibrary.Editor
         /// A list of the favorite <see cref="ItemLibraryItem"/> in this library.
         /// </summary>
         public IReadOnlyList<ItemLibraryItem> CurrentFavorites => m_CachedFavorites;
+
+        /// <summary>
+        /// The <see cref="PortModel"/> from which the library is created, if any.
+        /// </summary>
+        /// <remarks>Not null when the library is created by dragging a wire from a port, null otherwise.</remarks>
+        public PortModel SourcePort { get; }
 
         /// <summary>
         /// Tests whether a <see cref="ItemLibraryItem"/> is a favorite or not.
@@ -180,7 +188,7 @@ namespace Unity.ItemLibrary.Editor
             m_CachedFavorites.Clear();
         }
 
-        ItemLibraryLibrary_Internal(IEnumerable<ItemLibraryDatabaseBase> databases, string title, IItemLibraryAdapter adapter, ItemLibraryFilter filter, string context = null)
+        ItemLibraryLibrary_Internal(IEnumerable<ItemLibraryDatabaseBase> databases, string title, IItemLibraryAdapter adapter, ItemLibraryFilter filter, string context = null, PortModel sourcePort = null)
         {
             m_Databases = new List<ItemLibraryDatabaseBase>();
             var databaseId = 0;
@@ -196,6 +204,7 @@ namespace Unity.ItemLibrary.Editor
 
             Adapter = adapter ?? new ItemLibraryAdapter(title);
             Preferences_Internal = new ItemLibraryPreferences_Internal(Adapter.LibraryName, string.IsNullOrEmpty(context) ? k_DefaultContext : context);
+            SourcePort = sourcePort;
         }
 
         Dictionary<ItemLibraryItem, ItemLibraryDatabaseBase.SearchData_Internal> m_LastSearchDataPerItem = new Dictionary<ItemLibraryItem, ItemLibraryDatabaseBase.SearchData_Internal>();

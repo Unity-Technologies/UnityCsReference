@@ -151,6 +151,10 @@ namespace UnityEditor
         internal static extern void RenderPlayModeViewCamerasInternal(RenderTexture target, int targetDisplay, Vector2 mousePosition, bool gizmos, bool renderIMGUI);
         internal static extern void SetupWindowSpaceAndVSyncInternal(Rect screenRect);
 
+        internal static extern void PerformTonemappingForGameView();
+        internal static extern void DrawTextureHdrSupport(Rect screenRect, Texture texture, Rect sourceRect, int leftBorder,
+            int rightBorder, int topBorder, int bottomBorder, Color color, Material mat, int pass, bool resetLinearToSrgbIfHdrActive);
+
         private static extern Texture2D FindTextureByName(string name);
         private static extern Texture2D FindTextureByType([NotNull] Type type);
         internal static extern string GetObjectNameWithInfo(Object obj);

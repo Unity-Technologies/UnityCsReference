@@ -12,18 +12,18 @@ namespace Unity.CommandStateObserver
     enum UpdateType
     {
         /// <summary>
-        /// The observer is up-to-date with the state and no update is necessary.
+        /// The <see cref="IStateComponent"/> has not changed since the last observation.
         /// </summary>
         None,
 
         /// <summary>
-        /// The state component maintains changesets and the observer is sufficiently up-to-date
-        /// to use them to incrementally update itself.
+        /// The <see cref="IStateComponent"/> can provide a description of what changed since the last observation.
         /// </summary>
         Partial,
 
         /// <summary>
-        /// The observer should do a complete update.
+        /// The <see cref="IStateComponent"/> cannot provide a description of what changed.
+        /// Any data held by the <see cref="IStateComponent"/> may have changed.
         /// </summary>
         Complete,
     }

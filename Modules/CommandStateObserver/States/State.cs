@@ -16,7 +16,9 @@ namespace Unity.CommandStateObserver
 
         List<IStateComponent> m_StateComponents;
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Delegate called when state components are added to the state or removed from the state.
+        /// </summary>
         public Action<IState, IStateComponent> OnStateComponentListModified { get; set; } = null;
 
         /// <summary>
@@ -61,7 +63,10 @@ namespace Unity.CommandStateObserver
             m_Disposed = true;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Adds a state component to the state.
+        /// </summary>
+        /// <param name="stateComponent">The state component to add.</param>
         public void AddStateComponent(IStateComponent stateComponent)
         {
             m_StateComponents.Add(stateComponent);
@@ -69,7 +74,10 @@ namespace Unity.CommandStateObserver
             OnStateComponentListModified?.Invoke(this, stateComponent);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Removes a state component from the state.
+        /// </summary>
+        /// <param name="stateComponent">The state component to remove.</param>
         public void RemoveStateComponent(IStateComponent stateComponent)
         {
             m_StateComponents.RemoveAll(c => c == stateComponent);
@@ -77,7 +85,9 @@ namespace Unity.CommandStateObserver
             OnStateComponentListModified?.Invoke(this, stateComponent);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// All the state components.
+        /// </summary>
         public virtual IEnumerable<IStateComponent> AllStateComponents => m_StateComponents;
     }
 }

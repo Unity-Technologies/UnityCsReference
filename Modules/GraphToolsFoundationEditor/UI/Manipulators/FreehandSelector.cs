@@ -22,6 +22,8 @@ namespace Unity.GraphToolsFoundation.Editor
         bool m_Active;
         GraphView m_GraphView;
 
+        GraphViewPanHelper_Internal m_PanHelper = new GraphViewPanHelper_Internal();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="FreehandSelector"/> class.
         /// </summary>
@@ -89,6 +91,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_Active = true;
                 target.CaptureMouse();
                 e.StopImmediatePropagation();
+                m_PanHelper.OnMouseDown(e, m_GraphView, Pan);
             }
         }
 
@@ -146,6 +149,7 @@ namespace Unity.GraphToolsFoundation.Editor
             m_Active = false;
             target.ReleaseMouse();
             e.StopPropagation();
+            m_PanHelper.OnMouseUp(e);
         }
 
         /// <summary>
@@ -162,6 +166,7 @@ namespace Unity.GraphToolsFoundation.Editor
             m_FreehandElement.MarkDirtyRepaint();
 
             e.StopPropagation();
+            m_PanHelper.OnMouseMove(e);
         }
 
         /// <summary>
@@ -187,6 +192,12 @@ namespace Unity.GraphToolsFoundation.Editor
         public void MarkDirtyRepaint()
         {
             m_FreehandElement?.MarkDirtyRepaint();
+        }
+
+        void Pan(TimerState obj)
+        {
+            m_FreehandElement.Points.Add(m_GraphView.ChangeCoordinatesTo(m_GraphView.ContentViewContainer, m_PanHelper.LastLocalMousePosition));
+            MarkDirtyRepaint();
         }
 
         class FreehandElement : VisualElement

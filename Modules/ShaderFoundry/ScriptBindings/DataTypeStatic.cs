@@ -82,6 +82,10 @@ namespace UnityEditor.ShaderFoundry
             m_Instance.Register<BlockSequenceElementInternal, BlockSequenceElement>(DataType.BlockSequenceElement);
             m_Instance.Register<CustomizationPointImplementationInternal, CustomizationPointImplementation>(DataType.CustomizationPointImplementation);
             m_Instance.Register<StageDescriptionInternal, StageDescription>(DataType.StageDescription);
+            m_Instance.Register<BlockShaderInterfaceInternal, BlockShaderInterface>(DataType.BlockShaderInterface);
+            m_Instance.Register<BlockShaderInternal, BlockShader>(DataType.BlockShader);
+            m_Instance.Register<RegisterTemplatesWithInterfaceInternal, RegisterTemplatesWithInterface>(DataType.RegisterTemplatesWithInterface);
+            m_Instance.Register<InterfaceRegistrationStatementInternal, InterfaceRegistrationStatement>(DataType.InterfaceRegistrationStatement);
         }
 
         void Register<InternalType, PublicType>(DataType dataType)

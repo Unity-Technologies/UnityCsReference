@@ -56,7 +56,7 @@ namespace Unity.CommandStateObserver
         protected bool IsDispatching => m_CurrentCommand != null;
 
         /// <summary>
-        /// Registers a handler for a command type.
+        /// Registers a handler for a command type. Replaces any previously registered handler for the command type.
         /// </summary>
         /// <param name="commandHandlerFunctor">The command handler.</param>
         public void RegisterCommandHandler<TCommand>(ICommandHandlerFunctor commandHandlerFunctor) where TCommand : ICommand
@@ -73,7 +73,7 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Gets a command handler for a command type.
+        /// Gets the command handler for a command type.
         /// </summary>
         /// <typeparam name="TCommand">The type of the command.</typeparam>
         /// <returns>The command handler for the command, or null if there is none.</returns>
@@ -83,7 +83,7 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Gets a command handler for a command type.
+        /// Gets the command handler for a command type.
         /// </summary>
         /// <param name="commandType">The type of the command.</param>
         /// <returns>The command handler for the command, or null if there is none.</returns>
@@ -115,9 +115,6 @@ namespace Unity.CommandStateObserver
         /// <summary>
         /// Registers a method to be called before dispatching a command.
         /// </summary>
-        /// <remarks>
-        /// The callback will be called whenever a command is dispatched.
-        /// </remarks>
         /// <param name="callback">The callback.</param>
         /// <exception cref="InvalidOperationException">Thrown when the callback is already registered.</exception>
         public void RegisterCommandPreDispatchCallback(Action<ICommand> callback)
@@ -151,8 +148,7 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Dispatches a command. This will call all command observers; then the command handler
-        /// registered for this command will be executed.
+        /// Dispatches a command: the command handler registered for this command will be executed.
         /// </summary>
         /// <param name="command">The command to dispatch.</param>
         /// <param name="diagnosticsFlags">Flags to control logging.</param>
@@ -193,7 +189,8 @@ namespace Unity.CommandStateObserver
         }
 
         /// <summary>
-        /// Called when a command is dispatched, before the command handler is executed.
+        /// Called when a command is dispatched, before the command handler is executed,
+        /// but after the pre-dispatch callbacks.
         /// </summary>
         /// <param name="command">The command being dispatched.</param>
         protected virtual void PreDispatchCommand(ICommand command)

@@ -23,10 +23,10 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeField, HideInInspector]
         ModelState m_State;
 
-        protected OrderedPorts m_InputsById;
-        protected OrderedPorts m_OutputsById;
-        protected OrderedPorts m_PreviousInputs;
-        protected OrderedPorts m_PreviousOutputs;
+        OrderedPorts m_InputsById;
+        OrderedPorts m_OutputsById;
+        OrderedPorts m_PreviousInputs;
+        OrderedPorts m_PreviousOutputs;
 
         [SerializeField, HideInInspector]
         bool m_Collapsed;
@@ -38,7 +38,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public override ModelState State
         {
             get => m_State;
-            set => m_State = value;
+            set
+            {
+                if (m_State == value)
+                    return;
+                m_State = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
         }
 
         /// <inheritdoc />
@@ -49,6 +55,16 @@ namespace Unity.GraphToolsFoundation.Editor
 
         /// <inheritdoc />
         public override IReadOnlyDictionary<string, PortModel> OutputsById => m_OutputsById;
+
+        /// <summary>
+        /// The previous value of <see cref="InputsById"/>.
+        /// </summary>
+        protected IReadOnlyDictionary<string, PortModel> PreviousInputsById => m_PreviousInputs;
+
+        /// <summary>
+        /// The previous value of <see cref="OutputsById"/>.
+        /// </summary>
+        protected IReadOnlyDictionary<string, PortModel> PreviousOutputsById => m_PreviousOutputs;
 
         /// <inheritdoc />
         public override IReadOnlyList<PortModel> InputsByDisplayOrder => m_InputsById;
@@ -67,7 +83,10 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (!this.IsCollapsible())
                     return;
 
+                if (m_Collapsed == value)
+                    return;
                 m_Collapsed = value;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Layout);
             }
         }
 
@@ -84,8 +103,20 @@ namespace Unity.GraphToolsFoundation.Editor
             m_InputConstantsById = new SerializedReferenceDictionary<string, Constant>();
         }
 
+        // Used in tests.
         internal void ClearPorts_Internal()
         {
+            foreach (var portModel in m_InputsById.Values)
+            {
+                GraphModel.UnregisterPort(portModel);
+            }
+
+            foreach (var portModel in m_OutputsById.Values)
+            {
+                GraphModel.UnregisterPort(portModel);
+            }
+
+            GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.GraphTopology);
             m_InputsById = new OrderedPorts();
             m_OutputsById = new OrderedPorts();
             m_PreviousInputs = null;
@@ -139,17 +170,25 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void RemoveObsoleteWiresAndConstants()
         {
+            var portsRemoved = false;
             foreach (var kv in m_PreviousInputs
                      .Where<KeyValuePair<string, PortModel>>(kv => !m_InputsById.ContainsKey(kv.Key)))
             {
                 DisconnectPort(kv.Value);
+                GraphModel?.UnregisterPort(kv.Value);
+                portsRemoved = true;
             }
 
             foreach (var kv in m_PreviousOutputs
                      .Where<KeyValuePair<string, PortModel>>(kv => !m_OutputsById.ContainsKey(kv.Key)))
             {
                 DisconnectPort(kv.Value);
+                GraphModel?.UnregisterPort(kv.Value);
+                portsRemoved = true;
             }
+
+            if (portsRemoved)
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.GraphTopology);
 
             // remove input constants that aren't used
             var idsToDeletes = m_InputConstantsById
@@ -161,7 +200,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        static PortModel ReuseOrCreatePortModel(PortModel model, IReadOnlyDictionary<string, PortModel> previousPorts, OrderedPorts newPorts)
+        PortModel ReuseOrCreatePortModel(PortModel model, IReadOnlyDictionary<string, PortModel> previousPorts, OrderedPorts newPorts)
         {
             // reuse existing ports when ids match, otherwise add port
             if (previousPorts != null && previousPorts.TryGetValue(model.UniqueName, out var portModelToAdd))
@@ -175,7 +214,9 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             else
             {
+                GraphModel?.RegisterPort(model);
                 portModelToAdd = model;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.GraphTopology);
             }
 
             newPorts.Add(portModelToAdd);
@@ -208,7 +249,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (GraphModel != null)
             {
                 var wireModels = GraphModel.GetWiresForPort(portModel);
-                GraphModel.DeleteWires(wireModels.ToList());
+                GraphModel.DeleteWires(wireModels);
             }
         }
 
@@ -265,6 +306,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     m_InputConstantsById.Remove(id);
                 }
+                else
+                {
+                    // We might be reusing a constant for a new compatible port.
+                    constant.OwnerModel = inputPort;
+                }
             }
 
             // Create new constant if needed
@@ -274,6 +320,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 && GraphModel.Stencil.GetConstantType(inputPort.DataTypeHandle) != null)
             {
                 var embeddedConstant = GraphModel.Stencil.CreateConstantValue(inputPort.DataTypeHandle);
+                embeddedConstant.OwnerModel = inputPort;
                 initializationCallback?.Invoke(embeddedConstant);
                 m_InputConstantsById[id] = embeddedConstant;
                 GraphModel.Asset.Dirty = true;
@@ -293,6 +340,8 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 var inputConstant = m_InputConstantsById[id];
                 var newConstant = inputConstant.Clone();
+                if (m_InputsById.TryGetValue(id, out var portModel))
+                    newConstant.OwnerModel = portModel;
                 m_InputConstantsById[id] = newConstant;
                 GraphModel.Asset.Dirty = true;
             }
@@ -317,6 +366,8 @@ namespace Unity.GraphToolsFoundation.Editor
             if (portModel.PortType != PortType.MissingPort || portModel.GetConnectedWires().Any())
                 return false;
 
+            GraphModel.UnregisterPort(portModel);
+            GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.GraphTopology);
             return portModel.Direction == PortDirection.Input ? m_InputsById.Remove(portModel) : m_OutputsById.Remove(portModel);
         }
     }

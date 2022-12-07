@@ -7,7 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
+using Unity.CommandStateObserver;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -21,8 +21,9 @@ namespace Unity.GraphToolsFoundation.Editor
         ISelectionDraggerTarget m_CurrentSelectionDraggerTarget;
         bool m_Dragging;
         readonly Snapper_Internal m_Snapper = new Snapper_Internal();
-
         bool m_Active;
+        bool m_ElementsToMoveDirty;
+        HashSet<GraphElement> m_ElementsToMove = new HashSet<GraphElement>();
 
         // selectedElement is used to store a unique selection candidate for cases where user clicks on an item not to
         // drag it but just to reset the selection -- we only know this after the manipulation has ended
@@ -38,6 +39,9 @@ namespace Unity.GraphToolsFoundation.Editor
         Vector2 m_MouseStartInGraph;
         Vector2 m_TotalMouseDelta;
         Vector2 m_LastMousePosition;
+        bool m_MoveOnlyPlacemats;
+
+        List<GraphElementModel> m_PreviousSelection = new List<GraphElementModel>();
 
         /// <summary>
         /// Elements to be dragged and their initial position
@@ -49,6 +53,8 @@ namespace Unity.GraphToolsFoundation.Editor
             public GraphElement Element;
             public Vector2 InitialPosition;
         }
+
+        SelectionObserver m_SelectionObserver;
 
         public bool IsActive => m_Active;
 
@@ -89,6 +95,27 @@ namespace Unity.GraphToolsFoundation.Editor
             return selectionDraggerTarget;
         }
 
+
+        class SelectionObserver : StateObserver
+        {
+            SelectionDragger m_SelectionDragger;
+            SelectionStateComponent m_SelectionState;
+            public SelectionObserver(GraphView gv,SelectionDragger sd):
+                base(gv?.GraphViewModel?.SelectionState)
+            {
+                m_SelectionDragger = sd;
+                m_SelectionState = gv?.GraphViewModel?.SelectionState;
+            }
+
+            public override void Observe()
+            {
+                using (var selectionObservation = this.ObserveState(m_SelectionState))
+                {
+                    if( selectionObservation.UpdateType != UpdateType.None)
+                        m_SelectionDragger.m_ElementsToMoveDirty = true;
+                }
+            }
+        }
         public SelectionDragger(GraphView graphView)
         {
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
@@ -106,6 +133,19 @@ namespace Unity.GraphToolsFoundation.Editor
             m_MovingElements = new List<MovingElement>();
             m_SelectedMovingElementIndex = 0;
 
+            m_SelectionObserver = new SelectionObserver(graphView, this);
+        }
+
+        public void RegisterObservers(ObserverManager observerManager)
+        {
+            if( m_SelectionObserver != null)
+                observerManager.RegisterObserver(m_SelectionObserver);
+        }
+
+        public void UnregisterObservers(ObserverManager observerManager)
+        {
+            if( m_SelectionObserver != null)
+                observerManager.UnregisterObserver(m_SelectionObserver);
         }
 
         /// <inheritdoc />
@@ -166,6 +206,12 @@ namespace Unity.GraphToolsFoundation.Editor
             m_Snapper.AddSnapStrategy(strategy);
         }
 
+
+        public void SetSelectionDirty()
+        {
+            m_ElementsToMoveDirty = true;
+        }
+
         /// <summary>
         /// Removes a snap strategy to the selection dragger.
         /// </summary>
@@ -213,30 +259,34 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (!clickedElement.IsMovable() || !clickedElement.ContainsPoint(clickedElement.WorldToLocal(e.mousePosition)))
                     return;
 
-                var selection = m_GraphView.GetSelection();
+                // In the case of a drag starting on an unselected element, the m_SelectionObserver notification will be too late, and the selection will indeed probably change.
+                if (!m_PreviousSelection.Contains(clickedElement.Model))
+                {
+                    m_ElementsToMoveDirty = true;
+                }
 
-                var elementsToMove = new HashSet<GraphElement>(selection
-                    .Select(model => model.GetView_Internal(m_GraphView))
-                    .OfType<GraphElement>()
-                    .Where(t=> !(t is Wire) && t.IsMovable()));
+                if (m_ElementsToMoveDirty || e.shiftKey != m_MoveOnlyPlacemats)
+                {
+                    var selection = m_GraphView.GetSelection();
+                    m_ElementsToMoveDirty = false;
+                    m_PreviousSelection.Clear();
+                    m_PreviousSelection.AddRange(selection);
+                    m_MoveOnlyPlacemats = e.shiftKey;
+                    RefreshElementsToMove(selection);
+                }
 
-                if (!elementsToMove.Any())
+                if (!m_ElementsToMove.Any())
                     return;
 
+                m_MovingElements.Clear();
+                if (m_ElementsToMove.Count > m_MovingElements.Capacity)
+                    m_MovingElements.Capacity = m_ElementsToMove.Count;
 
                 m_TotalMouseDelta = Vector2.zero;
                 m_SelectedMovingElementIndex = 0;
                 m_TotalFreePanTravel = Vector2.zero;
 
-                var selectedPlacemats = new HashSet<Placemat>(elementsToMove.OfType<Placemat>());
-                foreach (var placemat in selectedPlacemats)
-                    placemat.GetElementsToMove_Internal(e.shiftKey, elementsToMove);
-
-                m_MovingElements.Clear();
-                if (elementsToMove.Count > m_MovingElements.Capacity)
-                    m_MovingElements.Capacity = elementsToMove.Count;
-
-                foreach (GraphElement ce in elementsToMove)
+                foreach (GraphElement ce in m_ElementsToMove)
                 {
                     ce.PositionIsOverriddenByManipulator = true;
 
@@ -266,6 +316,23 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        void RefreshElementsToMove(IEnumerable<GraphElementModel> selection)
+        {
+            m_ElementsToMove.Clear();
+
+            m_ElementsToMove.UnionWith(selection
+                .Select(model => model.GetView_Internal(m_GraphView))
+                .OfType<GraphElement>()
+                .Where(t => !(t is Wire) && t.IsMovable()));
+
+            if( ! m_ElementsToMove.Any())
+                return;
+
+            var selectedPlacemats = new HashSet<Placemat>(m_ElementsToMove.OfType<Placemat>());
+            foreach (var placemat in selectedPlacemats)
+                placemat.GetElementsToMove_Internal(m_MoveOnlyPlacemats, m_ElementsToMove);
+        }
+
         IVisualElementScheduledItem m_PanSchedule;
         /// <summary>
         /// The offset by which the graphview should be panned based on the last mouse move.
@@ -288,6 +355,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (m_GraphView == null)
                 return;
+
+            m_ElementsToMoveDirty = false;
 
             if ((e.pressedButtons & (1 << (int) MouseButton.MiddleMouse)) != 0)
             {

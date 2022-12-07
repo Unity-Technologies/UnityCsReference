@@ -658,11 +658,12 @@ namespace UnityEngine.UIElements
             return e;
         }
 
-        internal static WheelEvent GetPooled(Vector3 delta, Vector3 mousePosition)
+        internal static WheelEvent GetPooled(Vector3 delta, Vector3 mousePosition, EventModifiers modifiers = default)
         {
             WheelEvent e = GetPooled();
             e.delta = delta;
             e.mousePosition = mousePosition;
+            e.modifiers = modifiers;
             return e;
         }
 

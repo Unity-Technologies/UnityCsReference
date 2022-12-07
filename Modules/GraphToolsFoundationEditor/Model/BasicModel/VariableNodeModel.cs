@@ -58,8 +58,11 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             set
             {
+                if (ReferenceEquals(m_DeclarationModel, value))
+                    return;
                 m_DeclarationModel = (VariableDeclarationModel)value;
                 m_DeclarationModelGuid = m_DeclarationModel.Guid;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
                 DefineNode();
             }
         }
@@ -94,7 +97,10 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual void UpdateTypeFromDeclaration()
         {
             if (DeclarationModel != null && m_MainPortModel != null)
+            {
                 m_MainPortModel.DataTypeHandle = VariableDeclarationModel.DataType;
+                GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+            }
 
             // update connected nodes' ports colors/types
             if (m_MainPortModel != null)

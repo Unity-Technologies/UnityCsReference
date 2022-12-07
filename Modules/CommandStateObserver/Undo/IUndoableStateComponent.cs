@@ -20,6 +20,7 @@ namespace Unity.CommandStateObserver
         /// <summary>
         /// The changeset manager for this state component.
         /// </summary>
+        /// <remarks>If the state components does not maintain changesets, this should return null.</remarks>
         IChangesetManager ChangesetManager { get; }
 
         /// <summary>
@@ -33,7 +34,8 @@ namespace Unity.CommandStateObserver
         /// Replaces serialized values of this component by values from <paramref name="undoData"/>.
         /// </summary>
         /// <param name="undoData">The state component from which to take the values.</param>
-        /// <param name="changeset"></param>
+        /// <param name="changeset">A description of the changes brought in by <paramref name="undoData"/>.
+        /// If null, anything may have change.</param>
         void ApplyUndoData(IStateComponent undoData, IChangeset changeset);
 
         /// <summary>

@@ -58,12 +58,13 @@ namespace Unity.GraphToolsFoundation.Editor
 
             PlacematModel placematModel;
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 placematModel = graphModelState.GraphModel.CreatePlacemat(command.Position);
                 if (command.Title != null)
                     placematModel.Title = command.Title;
 
-                graphUpdater.MarkNew(placematModel);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
                 graphUpdater.MarkForRename(placematModel);
             }
 
@@ -147,74 +148,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 graphModelState.GraphModel.ReorderPlacemats(command.Models, command.OrderingAction);
-                graphUpdater.MarkChanged(command.Models, ChangeHint.Layout);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Command to collapse or expand placemats.
-    /// </summary>
-    class CollapsePlacematCommand : UndoableCommand
-    {
-        /// <summary>
-        /// The placemat to collapse or expand.
-        /// </summary>
-        public readonly PlacematModel PlacematModel;
-        /// <summary>
-        /// True if the placemat should be collapsed, false otherwise.
-        /// </summary>
-        public readonly bool Collapse;
-        /// <summary>
-        /// If collapsing the placemat, the elements hidden by the collapsed placemat.
-        /// </summary>
-        public readonly IReadOnlyList<GraphElementModel> CollapsedElements;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CollapsePlacematCommand"/> class.
-        /// </summary>
-        public CollapsePlacematCommand()
-        {
-            UndoString = "Collapse Or Expand Placemat";
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CollapsePlacematCommand"/> class.
-        /// </summary>
-        /// <param name="placematModel">The placemat to collapse or expand.</param>
-        /// <param name="collapse">True if the placemat should be collapsed, false otherwise.</param>
-        /// <param name="collapsedElements">If collapsing the placemat, the elements hidden by the collapsed placemat.</param>
-        public CollapsePlacematCommand(PlacematModel placematModel, bool collapse,
-                                       IReadOnlyList<GraphElementModel> collapsedElements) : this()
-        {
-            PlacematModel = placematModel;
-            Collapse = collapse;
-            CollapsedElements = collapsedElements;
-
-            UndoString = Collapse ? "Collapse Placemat" : "Expand Placemat";
-        }
-
-        /// <summary>
-        /// Default command handler.
-        /// </summary>
-        /// <param name="undoState">The undo state component.</param>
-        /// <param name="graphModelState">The graph model state component.</param>
-        /// <param name="command">The command.</param>
-        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, CollapsePlacematCommand command)
-        {
-            using (var undoStateUpdater = undoState.UpdateScope)
-            {
-                undoStateUpdater.SaveState(graphModelState);
-            }
-
-            using (var graphUpdater = graphModelState.UpdateScope)
-            {
-                command.PlacematModel.Collapsed = command.Collapse;
-                command.PlacematModel.HiddenElements = command.PlacematModel.Collapsed ? command.CollapsedElements : null;
-
-                graphUpdater.MarkChanged(command.PlacematModel, ChangeHint.Layout);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }

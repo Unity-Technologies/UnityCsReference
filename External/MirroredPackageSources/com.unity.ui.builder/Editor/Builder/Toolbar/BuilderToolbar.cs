@@ -607,19 +607,41 @@ namespace Unity.UI.Builder
             return theme is BuilderDocument.CanvasTheme.Default or BuilderDocument.CanvasTheme.Dark or BuilderDocument.CanvasTheme.Light;
         }
 
-        public void ChangeCanvasTheme(BuilderDocument.CanvasTheme theme, ThemeStyleSheet themeStyleSheet = null)
+        public void ChangeCanvasTheme(BuilderDocument.CanvasTheme theme, ThemeStyleSheet customThemeStyleSheet = null)
         {
-            ApplyCanvasTheme(m_Viewport.sharedStylesAndDocumentElement, theme, themeStyleSheet);
-            ApplyCanvasTheme(m_Viewport.documentRootElement, theme, themeStyleSheet);
-            ApplyCanvasBackground(m_Viewport.canvas.defaultBackgroundElement, theme, themeStyleSheet);
-            ApplyCanvasTheme(m_TooltipPreview, theme, themeStyleSheet);
-            ApplyCanvasBackground(m_TooltipPreview, theme, themeStyleSheet);
+            m_Viewport.canvas.defaultBackgroundElement.style.display = theme == BuilderDocument.CanvasTheme.Custom ? DisplayStyle.None : DisplayStyle.Flex;
+            m_Viewport.canvas.checkerboardBackgroundElement.style.display = theme == BuilderDocument.CanvasTheme.Custom ? DisplayStyle.Flex : DisplayStyle.None;
 
-            document.ChangeDocumentTheme(m_Viewport.documentRootElement, theme, themeStyleSheet);
+            StyleSheet activeThemeStyleSheet = null;
+
+            switch (theme)
+            {
+                case BuilderDocument.CanvasTheme.Dark:
+                    activeThemeStyleSheet = UIElementsEditorUtility.GetCommonDarkStyleSheet();
+                    break;
+                case BuilderDocument.CanvasTheme.Light:
+                    activeThemeStyleSheet = UIElementsEditorUtility.GetCommonLightStyleSheet();
+                    break;
+                case BuilderDocument.CanvasTheme.Default:
+                    activeThemeStyleSheet = EditorGUIUtility.isProSkin ? UIElementsEditorUtility.GetCommonDarkStyleSheet() : UIElementsEditorUtility.GetCommonLightStyleSheet();
+                    break;
+                case BuilderDocument.CanvasTheme.Custom:
+                    activeThemeStyleSheet = customThemeStyleSheet;
+                    break;
+            }
+
+            ApplyCanvasTheme(m_Viewport.sharedStylesAndDocumentElement, activeThemeStyleSheet, m_LastCustomTheme);
+            ApplyCanvasTheme(m_Viewport.documentRootElement, activeThemeStyleSheet, m_LastCustomTheme);
+            ApplyCanvasBackground(m_Viewport.canvas.defaultBackgroundElement, theme);
+            ApplyCanvasTheme(m_TooltipPreview, activeThemeStyleSheet, m_LastCustomTheme);
+            ApplyCanvasBackground(m_TooltipPreview, theme);
+            document.ChangeDocumentTheme(m_Viewport.documentRootElement, theme, customThemeStyleSheet);
+            m_LastCustomTheme = customThemeStyleSheet;
+
             m_Inspector?.selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
         }
 
-        void ApplyCanvasTheme(VisualElement element, BuilderDocument.CanvasTheme theme, ThemeStyleSheet customThemeSheet)
+        void ApplyCanvasTheme(VisualElement element, StyleSheet newThemeStyleSheet, StyleSheet oldCustomThemeStyleSheet)
         {
             if (element == null)
                 return;
@@ -649,50 +671,21 @@ namespace Unity.UI.Builder
                 }
             }
 
-            // Should remove the previous custom theme stylesheet
-            if (m_LastCustomTheme)
-            {
-                element.styleSheets.Remove(m_LastCustomTheme);
-                m_LastCustomTheme = null;
-            }
-            // We verify whether the styles are loaded beforehand because calling GetCommonXXXStyleSheet() will load them unecessarily in this case
+            // We verify whether the styles are loaded beforehand because calling GetCommonXXXStyleSheet() will load them unnecessarily in this case
             if (UIElementsEditorUtility.IsCommonDarkStyleSheetLoaded())
                 element.styleSheets.Remove(UIElementsEditorUtility.GetCommonDarkStyleSheet());
             if (UIElementsEditorUtility.IsCommonLightStyleSheetLoaded())
                 element.styleSheets.Remove(UIElementsEditorUtility.GetCommonLightStyleSheet());
-            m_Viewport.canvas.defaultBackgroundElement.style.display = DisplayStyle.Flex;
+            if (oldCustomThemeStyleSheet != null)
+                element.styleSheets.Remove(oldCustomThemeStyleSheet);
 
-            StyleSheet themeStyleSheet = null;
-            m_Viewport.canvas.checkerboardBackgroundElement.style.display = DisplayStyle.None;
+            if (newThemeStyleSheet != null)
+                element.styleSheets.Add(newThemeStyleSheet);
 
-            switch (theme)
-            {
-                case BuilderDocument.CanvasTheme.Dark:
-                    themeStyleSheet = UIElementsEditorUtility.GetCommonDarkStyleSheet();
-                    break;
-                case BuilderDocument.CanvasTheme.Light:
-                    themeStyleSheet = UIElementsEditorUtility.GetCommonLightStyleSheet();
-                    break;
-                case BuilderDocument.CanvasTheme.Default:
-                    themeStyleSheet = EditorGUIUtility.isProSkin ? UIElementsEditorUtility.GetCommonDarkStyleSheet() : UIElementsEditorUtility.GetCommonLightStyleSheet();
-                    break;
-                case BuilderDocument.CanvasTheme.Custom:
-                    m_Viewport.canvas.defaultBackgroundElement.style.display = DisplayStyle.None;
-                    m_Viewport.canvas.checkerboardBackgroundElement.style.display = DisplayStyle.Flex;
-                    m_LastCustomTheme = customThemeSheet;
-                    themeStyleSheet = customThemeSheet;
-                    break;
-                default:
-                    break;
-            }
-
-            if (themeStyleSheet != null)
-                element.styleSheets.Add(themeStyleSheet);
-
-            element.SetProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName, themeStyleSheet);
+            element.SetProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName, newThemeStyleSheet);
         }
 
-        void ApplyCanvasBackground(VisualElement element, BuilderDocument.CanvasTheme theme, ThemeStyleSheet themeStyleSheet)
+        void ApplyCanvasBackground(VisualElement element, BuilderDocument.CanvasTheme theme)
         {
             if (element == null)
                 return;

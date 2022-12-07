@@ -920,10 +920,7 @@ namespace UnityEngine.UIElements
             {
                 if (e.oldRect.size == e.newRect.size)
                     return;
-
-                // The ScrollView is updating its Scroller values the next frame after the GeometryChangedEvent.
-                // We need to make sure the new ScrollOffset value is not clamped.
-                scrollView.OnUpdateScrollers += UpdateScrollOffset;
+                UpdateScrollOffset();
             }
 
             void TextElementOnGeometryChangedEvent(GeometryChangedEvent e)
@@ -978,7 +975,6 @@ namespace UnityEngine.UIElements
                     scrollView.scrollOffset = scrollOffset;
 
                     m_ScrollViewWasClamped = scrollOffset.x > scrollView.scrollOffset.x || scrollOffset.y > scrollView.scrollOffset.y;
-                    scrollView.OnUpdateScrollers -= UpdateScrollOffset;
                 }
                 else
                 {

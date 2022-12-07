@@ -70,12 +70,16 @@ namespace UnityEngine
     [ExcludeFromDocs]
     internal class StringTests
     {
+        public static extern void SetTestOutString(string testString);
+
         [NativeThrows] public static extern void ParameterICallString(string param);
         [NativeThrows] public static extern void ParameterICallNullString(string param);
 
         [NativeThrows] public static extern void ParameterCoreString(string param);
 
         [NativeThrows] public static extern void ParameterConstCharPtr(string param);
+        [NativeThrows] public static extern void ParameterConstCharPtrNull(string param);
+        [NativeThrows] public static extern void ParameterConstCharPtrEmptyString(string param);
 
         [NativeThrows] public static extern void ParameterCoreStringVector(string[] param);
 
@@ -84,6 +88,9 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterStructCoreString(StructCoreString param);
 
         [NativeThrows] public static extern void ParameterStructCoreStringVector(StructCoreStringVector param);
+
+        [NativeThrows] public static extern void ParameterOutString(out string param);
+        [NativeThrows] public static extern void ParameterRefString(ref string param);
 
         public static extern string ReturnCoreString();
 
@@ -101,8 +108,6 @@ namespace UnityEngine
         public static extern string FalseConditional();
 
         public static extern StructCoreStringVector ReturnStructCoreStringVector();
-        public static extern void ParameterOutString(out string param);
-        [NativeThrows] public static extern void ParameterRefString(ref string param);
     }
 
     // --------------------------------------------------------------------
@@ -831,5 +836,41 @@ namespace UnityEngine
     {
         [NativeThrows] public static extern void ParameterStructWith8ByteAndBoolFields(StructWith8ByteAndBoolFields param);
         [NativeThrows] public static extern void ParameterStructWith8ByteAndBoolFieldsArray(StructWith8ByteAndBoolFields[] param);
+    }
+
+    struct BlittableCornerCases
+    {
+        public char cVal;
+        public bool bVal;
+        public SomeEnum eVal;
+    }
+
+    // --------------------------------------------------------------------
+    // System.Array tests
+    [NativeType("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    internal class ValueTypeArrayTests
+    {
+        [NativeThrows] public static extern void ParameterIntArrayReadOnly(int[] param);
+        [NativeThrows] public static extern void ParameterIntArrayWritable(int[] param);
+        [NativeThrows] public static extern void ParameterIntArrayEmpty(int[] param, int[] param2);
+        public static extern void ParameterIntArrayNullExceptioins([NotNull] int[] param, [NotNull("NullReferenceException")] int[] param2);
+        [NativeThrows] public static extern void ParameterIntMultidimensionalArray(int[,] param);
+        public static extern void ParameterIntMultidimensionalArrayNullExceptions([NotNull] int[,] param, [NotNull("NullReferenceException")] int[,] param2);
+        [NativeThrows] public static extern void ParameterCharArrayReadOnly(char[] param);
+        [NativeThrows] public static extern void ParameterBlittableCornerCaseStructArrayReadOnly(BlittableCornerCases[] param);
+        [NativeThrows] public static extern void ParameterIntArrayOutAttr([Out] int[] param);
+        [NativeThrows] public static extern void ParameterCharArrayOutAttr([Out]char[] param);
+        [NativeThrows] public static extern void ParameterBlittableCornerCaseStructArrayOutAttr([Out]BlittableCornerCases[] param);
+        public static extern int[] ParameterIntArrayReturn();
+        public static extern int[] ParameterIntArrayReturnEmpty();
+        public static extern int[] ParameterIntArrayReturnNull();
+        public static extern char[] ParameterCharArrayReturn();
+        public static extern BlittableCornerCases[] ParameterBlittableCornerCaseStructArrayReturn();
+    }
+
+    internal static class MarshallingTests
+    {
+        [FreeFunction("MarshallingTest::DisableMarshallingTestsVerification")]
+        public static extern void DisableMarshallingTestsVerification();
     }
 }

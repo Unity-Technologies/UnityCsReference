@@ -125,9 +125,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             VariableDeclarationModel newVariableDeclaration;
+            var graphModel = graphModelState.GraphModel;
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                var graphModel = graphModelState.GraphModel;
                 if (graphModel.IsContainerGraph() && (command.ModifierFlags == ModifierFlags.Read || command.ModifierFlags == ModifierFlags.Write))
                 {
                     Debug.LogWarning("Cannot create an input or an output variable declaration in a container graph.");
@@ -141,12 +142,12 @@ namespace Unity.GraphToolsFoundation.Editor
                     newVariableDeclaration = graphModel.CreateGraphVariableDeclaration(command.TypeHandle, command.VariableName,
                         command.ModifierFlags, command.IsExposed, command.Group, command.IndexInGroup, null, command.Guid);
 
-                graphUpdater.MarkNew(newVariableDeclaration);
                 graphUpdater.MarkForRename(newVariableDeclaration);
-                graphUpdater.MarkChanged(newVariableDeclaration.ParentGroup, ChangeHint.Grouping);
 
                 foreach (var recursiveSubgraphNode in graphModel.GetRecursiveSubgraphNodes())
-                    graphUpdater.MarkChanged(recursiveSubgraphNode.Update(), ChangeHint.Data);
+                    recursiveSubgraphNode.Update();
+
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
             using (var bbUpdater = blackboardViewState.UpdateScope)
             {
@@ -210,9 +211,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 command.VariableDeclarationModel.CreateInitializationValue();
-                graphUpdater.MarkChanged(command.VariableDeclarationModel, ChangeHint.Data);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -266,22 +268,16 @@ namespace Unity.GraphToolsFoundation.Editor
                     undoStateUpdater.SaveState(graphModelState);
                 }
 
+                var graphModel = graphModelState.GraphModel;
                 using (var graphUpdater = graphModelState.UpdateScope)
+                using (var changeScope = graphModel.ChangeDescriptionScope)
                 {
                     if (command.VariableDeclarationModel.DataType != command.Type)
                         command.VariableDeclarationModel.CreateInitializationValue();
 
                     command.VariableDeclarationModel.DataType = command.Type;
 
-                    var graphModel = graphModelState.GraphModel;
-                    var variableReferences = graphModel.FindReferencesInGraph<VariableNodeModel>(command.VariableDeclarationModel).ToList();
-                    foreach (var usage in variableReferences)
-                    {
-                        usage.UpdateTypeFromDeclaration();
-                    }
-
-                    graphUpdater.MarkChanged(variableReferences, ChangeHint.Data);
-                    graphUpdater.MarkChanged(command.VariableDeclarationModel, ChangeHint.Data);
+                    graphUpdater.MarkUpdated(changeScope.ChangeDescription);
                 }
             }
         }
@@ -345,14 +341,13 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 foreach (var variable in command.VariableDeclarationModels)
                 {
                     variable.IsExposed = command.Exposed;
                 }
-
-                graphUpdater.MarkChanged(command.VariableDeclarationModels, ChangeHint.Data);
-
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -413,17 +408,13 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
-                var graphModel = graphModelState.GraphModel;
-
                 foreach (var variable in command.VariableDeclarationModels)
                 {
                     variable.Tooltip = command.Tooltip;
-
-                    var references = graphModel.FindReferencesInGraph<VariableNodeModel>(variable);
-                    graphUpdater.MarkChanged(references, ChangeHint.Style);
                 }
-                graphUpdater.MarkChanged(command.VariableDeclarationModels, ChangeHint.Style);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }

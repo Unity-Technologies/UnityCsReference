@@ -66,7 +66,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        GraphView GraphView => RootView as GraphView;
+        /// <summary>
+        /// The <see cref="GraphView"/> this port belongs to.
+        /// </summary>
+        public GraphView GraphView => RootView as GraphView;
 
         WireConnector m_WireConnector;
 
@@ -376,11 +379,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public Vector3 GetGlobalCenter()
         {
-            if (GraphView != null && GraphView.GetPortCenterOverride(this, out var overriddenPosition))
-            {
-                return overriddenPosition;
-            }
-
             var connector = GetConnector();
             var localCenter = new Vector2(connector.layout.width * .5f, connector.layout.height * .5f);
             return connector.LocalToWorld(localCenter);

@@ -30,7 +30,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (element is ICloneable cloneable)
             {
                 T copy = (T)cloneable.Clone();
-                copy.AssignNewGuid();
+                copy.AssignNewGuidRecursively();
                 return copy;
             }
 
@@ -53,14 +53,13 @@ namespace Unity.GraphToolsFoundation.Editor
             //            EditorUtility.CopySerializedManagedFieldsOnly(element, clone);
             var h2 = Object.Instantiate(h);
             var clone = h2.m_Model;
-            clone.AssignNewGuid();
+            clone.AssignNewGuidRecursively();
 
             if (clone is IGraphElementContainer container)
                 foreach (var subElement in container.GraphElementModels)
                 {
                     if (subElement is ICloneable)
                         Debug.LogError("ICloneable is not supported on elements in IGraphElementsContainer");
-                    subElement.AssignNewGuid();
                 }
 
             Object.DestroyImmediate(h);

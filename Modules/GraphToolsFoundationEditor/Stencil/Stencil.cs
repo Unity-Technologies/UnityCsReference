@@ -41,6 +41,20 @@ namespace Unity.GraphToolsFoundation.Editor
             return new BlackboardGraphModel(){GraphModel = graphModel};
         }
 
+        /// <inheritdoc />
+        public override void OnGraphModelEnabled()
+        {
+            base.OnGraphModelEnabled();
+            GetGraphProcessorContainer().OnGraphModelEnabled();
+        }
+
+        /// <inheritdoc />
+        public override void OnGraphModelDisabled()
+        {
+            GetGraphProcessorContainer().OnGraphModelDisabled();
+            base.OnGraphModelDisabled();
+        }
+
         public override InspectorModel CreateInspectorModel(IEnumerable<Model> inspectedModels)
         {
             return new InspectorModel(){InspectedModels = inspectedModels};

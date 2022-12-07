@@ -13,10 +13,12 @@ namespace Unity.GraphToolsFoundation.Editor
     /// Base class for root views.
     /// </summary>
     /// <remarks>Root views are model views that can receive commands. They are also usually being updated by an observer.</remarks>
-    abstract class RootView : BaseModelView, IHierarchicalCommandTarget
+    abstract class RootView : BaseModelView, IHierarchicalCommandTarget, IUndoableCommandMerger
     {
         public static readonly string ussClassName = "ge-view";
         public static readonly string focusedViewModifierUssClassName = ussClassName.WithUssModifier("focused");
+
+        int m_StartMergeGroup;
 
         /// <summary>
         /// The graph tool.
@@ -81,6 +83,22 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 GraphTool.UndoStateComponent.EndOperation();
             }
+        }
+
+        /// <summary>
+        /// Indicate that you want to merge the next undoable commands into one undo.
+        /// </summary>
+        public virtual void StartMerging()
+        {
+            m_StartMergeGroup = Undo.GetCurrentGroup();
+        }
+
+        /// <summary>
+        /// Ends the merging of undoables commands into one undo.
+        /// </summary>
+        public virtual void StopMerging()
+        {
+            Undo.CollapseUndoOperations(m_StartMergeGroup);
         }
 
         public void DispatchToSelf(ICommand command, Diagnostics diagnosticsFlags = Diagnostics.None)

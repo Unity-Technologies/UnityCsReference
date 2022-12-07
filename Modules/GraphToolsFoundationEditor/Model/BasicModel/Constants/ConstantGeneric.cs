@@ -23,7 +23,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual T Value
         {
             get => m_Value;
-            set => m_Value = value;
+            set
+            {
+                m_Value = value;
+                OwnerModel?.GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(OwnerModel, ChangeHint.Data);
+            }
         }
 
         /// <inheritdoc />

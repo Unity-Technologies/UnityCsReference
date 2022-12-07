@@ -32,7 +32,7 @@ namespace Unity.GraphToolsFoundation.Editor
             IEnumerable<object> inspectedObjects,
             FieldInfo inspectedField,
             string fieldTooltip)
-            : base(commandTarget, models, inspectedField.Name, null, fieldTooltip)
+            : base(commandTarget, models, inspectedField.Name, null, inspectedField, fieldTooltip)
         {
             m_ValueGetter = MakeFieldValueGetter(inspectedField, inspectedObjects);
 

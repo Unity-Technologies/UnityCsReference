@@ -7,7 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.Yoga;
+using UnityEngine.UIElements.Layout;
 
 namespace UnityEditor.Experimental.GraphView
 {
@@ -234,13 +234,13 @@ namespace UnityEditor.Experimental.GraphView
             schedule.Execute(t => UpdateGeometryFromContent());
         }
 
-        void MarkYogaNodeSeen(YogaNode node)
+        void MarkLayoutNodeSeen(LayoutNode node)
         {
             node.MarkLayoutSeen();
 
             for (int i = 0; i < node.Count; i++)
             {
-                MarkYogaNodeSeen(node[i]);
+                MarkLayoutNodeSeen(node[i]);
             }
         }
 
@@ -292,12 +292,12 @@ namespace UnityEditor.Experimental.GraphView
             try
             {
                 // Dirty the layout of the content container to recompute the content bounding rect
-                m_ContentContainer.yogaNode.MarkDirty();
+                m_ContentContainer.layoutNode.MarkDirty();
 
                 // Force the layout to be computed right away
-                this.yogaNode.CalculateLayout();
+                this.layoutNode.CalculateLayout();
 
-                MarkYogaNodeSeen(yogaNode);
+                MarkLayoutNodeSeen(layoutNode);
 
                 // Need to mark actual children as dirty repaint so they properly move with the changes in size/position of the scope.
                 // The number of actual children should be low given the Scope (and Group) nodes do not parent their child nodes.

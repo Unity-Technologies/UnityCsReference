@@ -140,6 +140,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             using (var graphUpdater = graphModelState.UpdateScope)
             using (var selectionUpdaters = selectionHelper.UpdateScopes)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 foreach (var selectionUpdater in selectionUpdaters)
                 {
@@ -149,8 +150,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 var newModel = command.SelectedItem.CreateElement.Invoke(
                     new GraphBlockCreationData(graphModelState.GraphModel, guid: command.Guid, contextNodeModel: command.ContextNodeModel, orderInContext: command.OrderInContext));
 
-                graphUpdater.MarkNew(newModel);
-                selectionUpdaters.MainUpdateScope.SelectElements(new []{ newModel }, true);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
+                selectionUpdaters.MainUpdateScope.SelectElements(new[] { newModel }, true);
             }
         }
     }

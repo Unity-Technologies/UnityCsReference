@@ -232,7 +232,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc/>
         public override bool HandlePasteOperation(PasteOperation operation, string operationName, Vector2 delta, CopyPasteData copyPasteData)
         {
-            if (!copyPasteData.m_Nodes_Internal.All(t => t is BlockNodeModel))
+            if (!copyPasteData.Nodes.All(t => t is BlockNodeModel))
                 return false;
 
             if (operation == PasteOperation.Duplicate)
@@ -266,7 +266,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 var selectedBlocksInSameContext = selection.OfType<BlockNodeModel>().Where(t => t.ContextNodeModel == BlockNodeModel.ContextNodeModel);
                 var index = selectedBlocksInSameContext.Max(t => t.GetIndex()) + 1;
 
-                var nodesToPaste = copyPasteData.m_Nodes_Internal.OfType<BlockNodeModel>();
+                var nodesToPaste = copyPasteData.Nodes.OfType<BlockNodeModel>();
 
                 GraphView.Dispatch(new InsertBlocksInContextCommand(BlockNodeModel.ContextNodeModel, index, nodesToPaste, true, operationName));
             }

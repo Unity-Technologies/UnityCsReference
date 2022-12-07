@@ -25,6 +25,38 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
+        /// Performs tasks that need to be done when the <see cref="GraphModel"/> is enabled.
+        /// </summary>
+        public void OnGraphModelEnabled()
+        {
+            if (m_GraphProcessors == null)
+            {
+                return;
+            }
+
+            foreach (var processor in m_GraphProcessors)
+            {
+                processor.OnGraphModelEnabled();
+            }
+        }
+
+        /// <summary>
+        /// Performs tasks that need to be done when the <see cref="GraphModel"/> is disabled.
+        /// </summary>
+        public void OnGraphModelDisabled()
+        {
+            if (m_GraphProcessors == null)
+            {
+                return;
+            }
+
+            foreach (var processor in m_GraphProcessors)
+            {
+                processor.OnGraphModelDisabled();
+            }
+        }
+
+        /// <summary>
         /// Processes a graph using the container's graph processors.
         /// </summary>
         /// <param name="graphModel">The graph to process.</param>

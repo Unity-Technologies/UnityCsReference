@@ -14,6 +14,9 @@ namespace Unity.GraphToolsFoundation.Editor
     [Serializable]
     abstract class PortNodeModel : AbstractNodeModel
     {
+        /// <inheritdoc />
+        public override IEnumerable<GraphElementModel> DependentModels => base.DependentModels.Concat(Ports);
+
         /// <summary>
         /// Gets all the port models this node has.
         /// </summary>

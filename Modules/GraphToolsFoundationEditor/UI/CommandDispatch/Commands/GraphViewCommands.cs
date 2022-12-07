@@ -57,13 +57,13 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 foreach (var movable in command.Models)
                 {
                     movable.Move(command.Value);
                 }
-
-                graphUpdater.MarkChanged(command.Models.OfType<GraphElementModel>(), ChangeHint.Layout);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -117,6 +117,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
                 for (int i = 0; i < command.Models.Count; ++i)
                 {
@@ -124,8 +125,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     Vector2 delta = command.Deltas[i];
                     model.Move(delta);
                 }
-
-                graphUpdater.MarkChanged(command.Models.OfType<GraphElementModel>(), ChangeHint.Layout);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -179,37 +179,17 @@ namespace Unity.GraphToolsFoundation.Editor
                 undoStateUpdater.SaveState(graphModelState);
                 undoStateUpdater.SaveState(selectionState);
             }
-
             using (var selectionUpdater = selectionState.UpdateScope)
             using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
-                var changeDescription = graphModelState.GraphModel.DeleteElements(command.Models);
-                var deletedModels = changeDescription.DeletedModels.ToList();
-
-                foreach (var wiresToDelete in deletedModels.OfType<WireModel>())
-                {
-                    var toPort = wiresToDelete.ToPort;
-                    var fromPort = wiresToDelete.FromPort;
-
-                    graphUpdater.MarkChanged(toPort, ChangeHint.GraphTopology);
-                    graphUpdater.MarkChanged(fromPort, ChangeHint.GraphTopology);
-
-                    if (toPort.PortType == PortType.MissingPort && !toPort.GetConnectedWires().Any())
-                    {
-                        if (toPort.NodeModel.RemoveUnusedMissingPort(toPort))
-                            graphUpdater.MarkChanged(toPort.NodeModel, ChangeHint.GraphTopology);
-                    }
-                    if (fromPort.PortType == PortType.MissingPort && !fromPort.GetConnectedWires().Any())
-                    {
-                        if (fromPort.NodeModel.RemoveUnusedMissingPort(fromPort))
-                            graphUpdater.MarkChanged(fromPort.NodeModel, ChangeHint.GraphTopology);
-                    }
-                }
+                graphModelState.GraphModel.DeleteElements(command.Models);
+                var deletedModels = changeScope.ChangeDescription.DeletedModels.ToList();
 
                 if (deletedModels.Any(model => model is VariableDeclarationModel variable && variable.IsInputOrOutput()))
                 {
                     foreach (var recursiveSubgraphNode in graphModelState.GraphModel.GetRecursiveSubgraphNodes())
-                        graphUpdater.MarkChanged(recursiveSubgraphNode.Update(), ChangeHint.Data);
+                        recursiveSubgraphNode.Update();
                 }
 
                 var selectedModels = deletedModels.Where(selectionState.IsSelected).ToList();
@@ -218,8 +198,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     selectionUpdater.SelectElements(selectedModels, false);
                 }
 
-                graphUpdater.MarkChanged(changeDescription.ChangedModels);
-                graphUpdater.MarkDeleted(deletedModels);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }
@@ -306,7 +285,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="command">The command.</param>
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, PasteSerializedDataCommand command)
         {
-            if (!command.Data.IsEmpty_Internal())
+            if (!command.Data.IsEmpty())
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
 
@@ -316,7 +295,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     undoStateUpdater.SaveStates(undoableStates);
                 }
 
-                using (var graphViewUpdater = graphModelState.UpdateScope)
+                using (var graphModelStateUpdater = graphModelState.UpdateScope)
                 using (var selectionUpdaters = selectionHelper.UpdateScopes)
                 {
                     foreach (var selectionUpdater in selectionUpdaters)
@@ -324,7 +303,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         selectionUpdater.ClearSelection();
                     }
 
-                    CopyPasteData.PasteSerializedData_Internal(command.Operation, command.Delta, graphViewUpdater,
+                    CopyPasteData.PasteSerializedData(command.Operation, command.Delta, graphModelStateUpdater,
                         null, selectionUpdaters.MainUpdateScope, command.Data, graphModelState.GraphModel, command.SelectedGroup);
                 }
             }

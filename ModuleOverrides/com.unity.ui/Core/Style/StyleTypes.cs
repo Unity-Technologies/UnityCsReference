@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
-using UnityEngine.Yoga;
 
 namespace UnityEngine.UIElements
 {
@@ -52,10 +52,10 @@ namespace UnityEngine.UIElements
             return styleValue.keyword != StyleKeyword.Undefined ? $"{styleValue.keyword}" : $"{styleValue.value}";
         }
 
-        internal static YogaValue ToYogaValue(this Length length)
+        internal static LayoutValue ToLayoutValue(this Length length)
         {
             if (length.IsAuto())
-                return YogaValue.Auto();
+                return LayoutValue.Auto();
 
             // For max-width and max-height
             if (length.IsNone())
@@ -64,9 +64,9 @@ namespace UnityEngine.UIElements
             switch (length.unit)
             {
                 case LengthUnit.Pixel:
-                    return YogaValue.Point(length.value);
+                    return LayoutValue.Point(length.value);
                 case LengthUnit.Percent:
-                    return YogaValue.Percent(length.value);
+                    return LayoutValue.Percent(length.value);
                 default:
                     Debug.LogAssertion($"Unexpected unit '{length.unit}'");
                     return float.NaN;
