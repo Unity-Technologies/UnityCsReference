@@ -2543,6 +2543,7 @@ namespace UnityEditor.Search
                 qsWindow.SelectGroup(contextualProvider.id);
             qsWindow.SendEvent(SearchAnalytics.GenericEventType.QuickSearchJumpToSearch, qsWindow.m_FilteredItems.currentGroup, sourceContext);
             qsWindow.SetSearchText(query);
+            qsWindow.RefreshBuilder();
             qsWindow.syncSearch = true;
             c.result = true;
         }

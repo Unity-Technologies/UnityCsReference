@@ -291,70 +291,70 @@ namespace UnityEditor
             InternalSettingsGUI(compact);
         }
 
-        public void UpdateSettings(SerializedObject lso)
+        public void UpdateSettings(SerializedObject lightingSettingsObject)
         {
-            if (lso != null)
-            {
-                m_GIWorkflowMode = lso.FindProperty("m_GIWorkflowMode");
+            if (lightingSettingsObject == null)
+                return;
+            
+            m_GIWorkflowMode = lightingSettingsObject.FindProperty("m_GIWorkflowMode");
 
-                //realtime GI
-                m_RealtimeResolution = lso.FindProperty("m_RealtimeResolution");
-                m_EnableRealtimeGI = lso.FindProperty("m_EnableRealtimeLightmaps");
-                m_RealtimeEnvironmentLighting = lso.FindProperty("m_RealtimeEnvironmentLighting");
+            //realtime GI
+            m_RealtimeResolution = lightingSettingsObject.FindProperty("m_RealtimeResolution");
+            m_EnableRealtimeGI = lightingSettingsObject.FindProperty("m_EnableRealtimeLightmaps");
+            m_RealtimeEnvironmentLighting = lightingSettingsObject.FindProperty("m_RealtimeEnvironmentLighting");
 
-                //baked
-                m_EnabledBakedGI = lso.FindProperty("m_EnableBakedLightmaps");
-                m_BakeBackend = lso.FindProperty("m_BakeBackend");
-                m_MixedBakeMode = lso.FindProperty("m_MixedBakeMode");
-                m_AlbedoBoost = lso.FindProperty("m_AlbedoBoost");
-                m_IndirectOutputScale = lso.FindProperty("m_IndirectOutputScale");
-                m_LightmapMaxSize = lso.FindProperty("m_LightmapMaxSize");
-                m_LightmapParameters = lso.FindProperty("m_LightmapParameters");
-                m_LightmapDirectionalMode = lso.FindProperty("m_LightmapsBakeMode");
-                m_BakeResolution = lso.FindProperty("m_BakeResolution");
-                m_Padding = lso.FindProperty("m_Padding");
-                m_AmbientOcclusion = lso.FindProperty("m_AO");
-                m_AOMaxDistance = lso.FindProperty("m_AOMaxDistance");
-                m_CompAOExponent = lso.FindProperty("m_CompAOExponent");
-                m_CompAOExponentDirect = lso.FindProperty("m_CompAOExponentDirect");
-                m_LightmapCompression = lso.FindProperty("m_LightmapCompression");
-                m_FinalGather = lso.FindProperty("m_FinalGather");
-                m_FinalGatherRayCount = lso.FindProperty("m_FinalGatherRayCount");
-                m_FinalGatherFiltering = lso.FindProperty("m_FinalGatherFiltering");
+            //baked
+            m_EnabledBakedGI = lightingSettingsObject.FindProperty("m_EnableBakedLightmaps");
+            m_BakeBackend = lightingSettingsObject.FindProperty("m_BakeBackend");
+            m_MixedBakeMode = lightingSettingsObject.FindProperty("m_MixedBakeMode");
+            m_AlbedoBoost = lightingSettingsObject.FindProperty("m_AlbedoBoost");
+            m_IndirectOutputScale = lightingSettingsObject.FindProperty("m_IndirectOutputScale");
+            m_LightmapMaxSize = lightingSettingsObject.FindProperty("m_LightmapMaxSize");
+            m_LightmapParameters = lightingSettingsObject.FindProperty("m_LightmapParameters");
+            m_LightmapDirectionalMode = lightingSettingsObject.FindProperty("m_LightmapsBakeMode");
+            m_BakeResolution = lightingSettingsObject.FindProperty("m_BakeResolution");
+            m_Padding = lightingSettingsObject.FindProperty("m_Padding");
+            m_AmbientOcclusion = lightingSettingsObject.FindProperty("m_AO");
+            m_AOMaxDistance = lightingSettingsObject.FindProperty("m_AOMaxDistance");
+            m_CompAOExponent = lightingSettingsObject.FindProperty("m_CompAOExponent");
+            m_CompAOExponentDirect = lightingSettingsObject.FindProperty("m_CompAOExponentDirect");
+            m_LightmapCompression = lightingSettingsObject.FindProperty("m_LightmapCompression");
+            m_FinalGather = lightingSettingsObject.FindProperty("m_FinalGather");
+            m_FinalGatherRayCount = lightingSettingsObject.FindProperty("m_FinalGatherRayCount");
+            m_FinalGatherFiltering = lightingSettingsObject.FindProperty("m_FinalGatherFiltering");
 
-                // pvr
-                m_PVRSampleCount = lso.FindProperty("m_PVRSampleCount");
-                m_PVRDirectSampleCount = lso.FindProperty("m_PVRDirectSampleCount");
-                m_PVRBounces = lso.FindProperty("m_PVRBounces");
-                m_PVRCulling = lso.FindProperty("m_PVRCulling");
-                m_PVRFilteringMode = lso.FindProperty("m_PVRFilteringMode");
-                m_PVRFilterTypeDirect = lso.FindProperty("m_PVRFilterTypeDirect");
-                m_PVRFilterTypeIndirect = lso.FindProperty("m_PVRFilterTypeIndirect");
-                m_PVRFilterTypeAO = lso.FindProperty("m_PVRFilterTypeAO");
-                m_PVRDenoiserTypeDirect = lso.FindProperty("m_PVRDenoiserTypeDirect");
-                m_PVRDenoiserTypeIndirect = lso.FindProperty("m_PVRDenoiserTypeIndirect");
-                m_PVRDenoiserTypeAO = lso.FindProperty("m_PVRDenoiserTypeAO");
-                m_PVRFilteringGaussRadiusDirect = lso.FindProperty("m_PVRFilteringGaussRadiusDirect");
-                m_PVRFilteringGaussRadiusIndirect = lso.FindProperty("m_PVRFilteringGaussRadiusIndirect");
-                m_PVRFilteringGaussRadiusAO = lso.FindProperty("m_PVRFilteringGaussRadiusAO");
-                m_PVRFilteringAtrousPositionSigmaDirect = lso.FindProperty("m_PVRFilteringAtrousPositionSigmaDirect");
-                m_PVRFilteringAtrousPositionSigmaIndirect = lso.FindProperty("m_PVRFilteringAtrousPositionSigmaIndirect");
-                m_PVRFilteringAtrousPositionSigmaAO = lso.FindProperty("m_PVRFilteringAtrousPositionSigmaAO");
-                m_PVREnvironmentIS = lso.FindProperty("m_PVREnvironmentImportanceSampling");
-                m_PVREnvironmentSampleCount = lso.FindProperty("m_PVREnvironmentSampleCount");
-                m_LightProbeSampleCountMultiplier = lso.FindProperty("m_LightProbeSampleCountMultiplier");
+            // pvr
+            m_PVRSampleCount = lightingSettingsObject.FindProperty("m_PVRSampleCount");
+            m_PVRDirectSampleCount = lightingSettingsObject.FindProperty("m_PVRDirectSampleCount");
+            m_PVRBounces = lightingSettingsObject.FindProperty("m_PVRBounces");
+            m_PVRCulling = lightingSettingsObject.FindProperty("m_PVRCulling");
+            m_PVRFilteringMode = lightingSettingsObject.FindProperty("m_PVRFilteringMode");
+            m_PVRFilterTypeDirect = lightingSettingsObject.FindProperty("m_PVRFilterTypeDirect");
+            m_PVRFilterTypeIndirect = lightingSettingsObject.FindProperty("m_PVRFilterTypeIndirect");
+            m_PVRFilterTypeAO = lightingSettingsObject.FindProperty("m_PVRFilterTypeAO");
+            m_PVRDenoiserTypeDirect = lightingSettingsObject.FindProperty("m_PVRDenoiserTypeDirect");
+            m_PVRDenoiserTypeIndirect = lightingSettingsObject.FindProperty("m_PVRDenoiserTypeIndirect");
+            m_PVRDenoiserTypeAO = lightingSettingsObject.FindProperty("m_PVRDenoiserTypeAO");
+            m_PVRFilteringGaussRadiusDirect = lightingSettingsObject.FindProperty("m_PVRFilteringGaussRadiusDirect");
+            m_PVRFilteringGaussRadiusIndirect = lightingSettingsObject.FindProperty("m_PVRFilteringGaussRadiusIndirect");
+            m_PVRFilteringGaussRadiusAO = lightingSettingsObject.FindProperty("m_PVRFilteringGaussRadiusAO");
+            m_PVRFilteringAtrousPositionSigmaDirect = lightingSettingsObject.FindProperty("m_PVRFilteringAtrousPositionSigmaDirect");
+            m_PVRFilteringAtrousPositionSigmaIndirect = lightingSettingsObject.FindProperty("m_PVRFilteringAtrousPositionSigmaIndirect");
+            m_PVRFilteringAtrousPositionSigmaAO = lightingSettingsObject.FindProperty("m_PVRFilteringAtrousPositionSigmaAO");
+            m_PVREnvironmentIS = lightingSettingsObject.FindProperty("m_PVREnvironmentImportanceSampling");
+            m_PVREnvironmentSampleCount = lightingSettingsObject.FindProperty("m_PVREnvironmentSampleCount");
+            m_LightProbeSampleCountMultiplier = lightingSettingsObject.FindProperty("m_LightProbeSampleCountMultiplier");
 
-                //dev debug properties
-                m_ExportTrainingData = lso.FindProperty("m_ExportTrainingData");
-                m_TrainingDataDestination = lso.FindProperty("m_TrainingDataDestination");
-                m_ForceWhiteAlbedo = lso.FindProperty("m_ForceWhiteAlbedo");
-                m_ForceUpdates = lso.FindProperty("m_ForceUpdates");
-                m_FilterMode = lso.FindProperty("m_FilterMode");
-                m_BounceScale = lso.FindProperty("m_BounceScale");
-                m_TiledBaking = lso.FindProperty("m_PVRTiledBaking");
-                m_NumRaysToShootPerTexel = lso.FindProperty("m_NumRaysToShootPerTexel");
-                m_RespectSceneVisibilityWhenBakingGI = lso.FindProperty("m_RespectSceneVisibilityWhenBakingGI");
-            }
+            //dev debug properties
+            m_ExportTrainingData = lightingSettingsObject.FindProperty("m_ExportTrainingData");
+            m_TrainingDataDestination = lightingSettingsObject.FindProperty("m_TrainingDataDestination");
+            m_ForceWhiteAlbedo = lightingSettingsObject.FindProperty("m_ForceWhiteAlbedo");
+            m_ForceUpdates = lightingSettingsObject.FindProperty("m_ForceUpdates");
+            m_FilterMode = lightingSettingsObject.FindProperty("m_FilterMode");
+            m_BounceScale = lightingSettingsObject.FindProperty("m_BounceScale");
+            m_TiledBaking = lightingSettingsObject.FindProperty("m_PVRTiledBaking");
+            m_NumRaysToShootPerTexel = lightingSettingsObject.FindProperty("m_NumRaysToShootPerTexel");
+            m_RespectSceneVisibilityWhenBakingGI = lightingSettingsObject.FindProperty("m_RespectSceneVisibilityWhenBakingGI");
         }
 
         // Private methods
@@ -523,7 +523,7 @@ namespace UnityEditor
                         {
                             BakeBackendGUI();
 
-                            if (lightmapperSupported && !m_BakeBackend.hasMultipleDifferentValues)
+                            if (lightmapperSupported)
                             {
                                 #pragma warning disable 618
                                 if (m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.Enlighten)
@@ -552,12 +552,9 @@ namespace UnityEditor
                                     EditorGUILayout.PropertyField(m_PVRCulling, Styles.culling);
                                     EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
 
-                                    int sampleCount = EditorGUILayout.DelayedIntField(Styles.directSampleCount, m_PVRDirectSampleCount.intValue);
-                                    m_PVRDirectSampleCount.intValue = sampleCount;
-                                    sampleCount = EditorGUILayout.DelayedIntField(Styles.indirectSampleCount, m_PVRSampleCount.intValue);
-                                    m_PVRSampleCount.intValue = sampleCount;
-                                    sampleCount = EditorGUILayout.DelayedIntField(Styles.environmentSampleCount, m_PVREnvironmentSampleCount.intValue);
-                                    m_PVREnvironmentSampleCount.intValue = sampleCount;
+                                    MultiEditableDelayedIntField(m_PVRDirectSampleCount, Styles.directSampleCount);
+                                    MultiEditableDelayedIntField(m_PVRSampleCount, Styles.indirectSampleCount);
+                                    MultiEditableDelayedIntField(m_PVREnvironmentSampleCount, Styles.environmentSampleCount);
 
                                     using (new EditorGUI.DisabledScope(EditorSettings.useLegacyProbeSampleCount))
                                     {
@@ -782,26 +779,12 @@ namespace UnityEditor
             const float minimumWidth = 170.0f;
             const float postfixLabelWidth = 80.0f;
 
-            switch (property.propertyType)
-            {
-                case SerializedPropertyType.Float:
-                    DrawFieldWithPostfixLabel(
-                        (Rect propertyRect) => { property.floatValue = EditorGUI.FloatField(propertyRect, label, property.floatValue); },
-                        postfixLabel,
-                        EditorStyles.numberField,
-                        minimumWidth,
-                        postfixLabelWidth);
-                    break;
-
-                case SerializedPropertyType.Integer:
-                    DrawFieldWithPostfixLabel(
-                        (Rect propertyRect) => { property.intValue = EditorGUI.IntField(propertyRect, label, property.intValue); },
-                        postfixLabel,
-                        EditorStyles.numberField,
-                        minimumWidth,
-                        postfixLabelWidth);
-                    break;
-            }
+            DrawFieldWithPostfixLabel(
+                (Rect propertyRect) => { EditorGUI.PropertyField(propertyRect, property, label); },
+                postfixLabel,
+                EditorStyles.numberField,
+                minimumWidth,
+                postfixLabelWidth);
         }
 
         static void DrawFilterSettingField(SerializedProperty gaussSetting,
@@ -1031,6 +1014,28 @@ namespace UnityEditor
                 menu.DropDown(rect);
             }
             EditorGUI.EndProperty();
+        }
+
+        void MultiEditableDelayedIntField(SerializedProperty property, GUIContent style)
+        {
+            if (property.hasMultipleDifferentValues)
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = true;
+
+                int fieldValue = EditorGUILayout.DelayedIntField(style, property.intValue);
+
+                if (EditorGUI.EndChangeCheck())
+                    property.intValue = fieldValue;
+                
+                EditorGUI.showMixedValue = false;
+            }
+
+            else
+            {
+                int fieldValue = EditorGUILayout.DelayedIntField(style, property.intValue);
+                property.intValue = fieldValue;
+            }
         }
     }
 }

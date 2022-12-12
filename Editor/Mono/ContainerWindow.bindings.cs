@@ -26,8 +26,6 @@ namespace UnityEditor
         Tooltip = 6,
         // Modal Utility window
         ModalUtility = 7,
-        // Show as fullscreen window
-        Fullscreen = 8
     }
 
     //[StaticAccessor("ContainerWindowBindings", StaticAccessorType.DoubleColon)]
@@ -65,12 +63,6 @@ namespace UnityEditor
         [FreeFunction(k_ScriptingPrefix + "ToggleMaximize", HasExplicitThis = true)]
         public extern void ToggleMaximize();
 
-        [FreeFunction(k_ScriptingPrefix + "ToggleFullscreen", HasExplicitThis = true)]
-        internal extern void ToggleFullscreen(int displayIndex = 0);
-
-        [FreeFunction(k_ScriptingPrefix + "IsFullscreen", HasExplicitThis = true)]
-        internal extern bool IsFullscreen();
-
         [FreeFunction(k_ScriptingPrefix + "MoveInFrontOf", HasExplicitThis = true)]
         public extern void MoveInFrontOf(ContainerWindow other);
 
@@ -84,9 +76,6 @@ namespace UnityEditor
         [FreeFunction(k_ScriptingPrefix + "SendCaptionEvent", HasExplicitThis = true)]
         public extern void SendCaptionEvent(bool mouseDown);
 
-        [FreeFunction(k_ScriptingPrefix + "GetDisplayId", HasExplicitThis = true)]
-        internal extern int GetDisplayId();
-
         // Close the editor window.
         [FreeFunction(k_ScriptingPrefix + "InternalClose", HasExplicitThis = true)]
         public extern void InternalClose();
@@ -95,7 +84,7 @@ namespace UnityEditor
         private extern void Internal_SetMinMaxSizes(Vector2 minSize, Vector2 maxSize);
 
         [FreeFunction(k_ScriptingPrefix + "Internal_Show", HasExplicitThis = true, ThrowsException = true)]
-        private extern void Internal_Show(Rect r, int showMode, Vector2 minSize, Vector2 maxSize, int displayIndex = 0);
+        private extern void Internal_Show(Rect r, int showMode, Vector2 minSize, Vector2 maxSize);
 
         [FreeFunction(k_ScriptingPrefix + "Internal_BringLiveAfterCreation", HasExplicitThis = true)]
         private extern void Internal_BringLiveAfterCreation(bool displayImmediately, bool setFocus, bool showMaximized);

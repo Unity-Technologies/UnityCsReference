@@ -928,30 +928,6 @@
     <Compile Include="..\..\Editor\Mono\DisplayUtility.cs">
       <Link>Editor\Mono\DisplayUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\EditorDisplayFullscreenSetting.cs">
-      <Link>Editor\Mono\Display\EditorDisplayFullscreenSetting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\EditorDisplayManager.cs">
-      <Link>Editor\Mono\Display\EditorDisplayManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\EditorDisplaySettingsProfile.cs">
-      <Link>Editor\Mono\Display\EditorDisplaySettingsProfile.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\EditorDisplayUtility.bindings.cs">
-      <Link>Editor\Mono\Display\EditorDisplayUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\EditorFullscreenController.cs">
-      <Link>Editor\Mono\Display\EditorFullscreenController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\FullscreenSettingsForAttribute.cs">
-      <Link>Editor\Mono\Display\FullscreenSettingsForAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\GameViewFullscreenSettings.cs">
-      <Link>Editor\Mono\Display\GameViewFullscreenSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\IPlayModeViewFullscreenSettings.cs">
-      <Link>Editor\Mono\Display\IPlayModeViewFullscreenSettings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\DragAndDrop.bindings.cs">
       <Link>Editor\Mono\DragAndDrop.bindings.cs</Link>
     </Compile>
@@ -1656,12 +1632,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GameView\GameView.cs">
       <Link>Editor\Mono\GameView\GameView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GameView\GameViewOnPlayMenu.cs">
-      <Link>Editor\Mono\GameView\GameViewOnPlayMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GameView\GameViewOnPlayMenuItemProvider.cs">
-      <Link>Editor\Mono\GameView\GameViewOnPlayMenuItemProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GameView\GameViewSize.cs">
       <Link>Editor\Mono\GameView\GameViewSize.cs</Link>

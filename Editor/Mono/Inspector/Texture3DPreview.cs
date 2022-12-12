@@ -97,6 +97,7 @@ namespace UnityEditor
         const float s_MinViewDistance = 0f;
         const float s_MaxViewDistance = 5.0f;
         static readonly Vector2 s_InitialRotation = new Vector2(15, 30);
+        const float s_MaxPreviewPixelCount = 512 * 512 * 512;
 
         PreviewRenderUtility m_PreviewUtility;
         Preview3DMode m_Preview3DMode;
@@ -438,6 +439,16 @@ namespace UnityEditor
             m_PreviewUtility.Render();
         }
 
+        bool IsPreviewExpensiveToDisplay()
+        {
+            if (m_Preview3DMode == Preview3DMode.Volume || m_Preview3DMode == Preview3DMode.SDF)
+            {
+                Vector3 res = GetTextureResolution(Texture);
+                return res.x * res.y * res.z > s_MaxPreviewPixelCount;
+            }
+            return false;
+        }
+
         public void OnPreviewGUI(Rect r, GUIStyle background)
         {
             if (!ShaderUtil.hardwareSupportsRectRenderTexture || !SystemInfo.supports3DTextures)
@@ -451,6 +462,12 @@ namespace UnityEditor
             {
                 if (Event.current.type == EventType.Repaint)
                     EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 40), "Compressed 3D texture preview is not supported");
+                return;
+            }
+            if (IsPreviewExpensiveToDisplay())
+            {
+                if (Event.current.type == EventType.Repaint)
+                    EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 40), "Preview disabled (3D texture too large to display)");
                 return;
             }
 
@@ -484,6 +501,9 @@ namespace UnityEditor
 
             OnEnable();
             m_QualityModifier *= 2;
+
+            if (IsPreviewExpensiveToDisplay())
+                return null;
 
             Rect r = new Rect(0, 0, width, height);
             m_PreviewUtility.BeginStaticPreview(r);

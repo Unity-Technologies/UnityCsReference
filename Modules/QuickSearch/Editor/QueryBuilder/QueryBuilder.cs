@@ -82,6 +82,7 @@ namespace UnityEditor.Search
         public QueryBlock currentBlock => selectedBlocks.FirstOrDefault();
         public IEnumerable<QueryBlock> selectedBlocks => EnumerateBlocks().Where(b => b.selected);
 
+
         protected QueryBuilder()
         {
             errors = new List<QueryError>();

@@ -46,11 +46,7 @@ namespace UnityEditor
         [SerializeField] HideFlags m_TextureHideFlags = HideFlags.HideAndDontSave;
         [SerializeField] bool m_RenderIMGUI;
         [SerializeField] EnterPlayModeBehavior m_EnterPlayModeBehavior;
-        [SerializeField] int m_fullscreenMonitorIdx = 0;
-        [SerializeField] int m_playModeBehaviorIdx = 0;
         [SerializeField] bool m_UseMipMap;
-        [SerializeField] bool m_isFullscreen;
-        [SerializeField] bool m_suppressRenderingForFullscreen;
 
         private const int k_MaxSupportedDisplays = 8;
 
@@ -143,38 +139,11 @@ namespace UnityEditor
         public const int kFullscreenInvalidIdx = -1;
         public const int kFullscreenNone = 0;
 
-        public int fullscreenMonitorIdx
-        {
-            get => m_fullscreenMonitorIdx;
-            set => m_fullscreenMonitorIdx = value;
-        }
-
-        public int playModeBehaviorIdx
-        {
-            get => m_playModeBehaviorIdx;
-            set => m_playModeBehaviorIdx = value;
-        }
-
         [Obsolete("PlayModeView.maximizeOnPlay is obsolete. Use PlayModeView.enterPlayModeBehavior instead")]
         public bool maximizeOnPlay
         {
             get { return m_EnterPlayModeBehavior == EnterPlayModeBehavior.PlayMaximized; }
             set { m_EnterPlayModeBehavior = value ? EnterPlayModeBehavior.PlayMaximized : EnterPlayModeBehavior.PlayFocused; }
-        }
-
-        public bool isFullscreen
-        {
-            get { return m_isFullscreen; }
-            set { m_isFullscreen = value; }
-        }
-
-        internal bool suppressRenderingForFullscreen
-        {
-            get { return m_suppressRenderingForFullscreen; }
-            set
-            {
-                m_suppressRenderingForFullscreen = value;
-            }
         }
 
         protected bool useMipMap
@@ -241,9 +210,8 @@ namespace UnityEditor
             using (var renderingView = new RenderingView(this))
             {
                 SetPlayModeViewSize(targetSize);
-                // This should be called configure virtual display or sth
-                EditorDisplayUtility.AddVirtualDisplay(targetDisplay, (int)targetSize.x, (int)targetSize.y);
-                // EditorDisplayManager.UpdateVirtualDisplay(this);
+                int width = Mathf.RoundToInt(targetSize.x);
+                int height = Mathf.RoundToInt(targetSize.y);
                 var currentTargetDisplay = 0;
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
@@ -306,8 +274,6 @@ namespace UnityEditor
                 throw new ArgumentException("Type should derive from " + typeof(PlayModeView).Name);
             if (type.Name != GetType().Name)
             {
-                EditorFullscreenController.SetMainDisplayPlayModeViewType(type);
-
                 var serializedViews = ListsToDictionary(m_SerializedViewNames, m_SerializedViewValues);
 
                 // Clear serialized views so they wouldn't be serialized again
@@ -500,9 +466,6 @@ namespace UnityEditor
 
         protected void SetFocus(bool focused)
         {
-            if (suppressRenderingForFullscreen)
-                return; //suppressed views should not grab "play mode" focus
-
             if (!focused && s_LastFocused == this)
             {
                 InternalEditorUtility.OnGameViewFocus(false);
@@ -518,21 +481,6 @@ namespace UnityEditor
                 Repaint();
             }
             SetDisplayViewSize(m_TargetDisplay, m_TargetSize);
-        }
-
-        internal virtual void ApplyEditorDisplayFullscreenSetting(IPlayModeViewFullscreenSettings settings)
-        {
-            m_isFullscreen = true;
-
-            if (ModuleManager.ShouldShowMultiDisplayOption())
-            {
-                if (targetDisplay != settings.DisplayNumber)
-                {
-                    targetDisplay = settings.DisplayNumber;
-                }
-            }
-
-            SetVSync(settings.VsyncEnabled);
         }
 
         [RequiredByNativeCode]
@@ -554,19 +502,12 @@ namespace UnityEditor
         {
             PlayFocused,
             PlayMaximized,
-            PlayUnfocused,
-            PlayFullscreen
+            PlayUnfocused
         }
 
         void SetPlayModeWindowsStates(EnterPlayModeBehavior behavior)
         {
-            var isFullscreen = (behavior == EnterPlayModeBehavior.PlayFullscreen);
-
             this.m_EnterPlayModeBehavior = behavior;
-            this.fullscreenMonitorIdx = isFullscreen
-                ? GameViewOnPlayMenu.SelectedIndexToDisplayIndex(this.playModeBehaviorIdx)
-                : -1;
-
             foreach (var view in s_PlayModeViews)
             {
                 if (view == this)
@@ -577,32 +518,12 @@ namespace UnityEditor
                 {
                     // Only one play mode view can be maximized at a time.
                     view.m_EnterPlayModeBehavior = EnterPlayModeBehavior.PlayUnfocused;
-                    view.playModeBehaviorIdx = 0;
-                    view.fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
                 }
-                else if (behavior == EnterPlayModeBehavior.PlayFullscreen && view.m_EnterPlayModeBehavior == EnterPlayModeBehavior.PlayFullscreen)
-                {
-                    // We can have multiple fullscreen views, so long as they're not on the same monitor
-                    if (this.fullscreenMonitorIdx == view.fullscreenMonitorIdx)
-                    {
-                        view.m_EnterPlayModeBehavior = EnterPlayModeBehavior.PlayUnfocused;
-                        view.playModeBehaviorIdx = 0;
-                        view.fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
-                    }
-                }
-
                 view.OnEnterPlayModeBehaviorChange();
                 view.Repaint();
             }
         }
 
         protected virtual void OnEnterPlayModeBehaviorChange() {}
-        internal static PlayModeView GetAssociatedViewForTargetDisplay(int targetDisplay)
-        {
-            return s_PlayModeViews.Where(v => v.targetDisplay == targetDisplay && !v.m_suppressRenderingForFullscreen)
-                .OrderByDescending(v => v.isFullscreen)
-                .ThenByDescending(v => v.hasFocus)
-                .FirstOrDefault();
-        }
     }
 }
