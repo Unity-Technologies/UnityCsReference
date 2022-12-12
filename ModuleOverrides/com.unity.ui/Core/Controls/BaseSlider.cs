@@ -671,6 +671,7 @@ namespace UnityEngine.UIElements
                 {
                     inputTextField = new TextField() { name = "unity-text-field" };
                     inputTextField.AddToClassList(textFieldClassName);
+                    inputTextField.RegisterCallback<NavigationMoveEvent>(OnInputNavigationMoveEvent, TrickleDown.TrickleDown);
                     inputTextField.RegisterValueChangedCallback(OnTextFieldValueChange);
                     inputTextField.RegisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
                     visualInput.Add(inputTextField);
@@ -682,6 +683,7 @@ namespace UnityEngine.UIElements
                 if (inputTextField.panel != null)
                     inputTextField.RemoveFromHierarchy();
 
+                inputTextField.UnregisterCallback<NavigationMoveEvent>(OnInputNavigationMoveEvent);
                 inputTextField.UnregisterValueChangedCallback(OnTextFieldValueChange);
                 inputTextField.UnregisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
                 inputTextField = null;
@@ -699,6 +701,12 @@ namespace UnityEngine.UIElements
         private void OnTextFieldFocusOut(FocusOutEvent evt)
         {
             UpdateTextFieldValue();
+        }
+
+        private void OnInputNavigationMoveEvent(NavigationMoveEvent evt)
+        {
+            // The input field should not do any navigation when using the arrow keys.
+            evt.StopPropagation();
         }
 
         void OnTextFieldValueChange(ChangeEvent<string> evt)
@@ -722,7 +730,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                visualInput.Add(dragElement);
+                dragContainer.Add(dragElement);
             }
         }
     }

@@ -284,7 +284,7 @@ namespace UnityEditor
     [CustomPropertyDrawer(typeof(TextAreaAttribute))]
     internal sealed class TextAreaDrawer : PropertyDrawer
     {
-        private const int kLineHeight = 13;
+        private const int kLineHeight = 15;
         private static string s_InvalidTypeMessage = L10n.Tr("Use TextAreaDrawer with string.");
         private Vector2 m_ScrollPosition = new Vector2();
 
@@ -311,31 +311,39 @@ namespace UnityEditor
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            if (property.propertyType == SerializedPropertyType.String)
+            if (property.propertyType != SerializedPropertyType.String)
+                return new Label(s_InvalidTypeMessage);
+
+            var textAreaAttribute = attribute as TextAreaAttribute;
+
+            // Label + first line
+            var initialHeight = EditorGUI.kSingleLineHeight + EditorGUI.kSingleLineHeight;
+
+            var minHeight = initialHeight + (textAreaAttribute!.minLines - 1) * kLineHeight;
+            var maxHeight = initialHeight + (textAreaAttribute!.maxLines - 1) * kLineHeight;
+
+            if (maxHeight < minHeight)
+                maxHeight = minHeight;
+
+            var textField = new TextField
             {
-                var textAreaAttribute = attribute as TextAreaAttribute;
-                var element = new VisualElement();
-                var label = new Label(property.displayName);
-                var scrollView = new ScrollView();
-                var textField = new TextField();
-                textField.multiline = true;
-                var minHeight = EditorGUI.kSingleLineHeight + (textAreaAttribute.minLines - 1) * kLineHeight;
-                var maxHeight = minHeight;
+                label = property.displayName,
+                multiline = true,
+                style =
+                {
+                    flexDirection = FlexDirection.Column,
+                    whiteSpace = WhiteSpace.Normal,
+                    minHeight = minHeight,
+                    maxHeight = maxHeight
+                }
+            };
 
-                element.Add(label);
-                element.Add(scrollView);
+            textField.SetVerticalScrollerVisibility(ScrollerVisibility.Auto);
 
-                scrollView.Add(textField);
-                scrollView.style.minHeight = minHeight;
-                scrollView.style.maxHeight = maxHeight;
+            textField.style.minHeight = minHeight;
+            textField.bindingPath = property.propertyPath;
 
-                textField.style.minHeight = minHeight;
-                textField.bindingPath = property.propertyPath;
-
-                return element;
-            }
-
-            return new Label(s_InvalidTypeMessage);
+            return textField;
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)

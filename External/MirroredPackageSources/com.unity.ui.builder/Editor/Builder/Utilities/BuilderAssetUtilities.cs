@@ -417,7 +417,6 @@ namespace Unity.UI.Builder
             }
             else if (ve.GetVisualElementAsset() != null)
             {
-                Undo.IncrementCurrentGroup();
                 Undo.RegisterCompleteObjectUndo(
                     document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
 
@@ -455,7 +454,6 @@ namespace Unity.UI.Builder
             }
             else if (ve.GetVisualElementAsset() != null)
             {
-                Undo.IncrementCurrentGroup();
                 Undo.RegisterCompleteObjectUndo(
                     document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
 

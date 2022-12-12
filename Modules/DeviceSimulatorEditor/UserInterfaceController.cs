@@ -87,9 +87,8 @@ namespace UnityEditor.DeviceSimulation
         private Label m_ScaleValueLabel;
         private ToolbarToggle m_FitToScreenToggle;
         private ToolbarToggle m_HighlightSafeAreaToggle;
+        private ToolbarMenu m_EnterPlayModeMenu;
         private ToolbarToggle m_ControlPanelToggle;
-        private VisualElement m_OnPlayBehaviorListMenu;
-        private TextElement m_SelectedOnPlayBehaviorName;
 
         // Controls for inactive message.
         private VisualElement m_InactiveMsgContainer;
@@ -159,10 +158,20 @@ namespace UnityEditor.DeviceSimulation
             m_HighlightSafeAreaToggle.SetValueWithoutNotify(HighlightSafeArea);
 
             // Enter Play Mode popup up
-            m_OnPlayBehaviorListMenu = rootVisualElement.Q<VisualElement>("enter-play-mode-list-menu");
-            m_OnPlayBehaviorListMenu.AddManipulator(new Clickable(ShowOnPlayBehaviorSelector));
-            m_SelectedOnPlayBehaviorName = m_OnPlayBehaviorListMenu.Q<TextElement>("selected-play-mode-name");
-            m_SelectedOnPlayBehaviorName.text = GameViewOnPlayMenu.GetOnPlayBehaviorName(m_Main.playModeView.playModeBehaviorIdx);
+            m_EnterPlayModeMenu = rootVisualElement.Q<ToolbarMenu>("enter-play-mode-menu");
+            UpdateEnterPlayModeBehaviorMsg();
+
+            foreach (var name in Enum.GetNames(typeof(PlayModeView.EnterPlayModeBehavior)))
+            {
+                m_EnterPlayModeMenu.menu.AppendAction(ObjectNames.NicifyVariableName(name),
+                    a => HandleEnterPlayModeBehaviorSelection(name),
+                    a =>
+                    {
+                        return m_Main.playModeView.enterPlayModeBehavior.ToString() == name
+                        ? DropdownMenuAction.Status.Checked
+                        : DropdownMenuAction.Status.Normal;
+                    });
+            }
 
             // Inactive message set up
             m_InactiveMsgContainer = rootVisualElement.Q<VisualElement>("inactive-msg-container");
@@ -351,14 +360,6 @@ namespace UnityEditor.DeviceSimulation
             PopupWindow.Show(rect, m_DeviceListPopup);
         }
 
-        private void ShowOnPlayBehaviorSelector()
-        {
-            var rect = new Rect(m_OnPlayBehaviorListMenu.worldBound.position + new Vector2(1, m_OnPlayBehaviorListMenu.worldBound.height), new Vector2());
-            var menuData = new SimulationOnPlayMenuItemProvider();
-            var flexibleMenu = new GameViewOnPlayMenu(menuData, m_Main.playModeView.playModeBehaviorIdx, null, m_Main.playModeView as SimulatorWindow);
-            PopupWindow.Show(rect, flexibleMenu);
-        }
-
         private void OnDeviceSelected(int selectedDeviceIndex)
         {
             if (m_Main.deviceIndex == selectedDeviceIndex)
@@ -394,9 +395,18 @@ namespace UnityEditor.DeviceSimulation
             m_ScrollView.style.paddingTop = scrollViewHeight > m_DeviceView.style.height.value.value ? (scrollViewHeight - m_DeviceView.style.height.value.value) / 2 : 0;
         }
 
+        private void HandleEnterPlayModeBehaviorSelection(string selected)
+        {
+            if (m_Main.playModeView.enterPlayModeBehavior.ToString() != selected)
+            {
+                m_Main.playModeView.enterPlayModeBehavior = (PlayModeView.EnterPlayModeBehavior)Enum.Parse(typeof(PlayModeView.EnterPlayModeBehavior), selected);
+                UpdateEnterPlayModeBehaviorMsg();
+            }
+        }
+
         public void UpdateEnterPlayModeBehaviorMsg()
         {
-            m_SelectedOnPlayBehaviorName.text = GameViewOnPlayMenu.GetOnPlayBehaviorName(m_Main.playModeView.playModeBehaviorIdx);
+            m_EnterPlayModeMenu.text = ObjectNames.NicifyVariableName(m_Main.playModeView.enterPlayModeBehavior.ToString());
         }
     }
 }

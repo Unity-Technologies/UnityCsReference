@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeHeader("Runtime/Scripting/TypeCache.h")]
+    [NativeHeader("Runtime/Mono/MonoAttributeHelpers.h")]
     static partial class EditorAssemblies
     {
         const BindingFlags k_DefaultMethodBindingFlags =
@@ -27,5 +27,31 @@ namespace UnityEditor
 
         [FreeFunction(Name = "GetAllMethodsWithAttribute")]
         extern static object[] Internal_GetAllMethodsWithAttribute(Type attrType, BindingFlags staticness);
+
+        [Obsolete("Use public TypeCache.GetTypesWithAttribute<> API instead.")]
+        internal static IEnumerable<Type> GetAllTypesWithAttribute<T>() where T : Attribute
+        {
+            return Internal_GetAllTypesWithAttribute(typeof(T));
+        }
+
+        [FreeFunction(Name = "GetAllTypesWithAttribute")]
+        extern static Type[] Internal_GetAllTypesWithAttribute(Type attrType);
+
+        [Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
+        internal static IEnumerable<Type> GetAllTypesWithInterface<T>() where T : class
+        {
+            return GetAllTypesWithInterface(typeof(T));
+        }
+
+        [Obsolete("Use public TypeCache.GetTypesDerivedFrom<> API instead.")]
+        private static IEnumerable<Type> GetAllTypesWithInterface(Type interfaceType)
+        {
+            if (!interfaceType.IsInterface)
+                throw new ArgumentException(string.Format("Specified type {0} is not an interface.", interfaceType), nameof(interfaceType));
+            return Internal_GetAllTypesWithInterface(interfaceType);
+        }
+
+        [FreeFunction(Name = "GetAllTypesWithInterface")]
+        extern static Type[] Internal_GetAllTypesWithInterface(Type interfaceType);
     }
 }

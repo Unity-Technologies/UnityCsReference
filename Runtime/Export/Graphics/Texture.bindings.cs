@@ -175,8 +175,8 @@ namespace UnityEngine
             set;
         }
 
-        extern internal int GetPixelDataSize(int mipLevel, int element = 0);
-        extern internal int GetPixelDataOffset(int mipLevel, int element = 0);
+        extern internal ulong GetPixelDataSize(int mipLevel, int element = 0);
+        extern internal ulong GetPixelDataOffset(int mipLevel, int element = 0);
     }
 
     [NativeHeader("Runtime/Graphics/Texture2D.h")]
@@ -236,7 +236,7 @@ namespace UnityEngine
         extern private void SetPixelsImpl(int x, int y, int w, int h, Color[] pixel, int miplevel, int frame);
 
         [FreeFunction(Name = "Texture2DScripting::LoadRawData", HasExplicitThis = true)]
-        extern private bool LoadRawTextureDataImpl(IntPtr data, int size);
+        extern private bool LoadRawTextureDataImpl(IntPtr data, ulong size);
 
         [FreeFunction(Name = "Texture2DScripting::LoadRawData", HasExplicitThis = true)]
         extern private bool LoadRawTextureDataImplArray(byte[] data);
@@ -248,7 +248,7 @@ namespace UnityEngine
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         extern private IntPtr GetWritableImageData(int frame);
-        extern private long GetRawImageDataSize();
+        extern private ulong GetRawImageDataSize();
 
         extern private static AtomicSafetyHandle GetSafetyHandle(Texture2D tex);
         extern private AtomicSafetyHandle GetSafetyHandleForSlice(int mipLevel);
@@ -329,7 +329,7 @@ namespace UnityEngine
         [FreeFunction("Texture2DScripting::SetBlockOfPixels32", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetBlockOfPixels32(int x, int y, int blockWidth, int blockHeight, Color32[] colors, int miplevel);
 
-        [FreeFunction("Texture2DScripting::GetRawTextureData", HasExplicitThis = true)]
+        [FreeFunction("Texture2DScripting::GetRawTextureData", HasExplicitThis = true, ThrowsException = true)]
         extern public byte[] GetRawTextureData();
 
         [FreeFunction("Texture2DScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
