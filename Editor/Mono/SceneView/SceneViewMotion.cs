@@ -11,6 +11,27 @@ namespace UnityEditor
 {
     internal static class SceneViewMotion
     {
+        const string k_temporaryPanTool2D = "Scene View/Temporary Pan Tool for 2D Mode";
+        const string k_temporaryPanTool1 = "Scene View/Temporary Pan Tool 1";
+        const string k_temporaryPanTool2 = "Scene View/Temporary Pan Tool 2";
+        const string k_temporaryPanTool3 = "Scene View/Temporary Pan Tool 3";
+        const string k_temporaryPanTool4 = "Scene View/Temporary Pan Tool 4";
+        const string k_temporaryZoomTool = "Scene View/Temporary Zoom Tool";
+        const string k_temporaryOrbitTool = "Scene View/Temporary Orbit Tool";
+        const string k_temporaryFpsTool = "Scene View/Temporary FPS Tool";
+
+        static readonly ShortcutEntry[] ViewToolShortcuts =
+        {
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryPanTool2D),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryPanTool1),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryPanTool2),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryPanTool3),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryPanTool4),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryZoomTool),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryOrbitTool),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryFpsTool),
+        };
+
         [NonSerialized]
         static bool s_Initialized;
         static SceneView s_CurrentSceneView; // The SceneView that is calling OnGUI
@@ -52,7 +73,8 @@ namespace UnityEditor
             {
                 if (Event.current != null)
                     UpdateViewToolState(Event.current);
-                return s_ViewToolActive;
+
+                return s_ViewToolActive || Tools.current == Tool.View;
             }
         }
         internal static event Action viewToolActiveChanged;
@@ -94,32 +116,38 @@ namespace UnityEditor
                 && ((!SceneView.lastActiveSceneView?.in2DMode ?? false) && (!SceneView.lastActiveSceneView?.isRotationLocked ?? false));
         }
 
-        [ClutchShortcut("Scene View/Temporary Pan Tool for 2D Mode", typeof(SceneViewViewport2D), KeyCode.Mouse1)]
-        [ClutchShortcut("Scene View/Temporary Pan Tool 1", typeof(SceneViewViewport), KeyCode.Mouse2)]
-        [ClutchShortcut("Scene View/Temporary Pan Tool 2", typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Alt)]
-        [ClutchShortcut("Scene View/Temporary Pan Tool 3", typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
-        [ClutchShortcut("Scene View/Temporary Pan Tool 4", typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_temporaryPanTool2D, typeof(SceneViewViewport2D), KeyCode.Mouse1)]
+        [ClutchShortcut(k_temporaryPanTool1, typeof(SceneViewViewport), KeyCode.Mouse2)]
+        [ClutchShortcut(k_temporaryPanTool2, typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_temporaryPanTool3, typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_temporaryPanTool4, typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
         static void TemporaryPan(ShortcutArguments args)
         {
-            if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Pan);
-            else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
+            if (args.stage == ShortcutStage.Begin)
+                TemporaryTool(ViewTool.Pan);
+            else
+                HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
-        [ClutchShortcut("Scene View/Temporary Zoom Tool", typeof(SceneViewViewport), KeyCode.Mouse1, ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_temporaryZoomTool, typeof(SceneViewViewport), KeyCode.Mouse1, ShortcutModifiers.Alt)]
         static void TemporaryZoom(ShortcutArguments args)
         {
-            if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Zoom);
-            else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
+            if (args.stage == ShortcutStage.Begin)
+                TemporaryTool(ViewTool.Zoom);
+            else
+                HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
-        [ClutchShortcut("Scene View/Temporary Orbit Tool", typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_temporaryOrbitTool, typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Alt)]
         static void TemporaryOrbit(ShortcutArguments args)
         {
-            if (args.stage == ShortcutStage.Begin) TemporaryTool(ViewTool.Orbit);
-            else HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
+            if (args.stage == ShortcutStage.Begin)
+                TemporaryTool(ViewTool.Orbit);
+            else
+                HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
-        [ClutchShortcut("Scene View/Temporary FPS Tool", typeof(SceneViewViewport3D), KeyCode.Mouse1)]
+        [ClutchShortcut(k_temporaryFpsTool, typeof(SceneViewViewport3D), KeyCode.Mouse1)]
         static void TemporaryFPS(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin)
@@ -141,8 +169,10 @@ namespace UnityEditor
             s_CurrentState = MotionState.kDragging;
             HandleMouseDown(SceneView.lastActiveSceneView, s_ViewToolID, Event.current?.button ?? 0);
             UpdateViewToolState(Event.current);
-            if(Event.current != null) shortcutKey = Event.current.isMouse ? KeyCode.Mouse0 + Event.current.button : Event.current.keyCode;
-            else shortcutKey = KeyCode.None;
+            if(Event.current != null)
+                shortcutKey = Event.current.isMouse ? KeyCode.Mouse0 + Event.current.button : Event.current.keyCode;
+            else
+                shortcutKey = KeyCode.None;
         }
 
         public static void DoViewTool(SceneView view)
@@ -199,12 +229,19 @@ namespace UnityEditor
                 HandleMouseDrag(view, id);
             }
 
-            if (shortcutKey != KeyCode.None && Tools.viewTool != ViewTool.None) GUIUtility.hotControl = s_ViewToolID;
+            if (shortcutKey != KeyCode.None && Tools.viewTool != ViewTool.None)
+                GUIUtility.hotControl = s_ViewToolID;
         }
 
         static void UpdateViewToolState(Event evt)
         {
-            bool shouldBeActive = Tools.s_LockedViewTool != ViewTool.None;
+            bool viewShortcut = false;
+            var eventKeyCombination = new[] { KeyCombination.FromInput(evt) };
+
+            foreach (var shortcut in ViewToolShortcuts)
+                viewShortcut |= shortcut.StartsWith(eventKeyCombination);
+
+            bool shouldBeActive = Tools.s_LockedViewTool != ViewTool.None || Tools.current == Tool.View || viewShortcut;
             if (shouldBeActive != s_ViewToolActive)
             {
                 s_ViewToolActive = shouldBeActive;

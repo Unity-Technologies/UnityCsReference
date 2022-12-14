@@ -2345,6 +2345,10 @@ namespace UnityEditor
             if (plainGameObject.transform.GetType() != prefabAssetRoot.transform.GetType())
                 throw new InvalidOperationException(string.Format("Cannot convert the GameObject '{0}' with root transform of type {1} with a Prefab asset with root transform of type {2}. Transform types must match.", plainGameObject.name, plainGameObject.transform.GetType().Name, prefabAssetRoot.transform.GetType().Name));
 
+            // Prefab Mode and EditPrefabContents scope handling
+            if (PrefabStageUtility.IsGameObjectThePrefabRootInAnyPrefabStage(plainGameObject) || (EditorSceneManager.IsPreviewSceneObject(plainGameObject) && plainGameObject.transform.parent == null))
+                throw new InvalidOperationException("Replacing the root GameObject in a Prefab with a Prefab instance is not supported since it will break all overrides for existing instances of this Prefab, including their positions and rotations." + plainGameObject.name);
+
             if (plainGameObject.hideFlags.HasFlag(HideFlags.DontSaveInEditor) || plainGameObject.transform.hideFlags.HasFlag(HideFlags.DontSaveInEditor))
                 throw new ArgumentException("Input GameObject is using the HideFlags.DontSaveInEditor flag which is not supported when converting to Prefab instance: GameObject: " + plainGameObject.name, nameof(plainGameObject));
 

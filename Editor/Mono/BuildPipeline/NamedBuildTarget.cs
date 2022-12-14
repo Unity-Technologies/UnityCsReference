@@ -41,6 +41,7 @@ namespace UnityEditor.Build
         public static readonly NamedBuildTarget WebGL = new NamedBuildTarget("WebGL");
         public static readonly NamedBuildTarget WindowsStoreApps = new NamedBuildTarget("Windows Store Apps");
         public static readonly NamedBuildTarget PS4 = new NamedBuildTarget("PS4");
+        public static readonly NamedBuildTarget PS5 = new NamedBuildTarget("PS5");
         public static readonly NamedBuildTarget XboxOne = new NamedBuildTarget("XboxOne");
         public static readonly NamedBuildTarget tvOS = new NamedBuildTarget("tvOS");
         public static readonly NamedBuildTarget NintendoSwitch = new NamedBuildTarget("Nintendo Switch");

@@ -26,6 +26,24 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string Name;
         public string Version;
         public VersionType Type;
+
+        public VersionMetaData(string name)
+        {
+            Name = name;
+        }
+
+        public VersionMetaData(string name, string version)
+        {
+            Name = name;
+            Version = version;
+        }
+		
+        public VersionMetaData(string name, string version, VersionType type)
+        {
+            Name = name;
+            Version = version;
+			Type = type;
+        }
     }
 
 

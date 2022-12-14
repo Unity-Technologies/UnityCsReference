@@ -1317,15 +1317,14 @@ namespace UnityEngine.TextCore.Text
                 {
                     // Shift Top vertices forward by half (Shear Value * height of character) and Bottom vertices back by same amount.
                     float shearValue = m_ItalicAngle * 0.01f;
-                    Vector3 topShear = new Vector3(shearValue * ((currentGlyphMetrics.horizontalBearingY + padding + stylePadding) * currentElementScale), 0, 0);
-                    Vector3 bottomShear = new Vector3(shearValue * (((currentGlyphMetrics.horizontalBearingY - currentGlyphMetrics.height - padding - stylePadding)) * currentElementScale), 0, 0);
+                    float midPoint = ((m_CurrentFontAsset.m_FaceInfo.capLine - (m_CurrentFontAsset.m_FaceInfo.baseline + m_BaselineOffset)) / 2) * m_FontScaleMultiplier * m_CurrentFontAsset.m_FaceInfo.scale;
+                    Vector3 topShear = new Vector3(shearValue * ((currentGlyphMetrics.horizontalBearingY + padding + stylePadding - midPoint) * currentElementScale), 0, 0);
+                    Vector3 bottomShear = new Vector3(shearValue * (((currentGlyphMetrics.horizontalBearingY - currentGlyphMetrics.height - padding - stylePadding - midPoint)) * currentElementScale), 0, 0);
 
-                    Vector3 shearAdjustment = new Vector3((topShear.x - bottomShear.x) / 2, 0, 0);
-
-                    topLeft = topLeft + topShear - shearAdjustment;
-                    bottomLeft = bottomLeft + bottomShear - shearAdjustment;
-                    topRight = topRight + topShear - shearAdjustment;
-                    bottomRight = bottomRight + bottomShear - shearAdjustment;
+                    topLeft += topShear;
+                    bottomLeft += bottomShear;
+                    topRight += topShear;
+                    bottomRight += bottomShear;
                 }
                 #endregion Handle Italics & Shearing
 

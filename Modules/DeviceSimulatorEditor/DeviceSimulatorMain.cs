@@ -120,6 +120,8 @@ namespace UnityEditor.DeviceSimulation
             InitScreenUI();
 
             m_ApplicationSimulation.OnSimulationStart(currentDevice.deviceInfo);
+
+            m_DeviceSimulator.OnDeviceChanged();
         }
 
         private void InitDeviceIndex(SimulatorState serializedState)

@@ -356,7 +356,7 @@ namespace UnityEngine
                     TouchScreenKeyboard.Android.consumesOutsideTouches = value;
                 }
             }
-
+            [Obsolete("consumesOutsideTouches is deprecated and will be removed in a future version where Unity will always process touch input outside of the on-screen keyboard (consumesOutsideTouches = false)")]
             public static bool consumesOutsideTouches
             {
                 set

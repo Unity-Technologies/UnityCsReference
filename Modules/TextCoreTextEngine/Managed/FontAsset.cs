@@ -605,6 +605,10 @@ namespace UnityEngine.TextCore.Text
                             return FontAsset.CreateFontAsset("Arial", "Regular");
                     }
                 }
+                FontAsset systemFontAsset = CreateFontAsset(font.name, "Regular");
+                if (systemFontAsset != null)
+                    return systemFontAsset;
+
                 Debug.LogWarning("Unable to load font face for [" + font.name + "]. Make sure \"Include Font Data\" is enabled in the Font Import Settings.", font);
                 return null;
             }

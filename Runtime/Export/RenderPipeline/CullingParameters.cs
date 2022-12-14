@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Scripting;
+using Unity.Collections;
 
 namespace UnityEngine.Rendering
 {
@@ -580,5 +581,19 @@ namespace UnityEngine.Rendering
         {
             return !left.Equals(right);
         }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct LightShadowCasterCullingInfo
+    {
+        public RangeInt splitRange;
+        public BatchCullingProjectionType projectionType;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ShadowCastersCullingInfos
+    {
+        public NativeArray<ShadowSplitData> splitBuffer;
+        public NativeArray<LightShadowCasterCullingInfo> perLightInfos;
     }
 }

@@ -277,6 +277,82 @@ namespace UnityEngine.Rendering
             return results;
         }
 
+        // Match with struct in Internal_CullShadowCasters C++ side
+        unsafe struct CullShadowCastersContext
+        {
+            public IntPtr cullResults;
+            public ShadowSplitData* splitBuffer;
+            public int splitBufferCount;
+            public LightShadowCasterCullingInfo* perLightInfos;
+            public int perLightInfoCount;
+        }
+
+        unsafe void ValidateCullShadowCastersParameters(in CullingResults cullingResults, in ShadowCastersCullingInfos cullingInfos)
+        {
+            if (cullingResults.ptr == null)
+            {
+                throw new UnityException("CullingResults is null");
+            }
+
+            // Always valid to provide 0 range
+            if (cullingInfos.perLightInfos.Length == 0)
+                return;
+
+            if (cullingResults.visibleLights.Length != cullingInfos.perLightInfos.Length)
+            {
+                throw new UnityException($"CullingResults.visibleLights.Length ({cullingResults.visibleLights.Length}) != ShadowCastersCullingInfos.perLightInfos.Length ({cullingInfos.perLightInfos.Length}). " +
+                    "ShadowCastersCullingInfos.perLightInfos must have one entry per visible light.");
+            }
+
+            LightShadowCasterCullingInfo* perLightInfosPtr = (LightShadowCasterCullingInfo*)cullingInfos.perLightInfos.GetUnsafeReadOnlyPtr();
+
+            for (int i = 0; i < cullingInfos.perLightInfos.Length; ++i)
+            {
+                ref readonly LightShadowCasterCullingInfo infos = ref perLightInfosPtr[i];
+                RangeInt range = infos.splitRange;
+                int begin = range.start;
+                int length = range.length;
+                int end = begin + length;
+
+                // Null ranges are always valid
+                if (begin == 0 && length == 0)
+                    continue;
+
+                bool isBeginValid = begin >= 0 && begin < cullingInfos.splitBuffer.Length;
+                bool isLengthValid = length > 0;
+                bool isEndValid = end > begin && end <= cullingInfos.splitBuffer.Length;
+                bool isRangeValid = isBeginValid && isLengthValid && isEndValid;
+                if (!isRangeValid)
+                {
+                    throw new UnityException($"ShadowCastersCullingInfos.perLightInfos[{i}] is referring to an invalid memory location. " +
+                        $"splitRange.start ({range.start}) splitRange.length ({range.length}) " +
+                        $"ShadowCastersCullingInfos.splitBuffer.Length ({cullingInfos.splitBuffer.Length}).");
+                }
+
+                if (length > 0 && infos.projectionType == BatchCullingProjectionType.Unknown)
+                {
+                    throw new UnityException($"ShadowCastersCullingInfos.perLightInfos[{i}].projectionType == {infos.projectionType}. "
+                        + "The range however appears to be valid. splitRange.start ({range.start}) splitRange.length ({range.length})\n");
+                }
+            }
+        }
+
+        public unsafe void CullShadowCasters(CullingResults cullingResults, ShadowCastersCullingInfos infos)
+        {
+            Validate();
+
+            ValidateCullShadowCastersParameters(cullingResults, infos);
+
+            CullShadowCastersContext context = default;
+            context.cullResults = cullingResults.ptr;
+            context.splitBuffer = (ShadowSplitData*)infos.splitBuffer.GetUnsafePtr();
+            context.splitBufferCount = infos.splitBuffer.Length;
+            context.perLightInfos = (LightShadowCasterCullingInfo*)infos.perLightInfos.GetUnsafePtr();
+            context.perLightInfoCount = infos.perLightInfos.Length;
+
+            Internal_CullShadowCasters(this, (IntPtr)(&context));
+        }
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal void Validate()
         {

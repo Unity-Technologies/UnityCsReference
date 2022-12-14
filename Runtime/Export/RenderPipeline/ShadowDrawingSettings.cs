@@ -41,6 +41,7 @@ namespace UnityEngine.Rendering
             set { m_UseRenderingLayerMaskTest = value ? 1 : 0; }
         }
 
+        [Obsolete("ShadowDrawingSettings.splitData is deprecated. The equivalent data must be passed to ScriptableRenderContext.CullShadowCasters.")]
         public ShadowSplitData splitData
         {
             get { return m_SplitData; }
@@ -53,19 +54,14 @@ namespace UnityEngine.Rendering
             set { m_ObjectsFilter = value; }
         }
 
+        [Obsolete("ShadowDrawingSettings.projectionType is deprecated. There is no replacement for this parameter. You don't need to set it anymore.")]
         public BatchCullingProjectionType projectionType
         {
             get { return m_ProjectionType; }
             set { m_ProjectionType = value; }
         }
-
-        [Obsolete("ShadowDrawingSettings(CullingResults, int) is deprecated. Use ShadowDrawingSettings(CullingResults, int, BatchCullingProjectionType) instead.")]
+        
         public ShadowDrawingSettings(CullingResults cullingResults, int lightIndex)
-            : this(cullingResults, lightIndex, BatchCullingProjectionType.Unknown)
-        {
-        }
-
-        public ShadowDrawingSettings(CullingResults cullingResults, int lightIndex, BatchCullingProjectionType projectionType)
         {
             m_CullingResults = cullingResults;
             m_LightIndex = lightIndex;
@@ -73,6 +69,13 @@ namespace UnityEngine.Rendering
             m_SplitData = default(ShadowSplitData);
             m_SplitData.shadowCascadeBlendCullingFactor = 1f;
             m_ObjectsFilter = ShadowObjectsFilter.AllObjects;
+            m_ProjectionType = BatchCullingProjectionType.Unknown;
+        }
+
+        [Obsolete("ShadowDrawingSettings(CullingResults, int, BatchCullingProjectionType) is deprecated. Use ShadowDrawingSettings(CullingResults, int) instead.")]
+        public ShadowDrawingSettings(CullingResults cullingResults, int lightIndex, BatchCullingProjectionType projectionType)
+            : this(cullingResults, lightIndex)
+        {
             m_ProjectionType = projectionType;
         }
 

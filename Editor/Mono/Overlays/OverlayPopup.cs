@@ -54,31 +54,65 @@ namespace UnityEditor.Overlays
                     this.EnableInClassList(k_FromVertical, true);
 
                 if (!overlay.isInToolbar)
-                {
                     this.EnableInClassList(k_OutsideToolbar, true);
-                    var overlayWorldBound = overlay.rootVisualElement.worldBound;
 
-                    var rightPlacement = overlayWorldBound.x + overlayWorldBound.width;
-                    var rightSideSpace = canvasWorld.xMax - rightPlacement;
+                var overlayWorldBound = overlay.rootVisualElement.worldBound;
 
-                    var xAdjusted = placement.position.x;
-                    if (rightSideSpace >= placement.width)
-                        xAdjusted = rightPlacement;
+                var rightPlacement = overlayWorldBound.x + overlayWorldBound.width;
+                var rightSideSpace = canvasWorld.xMax - rightPlacement;
+
+                var xAdjusted = placement.position.x;
+                if (rightSideSpace >= placement.width)
+                    xAdjusted = rightPlacement;
+                else
+                {
+                    var leftSideSpace = placement.x - overlay.canvas.rootVisualElement.worldBound.x;
+                    if (leftSideSpace >= placement.width)
+                        xAdjusted = overlayWorldBound.x - placement.width;
+                    else // If neither side has enough space, show the popup on the widest one
+                    {
+                        if (rightSideSpace > leftSideSpace)
+                            xAdjusted = overlayWorldBound.x + overlayWorldBound.width;
+                        else
+                            xAdjusted = overlayWorldBound.x - placement.width;
+                    }
+                }
+
+                var yAdjusted = placement.position.y;
+                var upPlacement = overlayWorldBound.y + overlayWorldBound.height - placement.height;
+                var upSpace = canvasWorld.yMax - upPlacement;
+
+                if (overlay.dockPosition.Equals(DockPosition.Bottom))
+                {
+                    if (upSpace >= placement.height && upPlacement >= canvasWorld.y)
+                        yAdjusted = upPlacement;
+                }
+                else
+                {
+                    var bottomPlacement = overlayWorldBound.y + 2;
+                    var bottomSpace = canvasWorld.yMax - bottomPlacement;
+
+                    if (bottomSpace >= placement.height)
+                    {
+                        yAdjusted = bottomPlacement;
+                    }
                     else
                     {
-                        var leftSideSpace = placement.x - overlay.canvas.rootVisualElement.worldBound.x;
-                        if (leftSideSpace >= placement.width)
-                            xAdjusted = overlayWorldBound.x - placement.width;
+                        if (upSpace >= placement.height && upPlacement >= canvasWorld.y)
+                        {
+                            yAdjusted = upPlacement;
+                        }
                         else // If neither side has enough space, show the popup on the widest one
                         {
-                            if (rightSideSpace > leftSideSpace)
-                                xAdjusted = overlayWorldBound.x + overlayWorldBound.width;
+                            if (bottomSpace > upSpace)
+                                yAdjusted = overlayWorldBound.y + overlayWorldBound.height;
                             else
-                                xAdjusted = overlayWorldBound.x - placement.width;
+                                yAdjusted = overlayWorldBound.y - placement.height;
                         }
                     }
-                    placement.position = new Vector2(xAdjusted, placement.position.y);
                 }
+
+                placement.position = new Vector2(xAdjusted, yAdjusted);
 
                 style.maxWidth = canvasWorld.xMax - placement.position.x;
                 style.maxHeight = canvasWorld.yMax - placement.position.y;

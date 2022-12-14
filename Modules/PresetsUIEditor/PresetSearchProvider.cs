@@ -23,9 +23,14 @@ namespace UnityEditor.Presets
         public readonly bool CreateNewAllowed;
         public readonly bool RevertOnNullSelection;
 
-        public PresetContext(Object[] targets, bool createNewAllowed) : this(targets, null, createNewAllowed) {}
+        public readonly Action<Preset> OnSelectionChanged;
+        public readonly Action<Preset, bool> OnSelectionClosed;
 
-        public PresetContext(Object[] targets, Preset currentSelection, bool createNewAllowed)
+        public PresetContext(Object[] targets, bool createNewAllowed) : this(targets, null, createNewAllowed, null, null) {}
+
+        public PresetContext(Object[] targets, Preset currentSelection, bool createNewAllowed) : this(targets, currentSelection, createNewAllowed, null, null) {}
+
+        public PresetContext(Object[] targets, Preset currentSelection, bool createNewAllowed, Action<Preset> onSelectionChanged, Action<Preset, bool> onSelectionClosed)
         {
             Targets = targets.Where(t => t != null).ToArray();
             Target = Targets.FirstOrDefault();
@@ -35,6 +40,8 @@ namespace UnityEditor.Presets
             CurrentSelection = currentSelection;
             CreateNewAllowed = createNewAllowed;
             RevertOnNullSelection = true;
+            OnSelectionChanged = onSelectionChanged;
+            OnSelectionClosed = onSelectionClosed;
         }
 
         public PresetContext(PresetType presetType, Preset currentSelection, SerializedProperty presetProperty, bool createNewAllowed)
@@ -47,6 +54,8 @@ namespace UnityEditor.Presets
             CurrentSelection = currentSelection;
             CreateNewAllowed = createNewAllowed;
             RevertOnNullSelection = false;
+            OnSelectionChanged = null;
+            OnSelectionClosed = null;
         }
     }
 

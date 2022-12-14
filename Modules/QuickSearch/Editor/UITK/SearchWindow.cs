@@ -1061,6 +1061,8 @@ namespace UnityEditor.Search
             m_ContextHash = Utils.CombineHashCodes(m_ContextHash, GetType().Name.GetHashCode());
             if (context.filterType != null)
                 m_ContextHash = Utils.CombineHashCodes(m_ContextHash, context.filterType.Name.GetHashCode());
+            if (context.runtimeContext != null && !string.IsNullOrEmpty(context.runtimeContext.contextId))
+                m_ContextHash = Utils.CombineHashCodes(m_ContextHash, context.runtimeContext.contextId.GetHashCode());
             context.searchView = this;
             Refresh();
         }

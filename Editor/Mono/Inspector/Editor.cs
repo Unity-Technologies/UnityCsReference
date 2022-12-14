@@ -306,6 +306,7 @@ namespace UnityEditor
         bool ModeSurvivesSelectionChange(int toolMode);
     }
 
+    [Obsolete(@"CustomEditorForRenderPipelineAttribute is deprecated. Use CustomEditor with SupportedOnCurrentPipeline instead. #from(2023.1)", false)]
     [AttributeUsage(AttributeTargets.Class)]
     public class CustomEditorForRenderPipelineAttribute : CustomEditor
     {

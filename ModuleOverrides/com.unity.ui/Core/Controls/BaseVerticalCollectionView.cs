@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Profiling;
+using UnityEngine.Pool;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -1501,6 +1502,9 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings() || indices == null)
                 return;
 
+            if (MatchesExistingSelection(indices))
+                return;
+
             ClearSelectionWithoutValidation();
             foreach (var index in indices)
                 AddToSelectionWithoutValidation(index);
@@ -1509,6 +1513,28 @@ namespace UnityEngine.UIElements
                 NotifyOfSelectionChange();
 
             SaveViewData();
+        }
+
+        private bool MatchesExistingSelection(IEnumerable<int> indices)
+        {
+            var pooled = ListPool<int>.Get();
+            try
+            {
+                pooled.AddRange(indices);
+                if (pooled.Count != m_SelectedIndices.Count)
+                    return false;
+                for (var i = 0; i < pooled.Count; ++i)
+                {
+                    if (pooled[i] != m_SelectedIndices[i])
+                        return false;
+                }
+
+                return true;
+            }
+            finally
+            {
+                ListPool<int>.Release(pooled);
+            }
         }
 
         private void NotifyOfSelectionChange()

@@ -141,6 +141,13 @@ namespace UnityEditor.Overlays
         }
     }
 
+    [Serializable]
+    sealed class ContainerData
+    {
+        public string containerId;
+        public float scrollOffset;
+    }
+
     //Dock position within container
     //for a horizontal container, Top is left, Bottom is right
     public enum DockPosition
@@ -242,6 +249,9 @@ namespace UnityEditor.Overlays
         [SerializeField]
         List<SaveData> m_SaveData = new List<SaveData>();
 
+        [SerializeField]
+        List<ContainerData> m_ContainerData = new List<ContainerData>();
+
         VisualElement m_RootVisualElement;
         internal EditorWindow containerWindow { get; set; }
 
@@ -335,6 +345,10 @@ namespace UnityEditor.Overlays
                     else
                         defaultContainer = container;
                 }
+
+                var data = GetContainerData(container.name);
+                if (container is ToolbarOverlayContainer toolbar)
+                    toolbar.scrollOffset = data.scrollOffset;
             }
 
             m_OriginGhost = new VisualElement { name = "origin-ghost"};
@@ -505,7 +519,10 @@ namespace UnityEditor.Overlays
         {
             m_OriginGhost.style.width = overlay.rootVisualElement.layout.width;
             m_OriginGhost.style.height = overlay.rootVisualElement.layout.height;
-            overlay.container?.Insert(overlay.container.IndexOf(overlay.rootVisualElement), m_OriginGhost);
+            if (overlay.container.GetOverlayIndex(overlay, out var section, out var index))
+            {
+                overlay.container.GetSectionElement(section)?.Insert(index, m_OriginGhost);
+            }
         }
 
         internal void UpdateGhostHover(bool hovered)
@@ -551,6 +568,10 @@ namespace UnityEditor.Overlays
                         if (!after[i].dontSaveInLayout)
                             WriteOrReplaceSaveData(after[i], i);
                     }
+
+                    var data = GetContainerData(container.name);
+                    if (container is ToolbarOverlayContainer toolbar)
+                        data.scrollOffset = toolbar.scrollOffset;
                 }
             }
         }
@@ -779,6 +800,22 @@ namespace UnityEditor.Overlays
                 RestoreOverlay(o.Item2, o.Item1);
 
             afterOverlaysInitialized?.Invoke();
+        }
+
+        ContainerData GetContainerData(string containerId)
+        {
+            foreach (var data in m_ContainerData)
+                if (data.containerId == containerId)
+                    return data;
+
+            var newData = new ContainerData
+            {
+                containerId = containerId,
+                scrollOffset = 0
+            };
+
+            m_ContainerData.Add(newData);
+            return newData;
         }
     }
 }

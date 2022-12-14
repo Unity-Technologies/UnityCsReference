@@ -29,9 +29,8 @@ namespace UnityEditor.ShortcutManagement
 
         public void HandleKeyEvent(Event evt, IContextManager contextManager)
         {
-            if (evt == null) return;
-
-            if (evt.keyCode == KeyCode.None) return;
+            if (evt == null || evt.keyCode == KeyCode.None)
+                return;
 
             if (evt.type == EventType.KeyUp || evt.type == EventType.MouseUp)
             {

@@ -180,6 +180,7 @@ namespace Unity.Properties.Internal
                     var hasCreatePropertyAttribute = member.GetCustomAttribute<CreatePropertyAttribute>() != null;
                     var hasNonSerializedAttribute = member.GetCustomAttribute<NonSerializedAttribute>() != null;
                     var hasSerializedFieldAttribute = member.GetCustomAttribute<SerializeField>() != null;
+                    var hasSerializeReferenceAttribute = member.GetCustomAttribute<SerializeReference>() != null;
 
                     if (hasDontCreatePropertyAttribute)
                     {
@@ -201,6 +202,13 @@ namespace Unity.Properties.Internal
                     }
 
                     if (hasSerializedFieldAttribute)
+                    {
+                        // If property generation was not explicitly specified lets keep behaviour consistent with Unity.
+                        yield return member;
+                        continue;
+                    }
+
+                    if (hasSerializeReferenceAttribute)
                     {
                         // If property generation was not explicitly specified lets keep behaviour consistent with Unity.
                         yield return member;

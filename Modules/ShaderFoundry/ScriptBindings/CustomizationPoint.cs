@@ -14,6 +14,7 @@ namespace UnityEditor.ShaderFoundry
     internal struct CustomizationPointInternal : IInternalType<CustomizationPointInternal>
     {
         internal FoundryHandle m_NameHandle;
+        internal FoundryHandle m_AttributeListHandle;
         internal FoundryHandle m_InputListHandle;
         internal FoundryHandle m_OutputListHandle;
         internal FoundryHandle m_DefaultBlockSequenceElementListHandle;
@@ -43,6 +44,7 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
         public string Name => container?.GetString(customizationPoint.m_NameHandle) ?? string.Empty;
+        public IEnumerable<ShaderAttribute> Attributes => FixedHandleListInternal.Enumerate<ShaderAttribute>(container, customizationPoint.m_AttributeListHandle);
         public IEnumerable<BlockVariable> Inputs => GetVariableEnumerable(customizationPoint.m_InputListHandle);
         public IEnumerable<BlockVariable> Outputs => GetVariableEnumerable(customizationPoint.m_OutputListHandle);
         // TODO @ SHADERS: Delete this once we don't rely on it in the prototype
@@ -83,6 +85,7 @@ namespace UnityEditor.ShaderFoundry
         {
             ShaderContainer container;
             internal string name;
+            public List<ShaderAttribute> attributes;
             public List<BlockVariable> inputs { get; set; } = new List<BlockVariable>();
             public List<BlockVariable> outputs { get; set; } = new List<BlockVariable>();
             public List<BlockVariable> properties { get; set; } = new List<BlockVariable>();
@@ -95,6 +98,7 @@ namespace UnityEditor.ShaderFoundry
                 this.name = name;
             }
 
+            public void AddAttribute(ShaderAttribute attribute) => Utilities.AddToList(ref attributes, attribute);
             public void AddInput(BlockVariable input) { inputs.Add(input); }
             public void AddOutput(BlockVariable output) { outputs.Add(output); }
             // TODO @ SHADERS: Delete this once we don't rely on it in the prototype
@@ -107,6 +111,7 @@ namespace UnityEditor.ShaderFoundry
                     m_NameHandle = container.AddString(name),
                 };
 
+                customizationPointInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes);
                 customizationPointInternal.m_InputListHandle = FixedHandleListInternal.Build(container, inputs, (v) => (v.handle));
                 customizationPointInternal.m_OutputListHandle = FixedHandleListInternal.Build(container, outputs, (v) => (v.handle));
                 customizationPointInternal.m_DefaultBlockSequenceElementListHandle = FixedHandleListInternal.Build(container, defaultBlockSequenceElements, (v) => (v.handle));

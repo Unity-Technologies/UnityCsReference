@@ -680,7 +680,7 @@ namespace UnityEngine.TextCore.Text
         {
             if (textInfo.characterCount <= 0)
                 return;
-            var maxAscender = 0f;
+            var maxAscender = float.MinValue;
             var maxDescender = textInfo.textElementInfo[textInfo.characterCount - 1].descender;
             var renderedWidth = 0f;
             var renderedHeight = 0f;
@@ -691,7 +691,7 @@ namespace UnityEngine.TextCore.Text
                 maxAscender = Mathf.Max(maxAscender, textInfo.textElementInfo[lineInfo.firstVisibleCharacterIndex].ascender);
                 maxDescender = Mathf.Min(maxDescender, textInfo.textElementInfo[lineInfo.firstVisibleCharacterIndex].descender);
 
-                renderedWidth = Mathf.Max(preferredSize.x, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
+                renderedWidth = Mathf.Max(renderedWidth, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
             }
             renderedHeight = maxAscender - maxDescender;
 

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Scripting;
 
 namespace Unity.Properties
 {
@@ -23,7 +24,8 @@ namespace Unity.Properties
     /// </remarks>
     /// <see cref="DontCreatePropertyAttribute"/>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public class CreatePropertyAttribute : Attribute
+    [RequireAttributeUsages]
+    public class CreatePropertyAttribute : RequiredMemberAttribute
     {
         /// <summary>
         /// Indicates if the property should generate a setter.

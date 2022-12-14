@@ -107,6 +107,15 @@ namespace UnityEditor.Overlays
             }
             else
             {
+                if (m_Container is ToolbarOverlayContainer)
+                {
+                    var targetSize = m_Container.spacerSize * .5f;
+                    if (m_Container.isHorizontal)
+                        dropArea.style.width = targetSize;
+                    else
+                        dropArea.style.height = targetSize;
+                }
+
                 if (m_Container is ToolbarOverlayContainer && !m_Container.HasVisibleOverlays())
                 {
                     SetVisualMode(VisualMode.Disabled);
@@ -271,8 +280,6 @@ namespace UnityEditor.Overlays
 
         protected override void OnDropZoneActivated(Overlay draggedOverlay)
         {
-            base.OnDropZoneActivated(draggedOverlay);
-
             SetVisualMode(m_OverlayContainer.HasVisibleOverlays() ? VisualMode.Disabled : VisualMode.Custom);
         }
 
@@ -314,6 +321,8 @@ namespace UnityEditor.Overlays
         public virtual bool CanAcceptTarget(Overlay overlay) { return true; }
         public int priority { get; set; }
         public abstract void DropOverlay(Overlay overlay);
+
+        protected VisualElement dropArea => m_DropArea;
 
         public virtual void PopulateDestMarkerClassList(IList<string> classes)
         {
@@ -364,6 +373,7 @@ namespace UnityEditor.Overlays
             pickingMode = PickingMode.Ignore;
             m_DropArea.pickingMode = PickingMode.Ignore;
             m_VisualBounds.pickingMode = PickingMode.Ignore;
+            m_DropArea.style.display = DisplayStyle.None;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
@@ -385,12 +395,14 @@ namespace UnityEditor.Overlays
         {
             //TODO check if in same canvas? or we support dragging to different canvas
             m_DropArea.pickingMode = PickingMode.Position;
+            m_DropArea.style.display = DisplayStyle.Flex;
             OnDropZoneActivated(overlay);
         }
 
         void OnDragEnded(Overlay overlay)
         {
             m_DropArea.pickingMode = PickingMode.Ignore;
+            m_DropArea.style.display = DisplayStyle.None;
             OnDropZoneDeactivated(overlay);
         }
 

@@ -154,6 +154,11 @@ namespace UnityEditor.Presets
             ShowSelector(new PresetContext(targets, currentSelection, createNewAllowed));
         }
 
+        public static void ShowSelector(Object[] targets, Preset currentSelection, bool createNewAllowed, Action<Preset> onSelectionChanged, Action<Preset, bool> onSelectionClosed)
+        {
+            ShowSelector(new PresetContext(targets, currentSelection, createNewAllowed, onSelectionChanged, onSelectionClosed));
+        }
+
         [Obsolete("The PresetSelectorReceiver is deprecated. Please use ShowSelector(Object[], Preset, bool).", false)]
         public static void ShowSelector(Object target, Preset currentSelection, bool createNewAllowed, PresetSelectorReceiver eventReceiver)
         {
@@ -229,15 +234,27 @@ namespace UnityEditor.Presets
                 filterHandler = item => OnPresetFilter(presetContext, provider, item),
                 selectHandler = (item, canceled) =>
                 {
+                    Preset preset = null;
                     if (item?.id == PresetSearchProvider.CreateItemID)
-                        CreatePreset(presetContext.Target);
+                        preset = CreatePreset(presetContext.Target);
                     else
-                        OnPresetSelected(presetContext, item?.ToObject<Preset>(), canceled);
+                    {
+                        preset = item?.ToObject<Preset>();
+                        OnPresetSelected(presetContext, preset, canceled);
+                    }
+
+                    presetContext.OnSelectionClosed?.Invoke(preset, canceled);
 
                     PresetEditorHelper.presetEditorOpen = false;
                 },
 
-                trackingHandler = item => OnPresetSelected(in presetContext, item?.ToObject<Preset>(), false),
+                trackingHandler = item =>
+                {
+                    var preset = item?.ToObject<Preset>();
+                    OnPresetSelected(in presetContext, preset, false);
+
+                    presetContext.OnSelectionChanged?.Invoke(preset);
+                },
                 selectedIds = presetContext.CurrentSelection != null ? new []{ presetContext.CurrentSelection.GetInstanceID() } : null
             };
             PresetEditorHelper.presetEditorOpen = true;
@@ -328,13 +345,13 @@ namespace UnityEditor.Presets
                 ProjectWindowUtil.GetActiveFolderPath());
         }
 
-        static void CreatePreset(Object target)
+        static Preset CreatePreset(Object target)
         {
             // The preset picker will apply the selection when the window is disposed.
             // However, when creating a new preset, the preset window is closed as the save file dialog opens.
             // This triggers a second selection callback invocation, which we do not want.
             if (PresetEditorHelper.presetEditorOpen == false)
-                return;
+                return null;
 
             // Set the preset popup closed before triggering the save file dialog
             PresetEditorHelper.presetEditorOpen = false;
@@ -363,6 +380,7 @@ namespace UnityEditor.Presets
                     });
                     foreach (var pe in propertyEditors)
                         pe.tracker.ForceRebuild();
+                    preset = oldPreset;
                 }
                 else
                 {
@@ -370,6 +388,8 @@ namespace UnityEditor.Presets
                 }
             }
             GUIUtility.ExitGUI();
+
+            return preset;
         }
 
         void OnBeforeAssemblyReload()

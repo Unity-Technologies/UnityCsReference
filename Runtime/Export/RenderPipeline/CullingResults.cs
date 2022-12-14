@@ -156,14 +156,8 @@ namespace UnityEngine.Rendering
             if (ptr == IntPtr.Zero)
                 throw new InvalidOperationException($"The {nameof(CullingResults)} instance is invalid. This can happen if you construct an instance using the default constructor.");
 
-            try
-            {
-                AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
-            }
-            catch (Exception e)
-            {
-                throw new InvalidOperationException($"The {nameof(CullingResults)} instance is no longer valid. This can happen if you re-use it across multiple frames.", e);
-            }
+            if (!AtomicSafetyHandle.IsHandleValid(m_Safety))
+                throw new InvalidOperationException($"The {nameof(CullingResults)} instance is no longer valid. This can happen if you re-use it across multiple frames.");
         }
 
         public unsafe bool Equals(CullingResults other)

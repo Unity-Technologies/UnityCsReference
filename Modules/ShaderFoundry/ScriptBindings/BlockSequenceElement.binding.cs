@@ -13,6 +13,7 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/BlockSequenceElement.h")]
     internal struct BlockSequenceElementInternal : IInternalType<BlockSequenceElementInternal>
     {
+        internal FoundryHandle m_AttributeListHandle;
         internal FoundryHandle m_BlockHandle;
         internal FoundryHandle m_CustomizationPointHandle;
         internal FoundryHandle m_InstanceNameHandle;
@@ -42,6 +43,7 @@ namespace UnityEditor.ShaderFoundry
 
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
+        public IEnumerable<ShaderAttribute> Attributes => FixedHandleListInternal.Enumerate<ShaderAttribute>(container, element.m_AttributeListHandle);
         public Block Block => new Block(container, element.m_BlockHandle);
         public CustomizationPoint CustomizationPoint => new CustomizationPoint(container, element.m_CustomizationPointHandle);
         public string InstanceName => container?.GetString(element.m_InstanceNameHandle) ?? string.Empty;
@@ -69,6 +71,7 @@ namespace UnityEditor.ShaderFoundry
         public class Builder
         {
             ShaderContainer container;
+            public List<ShaderAttribute> attributes;
             public Block block { get; private set; }
             public CustomizationPoint customizationPoint { get; private set; }
             public string instanceName;
@@ -91,6 +94,7 @@ namespace UnityEditor.ShaderFoundry
                 this.block = Block.Invalid;
             }
 
+            public void AddAttribute(ShaderAttribute attribute) => Utilities.AddToList(ref attributes, attribute);
             public void AddInputOverride(BlockLinkOverride linkOverride)
             {
                 if (inputOverrides == null)
@@ -108,6 +112,7 @@ namespace UnityEditor.ShaderFoundry
             public BlockSequenceElement Build()
             {
                 var internalResult = new BlockSequenceElementInternal();
+                internalResult.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes);
                 internalResult.m_BlockHandle = block.handle;
                 internalResult.m_CustomizationPointHandle = customizationPoint.handle;
                 internalResult.m_InstanceNameHandle = container.AddString(instanceName);

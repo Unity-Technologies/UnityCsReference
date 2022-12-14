@@ -11,7 +11,7 @@ namespace Unity.UI.Builder
     {
         internal static readonly string s_TraitsNotFoundMessage = "UI Builder: IUxmlFactory.m_Traits field has not been found! Update the reflection code!";
 
-        public static UxmlTraits GetTraits(this IUxmlFactory factory)
+        public static BaseUxmlTraits GetTraits(this IBaseUxmlFactory factory)
         {
             var traitsField = factory.GetType()
                 .GetField("m_Traits", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -21,7 +21,7 @@ namespace Unity.UI.Builder
                 return null;
             }
 
-            return traitsField.GetValue(factory) as UxmlTraits;
+            return traitsField.GetValue(factory) as BaseUxmlTraits;
         }
     }
 }

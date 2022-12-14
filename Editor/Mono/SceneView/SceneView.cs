@@ -1892,8 +1892,8 @@ namespace UnityEditor
             }
 
             Rect actualCameraRect = Handles.GetCameraRect(cameraRect);
-            int width = (int)actualCameraRect.width;
-            int height = (int)actualCameraRect.height;
+            int width = (int)Mathf.Max(1f, actualCameraRect.width);
+            int height = (int)Mathf.Max(1f, actualCameraRect.height);
 
             if (m_SceneTargetTexture == null)
             {

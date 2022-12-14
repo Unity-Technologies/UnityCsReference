@@ -262,8 +262,11 @@ namespace UnityEditor.Search
                     if (!m_ResultView?.showNoResultMessage ?? false)
                         return false;
 
-                    if (m_ResultView is SearchEmptyView)
+                    if (m_ResultView is SearchEmptyView emptyView)
+                    {
+                        emptyView.Update();
                         return false;
+                    }
 
                     nextView = new SearchEmptyView(this, hideHelpers);
                 }

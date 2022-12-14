@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Unity.Profiling;
 using UnityEditor.Hardware;
 using UnityEditorInternal;
 using UnityEngine;
@@ -17,6 +18,8 @@ namespace UnityEditor.Modules
 {
     internal static class ModuleManager
     {
+        private static readonly ProfilerMarkerWithStringData s_InitializePlatformSupportModule = ProfilerMarkerWithStringData.Create("InitializePlatformSupportModule", "Name");
+
         [NonSerialized]
         static Dictionary<string, IPlatformSupportModule> s_PlatformModules;
 
@@ -113,14 +116,17 @@ namespace UnityEditor.Modules
 
             foreach (var module in platformSupportModules.Values)
             {
-                foreach (var library in module.NativeLibraries)
-                    EditorUtility.LoadPlatformSupportNativeLibrary(library);
-                foreach (var fullPath in module.AssemblyReferencesForUserScripts)
-                    InternalEditorUtility.RegisterPlatformModuleAssembly(Path.GetFileName(fullPath), fullPath);
+                using (s_InitializePlatformSupportModule.Auto(module.TargetName))
+                {
+                    foreach (var library in module.NativeLibraries)
+                        EditorUtility.LoadPlatformSupportNativeLibrary(library);
+                    foreach (var fullPath in module.AssemblyReferencesForUserScripts)
+                        InternalEditorUtility.RegisterPlatformModuleAssembly(Path.GetFileName(fullPath), fullPath);
 
-                EditorUtility.LoadPlatformSupportModuleNativeDllInternal(module.TargetName);
+                    EditorUtility.LoadPlatformSupportModuleNativeDllInternal(module.TargetName);
 
-                module.OnLoad();
+                    module.OnLoad();
+                }
             }
 
             // Setup active build target and call OnActivate() for current platform module

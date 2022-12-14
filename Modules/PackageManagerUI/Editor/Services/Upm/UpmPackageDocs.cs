@@ -72,6 +72,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static void OpenWebUrl(string onlineUrl, IPackageVersion version, ApplicationProxy applicationProxy, string analyticsEvent, Action errorCallback)
         {
+            if (!version.isUnityPackage)
+            {
+                applicationProxy.OpenURL(onlineUrl);
+                PackageManagerWindowAnalytics.SendEvent($"{analyticsEvent}NonUnityPackageUrl", version?.uniqueId);
+                return;
+            }
+
             var request = UnityWebRequest.Head(onlineUrl);
             try
             {

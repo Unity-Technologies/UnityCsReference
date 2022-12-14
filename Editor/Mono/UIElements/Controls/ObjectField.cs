@@ -108,7 +108,7 @@ namespace UnityEditor.UIElements
             m_ObjectFieldDisplay?.ShowMixedValue(showMixedValue);
         }
 
-        internal void UpdateDisplay()
+        internal virtual void UpdateDisplay()
         {
             m_ObjectFieldDisplay.Update();
         }
@@ -316,12 +316,15 @@ namespace UnityEditor.UIElements
             }
 
             [EventInterest(typeof(MouseDownEvent))]
-            protected override void ExecuteDefaultAction(EventBase evt)
+            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
-                base.ExecuteDefaultAction(evt);
+                base.ExecuteDefaultActionAtTarget(evt);
 
                 if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
+                {
                     m_ObjectField.ShowObjectSelector();
+                    evt.StopPropagation();
+                }
             }
         }
 
