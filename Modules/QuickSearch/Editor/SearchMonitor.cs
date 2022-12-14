@@ -192,7 +192,7 @@ namespace UnityEditor.Search
         static readonly HashSet<string> s_MovedItems = new HashSet<string>();
 
         static Action s_ContentRefreshOff;
-        static Action s_DelayedInvalidateOff;
+        static Delayer s_DelayedInvalidate;
         static readonly HashSet<ulong> s_DocumentsToInvalidate = new HashSet<ulong>();
 
         public static bool pending => s_UpdatedItems.Count > 0 || s_RemovedItems.Count > 0 || s_MovedItems.Count > 0;
@@ -272,6 +272,8 @@ namespace UnityEditor.Search
             EditorSceneManager.activeSceneChangedInEditMode += (_, __) => InvalidateCurrentScene();
             PrefabStage.prefabStageOpened += _ => InvalidateCurrentScene();
             PrefabStage.prefabStageClosing += _ => InvalidateCurrentScene();
+
+            s_DelayedInvalidate = Delayer.Debounce(_ => InvalidateDocuments());
 
             ObjectChangeEvents.changesPublished += OnObjectChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
@@ -521,8 +523,7 @@ namespace UnityEditor.Search
         private static void InvalidateDocument(ulong documentKey)
         {
             s_DocumentsToInvalidate.Add(documentKey);
-            if (s_DelayedInvalidateOff == null)
-                s_DelayedInvalidateOff = Utils.CallDelayed(InvalidateDocuments, refreshContentDelay);
+            s_DelayedInvalidate?.Execute();
         }
 
         private static void InvalidateDocuments()
@@ -533,7 +534,6 @@ namespace UnityEditor.Search
                     view.InvalidateDocument(k);
             }
             s_DocumentsToInvalidate.Clear();
-            s_DelayedInvalidateOff = null;
             documentsInvalidated?.Invoke();
         }
 

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -78,6 +77,38 @@ namespace Unity.UI.Builder
             var strShortened = str.Substring(0, maxLength);
             strShortened += BuilderConstants.EllipsisText;
             return strShortened;
+        }
+
+        public static string GetNameByReflection(object obj)
+        {
+            if (obj == null)
+                return null;
+
+            var type = obj.GetType();
+
+            // Look for a name property
+            var nameProperty = type.GetProperty("name");
+            var objName = BuilderConstants.UnnamedValue;
+            object nameValue = null;
+
+            if (nameProperty != null)
+            {
+                nameValue = nameProperty.GetValue(obj);
+            }
+            else
+            {
+                var nameField = type.GetField(("name"));
+
+                if (nameField != null)
+                    nameValue = nameField.GetValue(obj);
+            }
+
+            if (nameValue != null)
+                objName = nameValue.ToString();
+
+            if (string.IsNullOrEmpty(objName))
+                objName = BuilderConstants.UnnamedValue;
+            return objName;
         }
 
         public static Regex attributeRegex { get; } = new Regex(@"^[a-zA-Z0-9\-_]+$");

@@ -22,24 +22,6 @@ namespace UnityEditor.UIElements
 
             k_Registered = true;
 
-            // Generic element types cannot be discovered through reflection.
-
-            // TODO: Remove these in 2023.1
-#pragma warning disable 0618
-            IUxmlFactory[] propertyControls =
-            {
-                new PropertyControl<int>.UxmlFactory(),
-                new PropertyControl<long>.UxmlFactory(),
-                new PropertyControl<float>.UxmlFactory(),
-                new PropertyControl<double>.UxmlFactory(),
-                new PropertyControl<string>.UxmlFactory(),
-            };
-            foreach (var uxmlFactory in propertyControls)
-            {
-                RegisterFactory(uxmlFactory);
-            }
-#pragma warning restore
-
             // Discover all factories thanks to the type cache!
             var types = TypeCache.GetTypesDerivedFrom<IUxmlFactory>();
             foreach (var type in types)

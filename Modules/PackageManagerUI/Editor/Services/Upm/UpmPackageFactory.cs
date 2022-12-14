@@ -352,14 +352,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                         productIdAndNamesToSearch.Add((productId: productId, packageName: packageName));
                 }
 
+                if (package == null)
+                    continue;
+
                 // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early
                 // since the primary version's display name is used in the package list
                 var primaryVersion = package.versions.primary;
                 if (primaryVersion?.isFullyFetched == false)
                     m_UpmClient.ExtraFetch(primaryVersion.packageId);
 
-                if (package != null)
-                    packagesChanged.Add(package);
+                packagesChanged.Add(package);
             }
             if (packagesChanged.Any())
                 m_PackageDatabase.UpdatePackages(packagesChanged);

@@ -210,6 +210,9 @@ namespace UnityEditor.UIElements
             visualInput.Add(borderElement);
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            RegisterCallback<KeyDownEvent>(OnKeyDown);
+            RegisterCallback<PointerDownEvent>(OnPointerDown);
+            RegisterCallback<MouseDownEvent>(OnMouseDownCompatibilityEvent);
 
             visualInput.generateVisualContent += OnGenerateVisualContent;
         }
@@ -280,8 +283,39 @@ namespace UnityEditor.UIElements
             CurveEditorWindow.color = curveColor;
         }
 
-        [EventInterest(typeof(KeyDownEvent), typeof(PointerDownEvent), typeof(DetachFromPanelEvent),
-            typeof(GeometryChangedEvent))]
+        void OnKeyDown(KeyDownEvent kde)
+        {
+            if (kde != null)
+            {
+                if ((kde.keyCode == KeyCode.Space) ||
+                    (kde.keyCode == KeyCode.KeypadEnter) ||
+                    (kde.keyCode == KeyCode.Return))
+                {
+                    ShowCurveEditor();
+                    kde.StopPropagation();
+                }
+            }
+        }
+
+        void OnPointerDown(PointerDownEvent evt)
+        {
+            if (visualInput.ContainsPoint(visualInput.WorldToLocal(evt.position)))
+            {
+                ShowCurveEditor();
+                evt.StopPropagation();
+            }
+        }
+
+        void OnMouseDownCompatibilityEvent(MouseDownEvent evt)
+        {
+            var mdeInternal = (IMouseEventInternal)evt;
+            if (visualInput.ContainsPoint(visualInput.WorldToLocal(evt.mousePosition)) && mdeInternal.sourcePointerEvent != null && ((EventBase)mdeInternal.sourcePointerEvent).isPropagationStopped)
+            {
+                evt.StopPropagation();
+            }
+        }
+
+        [EventInterest(typeof(DetachFromPanelEvent), typeof(GeometryChangedEvent))]
         protected override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
@@ -291,31 +325,9 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            var showCurveEditor = false;
-            KeyDownEvent kde = (evt as KeyDownEvent);
-            if (kde != null)
-            {
-                if ((kde.keyCode == KeyCode.Space) ||
-                    (kde.keyCode == KeyCode.KeypadEnter) ||
-                    (kde.keyCode == KeyCode.Return))
-                {
-                    showCurveEditor = true;
-                }
-            }
-            else if ((evt as PointerDownEvent)?.button == (int)MouseButton.LeftMouse)
-            {
-                var mde = (PointerDownEvent)evt;
-                if (visualInput.ContainsPoint(visualInput.WorldToLocal(mde.position)))
-                {
-                    showCurveEditor = true;
-                }
-            }
-
-            if (showCurveEditor)
-                ShowCurveEditor();
-            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
+            if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
                 OnDetach();
-            if (evt.eventTypeId == GeometryChangedEvent.TypeId())
+            else if (evt.eventTypeId == GeometryChangedEvent.TypeId())
                 m_TextureDirty = true;
         }
 

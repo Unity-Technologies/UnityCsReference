@@ -79,6 +79,14 @@ namespace UnityEditor.Search
             BuildView();
         }
 
+        public void Update()
+        {
+            if (GetDisplayMode() == SearchEmptyViewMode.NoResultWithTips && !context.empty)
+            {
+                BuildView(true);
+            }
+        }
+
         private SearchEmptyViewMode GetDisplayMode()
         {
             if (hideHelpers)
@@ -96,10 +104,10 @@ namespace UnityEditor.Search
             return SearchEmptyViewMode.QueryHelpersText;
         }
 
-        private void BuildView()
+        private void BuildView(bool forceBuild = false)
         {
             var displayMode = GetDisplayMode();
-            if (displayMode == m_DisplayMode)
+            if (!forceBuild && displayMode == m_DisplayMode)
                 return;
             m_DisplayMode = displayMode;
 
@@ -228,12 +236,17 @@ namespace UnityEditor.Search
 
         private IEnumerable<QueryHelperSearchGroup.QueryData> GetFilteredQueries(IEnumerable<QueryHelperSearchGroup.QueryData> queries, string currentAreaFilterId, bool blockMode)
         {
+            var activeProviders = GetActiveHelperProviders(blockMode);
             var isAll = k_All == currentAreaFilterId;
             if (isAll)
-                return queries;
-            var currentProvider = GetActiveHelperProviders(blockMode).FirstOrDefault(p => p.filterId == currentAreaFilterId);
+            {
+                // Keep only query matching one of the active providers.
+                return queries.Where(q => activeProviders.Any(p => IsFilteredQuery(q.query, p)));
+            }
+            var currentProvider = activeProviders.FirstOrDefault(p => p.filterId == currentAreaFilterId);
             return queries.Where(q =>
             {
+                // Keep query matching THE selected provider.
                 if (q.type == QueryHelperSearchGroup.QueryType.Recent)
                     return q.searchText.StartsWith(currentAreaFilterId, StringComparison.Ordinal);
                 return IsFilteredQuery(q.query, currentProvider);

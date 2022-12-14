@@ -2,26 +2,31 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.Rendering
 {
     public abstract class RenderPipelineAsset : ScriptableObject
     {
         internal RenderPipeline InternalCreatePipeline()
         {
-            RenderPipeline pipeline = null;
             try
             {
-                pipeline = CreatePipeline();
+                EnsureGlobalSettings();
+                return CreatePipeline();
             }
-            catch (System.Exception e)
+            catch (InvalidImportException)
             {
                 // This can be called at a time where AssetDatabase is not available for loading.
                 // When this happens, the GUID can be get but the resource loaded will be null.
                 // In SRP using the ResourceReloader mechanism in CoreRP, it checks this and add InvalidImport data when this occurs.
-                if (!(e.Data.Contains("InvalidImport") && e.Data["InvalidImport"] is int && (int)e.Data["InvalidImport"] == 1))
-                    Debug.LogException(e);
             }
-            return pipeline;
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+
+            return null;
         }
 
         public virtual int terrainBrushPassIndex => (int)UnityEngine.Rendering.RenderQueue.GeometryLast;
@@ -68,6 +73,11 @@ namespace UnityEngine.Rendering
         public virtual string renderPipelineShaderTag => string.Empty;
 
         protected abstract RenderPipeline CreatePipeline();
+
+        protected virtual void EnsureGlobalSettings()
+        {
+
+        }
 
         protected virtual void OnValidate()
         {

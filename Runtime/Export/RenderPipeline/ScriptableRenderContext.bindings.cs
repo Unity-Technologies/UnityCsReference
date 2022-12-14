@@ -33,6 +33,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("ScriptableRenderPipeline_Bindings::Internal_Cull")]
         static extern void Internal_Cull(ref ScriptableCullingParameters parameters, ScriptableRenderContext renderLoop, IntPtr results);
 
+        [FreeFunction("ScriptableRenderPipeline_Bindings::Internal_CullShadowCasters")]
+        static extern void Internal_CullShadowCasters(ScriptableRenderContext renderLoop, IntPtr context);
+
         [FreeFunction("InitializeSortSettings")]
         internal static extern void InitializeSortSettings(Camera camera, out SortingSettings sortingSettings);
 

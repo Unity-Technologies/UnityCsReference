@@ -245,21 +245,25 @@ namespace UnityEditor
                     EditorUserSettings.SetConfigValue(m_BakingProfileKey, bakingProfile.ToString());
                 }
 
-                m_ShowProbeDebugSettings.value = EditorGUILayout.Foldout(m_ShowProbeDebugSettings.value, Styles.lightProbeVisualization, true);
 
-                if (m_ShowProbeDebugSettings.value)
+                if (!UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystem)
                 {
-                    EditorGUI.BeginChangeCheck();
+                    m_ShowProbeDebugSettings.value = EditorGUILayout.Foldout(m_ShowProbeDebugSettings.value, Styles.lightProbeVisualization, true);
 
-                    EditorGUI.indentLevel++;
-                    LightProbeVisualization.lightProbeVisualizationMode = (LightProbeVisualization.LightProbeVisualizationMode)EditorGUILayout.EnumPopup(LightProbeVisualization.lightProbeVisualizationMode);
-                    LightProbeVisualization.showInterpolationWeights = EditorGUILayout.Toggle(Styles.displayWeights, LightProbeVisualization.showInterpolationWeights);
-                    LightProbeVisualization.showOcclusions = EditorGUILayout.Toggle(Styles.displayOcclusion, LightProbeVisualization.showOcclusions);
-                    LightProbeVisualization.highlightInvalidCells = EditorGUILayout.Toggle(Styles.highlightInvalidCells, LightProbeVisualization.highlightInvalidCells);
-                    EditorGUI.indentLevel--;
+                    if (m_ShowProbeDebugSettings.value)
+                    {
+                        EditorGUI.BeginChangeCheck();
 
-                    if (EditorGUI.EndChangeCheck())
-                        EditorApplication.SetSceneRepaintDirty();
+                        EditorGUI.indentLevel++;
+                        LightProbeVisualization.lightProbeVisualizationMode = (LightProbeVisualization.LightProbeVisualizationMode)EditorGUILayout.EnumPopup(LightProbeVisualization.lightProbeVisualizationMode);
+                        LightProbeVisualization.showInterpolationWeights = EditorGUILayout.Toggle(Styles.displayWeights, LightProbeVisualization.showInterpolationWeights);
+                        LightProbeVisualization.showOcclusions = EditorGUILayout.Toggle(Styles.displayOcclusion, LightProbeVisualization.showOcclusions);
+                        LightProbeVisualization.highlightInvalidCells = EditorGUILayout.Toggle(Styles.highlightInvalidCells, LightProbeVisualization.highlightInvalidCells);
+                        EditorGUI.indentLevel--;
+
+                        if (EditorGUI.EndChangeCheck())
+                            EditorApplication.SetSceneRepaintDirty();
+                    }
                 }
 
                 // If either auto ambient or auto reflection baking is supported, show the SkyManager toggle.

@@ -62,9 +62,11 @@ namespace UnityEditor.Search
                 (source.context.empty ? SearchPropositionFlags.ForceAllProviders : SearchPropositionFlags.None));
             if (source.context.empty)
             {
-                return QueryAreaBlock.FetchPropositions(context)
-                    .Concat(new[] { SearchProposition.CreateSeparator() })
-                    .Concat(SearchProposition.Fetch(context, options).OrderBy(p => p));
+                var areaPropositions = QueryAreaBlock.FetchPropositions(context);
+                var allOtherPropositions = new[] { SearchProposition.CreateSeparator() }.Concat(SearchProposition.Fetch(context, options).OrderBy(p => p));
+                return areaPropositions.Count() > 1 ?
+                    areaPropositions.Concat(allOtherPropositions) :
+                    allOtherPropositions;
             }
             else
             {

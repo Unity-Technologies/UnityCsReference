@@ -237,7 +237,7 @@ namespace UnityEditor.Search
                     continue;
 
                 tab.groupNameLabel.text = tab.name;
-                if (!context.empty)
+                if (tab.count > 0)
                 {
                     var formattedCount = Utils.FormatCount((ulong)tab.count);
                     tab.groupCountLabel.text = string.Format(m_TabCountTextColorFormat, formattedCount);

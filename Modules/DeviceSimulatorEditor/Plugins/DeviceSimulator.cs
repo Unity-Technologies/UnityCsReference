@@ -39,6 +39,7 @@ namespace UnityEditor.DeviceSimulation
         internal ApplicationSimulation applicationSimulation;
 
         public event Action<TouchEvent> touchScreenInput;
+        public event Action deviceChanged;
 
         internal void OnTouchScreenInput(TouchEvent touchEvent)
         {
@@ -51,6 +52,25 @@ namespace UnityEditor.DeviceSimulation
                 try
                 {
                     handler.Invoke(touchEvent);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+        }
+
+        internal void OnDeviceChanged()
+        {
+            var handlers = deviceChanged?.GetInvocationList();
+            if (handlers == null)
+                return;
+
+            foreach (Action handler in handlers)
+            {
+                try
+                {
+                    handler.Invoke();
                 }
                 catch (Exception e)
                 {

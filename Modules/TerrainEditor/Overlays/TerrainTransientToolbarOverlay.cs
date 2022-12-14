@@ -102,14 +102,14 @@ namespace UnityEditor.TerrainTools
                 // scheme is prefix-major.minor.patch-postfix.version
                 // where prefix is letters, major, minor, patch are numbers,
                 // postfix is letters, and postfix.version is a number
-                
+
                 // use regex to get the major, minor, patch components of the string
                 var versionDigits = Regex.Match(versionString, @"\d+\.\d+\.\d+");
-                
+
                 if (!versionDigits.Success) return false;
                 var parts = versionDigits.Value.Split(".");
                 if (parts.Length != 3) return false;
-                
+
                 if (!Int32.TryParse(parts[0], out var major)) return false;
                 if (!Int32.TryParse(parts[1], out var minor)) return false;
                 if (!Int32.TryParse(parts[2], out var patch)) return false;
@@ -129,7 +129,7 @@ namespace UnityEditor.TerrainTools
             // only parse if version is different than what we have cached -- otherwise
             // just return the result from the last parse
             if (version.Equals(m_PackageVersion)) return m_PackageInstalled;
-            
+
             m_PackageInstalled = ParseTerrainToolsVersion(version, 5, 1, 0);
             m_PackageVersion = version;
 
@@ -415,6 +415,12 @@ namespace UnityEditor.TerrainTools
             // going through all the icons in the menu
             for (int i = 0; i < s_ModeMenu.Length; i++)
             {
+                // check if the menu mode tools are empty or not
+                if (m_CategoryToTools[(TerrainCategory)i].Count == 0)
+                {
+                    continue;
+                }
+
                 EditorToolbarToggle button = new EditorToolbarToggle
                 {
                     tooltip = s_ModeMenu[i].ToolTip,

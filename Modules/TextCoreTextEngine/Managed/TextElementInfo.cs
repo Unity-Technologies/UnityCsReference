@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
@@ -68,5 +69,16 @@ namespace UnityEngine.TextCore.Text
         public HighlightState highlightState;
         public FontStyles style;
         public bool isVisible;
+
+        public override string ToString()
+        {
+            return $"{nameof(character)}: {character}\n{nameof(index)}: {index}\n{nameof(elementType)}: {elementType}\n{nameof(stringLength)}: {stringLength}\n{nameof(textElement)}: {textElement}\n{nameof(alternativeGlyph)}: {alternativeGlyph}\n{nameof(fontAsset)}: {fontAsset}\n{nameof(spriteAsset)}: {spriteAsset}\n{nameof(spriteIndex)}: {spriteIndex}\n{nameof(material)}: {material}\n{nameof(materialReferenceIndex)}: {materialReferenceIndex}\n{nameof(isUsingAlternateTypeface)}: {isUsingAlternateTypeface}\n{nameof(pointSize)}: {pointSize}\n{nameof(lineNumber)}: {lineNumber}\n{nameof(pageNumber)}: {pageNumber}\n{nameof(vertexIndex)}: {vertexIndex}\n{nameof(vertexTopLeft)}: {vertexTopLeft}\n{nameof(vertexBottomLeft)}: {vertexBottomLeft}\n{nameof(vertexTopRight)}: {vertexTopRight}\n{nameof(vertexBottomRight)}: {vertexBottomRight}\n{nameof(topLeft)}: {topLeft}\n{nameof(bottomLeft)}: {bottomLeft}\n{nameof(topRight)}: {topRight}\n{nameof(bottomRight)}: {bottomRight}\n{nameof(origin)}: {origin}\n{nameof(ascender)}: {ascender}\n{nameof(baseLine)}: {baseLine}\n{nameof(descender)}: {descender}\n{nameof(adjustedAscender)}: {adjustedAscender}\n{nameof(adjustedDescender)}: {adjustedDescender}\n{nameof(adjustedHorizontalAdvance)}: {adjustedHorizontalAdvance}\n{nameof(xAdvance)}: {xAdvance}\n{nameof(aspectRatio)}: {aspectRatio}\n{nameof(scale)}: {scale}\n{nameof(color)}: {color}\n{nameof(underlineColor)}: {underlineColor}\n{nameof(underlineVertexIndex)}: {underlineVertexIndex}\n{nameof(strikethroughColor)}: {strikethroughColor}\n{nameof(strikethroughVertexIndex)}: {strikethroughVertexIndex}\n{nameof(highlightColor)}: {highlightColor}\n{nameof(highlightState)}: {highlightState}\n{nameof(style)}: {style}\n{nameof(isVisible)}: {isVisible}";
+        }
+
+        // Used in automated tests.
+        internal string ToStringTest()
+        {
+            return $"topLeft.x: {topLeft.x.ToString("F4")}\n topLeft.y: {topLeft.y.ToString("F4")}\n topRight.x: {topRight.x.ToString("F4")}\n topRight.y: {topRight.y.ToString("F4")}\n  bottomLeft.x: {bottomLeft.x.ToString("F4")}\n bottomLeft.y: {bottomLeft.y.ToString("F4")}\n  bottomRight.x: {bottomRight.x.ToString("F4")}\n bottomRight.y: {bottomRight.y.ToString("F4")}\n{nameof(origin)}: {origin.ToString("F4")}\n{nameof(xAdvance)}: {xAdvance.ToString("F4")}\n";
+        }
     }
 }

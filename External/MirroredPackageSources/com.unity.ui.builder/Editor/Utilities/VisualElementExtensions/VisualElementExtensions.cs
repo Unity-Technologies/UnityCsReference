@@ -16,6 +16,17 @@ namespace Unity.UI.Builder
             "template",
         };
 
+        public static UxmlAttributeDescription GetLinkedAttributeDescription(this VisualElement ve)
+        {
+            return ve.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) as
+                    UxmlAttributeDescription;
+        }
+
+        public static void SetLinkedAttributeDescription(this VisualElement ve, UxmlAttributeDescription attribute)
+        {
+            ve.SetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName, attribute);
+        }
+
         public static List<UxmlAttributeDescription> GetAttributeDescriptions(this VisualElement ve)
         {
             var attributeList = new List<UxmlAttributeDescription>();
@@ -413,12 +424,7 @@ namespace Unity.UI.Builder
 
         public static FieldStatusIndicator GetFieldStatusIndicator(this VisualElement field)
         {
-            FieldStatusIndicator statusIndicator = null;
-            
-            if (field.HasProperty(FieldStatusIndicator.s_FieldStatusIndicatorVEPropertyName))
-            {
-               statusIndicator = field.GetProperty(FieldStatusIndicator.s_FieldStatusIndicatorVEPropertyName) as FieldStatusIndicator;
-            }
+            var statusIndicator = field.GetProperty(FieldStatusIndicator.s_FieldStatusIndicatorVEPropertyName) as FieldStatusIndicator;
 
             if (statusIndicator == null)
             {
@@ -427,7 +433,7 @@ namespace Unity.UI.Builder
                 if (row == null)
                     return null;
 
-                // If the field has a name then look for a FieldStatusIndicator in the same containing row that has 
+                // If the field has a name then look for a FieldStatusIndicator in the same containing row that has
                 // targetFieldName matching the field's name.
                 if (!string.IsNullOrEmpty(field.name))
                 {
@@ -454,6 +460,8 @@ namespace Unity.UI.Builder
 
             return statusIndicator;
         }
+
+        public static IBuilderUxmlAttributeFieldFactory GetFieldFactory(this VisualElement field) => field.GetProperty(BuilderConstants.AttributeFieldFactoryVEPropertyName) as IBuilderUxmlAttributeFieldFactory;
     }
 
     enum BuilderElementStyle

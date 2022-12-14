@@ -463,12 +463,25 @@ namespace UnityEditor
 
         void OnSceneCreated(Scene scene, NewSceneSetup setup, NewSceneMode mode)
         {
+            ClearSearchSessionIfAny();
             ExpandTreeViewItem(scene.handle, true);
         }
 
         void OnSceneOpened(Scene scene, OpenSceneMode mode)
         {
+            ClearSearchSessionIfAny();
             ExpandTreeViewItem(scene.handle, true);
+        }
+
+        void ClearSearchSessionIfAny()
+        {
+            var dataSource = treeView.data as GameObjectTreeViewDataSource;
+            if (dataSource != null && !string.IsNullOrEmpty(dataSource.searchString))
+            {
+                var oldSearch = dataSource.searchString;
+                dataSource.searchString = "";
+                dataSource.searchString = oldSearch;
+            }
         }
 
         internal void ExpandTreeViewItem(int id, bool expand)

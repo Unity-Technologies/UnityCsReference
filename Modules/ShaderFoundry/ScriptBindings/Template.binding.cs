@@ -15,6 +15,7 @@ namespace UnityEditor.ShaderFoundry
     internal struct TemplateInternal : IInternalType<TemplateInternal>
     {
         internal FoundryHandle m_NameHandle;                        // string
+        internal FoundryHandle m_AttributeListHandle;               // List<ShaderAttribute>
         internal FoundryHandle m_PassListHandle;                    // List<TemplatePass>
         internal FoundryHandle m_TagDescriptorListHandle;           // List<FoundryHandle>
         internal FoundryHandle m_LODHandle;                         // string
@@ -58,6 +59,7 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
         public string Name => container?.GetString(template.m_NameHandle) ?? string.Empty;
+        public IEnumerable<ShaderAttribute> Attributes => FixedHandleListInternal.Enumerate<ShaderAttribute>(container, template.m_AttributeListHandle);
         public string AdditionalShaderID => container?.GetString(template.m_AdditionalShaderIDStringHandle) ?? string.Empty;
         public IEnumerable<TemplatePass> Passes
         {
@@ -103,6 +105,7 @@ namespace UnityEditor.ShaderFoundry
         public class Builder
         {
             public string Name { get; set; }
+            public List<ShaderAttribute> attributes;
             List<TemplatePass> passes { get; set; }
             public string AdditionalShaderID { get; set; }
             ITemplateLinker linker;
@@ -131,6 +134,7 @@ namespace UnityEditor.ShaderFoundry
                 this.linker = linker;
             }
 
+            public void AddAttribute(ShaderAttribute attribute) => Utilities.AddToList(ref attributes, attribute);
             public void AddPass(TemplatePass pass)
             {
                 if (pass.IsValid)
@@ -215,6 +219,7 @@ namespace UnityEditor.ShaderFoundry
                     m_ShaderFallbackHandle = container.AddString(ShaderFallback),
                 };
 
+                templateInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes);
                 templateInternal.m_PassListHandle = FixedHandleListInternal.Build(container, passes, (p) => (p.handle));
                 templateInternal.m_LODHandle =  container.AddString(LOD);
                 templateInternal.m_PackageRequirementListHandle = FixedHandleListInternal.Build(container, packageRequirements, (p) => (p.handle));

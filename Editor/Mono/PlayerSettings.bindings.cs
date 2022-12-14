@@ -218,6 +218,14 @@ namespace UnityEditor
         Legacy = 1
     }
 
+    // Must be in sync with MeshDeformation enum in GfxDeviceTypes.h
+    public enum MeshDeformation
+    {
+        CPU = 0,
+        GPU = 1,
+        GPUBatched = 2
+    }
+
     // Must be in sync with IconKind enum in EditorOnlyPlayerSettings.h
     public enum IconKind
     {
@@ -1423,6 +1431,9 @@ namespace UnityEditor
 
         [NativeProperty("GPUSkinning")]
         public static extern bool gpuSkinning { get; set; }
+
+        [NativeProperty("MeshDeformation")]
+        public static extern MeshDeformation meshDeformation { get; set; }
 
         public static bool graphicsJobs
         {

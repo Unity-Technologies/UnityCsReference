@@ -17,6 +17,7 @@ namespace UnityEditor.ShaderFoundry
     internal struct BlockInternal : IInternalType<BlockInternal>
     {
         internal FoundryHandle m_NameHandle;
+        internal FoundryHandle m_AttributeListHandle;
         internal FoundryHandle m_DeclaredTypeListHandle;
         internal FoundryHandle m_ReferencedTypeListHandle;
         internal FoundryHandle m_DeclaredFunctionListHandle;
@@ -68,6 +69,7 @@ namespace UnityEditor.ShaderFoundry
         public bool IsValid => Exists && block.IsValid;
 
         public string Name => container?.GetString(block.m_NameHandle) ?? string.Empty;
+        public IEnumerable<ShaderAttribute> Attributes => FixedHandleListInternal.Enumerate<ShaderAttribute>(container, block.m_AttributeListHandle);
         public IEnumerable<ShaderType> Types
         {
             get
@@ -197,6 +199,7 @@ namespace UnityEditor.ShaderFoundry
             internal FoundryHandle passParentHandle;
             internal FoundryHandle templateParentHandle;
             internal string name;
+            List<ShaderAttribute> attributes;
             List<ShaderType> types = new List<ShaderType>();
             List<ShaderType> referencedTypes = new List<ShaderType>();
             List<ShaderFunction> functions = new List<ShaderFunction>();
@@ -226,6 +229,7 @@ namespace UnityEditor.ShaderFoundry
                 blockHandle = container.Create<BlockInternal>();
             }
 
+            public void AddAttribute(ShaderAttribute attribute) => Utilities.AddToList(ref attributes, attribute);
             internal void AddType(ShaderType type) { types.Add(type); }
 
             public void AddReferencedType(ShaderType type) { referencedTypes.Add(type); }
@@ -276,6 +280,7 @@ namespace UnityEditor.ShaderFoundry
                 var blockInternal = new BlockInternal();
                 blockInternal.m_NameHandle = container.AddString(name);
 
+                blockInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes);
                 blockInternal.m_DeclaredTypeListHandle = FixedHandleListInternal.Build(container, types, (t) => (t.handle));
                 blockInternal.m_ReferencedTypeListHandle = FixedHandleListInternal.Build(container, referencedTypes, (t) => (t.handle));
                 blockInternal.m_DeclaredFunctionListHandle = FixedHandleListInternal.Build(container, functions, (f) => (f.handle));

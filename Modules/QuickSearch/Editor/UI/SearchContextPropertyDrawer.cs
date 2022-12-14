@@ -48,6 +48,7 @@ namespace UnityEditor.Search
         {
             return new RuntimeSearchContext
             {
+                contextId = property.propertyPath,
                 pickerType = SearchPickerType.SearchContextAttribute,
                 currentObject = property.objectReferenceValue,
                 editedObjects = property.serializedObject.targetObjects,

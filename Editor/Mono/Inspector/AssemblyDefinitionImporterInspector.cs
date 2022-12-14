@@ -24,11 +24,15 @@ namespace UnityEditor
         {
             public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name", "The assembly name is used to generate a <name>.dll file on you disk.");
             public static readonly GUIContent rootNamespace = EditorGUIUtility.TrTextContent("Root Namespace", "Specify the root namespace of the assembly.");
-            public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints", "Specify a constraint in the assembly definition. The assembly definition only builds if this constraint returns True.");
-            public static readonly GUIContent versionDefines = EditorGUIUtility.TrTextContent("Version Defines", "Specify which versions of a packages and modules to include in compilations.");
+            public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints", "Specify constraints which determine if the assembly will be compiled or not. The assembly will compile whenever all constraints are met.");
+            public static readonly GUIContent versionDefines = EditorGUIUtility.TrTextContent("Version Defines", "Specify preprocessor symbols to define based on package, module or Unity versions.");
+            public static readonly GUIContent resource = EditorGUIUtility.TrTextContent("If resource", "Select 'Unity' or the package or module that you want to set a define for.");
+            public static readonly GUIContent version = EditorGUIUtility.TrTextContent("version is", "Specify the semantic version of your chosen module, package or Unity Version. You must use mathematical interval notation.");
+            public static readonly GUIContent define = EditorGUIUtility.TrTextContent("set define", "Specify the name you want this define to have. This define is only set if the expression's condition is satisfied.");
+            public static readonly GUIContent expressionOutcome = EditorGUIUtility.TrTextContent("Version expression outcome", "Shows the mathematical equation applied to the version number used determine if the symbol should be defined.");
             public static readonly GUIContent references = EditorGUIUtility.TrTextContent("Assembly Definition References", "The list of assembly files that this assembly definition should reference.");
             public static readonly GUIContent precompiledReferences = EditorGUIUtility.TrTextContent("Assembly References", "The list of Precompiled assemblies that this assembly definition should reference.");
-            public static readonly GUIContent generalOptions = EditorGUIUtility.TrTextContent("General");
+            public static readonly GUIContent generalOptions = EditorGUIUtility.TrTextContent("General Options");
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "When enabled, the C# compiler for this assembly includes types or members that have the `unsafe` keyword.");
             public static readonly GUIContent overrideReferences = EditorGUIUtility.TrTextContent("Override References", "When enabled, you can select which specific precompiled assemblies to refer to via a drop-down list that appears. When not enabled, this assembly definition refers to all auto-referenced precompiled assemblies.");
             public static readonly GUIContent autoReferenced = EditorGUIUtility.TrTextContent("Auto Referenced", "When enabled, this assembly definition is automatically referenced in predefined assemblies.");
@@ -40,7 +44,6 @@ namespace UnityEditor
             public static readonly GUIContent selectAll = EditorGUIUtility.TrTextContent("Select all");
             public static readonly GUIContent deselectAll = EditorGUIUtility.TrTextContent("Deselect all");
             public static readonly GUIContent loadError = EditorGUIUtility.TrTextContent("Load error");
-            public static readonly GUIContent expressionOutcome = EditorGUIUtility.TrTextContent("Expression outcome", "Shows the mathematical equation that your Expression represents.");
             public static readonly GUIContent noEngineReferences = EditorGUIUtility.TrTextContent("No Engine References", "When enabled, references to UnityEngine/UnityEditor will not be added when compiling this assembly.");
 
             // This is used to make everything in reorderable list elements centered vertically.
@@ -56,16 +59,16 @@ namespace UnityEditor
             public static Texture2D validDefineConstraint => EditorGUIUtility.pixelsPerPoint > 1 ? kValidDefineConstraintHighDpi : kValidDefineConstraint;
             public static Texture2D invalidDefineConstraint => EditorGUIUtility.pixelsPerPoint > 1 ? kInvalidDefineConstraintHighDpi : kInvalidDefineConstraint;
 
-            static string kCompatibleTextTitle = L10n.Tr("Define constraints are compatible.");
-            static string kIncompatibleTextTitle = L10n.Tr("One or more define constraints are invalid or incompatible.");
+            static string kCompatibleTextTitle = L10n.Tr("Define constraints are met.");
+            static string kIncompatibleTextTitle = L10n.Tr("One or more define constraints are invalid or not met.");
 
             public static string GetTitleTooltipFromDefineConstraintCompatibility(bool compatible)
             {
                 return compatible ? kCompatibleTextTitle : kIncompatibleTextTitle;
             }
 
-            static string kCompatibleTextIndividual = L10n.Tr("Define constraint is compatible.");
-            static string kIncompatibleTextIndividual = L10n.Tr("Define constraint is incompatible.");
+            static string kCompatibleTextIndividual = L10n.Tr("Define constraint is met.");
+            static string kIncompatibleTextIndividual = L10n.Tr("Define constraint is not met.");
             static string kInvalidTextIndividual = L10n.Tr("Define constraint is invalid.");
 
             public static string GetIndividualTooltipFromDefineConstraintStatus(DefineConstraintsHelper.DefineConstraintStatus status)
@@ -195,7 +198,7 @@ namespace UnityEditor
             {
                 try
                 {
-                    using (var fs = File.Open(assetPath, FileMode.Open, FileAccess.Write)) {}
+                    using (var fs = File.Open(assetPath, FileMode.Open, FileAccess.Write)) { }
                 }
                 catch
                 {
@@ -255,54 +258,22 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_AssemblyName, Styles.name);
                 }
 
+                GUILayout.Space(6f);
+
+                // General Options
                 GUILayout.Label(Styles.generalOptions, EditorStyles.boldLabel);
+
                 EditorGUILayout.BeginVertical(GUI.skin.box);
                 EditorGUILayout.PropertyField(m_AllowUnsafeCode, Styles.allowUnsafeCode);
                 EditorGUILayout.PropertyField(m_AutoReferenced, Styles.autoReferenced);
                 EditorGUILayout.PropertyField(m_NoEngineReferences, Styles.noEngineReferences);
                 EditorGUILayout.PropertyField(m_OverrideReferences, Styles.overrideReferences);
                 EditorGUILayout.PropertyField(m_RootNamespace, Styles.rootNamespace);
-
                 EditorGUILayout.EndVertical();
-                GUILayout.Space(10f);
 
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.Label(Styles.defineConstraints, EditorStyles.boldLabel);
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
+                GUILayout.Space(6f);
 
-                if (m_DefineConstraints.serializedProperty.arraySize > 0)
-                {
-                    var defineConstraintsCompatible = true;
-
-                    var defines = GetDefines();
-
-                    if (defines != null)
-                    {
-                        for (var i = 0; i < m_DefineConstraints.serializedProperty.arraySize && defineConstraintsCompatible; ++i)
-                        {
-                            var defineConstraint = m_DefineConstraints.serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("name").stringValue;
-
-                            if (DefineConstraintsHelper.GetDefineConstraintCompatibility(defines, defineConstraint) != DefineConstraintsHelper.DefineConstraintStatus.Compatible)
-                            {
-                                defineConstraintsCompatible = false;
-                            }
-                        }
-
-                        var constraintValidityRect = new Rect(GUILayoutUtility.GetLastRect());
-                        constraintValidityRect.x = constraintValidityRect.width - Styles.kValidityIconWidth / 4;
-                        var image = defineConstraintsCompatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
-                        var tooltip = Styles.GetTitleTooltipFromDefineConstraintCompatibility(defineConstraintsCompatible);
-                        var content = new GUIContent(image, tooltip);
-
-                        constraintValidityRect.width = Styles.kValidityIconWidth;
-                        constraintValidityRect.height = Styles.kValidityIconHeight;
-                        EditorGUI.LabelField(constraintValidityRect, content);
-                    }
-                }
-
-                m_DefineConstraints.DoLayoutList();
-
+                // ASMDEF References
                 GUILayout.Label(Styles.references, EditorStyles.boldLabel);
 
                 EditorGUILayout.BeginVertical(GUI.skin.box);
@@ -331,6 +302,9 @@ namespace UnityEditor
                     }
                 }
 
+                GUILayout.Space(6f);
+
+                // Platforms
                 GUILayout.Label(Styles.platforms, EditorStyles.boldLabel);
                 EditorGUILayout.BeginVertical(GUI.skin.box);
 
@@ -403,10 +377,51 @@ namespace UnityEditor
                     GUILayout.FlexibleSpace();
                     GUILayout.EndHorizontal();
                 }
-
                 EditorGUILayout.EndVertical();
-                GUILayout.Space(10f);
 
+                GUILayout.Space(6f);
+
+                // Define Constraints
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label(Styles.defineConstraints, EditorStyles.boldLabel);
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+
+                if (m_DefineConstraints.serializedProperty.arraySize > 0)
+                {
+                    var defineConstraintsCompatible = true;
+
+                    var defines = GetDefines();
+
+                    if (defines != null)
+                    {
+                        for (var i = 0; i < m_DefineConstraints.serializedProperty.arraySize && defineConstraintsCompatible; ++i)
+                        {
+                            var defineConstraint = m_DefineConstraints.serializedProperty.GetArrayElementAtIndex(i).FindPropertyRelative("name").stringValue;
+
+                            if (DefineConstraintsHelper.GetDefineConstraintCompatibility(defines, defineConstraint) != DefineConstraintsHelper.DefineConstraintStatus.Compatible)
+                            {
+                                defineConstraintsCompatible = false;
+                            }
+                        }
+
+                        var constraintValidityRect = new Rect(GUILayoutUtility.GetLastRect());
+                        constraintValidityRect.x = constraintValidityRect.width - Styles.kValidityIconWidth / 4;
+                        var image = defineConstraintsCompatible ? Styles.validDefineConstraint : Styles.invalidDefineConstraint;
+                        var tooltip = Styles.GetTitleTooltipFromDefineConstraintCompatibility(defineConstraintsCompatible);
+                        var content = new GUIContent(image, tooltip);
+
+                        constraintValidityRect.width = Styles.kValidityIconWidth;
+                        constraintValidityRect.height = Styles.kValidityIconHeight;
+                        EditorGUI.LabelField(constraintValidityRect, content);
+                    }
+                }
+
+                m_DefineConstraints.DoLayoutList();
+
+                GUILayout.Space(6f);
+
+                // Version Defines
                 EditorGUILayout.BeginVertical(GUI.skin.box);
                 GUILayout.Label(Styles.versionDefines, EditorStyles.boldLabel);
                 m_VersionDefineList.DoLayoutList();
@@ -534,20 +549,28 @@ namespace UnityEditor
             return defines.Distinct().ToArray();
         }
 
-        private List<string> BuildListOfVersionDefineResourceOptions(string preselectedResourceName)
+        private List<VersionMetaData> BuildListOfVersionDefineResourceOptions(string preselectedResourceName)
         {
-            var versionDefineResourceOptions = EditorCompilationInterface.Instance.GetVersionMetaDatas().Keys.ToList();
+            var versionDefineResourceOptions = EditorCompilationInterface.Instance.GetVersionMetaDatas().Values.ToList();
 
-            if (!string.IsNullOrEmpty(preselectedResourceName) && !versionDefineResourceOptions.Contains(preselectedResourceName))
+            if (!string.IsNullOrEmpty(preselectedResourceName) && !versionDefineResourceOptions.Where(x => x.Name == preselectedResourceName).Any())
             {
-                versionDefineResourceOptions.Add(preselectedResourceName);
+                versionDefineResourceOptions.Add(new VersionMetaData(preselectedResourceName));
             }
 
-            versionDefineResourceOptions.Insert(0, "Select...");
+            versionDefineResourceOptions.Insert(0, new VersionMetaData("Select..."));
 
-            bool optionUnityIsInTheList = versionDefineResourceOptions.Remove(UnityVersionTypeName);
-            if (optionUnityIsInTheList)
-                versionDefineResourceOptions.Insert(1, UnityVersionTypeName);
+            // Make sure Unity is always second option (index 1).
+            for (int i = versionDefineResourceOptions.Count - 1; i >= 2; --i)
+            {
+                if (versionDefineResourceOptions[i].Name == UnityVersionTypeName)
+                {
+                    var tmp = versionDefineResourceOptions[i];
+                    versionDefineResourceOptions.RemoveAt(i);
+                    versionDefineResourceOptions.Insert(1, tmp);
+                    break;
+                }
+            }
 
             return versionDefineResourceOptions;
         }
@@ -567,22 +590,41 @@ namespace UnityEditor
             int indexOfSelected = 0;
             if (!string.IsNullOrEmpty(nameProp.stringValue))
             {
-                indexOfSelected = versionedResourceOptions.IndexOf(nameProp.stringValue);
+                indexOfSelected = versionedResourceOptions.IndexOf(versionedResourceOptions.Where(x => x.Name == nameProp.stringValue).First());
             }
 
             bool mixed = versionDefineProp.hasMultipleDifferentValues;
             EditorGUI.showMixedValue = mixed;
 
+            string[] versionedResourceOptionsStrings = new string[versionedResourceOptions.Count];
+
+            for (int i = 0; i < versionedResourceOptions.Count; ++i)
+            {
+                if (string.IsNullOrEmpty(versionedResourceOptions[i].Version))
+                {
+                    versionedResourceOptionsStrings[i] = versionedResourceOptions[i].Name;
+                }
+                else
+                {
+                    versionedResourceOptionsStrings[i] = $"{versionedResourceOptions[i].Name} ({versionedResourceOptions[i].Version})";
+                }
+            }
+
             var elementRect = new Rect(rect);
             elementRect.height = EditorGUIUtility.singleLineHeight;
-            int popupIndex = EditorGUI.Popup(elementRect, GUIContent.Temp("Resource", "Select 'Unity' or the package or module that you want to set a define for."), indexOfSelected, versionedResourceOptions.ToArray());
-            nameProp.stringValue = versionedResourceOptions[popupIndex];
+            elementRect.y += 1;
+
+            var prefixLabel = EditorGUI.PrefixLabel(elementRect, Styles.resource);
+
+            int popupIndex = EditorGUI.AdvancedPopup(prefixLabel, indexOfSelected, versionedResourceOptionsStrings);
+
+            nameProp.stringValue = versionedResourceOptions[popupIndex].Name;
 
             elementRect.y += EditorGUIUtility.singleLineHeight;
-            defineProp.stringValue = EditorGUI.TextField(elementRect, GUIContent.Temp("Define", "Specify the name you want this define to have. This define is only set if the expression below returns true."), defineProp.stringValue);
+            expressionProp.stringValue = EditorGUI.TextField(elementRect, Styles.version, expressionProp.stringValue);
 
             elementRect.y += EditorGUIUtility.singleLineHeight;
-            expressionProp.stringValue = EditorGUI.TextField(elementRect, GUIContent.Temp("Expression", "Specify the Unity version or the semantic version of your chosen module or package. You must use mathematical interval notation."), expressionProp.stringValue);
+            defineProp.stringValue = EditorGUI.TextField(elementRect, Styles.define, defineProp.stringValue);
 
             string expressionOutcome = null;
             if (!string.IsNullOrEmpty(expressionProp.stringValue))

@@ -2918,6 +2918,9 @@
     <Compile Include="..\..\Runtime\Export\Debug\Debug.deprecated.cs">
       <Link>Runtime\Export\Debug\Debug.deprecated.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\DedicatedServer\Arguments.bindings.cs">
+      <Link>Runtime\Export\DedicatedServer\Arguments.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Device\Application.cs">
       <Link>Runtime\Export\Device\Application.cs</Link>
     </Compile>
@@ -3442,6 +3445,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\GizmoSubset.cs">
       <Link>Runtime\Export\RenderPipeline\GizmoSubset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\RenderPipeline\InvalidImportException.cs">
+      <Link>Runtime\Export\RenderPipeline\InvalidImportException.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\LODParameters.cs">
       <Link>Runtime\Export\RenderPipeline\LODParameters.cs</Link>

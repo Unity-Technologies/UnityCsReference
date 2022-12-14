@@ -127,6 +127,7 @@ namespace Unity.UI.Builder
         public static readonly string InspectorLocalStyleVariableEditingClassName = "unity-builder-inspector__style--variable-editing";
         public static readonly string InspectorLocalStyleInheritedClassName = "unity-builder-inspector__style--inherited";
         public static readonly string InspectorLocalStyleSelectorClassName = "unity-builder-inspector__style--uss-selector";
+        public static readonly string InspectorLocalStyleSelectorElementClassName = "unity-builder-inspector__style--selector-element";
         public static readonly string InspectorLocalStyleDefaultStatusClassName = "unity-builder-inspector__style--default";
         public static readonly string InspectorEmptyFoldoutLabelClassName = "unity-builder-inspector__empty-foldout-label";
         public static readonly string InspectorClassPillNotInDocumentClassName = "unity-builder-class-pill--not-in-document";
@@ -171,6 +172,7 @@ namespace Unity.UI.Builder
         public static readonly string EditPropertyToAddNewTransition = "Set a property to a non-keyword value to add a new transition.";
         public static readonly string FileNotFoundMessage = "File not found";
         public static readonly string HeaderSectionHelpBoxMessage = "This control is not supported in Runtime UI. Remove it, or enable Editor Extension Authoring in the Library.";
+        public static readonly string UnnamedValue = "<No Name>";
 
         // Tooltip Messages
         public static readonly string FieldStatusIndicatorDefaultTooltip = "Default value";
@@ -202,6 +204,9 @@ namespace Unity.UI.Builder
         public const string PreviewMinimizeInInspector = "Minimize in Inspector";
         public const string PreviewRestoreInInspector = "Restore in Inspector";
         public const string PreviewTransparencyToggleTooltip = "Show or hide transparency view.";
+
+        // Attribute fields
+        public static readonly string AttributeFieldFactoryVEPropertyName = "__unity-ui-builder-attribute-field-factory";
 
         //
         // Explorer
@@ -446,6 +451,7 @@ namespace Unity.UI.Builder
         public static readonly string UxmlTagTypeName = "UnityEngine.UIElements.UXML";
         public static readonly string UxmlInstanceTypeName = "UnityEngine.UIElements.Instance";
         public static readonly string UxmlBindableElementTypeName = "UnityEngine.UIElements.BindableElement";
+        public static readonly string UxmlVisualElementTypeName = "UnityEngine.UIElements.VisualElement";
 
         // USS
         public static readonly string UssSelectorNameSymbol = "#";

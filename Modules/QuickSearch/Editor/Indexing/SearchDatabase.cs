@@ -50,7 +50,8 @@ namespace UnityEditor.Search
         // 5- Fix asset has= property indexing.
         // 6- Use produce artifacts async
         // 7- Update how keywords are encoded
-        public const int version = (7 << 8) ^ SearchIndexEntryImporter.version;
+        // 8- Update t:prefab
+        public const int version = (8 << 8) ^ SearchIndexEntryImporter.version;
         private const string k_QuickSearchLibraryPath = "Library/Search";
         public const string defaultSearchDatabaseIndexPath = "UserSettings/Search.index";
 

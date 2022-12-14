@@ -105,7 +105,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 },
                 bindCell = (ve, index) =>
                 {
-                    (ve as Label).text = m_IOProxy.GetParentDirectory(assets[index].importedPath);
+                    ((Label)ve).text = m_IOProxy.GetParentDirectory(assets[index].importedPath);
                 },
                 stretchable = true,
                 minWidth = k_MinColumnWidth
@@ -122,7 +122,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 },
                 bindCell = (ve, index) =>
                 {
-                    (ve as Label).text = assets[index].origin.packageVersion;
+                    var versionString = assets[index].origin.packageVersion;
+                    if (!string.IsNullOrEmpty(versionString))
+                    {
+                        ((Label)ve).text = versionString;
+                        ve.tooltip = string.Empty;
+                    }
+                    else
+                    {
+                        ((Label)ve).text = "-";
+                        ve.tooltip = L10n.Tr("This asset's version is unknown because it was imported with an older version of Unity. For accurate version tracking, import the asset again or update it.");
+                    }
+
                 },
                 stretchable = true,
                 resizable = false,

@@ -195,6 +195,7 @@ namespace UnityEditor
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Calculate mesh skinning and blend shapes on the GPU via shaders");
+            public static readonly GUIContent[] meshDeformations = { EditorGUIUtility.TrTextContent("CPU"), EditorGUIUtility.TrTextContent("GPU"), EditorGUIUtility.TrTextContent("GPU (Batched)") };
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols", "Preprocessor defines passed to the C# script compiler.");
             public static readonly GUIContent additionalCompilerArguments = EditorGUIUtility.TrTextContent("Additional Compiler Arguments", "Additional arguments passed to the C# script compiler.");
             public static readonly GUIContent scriptingDefineSymbolsApply = EditorGUIUtility.TrTextContent("Apply");
@@ -258,28 +259,30 @@ namespace UnityEditor
             public static readonly GUIContent allowHDRDisplay = EditorGUIUtility.TrTextContent("Allow HDR Display Output*", "Checks if the display supports HDR and if it does, switches to HDR output at the start of the application.");
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
 
-            public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
-            public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
-            public static string undoChangedScriptingDefineString { get { return LocalizationDatabase.GetLocalizedString("Changed Scripting Define Settings"); } }
-            public static string undoChangedGraphicsJobsString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Jobs Setting"); } }
-            public static string undoChangedGraphicsJobModeString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Job Mode Setting"); } }
-            public static string changeColorSpaceString { get { return LocalizationDatabase.GetLocalizedString("Changing the color space may take a significant amount of time."); } }
-            public static string undoChangedPlatformShaderChunkSizeString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Size Platform Setting"); } }
-            public static string undoChangedPlatformShaderChunkCountString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Count Platform Setting"); } }
-            public static string undoChangedDefaultShaderChunkSizeString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Size Default Setting"); } }
-            public static string undoChangedDefaultShaderChunkCountString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Count Default Setting"); } }
+            public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
+            public static readonly string undoChangedGraphicsAPIString              = L10n.Tr("Changed Graphics API Settings");
+            public static readonly string undoChangedScriptingDefineString          = L10n.Tr("Changed Scripting Define Settings");
+            public static readonly string undoChangedGraphicsJobsString             = L10n.Tr("Changed Graphics Jobs Setting");
+            public static readonly string undoChangedGraphicsJobModeString          = L10n.Tr("Changed Graphics Job Mode Setting");
+            public static readonly string changeColorSpaceString                    = L10n.Tr("Changing the color space may take a significant amount of time.");
+            public static readonly string undoChangedPlatformShaderChunkSizeString  = L10n.Tr("Changed Shader Chunk Size Platform Setting");
+            public static readonly string undoChangedPlatformShaderChunkCountString = L10n.Tr("Changed Shader Chunk Count Platform Setting");
+            public static readonly string undoChangedDefaultShaderChunkSizeString   = L10n.Tr("Changed Shader Chunk Size Default Setting");
+            public static readonly string undoChangedDefaultShaderChunkCountString  = L10n.Tr("Changed Shader Chunk Count Default Setting");
         }
 
         class RecompileReason
         {
-            public static readonly string scriptingDefineSymbolsModified = "Scripting define symbols setting modified";
-            public static readonly string suppressCommonWarningsModified = "Suppress common warnings setting modified";
-            public static readonly string allowUnsafeCodeModified = "Allow 'unsafe' code setting modified";
-            public static readonly string apiCompatibilityLevelModified = "API Compatibility level modified";
-            public static readonly string editorAssembliesCompatibilityLevelModified = "Editor Assemblies Compatibility level modified";
-            public static readonly string useDeterministicCompilationModified = "Use deterministic compilation modified";
-            public static readonly string additionalCompilerArgumentsModified = "Additional compiler arguments modified";
-            public static readonly string activeBuildTargetGroupModified = "Active build target group modified";
+            public static readonly string scriptingDefineSymbolsModified             = L10n.Tr("Scripting define symbols setting modified");
+            public static readonly string suppressCommonWarningsModified             = L10n.Tr("Suppress common warnings setting modified");
+            public static readonly string allowUnsafeCodeModified                    = L10n.Tr("Allow 'unsafe' code setting modified");
+            public static readonly string apiCompatibilityLevelModified              = L10n.Tr("API Compatibility level modified");
+            public static readonly string editorAssembliesCompatibilityLevelModified = L10n.Tr("Editor Assemblies Compatibility level modified");
+            public static readonly string useDeterministicCompilationModified        = L10n.Tr("Use deterministic compilation modified");
+            public static readonly string additionalCompilerArgumentsModified        = L10n.Tr("Additional compiler arguments modified");
+            public static readonly string activeBuildTargetGroupModified             = L10n.Tr("Active build target group modified");
+
+            public static readonly string presetChanged = L10n.Tr("Preset changed");
         }
 
         PlayerSettingsSplashScreenEditor m_SplashScreenEditor;
@@ -306,6 +309,7 @@ namespace UnityEditor
 
         private static GraphicsJobMode[] m_GfxJobModeValues = new GraphicsJobMode[] { GraphicsJobMode.Native, GraphicsJobMode.Legacy };
         private static GUIContent[] m_GfxJobModeNames = new GUIContent[] { EditorGUIUtility.TrTextContent("Native"), EditorGUIUtility.TrTextContent("Legacy") };
+        private static MeshDeformation[] m_MeshDeformations = { MeshDeformation.CPU, MeshDeformation.GPU, MeshDeformation.GPUBatched };
 
         // Section and tab selection state
 
@@ -423,6 +427,7 @@ namespace UnityEditor
         SerializedProperty m_CaptureSingleScreen;
 
         SerializedProperty m_SkinOnGPU;
+        SerializedProperty m_MeshDeformation;
 
         SerializedProperty m_EnableLoadStoreDebugMode;
 
@@ -640,6 +645,7 @@ namespace UnityEditor
             m_VisibleInBackground              = FindPropertyAssert("visibleInBackground");
             m_AllowFullscreenSwitch            = FindPropertyAssert("allowFullscreenSwitch");
             m_SkinOnGPU                        = FindPropertyAssert("gpuSkinning");
+            m_MeshDeformation                  = FindPropertyAssert("meshDeformation");
             m_ForceSingleInstance              = FindPropertyAssert("forceSingleInstance");
             m_UseFlipModelSwapchain            = FindPropertyAssert("useFlipModelSwapchain");
 
@@ -927,6 +933,11 @@ namespace UnityEditor
 
             if (hasPresetWindowClosed)
             {
+                // We recompile after the window is closed just to make sure all the values are set/shown correctly.
+                // There might be a smarter idea where you detect the values that have changed and only do it if it's required,
+                // but the way the Preset window applies those changes as well as the way IMGUI works makes it difficult to track.
+                SetReason(RecompileReason.presetChanged);
+
                 OnPresetSelectorClosed();
             }
             else if (HasReasonToCompile())
@@ -1997,11 +2008,43 @@ namespace UnityEditor
             // GPU Skinning toggle (only show on relevant platforms)
             if (!BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
             {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_SkinOnGPU, SettingsContent.skinOnGPU);
-                if (EditorGUI.EndChangeCheck())
+                /// Adding support to other platforms in progress...
+                bool platformSupportsBatching =
+                    platform.namedBuildTarget == NamedBuildTarget.NintendoSwitch ||
+                    platform.namedBuildTarget == NamedBuildTarget.PS5;
+
+                if (platformSupportsBatching)
                 {
-                    ShaderUtil.RecreateSkinnedMeshResources();
+                    MeshDeformation currentDeformation = (MeshDeformation)m_MeshDeformation.intValue;
+
+                    EditorGUI.BeginChangeCheck();
+                    MeshDeformation newDeformation = BuildEnumPopup(SettingsContent.skinOnGPU, currentDeformation, m_MeshDeformations, SettingsContent.meshDeformations);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        m_SkinOnGPU.boolValue = newDeformation != MeshDeformation.CPU;
+                        m_MeshDeformation.intValue = (int)newDeformation;
+                        serializedObject.ApplyModifiedProperties();
+                        ShaderUtil.RecreateSkinnedMeshResources();
+                    }
+                }
+                else
+                {
+                    // Use the original checkbox UI but preserve underlying batching mode whenever possible.
+                    // We need to do this because gpuSkinning/meshDeformation are properties which are shared between all platforms
+                    // and if the user sets gpuSkinning mode to "enabled", we actually want to preserve "batchEnabled" if it was set for other platforms.
+                    // Platforms that do not support batching but have meshDeformation == GPUBatched just silently use original non-batched code.
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.PropertyField(m_SkinOnGPU, SettingsContent.skinOnGPU);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        // Preserve the value of m_MeshDeformation when possible.
+                        if (!m_SkinOnGPU.boolValue)
+                            m_MeshDeformation.intValue = (int)MeshDeformation.CPU;
+                        else
+                            m_MeshDeformation.intValue = m_MeshDeformation.intValue != (int)MeshDeformation.CPU ? m_MeshDeformation.intValue : (int)MeshDeformation.GPUBatched;
+                        serializedObject.ApplyModifiedProperties();
+                        ShaderUtil.RecreateSkinnedMeshResources();
+                    }
                 }
             }
 
@@ -2031,7 +2074,7 @@ namespace UnityEditor
                 PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
                 graphicsJobsModeOptionEnabled = false;
             }
-            else if (platform.namedBuildTarget == new NamedBuildTarget("PS5"))
+            else if (platform.namedBuildTarget == NamedBuildTarget.PS5)
             {
                 // On PS5NGGC, we only have kGfxJobModeNative so we disable the options in that case
                 GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);

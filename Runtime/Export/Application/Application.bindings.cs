@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using UnityEngineInternal;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;

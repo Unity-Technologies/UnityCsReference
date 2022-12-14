@@ -186,19 +186,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             try
             {
-                path = path.Replace('\\', '/');
-                var projectPath = m_IOProxy.GetProjectDirectory().Replace('\\', '/') + '/';
-                if (path.StartsWith(projectPath))
-                {
-                    var packageFolderPrefix = "Packages/";
-                    var relativePathToProjectRoot = path.Substring(projectPath.Length);
-                    if (relativePathToProjectRoot.StartsWith(packageFolderPrefix, StringComparison.InvariantCultureIgnoreCase))
-                        path = relativePathToProjectRoot.Substring(packageFolderPrefix.Length);
-                    else
-                        path = $"../{relativePathToProjectRoot}";
-                }
-
-                tempPackageId = $"file:{path}";
+                tempPackageId = GetTempPackageIdFromPath(path);
                 addOperation.AddByUrlOrPath(tempPackageId, PackageTag.Local);
                 SetupAddOperation();
                 return true;
@@ -208,6 +196,21 @@ namespace UnityEditor.PackageManager.UI.Internal
                 Debug.Log($"[Package Manager Window] Cannot add package {path}: {e.Message}");
                 return false;
             }
+        }
+
+        public string GetTempPackageIdFromPath(string path)
+        {
+            path = path.Replace('\\', '/');
+            var projectPath = m_IOProxy.GetProjectDirectory().Replace('\\', '/') + '/';
+            if (!path.StartsWith(projectPath))
+                return $"file:{path}";
+
+            const string packageFolderPrefix = "Packages/";
+            var relativePathToProjectRoot = path.Substring(projectPath.Length);
+            if (relativePathToProjectRoot.StartsWith(packageFolderPrefix, StringComparison.InvariantCultureIgnoreCase))
+                return $"file:{relativePathToProjectRoot.Substring(packageFolderPrefix.Length)}";
+            else
+                return $"file:../{relativePathToProjectRoot}";
         }
 
         public virtual void AddByUrl(string url)

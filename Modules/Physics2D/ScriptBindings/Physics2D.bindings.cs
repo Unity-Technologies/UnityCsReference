@@ -4588,6 +4588,10 @@ namespace UnityEngine
         // Generates the geometry if using manual generation type.
         extern public void GenerateGeometry();
 
+        // Get a list of composited colliders.
+        [NativeMethod("GetCompositedColliders_Binding")]
+        extern public int GetCompositedColliders([NotNull] List<Collider2D> colliders);
+
         // Gets the count of points in the specified path.
         public int GetPathPointCount(int index)
         {

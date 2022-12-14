@@ -86,7 +86,9 @@ namespace UnityEditor.Search
                 selectContext.requiredTypeNames.First(), selectContext.requiredTypes.First());
             if (parameters.context.currentObject)
                 viewState.selectedIds = new int[] { parameters.context.currentObject.GetInstanceID()};
-            viewState.context.runtimeContext = new RuntimeSearchContext() { searchEngineContext = selectContext, pickerType = SearchPickerType.AdvancedSearchPicker };
+            viewState.context.runtimeContext = new RuntimeSearchContext() {
+                searchEngineContext = selectContext,
+                pickerType = SearchPickerType.AdvancedSearchPicker };
             s_Window = SearchService.ShowPicker(viewState) as SearchWindow;
         }
 

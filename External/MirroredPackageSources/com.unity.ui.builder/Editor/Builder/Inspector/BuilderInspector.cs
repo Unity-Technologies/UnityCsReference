@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -55,7 +56,7 @@ namespace Unity.UI.Builder
         const float m_PreviewDefaultHeight = 200;
         const float m_PreviewMinHeight = 20;
         float m_CachedPreviewHeight = m_PreviewDefaultHeight;
-        
+
         // Utilities
         BuilderInspectorMatchingSelectors m_MatchingSelectors;
         BuilderInspectorStyleFields m_StyleFields;
@@ -72,12 +73,12 @@ namespace Unity.UI.Builder
         BuilderInspectorInheritedStyles m_InheritedStyleSection;
         BuilderInspectorLocalStyles m_LocalStylesSection;
         BuilderInspectorStyleSheet m_StyleSheetSection;
-        
+
         // Selector Preview
         TwoPaneSplitView m_SplitView;
         BuilderInspectorPreview m_SelectorPreview;
         BuilderInspectorPreviewWindow m_PreviewWindow;
-        
+
         public BuilderInspectorCanvas canvasInspector => m_CanvasSection;
         public BuilderInspectorAttributes attributesSection => m_AttributesSection;
 
@@ -109,7 +110,7 @@ namespace Unity.UI.Builder
         public BuilderInspectorPreview preview => m_SelectorPreview;
         public BuilderInspectorPreviewWindow previewWindow => m_PreviewWindow;
         public bool showingPreview => m_SplitView?.fixedPane?.resolvedStyle.height > m_PreviewMinHeight;
-        
+
         public StyleSheet styleSheet
         {
             get
@@ -267,7 +268,7 @@ namespace Unity.UI.Builder
             // Local Styles Section
             m_LocalStylesSection = new BuilderInspectorLocalStyles(this, m_StyleFields);
             m_Sections.Add(m_LocalStylesSection.root);
-            
+
             m_SplitView = this.Q<TwoPaneSplitView>("inspector-content");
             m_SplitView.RegisterCallback<GeometryChangedEvent>(OnFirstDisplay);
             var previewPane = this.Q<BuilderPane>("inspector-selector-preview");
@@ -279,7 +280,7 @@ namespace Unity.UI.Builder
             previewPane.toolbar.Add(m_SelectorPreview.backgroundToggle);
 
             previewPane.RegisterCallback<GeometryChangedEvent>(OnSizeChange);
-            
+
             RegisterDraglineInteraction();
 
             // This will take into account the current selection and then call RefreshUI().
@@ -287,7 +288,7 @@ namespace Unity.UI.Builder
 
             // Forward focus to the panel header.
             this.Query().Where(e => e.focusable).ForEach((e) => AddFocusable(e));
-            
+
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
@@ -360,14 +361,29 @@ namespace Unity.UI.Builder
 
         public void UpdateFieldStatus(VisualElement field, StyleProperty property)
         {
+            if (m_CurrentVisualElement == null)
+            {
+                return;
+            }
+
             var valueInfo = FieldValueInfo.Get(this, field, property);
 
             field.SetProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName, valueInfo);
-            UpdateFieldStatusIconAndStyling(field, valueInfo);
+            UpdateFieldStatusIconAndStyling(currentVisualElement, field, valueInfo);
             UpdateFieldTooltip(field, valueInfo);
+
+            var isAttribute = field.HasProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName);
+            if (isAttribute)
+            {
+                attributeSection.UpdateAttributeOverrideStyle(field);
+            }
+            else
+            {
+                m_LocalStylesSection.UpdateStyleCategoryFoldoutOverrides();
+            }
         }
 
-        void UpdateFieldStatusIconAndStyling(VisualElement field, FieldValueInfo valueInfo)
+        internal static void UpdateFieldStatusIconAndStyling(VisualElement currentElement, VisualElement field, FieldValueInfo valueInfo)
         {
             var statusIndicator = field.GetFieldStatusIndicator();
 
@@ -378,6 +394,7 @@ namespace Unity.UI.Builder
                 ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleSelectorClassName);
                 ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
                 ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleUnresolvedVariableClassName);
+                ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleSelectorElementClassName);
             };
 
             ClearClassLists(field);
@@ -398,12 +415,41 @@ namespace Unity.UI.Builder
 
             statusIndicator.AddToClassList(statusClassName);
             field.AddToClassList(statusClassName);
+
+            if (currentElement != null)
+            {
+                var isSelector = currentElement.IsSelector();
+                if (isSelector)
+                {
+                    statusIndicator.AddToClassList(BuilderConstants.InspectorLocalStyleSelectorElementClassName);
+                    field.AddToClassList(BuilderConstants.InspectorLocalStyleSelectorElementClassName);
+                }
+            }
         }
 
-        void UpdateFieldTooltip(VisualElement field, FieldValueInfo valueInfo)
+        internal static void UpdateFieldTooltip(VisualElement field, FieldValueInfo valueInfo)
         {
-            field.tooltip = GetFieldTooltip(field, valueInfo);
+            var draggerLabel = GetDraggerLabel(field);
+            var tooltipValue = GetFieldTooltip(field, valueInfo);
+            var fieldLabel = field.GetValueByReflection("labelElement") as Label;
+
+            if (draggerLabel != null)
+            {
+                draggerLabel.tooltip = tooltipValue;
+            }
+
+            if (fieldLabel != null)
+            {
+                fieldLabel.tooltip = tooltipValue;
+            }
+
             field.GetFieldStatusIndicator().tooltip = GetFieldStatusIndicatorTooltip(valueInfo);
+        }
+
+        internal static Label GetDraggerLabel(VisualElement field)
+        {
+            var labelDraggers = field.Query<Label>(classes: BaseField<float>.labelDraggerVariantUssClassName).ToList();
+            return labelDraggers.Count != 1 ? null : labelDraggers.First();
         }
 
         static string GetFieldStatusIndicatorTooltip(FieldValueInfo info)
@@ -703,6 +749,15 @@ namespace Unity.UI.Builder
                 m_CachedVisualElement = m_CurrentVisualElement;
             }
 
+            if (IsElementSelected())
+            {
+                m_AttributesSection.SetAttributesOwner(visualTreeAsset, currentVisualElement, m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance);
+            }
+            else
+            {
+                m_AttributesSection.ResetAttributesOwner();
+            }
+
             if (m_CurrentVisualElement != null && BuilderSharedStyles.IsSelectorElement(m_CurrentVisualElement))
             {
                 StyleSheetUtilities.AddFakeSelector(m_CurrentVisualElement);
@@ -712,6 +767,12 @@ namespace Unity.UI.Builder
             {
                 RefreshUI();
             }
+        }
+
+        private bool IsElementSelected()
+        {
+            return m_CurrentVisualElement != null && m_Selection.selectionType is BuilderSelectionType.Element
+                or BuilderSelectionType.ElementInTemplateInstance or BuilderSelectionType.ElementInControlInstance;
         }
 
         private UnityEngine.UIElements.UxmlTraits GetCurrentElementTraits()
@@ -730,7 +791,7 @@ namespace Unity.UI.Builder
                 }
             }
 
-            var traits = factoryList[0].GetTraits();
+            var traits = factoryList[0].GetTraits() as UxmlTraits;
             return traits;
         }
 
@@ -793,7 +854,7 @@ namespace Unity.UI.Builder
                 RefreshUI();
             }
         }
-        
+
         void OnFirstDisplay(GeometryChangedEvent evt)
         {
             if (m_PreviewWindow != null)
@@ -809,29 +870,29 @@ namespace Unity.UI.Builder
             UpdateSelectorPreviewsVisibility();
             m_SplitView.UnregisterCallback<GeometryChangedEvent>(OnFirstDisplay);
         }
-        
+
         private void OnSizeChange(GeometryChangedEvent evt)
         {
             var hideToggle = !showingPreview && m_PreviewWindow == null;
             m_SelectorPreview.backgroundToggle.style.display = hideToggle ? DisplayStyle.None : DisplayStyle.Flex;
         }
-        
+
         private void OnDragLineChange(PointerUpEvent evt)
         {
             var previewHeight = m_SplitView.fixedPane.resolvedStyle.height;
             var isSingleClick = (previewHeight == m_CachedPreviewHeight || previewHeight == m_PreviewMinHeight)
                                 && Math.Abs(m_SplitView.m_Resizer.delta) <= 5;
-            
+
             if (isSingleClick && evt.button == (int) MouseButton.LeftMouse)
             {
                 TogglePreviewInInspector();
                 return;
             }
-            
+
             if (!showingPreview) return;
             m_CachedPreviewHeight = previewHeight;
         }
-        
+
         internal void ReattachPreview()
         {
             var previewPane = this.Q<BuilderPane>("inspector-selector-preview");
@@ -853,7 +914,7 @@ namespace Unity.UI.Builder
                     m_SplitView.UnCollapse();
                     m_SelectorPreview.style.display = DisplayStyle.Flex;
                 }
-                else 
+                else
                     m_SplitView.CollapseChild(1);
             }
             else if (currElementIsSelector)
@@ -886,7 +947,7 @@ namespace Unity.UI.Builder
         void UpdatePreviewHeight(float newHeight)
         {
             var draglineAnchor = m_SplitView.Q("unity-dragline-anchor");
-            
+
             m_SplitView.fixedPane.style.height = newHeight;
             m_SplitView.fixedPaneDimension = newHeight;
             draglineAnchor.style.top = m_SplitView.resolvedStyle.height - newHeight;

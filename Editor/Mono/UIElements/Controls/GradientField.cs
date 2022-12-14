@@ -166,11 +166,10 @@ namespace UnityEditor.UIElements
             rawValue = new Gradient();
         }
 
-        [EventInterest(typeof(KeyDownEvent), typeof(MouseDownEvent),
-            typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        [EventInterest(typeof(KeyDownEvent), typeof(MouseDownEvent))]
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.ExecuteDefaultActionAtTarget(evt);
 
             if (evt == null)
             {
@@ -200,8 +199,21 @@ namespace UnityEditor.UIElements
             if (showGradientPicker)
             {
                 ShowGradientPicker();
+                evt.StopPropagation();
             }
-            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
+        }
+
+        [EventInterest(typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (evt == null)
+            {
+                return;
+            }
+
+            if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
                 OnDetach();
             else if (evt.eventTypeId == AttachToPanelEvent.TypeId())
                 OnAttach();

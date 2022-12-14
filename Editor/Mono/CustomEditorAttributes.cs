@@ -212,11 +212,13 @@ namespace UnityEditor
                 }
             }
 
+#pragma warning disable CS0618
             if (inspectAttr is CustomEditorForRenderPipelineAttribute attr)
             {
                 results = new[] { attr.renderPipelineType };
                 return true;
             }
+#pragma warning restore CS0618
 
             results = null;
             return true;

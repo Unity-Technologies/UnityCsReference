@@ -229,7 +229,7 @@ namespace Unity.UI.Builder
 
                 if (VisualElementFactoryRegistry.TryGetValue(fullTypeName, out var factoryList))
                 {
-                    var traits = factoryList[0].GetTraits();
+                    var traits = factoryList[0].GetTraits() as UxmlTraits;
 
                     if (traits == null)
                     {

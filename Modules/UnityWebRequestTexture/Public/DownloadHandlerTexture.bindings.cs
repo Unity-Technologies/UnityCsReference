@@ -15,8 +15,6 @@ namespace UnityEngine.Networking
     public sealed class DownloadHandlerTexture : DownloadHandler
     {
         private NativeArray<byte> m_NativeData;
-        private Texture2D mTexture;
-        private bool mHasTexture;
         private bool mNonReadable;
 
         private static extern IntPtr Create(DownloadHandlerTexture obj, bool readable);
@@ -50,27 +48,7 @@ namespace UnityEngine.Networking
 
         public Texture2D texture
         {
-            get { return InternalGetTexture(); }
-        }
-
-        private Texture2D InternalGetTexture()
-        {
-            if (mHasTexture)
-            {
-                if (mTexture == null)
-                {
-                    // this is corner case when this DH survives scene reload, while texture does not
-                    mTexture = new Texture2D(2, 2);
-                    mTexture.LoadImage(GetData(), mNonReadable);
-                }
-            }
-            else if (mTexture == null)
-            {
-                mTexture = InternalGetTextureNative();
-                mHasTexture = true;
-            }
-
-            return mTexture;
+            get { return InternalGetTextureNative(); }
         }
 
         [NativeThrows]

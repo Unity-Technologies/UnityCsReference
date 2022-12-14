@@ -53,20 +53,27 @@ namespace UnityEditor.Overlays
         }
 
         public const string className = "unity-overlay-container";
-        public const string spacerClassName = "overlay-container__spacer";
         const string k_HorizontalClassName = className + "-horizontal";
         const string k_VerticalClassName = className + "-vertical";
+        const string k_ContentClassName = className + "__content";
+        const string k_BeforeClassName = className + "__before-spacer-container";
+        const string k_AfterClassName = className + "__after-spacer-container";
+        const string k_SpacingContainerClassName = className + "__spacing-container";
         public static readonly Overlay spacerMarker = null;
 
         readonly List<Overlay> m_BeforeOverlays = new List<Overlay>();
         readonly List<Overlay> m_AfterOverlays = new List<Overlay>();
-        readonly VisualElement m_Spacer;
+        readonly VisualElement m_BeforeSectionContent;
+        readonly VisualElement m_AfterSectionContent;
 
         // This is set by querying the stylesheet for 'vertical' and 'horizontal'
         Layout m_SupportedOverlayLayouts = 0; //Used as a flag in this case
         bool m_IsHorizontal;
 
         public OverlayCanvas canvas { get; internal set; }
+
+        protected readonly VisualElement beforeSectionContainer;
+        protected readonly VisualElement afterSectionContainer;
 
         public int overlayCount => m_BeforeOverlays.Count + m_AfterOverlays.Count;
         public virtual Layout preferredLayout => Layout.Panel;
@@ -87,21 +94,32 @@ namespace UnityEditor.Overlays
             }
         }
 
-        protected VisualElement spacer => m_Spacer;
-        public bool isSpacerVisible => !Mathf.Approximately(spacer.rect.width, 0) && !Mathf.Approximately(spacer.rect.height, 0);
+        public float spacerSize => isHorizontal
+                ? layout.width - (beforeSectionContainer.layout.width + afterSectionContainer.layout.width)
+                : layout.height - (beforeSectionContainer.layout.height + afterSectionContainer.layout.height);
+
+        public bool isSpacerVisible => !Mathf.Approximately(spacerSize, 0);
 
         public OverlayContainer()
         {
             AddToClassList(className);
             name = className;
 
-            Add(m_Spacer = new VisualElement());
-            m_Spacer.AddToClassList(spacerClassName);
+            beforeSectionContainer = new VisualElement();
+            Add(beforeSectionContainer);
+            beforeSectionContainer.Add(m_BeforeSectionContent = new VisualElement());
+            beforeSectionContainer.Add(new OverlayContainerDropZone(this, OverlayContainerDropZone.Placement.Start));
+            beforeSectionContainer.AddToClassList(k_BeforeClassName);
+            beforeSectionContainer.AddToClassList(k_SpacingContainerClassName);
+            m_BeforeSectionContent.AddToClassList(k_ContentClassName);
 
-            m_Spacer.Add(new OverlayContainerDropZone(this, OverlayContainerDropZone.Placement.Start));
-            var dropZoneSpacer = new VisualElement { name = "DropZonesSpacer" };
-            m_Spacer.Add(dropZoneSpacer);
-            m_Spacer.Add(new OverlayContainerDropZone(this, OverlayContainerDropZone.Placement.End));
+            afterSectionContainer = new VisualElement();
+            Add(afterSectionContainer);
+            afterSectionContainer.Add(new OverlayContainerDropZone(this, OverlayContainerDropZone.Placement.End));
+            afterSectionContainer.Add(m_AfterSectionContent = new VisualElement());
+            afterSectionContainer.AddToClassList(k_AfterClassName);
+            afterSectionContainer.AddToClassList(k_SpacingContainerClassName);
+            m_AfterSectionContent.AddToClassList(k_ContentClassName);
 
             SetVertical();
         }
@@ -135,32 +153,22 @@ namespace UnityEditor.Overlays
                 return;
 
             var list = GetSectionInternal(section);
-
+            var element = GetSectionElement(section);
             int realIndex = -1;
 
             //Insert relative to another element in case other visual elements are added to hierarchy
             if (index < list.Count)
             {
-                realIndex = IndexOf(list[index].rootVisualElement);
-
-                // Section after spacer is listed from bottom to spacer instead of spacer to bottom.
-                // So before an overlay after the spacer is actually after the overlay element in the container hierarchy.
-                if (section == OverlayContainerSection.AfterSpacer)
-                    ++realIndex;
-
+                realIndex = element.IndexOf(list[index].rootVisualElement);
             }
-
-            if (realIndex < 0)
+            else if (index == list.Count)
             {
-                switch (section)
-                {
-                    case OverlayContainerSection.BeforeSpacer: realIndex = IndexOf(m_Spacer); break;
-                    case OverlayContainerSection.AfterSpacer: realIndex = IndexOf(m_Spacer) + 1; break;
-                }
+                realIndex = element.childCount;
             }
 
+            realIndex = Mathf.Max(realIndex, 0);
 
-            Insert(realIndex, overlay.rootVisualElement);
+            element.Insert(realIndex, overlay.rootVisualElement);
             list.Insert(index, overlay);
         }
 
@@ -217,6 +225,17 @@ namespace UnityEditor.Overlays
         public ReadOnlyCollection<Overlay> GetSection(OverlayContainerSection section)
         {
             return GetSectionInternal(section).AsReadOnly();
+        }
+
+        public VisualElement GetSectionElement(OverlayContainerSection section)
+        {
+            switch (section)
+            {
+                case OverlayContainerSection.BeforeSpacer: return m_BeforeSectionContent;
+                case OverlayContainerSection.AfterSpacer: return m_AfterSectionContent;
+                default:
+                    throw new InvalidEnumArgumentException();
+            }
         }
 
         List<Overlay> GetSectionInternal(OverlayContainerSection section)
@@ -283,38 +302,82 @@ namespace UnityEditor.Overlays
 
         readonly OverlayDropZoneBase m_NoElementDropZone;
         readonly VisualElement m_ContentContainer;
+        readonly ScrollView m_ScrollView;
+
+        float m_ScrollOffsetRequestedValue;
 
         public override VisualElement contentContainer => m_ContentContainer ?? base.contentContainer;
 
         public override Layout preferredLayout => isHorizontal ? Layout.HorizontalToolbar : Layout.VerticalToolbar;
 
+        internal bool canAssignScrollOffset => isHorizontal ? HasValidScrollerValues(m_ScrollView.horizontalScroller) : HasValidScrollerValues(m_ScrollView.verticalScroller);
+
+        public float scrollOffset
+        {
+            get => isHorizontal ? m_ScrollView.scrollOffset.x : m_ScrollView.scrollOffset.y;
+            set
+            {
+                if (canAssignScrollOffset)
+                    m_ScrollView.scrollOffset = isHorizontal ? new Vector2(value, 0) : new Vector2(0, value);
+                else
+                    m_ScrollOffsetRequestedValue = value;
+            }
+        }
+
+        
+
         public ToolbarOverlayContainer()
         {
+            m_ScrollView = new ScrollView(ScrollViewMode.Horizontal);
+            m_ScrollView.style.width = new StyleLength(new Length(100, LengthUnit.Percent));
+            hierarchy.Add(m_ScrollView);
+            m_ScrollView.RegisterCallback<GeometryChangedEvent>(DelayScrollViewInit);
+
             AddToClassList(k_ToolbarClassName);
             m_NoElementDropZone = new HiddenToolbarDropZone(this) { name = "NoElementToolbarDropZone" };
             hierarchy.Add(m_NoElementDropZone);
 
-            hierarchy.Add(m_ContentContainer = new VisualElement());
-            m_ContentContainer.style.flexGrow = 1;
-            m_ContentContainer.style.flexDirection = isHorizontal ? FlexDirection.Row : FlexDirection.Column;
-            m_ContentContainer.pickingMode = PickingMode.Ignore;
-            m_ContentContainer.Add(spacer);
+            m_ContentContainer = m_ScrollView.contentContainer;
+            Add(beforeSectionContainer);
+            Add(afterSectionContainer);
+
+            //Force the current direction because scroll view was just created
+            if (isHorizontal)
+                SetHorizontal();
+            else
+                SetVertical();
+        }
+
+        void DelayScrollViewInit(GeometryChangedEvent evt)
+        {
+            m_ScrollView.UnregisterCallback<GeometryChangedEvent>(DelayScrollViewInit);
+            m_ScrollView.horizontalScrollerVisibility = m_ScrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            if (!Mathf.Approximately(m_ScrollOffsetRequestedValue, 0))
+                scrollOffset = m_ScrollOffsetRequestedValue;
         }
 
         protected override void SetHorizontal()
         {
             base.SetHorizontal();
 
-            if (contentContainer != null)
-                contentContainer.style.flexDirection = FlexDirection.Row;
+            if (m_ScrollView != null)
+            {
+                m_ScrollView.mode = ScrollViewMode.Horizontal;
+                m_ScrollView.style.width = new StyleLength(new Length(100, LengthUnit.Percent));
+                m_ScrollView.style.height = new StyleLength(StyleKeyword.Auto);
+            }
         }
 
         protected override void SetVertical()
         {
             base.SetVertical();
 
-            if (contentContainer != null)
-                contentContainer.style.flexDirection = FlexDirection.Column;
+            if (m_ScrollView != null)
+            {
+                m_ScrollView.mode = ScrollViewMode.Vertical;
+                m_ScrollView.style.height = new StyleLength(new Length(100, LengthUnit.Percent));
+                m_ScrollView.style.width = new StyleLength(StyleKeyword.Auto);
+            }
         }
 
         public override bool IsOverlayLayoutSupported(Layout requested)
@@ -322,6 +385,11 @@ namespace UnityEditor.Overlays
             if (isHorizontal)
                 return (requested & Layout.HorizontalToolbar) > 0;
             return (requested & Layout.VerticalToolbar) > 0;
+        }
+
+        bool HasValidScrollerValues(Scroller scroller)
+        {
+            return !float.IsNaN(scroller.lowValue) && !float.IsNaN(scroller.highValue);
         }
     }
 }

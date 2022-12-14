@@ -93,7 +93,6 @@ namespace UnityEditor.TerrainTools
             root.Add(bs);
 
             var currTool = TerrainInspector.GetActiveTerrainTool() as ITerrainPaintToolWithOverlays;
-            if (currTool == null) Debug.LogWarning("current tool is null");
             if (currTool is PaintDetailsTool)
             {
                 var bts = new BrushTargetStrength();
@@ -116,7 +115,6 @@ namespace UnityEditor.TerrainTools
         public override VisualElement CreatePanelContent()
         {
             var currTool = TerrainInspector.GetActiveTerrainTool() as ITerrainPaintToolWithOverlays;
-            if (currTool == null) Debug.LogWarning("current tool is null");
 
             string[] toolbarElementIds;
 
@@ -319,8 +317,7 @@ namespace UnityEditor.TerrainTools
             this.RegisterValueChangedCallback(e =>
             {
                 var editor = TerrainInspector.s_activeTerrainInspectorInstance;
-                if (!editor) Debug.LogWarning("cannot display SIZE in BrushAttributesOverlay.CS");
-                editor.brushSize = e.newValue;
+                if (editor) editor.brushSize = e.newValue;
             });
 
             if (direction == SliderDirection.Horizontal)
@@ -410,7 +407,6 @@ namespace UnityEditor.TerrainTools
             this.RegisterValueChangedCallback(e =>
             {
                 var currTool = TerrainInspector.GetActiveTerrainTool() as PaintDetailsTool;
-                if (currTool == null) Debug.LogWarning("current tool is null");
                 if (currTool != null)
                 {
                     currTool.detailStrength = e.newValue;

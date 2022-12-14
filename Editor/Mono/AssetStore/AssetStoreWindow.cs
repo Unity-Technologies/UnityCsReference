@@ -13,9 +13,6 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Asset Store", icon = "Asset Store")]
     internal class AssetStoreWindow : EditorWindow
     {
-        // Use this for initialization
-        // Index at 1499 because "Package Manager" is 1500, pairing tools for user to get external content
-        [MenuItem("Window/Asset Store", false, 1499)]
         public static AssetStoreWindow Init()
         {
             if (EditorPrefs.GetBool("AlwaysOpenAssetStoreInBrowser", false))
@@ -32,12 +29,19 @@ namespace UnityEditor
             }
         }
 
-        private static void OpenAssetStoreInBrowser()
+        [MenuItem("Window/Asset Store", false, 1497)]
+        public static void OpenAssetStoreInBrowser()
         {
             string assetStoreUrl = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudAssetStoreUrl);
-            if (UnityEditor.Connect.UnityConnect.instance.loggedIn)
-                UnityEditor.Connect.UnityConnect.instance.OpenAuthorizedURLInWebBrowser(assetStoreUrl);
+            if (UnityConnect.instance.loggedIn)
+                UnityConnect.instance.OpenAuthorizedURLInWebBrowser(assetStoreUrl);
             else Application.OpenURL(assetStoreUrl);
+        }
+
+        [MenuItem("Window/My Assets", false, 1498)]
+        public static void OpenMyAssetsInPackageManager()
+        {
+            PackageManagerWindow.SelectPackageAndFilterStatic(string.Empty, PackageManager.UI.Internal.PackageFilterTab.AssetStore);
         }
 
         public void OnEnable()

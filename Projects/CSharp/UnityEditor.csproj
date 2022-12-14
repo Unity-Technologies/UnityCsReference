@@ -3566,9 +3566,6 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\ObjectField.cs">
       <Link>Editor\Mono\UIElements\Controls\ObjectField.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Controls\PropertyControl.cs">
-      <Link>Editor\Mono\UIElements\Controls\PropertyControl.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\PropertyField.cs">
       <Link>Editor\Mono\UIElements\Controls\PropertyField.cs</Link>
     </Compile>
@@ -4172,6 +4169,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderElementContextMenu.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderElementContextMenu.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderInspectorUtilities.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderInspectorUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderNameUtilities.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderNameUtilities.cs</Link>
     </Compile>
@@ -4189,6 +4189,30 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderStyleUtilities.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Utilities\BuilderStyleUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\BuilderUxmlAttributesView.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\BuilderUxmlAttributesView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlAssetAttributeField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlAssetAttributeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlAttributeFieldFactory.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlAttributeFieldFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlAttributeFieldFactoryRegistry.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlAttributeFieldFactoryRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlEnumAttributeField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlEnumAttributeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlIntAttributeField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlIntAttributeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlStringAttributeField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlStringAttributeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlTypeAttributeField.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlTypeAttributeField.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderCanvas.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Builder\Viewport\BuilderCanvas.cs</Link>
@@ -4445,6 +4469,9 @@
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\UIStyleValue.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\Transitions\UIStyleValue.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TypeExtensions\TypeExtensions.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TypeExtensions\TypeExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TypeField\BuilderAttributeTypeName.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\TypeField\BuilderAttributeTypeName.cs</Link>
     </Compile>
@@ -4462,6 +4489,9 @@
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\TemplateAssetExtensions.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\TemplateAssetExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\ValueToUXML.cs">
+      <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\ValueToUXML.cs</Link>
     </Compile>
     <Compile Include="..\..\External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualElementAssetExtensions.cs">
       <Link>External\MirroredPackageSources\com.unity.ui.builder\Editor\Utilities\VisualTreeAssetExtensions\VisualElementAssetExtensions.cs</Link>
@@ -9932,7 +9962,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-linux-x64_1341/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_33df/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />
