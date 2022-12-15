@@ -48,6 +48,8 @@ namespace UnityEditor
         private VisualElement m_UIRootElement;
         public VisualElement rootVisualElement => m_UIRootElement ?? (m_UIRootElement = CreateRoot());
 
+        internal bool isUIToolkitWindow => m_UIRootElement != null && m_UIRootElement.childCount > 0;
+
         [HideInInspector]
         [SerializeField]
         private SerializableJsonDictionary m_ViewDataDictionary;

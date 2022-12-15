@@ -88,7 +88,7 @@ namespace UnityEditor
                 {
                     // Set filter after we found the folder
                     if (propertyWithFilter != null)
-                        propertyWithFilter.CopySearchFilterFrom(property);
+                        property.CopySearchFilterFrom(propertyWithFilter);
                     else
                     {
                         property.SetSearchFilter(searchFilter);

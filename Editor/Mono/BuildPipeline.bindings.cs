@@ -662,6 +662,10 @@ namespace UnityEditor
         private static bool DoesBuildTargetSupportPlayerConnectionPlayerToEditor(BuildTarget targetPlatform)
         {
             return
+                targetPlatform == BuildTarget.StandaloneOSX ||
+                targetPlatform == BuildTarget.StandaloneWindows ||
+                targetPlatform == BuildTarget.StandaloneWindows64 ||
+                targetPlatform == BuildTarget.StandaloneLinux64 ||
                 // Android: support connection from player to Editor in both cases
                 //          connecting to 127.0.0.1 (when both Editor and Android are on localhost using USB cable)
                 //          connecting to <ip of machine where the Editor is running>, the Android and PC has to be on the same subnet

@@ -1211,22 +1211,28 @@ namespace UnityEditor.PackageManager.UI
             PackageManagerWindowAnalytics.SendEvent("uninstall", displayVersion?.uniqueId);
         }
 
-        private void ViewOfflineDocs(PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, string> getUrl, string messageOnNotFound)
+        private void ViewOfflineDocs(PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, bool, string> getUrl, string messageOnNotFound, bool isUnityPackage = true)
         {
             if (string.IsNullOrEmpty(packageInfo?.resolvedPath))
             {
                 EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), L10n.Tr("This package is not available offline."), L10n.Tr("Ok"));
                 return;
             }
-            var offlineUrl = getUrl(m_IOProxy, packageInfo, true);
+            var offlineUrl = getUrl(m_IOProxy, packageInfo, true, isUnityPackage);
             if (!string.IsNullOrEmpty(offlineUrl))
                 m_Application.RevealInFinder(offlineUrl);
             else
                 EditorUtility.DisplayDialog(L10n.Tr("Unity Package Manager"), messageOnNotFound, L10n.Tr("Ok"));
         }
 
-        private void OpenWebUrl(string onlineUrl, Action errorCallback)
+        private void OpenWebUrl(string onlineUrl, Action errorCallback, bool isUnityPackage)
         {
+            if (!isUnityPackage)
+            {
+                m_Application.OpenURL(onlineUrl);
+                return;
+            }
+
             var request = UnityWebRequest.Head(onlineUrl);
             try
             {
@@ -1248,48 +1254,50 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        private void ViewUrlCascade(string[] urls, PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, string[]> getUrl, string messageOnNotFound)
+        private void ViewUrlCascade(string[] urls, PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, bool, string[]> getUrl, string messageOnNotFound, bool isUnityPackage = true)
         {
-            var onlineUrls = getUrl(m_IOProxy, packageInfo, true);
+            var onlineUrls = getUrl(m_IOProxy, packageInfo, true, isUnityPackage);
             if (urls.Length > 0)
-            { 
+            {
                 OpenWebUrl(urls[0], () =>
                 {
-                   ViewUrlCascade(urls.ToList().Skip(1).ToArray(), packageInfo, getUrl, messageOnNotFound);
-                });
+                   ViewUrlCascade(urls.ToList().Skip(1).ToArray(), packageInfo, getUrl, messageOnNotFound, isUnityPackage);
+                }, isUnityPackage);
             }
             else
             {
-                string GetUrls(IOProxy IOProxy, PackageInfo packageInfo, bool offline) => onlineUrls[0];
-                ViewOfflineDocs(packageInfo, GetUrls, messageOnNotFound);
+                string GetUrls(IOProxy IOProxy, PackageInfo packageInfo, bool offline, bool isUnityPackage) => onlineUrls[0];
+                ViewOfflineDocs(packageInfo, GetUrls, messageOnNotFound, isUnityPackage);
             }
         }
 
-        private void ViewUrl(PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, string> getUrl, string messageOnNotFound)
+        private void ViewUrl(PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, bool, string> getUrl, string messageOnNotFound)
         {
-            var onlineUrl = getUrl(m_IOProxy, packageInfo, false);
+            var isUnityPackage = (displayVersion as UpmPackageVersion)?.isUnityPackage ?? true;
+            var onlineUrl = getUrl(m_IOProxy, packageInfo, false, isUnityPackage);
             if (!string.IsNullOrEmpty(onlineUrl) && m_Application.isInternetReachable)
             {
                 OpenWebUrl(onlineUrl, () =>
                 {
-                    ViewOfflineDocs(packageInfo, getUrl, messageOnNotFound);
-                });
+                    ViewOfflineDocs(packageInfo, getUrl, messageOnNotFound, isUnityPackage);
+                }, isUnityPackage);
                 return;
             }
-            ViewOfflineDocs(packageInfo, getUrl, messageOnNotFound);
+            ViewOfflineDocs(packageInfo, getUrl, messageOnNotFound, isUnityPackage);
         }
 
-        private void ViewUrl(PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, string[]> getUrl, string messageOnNotFound)
+        private void ViewUrl(PackageInfo packageInfo, Func<IOProxy, PackageInfo, bool, bool, string[]> getUrl, string messageOnNotFound)
         {
-            var onlineUrl = getUrl(m_IOProxy, packageInfo, false);
+            var isUnityPackage = (displayVersion as UpmPackageVersion)?.isUnityPackage ?? true;
+            var onlineUrl = getUrl(m_IOProxy, packageInfo, false, (displayVersion as UpmPackageVersion)?.isUnityPackage ?? true);
             if (m_Application.isInternetReachable)
             {
-                ViewUrlCascade(onlineUrl, packageInfo, getUrl, messageOnNotFound);
+                ViewUrlCascade(onlineUrl, packageInfo, getUrl, messageOnNotFound, isUnityPackage);
             }
             else
             {
-                string GetUrls(IOProxy IOProxy, PackageInfo packageInfo, bool offline) => onlineUrl[0];
-                ViewOfflineDocs(packageInfo, GetUrls, messageOnNotFound);
+                string GetUrls(IOProxy IOProxy, PackageInfo packageInfo, bool offline, bool isUnityPackage) => onlineUrl[0];
+                ViewOfflineDocs(packageInfo, GetUrls, messageOnNotFound, isUnityPackage);
             }
         }
 

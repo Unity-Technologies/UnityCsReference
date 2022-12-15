@@ -215,12 +215,12 @@ namespace UnityEngine.UIElements
             set { verticalScroller.slider.pageSize = value; }
         }
 
-        private float scrollableWidth
+        internal float scrollableWidth
         {
             get { return contentContainer.layout.width - contentViewport.layout.width; }
         }
 
-        private float scrollableHeight
+        internal float scrollableHeight
         {
             get { return contentContainer.layout.height - contentViewport.layout.height; }
         }

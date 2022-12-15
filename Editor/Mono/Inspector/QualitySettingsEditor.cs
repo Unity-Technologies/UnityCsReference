@@ -31,6 +31,7 @@ namespace UnityEditor
             public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count", "Limit refresh rate to avoid tearing");
             public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Bias");
             public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Where maximum possible texture mip resolution for a platform is less than full, package size can be reduced by enabling Texture MipMap Stripping in Player Settings.");
+            public static readonly GUIContent kAsyncUploadBufferSizeWarning = EditorGUIUtility.TrTextContent("Unity has detected that you are using an upload buffer size of {0} MB with the '{1}' setting enabled. If you have issues with excessive memory usage, you may need to reduce the upload buffer size or disable the '{1}' setting. Memory fragmentation can occur if you choose the latter option.");
         }
 
         private class Styles
@@ -49,7 +50,8 @@ namespace UnityEditor
         }
 
         public const int kMinAsyncRingBufferSize = 2;
-        public const int kMaxAsyncRingBufferSize = 512;
+        public const int kMaxAsyncRingBufferSize = 2047;
+        public const int kAsyncRingBufferSizeWarningThreshold = 513;
         public const int kMinAsyncUploadTimeSlice = 1;
         public const int kMaxAsyncUploadTimeSlice = 33;
 
@@ -630,6 +632,12 @@ namespace UnityEditor
 
             asyncUploadTimeSliceProperty.intValue = Mathf.Clamp(asyncUploadTimeSliceProperty.intValue, kMinAsyncUploadTimeSlice, kMaxAsyncUploadTimeSlice);
             asyncUploadBufferSizeProperty.intValue = Mathf.Clamp(asyncUploadBufferSizeProperty.intValue, kMinAsyncRingBufferSize, kMaxAsyncRingBufferSize);
+
+            if (asyncUploadBufferSizeProperty.intValue >= kAsyncRingBufferSizeWarningThreshold && asyncUploadPersistentBufferProperty.boolValue)
+            {
+                string messageToDisplay = string.Format(Content.kAsyncUploadBufferSizeWarning.text, asyncUploadBufferSizeProperty.intValue, asyncUploadPersistentBufferProperty.displayName);
+                EditorGUILayout.HelpBox(messageToDisplay, MessageType.Warning, false);
+            }
 
             if (m_Dragging != null && m_Dragging.m_Position != m_Dragging.m_StartPosition)
             {

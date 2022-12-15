@@ -472,6 +472,16 @@ namespace UnityEngine
             get { return GetMaxTextureSize(); }
         }
 
+        public static int maxTexture3DSize
+        {
+            get { return GetMaxTexture3DSize(); }
+        }
+
+        public static int maxTextureArraySlices
+        {
+            get { return GetMaxTextureArraySlices(); }
+        }
+
         public static int maxCubemapSize
         {
             get { return GetMaxCubemapSize(); }
@@ -530,6 +540,11 @@ namespace UnityEngine
         public static int maxComputeWorkGroupSizeZ
         {
             get { return GetMaxComputeWorkGroupSizeZ(); }
+        }
+
+        public static int computeSubGroupSize
+        {
+            get { return GetComputeSubGroupSize(); }
         }
 
         public static bool supportsAsyncCompute
@@ -821,6 +836,12 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::GetMaxTextureSize")]
         static extern int GetMaxTextureSize();
 
+        [FreeFunction("ScriptingGraphicsCaps::GetMaxTexture3DSize")]
+        static extern int GetMaxTexture3DSize();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetMaxTextureArraySlices")]
+        static extern int GetMaxTextureArraySlices();
+
         [FreeFunction("ScriptingGraphicsCaps::GetMaxCubemapSize")]
         static extern int GetMaxCubemapSize();
 
@@ -838,6 +859,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::GetMaxComputeWorkGroupSizeZ")]
         static extern int GetMaxComputeWorkGroupSizeZ();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetComputeSubGroupSize")]
+        static extern int GetComputeSubGroupSize();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsAsyncCompute")]
         static extern bool SupportsAsyncCompute();
@@ -1037,6 +1061,10 @@ namespace UnityEngine
 
         public static int maxTextureSize => ShimManager.systemInfoShim.maxTextureSize;
 
+        public static int maxTexture3DSize => ShimManager.systemInfoShim.maxTexture3DSize;
+
+        public static int maxTextureArraySlices => ShimManager.systemInfoShim.maxTextureArraySlices;
+
         public static int maxCubemapSize => ShimManager.systemInfoShim.maxCubemapSize;
 
         internal static int maxRenderTextureSize => EditorSystemInfo.maxRenderTextureSize;
@@ -1060,6 +1088,8 @@ namespace UnityEngine
         public static int maxComputeWorkGroupSizeY => ShimManager.systemInfoShim.maxComputeWorkGroupSizeY;
 
         public static int maxComputeWorkGroupSizeZ => ShimManager.systemInfoShim.maxComputeWorkGroupSizeZ;
+
+        public static int computeSubGroupSize => ShimManager.systemInfoShim.computeSubGroupSize;
 
         public static bool supportsAsyncCompute => ShimManager.systemInfoShim.supportsAsyncCompute;
 
