@@ -144,15 +144,6 @@ namespace UnityEditor.SearchService
         public const string activeSearchEnginesPrefKey = keyPrefix + ".activeengines.";
         public static List<ISearchApi> searchApis = new List<ISearchApi>();
 
-        static SearchService()
-        {
-            Build.BuildDefines.getScriptCompilationDefinesDelegates += AddSearchServiceBuildDefines;
-        }
-
-        private static void AddSearchServiceBuildDefines(BuildTarget target, HashSet<string> defines)
-        {
-            defines.Add("USE_SEARCH_ENGINE_API");
-        }
     }
 
     class SearchApiBaseImp<TAttribute, TEngine> : ISearchApi

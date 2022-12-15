@@ -351,7 +351,7 @@ namespace UnityEditor
             public readonly string psdRemoveMatteURL = "https://docs.unity3d.com/Manual/HOWTO-alphamaps.html";
 
             public readonly GUIContent ignorePngGamma = EditorGUIUtility.TrTextContent("Ignore PNG file gamma", "Ignore the Gamma value attribute in PNG files, this setting has no effect on other file formats.");
-            public readonly GUIContent readWriteWarning = EditorGUIUtility.TrTextContent("Textures larger than 8192 can not be Read/Write enabled. Value will be ignored.");
+            public readonly GUIContent readWriteWarning = EditorGUIUtility.TrTextContent("When you enable Read/Write, Unity stores an additional copy of your textures in CPU-addressable memory. One or more of the textures you have selected use a considerable amount of memory (more than 512MB).");
 
             public readonly GUIContent flipbookColumns = EditorGUIUtility.TrTextContent("Columns", "Source image is divided into this amount of columns.");
             public readonly GUIContent flipbookRows = EditorGUIUtility.TrTextContent("Rows", "Source image is divided into this amount of rows.");
@@ -932,14 +932,11 @@ namespace UnityEditor
 
         void ReadableGUI(TextureInspectorGUIElement guiElements)
         {
-            bool enabled = CanReadWrite();
-            using (new EditorGUI.DisabledScope(!enabled))
+            ToggleFromInt(m_IsReadable, s_Styles.readWrite);
+
+            if (m_IsReadable.intValue > 0 && !m_IsReadable.hasMultipleDifferentValues && ShouldShowWarningForReadWrite())
             {
-                ToggleFromInt(m_IsReadable, s_Styles.readWrite);
-                if (!enabled && m_IsReadable.intValue > 0)
-                {
-                    EditorGUILayout.HelpBox(s_Styles.readWriteWarning.text, MessageType.Warning, true);
-                }
+                EditorGUILayout.HelpBox(s_Styles.readWriteWarning.text, MessageType.Info, true);
             }
         }
 
@@ -1264,6 +1261,7 @@ namespace UnityEditor
                 // NB we do these weird things partly because ApplyTextureType has early out
                 // NB hence we want settings to have *old* textureType when calling it
                 TextureImporterSettings settings = GetSerializedPropertySettings();
+                settings.textureType = (TextureImporterType)oldTextureType;
                 settings.ApplyTextureType((TextureImporterType)newTextureType);
                 settings.textureType = (TextureImporterType)newTextureType;
 
@@ -1458,14 +1456,24 @@ namespace UnityEditor
             return ((f & (f - 1)) == 0);
         }
 
-        bool CanReadWrite()
+        bool ShouldShowWarningForReadWrite()
         {
-            foreach (TextureImportPlatformSettings ps in m_PlatformSettings)
+            const int maxRecommendedSize = 536870912; // 512 MB
+
+            if (textureInspector && textureInspector.targets != null)
             {
-                if (ps.model.platformTextureSettings.maxTextureSize > TextureImporter.MaxTextureSizeAllowedForReadable)
-                    return false;
+                foreach (Texture texture in textureInspector.targets)
+                {
+                    if (texture)
+                    {
+                        if (TextureUtil.GetStorageMemorySizeLong(texture) > maxRecommendedSize)
+                        {
+                            return true;
+                        }
+                    }
+                }
             }
-            return true;
+            return false;
         }
 
         public virtual void BuildTargetList()

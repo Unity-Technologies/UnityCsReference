@@ -4621,6 +4621,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\IOUtils.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\IOUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\IncorrectFieldTypeException.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\IncorrectFieldTypeException.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\LoadingSpinner.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\LoadingSpinner.cs</Link>
     </Compile>
@@ -5070,6 +5073,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PresetsEditor\PresetEditor.cs">
       <Link>Modules\PresetsEditor\PresetEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PresetsEditor\PresetEditorHelper.cs">
+      <Link>Modules\PresetsEditor\PresetEditorHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PresetsEditor\PresetManagerEditor.cs">
       <Link>Modules\PresetsEditor\PresetManagerEditor.cs</Link>

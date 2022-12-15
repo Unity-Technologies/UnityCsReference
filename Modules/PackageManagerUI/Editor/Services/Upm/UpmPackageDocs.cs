@@ -71,7 +71,12 @@ namespace UnityEditor.PackageManager.UI
                     var docsFolder = IOProxy.PathsCombine(packageInfo.resolvedPath, "Documentation~");
                     if (!IOProxy.DirectoryExists(docsFolder))
                         docsFolder = IOProxy.PathsCombine(packageInfo.resolvedPath, "Documentation");
-                    if (IOProxy.DirectoryExists(docsFolder))
+                    if (!IOProxy.DirectoryExists(docsFolder))
+                    {
+                        var readMeFile = IOProxy.PathsCombine(packageInfo.resolvedPath, "README.md");
+                        return IOProxy.FileExists(readMeFile) ? readMeFile : string.Empty;
+                    }
+                    else
                     {
                         var mdFiles = IOProxy.DirectoryGetFiles(docsFolder, "*.md", System.IO.SearchOption.TopDirectoryOnly);
                         var docsMd = mdFiles.FirstOrDefault(d => IOProxy.GetFileName(d).ToLower() == "index.md")
@@ -97,7 +102,7 @@ namespace UnityEditor.PackageManager.UI
             return semVer == null ? string.Empty : UpmPackageVersion.FormatPackageId(packageInfo.name, semVer.Value.ShortVersion());
         }
 
-        public static string[] GetDocumentationUrl(IOProxy IOProxy, PackageInfo packageInfo, bool offline = false)
+        public static string[] GetDocumentationUrl(IOProxy IOProxy, PackageInfo packageInfo, bool offline = false, bool isUnityPackage = true)
         {
             if (packageInfo == null)
                 return new string[0];
@@ -111,10 +116,13 @@ namespace UnityEditor.PackageManager.UI
             if (IsBuiltIn(packageInfo) && !string.IsNullOrEmpty(packageInfo.description))
                 return FetchUrlsFromDescription(packageInfo);
 
+            if (!isUnityPackage)
+                return new string[0];
+
             return new string[] { $"https://docs.unity3d.com/Packages/{GetShortVersionId(packageInfo)}/index.html" };
         }
 
-        public static string GetChangelogUrl(IOProxy IOProxy, PackageInfo packageInfo, bool offline = false)
+        public static string GetChangelogUrl(IOProxy IOProxy, PackageInfo packageInfo, bool offline = false, bool isUnityPackage = true)
         {
             if (packageInfo == null)
                 return string.Empty;
@@ -124,6 +132,9 @@ namespace UnityEditor.PackageManager.UI
 
             if (!string.IsNullOrEmpty(packageInfo?.changelogUrl))
                 return packageInfo.changelogUrl;
+
+            if (!isUnityPackage)
+                return string.Empty;
 
             return $"http://docs.unity3d.com/Packages/{GetShortVersionId(packageInfo)}/changelog/CHANGELOG.html";
         }
@@ -145,7 +156,7 @@ namespace UnityEditor.PackageManager.UI
             return string.Empty;
         }
 
-        public static string GetLicensesUrl(IOProxy IOProxy, PackageInfo packageInfo, bool offline = false)
+        public static string GetLicensesUrl(IOProxy IOProxy, PackageInfo packageInfo, bool offline = false, bool isUnityPackage = true)
         {
             if (packageInfo == null)
                 return string.Empty;
@@ -155,6 +166,9 @@ namespace UnityEditor.PackageManager.UI
 
             if (!string.IsNullOrEmpty(packageInfo?.licensesUrl))
                 return packageInfo.licensesUrl;
+
+            if (!isUnityPackage)
+                return string.Empty;
 
             return $"http://docs.unity3d.com/Packages/{GetShortVersionId(packageInfo)}/license/index.html";
         }
