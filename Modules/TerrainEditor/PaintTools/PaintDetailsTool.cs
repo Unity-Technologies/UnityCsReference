@@ -432,6 +432,11 @@ namespace UnityEditor.TerrainTools
             terrainInspector.ShowRefreshPrototypes();
             GUILayout.EndHorizontal();
 
+            if(prototypes.Length > 0)
+            {
+                ShowTextureFallbackWarning(ref terrain);
+            }
+
             terrainInspector.ShowDetailStats();
             EditorGUILayout.Space();
 
@@ -447,6 +452,37 @@ namespace UnityEditor.TerrainTools
 
             // Brush editor
             editContext.ShowBrushesGUI((int)EditorGUIUtility.singleLineHeight, BrushGUIEditFlags.Inspect);
+        }
+
+        private void ShowTextureFallbackWarning(ref Terrain terrain)
+        {
+            if (!TextureUtil.IsCompressedTextureFormat(terrain.terrainData.atlasFormat))
+            {
+                using (new EditorGUILayout.VerticalScope())
+                {
+                    GUILayout.Space(3);
+                    using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
+                    {
+                        // Copied from LabelField called by HelpBox - using so that label and button link are in the same helpbox
+                        var infoLabel = EditorGUIUtility.TempContent("Atlas uncompressed. This can be caused by mismatched texture formats.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                        Rect r = GUILayoutUtility.GetRect(infoLabel, EditorStyles.wordWrappedLabel);
+                        int oldIndent = EditorGUI.indentLevel;
+                        EditorGUI.indentLevel = 0;
+                        EditorGUI.LabelField(r, infoLabel, EditorStyles.wordWrappedLabel);
+                        EditorGUI.indentLevel = oldIndent;
+
+                        using(new EditorGUILayout.VerticalScope())
+                        {
+                            GUILayout.FlexibleSpace();
+                            if(EditorGUILayout.LinkButton("Read More"))
+                            {
+                                Help.BrowseURL($"https://docs.unity3d.com//{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/ScriptReference/Texture2D.PackTextures.html");
+                            }
+                            GUILayout.FlexibleSpace();
+                        }
+                    }
+                }
+            }
         }
 
         private Vector2 CalculatePatchHeightMinMaxCached(Vector2Int patch, float patchUVSize, int heightmapRes, TerrainData terrainData)

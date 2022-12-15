@@ -12,6 +12,18 @@ using UnityEngine.TextCore.LowLevel;
 namespace UnityEngine.TextCore
 {
     /// <summary>
+    /// Glyph class definition types.
+    /// </summary>
+    public enum GlyphClassDefinitionType
+    {
+        Undefined = 0,
+        Base = 1,
+        Ligature = 2,
+        Mark = 3,
+        Component = 4
+    }
+
+    /// <summary>
     /// A rectangle that defines the position of a glyph within an atlas texture.
     /// </summary>
     [Serializable]
@@ -260,6 +272,11 @@ namespace UnityEngine.TextCore
         /// </summary>
         public int atlasIndex { get { return m_AtlasIndex; } set { m_AtlasIndex = value; } }
 
+        /// <summary>
+        /// Glyph class definition type.
+        /// </summary>
+        public GlyphClassDefinitionType classDefinitionType { get { return m_ClassDefinitionType; } set { m_ClassDefinitionType = value; } }
+
         // =============================================
         // Private backing fields for public properties.
         // =============================================
@@ -283,6 +300,10 @@ namespace UnityEngine.TextCore
         [SerializeField]
         [NativeName("atlasIndex")]
         private int m_AtlasIndex;
+
+        [SerializeField]
+        [NativeName("type")]
+        private GlyphClassDefinitionType m_ClassDefinitionType;
 
         /// <summary>
         /// Constructor for a new glyph.

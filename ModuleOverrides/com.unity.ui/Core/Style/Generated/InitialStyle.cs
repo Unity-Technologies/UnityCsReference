@@ -83,10 +83,10 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.inheritedData.Write().textShadow = default(TextShadow);
             s_InitialStyle.layoutData.Write().top = StyleKeyword.Auto.ToLength();
             s_InitialStyle.transformData.Write().transformOrigin = TransformOrigin.Initial();
-            s_InitialStyle.transitionData.Write().transitionDelay = new List<TimeValue> {0};
-            s_InitialStyle.transitionData.Write().transitionDuration = new List<TimeValue> {0};
-            s_InitialStyle.transitionData.Write().transitionProperty = new List<StylePropertyName> {"all"};
-            s_InitialStyle.transitionData.Write().transitionTimingFunction = new List<EasingFunction> {EasingMode.Ease};
+            s_InitialStyle.transitionData.Write().transitionDelay = new List<TimeValue>{0};
+            s_InitialStyle.transitionData.Write().transitionDuration = new List<TimeValue>{0};
+            s_InitialStyle.transitionData.Write().transitionProperty = new List<StylePropertyName>{"all"};
+            s_InitialStyle.transitionData.Write().transitionTimingFunction = new List<EasingFunction>{EasingMode.Ease};
             s_InitialStyle.transformData.Write().translate = StyleKeyword.None.ToTranslate();
             s_InitialStyle.rareData.Write().unityBackgroundImageTintColor = Color.white;
             s_InitialStyle.rareData.Write().unityBackgroundScaleMode = ScaleMode.StretchToFill;

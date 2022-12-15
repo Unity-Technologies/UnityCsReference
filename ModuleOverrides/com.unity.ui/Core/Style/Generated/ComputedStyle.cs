@@ -112,7 +112,7 @@ namespace UnityEngine.UIElements
         public static ComputedStyle Create(ref ComputedStyle parentStyle)
         {
             ref var initialStyle = ref InitialStyle.Get();
-            var cs = new ComputedStyle {dpiScaling = 1f};
+            var cs = new ComputedStyle{dpiScaling = 1f};
             cs.inheritedData = parentStyle.inheritedData.Acquire();
             cs.layoutData = initialStyle.layoutData.Acquire();
             cs.rareData = initialStyle.rareData.Acquire();
@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
 
         public static ComputedStyle CreateInitial()
         {
-            var cs = new ComputedStyle {dpiScaling = 1f};
+            var cs = new ComputedStyle{dpiScaling = 1f};
             cs.inheritedData = StyleDataRef<InheritedData>.Create();
             cs.layoutData = StyleDataRef<LayoutData>.Create();
             cs.rareData = StyleDataRef<RareData>.Create();
@@ -1391,7 +1391,7 @@ namespace UnityEngine.UIElements
             {
                 case StylePropertyId.Scale:
                     transformData.Write().scale = newValue;
-                    ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Transform);
+                    ve.IncrementVersion(VersionChangeType.Transform);
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Scale' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -123,10 +124,13 @@ namespace UnityEditor.UIElements
             get { return base.value; }
             set
             {
-                base.value = value;
-                if (textValueInput.m_UpdateTextFromValue)
+                if (!EqualityComparer<TValueType>.Default.Equals(rawValue, value))
                 {
-                    text = ValueToString(rawValue);
+                    base.value = value;
+                    if (textValueInput.m_UpdateTextFromValue)
+                    {
+                        text = ValueToString(rawValue);
+                    }
                 }
             }
         }
@@ -314,10 +318,12 @@ namespace UnityEditor.UIElements
                     {
                         // Make sure that empty field gets the default value
                         textValueFieldParent.value = default(TValueType);
+                        UpdateTextFromValue();
                     }
                     else
                     {
                         UpdateValueFromText();
+                        UpdateTextFromValue();
                     }
                 }
                 else if (evt.eventTypeId == FocusEvent.TypeId())
@@ -325,6 +331,7 @@ namespace UnityEditor.UIElements
                     if (textValueFieldParent.showMixedValue)
                     {
                         textValueFieldParent.value = default(TValueType);
+                        UpdateTextFromValue();
                     }
                 }
             }

@@ -451,22 +451,9 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                style.scale = new Scale(value);
+                // This is the older API where Z-scaling doesn't make sense, forcing the value to Vector2.
+                style.scale = new Scale((Vector2)value);
             }
-        }
-
-        internal Vector3 ComputeGlobalScale()
-        {
-            Vector3 result = resolvedStyle.scale.value;
-
-            var ve = this.hierarchy.parent;
-
-            while (ve != null)
-            {
-                result.Scale(ve.resolvedStyle.scale.value);
-                ve = ve.hierarchy.parent;
-            }
-            return result;
         }
 
         Matrix4x4 ITransform.matrix

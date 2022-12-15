@@ -760,23 +760,23 @@ namespace UnityEngine.UIElements
             switch (id)
             {
                 case StylePropertyId.All:
-                    return new string[] {};
+                    return new string[]{};
                 case StylePropertyId.BorderColor:
-                    return new string[] {"border-top-color", "border-right-color", "border-bottom-color", "border-left-color"};
+                    return new string[]{"border-top-color", "border-right-color", "border-bottom-color", "border-left-color"};
                 case StylePropertyId.BorderRadius:
-                    return new string[] {"border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius"};
+                    return new string[]{"border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius"};
                 case StylePropertyId.BorderWidth:
-                    return new string[] {"border-top-width", "border-right-width", "border-bottom-width", "border-left-width"};
+                    return new string[]{"border-top-width", "border-right-width", "border-bottom-width", "border-left-width"};
                 case StylePropertyId.Flex:
-                    return new string[] {"flex-grow", "flex-shrink", "flex-basis"};
+                    return new string[]{"flex-grow", "flex-shrink", "flex-basis"};
                 case StylePropertyId.Margin:
-                    return new string[] {"margin-top", "margin-right", "margin-bottom", "margin-left"};
+                    return new string[]{"margin-top", "margin-right", "margin-bottom", "margin-left"};
                 case StylePropertyId.Padding:
-                    return new string[] {"padding-top", "padding-right", "padding-bottom", "padding-left"};
+                    return new string[]{"padding-top", "padding-right", "padding-bottom", "padding-left"};
                 case StylePropertyId.Transition:
-                    return new string[] {"transition-delay", "transition-duration", "transition-property", "transition-timing-function"};
+                    return new string[]{"transition-delay", "transition-duration", "transition-property", "transition-timing-function"};
                 case StylePropertyId.UnityTextOutline:
-                    return new string[] {"-unity-text-outline-color", "-unity-text-outline-width"};
+                    return new string[]{"-unity-text-outline-color", "-unity-text-outline-width"};
                 default:
                 {
                     Debug.LogAssertion($"Cannot get longhand property names for property id {id}");
@@ -851,7 +851,7 @@ namespace UnityEngine.UIElements
 
         public static StylePropertyId[] GetInheritedProperties()
         {
-            return new[] {StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
+            return new[]{StylePropertyId.Color, StylePropertyId.FontSize, StylePropertyId.LetterSpacing, StylePropertyId.TextShadow, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.WordSpacing};
         }
     }
 }

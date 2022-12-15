@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEditor.Modules;
 using UnityEditorInternal.VR;
 using UnityEngine.Events;
@@ -254,8 +255,8 @@ namespace UnityEditor
             public static readonly string allowUnsafeCodeModified = "Allow 'unsafe' code setting modified";
             public static readonly string apiCompatibilityLevelModified = "API Compatibility level modified";
             public static readonly string useDeterministicCompilationModified = "Use deterministic compilation modified";
-            public static readonly string playerSettingsModified = "Player settings modified";
             public static readonly string additionalCompilerArgumentsModified = "Additional compiler arguments modified";
+            public static readonly string activeBuildTargetGroupModified = "Active build target group modified";
         }
 
         PlayerSettingsSplashScreenEditor m_SplashScreenEditor;
@@ -466,7 +467,6 @@ namespace UnityEditor
         bool serializedSuppressCommonWarnings = true;
         bool serializedAllowUnsafeCode = false;
         string serializedScriptingDefines;
-        ApiCompatibilityLevel serializedAPICompatibilityLevel;
         bool serializedUseDeterministicCompilation;
 
         List<string> scriptingDefinesList;
@@ -478,6 +478,7 @@ namespace UnityEditor
         ReorderableList additionalCompilerArgumentsReorderableList;
 
         ISettingEditorExtension[] m_SettingsExtensions;
+        private HashSet<string> m_Reasons = new HashSet<string>();
 
         // Section animation state
         const int kNumberGUISections = 6;
@@ -490,7 +491,6 @@ namespace UnityEditor
         bool isPreset = false;
         bool isPresetWindowOpen = false;
         bool hasPresetWindowClosed = false;
-        bool scriptRecompileRequired = false;
 
         public SerializedProperty FindPropertyAssert(string name)
         {
@@ -668,7 +668,6 @@ namespace UnityEditor
             serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
             serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(namedBuildTarget);
             serializedScriptingDefines = GetScriptingDefineSymbolsForGroup(namedBuildTarget);
-            serializedAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(namedBuildTarget);
             serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
 
             InitReorderableScriptingDefineSymbolsList(namedBuildTarget);
@@ -682,7 +681,7 @@ namespace UnityEditor
                 if (EditorUtility.DisplayDialog("Scripting Define Symbols Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
                 {
                     SetScriptingDefineSymbolsForGroup(lastNamedBuildTarget, scriptingDefinesList.ToArray());
-                    RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
+                    SetReason(RecompileReason.scriptingDefineSymbolsModified);
                 }
 
                 hasScriptingDefinesBeenModified = false;
@@ -693,10 +692,16 @@ namespace UnityEditor
                 if (EditorUtility.DisplayDialog("Additional Compiler Arguments Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
                 {
                     SetAdditionalCompilerArgumentsForGroup(lastNamedBuildTarget, additionalCompilerArgumentsList.ToArray());
-                    RecompileScripts(RecompileReason.additionalCompilerArgumentsModified);
+                    SetReason(RecompileReason.additionalCompilerArgumentsModified);
                 }
 
                 hasAdditionalCompilerArgumentsBeenModified = false;
+            }
+
+            if (HasReasonToCompile())
+            {
+                serializedObject.ApplyModifiedProperties();
+                RecompileScripts();
             }
 
             // Ensure script compilation handling is returned to to EditorOnlyPlayerSettings
@@ -739,8 +744,7 @@ namespace UnityEditor
             if (isPreset)
                 return;
 
-            var selectors = Resources.FindObjectsOfTypeAll<PresetSelector>();
-            var isOpen = selectors != null && selectors.Length > 0;
+            bool isOpen = PresetEditorHelper.presetEditorOpen;
             hasPresetWindowClosed = (isPresetWindowOpen && !isOpen);
             isPresetWindowOpen = isOpen;
 
@@ -748,98 +752,54 @@ namespace UnityEditor
                 PlayerSettings.isHandlingScriptRecompile = false;
         }
 
-        private void CheckConsistency(BuildPlatform platform)
+        private void SetReason(string reason)
         {
             if (isPreset)
+            {
                 return;
-
-            // Scripting define symbols
-            var currentDefines = GetScriptingDefineSymbolsForGroup(platform.namedBuildTarget);
-            if (serializedScriptingDefines != currentDefines)
-            {
-                if (!hasScriptingDefinesBeenModified)
-                {
-                    serializedScriptingDefines = currentDefines;
-                    UpdateScriptingDefineSymbolsLists();
-                }
-
-                if (platform.IsActive())
-                    scriptRecompileRequired = true;
             }
 
-            // Additional compiler arguments
-            var currentAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(platform.namedBuildTarget);
-            if (!serializedAdditionalCompilerArguments.SequenceEqual(currentAdditionalCompilerArguments))
-            {
-                if (!hasAdditionalCompilerArgumentsBeenModified)
-                {
-                    serializedAdditionalCompilerArguments = currentAdditionalCompilerArguments;
-                    UpdateAdditionalCompilerArgumentsLists();
-                }
-
-                if (platform.IsActive())
-                    scriptRecompileRequired = true;
-            }
-
-            // API compatibility level
-            var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
-            if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
-            {
-                serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
-                if (platform.IsActive())
-                    scriptRecompileRequired = true;
-            }
-
-            // Use determinisitc compilation
-            if (serializedUseDeterministicCompilation != m_UseDeterministicCompilation.boolValue)
-            {
-                serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
-                scriptRecompileRequired = true;
-            }
-
-            // Allow unsafe code
-            if (serializedAllowUnsafeCode != m_AllowUnsafeCode.boolValue)
-            {
-                serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
-                scriptRecompileRequired = true;
-            }
-
-            // Stack trace log type
-            foreach (LogType logType in Enum.GetValues(typeof(LogType)))
-            {
-                var globalLogType = PlayerSettings.GetGlobalStackTraceLogType(logType);
-                var serializedLogType = (StackTraceLogType)m_StackTraceTypes.GetArrayElementAtIndex((int)logType).intValue;
-
-                if (serializedLogType != globalLogType)
-                    PlayerSettings.SetGlobalStackTraceLogType(logType, serializedLogType);
-            }
+            m_Reasons.Add(reason);
         }
 
-        private void RecompileScripts(string reason)
+        private string ConvertReasonsToString()
         {
-            if (isPreset)
-                return;
+            var sb = new StringBuilder();
+            foreach (var reason in m_Reasons)
+            {
+                sb.AppendLine(reason);
+            }
 
-            if (isPresetWindowOpen)
+            return sb.ToString();
+        }
+
+        private void RecompileScripts()
+        {
+            if (isPreset || isPresetWindowOpen)
             {
-                scriptRecompileRequired = true;
+                return;
             }
-            else
-            {
-                scriptRecompileRequired = false;
-                PlayerSettings.RecompileScripts(reason);
-            }
+
+            var reasons = ConvertReasonsToString();
+            PlayerSettings.RecompileScripts(reasons);
+            m_Reasons.Clear();
+        }
+
+        private bool HasReasonToCompile()
+        {
+            return m_Reasons.Count > 0;
         }
 
         private void OnPresetSelectorClosed()
         {
+            hasPresetWindowClosed = false;
+
             if (isPreset)
                 return;
 
-            if (scriptRecompileRequired)
+            if (HasReasonToCompile())
             {
-                PlayerSettings.RecompileScripts(RecompileReason.playerSettingsModified);
-                scriptRecompileRequired = false;
+                RecompileScripts();
             }
 
             PlayerSettings.isHandlingScriptRecompile = true;
@@ -883,7 +843,6 @@ namespace UnityEditor
             if (!isPreset)
             {
                 CheckUpdatePresetSelectorStatus();
-                CheckConsistency(platform);
             }
 
             GUILayout.Label(string.Format(L10n.Tr("Settings for {0}"), validPlatforms[selectedPlatformValue].title.text));
@@ -920,7 +879,10 @@ namespace UnityEditor
             if (hasPresetWindowClosed)
             {
                 OnPresetSelectorClosed();
-                hasPresetWindowClosed = false;
+            }
+            else if (HasReasonToCompile())
+            {
+                RecompileScripts();
             }
         }
 
@@ -2527,6 +2489,17 @@ namespace UnityEditor
                 return (ApiCompatibilityLevel)m_DefaultAPICompatibilityLevel.intValue;
         }
 
+        private void SetApiCompatibilityLevelForTarget(
+            string targetName,
+            ApiCompatibilityLevel apiCompatibilityLevel)
+        {
+            if (m_APICompatibilityLevel.TryGetMapEntry(targetName, out _))
+                m_APICompatibilityLevel.SetMapValue(targetName, (int)apiCompatibilityLevel);
+            else
+                // See comment in EditorOnlyPlayerSettings regarding defaultApiCompatibilityLevel
+                m_DefaultAPICompatibilityLevel.intValue = (int) apiCompatibilityLevel;
+        }
+
         private void OtherSectionConfigurationGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
         {
             // Configuration
@@ -2587,20 +2560,21 @@ namespace UnityEditor
                         {
                             var currentAPICompatibilityLevel = GetApiCompatibilityLevelForTarget(platform.namedBuildTarget);
                             var availableCompatibilityLevels = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_Unity_4_8, ApiCompatibilityLevel.NET_Standard };
-                            currentAPICompatibilityLevel = BuildEnumPopup(
+                            var newAPICompatibilityLevel = BuildEnumPopup(
                                 SettingsContent.apiCompatibilityLevel,
                                 currentAPICompatibilityLevel,
                                 availableCompatibilityLevels,
                                 GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels)
                             );
 
-                            if (serializedAPICompatibilityLevel != currentAPICompatibilityLevel)
+                            if (newAPICompatibilityLevel != currentAPICompatibilityLevel)
                             {
-                                m_APICompatibilityLevel.SetMapValue(platform.namedBuildTarget.TargetName, (int)currentAPICompatibilityLevel);
-                                serializedAPICompatibilityLevel = currentAPICompatibilityLevel;
+                                SetApiCompatibilityLevelForTarget(platform.namedBuildTarget.TargetName, newAPICompatibilityLevel);
 
                                 if (platform.IsActive())
-                                    RecompileScripts(RecompileReason.apiCompatibilityLevelModified);
+                                {
+                                    SetReason(RecompileReason.apiCompatibilityLevelModified);
+                                }
                             }
                         }
                     }
@@ -2851,7 +2825,7 @@ namespace UnityEditor
                             UpdateScriptingDefineSymbolsLists();
 
                             if (platform.IsActive())
-                                RecompileScripts(RecompileReason.scriptingDefineSymbolsModified);
+                                SetReason(RecompileReason.scriptingDefineSymbolsModified);
                         }
 
                         // Set previous GUIState
@@ -2895,7 +2869,7 @@ namespace UnityEditor
 
                                     if (platform.IsActive())
                                     {
-                                        RecompileScripts(RecompileReason.additionalCompilerArgumentsModified);
+                                        SetReason(RecompileReason.additionalCompilerArgumentsModified);
                                     }
                                 }
                             }
@@ -2909,7 +2883,7 @@ namespace UnityEditor
             if (serializedSuppressCommonWarnings != m_SuppressCommonWarnings.boolValue)
             {
                 serializedSuppressCommonWarnings = m_SuppressCommonWarnings.boolValue;
-                RecompileScripts(RecompileReason.suppressCommonWarningsModified);
+                SetReason(RecompileReason.suppressCommonWarningsModified);
             }
 
             // Allow unsafe code
@@ -2917,7 +2891,7 @@ namespace UnityEditor
             if (serializedAllowUnsafeCode != m_AllowUnsafeCode.boolValue)
             {
                 serializedAllowUnsafeCode = m_AllowUnsafeCode.boolValue;
-                RecompileScripts(RecompileReason.allowUnsafeCodeModified);
+                SetReason(RecompileReason.allowUnsafeCodeModified);
             }
 
             // Use deterministic compliation
@@ -2925,7 +2899,7 @@ namespace UnityEditor
             if (serializedUseDeterministicCompilation != m_UseDeterministicCompilation.boolValue)
             {
                 serializedUseDeterministicCompilation = m_UseDeterministicCompilation.boolValue;
-                RecompileScripts(RecompileReason.useDeterministicCompilationModified);
+                SetReason(RecompileReason.useDeterministicCompilationModified);
             }
 
             EditorGUILayout.PropertyField(m_EnableRoslynAnalyzers, SettingsContent.enableRoslynAnalyzers);

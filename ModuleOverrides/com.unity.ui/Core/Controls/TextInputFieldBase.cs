@@ -502,6 +502,12 @@ namespace UnityEngine.UIElements
                 parentTextField.value = newValue;
             }
 
+            internal void UpdateTextFromValue()
+            {
+                TextInputBaseField<TValueType> parentTextField = (TextInputBaseField<TValueType>)parent;
+                text = parentTextField.ValueToString(parentTextField.rawValue);
+            }
+
             /// <summary>
             /// This is the cursor index in the text presented.
             /// </summary>

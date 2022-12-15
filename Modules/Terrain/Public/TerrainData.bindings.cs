@@ -1006,6 +1006,12 @@ namespace UnityEngine
         [NativeName(k_SplatDatabasePrefix + "SyncGPUModifications")]
         private extern void Internal_SyncAlphamaps();
 
+        extern internal TextureFormat atlasFormat
+        {
+            [NativeName(k_DetailDatabasePrefix + "GetAtlasTexture()->GetTextureFormat")]
+            get;
+        }
+
         internal extern Terrain[] users
         {
             get;

@@ -24,6 +24,7 @@ namespace UnityEngine.VFX
     {
         private IntPtr m_Ptr;
         private bool m_Owner;
+        private VFXEventAttribute m_WrapEventAttribute;
 
         public VFXSpawnerState() : this(Internal_Create(), true)
         {
@@ -41,17 +42,32 @@ namespace UnityEngine.VFX
         internal static VFXSpawnerState CreateSpawnerStateWrapper()
         {
             var spawnerState = new VFXSpawnerState(IntPtr.Zero, false);
+            spawnerState.PrepareWrapper();
             return spawnerState;
         }
 
-        [RequiredByNativeCode]
-        internal void SetWrapValue(IntPtr ptr)
+        void PrepareWrapper()
         {
             if (m_Owner)
-            {
                 throw new Exception("VFXSpawnerState : SetWrapValue is reserved to CreateWrapper object");
-            }
-            m_Ptr = ptr;
+
+            if (m_WrapEventAttribute != null)
+                throw new Exception("VFXSpawnerState : Unexpected calling twice prepare wrapper");
+
+            m_WrapEventAttribute = VFXEventAttribute.CreateEventAttributeWrapper();
+        }
+
+        [RequiredByNativeCode]
+        internal void SetWrapValue(IntPtr ptrToSpawnerState, IntPtr ptrToEventAttribute)
+        {
+            if (m_Owner)
+                throw new Exception("VFXSpawnerState : SetWrapValue is reserved to CreateWrapper object");
+
+            if (m_WrapEventAttribute == null)
+                throw new Exception("VFXSpawnerState : Missing PrepareWrapper");
+
+            m_Ptr = ptrToSpawnerState;
+            m_WrapEventAttribute.SetWrapValue(ptrToEventAttribute);
         }
 
         internal IntPtr GetPtr()
@@ -66,6 +82,7 @@ namespace UnityEngine.VFX
                 Internal_Destroy(m_Ptr);
             }
             m_Ptr = IntPtr.Zero;
+            m_WrapEventAttribute = null;
         }
 
         ~VFXSpawnerState()
@@ -103,6 +120,19 @@ namespace UnityEngine.VFX
         extern public float delayAfterLoop { get; set; }
         extern public int loopIndex { get; set; }
         extern public int loopCount { get; set; }
-        extern public VFXEventAttribute vfxEventAttribute { get; }
+
+        extern internal VFXEventAttribute Internal_GetVFXEventAttribute();
+
+        public VFXEventAttribute vfxEventAttribute
+        {
+            get
+            {
+                if (!m_Owner && m_WrapEventAttribute != null)
+                    return m_WrapEventAttribute;
+
+                //Default fallback, it will allocate a new VFXEventAttribute
+                return Internal_GetVFXEventAttribute();
+            }
+        }
     }
 }

@@ -88,6 +88,8 @@ namespace UnityEngine.Device
 
         public static bool supportsCubemapArrayTextures => ShimManager.systemInfoShim.supportsCubemapArrayTextures;
 
+        public static bool supportsAnisotropicFilter => ShimManager.systemInfoShim.supportsAnisotropicFilter;
+
         public static Rendering.CopyTextureSupport copyTextureSupport => ShimManager.systemInfoShim.copyTextureSupport;
 
         public static bool supportsComputeShaders => ShimManager.systemInfoShim.supportsComputeShaders;
@@ -151,6 +153,8 @@ namespace UnityEngine.Device
         public static int maxTextureArraySlices => ShimManager.systemInfoShim.maxTextureArraySlices;
 
         public static int maxCubemapSize => ShimManager.systemInfoShim.maxCubemapSize;
+
+        public static int maxAnisotropyLevel => ShimManager.systemInfoShim.maxAnisotropyLevel;
 
         public static int maxComputeBufferInputsVertex => ShimManager.systemInfoShim.maxComputeBufferInputsVertex;
 

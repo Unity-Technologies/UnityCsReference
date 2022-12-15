@@ -140,6 +140,7 @@ namespace UnityEditor.Presets
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             m_ModalUndoGroup = Undo.GetCurrentGroup();
+            PresetEditorHelper.presetEditorOpen = true;
 
             // Freeze to prevent flicker on OSX.
             // Screen will be updated again when calling
@@ -322,6 +323,7 @@ namespace UnityEditor.Presets
             }
 
             Undo.CollapseUndoOperations(m_ModalUndoGroup);
+            PresetEditorHelper.presetEditorOpen = false;
         }
 
         void OnDestroy()

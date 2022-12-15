@@ -12,6 +12,9 @@ using UnityEngine.Profiling;
 
 namespace UnityEngine.TextCore.LowLevel
 {
+    /// <summary>
+    /// Flags taken from freetype.h
+    /// </summary>
     [UsedByNativeCode]
     [Flags]
     public enum GlyphLoadFlags
@@ -32,7 +35,7 @@ namespace UnityEngine.TextCore.LowLevel
         //LOAD_LINEAR_DESIGN = 1 << 13,
         LOAD_NO_AUTOHINT = 1 << 15,
         /* Bits 16-19 are used by `LOAD_TARGET_' */
-        //LOAD_COLOR = 1 << 20,
+        LOAD_COLOR = 1 << 20,
         LOAD_COMPUTE_METRICS = 1 << 21,
         LOAD_BITMAP_METRICS_ONLY = 1 << 22
     }
@@ -63,6 +66,8 @@ namespace UnityEngine.TextCore.LowLevel
         RASTER_MODE_8X          = 0x2000,
         RASTER_MODE_16X         = 0x4000,
         RASTER_MODE_32X         = 0x8000,
+
+        RASTER_MODE_COLOR       = 0x10000,
     }
 
     /// <summary>
@@ -96,6 +101,9 @@ namespace UnityEngine.TextCore.LowLevel
         Atlas_Generation_Cancelled  = 0x64,
         Invalid_SharedTextureData   = 0x65,
 
+        // OpenType Layout related errors.
+        OpenTypeLayoutLookup_Mismatch = 0x74,
+
         // Additional errors codes will be added as necessary to cover new FontEngine features and functionality.
     }
 
@@ -105,21 +113,22 @@ namespace UnityEngine.TextCore.LowLevel
     [UsedByNativeCode]
     public enum GlyphRenderMode
     {
-        SMOOTH_HINTED = GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_8BIT | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
-        SMOOTH = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_8BIT | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
+        SMOOTH_HINTED   = GlyphRasterModes.RASTER_MODE_HINTED     | GlyphRasterModes.RASTER_MODE_8BIT  | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
+        SMOOTH          = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_8BIT  | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
 
-        RASTER_HINTED = GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
-        RASTER = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
+        COLOR_HINTED    = GlyphRasterModes.RASTER_MODE_HINTED     | GlyphRasterModes.RASTER_MODE_COLOR | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
+        COLOR           = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_COLOR | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
 
-        SDF = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_1X,
-        SDF8 = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_8X,
-        SDF16 = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_16X,
-        SDF32 = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO | GlyphRasterModes.RASTER_MODE_SDF | GlyphRasterModes.RASTER_MODE_32X,
+        RASTER_HINTED   = GlyphRasterModes.RASTER_MODE_HINTED     | GlyphRasterModes.RASTER_MODE_MONO  | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
+        RASTER          = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO  | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
 
-        SDFAA_HINTED = GlyphRasterModes.RASTER_MODE_HINTED | GlyphRasterModes.RASTER_MODE_8BIT | GlyphRasterModes.RASTER_MODE_SDFAA | GlyphRasterModes.RASTER_MODE_1X,
-        SDFAA = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_8BIT | GlyphRasterModes.RASTER_MODE_SDFAA | GlyphRasterModes.RASTER_MODE_1X,
-        //MSDF  = RasterModes.RASTER_MODE_HINTED | RasterModes.RASTER_MODE_8BIT | RasterModes.RASTER_MODE_MSDF | RasterModes.RASTER_MODE_1X,
-        //MSDFA = RasterModes.RASTER_MODE_HINTED | RasterModes.RASTER_MODE_8BIT | RasterModes.RASTER_MODE_MSDFA | RasterModes.RASTER_MODE_1X,
+        SDF             = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO  | GlyphRasterModes.RASTER_MODE_SDF    | GlyphRasterModes.RASTER_MODE_1X,
+        SDF8            = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO  | GlyphRasterModes.RASTER_MODE_SDF    | GlyphRasterModes.RASTER_MODE_8X,
+        SDF16           = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO  | GlyphRasterModes.RASTER_MODE_SDF    | GlyphRasterModes.RASTER_MODE_16X,
+        SDF32           = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_MONO  | GlyphRasterModes.RASTER_MODE_SDF    | GlyphRasterModes.RASTER_MODE_32X,
+
+        SDFAA_HINTED    = GlyphRasterModes.RASTER_MODE_HINTED     | GlyphRasterModes.RASTER_MODE_8BIT  | GlyphRasterModes.RASTER_MODE_SDFAA  | GlyphRasterModes.RASTER_MODE_1X,
+        SDFAA           = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_8BIT  | GlyphRasterModes.RASTER_MODE_SDFAA  | GlyphRasterModes.RASTER_MODE_1X,
     }
 
     /// <summary>
@@ -140,10 +149,11 @@ namespace UnityEngine.TextCore.LowLevel
     /// </summary>
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [System.Diagnostics.DebuggerDisplay("{familyName} - {styleName}")]
     internal struct FontReference
     {
         /// <summary>
-        /// The family name of the font.
+        /// The family name of the font face.
         /// </summary>
         public string familyName;
 
@@ -153,7 +163,7 @@ namespace UnityEngine.TextCore.LowLevel
         public string styleName;
 
         /// <summary>
-        /// The face index of the face face matching this style name.
+        /// The index of the font face.
         /// </summary>
         public int faceIndex;
 
@@ -176,7 +186,18 @@ namespace UnityEngine.TextCore.LowLevel
         private static GlyphRect[] s_FreeGlyphRects = new GlyphRect[16];
         private static GlyphRect[] s_UsedGlyphRects = new GlyphRect[16];
 
+        private static GlyphAdjustmentRecord[] s_SingleAdjustmentRecords_MarshallingArray;
+
+        private static SingleSubstitutionRecord[] s_SingleSubstitutionRecords_MarshallingArray;
+        private static MultipleSubstitutionRecord[] s_MultipleSubstitutionRecords_MarshallingArray;
+        private static AlternateSubstitutionRecord[] s_AlternateSubstitutionRecords_MarshallingArray;
+        private static LigatureSubstitutionRecord[] s_LigatureSubstitutionRecords_MarshallingArray;
+        private static ContextualSubstitutionRecord[] s_ContextualSubstitutionRecords_MarshallingArray;
+        private static ChainingContextualSubstitutionRecord[] s_ChainingContextualSubstitutionRecords_MarshallingArray;
+
         private static GlyphPairAdjustmentRecord[] s_PairAdjustmentRecords_MarshallingArray;
+        private static MarkToBaseAdjustmentRecord[] s_MarkToBaseAdjustmentRecords_MarshallingArray;
+        private static MarkToMarkAdjustmentRecord[] s_MarkToMarkAdjustmentRecords_MarshallingArray;
 
         private static Dictionary<uint, Glyph> s_GlyphLookupDictionary = new Dictionary<uint, Glyph>();
 
@@ -535,6 +556,15 @@ namespace UnityEngine.TextCore.LowLevel
 
         [NativeMethod(Name = "TextCore::FontEngine::GetFontFaces", IsThreadSafe = true, IsFreeFunction = true)]
         static extern string[] GetFontFaces_Internal();
+
+        /// <summary>
+        /// Get the index of the glyph for the given character Unicode as modified by the variant selector.
+        /// </summary>
+        /// <param name="unicode">The Unicode value of the character for which to lookup the glyph index.</param>
+        /// <param name="variantSelectorUnicode">The Unicode value of the variant selector.</param>
+        /// <returns>Returns the index of the glyph used by the character using the Unicode value as modified by the variant selector. Returns zero if no glyph variant exists for the given Unicode value.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetVariantGlyphIndex", IsThreadSafe = true, IsFreeFunction = true)]
+        internal static extern uint GetVariantGlyphIndex(uint unicode, uint variantSelectorUnicode);
 
         /// <summary>
         /// Get the index of the glyph for the character mapped at Unicode value.
@@ -1170,15 +1200,7 @@ namespace UnityEngine.TextCore.LowLevel
 
             // Make sure marshalling glyph index array allocations are appropriate.
             if (s_GlyphIndexes_MarshallingArray_A == null || s_GlyphIndexes_MarshallingArray_A.Length < glyphCount)
-            {
-                if (s_GlyphIndexes_MarshallingArray_A == null)
-                    s_GlyphIndexes_MarshallingArray_A = new uint[glyphCount];
-                else
-                {
-                    int newSize = Mathf.NextPowerOfTwo(glyphCount + 1);
-                    s_GlyphIndexes_MarshallingArray_A = new uint[newSize];
-                }
-            }
+                s_GlyphIndexes_MarshallingArray_A = new uint[Mathf.NextPowerOfTwo(glyphCount + 1)];
 
             // Determine potential total allocations required for glyphs and glyph rectangles.
             int freeGlyphRectCount = freeGlyphRects.Count;
@@ -1261,18 +1283,463 @@ namespace UnityEngine.TextCore.LowLevel
         // OPENTYPE RELATED FEATURES AND FUNCTIONS
         // ================================================
 
-        [NativeMethod(Name = "TextCore::FontEngine::GetOpenTypeFontFeatures", IsFreeFunction = true)]
-        internal extern static int GetOpenTypeFontFeatureTable();
+        /// <summary>
+        /// Get the specified OpenType Layout table.
+        /// </summary>
+        /// <param name="type">The type of the table.</param>
+        /// <returns>The OpenType Layout table.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetOpenTypeLayoutTable", IsFreeFunction = true)]
+        internal extern static OTL_Table GetOpenTypeLayoutTable(OTL_TableType type);
 
         /// <summary>
-        /// Internal function used to retrieve positional adjustments for pairs of glyphs.
+        /// Get OpenType Layout scripts for the currently loaded font.
         /// </summary>
-        /// <param name="glyphIndexes">List of glyph indexes to check for potential positional adjustment records.</param>
+        /// <returns></returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetOpenTypeLayoutScripts", IsFreeFunction = true)]
+        internal extern static OTL_Script[] GetOpenTypeLayoutScripts();
+
+        /// <summary>
+        /// Get OpenType Layout features for the currently loaded font.
+        /// </summary>
+        /// <returns></returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetOpenTypeLayoutFeatures", IsFreeFunction = true)]
+        internal extern static OTL_Feature[] GetOpenTypeLayoutFeatures();
+
+        /// <summary>
+        /// Get OpenType Layout lookups for the currently loaded font.
+        /// </summary>
+        /// <returns></returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetOpenTypeLayoutLookups", IsFreeFunction = true)]
+        internal extern static OTL_Lookup[] GetOpenTypeLayoutLookups();
+
+        // Required to prevent compilation errors on TMP 3.20.0 Preview 3.
+        internal static OpenTypeFeature[] GetOpenTypeFontFeatureList() => throw new NotImplementedException();
+
+        // ================================================
+        // GSUB FONT FEATURES
+        // ================================================
+
+        #region SINGLE SUBSTITUTION
+        /// <summary>
+        /// Retrieve all single substitution records.
+        /// </summary>
+        /// <returns>An array that contains all single substitution records.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetAllSingleSubstitutionRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static SingleSubstitutionRecord[] GetAllSingleSubstitutionRecords();
+
+        /// <summary>
+        /// Internal function used to retrieve potential Single Substitution records for the given glyph index.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential subsitution records.</param>
+        /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the given glyph index.</returns>
+        internal static SingleSubstitutionRecord[] GetSingleSubstitutionRecords(int lookupIndex, uint glyphIndex)
+        {
+            GlyphIndexToMarshallingArray(glyphIndex, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetSingleSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve Single Substitution records for the given list of glyphs.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential substitution records.</param>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the provide list of glyph indexes.</returns>
+        internal static SingleSubstitutionRecord[] GetSingleSubstitutionRecords(int lookupIndex, List<uint> glyphIndexes)
+        {
+            // Copy source list data to array of same type.
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetSingleSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        private static SingleSubstitutionRecord[] GetSingleSubstitutionRecords(int lookupIndex, uint[] glyphIndexes)
+        {
+            PopulateSingleSubstitutionRecordMarshallingArray_from_GlyphIndexes(glyphIndexes, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_SingleSubstitutionRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetSingleSubstitutionRecordsFromMarshallingArray(s_SingleSubstitutionRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_SingleSubstitutionRecords_MarshallingArray[recordCount] = new SingleSubstitutionRecord();
+
+            return s_SingleSubstitutionRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateSingleSubstitutionRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateSingleSubstitutionRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, int lookupIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetSingleSubstitutionRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetSingleSubstitutionRecordsFromMarshallingArray([Out] SingleSubstitutionRecord[] singleSubstitutionRecords);
+        #endregion
+
+        #region MULTIPLE SUBSTITUTION
+        /// <summary>
+        /// Retrieve all MultipleSubstitution records.
+        /// </summary>
+        /// <returns>An array that contains all MultipleSubstitution records.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetAllMultipleSubstitutionRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static MultipleSubstitutionRecord[] GetAllMultipleSubstitutionRecords();
+
+        /// <summary>
+        /// Internal function used to retrieve potential MultipleSubstitution records for the given glyph index.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential subsitution records.</param>
+        /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the given glyph index.</returns>
+        internal static MultipleSubstitutionRecord[] GetMultipleSubstitutionRecords(int lookupIndex, uint glyphIndex)
+        {
+            GlyphIndexToMarshallingArray(glyphIndex, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetMultipleSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve MultipleSubstitution records for the given list of glyphs.
+        /// </summary>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the provide list of glyph indexes.</returns>
+        internal static MultipleSubstitutionRecord[] GetMultipleSubstitutionRecords(int lookupIndex, List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetMultipleSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        private static MultipleSubstitutionRecord[] GetMultipleSubstitutionRecords(int lookupIndex, uint[] glyphIndexes)
+        {
+            PopulateMultipleSubstitutionRecordMarshallingArray_from_GlyphIndexes(glyphIndexes, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_MultipleSubstitutionRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetMultipleSubstitutionRecordsFromMarshallingArray(s_MultipleSubstitutionRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_MultipleSubstitutionRecords_MarshallingArray[recordCount] = new MultipleSubstitutionRecord();
+
+            return s_MultipleSubstitutionRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateMultipleSubstitutionRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateMultipleSubstitutionRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, int lookupIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetMultipleSubstitutionRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetMultipleSubstitutionRecordsFromMarshallingArray([Out] MultipleSubstitutionRecord[] substitutionRecords);
+
+        #endregion
+
+        #region ALTERNATE SUBSTITUTION
+        /// <summary>
+        /// Retrieve all alternate substitution records.
+        /// </summary>
+        /// <returns>An array that contains all alternate substitution records.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetAllAlternateSubstitutionRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static AlternateSubstitutionRecord[] GetAllAlternateSubstitutionRecords();
+
+        /// <summary>
+        /// Internal function used to retrieve potential Alternate Substitution records for the given glyph index.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential subsitution records.</param>
+        /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the given glyph index.</returns>
+        internal static AlternateSubstitutionRecord[] GetAlternateSubstitutionRecords(int lookupIndex, uint glyphIndex)
+        {
+            GlyphIndexToMarshallingArray(glyphIndex, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetAlternateSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve Alternate Substitution records for the given list of glyphs.
+        /// </summary>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the provide list of glyph indexes.</returns>
+        internal static AlternateSubstitutionRecord[] GetAlternateSubstitutionRecords(int lookupIndex, List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetAlternateSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        private static AlternateSubstitutionRecord[] GetAlternateSubstitutionRecords(int lookupIndex, uint[] glyphIndexes)
+        {
+            PopulateAlternateSubstitutionRecordMarshallingArray_from_GlyphIndexes(glyphIndexes, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_AlternateSubstitutionRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetAlternateSubstitutionRecordsFromMarshallingArray(s_AlternateSubstitutionRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_AlternateSubstitutionRecords_MarshallingArray[recordCount] = new AlternateSubstitutionRecord();
+
+            return s_AlternateSubstitutionRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateAlternateSubstitutionRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateAlternateSubstitutionRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, int lookupIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetAlternateSubstitutionRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetAlternateSubstitutionRecordsFromMarshallingArray([Out] AlternateSubstitutionRecord[] singleSubstitutionRecords);
+
+        #endregion
+
+        #region LIGATURE
+        /// <summary>
+        /// Retrieve all ligature substitution records.
+        /// </summary>
+        /// <returns>An array that contains all ligature substitution records.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetAllLigatureSubstitutionRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static LigatureSubstitutionRecord[] GetAllLigatureSubstitutionRecords();
+
+        /// <summary>
+        /// Internal function used to retrieve potential ligature substitution records for the given glyph index.
+        /// </summary>
+        /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the given glyph index.</returns>
+        internal static LigatureSubstitutionRecord[] GetLigatureSubstitutionRecords(uint glyphIndex)
+        {
+            GlyphIndexToMarshallingArray(glyphIndex, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetLigatureSubstitutionRecords(s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve potential ligature substitution records for the provided list of glyph indexes.
+        /// </summary>
+        /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the provided list of glyph indexes.</returns>
+        internal static LigatureSubstitutionRecord[] GetLigatureSubstitutionRecords(List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetLigatureSubstitutionRecords(s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve potential ligature substitution records for the given glyph index.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential subsitution records.</param>
+        /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the given glyph index.</returns>
+        internal static LigatureSubstitutionRecord[] GetLigatureSubstitutionRecords(int lookupIndex, uint glyphIndex)
+        {
+            GlyphIndexToMarshallingArray(glyphIndex, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetLigatureSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve potential ligature substitution records for the provided list of glyph indexes.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the Lookup table from which to retrieve the potential subsitution records.</param>
+        /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the provided list of glyph indexes.</returns>
+        internal static LigatureSubstitutionRecord[] GetLigatureSubstitutionRecords(int lookupIndex, List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetLigatureSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        private static LigatureSubstitutionRecord[] GetLigatureSubstitutionRecords(uint[] glyphIndexes)
+        {
+            PopulateLigatureSubstitutionRecordMarshallingArray(glyphIndexes, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_LigatureSubstitutionRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetLigatureSubstitutionRecordsFromMarshallingArray(s_LigatureSubstitutionRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_LigatureSubstitutionRecords_MarshallingArray[recordCount] = new LigatureSubstitutionRecord();
+
+            return s_LigatureSubstitutionRecords_MarshallingArray;
+        }
+
+        private static LigatureSubstitutionRecord[] GetLigatureSubstitutionRecords(int lookupIndex, uint[] glyphIndexes)
+        {
+            PopulateLigatureSubstitutionRecordMarshallingArray_for_LookupIndex(glyphIndexes, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_LigatureSubstitutionRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetLigatureSubstitutionRecordsFromMarshallingArray(s_LigatureSubstitutionRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_LigatureSubstitutionRecords_MarshallingArray[recordCount] = new LigatureSubstitutionRecord();
+
+            return s_LigatureSubstitutionRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateLigatureSubstitutionRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateLigatureSubstitutionRecordMarshallingArray(uint[] glyphIndexes, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateLigatureSubstitutionRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateLigatureSubstitutionRecordMarshallingArray_for_LookupIndex(uint[] glyphIndexes, int lookupIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetLigatureSubstitutionRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetLigatureSubstitutionRecordsFromMarshallingArray([Out] LigatureSubstitutionRecord[] ligatureSubstitutionRecords);
+        #endregion
+
+        #region CONTEXTUAL SUBSTITUTION
+        /// <summary>
+        /// Retrieve all MultipleSubstitution records.
+        /// </summary>
+        /// <returns>An array that contains all MultipleSubstitution records.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetAllContextualSubstitutionRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static ContextualSubstitutionRecord[] GetAllContextualSubstitutionRecords();
+
+        /// <summary>
+        /// Internal function used to retrieve potential ContextualSubstitution records for the given glyph index.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential subsitution records.</param>
+        /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the given glyph index.</returns>
+        internal static ContextualSubstitutionRecord[] GetContextualSubstitutionRecords(int lookupIndex, uint glyphIndex)
+        {
+            GlyphIndexToMarshallingArray(glyphIndex, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetContextualSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve MultipleSubstitution records for the given list of glyphs.
+        /// </summary>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the provide list of glyph indexes.</returns>
+        internal static ContextualSubstitutionRecord[] GetContextualSubstitutionRecords(int lookupIndex, List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetContextualSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        private static ContextualSubstitutionRecord[] GetContextualSubstitutionRecords(int lookupIndex, uint[] glyphIndexes)
+        {
+            PopulateContextualSubstitutionRecordMarshallingArray_from_GlyphIndexes(glyphIndexes, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_ContextualSubstitutionRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetContextualSubstitutionRecordsFromMarshallingArray(s_ContextualSubstitutionRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_ContextualSubstitutionRecords_MarshallingArray[recordCount] = new ContextualSubstitutionRecord();
+
+            return s_ContextualSubstitutionRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateContextualSubstitutionRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateContextualSubstitutionRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, int lookupIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetContextualSubstitutionRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetContextualSubstitutionRecordsFromMarshallingArray([Out] ContextualSubstitutionRecord[] substitutionRecords);
+
+        #endregion
+
+        #region CHAINING CONTEXTUAL SUBSTITUTION
+        /// <summary>
+        /// Retrieve all ChainingContextualSubstitution records.
+        /// </summary>
+        /// <returns>An array that contains all ChainingContextualSubstitution records.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetAllChainingContextualSubstitutionRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static ChainingContextualSubstitutionRecord[] GetAllChainingContextualSubstitutionRecords();
+
+        /// <summary>
+        /// Internal function used to retrieve potential ChainingContextualSubstitution records for the given glyph index.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential subsitution records.</param>
+        /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the given glyph index.</returns>
+        internal static ChainingContextualSubstitutionRecord[] GetChainingContextualSubstitutionRecords(int lookupIndex, uint glyphIndex)
+        {
+            GlyphIndexToMarshallingArray(glyphIndex, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetChainingContextualSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve ChainingContextualSubstitution records for the given list of glyphs.
+        /// </summary>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential substitution records.</param>
+        /// <returns>An array that contains the substitution records for the provide list of glyph indexes.</returns>
+        internal static ChainingContextualSubstitutionRecord[] GetChainingContextualSubstitutionRecords(int lookupIndex, List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetChainingContextualSubstitutionRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        private static ChainingContextualSubstitutionRecord[] GetChainingContextualSubstitutionRecords(int lookupIndex, uint[] glyphIndexes)
+        {
+            PopulateChainingContextualSubstitutionRecordMarshallingArray_from_GlyphIndexes(glyphIndexes, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_ChainingContextualSubstitutionRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetChainingContextualSubstitutionRecordsFromMarshallingArray(s_ChainingContextualSubstitutionRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_ChainingContextualSubstitutionRecords_MarshallingArray[recordCount] = new ChainingContextualSubstitutionRecord();
+
+            return s_ChainingContextualSubstitutionRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateChainingContextualSubstitutionRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateChainingContextualSubstitutionRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, int lookupIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetChainingContextualSubstitutionRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetChainingContextualSubstitutionRecordsFromMarshallingArray([Out] ChainingContextualSubstitutionRecord[] substitutionRecords);
+
+        #endregion
+
+        // ================================================
+        // POSITIONAL ADJUSTMENTS FROM KERN TABLE
+        // ================================================
+
+        #region POSITIONAL ADJUSTMENTS
+        /// <summary>
+        /// Internal function used to retrieve positional adjustments records for the given glyph indexes.
+        /// </summary>
+        /// <param name="glyphIndexes">Array of glyph indexes to check for potential positional adjustment records.</param>
         /// <returns>Array containing the positional adjustments for pairs of glyphs.</returns>
         internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentTable(uint[] glyphIndexes)
         {
             int recordCount;
-            PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndexes(glyphIndexes, out recordCount);
+            PopulatePairAdjustmentRecordMarshallingArray_from_KernTable(glyphIndexes, out recordCount);
 
             if (recordCount == 0)
                 return null;
@@ -1281,7 +1748,7 @@ namespace UnityEngine.TextCore.LowLevel
             SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
 
             // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
-            GetGlyphPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+            GetPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
 
             // Terminate last record to zero
             s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
@@ -1289,19 +1756,64 @@ namespace UnityEngine.TextCore.LowLevel
             return s_PairAdjustmentRecords_MarshallingArray;
         }
 
-        [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentTable", IsFreeFunction = true)]
-        extern static int GetGlyphPairAdjustmentTable_Internal(uint[] glyphIndexes, [Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords, out int adjustmentRecordCount);
+        /// <summary>
+        /// Internal function used to retrieve positional adjustments records for the given glyph indexes.
+        /// </summary>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential positional adjustment records.</param>
+        /// <param name="recordCount">The number of valid records in the returned array.</param>
+        /// <returns>Array containing the positional adjustments for pairs of glyphs.</returns>
+        internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentRecords(List<uint> glyphIndexes, out int recordCount)
+        {
+            // Copy source list data to array of same type.
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
 
+            PopulatePairAdjustmentRecordMarshallingArray_from_KernTable(s_GlyphIndexes_MarshallingArray_A, out recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
+
+            return s_PairAdjustmentRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulatePairAdjustmentRecordMarshallingArrayFromKernTable", IsFreeFunction = true)]
+        extern static int PopulatePairAdjustmentRecordMarshallingArray_from_KernTable(uint[] glyphIndexes, out int recordCount);
 
         /// <summary>
-        /// Internal function used to retrieve the potential PairAdjustmentRecord for the given pair of glyph indexes.
+        /// Internal function used to retrieve GlyphPairAdjustmentRecords for the given glyph index.
         /// </summary>
-        /// <param name="firstGlyphIndex">The index of the first glyph.</param>
-        /// <param name="secondGlyphIndex">The index of the second glyph.</param>
-        /// <returns></returns>
-        [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentRecord", IsFreeFunction = true)]
-        internal extern static GlyphPairAdjustmentRecord GetGlyphPairAdjustmentRecord(uint firstGlyphIndex, uint secondGlyphIndex);
+        /// <param name="glyphIndex">Index of the target glyph.</param>
+        /// <param name="recordCount">Number of glyph pair adjustment records using this glyph.</param>
+        /// <returns>Array containing the glyph pair adjustment records.</returns>
+        internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentRecords(uint glyphIndex, out int recordCount)
+        {
+            PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndex(glyphIndex, out recordCount);
 
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
+
+            return s_PairAdjustmentRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulatePairAdjustmentRecordMarshallingArrayFromKernTable", IsFreeFunction = true)]
+        extern static int PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndex(uint glyphIndex, out int recordCount);
 
         /// <summary>
         /// Internal function used to retrieve GlyphPairAdjustmentRecords for the given list of glyph indexes.
@@ -1326,7 +1838,7 @@ namespace UnityEngine.TextCore.LowLevel
             SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
 
             // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
-            GetGlyphPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+            GetPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
 
             // Terminate last record to zero
             s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
@@ -1334,42 +1846,147 @@ namespace UnityEngine.TextCore.LowLevel
             return s_PairAdjustmentRecords_MarshallingArray;
         }
 
+        [NativeMethod(Name = "TextCore::FontEngine::PopulatePairAdjustmentRecordMarshallingArrayFromKernTable", IsFreeFunction = true)]
+        extern static int PopulatePairAdjustmentRecordMarshallingArray_for_NewlyAddedGlyphIndexes(uint[] newGlyphIndexes, uint[] allGlyphIndexes, out int recordCount);
+
         /// <summary>
-        /// Internal function used to retrieve GlyphPairAdjustmentRecords for the given list of glyph indexes.
+        /// Internal function used to retrieve the potential PairAdjustmentRecord for the given pair of glyph indexes.
         /// </summary>
-        /// <param name="glyphIndexes">List of the glyph indexes.</param>
-        /// <returns>The glyph pair adjustment records.</returns>
-        internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentRecords(List<uint> glyphIndexes, out int recordCount)
+        /// <param name="firstGlyphIndex">The index of the first glyph.</param>
+        /// <param name="secondGlyphIndex">The index of the second glyph.</param>
+        /// <returns></returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentRecord", IsFreeFunction = true)]
+        internal extern static GlyphPairAdjustmentRecord GetGlyphPairAdjustmentRecord(uint firstGlyphIndex, uint secondGlyphIndex);
+        #endregion
+
+        // ================================================
+        // GPOS FONT FEATURES
+        // ================================================
+
+        #region SINGLE ADJUSTMENT
+        /// <summary>
+        /// Internal function used to retrieve potential adjustment records for the given glyph index.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential adjustment records.</param>
+        /// <param name="glyphIndex">Index of the glyph to check for potential adjustment records.</param>
+        /// <returns>An array that contains the adjustment records for the given glyph index.</returns>
+        internal static GlyphAdjustmentRecord[] GetSingleAdjustmentRecords(int lookupIndex, uint glyphIndex)
+        {
+            if (s_GlyphIndexes_MarshallingArray_A == null)
+                s_GlyphIndexes_MarshallingArray_A = new uint[8];
+
+            s_GlyphIndexes_MarshallingArray_A[0] = glyphIndex;
+            s_GlyphIndexes_MarshallingArray_A[1] = 0;
+
+            return GetSingleAdjustmentRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve adjustment records for the given list of glyphs.
+        /// </summary>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential adjustment records.</param>
+        /// <returns>An array that contains the adjustment records for the provide list of glyph indexes.</returns>
+        internal static GlyphAdjustmentRecord[] GetSingleAdjustmentRecords(int lookupIndex, List<uint> glyphIndexes)
         {
             // Copy source list data to array of same type.
             GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
 
-            PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndexes(s_GlyphIndexes_MarshallingArray_A, out recordCount);
-
-            if (recordCount == 0)
-                return null;
-
-            // Make sure marshalling array allocation is appropriate.
-            SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
-
-            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
-            GetGlyphPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
-
-            // Terminate last record to zero
-            s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
-
-            return s_PairAdjustmentRecords_MarshallingArray;
+            return GetSingleAdjustmentRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
         }
 
-        /// <summary>
-        /// Internal function used to retrieve GlyphPairAdjustmentRecords for the given glyph index.
-        /// </summary>
-        /// <param name="glyphIndex">Index of the target glyph.</param>
-        /// <param name="recordCount">Number of glyph pair adjustment records using this glyph.</param>
-        /// <returns>Array containing the glyph pair adjustment records.</returns>
-        internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentRecords(uint glyphIndex, out int recordCount)
+        private static GlyphAdjustmentRecord[] GetSingleAdjustmentRecords(int lookupIndex, uint[] glyphIndexes)
         {
-            PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndex(glyphIndex, out recordCount);
+            PopulateSingleAdjustmentRecordMarshallingArray_from_GlyphIndexes(glyphIndexes, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_SingleAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetSingleAdjustmentRecordsFromMarshallingArray(s_SingleAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_SingleAdjustmentRecords_MarshallingArray[recordCount] = new GlyphAdjustmentRecord();
+
+            return s_SingleAdjustmentRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateSingleAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateSingleAdjustmentRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, int lookupIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetSingleAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetSingleAdjustmentRecordsFromMarshallingArray([Out] GlyphAdjustmentRecord[] singleSubstitutionRecords);
+        #endregion
+
+        #region PAIR ADJUSTMENTS
+        /// <summary>
+        /// Retrieve all potential glyph pair adjustment records for the given glyph.
+        /// </summary>
+        /// <param name="baseGlyphIndex">The index of the glyph.</param>
+        /// <returns>An array that contains the adjustment records for the given glyph.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetPairAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static GlyphPairAdjustmentRecord[] GetPairAdjustmentRecords(uint glyphIndex);
+
+        /// <summary>
+        /// Retrieve potential glyph pair adjustment record for the given pair of glyphs.
+        /// </summary>
+        /// <param name="firstGlyphIndex">The index of the first glyph.</param>
+        /// <param name="secondGlyphIndex">The index of the second glyph.</param>
+        /// <returns>The glyph pair adjustment record.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetPairAdjustmentRecord", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static GlyphPairAdjustmentRecord GetPairAdjustmentRecord(uint firstGlyphIndex, uint secondGlyphIndex);
+
+        /// <summary>
+        /// Retrieve all glyph pair adjustment records.
+        /// </summary>
+        /// <returns>An array that contains the adjustment records.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetAllPairAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static GlyphPairAdjustmentRecord[] GetAllPairAdjustmentRecords();
+
+        /// <summary>
+        /// Internal function used to retrieve the potential glyph pair adjustment records for the given list of glyphs.
+        /// </summary>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential adjustment records.</param>
+        /// <returns>An array that contains the glyph pair adjustment records.</returns>
+        internal static GlyphPairAdjustmentRecord[] GetPairAdjustmentRecords(List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetPairAdjustmentRecords(s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve potential pair adjustment records for the given glyph index.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential adjustment records.</param>
+        /// <param name="glyphIndex">Index of the glyph to check for potential adjustment records.</param>
+        /// <returns>An array that contains the adjustment records for the given glyph index.</returns>
+        internal static GlyphPairAdjustmentRecord[] GetPairAdjustmentRecords(int lookupIndex, uint glyphIndex)
+        {
+            GlyphIndexToMarshallingArray(glyphIndex, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetPairAdjustmentRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve the potential glyph pair adjustment records for the given list of glyphs.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential adjustment records.</param>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential adjustment records.</param>
+        /// <returns>An array that contains the glyph pair adjustment records.</returns>
+        internal static GlyphPairAdjustmentRecord[] GetPairAdjustmentRecords(int lookupIndex, List<uint> glyphIndexes)
+        {
+            // Copy source list data to array of same type.
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetPairAdjustmentRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        private static GlyphPairAdjustmentRecord[] GetPairAdjustmentRecords(uint[] glyphIndexes)
+        {
+            PopulatePairAdjustmentRecordMarshallingArray(glyphIndexes, out int recordCount);
 
             if (recordCount == 0)
                 return null;
@@ -1378,7 +1995,7 @@ namespace UnityEngine.TextCore.LowLevel
             SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
 
             // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
-            GetGlyphPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+            GetPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
 
             // Terminate last record to zero
             s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
@@ -1386,33 +2003,247 @@ namespace UnityEngine.TextCore.LowLevel
             return s_PairAdjustmentRecords_MarshallingArray;
         }
 
-        /// <summary>
-        /// Internal functions used in the process of retrieving potential glyph PairAdjustmentRecords for the given list of glyph indexes.
-        /// Functions populate internal marshalling array which will be subsequently retrieved by the GetPopulatedGlyphPairAdjustmentRecords function.
-        /// </summary>
-        /// <param name="glyphIndexes">Glyph indexes</param>
-        /// <param name="recordCount">Number of glyph pair adjustment records for the given glyph indexes.</param>
-        /// <returns></returns>
-        [NativeMethod(Name = "TextCore::FontEngine::PopulatePairAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
-        extern static int PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndexes(uint[] glyphIndexes, out int recordCount);
+        private static GlyphPairAdjustmentRecord[] GetPairAdjustmentRecords(int lookupIndex, uint[] glyphIndexes)
+        {
+            PopulatePairAdjustmentRecordMarshallingArray_for_LookupIndex(glyphIndexes, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_PairAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetPairAdjustmentRecordsFromMarshallingArray(s_PairAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_PairAdjustmentRecords_MarshallingArray[recordCount] = new GlyphPairAdjustmentRecord();
+
+            return s_PairAdjustmentRecords_MarshallingArray;
+        }
 
         [NativeMethod(Name = "TextCore::FontEngine::PopulatePairAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
-        extern static int PopulatePairAdjustmentRecordMarshallingArray_for_NewlyAddedGlyphIndexes(uint[] newGlyphIndexes, uint[] allGlyphIndexes, out int recordCount);
+        extern static int PopulatePairAdjustmentRecordMarshallingArray(uint[] glyphIndexes, out int recordCount);
 
         [NativeMethod(Name = "TextCore::FontEngine::PopulatePairAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
-        extern static int PopulatePairAdjustmentRecordMarshallingArray_from_GlyphIndex(uint glyphIndex, out int recordCount);
+        extern static int PopulatePairAdjustmentRecordMarshallingArray_for_LookupIndex(uint[] glyphIndexes, int lookupIndex, out int recordCount);
 
         [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
-        extern static int GetGlyphPairAdjustmentRecordsFromMarshallingArray([Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords);
+        extern static int GetPairAdjustmentRecordsFromMarshallingArray([Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords);
+        #endregion
+
+        #region MARK TO BASE
+        /// <summary>
+        /// Retrieve all Mark-to-Base adjustment records for the currently loaded font.
+        /// </summary>
+        /// <returns>An array that contains the Mark-to-Base adjustment records.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetAllMarkToBaseAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static MarkToBaseAdjustmentRecord[] GetAllMarkToBaseAdjustmentRecords();
+
+        /// <summary>
+        /// Retrieve all potential Mark-to-Base adjustment records for the given base mark glyph.
+        /// </summary>
+        /// <param name="baseGlyphIndex">The index of the base glyph.</param>
+        /// <returns>An array that contains the adjustment records for the given base glyph.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetMarkToBaseAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static MarkToBaseAdjustmentRecord[] GetMarkToBaseAdjustmentRecords(uint baseGlyphIndex);
+
+        /// <summary>
+        /// Internal function used to retrieve the potential MarkToBaseAdjustmentRecord for the given pair of glyph indexes.
+        /// </summary>
+        /// <param name="baseGlyphIndex">The index of the base glyph.</param>
+        /// <param name="markGlyphIndex">The index of the mark glyph.</param>
+        /// <returns></returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetMarkToBaseAdjustmentRecord", IsFreeFunction = true)]
+        internal extern static MarkToBaseAdjustmentRecord GetMarkToBaseAdjustmentRecord(uint baseGlyphIndex, uint markGlyphIndex);
+
+        /// <summary>
+        /// Internal function used to retrieve the potential Mark-To-Base adjustment records for the given list of glyph indexes.
+        /// </summary>
+        /// <param name="glyphIndexes">The list of glyph indexes.</param>
+        /// <returns>An array that contains the adjustment records for the given list of glyph indexes.</returns>
+        internal static MarkToBaseAdjustmentRecord[] GetMarkToBaseAdjustmentRecords(List<uint> glyphIndexes)
+        {
+            // Copy source list data to array of same type.
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetMarkToBaseAdjustmentRecords(s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve the potential Mark-to-Base adjustment records for the given list of glyphs.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential adjustment records.</param>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential adjustment records.</param>
+        /// <returns>An array that contains the Mark-to-Base adjustment records.</returns>
+        internal static MarkToBaseAdjustmentRecord[] GetMarkToBaseAdjustmentRecords(int lookupIndex, List<uint> glyphIndexes)
+        {
+            // Copy source list data to array of same type.
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetMarkToBaseAdjustmentRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        private static MarkToBaseAdjustmentRecord[] GetMarkToBaseAdjustmentRecords(uint[] glyphIndexes)
+        {
+            PopulateMarkToBaseAdjustmentRecordMarshallingArray(glyphIndexes, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_MarkToBaseAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetMarkToBaseAdjustmentRecordsFromMarshallingArray(s_MarkToBaseAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_MarkToBaseAdjustmentRecords_MarshallingArray[recordCount] = new MarkToBaseAdjustmentRecord();
+
+            return s_MarkToBaseAdjustmentRecords_MarshallingArray;
+        }
+
+        private static MarkToBaseAdjustmentRecord[] GetMarkToBaseAdjustmentRecords(int lookupIndex, uint[] glyphIndexes)
+        {
+            PopulateMarkToBaseAdjustmentRecordMarshallingArray_for_LookupIndex(glyphIndexes, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_MarkToBaseAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetMarkToBaseAdjustmentRecordsFromMarshallingArray(s_MarkToBaseAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_MarkToBaseAdjustmentRecords_MarshallingArray[recordCount] = new MarkToBaseAdjustmentRecord();
+
+            return s_MarkToBaseAdjustmentRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateMarkToBaseAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateMarkToBaseAdjustmentRecordMarshallingArray(uint[] glyphIndexes, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateMarkToBaseAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateMarkToBaseAdjustmentRecordMarshallingArray_for_LookupIndex(uint[] glyphIndexes, int lookupIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetMarkToBaseAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetMarkToBaseAdjustmentRecordsFromMarshallingArray([Out] MarkToBaseAdjustmentRecord[] adjustmentRecords);
+        #endregion
+
+        #region MARK TO MARK
+        /// <summary>
+        /// Retrieve all Mark-to-Mark adjustment records for the currently loaded font.
+        /// </summary>
+        /// <returns>An array that contains the Mark-to-Base adjustment records.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetAllMarkToMarkAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static MarkToMarkAdjustmentRecord[] GetAllMarkToMarkAdjustmentRecords();
+
+        /// <summary>
+        /// Retrieve all potential Mark-to-Mark adjustment records for the given base mark glyph.
+        /// </summary>
+        /// <param name="baseMarkGlyphIndex">The index of the base mark glyph.</param>
+        /// <returns>An array that contains the adjustment records for the given base mark glyph.</returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetMarkToMarkAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        internal extern static MarkToMarkAdjustmentRecord[] GetMarkToMarkAdjustmentRecords(uint baseMarkGlyphIndex);
+
+        /// <summary>
+        /// Internal function used to retrieve the potential MarkToMarkAdjustmentRecord for the given pair of glyph indexes.
+        /// </summary>
+        /// <param name="firstGlyphIndex">The index of the first glyph.</param>
+        /// <param name="secondGlyphIndex">The index of the second glyph.</param>
+        /// <returns></returns>
+        [NativeMethod(Name = "TextCore::FontEngine::GetMarkToMarkAdjustmentRecord", IsFreeFunction = true)]
+        internal extern static MarkToMarkAdjustmentRecord GetMarkToMarkAdjustmentRecord(uint firstGlyphIndex, uint secondGlyphIndex);
+
+        /// <summary>
+        /// Internal function used to retrieve the potential Mark-To-Mark adjustment records for the given list of glyph indexes.
+        /// </summary>
+        /// <param name="glyphIndexes">The list of glyph indexes.</param>
+        /// <returns>An array that contains the adjustment records for the given list of glyph indexes.</returns>
+        internal static MarkToMarkAdjustmentRecord[] GetMarkToMarkAdjustmentRecords(List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetMarkToMarkAdjustmentRecords(s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        /// <summary>
+        /// Internal function used to retrieve the potential Mark-to-Mark adjustment records for the given list of glyphs.
+        /// </summary>
+        /// <param name="lookupIndex">Index of the lookup table from which to retrieve the potential adjustment records.</param>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential adjustment records.</param>
+        /// <returns>An array that contains the Mark-to-Mark adjustment records.</returns>
+        internal static MarkToMarkAdjustmentRecord[] GetMarkToMarkAdjustmentRecords(int lookupIndex, List<uint> glyphIndexes)
+        {
+            GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
+
+            return GetMarkToMarkAdjustmentRecords(lookupIndex, s_GlyphIndexes_MarshallingArray_A);
+        }
+
+        private static MarkToMarkAdjustmentRecord[] GetMarkToMarkAdjustmentRecords(uint[] glyphIndexes)
+        {
+            PopulateMarkToMarkAdjustmentRecordMarshallingArray(s_GlyphIndexes_MarshallingArray_A, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_MarkToMarkAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetMarkToMarkAdjustmentRecordsFromMarshallingArray(s_MarkToMarkAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_MarkToMarkAdjustmentRecords_MarshallingArray[recordCount] = new MarkToMarkAdjustmentRecord();
+
+            return s_MarkToMarkAdjustmentRecords_MarshallingArray;
+        }
+
+        private static MarkToMarkAdjustmentRecord[] GetMarkToMarkAdjustmentRecords(int lookupIndex, uint[] glyphIndexes)
+        {
+            PopulateMarkToMarkAdjustmentRecordMarshallingArray_for_LookupIndex(s_GlyphIndexes_MarshallingArray_A, lookupIndex, out int recordCount);
+
+            if (recordCount == 0)
+                return null;
+
+            // Make sure marshalling array allocation is appropriate.
+            SetMarshallingArraySize(ref s_MarkToMarkAdjustmentRecords_MarshallingArray, recordCount);
+
+            // Retrieve adjustment records already gathered by the GetPairAdjustmentRecordCount function.
+            GetMarkToMarkAdjustmentRecordsFromMarshallingArray(s_MarkToMarkAdjustmentRecords_MarshallingArray);
+
+            // Terminate last record to zero
+            s_MarkToMarkAdjustmentRecords_MarshallingArray[recordCount] = new MarkToMarkAdjustmentRecord();
+
+            return s_MarkToMarkAdjustmentRecords_MarshallingArray;
+        }
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateMarkToMarkAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateMarkToMarkAdjustmentRecordMarshallingArray(uint[] glyphIndexes, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::PopulateMarkToMarkAdjustmentRecordMarshallingArray", IsFreeFunction = true)]
+        extern static int PopulateMarkToMarkAdjustmentRecordMarshallingArray_for_LookupIndex(uint[] glyphIndexes, int lookupIndex, out int recordCount);
+
+        [NativeMethod(Name = "TextCore::FontEngine::GetMarkToMarkAdjustmentRecordsFromMarshallingArray", IsFreeFunction = true)]
+        extern static int GetMarkToMarkAdjustmentRecordsFromMarshallingArray([Out] MarkToMarkAdjustmentRecord[] adjustmentRecords);
+        #endregion
 
 
         // ================================================
         // Utility Methods
         // ================================================
 
-        /// <summary>
-        ///
-        /// </summary>
+        static void GlyphIndexToMarshallingArray(uint glyphIndex, ref uint[] dstArray)
+        {
+            if (dstArray == null || dstArray.Length == 1)
+                dstArray = new uint[8];
+
+            dstArray[0] = glyphIndex;
+            dstArray[1] = 0;
+        }
+
         static void GenericListToMarshallingArray<T>(ref List<T> srcList, ref T[] dstArray)
         {
             int count = srcList.Count;

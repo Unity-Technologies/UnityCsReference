@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.TextCore.Text;
-using UnityEngine.TextCore.LowLevel;
-
-using Glyph = UnityEngine.TextCore.Glyph;
+using UnityEngine.TextCore;
 
 
 namespace UnityEditor.TextCore.Text
@@ -14,7 +12,11 @@ namespace UnityEditor.TextCore.Text
     [CustomPropertyDrawer(typeof(Glyph))]
     internal class GlyphPropertyDrawer : PropertyDrawer
     {
-        private string k_ColorProperty = "_Color";
+        private Dictionary<uint, GlyphProxy> m_GlyphLookupDictionary;
+
+        private static readonly GUIContent k_ScaleLabel = new GUIContent("Scale:", "The scale of this glyph.");
+        private static readonly GUIContent k_AtlasIndexLabel = new GUIContent("Atlas Index:", "The index of the atlas texture that contains this glyph.");
+        private static readonly GUIContent k_ClassTypeLabel = new GUIContent("Class Type:", "The class definition type of this glyph.");
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
@@ -23,6 +25,11 @@ namespace UnityEditor.TextCore.Text
             SerializedProperty prop_GlyphRect = property.FindPropertyRelative("m_GlyphRect");
             SerializedProperty prop_Scale = property.FindPropertyRelative("m_Scale");
             SerializedProperty prop_AtlasIndex = property.FindPropertyRelative("m_AtlasIndex");
+            SerializedProperty prop_ClassDefinitionType = property.FindPropertyRelative("m_ClassDefinitionType");
+
+            // Refresh glyph proxy lookup dictionary if needed.
+            if (TextCorePropertyDrawerUtilities.s_RefreshGlyphProxyLookup)
+                TextCorePropertyDrawerUtilities.RefreshGlyphProxyLookup(property.serializedObject);
 
             GUIStyle style = new GUIStyle(EditorStyles.label);
             style.richText = true;
@@ -31,8 +38,6 @@ namespace UnityEditor.TextCore.Text
 
             float labelWidth = GUI.skin.label.CalcSize(new GUIContent("ID: " + prop_GlyphIndex.intValue)).x;
             EditorGUI.LabelField(new Rect(position.x + (64 - labelWidth) / 2, position.y + 85, 64f, 18f), new GUIContent("ID: <color=#FFFF80>" + prop_GlyphIndex.intValue + "</color>"), style);
-            //EditorGUIUtility.labelWidth = 22f;
-            //EditorGUI.DelayedIntField(new Rect(position.x + (64 - labelWidth) / 2, position.y + 89, 58f, 18f), prop_GlyphIndex, new GUIContent("ID:"));
 
             // We get Rect since a valid position may not be provided by the caller.
             EditorGUI.PropertyField(new Rect(rect.x, rect.y, position.width, 49), prop_GlyphRect);
@@ -41,12 +46,19 @@ namespace UnityEditor.TextCore.Text
             EditorGUI.PropertyField(rect, prop_GlyphMetrics);
 
             EditorGUIUtility.labelWidth = 40f;
-            EditorGUI.PropertyField(new Rect(rect.x, rect.y + 65, 75, 18), prop_Scale, new GUIContent("Scale:")); // new GUIContent("Scale: <color=#FFFF80>" + prop_Scale.floatValue + "</color>"), style);
+            EditorGUI.PropertyField(new Rect(rect.x, rect.y + 65, 75, 18), prop_Scale, k_ScaleLabel);
 
-            EditorGUIUtility.labelWidth = 74f;
-            EditorGUI.PropertyField(new Rect(rect.x + 85, rect.y + 65, 95, 18), prop_AtlasIndex, new GUIContent("Atlas Index:")); //  new GUIContent("Atlas Index: <color=#FFFF80>" + prop_AtlasIndex.intValue + "</color>"), style);
+            EditorGUIUtility.labelWidth = 70f;
+            EditorGUI.PropertyField(new Rect(rect.x + 85, rect.y + 65, 95, 18), prop_AtlasIndex, k_AtlasIndexLabel);
 
-            DrawGlyph(position, property);
+            if (prop_ClassDefinitionType != null)
+            {
+                EditorGUIUtility.labelWidth = 70f;
+                float minWidth = Mathf.Max(90, rect.width - 270);
+                EditorGUI.PropertyField(new Rect(rect.x + 190, rect.y + 65, minWidth, 18), prop_ClassDefinitionType, k_ClassTypeLabel);
+            }
+
+            DrawGlyph((uint)prop_GlyphIndex.intValue, new Rect(position.x, position.y + 10, 64, 80), property);
         }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
@@ -54,60 +66,37 @@ namespace UnityEditor.TextCore.Text
             return 130f;
         }
 
-        void DrawGlyph(Rect position, SerializedProperty property)
+        void DrawGlyph(uint glyphIndex, Rect position, SerializedProperty property)
         {
-            // Serialized object can either be a FontAsset or a TMP_FontAsset
+            // Get a reference to the serialized object which can either be a TMP_FontAsset or FontAsset.
             SerializedObject so = property.serializedObject;
-
             if (so == null)
                 return;
 
-            // Get reference to the atlas texture for the given atlas index.
-            int atlasIndex = property.FindPropertyRelative("m_AtlasIndex").intValue;
+            if (m_GlyphLookupDictionary == null)
+                m_GlyphLookupDictionary = TextCorePropertyDrawerUtilities.GetGlyphProxyLookupDictionary(so);
 
-            SerializedProperty atlasTextureProperty = so.FindProperty("m_AtlasTextures");
-            Texture2D atlasTexture = atlasTextureProperty.GetArrayElementAtIndex(atlasIndex).objectReferenceValue as Texture2D;
-            if (atlasTexture == null)
+            // Try getting a reference to the glyph for the given glyph index.
+            if (!m_GlyphLookupDictionary.TryGetValue(glyphIndex, out GlyphProxy glyph))
+                return;
+
+            Texture2D atlasTexture;
+            if (TextCorePropertyDrawerUtilities.TryGetAtlasTextureFromSerializedObject(so, glyph.atlasIndex, out atlasTexture) == false)
                 return;
 
             Material mat;
-
-            GlyphRenderMode atlasRenderMode = (GlyphRenderMode)so.FindProperty("m_AtlasRenderMode").intValue;
-            int atlasPadding = so.FindProperty("m_AtlasPadding").intValue;
-
-            if (((GlyphRasterModes)atlasRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
-            {
-                mat = FontAssetEditor.internalBitmapMaterial;
-
-                if (mat == null)
-                    return;
-
-                mat.mainTexture = atlasTexture;
-                mat.SetColor(k_ColorProperty, Color.white);
-            }
-            else
-            {
-                mat = FontAssetEditor.internalSDFMaterial;
-
-                if (mat == null)
-                    return;
-
-                mat.mainTexture = atlasTexture;
-                mat.SetFloat(TextShaderUtilities.ID_GradientScale, atlasPadding + 1);
-            }
+            if (TextCorePropertyDrawerUtilities.TryGetMaterial(so, atlasTexture, out mat) == false)
+                return;
 
             // Draw glyph from atlas texture.
-            Rect glyphDrawPosition = new Rect(position.x, position.y + 2, 64, 80);
+            Rect glyphDrawPosition = position;
 
-            SerializedProperty glyphRectProperty = property.FindPropertyRelative("m_GlyphRect");
-
-            int padding = atlasPadding;
-            int padding2X = padding * 2;
-
-            int glyphOriginX = glyphRectProperty.FindPropertyRelative("m_X").intValue - padding;
-            int glyphOriginY = glyphRectProperty.FindPropertyRelative("m_Y").intValue - padding;
-            int glyphWidth = glyphRectProperty.FindPropertyRelative("m_Width").intValue + padding2X;
-            int glyphHeight = glyphRectProperty.FindPropertyRelative("m_Height").intValue + padding2X;
+            int padding = so.FindProperty("m_AtlasPadding").intValue;
+            GlyphRect glyphRect = glyph.glyphRect;
+            int glyphOriginX = glyphRect.x - padding;
+            int glyphOriginY = glyphRect.y - padding;
+            int glyphWidth = glyphRect.width + padding * 2;
+            int glyphHeight = glyphRect.height + padding * 2;
 
             SerializedProperty faceInfoProperty = so.FindProperty("m_FaceInfo");
             float ascentLine = faceInfoProperty.FindPropertyRelative("m_AscentLine").floatValue;

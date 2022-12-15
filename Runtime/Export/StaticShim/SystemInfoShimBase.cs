@@ -89,6 +89,8 @@ namespace UnityEngine
 
         public virtual bool supportsCubemapArrayTextures => UnityEngine.SystemInfo.supportsCubemapArrayTextures;
 
+        public virtual bool supportsAnisotropicFilter => UnityEngine.SystemInfo.supportsAnisotropicFilter;
+
         public virtual Rendering.CopyTextureSupport copyTextureSupport => UnityEngine.SystemInfo.copyTextureSupport;
 
         public virtual bool supportsComputeShaders => UnityEngine.SystemInfo.supportsComputeShaders;
@@ -157,6 +159,8 @@ namespace UnityEngine
         public virtual int maxTextureArraySlices => UnityEngine.SystemInfo.maxTextureArraySlices;
 
         public virtual int maxCubemapSize => UnityEngine.SystemInfo.maxCubemapSize;
+
+        public virtual int maxAnisotropyLevel => UnityEngine.SystemInfo.maxAnisotropyLevel;
 
         public virtual int maxComputeBufferInputsVertex => UnityEngine.SystemInfo.maxComputeBufferInputsVertex;
 

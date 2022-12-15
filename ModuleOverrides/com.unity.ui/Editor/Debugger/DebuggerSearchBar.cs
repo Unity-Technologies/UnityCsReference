@@ -172,7 +172,7 @@ namespace UnityEditor.UIElements.Debugger
                     m_FoundItems.Add(new SearchResultItem() {item = treeItem, highlight = SearchHighlight.Type});
                 }
 
-                if ((m_CurrentFilter & DebuggerSearchBarFilter.Name) != 0 &&
+                if ((m_CurrentFilter & DebuggerSearchBarFilter.Name) != 0 && !string.IsNullOrEmpty(element.name) &&
                     element.name.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     m_FoundItems.Add(new SearchResultItem() {item = treeItem, highlight = SearchHighlight.Name});

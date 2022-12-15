@@ -277,6 +277,11 @@ namespace Unity.UI.Builder
 
             var documentRootElement = builderWindow.documentRootElement;
 
+            var disabledPills = m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance ||
+                                m_Selection.selectionType == BuilderSelectionType.ElementInControlInstance ||
+                                m_Selection.selectionType == BuilderSelectionType.ParentStyleSelector ||
+                                m_Selection.selectionType == BuilderSelectionType.ElementInParentDocument;
+
             foreach (var className in currentVisualElement.GetClasses())
             {
                 m_ClassPillTemplate.CloneTree(m_ClassListContainer.contentContainer);
@@ -308,11 +313,11 @@ namespace Unity.UI.Builder
                 if (selector == null)
                 {
                     pill.AddToClassList(BuilderConstants.InspectorClassPillNotInDocumentClassName);
-                    pill.tooltip = BuilderConstants.InspectorClassPillDoubleClickToCreate;
+                    pill.tooltip = disabledPills ? string.Empty : BuilderConstants.InspectorClassPillDoubleClickToCreate;
                 }
                 else
                 {
-                    pill.tooltip = BuilderConstants.InspectorClassPillDoubleClickToSelect;
+                    pill.tooltip = disabledPills ? string.Empty : BuilderConstants.InspectorClassPillDoubleClickToSelect;
                 }
             }
         }
