@@ -36,6 +36,7 @@ namespace UnityEditor
             public static readonly GUIContent kAsyncUploadTimeSlice = EditorGUIUtility.TrTextContent("Time Slice", "The amount of time (in milliseconds) Unity spends uploading Texture and Mesh data to the GPU per frame.");
             public static readonly GUIContent kAsyncUploadBufferSize = EditorGUIUtility.TrTextContent("Buffer Size", "The size (in megabytes) of the upload buffer Unity uses to stream Texture and Mesh data to GPU.");
             public static readonly GUIContent kAsyncUploadPersistentBuffer = EditorGUIUtility.TrTextContent("Persistent Buffer", "When enabled, the upload buffer persists even when there is nothing left to upload.");
+            public static readonly GUIContent kAsyncUploadBufferSizeWarning = EditorGUIUtility.TrTextContent("Unity has detected that you are using an upload buffer size of {0} MB with the '{1}' setting enabled. If you have issues with excessive memory usage, you may need to reduce the upload buffer size or disable the '{1}' setting. Memory fragmentation can occur if you choose the latter option.");
 
             public static readonly GUIContent kRenderPipelineObject = EditorGUIUtility.TrTextContent("Render Pipeline Asset", "Specifies the Render Pipeline Asset to use for this quality level. It overrides the value set in the Graphics Settings Window.");
         }
@@ -56,7 +57,8 @@ namespace UnityEditor
         }
 
         public const int kMinAsyncRingBufferSize = 2;
-        public const int kMaxAsyncRingBufferSize = 512;
+        public const int kMaxAsyncRingBufferSize = 2047;
+        public const int kAsyncRingBufferSizeWarningThreshold = 513;
         public const int kMinAsyncUploadTimeSlice = 1;
         public const int kMaxAsyncUploadTimeSlice = 33;
 
@@ -656,6 +658,12 @@ namespace UnityEditor
 
             asyncUploadTimeSliceProperty.intValue = Mathf.Clamp(asyncUploadTimeSliceProperty.intValue, kMinAsyncUploadTimeSlice, kMaxAsyncUploadTimeSlice);
             asyncUploadBufferSizeProperty.intValue = Mathf.Clamp(asyncUploadBufferSizeProperty.intValue, kMinAsyncRingBufferSize, kMaxAsyncRingBufferSize);
+
+            if (asyncUploadBufferSizeProperty.intValue >= kAsyncRingBufferSizeWarningThreshold && asyncUploadPersistentBufferProperty.boolValue)
+            {
+                string messageToDisplay = string.Format(Content.kAsyncUploadBufferSizeWarning.text, asyncUploadBufferSizeProperty.intValue, Content.kAsyncUploadPersistentBuffer.text);
+                EditorGUILayout.HelpBox(messageToDisplay, MessageType.Warning, false);
+            }
 
             GUILayout.Space(10);
             GUILayout.Label(EditorGUIUtility.TempContent("Level of Detail"), EditorStyles.boldLabel);

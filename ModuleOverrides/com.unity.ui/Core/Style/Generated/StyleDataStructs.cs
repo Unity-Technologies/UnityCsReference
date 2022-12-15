@@ -47,7 +47,7 @@ namespace UnityEngine.UIElements
             this = other;
         }
 
-        public static bool operator==(InheritedData lhs, InheritedData rhs)
+        public static bool operator ==(InheritedData lhs, InheritedData rhs)
         {
             return lhs.color == rhs.color &&
                 lhs.fontSize == rhs.fontSize &&
@@ -65,7 +65,7 @@ namespace UnityEngine.UIElements
                 lhs.wordSpacing == rhs.wordSpacing;
         }
 
-        public static bool operator!=(InheritedData lhs, InheritedData rhs)
+        public static bool operator !=(InheritedData lhs, InheritedData rhs)
         {
             return !(lhs == rhs);
         }
@@ -152,7 +152,7 @@ namespace UnityEngine.UIElements
             this = other;
         }
 
-        public static bool operator==(LayoutData lhs, LayoutData rhs)
+        public static bool operator ==(LayoutData lhs, LayoutData rhs)
         {
             return lhs.alignContent == rhs.alignContent &&
                 lhs.alignItems == rhs.alignItems &&
@@ -189,7 +189,7 @@ namespace UnityEngine.UIElements
                 lhs.width == rhs.width;
         }
 
-        public static bool operator!=(LayoutData lhs, LayoutData rhs)
+        public static bool operator !=(LayoutData lhs, LayoutData rhs)
         {
             return !(lhs == rhs);
         }
@@ -272,7 +272,7 @@ namespace UnityEngine.UIElements
             this = other;
         }
 
-        public static bool operator==(RareData lhs, RareData rhs)
+        public static bool operator ==(RareData lhs, RareData rhs)
         {
             return lhs.cursor == rhs.cursor &&
                 lhs.textOverflow == rhs.textOverflow &&
@@ -286,7 +286,7 @@ namespace UnityEngine.UIElements
                 lhs.unityTextOverflowPosition == rhs.unityTextOverflowPosition;
         }
 
-        public static bool operator!=(RareData lhs, RareData rhs)
+        public static bool operator !=(RareData lhs, RareData rhs)
         {
             return !(lhs == rhs);
         }
@@ -340,7 +340,7 @@ namespace UnityEngine.UIElements
             this = other;
         }
 
-        public static bool operator==(TransformData lhs, TransformData rhs)
+        public static bool operator ==(TransformData lhs, TransformData rhs)
         {
             return lhs.rotate == rhs.rotate &&
                 lhs.scale == rhs.scale &&
@@ -348,7 +348,7 @@ namespace UnityEngine.UIElements
                 lhs.translate == rhs.translate;
         }
 
-        public static bool operator!=(TransformData lhs, TransformData rhs)
+        public static bool operator !=(TransformData lhs, TransformData rhs)
         {
             return !(lhs == rhs);
         }
@@ -423,7 +423,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public static bool operator==(TransitionData lhs, TransitionData rhs)
+        public static bool operator ==(TransitionData lhs, TransitionData rhs)
         {
             return lhs.transitionDelay == rhs.transitionDelay &&
                 lhs.transitionDuration == rhs.transitionDuration &&
@@ -431,7 +431,7 @@ namespace UnityEngine.UIElements
                 lhs.transitionTimingFunction == rhs.transitionTimingFunction;
         }
 
-        public static bool operator!=(TransitionData lhs, TransitionData rhs)
+        public static bool operator !=(TransitionData lhs, TransitionData rhs)
         {
             return !(lhs == rhs);
         }
@@ -487,7 +487,7 @@ namespace UnityEngine.UIElements
             this = other;
         }
 
-        public static bool operator==(VisualData lhs, VisualData rhs)
+        public static bool operator ==(VisualData lhs, VisualData rhs)
         {
             return lhs.backgroundColor == rhs.backgroundColor &&
                 lhs.backgroundImage == rhs.backgroundImage &&
@@ -503,7 +503,7 @@ namespace UnityEngine.UIElements
                 lhs.overflow == rhs.overflow;
         }
 
-        public static bool operator!=(VisualData lhs, VisualData rhs)
+        public static bool operator !=(VisualData lhs, VisualData rhs)
         {
             return !(lhs == rhs);
         }

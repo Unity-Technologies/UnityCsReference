@@ -101,6 +101,22 @@ namespace UnityEngine.UIElements
             if (layoutPositionChanged || paddingPositionChanged)
                 changeType |= VersionChangeType.Transform;
 
+            // If the scale or rotate value of the style are not default, a change in the size will affect the resulting
+            // translation part of the local transform. Only when the transformOrigin is at (0, 0) we do not need to
+            // update the transform.
+            if (((changeType & VersionChangeType.Size) != 0) && ((changeType & VersionChangeType.Transform) == 0))
+            {
+                if (!ve.hasDefaultRotationAndScale)
+                {
+                    // if the pivot is not at the top left, update the transform
+                    if (!Mathf.Approximately(ve.resolvedStyle.transformOrigin.x, 0.0f) ||
+                        !Mathf.Approximately(ve.resolvedStyle.transformOrigin.y, 0.0f))
+                    {
+                        changeType |= VersionChangeType.Transform;
+                    }
+                }
+            }
+
             isDisplayed &= ve.resolvedStyle.display != DisplayStyle.None;
             ve.isHierarchyDisplayed = isDisplayed;
 

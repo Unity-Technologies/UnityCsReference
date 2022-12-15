@@ -688,7 +688,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             // If we aren't using a color ID (the DynamicColor flag), the text color will be stored in the vertex data,
             // so there's no need for a color match with the default TextCore settings.
-            bool useDefaultColor = !NeedsColorID(ve) || settings.faceColor == Color.white;
+            bool useDefaultColor = !NeedsColorID(ve);
 
             if (useDefaultColor && settings.outlineWidth == 0.0f && settings.underlayOffset == Vector2.zero && settings.underlaySoftness == 0.0f && !allocatesID)
             {
@@ -701,7 +701,15 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 ve.renderChainData.textCoreSettingsID = renderChain.shaderInfoAllocator.AllocTextCoreSettings(settings);
 
             if (RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID))
+            {
+                if (ve.panel.contextType == ContextType.Editor)
+                {
+                    settings.faceColor *= UIElementsUtility.editorPlayModeTintColor;
+                    settings.outlineColor *= UIElementsUtility.editorPlayModeTintColor;
+                    settings.underlayColor *= UIElementsUtility.editorPlayModeTintColor;
+                }
                 renderChain.shaderInfoAllocator.SetTextCoreSettingValue(ve.renderChainData.textCoreSettingsID, settings);
+            }
 
             return true;
         }

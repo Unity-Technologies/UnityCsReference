@@ -21,7 +21,7 @@ namespace UnityEngine.Rendering
         private UInt64 m_StateIndex;
 
         [FreeFunction("keywords::IsKeywordEnabled")] extern private static bool IsGlobalKeywordEnabled(ShaderKeywordSet state, uint index);
-        [FreeFunction("keywords::IsKeywordEnabled")] extern private static bool IsKeywordEnabled(ShaderKeywordSet state, LocalKeyword keyword);
+        [FreeFunction("keywords::IsKeywordEnabled")] extern private static bool IsKeywordEnabled(ShaderKeywordSet state, LocalKeywordSpace keywordSpace, uint index);
         [FreeFunction("keywords::IsKeywordEnabled")] extern private static bool IsKeywordNameEnabled(ShaderKeywordSet state, string name);
         [FreeFunction("keywords::EnableKeyword")] extern private static void EnableGlobalKeyword(ShaderKeywordSet state, uint index);
         [FreeFunction("keywords::EnableKeyword")] extern private static void EnableKeywordName(ShaderKeywordSet state, string name);
@@ -54,7 +54,7 @@ namespace UnityEngine.Rendering
 
         public bool IsEnabled(LocalKeyword keyword)
         {
-            return IsKeywordEnabled(this, keyword);
+            return IsKeywordEnabled(this, keyword.m_SpaceInfo, keyword.m_Index);
         }
 
         public void Enable(ShaderKeyword keyword)

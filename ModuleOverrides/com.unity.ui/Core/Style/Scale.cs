@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
         /// <undoc/>
         public Scale(Vector3 scale)
         {
-            m_Scale = scale;
+            m_Scale = new Vector3(scale.x, scale.y, 1);
             m_IsNone = false;
         }
 
@@ -38,7 +38,7 @@ namespace UnityEngine.UIElements
         public Vector3 value
         {
             get => m_Scale;
-            set => m_Scale = value;
+            set => m_Scale = new Vector3(value.x, value.y, 1);
         }
 
         Vector3 m_Scale;

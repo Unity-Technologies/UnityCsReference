@@ -21,7 +21,7 @@ namespace UnityEditor.TextCore.Text
             foreach (var asset in importedAssets)
             {
                 // Return if imported asset path is outside of the project.
-                if (asset.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) == false || !asset.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
+                if (asset.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase) == false)
                     continue;
 
                 Type assetType = AssetDatabase.GetMainAssetTypeAtPath(asset);

@@ -220,20 +220,6 @@ namespace UnityEditor.SearchService
 
         public static event Action<SyncSearchEvent, string, string> syncSearchChanged;
 
-        static SearchService()
-        {
-            Build.BuildDefines.getScriptCompilationDefinesDelegates += AddSearchServiceBuildDefines;
-        }
-
-        private static void AddSearchServiceBuildDefines(BuildTarget target, HashSet<string> defines)
-        {
-            defines.Add("USE_SEARCH_ENGINE_API");
-            defines.Add("USE_SEARCH_TABLE");
-            defines.Add("USE_SEARCH_MODULE");
-            defines.Add("USE_PROPERTY_DATABASE");
-            defines.Add("USE_SEARCH_EXTENSION_API");
-        }
-
         public static void NotifySyncSearchChanged(SyncSearchEvent evt, string syncViewId, string searchQuery)
         {
             syncSearchChanged?.Invoke(evt, syncViewId, searchQuery);

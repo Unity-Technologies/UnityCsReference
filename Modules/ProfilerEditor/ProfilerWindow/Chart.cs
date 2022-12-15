@@ -820,7 +820,7 @@ namespace UnityEditorInternal
             }
         }
 
-        private void DrawChartItemStacked(Rect r, int index, ChartViewData cdata, float[] stackedSampleSums)
+        private unsafe void DrawChartItemStacked(Rect r, int index, ChartViewData cdata, float[] stackedSampleSums)
         {
             int numSamples = cdata.GetDataDomainLength();
 
@@ -842,7 +842,12 @@ namespace UnityEditorInternal
             float rangeScale = cdata.series[0].rangeAxis.sqrMagnitude == 0f ?
                 0f : 1f / (cdata.series[0].rangeAxis.y - cdata.series[0].rangeAxis.x) * r.height;
             float rectBottom = r.y + r.height;
+            float rangeStart = cdata.series[0].rangeAxis.x;
             bool passedFirstValidValue = false;
+
+            const int vertexBufferSize = 512;
+            Vector3* vertexBuffer = stackalloc Vector3[vertexBufferSize];
+            int vertexBufferOffset = 0;
             for (int i = 0; i < numSamples; i++, x += step)
             {
                 float y = rectBottom - stackedSampleSums[i];
@@ -862,19 +867,29 @@ namespace UnityEditorInternal
 
                 value *= serie.yScale;
 
-                float val = (value - cdata.series[0].rangeAxis.x) * rangeScale;
+                float val = (value - rangeStart) * rangeScale;
                 if (y - val < r.yMin)
                     val = y - r.yMin; // Clamp the values to be inside drawrect
 
-                GL.Vertex3(x, y - val, 0f); // clip chart top
-                GL.Vertex3(x, y, 0f);
+                vertexBuffer[vertexBufferOffset++] = new Vector3(x, y - val, 0); // clip chart top
+                vertexBuffer[vertexBufferOffset++] = new Vector3(x, y, 0);
+                if (vertexBufferOffset >= vertexBufferSize)
+                {
+                    GL.Vertices(vertexBuffer, null, null, vertexBufferOffset);
+                    vertexBufferOffset -= vertexBufferSize;
+                }
 
                 stackedSampleSums[i] += val;
+            }
+
+            if (vertexBufferOffset > 0)
+            {
+                GL.Vertices(vertexBuffer, null, null, vertexBufferOffset);
             }
             GL.End();
         }
 
-        private void DrawChartItemStackedOverlay(Rect r, int index, ChartViewData cdata, float[] stackedSampleSums)
+        private unsafe void DrawChartItemStackedOverlay(Rect r, int index, ChartViewData cdata, float[] stackedSampleSums)
         {
             int numSamples = cdata.GetDataDomainLength();
             float step = r.width / numSamples;
@@ -887,12 +902,18 @@ namespace UnityEditorInternal
             Color color = cdata.series[orderIdx].color;
 
             GL.Begin(GL.TRIANGLE_STRIP);
+            GL.Color(color);
 
             float x = r.x + step * 0.5f;
             float rangeScale = cdata.series[0].rangeAxis.sqrMagnitude == 0f ?
                 0f : 1f / (cdata.series[0].rangeAxis.y - cdata.series[0].rangeAxis.x) * r.height;
+            float rangeStart = cdata.series[0].rangeAxis.x;
             float rectBottom = r.y + r.height;
             bool passedFirstValidValue = false;
+
+            const int vertexBufferSize = 512;
+            Vector3* vertexBuffer = stackalloc Vector3[vertexBufferSize];
+            int vertexBufferOffset = 0;
             for (int i = 0; i < numSamples; i++, x += step)
             {
                 float y = rectBottom - stackedSampleSums[i];
@@ -912,10 +933,19 @@ namespace UnityEditorInternal
 
                 value *= overlay.yScale;
 
-                float val = (value - cdata.series[0].rangeAxis.x) * rangeScale;
-                GL.Color(color);
-                GL.Vertex3(x, y - val, 0f);
-                GL.Vertex3(x, y, 0f);
+                float val = (value - rangeStart) * rangeScale;
+                vertexBuffer[vertexBufferOffset++] = new Vector3(x, y - val, 0);
+                vertexBuffer[vertexBufferOffset++] = new Vector3(x, y, 0);
+                if (vertexBufferOffset >= vertexBufferSize)
+                {
+                    GL.Vertices(vertexBuffer, null, null, vertexBufferOffset);
+                    vertexBufferOffset -= vertexBufferSize;
+                }
+            }
+
+            if (vertexBufferOffset > 0)
+            {
+                GL.Vertices(vertexBuffer, null, null, vertexBufferOffset);
             }
             GL.End();
         }

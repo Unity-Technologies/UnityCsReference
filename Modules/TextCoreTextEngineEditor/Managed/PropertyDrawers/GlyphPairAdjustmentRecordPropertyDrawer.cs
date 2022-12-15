@@ -2,12 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.TextCore;
 using UnityEngine.TextCore.Text;
 using UnityEngine.TextCore.LowLevel;
-
-using Glyph = UnityEngine.TextCore.Glyph;
-using GlyphRect = UnityEngine.TextCore.GlyphRect;
 
 
 namespace UnityEditor.TextCore.Text
@@ -15,8 +14,10 @@ namespace UnityEditor.TextCore.Text
     [CustomPropertyDrawer(typeof(GlyphPairAdjustmentRecord))]
     internal class GlyphPairAdjustmentRecordPropertyDrawer : PropertyDrawer
     {
-        private bool isEditingEnabled = false;
-        private bool isSelectable = false;
+        private bool isEditingEnabled;
+        private bool isSelectable;
+
+        private Dictionary<uint, GlyphProxy> m_GlyphLookupDictionary;
 
         private string m_FirstCharacter = string.Empty;
         private string m_SecondCharacter = string.Empty;
@@ -37,6 +38,10 @@ namespace UnityEditor.TextCore.Text
 
             SerializedProperty prop_FontFeatureLookupFlags = property.FindPropertyRelative("m_FeatureLookupFlags");
 
+            // Refresh glyph proxy lookup dictionary if needed.
+            if (TextCorePropertyDrawerUtilities.s_RefreshGlyphProxyLookup)
+                TextCorePropertyDrawerUtilities.RefreshGlyphProxyLookup(property.serializedObject);
+
             position.yMin += 2;
 
             float width = position.width / 2;
@@ -45,12 +50,12 @@ namespace UnityEditor.TextCore.Text
             Rect rect;
 
             isEditingEnabled = GUI.enabled;
-            isSelectable = label.text == "Selectable" ? true : false;
+            isSelectable = label.text == "Selectable";
 
             if (isSelectable)
-                GUILayoutUtility.GetRect(position.width, 75);
+                GUILayoutUtility.GetRect(position.width, 80);
             else
-                GUILayoutUtility.GetRect(position.width, 55);
+                GUILayoutUtility.GetRect(position.width, 60);
 
             GUIStyle style = new GUIStyle(EditorStyles.label);
             style.richText = true;
@@ -79,7 +84,7 @@ namespace UnityEditor.TextCore.Text
                 //rect.y += 20;
                 //EditorGUI.PropertyField(rect, prop_FirstGlyphValueRecord.FindPropertyRelative("m_YAdvance"), new GUIContent("AY:"));
 
-                DrawGlyph((uint)prop_FirstGlyphIndex.intValue, new Rect(position.x, position.y, position.width, position.height), property);
+                DrawGlyph((uint)prop_FirstGlyphIndex.intValue, new Rect(position.x, position.y - 5, 64, 80), property);
             }
             else
             {
@@ -95,18 +100,10 @@ namespace UnityEditor.TextCore.Text
                 {
                     if (ValidateInput(firstCharacter))
                     {
-                        //Debug.Log("1st Unicode value: [" + firstCharacter + "]");
-
                         uint unicode = GetUnicodeCharacter(firstCharacter);
 
-                        // Lookup glyph index
-                        SerializedPropertyHolder propertyHolder = property.serializedObject.targetObject as SerializedPropertyHolder;
-                        FontAsset fontAsset = propertyHolder.fontAsset;
-                        if (fontAsset != null)
-                        {
-                            prop_FirstGlyphIndex.intValue = (int)fontAsset.GetGlyphIndex(unicode);
-                            propertyHolder.firstCharacter = unicode;
-                        }
+                        SerializedProperty firstCharacter_prop = property.serializedObject.FindProperty("firstCharacter");
+                        firstCharacter_prop.intValue = (int)unicode;
                     }
                 }
 
@@ -121,6 +118,7 @@ namespace UnityEditor.TextCore.Text
                 EditorGUI.PropertyField(rect, prop_FirstGlyphIndex, new GUIContent("ID:"));
                 if (EditorGUI.EndChangeCheck())
                 {
+
                 }
 
                 GUI.enabled = isEditingEnabled;
@@ -163,7 +161,7 @@ namespace UnityEditor.TextCore.Text
                 //rect.y += 20;
                 //EditorGUI.PropertyField(rect, prop_SecondGlyphAdjustment.FindPropertyRelative("m_YAdvance"), new GUIContent("AY"));
 
-                DrawGlyph((uint)prop_SecondGlyphIndex.intValue, new Rect(position.width / 2 + 20, position.y, position.width, position.height), property);
+                DrawGlyph((uint)prop_SecondGlyphIndex.intValue, new Rect(position.width / 2 + 20, position.y - 5, 64, 80), property);
             }
             else
             {
@@ -179,18 +177,10 @@ namespace UnityEditor.TextCore.Text
                 {
                     if (ValidateInput(secondCharacter))
                     {
-                        //Debug.Log("2nd Unicode value: [" + secondCharacter + "]");
-
                         uint unicode = GetUnicodeCharacter(secondCharacter);
 
-                        // Lookup glyph index
-                        SerializedPropertyHolder propertyHolder = property.serializedObject.targetObject as SerializedPropertyHolder;
-                        FontAsset fontAsset = propertyHolder.fontAsset;
-                        if (fontAsset != null)
-                        {
-                            prop_SecondGlyphIndex.intValue = (int)fontAsset.GetGlyphIndex(unicode);
-                            propertyHolder.secondCharacter = unicode;
-                        }
+                        SerializedProperty secondCharacter_prop = property.serializedObject.FindProperty("secondCharacter");
+                        secondCharacter_prop.intValue = (int)unicode;
                     }
                 }
 
@@ -205,6 +195,7 @@ namespace UnityEditor.TextCore.Text
                 EditorGUI.PropertyField(rect, prop_SecondGlyphIndex, new GUIContent("ID:"));
                 if (EditorGUI.EndChangeCheck())
                 {
+
                 }
 
                 GUI.enabled = isEditingEnabled;
@@ -230,8 +221,8 @@ namespace UnityEditor.TextCore.Text
                 EditorGUIUtility.labelWidth = 55f;
 
                 rect.x = position.width - 255;
-                rect.y += 23;
-                rect.width = 270; // width - 70 - padding;
+                rect.y += 28;
+                rect.width = 270;
 
                 FontFeatureLookupFlags flags = (FontFeatureLookupFlags)prop_FontFeatureLookupFlags.intValue;
 
@@ -313,61 +304,40 @@ namespace UnityEditor.TextCore.Text
             return unicode;
         }
 
-        void DrawGlyph(uint glyphIndex, Rect position, SerializedProperty property)
+        void DrawGlyph(uint glyphIndex, Rect glyphDrawPosition, SerializedProperty property)
         {
-            // Get a reference to the font asset
-            FontAsset fontAsset = property.serializedObject.targetObject as FontAsset;
-
-            if (fontAsset == null)
+            // Get a reference to the serialized object which can either be a TMP_FontAsset or FontAsset.
+            SerializedObject so = property.serializedObject;
+            if (so == null)
                 return;
 
-            Glyph glyph;
+            if (m_GlyphLookupDictionary == null)
+                m_GlyphLookupDictionary = TextCorePropertyDrawerUtilities.GetGlyphProxyLookupDictionary(so);
 
-            // Check if glyph is present in the atlas texture.
-            if (!fontAsset.glyphLookupTable.TryGetValue(glyphIndex, out glyph))
+            // Try getting a reference to the glyph for the given glyph index.
+            if (!m_GlyphLookupDictionary.TryGetValue(glyphIndex, out GlyphProxy glyph))
                 return;
 
-            // Get the atlas index of the glyph and lookup its atlas texture
-            int atlasIndex = glyph.atlasIndex;
-            Texture2D atlasTexture = fontAsset.atlasTextures.Length > atlasIndex ? fontAsset.atlasTextures[atlasIndex] : null;
-
-            if (atlasTexture == null)
+            Texture2D atlasTexture;
+            if (TextCorePropertyDrawerUtilities.TryGetAtlasTextureFromSerializedObject(so, glyph.atlasIndex, out atlasTexture) == false)
                 return;
 
             Material mat;
-            if (((GlyphRasterModes)fontAsset.atlasRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
-            {
-                mat = FontAssetEditor.internalBitmapMaterial;
+            if (TextCorePropertyDrawerUtilities.TryGetMaterial(so, atlasTexture, out mat) == false)
+                return;
 
-                if (mat == null)
-                    return;
-
-                mat.mainTexture = atlasTexture;
-            }
-            else
-            {
-                mat = FontAssetEditor.internalSDFMaterial;
-
-                if (mat == null)
-                    return;
-
-                mat.mainTexture = atlasTexture;
-                mat.SetFloat(TextShaderUtilities.ID_GradientScale, fontAsset.atlasPadding + 1);
-            }
-
-            // Draw glyph from atlas texture.
-            Rect glyphDrawPosition = new Rect(position.x, position.y + 2, 64, 60);
-
+            int padding = so.FindProperty("m_AtlasPadding").intValue;
             GlyphRect glyphRect = glyph.glyphRect;
-
-            int padding = fontAsset.atlasPadding;
-
             int glyphOriginX = glyphRect.x - padding;
             int glyphOriginY = glyphRect.y - padding;
             int glyphWidth = glyphRect.width + padding * 2;
             int glyphHeight = glyphRect.height + padding * 2;
 
-            float normalizedHeight = fontAsset.faceInfo.ascentLine - fontAsset.faceInfo.descentLine;
+            SerializedProperty faceInfoProperty = so.FindProperty("m_FaceInfo");
+            float ascentLine = faceInfoProperty.FindPropertyRelative("m_AscentLine").floatValue;
+            float descentLine = faceInfoProperty.FindPropertyRelative("m_DescentLine").floatValue;
+
+            float normalizedHeight = ascentLine - descentLine;
             float scale = glyphDrawPosition.width / normalizedHeight;
 
             // Compute the normalized texture coordinates
