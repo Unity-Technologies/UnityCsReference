@@ -99,8 +99,6 @@ namespace UnityEditor
         SerializedProperty m_ForceWhiteAlbedo;
         SerializedProperty m_ForceUpdates;
         SerializedProperty m_FilterMode;
-        SerializedProperty m_TiledBaking;
-        SerializedProperty m_NumRaysToShootPerTexel;
         SerializedProperty m_RespectSceneVisibilityWhenBakingGI;
 
         enum DenoiserTarget
@@ -338,8 +336,6 @@ namespace UnityEditor
             m_ForceUpdates = lightingSettingsObject.FindProperty("m_ForceUpdates");
             m_FilterMode = lightingSettingsObject.FindProperty("m_FilterMode");
             m_BounceScale = lightingSettingsObject.FindProperty("m_BounceScale");
-            m_TiledBaking = lightingSettingsObject.FindProperty("m_PVRTiledBaking");
-            m_NumRaysToShootPerTexel = lightingSettingsObject.FindProperty("m_NumRaysToShootPerTexel");
             m_RespectSceneVisibilityWhenBakingGI = lightingSettingsObject.FindProperty("m_RespectSceneVisibilityWhenBakingGI");
         }
 
@@ -511,7 +507,11 @@ namespace UnityEditor
                             {
                                 EditorGUI.indentLevel++;
 
-                                EditorGUILayout.PropertyField(m_PVRCulling, Styles.culling);
+                                bool iterative = m_GIWorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative;
+                                if (iterative)
+                                {
+                                    EditorGUILayout.PropertyField(m_PVRCulling, Styles.culling);
+                                }
                                 EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
 
                                 MultiEditableDelayedIntField(m_PVRDirectSampleCount, Styles.directSampleCount);

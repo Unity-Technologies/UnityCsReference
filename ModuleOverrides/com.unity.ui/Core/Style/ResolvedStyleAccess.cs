@@ -9,11 +9,6 @@ namespace UnityEngine.UIElements
 {
     internal partial class ResolvedStyleAccess
     {
-        static ResolvedStyleAccess()
-        {
-            PropertyBag.Register(new ResolvedStyleAccessPropertyBag());
-        }
-
         private VisualElement ve { get; }
 
         public ResolvedStyleAccess(VisualElement ve)
@@ -24,6 +19,6 @@ namespace UnityEngine.UIElements
         [Obsolete("unityBackgroundScaleMode is deprecated. Use background-* properties instead.")]
         public StyleEnum<ScaleMode> unityBackgroundScaleMode => BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(
             ve.computedStyle.backgroundPositionX, ve.computedStyle.backgroundPositionY,
-            ve.computedStyle.backgroundRepeat, ve.computedStyle.backgroundSize);
+            ve.computedStyle.backgroundRepeat, ve.computedStyle.backgroundSize, out _);
     }
 }

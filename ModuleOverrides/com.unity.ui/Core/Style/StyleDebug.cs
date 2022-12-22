@@ -59,7 +59,7 @@ namespace UnityEngine.UIElements
                 {
                     return BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(computedStyle.backgroundPositionX,
                         computedStyle.backgroundPositionY, computedStyle.backgroundRepeat,
-                        computedStyle.backgroundSize);
+                        computedStyle.backgroundSize, out _);
                 }
 
                 return GetComputedStyleValue(computedStyle, id);

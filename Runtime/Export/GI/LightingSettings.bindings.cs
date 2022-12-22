@@ -170,8 +170,10 @@ namespace UnityEngine
         [NativeName("FilterMode")]
         internal extern UnityEngine.FilterMode lightmapFilterMode { get; set; }
 
+        [Obsolete("Training data export for baked lighting is deprecated.", false)]
         public extern bool exportTrainingData { get; set; }
 
+        [Obsolete("Training data export for baked lighting is deprecated.", false)]
         public extern string trainingDataDestination { get; set; }
 
         // Realtime lightmap resolution in texels per world unit. Also used for indirect resolution when using baked GI.
@@ -236,10 +238,6 @@ namespace UnityEngine
         // Force Tiled baking
         [NativeName("TiledBaking")]
         internal extern TiledBaking tiledBaking { get; set; }
-
-        // Force Num rays to shoot per texel
-        [NativeName("NumRaysToShootPerTexel")]
-        internal extern int numRaysToShootPerTexel { get; set; }
 
         // Which path tracer filtering mode is used.
         [NativeName("PVRFilteringMode")]

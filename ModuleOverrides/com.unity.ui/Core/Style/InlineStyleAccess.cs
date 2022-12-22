@@ -145,11 +145,6 @@ namespace UnityEngine.UIElements
 
     internal partial class InlineStyleAccess : StyleValueCollection
     {
-        static InlineStyleAccess()
-        {
-            PropertyBag.Register(new InlineStyleAccessPropertyBag());
-        }
-
         private static StylePropertyReader s_StylePropertyReader = new StylePropertyReader();
 
         private List<StyleValueManaged> m_ValuesManaged;
@@ -1336,7 +1331,7 @@ namespace UnityEngine.UIElements
             get
             {
                 return new StyleEnum<ScaleMode>(BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(ve.style.backgroundPositionX.value,
-                    ve.style.backgroundPositionY.value, ve.style.backgroundRepeat.value, ve.style.backgroundSize.value));
+                    ve.style.backgroundPositionY.value, ve.style.backgroundRepeat.value, ve.style.backgroundSize.value, out _));
             }
 
             set

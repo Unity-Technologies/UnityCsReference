@@ -245,9 +245,6 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern MemLabels GetMaterialTexturesMemLabels();
 
-        [FreeFunction]
-        internal static extern MemLabels GetNotShownMemLabels();
-
         [StaticAccessor("PVRMemoryLabelTracker::Get()", StaticAccessorType.Arrow)]
         internal static extern void ResetExplicitlyShownMemLabels();
 
@@ -263,9 +260,6 @@ namespace UnityEditor
 
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern void LogGPUMemoryStatistics();
-
-        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern float GetLightmapBakeTimeRaw();
 
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float GetLightmapBakeTimeTotal();
