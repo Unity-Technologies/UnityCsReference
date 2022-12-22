@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 using EditorGraphicsSettings = UnityEditor.Rendering.EditorGraphicsSettings;
 
@@ -167,6 +168,15 @@ namespace UnityEditor
 
             [Obsolete("minifyWithR8 is obsolete and has no effect anymore, since Android Gradle Plugin 7.0 always uses R8", false)]
             public static bool minifyWithR8 { get { return true; } set {} }
+
+            [Obsolete("Renamed to match UI. Please use splitApplicationBinary instead. (UnityUpgradable) -> splitApplicationBinary", false)]
+            public static extern bool useAPKExpansionFiles
+            {
+                [NativeMethod("GetAndroidSplitApplicationBinary")]
+                get;
+                [NativeMethod("SetAndroidSplitApplicationBinary")]
+                set;
+            }
         }
 
         partial class iOS

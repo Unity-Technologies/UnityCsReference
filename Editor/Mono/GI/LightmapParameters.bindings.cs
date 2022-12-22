@@ -61,5 +61,13 @@ namespace UnityEditor
             get { return stitchEdges ? 1.0f : 0.0f; }
             set { stitchEdges = (value != 0.0f); }
         }
+
+        [NativeHeader("Runtime/Graphics/LightmapEnums.h")]
+        public enum AntiAliasingSamples
+        {
+            SSAA1 = 1,
+            SSAA4 = 2,
+            SSAA16 = 4,
+        }
     }
 }

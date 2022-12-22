@@ -39,6 +39,8 @@ namespace UnityEditor.TerrainTools
     [Overlay(typeof(SceneView), "Terrain Tools")]
     internal class TerrainTransientToolbarOverlay : ToolbarOverlay, ITransientOverlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
+        bool m_OverlaysPackageInstalled;
+        
         // See also
         // - SceneViewToolbars
         public TerrainTransientToolbarOverlay() : base("TerrainTransientToolbar")
@@ -47,6 +49,7 @@ namespace UnityEditor.TerrainTools
             collapsedIcon = EditorGUIUtility.LoadIcon("TerrainOverlays/ToolModeIcons/SculptMode_On.png");
             CreateToolbarIfNull();
             s_TerrainTransientToolbarOverlay = this;
+            m_OverlaysPackageInstalled = IsOverlaysPackageVersionInstalled();
         }
 
         private void CreateToolbarIfNull()
@@ -58,10 +61,10 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-         internal static TerrainTransientToolbarOverlay s_TerrainTransientToolbarOverlay;
+        internal static TerrainTransientToolbarOverlay s_TerrainTransientToolbarOverlay;
 
         // determines whether the toolbar should be visible or not
-        public bool visible => IsOverlaysPackageVersionInstalled() && TerrainInspector.s_activeTerrainInspectorInstance != null && BrushesOverlay.IsSelectedObjectTerrain();
+        public bool visible => m_OverlaysPackageInstalled && TerrainInspector.s_activeTerrainInspectorInstance != null && BrushesOverlay.IsSelectedObjectTerrain();
 
         internal static TerrainTransientToolbar s_TerrainToolbarOverlay;
         private string m_PackageVersion = string.Empty;

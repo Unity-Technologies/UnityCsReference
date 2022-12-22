@@ -1205,6 +1205,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsBridge.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UIElementsBridge.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsInitialization.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UIElementsInitialization.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsPackageUtility.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UIElementsPackageUtility.cs</Link>
     </Compile>
@@ -1267,9 +1270,6 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VectorImage.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VectorImage.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElement.PropertyBag.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\VisualElement.PropertyBag.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\VisualElement.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\VisualElement.cs</Link>
@@ -2165,8 +2165,8 @@
     <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\IndexedCollectionPropertyBag.cs">
       <Link>Modules\Properties\Runtime\PropertyBags\IndexedCollectionPropertyBag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\Internal\DefaultPropertyBags.cs">
-      <Link>Modules\Properties\Runtime\PropertyBags\Internal\DefaultPropertyBags.cs</Link>
+    <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\Internal\PropertiesInitialization.cs">
+      <Link>Modules\Properties\Runtime\PropertyBags\Internal\PropertiesInitialization.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Properties\Runtime\PropertyBags\Internal\PropertyBagStore.cs">
       <Link>Modules\Properties\Runtime\PropertyBags\Internal\PropertyBagStore.cs</Link>

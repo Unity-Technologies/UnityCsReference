@@ -237,7 +237,8 @@ namespace UnityEditor
                     {
                         if (Int32.TryParse(bakingProfileString, out int bakingProfileStoredValue))
                         {
-                            if (bakingProfileStoredValue >= 0 && bakingProfileStoredValue <= 4)
+                            const Int32 maxBakingProfile = 4; // Keep in sync with kMaxBakingProfile (C++).
+                            if (bakingProfileStoredValue >= 0 && bakingProfileStoredValue <= maxBakingProfile)
                                 bakingProfile = bakingProfileStoredValue;
                         }
                     }

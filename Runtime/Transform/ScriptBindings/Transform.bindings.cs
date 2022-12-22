@@ -115,6 +115,9 @@ namespace UnityEngine
 
         public extern void SetLocalPositionAndRotation(Vector3 localPosition, Quaternion localRotation);
 
+        public extern void GetPositionAndRotation(out Vector3 position, out Quaternion rotation);
+        public extern void GetLocalPositionAndRotation(out Vector3 localPosition, out Quaternion localRotation);
+
         // Moves the transform in the direction and distance of /translation/.
         public void Translate(Vector3 translation, [UnityEngine.Internal.DefaultValue("Space.Self")] Space relativeTo)
         {

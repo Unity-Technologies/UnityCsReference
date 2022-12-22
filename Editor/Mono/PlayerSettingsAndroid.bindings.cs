@@ -466,9 +466,13 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidLicenseVerification")]
                 get;
             }
-
-            // Use APK Expansion Files
-            public static extern bool useAPKExpansionFiles { get; set; }
+            public static extern bool splitApplicationBinary
+            {
+                [NativeMethod("GetAndroidSplitApplicationBinary")]
+                get;
+                [NativeMethod("SetAndroidSplitApplicationBinary")]
+                set;
+            }
 
             // Application should show ActivityIndicator when loading
             public static extern AndroidShowActivityIndicatorOnLoading showActivityIndicatorOnLoading

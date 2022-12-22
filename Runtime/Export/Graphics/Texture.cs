@@ -121,7 +121,12 @@ namespace UnityEngine
 #pragma warning restore 618
             else
             {
-                this = new RenderTextureDescriptor(width, height, SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render), depthBufferBits, mipCount);
+                GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
+                if (requestedFormat != compatibleFormat)
+                {
+                    Debug.LogWarning(String.Format("'{0}' is not supported. RenderTexture::GetTemporary fallbacks to {1} format on this platform. Use 'SystemInfo.IsFormatSupported' C# API to check format support.", requestedFormat.ToString(), compatibleFormat.ToString()));
+                }
+                this = new RenderTextureDescriptor(width, height, compatibleFormat, depthBufferBits, mipCount);
             }
         }
 

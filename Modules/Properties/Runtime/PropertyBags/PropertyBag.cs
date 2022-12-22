@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Unity.Jobs;
 using Unity.Properties.Internal;
 
 namespace Unity.Properties
@@ -75,6 +77,17 @@ namespace Unity.Properties
         public static IEnumerable<Type> GetAllTypesWithAPropertyBag()
         {
             return PropertyBagStore.AllTypes;
+        }
+
+        /// <summary>
+        /// Allows for <see cref="IPropertyBag"/> to be registered on a background thread while ensuring that the jobs will be completed before
+        /// the next call to <see cref="GetPropertyBag"/>.
+        /// </summary>
+        /// <param name="handle">The job handle to wait on.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void AddJobToWaitQueue(JobHandle handle)
+        {
+            PropertyBagStore.AddJobToWaitQueue(handle);
         }
     }
 

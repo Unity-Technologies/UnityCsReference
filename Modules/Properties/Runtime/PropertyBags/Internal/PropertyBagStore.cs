@@ -3,9 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Unity.Jobs;
+using UnityEngine.Scripting;
 
 namespace Unity.Properties.Internal
 {
@@ -25,20 +28,15 @@ namespace Unity.Properties.Internal
     /// </remarks>
     static class PropertyBagStore
     {
-        static PropertyBagStore()
-        {
-            s_PropertyBagProvider = new ReflectedPropertyBagProvider();
-            DefaultPropertyBagInitializer.Initialize();
-        }
+        private static ConcurrentQueue<JobHandle> s_Handles = new ConcurrentQueue<JobHandle>();
 
         internal struct TypedStore<TContainer>
         {
             public static IPropertyBag<TContainer> PropertyBag;
         }
 
-        static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, IPropertyBag> s_PropertyBags = new System.Collections.Concurrent.ConcurrentDictionary<Type, IPropertyBag>();
+        static readonly ConcurrentDictionary<Type, IPropertyBag> s_PropertyBags = new ConcurrentDictionary<Type, IPropertyBag>();
         static readonly List<Type> s_RegisteredTypes = new List<Type>();
-        internal static event Action<Type, IPropertyBag> NewTypeRegistered;
 
         /// <summary>
         /// Instance of the dynamic property bag provider. This is used to allow an external assembly to generate property bags for us.
@@ -48,6 +46,11 @@ namespace Unity.Properties.Internal
         internal static bool HasProvider => null != s_PropertyBagProvider;
 
         internal static List<Type> AllTypes => s_RegisteredTypes;
+
+        internal static void CreatePropertyBagProvider()
+        {
+            s_PropertyBagProvider = new ReflectedPropertyBagProvider();
+        }
 
         /// <summary>
         /// Adds a <see cref="ContainerPropertyBag{TContainer}"/> to the store.
@@ -81,7 +84,6 @@ namespace Unity.Properties.Internal
             }
 
             s_PropertyBags[typeof(TContainer)] = propertyBag;
-            NewTypeRegistered?.Invoke(typeof(TContainer), propertyBag);
         }
 
         /// <summary>
@@ -121,6 +123,7 @@ namespace Unity.Properties.Internal
         /// <returns>The resolved property bag.</returns>
         internal static IPropertyBag GetPropertyBag(Type type)
         {
+            WaitForJobs();
             if (s_PropertyBags.TryGetValue(type, out var propertyBag))
             {
                 return propertyBag;
@@ -238,6 +241,26 @@ namespace Unity.Properties.Internal
 
             propertyBag = GetPropertyBag(value.GetType());
             return null != propertyBag;
+        }
+
+        internal static void AddJobToWaitQueue(JobHandle handle)
+        {
+            var handles = s_Handles ??= new ConcurrentQueue<JobHandle>();
+            handles.Enqueue(handle);
+        }
+
+        static void WaitForJobs()
+        {
+            if (s_Handles is not {Count: > 0})
+                return;
+
+            foreach (var handle in s_Handles)
+            {
+                if (!handle.IsCompleted)
+                    handle.Complete();
+            }
+
+            s_Handles.Clear();
         }
     }
 }

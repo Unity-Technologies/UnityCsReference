@@ -124,6 +124,18 @@ namespace UnityEditor
             }
         }
 
+        // Repaint when MRays/sec changes
+        float m_LastRepaintedMraysPerSec;
+        protected void Update()
+        {
+            float totalNow = Lightmapping.GetLightmapBakePerformanceTotal();
+            if (Math.Abs(totalNow - m_LastRepaintedMraysPerSec) < s_MraysPerSecRepaintThreshold)
+                return;
+
+            m_LastRepaintedMraysPerSec = totalNow;
+            Repaint();
+        }
+
         void OnEnable()
         {
             s_Window = this;
@@ -532,12 +544,11 @@ namespace UnityEditor
         internal static void Summary()
         {
             bool autoGenerate = Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
-            if (autoGenerate || !Lightmapping.isRunning)
+            // Show the number of lightmaps. These are the lightmaps that will be baked, is being baked or was baked last:
             {
                 long totalMemorySize = 0;
                 int lightmapCount = 0;
                 Dictionary<Vector2, int> sizes = new Dictionary<Vector2, int>();
-                bool directionalLightmapsMode = false;
                 bool shadowmaskMode = false;
                 foreach (LightmapData ld in LightmapSettings.lightmaps)
                 {
@@ -555,7 +566,6 @@ namespace UnityEditor
                     if (ld.lightmapDir)
                     {
                         totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapDir);
-                        directionalLightmapsMode = true;
                     }
                     if (ld.shadowMask)
                     {
@@ -565,7 +575,6 @@ namespace UnityEditor
                 }
                 StringBuilder sizesString = new StringBuilder();
                 sizesString.Append(lightmapCount);
-                sizesString.Append((directionalLightmapsMode ? " Directional" : " Non-Directional"));
                 sizesString.Append(" Lightmap");
                 if (lightmapCount != 1) sizesString.Append("s");
                 if (shadowmaskMode)
@@ -668,15 +677,28 @@ namespace UnityEditor
                         GUILayout.Label("Light Probes convergence: (" + lpc.convergedProbeSetCount + "/" + lpc.probeSetCount + ")", Styles.labelStyle);
                 }
                 float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
+            }
+
+            // We show baking device and performance even when not baking, so the user can see the information after a long bake:
+            {
+                string deviceName = Lightmapping.GetLightmapBakeGPUDeviceName();
+                if (deviceName.Length > 0)
+                    GUILayout.Label("Baking device: " + deviceName, Styles.labelStyle);
+
                 float mraysPerSec = Lightmapping.GetLightmapBakePerformanceTotal();
-                if (mraysPerSec >= 0.0)
-                    GUILayout.Label("Bake Performance: " + mraysPerSec.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat) + " mrays/sec", Styles.labelStyle);
+                {
+                    string text;
+                    if (mraysPerSec >= 0.0)
+                        text = @$"Bake Performance: {mraysPerSec.ToString("0.00", CultureInfo.InvariantCulture.NumberFormat)} mrays/sec";
+                    else
+                        text = "";
+                    GUILayout.Label(text, Styles.labelStyle);
+                }
             }
 
             if (!Lightmapping.isRunning)
             {
                 float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
-                float bakeTimeRaw = Lightmapping.GetLightmapBakeTimeRaw();
                 if (bakeTime >= 0.0)
                 {
                     int time = (int)bakeTime;
@@ -686,33 +708,14 @@ namespace UnityEditor
                     time -= 60 * timeM;
                     int timeS = time;
 
-                    int timeRaw = (int)bakeTimeRaw;
-                    int timeRawH = timeRaw / 3600;
-                    timeRaw -= 3600 * timeRawH;
-                    int timeRawM = timeRaw / 60;
-                    timeRaw -= 60 * timeRawM;
-                    int timeRawS = timeRaw;
-
-                    int oHeadTime = Math.Max(0, (int)(bakeTime - bakeTimeRaw));
-                    int oHeadTimeH = oHeadTime / 3600;
-                    oHeadTime -= 3600 * oHeadTimeH;
-                    int oHeadTimeM = oHeadTime / 60;
-                    oHeadTime -= 60 * oHeadTimeM;
-                    int oHeadTimeS = oHeadTime;
-
-
                     GUILayout.Label("Total Bake Time: " + timeH.ToString("0") + ":" + timeM.ToString("00") + ":" + timeS.ToString("00"), Styles.labelStyle);
-                    if (Unsupported.IsDeveloperBuild())
-                        GUILayout.Label("(Raw Bake Time: " + timeRawH.ToString("0") + ":" + timeRawM.ToString("00") + ":" + timeRawS.ToString("00") + ", Overhead: " + oHeadTimeH.ToString("0") + ":" + oHeadTimeM.ToString("00") + ":" + oHeadTimeS.ToString("00") + ")", Styles.labelStyle);
                 }
             }
-            string deviceName = Lightmapping.GetLightmapBakeGPUDeviceName();
-            if (deviceName.Length > 0)
-                GUILayout.Label("Baking device: " + deviceName, Styles.labelStyle);
             GUILayout.EndVertical();
         }
 
         internal static LightingWindow s_Window;
+        private static readonly double s_MraysPerSecRepaintThreshold = 0.01;
         internal static bool isShown => s_Window && !s_Window.docked;
 
         [MenuItem("Window/Rendering/Lighting", false, 1)]

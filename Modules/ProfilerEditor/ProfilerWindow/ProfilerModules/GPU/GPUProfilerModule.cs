@@ -112,6 +112,8 @@ namespace UnityEditorInternal.Profiling
             m_FrameDataHierarchyView.dataAvailabilityMessage = null;
             if (m_ViewType == ProfilerViewType.Timeline)
                 m_ViewType = ProfilerViewType.Hierarchy;
+
+            TryRestoringSelection();
         }
 
         public override void DrawDetailsView(Rect position)
