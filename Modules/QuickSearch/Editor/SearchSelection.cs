@@ -37,6 +37,7 @@ namespace UnityEditor.Search
             m_List = null;
         }
 
+        internal IList<int> indexes => m_Selection;
         /// <summary>
         /// How many items are selected.
         /// </summary>

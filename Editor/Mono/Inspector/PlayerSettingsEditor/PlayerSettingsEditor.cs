@@ -786,8 +786,7 @@ namespace UnityEditor
             if (isPreset)
                 return;
 
-            var selectors = Resources.FindObjectsOfTypeAll<PresetSelector>();
-            var isOpen = selectors != null && selectors.Length > 0;
+            bool isOpen = PresetEditorHelper.presetEditorOpen;
             hasPresetWindowClosed = (isPresetWindowOpen && !isOpen);
             isPresetWindowOpen = isOpen;
 

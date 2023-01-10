@@ -31,7 +31,8 @@ namespace UnityEditor.Search
         /// <summary>Have the item description always refreshed.</summary>
         AlwaysRefresh = 1 << 5,
         /// <summary>Item description is being drawn in details view.</summary>
-        FullDescription = 1 << 6
+        FullDescription = 1 << 6,
+        CustomAction = 1 << 7,
     }
 
     internal enum SearchItemSorting
@@ -126,7 +127,8 @@ namespace UnityEditor.Search
             label = "None",
             description = "Clear the current value",
             score = int.MinValue,
-            provider = defaultProvider
+            provider = defaultProvider,
+            options = SearchItemOptions.CustomAction
         };
 
         /// <summary>
@@ -217,9 +219,10 @@ namespace UnityEditor.Search
             if (cacheThumbnail && thumbnail)
                 return thumbnail;
             var tex = provider?.fetchThumbnail?.Invoke(this, context);
-            if (cacheThumbnail)
+            var textureValid = tex && tex.width > 0 && tex.height > 0;
+            if (cacheThumbnail && textureValid)
                 thumbnail = tex;
-            return tex;
+            return textureValid ? tex : null;
         }
 
         /// <summary>
@@ -235,9 +238,10 @@ namespace UnityEditor.Search
             if (cacheThumbnail && preview)
                 return preview;
             var tex = provider?.fetchPreview?.Invoke(this, context, size, options);
-            if (cacheThumbnail)
+            var textureValid = tex && tex.width > 0 && tex.height > 0;
+            if (cacheThumbnail && textureValid)
                 preview = tex;
-            return tex;
+            return textureValid ? tex : null;
         }
 
         /// <summary>
@@ -279,6 +283,13 @@ namespace UnityEditor.Search
         public override bool Equals(object other)
         {
             return other is SearchItem l && Equals(l);
+        }
+        
+        internal int GetInstanceId()
+        {
+            if (provider != null && provider.toInstanceId != null)
+                return provider.toInstanceId(this);
+            return id.GetHashCode();
         }
 
         /// <summary>

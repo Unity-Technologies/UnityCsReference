@@ -343,7 +343,8 @@ namespace UnityEditor.Modules
             ApplicationIdentifier = PlayerSettings.GetApplicationIdentifier(GetNamedBuildTarget(args)),
             InstallIntoBuildsFolder = GetInstallingIntoBuildsFolder(args),
             GenerateIdeProject = GetCreateSolution(args),
-            Development = (args.report.summary.options & BuildOptions.Development) == BuildOptions.Development,
+            Development = (args.options & BuildOptions.Development) == BuildOptions.Development,
+            NoGUID = (args.options & BuildOptions.NoUniqueIdentifier) == BuildOptions.NoUniqueIdentifier,
             UseIl2Cpp = GetUseIl2Cpp(args),
             UseCoreCLR = GetUseCoreCLR(args),
             Architecture = GetArchitecture(args),
@@ -470,9 +471,9 @@ namespace UnityEditor.Modules
 
         protected void DefaultResultProcessor(NodeFinishedMessage node, bool printErrors = true, bool printWarnings = true)
         {
-            var output = node.Node.OutputFile;
+            var output = node.Node.OutputDirectory;
             if (string.IsNullOrEmpty(output))
-                output = node.Node.OutputDirectory;
+                output = node.Node.OutputFile;
 
             var lines = (node.Output ?? string.Empty).Split(new[] {'\r', '\n'},
                 StringSplitOptions.RemoveEmptyEntries);
@@ -528,6 +529,19 @@ namespace UnityEditor.Modules
             var filesOutput = BeeDriverResult.DataFromBuildProgram.Get<BuiltFilesOutput>();
             foreach (var outputfile in filesOutput.Files.ToNPaths().Where(f => f.FileExists() && !f.IsSymbolicLink))
                 args.report.RecordFileAdded(outputfile.ToString(), outputfile.Extension);
+
+            var config = filesOutput.BootConfigArtifact.ToNPath().ReadAllLines();
+            var guidKey = "build-guid=";
+            var guidLine = config.FirstOrDefault(l => l.StartsWith(guidKey));
+            if (guidLine != null)
+            {
+                var guid = guidLine.Substring(guidKey.Length);
+                args.report.SetBuildGUID(new GUID(guid));
+            }
+            else
+            {
+                args.report.SetBuildGUID(new GUID("00000000000000000000000000000000"));
+            }
         }
 
         public override string PrepareForBuild(BuildOptions options, BuildTarget target)
@@ -630,6 +644,9 @@ namespace UnityEditor.Modules
                     args.report.EndBuildStep(buildStep);
 
                     BeeDriverResult = activeBuild.TaskObject.Result;
+                    
+                    UnityBeeDriverProfilerSession.AddTaskToWaitForBeforeFinishing(BeeDriverResult.ProfileOutputWritingTask);
+                    
                     if (BeeDriverResult.Success)
                     {
                         PostProcessCompletedBuild(args);
@@ -644,7 +661,7 @@ namespace UnityEditor.Modules
                         ReportBuildOutputFiles(args);
                         args.report.EndBuildStep(buildStep);
                     } else
-                        throw new BuildFailedException("Incremental Player build failed!");
+                        throw new BuildFailedException($"Player build failed: {args.report.SummarizeErrors()}", silent: true);
                 }
             }
             catch (OperationCanceledException)

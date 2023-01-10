@@ -182,12 +182,12 @@ namespace UnityEditor.Search
                 searchSession.context.userData = projectSearchContext.searchFilter;
                 if (projectSearchContext.searchFilter.searchArea == SearchFilter.SearchArea.InAssetsOnly)
                 {
-                    searchSession.context.searchText = $"a:assets {query}";
+                    searchSession.context.searchText = $"{query} a:assets";
                 }
                 else if (projectSearchContext.searchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly)
                 {
                     searchSession.context.options |= SearchFlags.Packages;
-                    searchSession.context.searchText = $"a:packages {query}";
+                    searchSession.context.searchText = $"{query} a:packages";
                 }
                 else if (projectSearchContext.searchFilter.searchArea == SearchFilter.SearchArea.AllAssets)
                 {

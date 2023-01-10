@@ -87,6 +87,11 @@ namespace UnityEditor.Search.Providers
                 };
             }
         }
+        
+        [SearchSelector("count", provider: type, cacheable = false)] static object SelectCount(SearchSelectorArgs args) => EditorPerformanceTracker.GetSampleCount(args.current.id);
+        [SearchSelector("peak", provider: type, cacheable = false)] static object SelectPeak(SearchSelectorArgs args) => EditorPerformanceTracker.GetPeakTime(args.current.id);
+        [SearchSelector("avg", provider: type, cacheable = false)] static object SelectAvg(SearchSelectorArgs args) => EditorPerformanceTracker.GetAverageTime(args.current.id);
+        [SearchSelector("total", provider: type, cacheable = false)] static object SelectTotal(SearchSelectorArgs args) => EditorPerformanceTracker.GetTotalTime(args.current.id);
 
         static IEnumerable<SearchColumn> FetchColumns(SearchContext context, IEnumerable<SearchItem> items)
         {

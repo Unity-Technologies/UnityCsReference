@@ -182,6 +182,11 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // ScrollViews can take more than 3 passes to stabilize. This can be the case when a scrollview contains elements with height bound to their width (e.g label with wrapped text).
+        // Beyond 5 passes, we assume that the layout may never be stabilized then we stop updating the visibility of the scrollers.
+        private const int k_MaxLocalLayoutPassCount = 5;
+        private int m_FirstLayoutPass = -1; // The layout pass when the first geometry changed occurred. It may not be layoutPass = 0, which could occur when you have nested ScrollViews.
+
         ScrollerVisibility m_HorizontalScrollerVisibility;
 
         /// <summary>
@@ -241,9 +246,6 @@ namespace UnityEngine.UIElements
 
         const float k_ScrollPageOverlapFactor = 0.1f;
         internal const float k_UnsetPageSizeValue = -1.0f;
-
-        IVisualElementScheduledItem m_UpdateScrollersScheduledItem;
-        internal Action<bool> OnUpdateScrollers;
 
         internal bool needsHorizontal
         {
@@ -874,6 +876,9 @@ namespace UnityEngine.UIElements
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
+            m_ScheduledLayoutPassResetItem?.Pause();
+            ResetLayoutPass();
+
             if (evt.originPanel == null)
             {
                 return;
@@ -925,7 +930,48 @@ namespace UnityEngine.UIElements
             {
                 return;
             }
-            DelayUpdateScrollers();
+
+            // Get the initial information on the necessity of the scrollbars
+            bool needsVerticalCached = needsVertical;
+            bool needsHorizontalCached = needsHorizontal;
+
+            if (m_FirstLayoutPass == -1)
+                m_FirstLayoutPass = evt.layoutPass;
+            else
+            {
+                // Here, we update the visibility of the scrollbars for only few layout pass.
+                // Exceeding this limit could suggest that the layout will never be stabilized if we keep showing/hiding the scrollbars.
+                if ((evt.layoutPass - m_FirstLayoutPass) > k_MaxLocalLayoutPassCount)
+                {
+                    needsVerticalCached = needsVerticalCached || isVerticalScrollDisplayed;
+                    needsHorizontalCached = needsHorizontalCached || isHorizontalScrollDisplayed;
+                }
+            }
+
+            UpdateScrollers(needsHorizontalCached, needsVerticalCached);
+            UpdateContentViewTransform();
+            ScheduleResetLayoutPass();
+        }
+
+        private IVisualElementScheduledItem m_ScheduledLayoutPassResetItem;
+
+        void ScheduleResetLayoutPass()
+        {
+            // Reset the cached layout pass information in the next frame.
+            if (m_ScheduledLayoutPassResetItem == null)
+            {
+                m_ScheduledLayoutPassResetItem = schedule.Execute(ResetLayoutPass);
+            }
+            else
+            {
+                m_ScheduledLayoutPassResetItem.Pause();
+                m_ScheduledLayoutPassResetItem.Resume();
+            }
+        }
+
+        void ResetLayoutPass()
+        {
+            m_FirstLayoutPass = -1;
         }
 
         private int m_ScrollingPointerId = PointerId.invalidPointerId;
@@ -1388,37 +1434,6 @@ namespace UnityEngine.UIElements
             verticalScroller.Adjust(verticalFactor);
         }
 
-        void DelayUpdateScrollers()
-        {
-            if (m_UpdateScrollersScheduledItem == null)
-            {
-                m_UpdateScrollersScheduledItem = schedule.Execute(UpdateScrollers);
-            }
-            else
-            {
-                // Restart the scheduled update of the scrollers
-                m_UpdateScrollersScheduledItem.Pause();
-                m_UpdateScrollersScheduledItem.Resume();
-            }
-        }
-
-        void UpdateScrollers()
-        {
-            UpdateScrollers(needsHorizontal, needsVertical);
-            UpdateContentViewTransform();
-            // Cancel the scheduled update if this method is not called from the scheduler
-            m_UpdateScrollersScheduledItem?.Pause();
-            OnUpdateScrollers?.Invoke(false);
-        }
-
-        void UpdateViewportContentMargins(bool displayHorizontal, bool displayVertical)
-        {
-            // Expand content if scrollbars are hidden
-            contentViewport.style.marginRight = displayVertical ? verticalScroller.layout.width : 0;
-            m_ContentAndVerticalScrollContainer.style.marginBottom =
-                displayHorizontal ? horizontalScroller.layout.height : 0;
-        }
-
         internal void UpdateScrollers(bool displayHorizontal, bool displayVertical)
         {
             AdjustScrollers();
@@ -1426,8 +1441,6 @@ namespace UnityEngine.UIElements
             // Set availability
             horizontalScroller.SetEnabled(contentContainer.boundingBox.width - contentViewport.layout.width > 0);
             verticalScroller.SetEnabled(contentContainer.boundingBox.height - contentViewport.layout.height > 0);
-
-            UpdateViewportContentMargins(displayHorizontal, displayVertical);
 
             var newShowHorizontal = displayHorizontal && m_HorizontalScrollerVisibility != ScrollerVisibility.Hidden;
             var newShowVertical = displayVertical && m_VerticalScrollerVisibility != ScrollerVisibility.Hidden;
@@ -1467,17 +1480,16 @@ namespace UnityEngine.UIElements
             {
                 return;
             }
-            var newShowVertical = needsVertical && m_VerticalScrollerVisibility != ScrollerVisibility.Hidden;
+
             var newShowHorizontal = needsHorizontal && m_HorizontalScrollerVisibility != ScrollerVisibility.Hidden;
 
-            // Add some space if both scrollers are visible
+            // Align the right side of the horizontal scroller with the left side of the vertical scroller.
             if (newShowHorizontal)
             {
                 horizontalScroller.style.marginRight = verticalScroller.layout.width;
             }
 
             AdjustScrollers();
-            UpdateViewportContentMargins(newShowHorizontal, newShowVertical);
         }
 
         // TODO: Same behaviour as IMGUI Scroll view

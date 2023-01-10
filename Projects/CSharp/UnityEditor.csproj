@@ -6502,6 +6502,9 @@
     <Compile Include="..\..\Modules\PresetsEditor\PresetContextMenu.cs">
       <Link>Modules\PresetsEditor\PresetContextMenu.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PresetsEditor\PresetEditorHelper.cs">
+      <Link>Modules\PresetsEditor\PresetEditorHelper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PresetsEditor\PresetManagerEditor.cs">
       <Link>Modules\PresetsEditor\PresetManagerEditor.cs</Link>
     </Compile>
@@ -7342,6 +7345,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchResultView.cs">
       <Link>Modules\QuickSearch\Editor\UI\SearchResultView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchTableViewColumnSorter.cs">
+      <Link>Modules\QuickSearch\Editor\UI\SearchTableViewColumnSorter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UI\SearchViewState.cs">
       <Link>Modules\QuickSearch\Editor\UI\SearchViewState.cs</Link>
     </Compile>
@@ -7368,6 +7374,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\RaceConditionDetector.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\RaceConditionDetector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\RetriableOperation.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\RetriableOperation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\StringView.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\StringView.cs</Link>
@@ -8326,7 +8335,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-linux-x64_1341/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_33df/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

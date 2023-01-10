@@ -78,6 +78,7 @@ namespace UnityEditor.Search
         internal static UnityEngine.Object ToObject(SearchItem item, Type type)
         {
             var selectItemObject = (item.data as SearchServiceItem) ?? ScriptableObject.CreateInstance<SearchServiceItem>();
+            selectItemObject.hideFlags |= HideFlags.DontSaveInEditor;
             selectItemObject.name = item.label ?? item.value.ToString();
             selectItemObject.item = item;
             if (item.data == null)

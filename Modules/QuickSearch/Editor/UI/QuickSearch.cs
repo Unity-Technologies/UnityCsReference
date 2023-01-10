@@ -104,8 +104,9 @@ namespace UnityEditor.Search
         public Func<SearchItem, bool> filterCallback { get => (item) => m_ViewState.filterHandler?.Invoke(item) ?? true; set => m_ViewState.filterHandler = value; }
         public Action<SearchItem> trackingCallback { get => m_ViewState.trackingHandler; set => m_ViewState.trackingHandler = value; }
 
-        internal bool searchInProgress => (context?.searchInProgress ?? false) || nextFrame != null || m_DebounceOff != null || m_WaitAsyncResults != null;
-        internal string currentGroup => m_FilteredItems.currentGroup;
+
+        internal bool searchInProgress => (context?.searchInProgress ?? false) || m_DebounceOff != null || m_WaitAsyncResults != null;
+        internal string currentGroup { get => m_FilteredItems.currentGroup; set => SelectGroup(value); }
         internal SearchViewState viewState => m_ViewState;
 
         internal ISearchQuery activeQuery
@@ -173,6 +174,8 @@ namespace UnityEditor.Search
         {
             if (context == null)
                 return;
+            if (string.Equals(context.searchText, searchText, StringComparison.Ordinal))
+                return;
             context.searchText = searchText ?? string.Empty;
             RefreshSearch();
             if (moveCursor != TextCursorPlacement.None)
@@ -221,7 +224,7 @@ namespace UnityEditor.Search
         protected virtual IEnumerable<SearchItem> FetchItems()
         {
             SearchSettings.ApplyContextOptions(context);
-            return SearchService.GetItems(context);
+            return SearchService.GetItems(context, context.options);
         }
 
         public static QuickSearch Create(SearchFlags flags = SearchFlags.OpenDefault)
@@ -291,15 +294,12 @@ namespace UnityEditor.Search
 
         private void SetContext(SearchContext newContext)
         {
-            SetContext(newContext, true);
-        }
-
-        private void SetContext(SearchContext newContext, bool disposeOldContext)
-        {
-            var searchText = context?.searchText ?? string.Empty;
-            if (disposeOldContext)
+            if (context == null || context != newContext)
+            {
+                var searchText = context?.searchText ?? string.Empty;
                 context?.Dispose();
-            m_ViewState.context = newContext ?? SearchService.CreateContext(searchText);
+                m_ViewState.context = newContext ?? SearchService.CreateContext(searchText);
+            }
 
             context.searchView = this;
             context.focusedWindow = m_LastFocusedWindow;
@@ -308,7 +308,7 @@ namespace UnityEditor.Search
 
             m_FilteredItems?.Dispose();
             m_FilteredItems = new GroupedSearchList(context);
-
+            m_FilteredItems.currentGroup = m_ViewState.group;
             LoadContext();
         }
 
@@ -592,8 +592,9 @@ namespace UnityEditor.Search
             InitializeSplitters();
             InitializeSavedSearches();
 
-            SetContext(m_ViewState.context, false);
+            SetContext(m_ViewState.context);
             LoadSessionSettings(m_ViewState);
+            Refresh();
 
             SearchSettings.SortActionsPriority();
             m_SearchField = new UI.SearchField();
@@ -891,6 +892,8 @@ namespace UnityEditor.Search
         {
             m_SearchItemSelection = null;
             m_FilteredItems.Clear();
+            if (m_ViewState.filterHandler != null)
+                items = items.Where(item => m_ViewState.filterHandler(item));
             m_FilteredItems.AddItems(items);
             if (!string.IsNullOrEmpty(context.filterId))
                 m_FilteredItems.AddGroup(context.providers.First());
@@ -937,6 +940,8 @@ namespace UnityEditor.Search
 
         protected virtual void OnAsyncItemsReceived(SearchContext context, IEnumerable<SearchItem> items)
         {
+            if (m_ViewState.filterHandler != null)
+                items = items.Where(item => m_ViewState.filterHandler(item));
             m_FilteredItems.AddItems(items);
             if (context.searchInProgress)
                 WaitForAsynResults();
@@ -1912,6 +1917,7 @@ namespace UnityEditor.Search
 
             var oldGroupId = m_FilteredItems.currentGroup;
             m_FilteredItems.currentGroup = groupId;
+            m_ViewState.group = groupId;
 
             viewState.groupChanged?.Invoke(context, groupId, oldGroupId);
             m_ResultView?.OnGroupChanged(oldGroupId, groupId);
@@ -2249,8 +2255,7 @@ namespace UnityEditor.Search
             }
             else if (activeQuery is SearchQuery sq)
             {
-                var vs = SaveViewState(context.searchText);
-                sq.Set(vs, vs.tableConfig);
+                sq.Set(viewState);
                 SearchQuery.SaveSearchQuery(sq);
                 SaveItemCountToPropertyDatabase(true);
             }
@@ -2258,8 +2263,7 @@ namespace UnityEditor.Search
 
         internal void SaveUserSearchQuery()
         {
-            var vs = SaveViewState(context.searchText);
-            var query = SearchQuery.AddUserQuery(vs, vs.tableConfig);
+            var query = SearchQuery.AddUserQuery(viewState);
             AddNewQuery(query);
         }
 
@@ -2360,40 +2364,47 @@ namespace UnityEditor.Search
         {
             if (!Utils.IsRunningTests())
             {
-                if (!args.ignoreSaveSearches && args.context != null && string.IsNullOrEmpty(args.context.searchText))
-                    SetSearchText(SearchSettings.GetScopeValue(k_LastSearchPrefKey, m_ContextHash, ""));
-                else
-                    RefreshSearch();
+                RestoreSearchText(args);
 
-                if (m_ViewState.flags.HasNone(SearchViewFlags.OpenInspectorPreview | SearchViewFlags.OpenLeftSidePanel | SearchViewFlags.HideSearchBar))
+                if (args.flags.HasNone(SearchViewFlags.OpenInspectorPreview | SearchViewFlags.OpenLeftSidePanel | SearchViewFlags.HideSearchBar))
                 {
                     if (SearchSettings.GetScopeValue(nameof(SearchViewFlags.OpenInspectorPreview), m_ContextHash, 0) != 0)
-                        m_ViewState.flags |= SearchViewFlags.OpenInspectorPreview;
+                        args.flags |= SearchViewFlags.OpenInspectorPreview;
 
                     if (SearchSettings.showSavedSearchPanel)
-                        m_ViewState.flags |= SearchViewFlags.OpenLeftSidePanel;
+                        args.flags |= SearchViewFlags.OpenLeftSidePanel;
                 }
             }
-            else
-                RefreshSearch();
 
-            if (m_FilteredItems != null)
+            string loadGroup = null;
+            if (!Utils.IsRunningTests())
+                loadGroup = SearchSettings.GetScopeValue(nameof(m_FilteredItems.currentGroup), m_ContextHash, viewState.group);
+
+            if (context.options.HasAny(SearchFlags.FocusContext))
             {
-                string loadGroup = args.group;
-                if (!Utils.IsRunningTests())
-                    loadGroup = string.IsNullOrEmpty(args.group) ? SearchSettings.GetScopeValue(nameof(m_FilteredItems.currentGroup), m_ContextHash, ((IGroup)m_FilteredItems).id) : args.group;
-
-                if (context.options.HasAny(SearchFlags.FocusContext))
-                {
-                    var contextualProvider = GetContextualProvider();
-                    if (contextualProvider != null)
-                        loadGroup = contextualProvider.id;
-                }
-
-                SelectGroup(viewState.hideTabs ? null : loadGroup);
+                var contextualProvider = GetContextualProvider();
+                if (contextualProvider != null)
+                    loadGroup = contextualProvider.id;
             }
+
+            args.group = viewState.hideTabs ? null : (loadGroup ?? args.group);
+            if (viewState.hideAllGroup && (args.group == null || string.Equals("all", args.group, StringComparison.Ordinal)))
+                args.group = args.context?.GetProviders().FirstOrDefault()?.id;
 
             UpdateViewState(args);
+        }
+
+        protected virtual void RestoreSearchText(SearchViewState args)
+        {
+            if (!args.ignoreSaveSearches && args.context != null && string.IsNullOrEmpty(args.context.searchText))
+            {
+                args.searchText = SearchSettings.GetScopeValue(k_LastSearchPrefKey, m_ContextHash, "");
+                if (args.context != null)
+                {
+                    args.context.searchText = args.searchText;
+                    SearchSettings.ApplyContextOptions(args.context);
+                }
+            }
         }
 
         protected virtual void SaveSessionSettings()
@@ -2448,7 +2459,7 @@ namespace UnityEditor.Search
         }
 
         [MenuItem("Edit/Search All... %k", priority = 161)]
-        private static QuickSearch OpenDefaultQuickSearch()
+        internal static QuickSearch OpenDefaultQuickSearch()
         {
             var window = Open(flags: SearchFlags.OpenGlobal);
             SearchAnalytics.SendEvent(window.windowId, SearchAnalytics.GenericEventType.QuickSearchOpen, "Default");

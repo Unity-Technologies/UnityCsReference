@@ -485,7 +485,7 @@ namespace UnityEditor.Search
         private SearchQueryEvaluator<SearchResult>.EvalResult EvaluateSearchNode(SearchQueryEvaluator<SearchResult>.EvalHandlerArgs args)
         {
             if (args.op == SearchIndexOperator.None)
-                return SearchIndexerQuery.EvalResult.None;
+                return SearchQueryEvaluator<SearchResult>.EvalResult.None;
 
             SearchResultCollection subset = null;
             if (args.andSet != null)
@@ -514,7 +514,7 @@ namespace UnityEditor.Search
             if (args.orSet != null)
                 results = results.Concat(args.orSet);
 
-            return SearchIndexerQuery.EvalResult.Combined(results);
+            return SearchQueryEvaluator<SearchResult>.EvalResult.Combined(results);
         }
 
         /// <summary>
@@ -1080,7 +1080,7 @@ namespace UnityEditor.Search
 
         internal void CombineIndexes(IEnumerable<SearchIndexer> artifacts, int baseScore, string indexName, Action<int> progress)
         {
-            //using (new DebugTimer("Combining artifacts"))
+            // using (new EditorPerformanceTracker("Search.Combiningartifacts"))
             {
                 int i = 0;
                 var wiec = new SearchIndexComparer(SearchIndexOperator.DoNotCompareScore);

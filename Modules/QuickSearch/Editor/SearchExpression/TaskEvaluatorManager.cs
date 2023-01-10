@@ -85,7 +85,8 @@ namespace UnityEditor.Search
                 }
             });
 
-            while (!concurrentList.IsEmpty || !TaskHelper.IsTaskFinished(task))
+            // IMPORTANT to test IsTaskFinished first or else threading will cause instabilities.
+            while (!TaskHelper.IsTaskFinished(task) || !concurrentList.IsEmpty)
             {
                 if (cancelToken.IsCancellationRequested)
                 {

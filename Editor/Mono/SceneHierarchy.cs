@@ -994,7 +994,7 @@ namespace UnityEditor
             return false;
         }
 
-        static bool IsSelectedOrChildOfSelection(Transform transform)
+        static bool IsChildOfSelectionOrSelected(Transform transform)
         {
             if (transform == null)
                 return false;
@@ -1024,17 +1024,21 @@ namespace UnityEditor
             }
 
             bool execute = evt.type == EventType.ExecuteCommand;
+            // If the custom parent for new objects is set we don't allow cut, copy or duplicate any ancestors of this object
+            // as it might be context objects (as in Prefab Mode in Context).
+            bool allowCutCopyAndDuplicate = m_CustomParentForNewGameObjects == null
+                                            || !IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects.parent);
 
             if (evt.commandName == EventCommandNames.Delete || evt.commandName == EventCommandNames.SoftDelete)
             {
-                if (execute && !IsSelectedOrChildOfSelection(m_CustomParentForNewGameObjects))
+                if (execute && !IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects))
                     DeleteGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
             else if (evt.commandName == EventCommandNames.Duplicate)
             {
-                if (execute)
+                if (execute && allowCutCopyAndDuplicate)
                     DuplicateGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
@@ -1048,12 +1052,13 @@ namespace UnityEditor
             }
             else if (evt.commandName == EventCommandNames.Cut)
             {
-                ClipboardUtility.CutGO();
+                if (allowCutCopyAndDuplicate)
+                    ClipboardUtility.CutGO();
                 GUIUtility.ExitGUI();
             }
             else if (evt.commandName == EventCommandNames.Copy)
             {
-                if (execute)
+                if (execute && allowCutCopyAndDuplicate)
                     ClipboardUtility.CopyGO();
                 evt.Use();
                 GUIUtility.ExitGUI();
@@ -1136,7 +1141,7 @@ namespace UnityEditor
 
             menu.AddSeparator("");
 
-            if (IsSelectedOrChildOfSelection(m_CustomParentForNewGameObjects))
+            if (IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects))
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete GameObject"));
             else
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete GameObject"), false, DeleteGO);
@@ -1144,8 +1149,20 @@ namespace UnityEditor
 
         void CreateGameObjectContextClick(GenericMenu menu, int contextClickedItemID)
         {
-            menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, ClipboardUtility.CutGO);
-            menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, ClipboardUtility.CopyGO);
+            bool itemIsSelected = Selection.gameObjects.Length > 0;
+            // If the custom parent for new objects is set we don't allow cut, copy or duplicate any ancestors of this object
+            // as it might be context objects (as in Prefab Mode in Context).
+            bool allowCutCopyAndDuplicate = m_CustomParentForNewGameObjects == null
+                                            || !IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects.parent);
+
+            if (itemIsSelected && allowCutCopyAndDuplicate)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Cut"), false, ClipboardUtility.CutGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Cut"));
+            if (itemIsSelected && allowCutCopyAndDuplicate)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Copy"), false, ClipboardUtility.CopyGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Copy"));
             if (CutBoard.CanGameObjectsBePasted() || Unsupported.CanPasteGameObjectsFromPasteboard())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Paste"), false, PasteGO);
             else
@@ -1156,17 +1173,22 @@ namespace UnityEditor
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Paste As Child"));
 
             menu.AddSeparator("");
-            // TODO: Add this back in.
-            if (!hasSearchFilter && m_TreeViewState.selectedIDs.Count == 1 && !GetIsNotEditable())
+
+            if (itemIsSelected && !hasSearchFilter && m_TreeViewState.selectedIDs.Count == 1 && !GetIsNotEditable())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameGO);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
-            menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
 
-            if (IsSelectedOrChildOfSelection(m_CustomParentForNewGameObjects))
+            if (itemIsSelected && allowCutCopyAndDuplicate)
+                menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Duplicate"));
+
+            if (m_CustomParentForNewGameObjects != null && IsChildOfSelectionOrSelected(m_CustomParentForNewGameObjects) || !itemIsSelected)
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
             else
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);
+                
 
             menu.AddSeparator("");
 

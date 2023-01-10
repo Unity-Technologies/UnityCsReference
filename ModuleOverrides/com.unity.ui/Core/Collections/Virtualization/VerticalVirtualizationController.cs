@@ -231,8 +231,10 @@ namespace UnityEngine.UIElements
 
             if (m_EmptyRows == null)
             {
-                m_EmptyRows = new VisualElement();
-                m_EmptyRows.AddToClassList(BaseVerticalCollectionView.backgroundFillUssClassName);
+                m_EmptyRows = new VisualElement()
+                {
+                    classList = {BaseVerticalCollectionView.backgroundFillUssClassName}
+                };
             }
 
             if (m_EmptyRows.parent == null)
@@ -240,6 +242,7 @@ namespace UnityEngine.UIElements
 
             var pixelAlignedItemHeight = GetExpectedItemHeight(-1);
             var itemCount = Mathf.FloorToInt(backgroundFillHeight / pixelAlignedItemHeight) + 1;
+
             if (itemCount > m_EmptyRows.childCount)
             {
                 var itemsToAdd = itemCount - m_EmptyRows.childCount;

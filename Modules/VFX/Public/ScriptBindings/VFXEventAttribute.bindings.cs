@@ -28,6 +28,20 @@ namespace UnityEngine.VFX
         {
         }
 
+        internal static VFXEventAttribute CreateEventAttributeWrapper()
+        {
+            var eventAttribute = new VFXEventAttribute(IntPtr.Zero, false, null);
+            return eventAttribute;
+        }
+
+        internal void SetWrapValue(IntPtr ptrToEventAttribute)
+        {
+            if (m_Owner)
+                throw new Exception("VFXSpawnerState : SetWrapValue is reserved to CreateWrapper object");
+            m_Ptr = ptrToEventAttribute;
+
+        }
+
         public VFXEventAttribute(VFXEventAttribute original)
         {
             if (original == null)

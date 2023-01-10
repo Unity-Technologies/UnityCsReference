@@ -17,7 +17,7 @@ namespace UnityEditor.Search.Providers
     {
         enum IdentifierType { kNullIdentifier = 0, kImportedAsset = 1, kSceneObject = 2, kSourceAsset = 3, kBuiltInAsset = 4 };
 
-        struct AssetMetaInfo
+        internal struct AssetMetaInfo
         {
             public readonly string path;
             private readonly string gidString;
@@ -161,6 +161,7 @@ namespace UnityEditor.Search.Providers
                 toObject = (item, type) => GetObject(item, type),
                 toType = (item, constrainedType) => GetItemAssetType(item, constrainedType),
                 toKey = (item) => GetDocumentKey(item),
+                toInstanceId = (item) => GetItemInstanceId(item),
                 fetchItems = (context, items, provider) => SearchAssets(context, provider),
                 fetchLabel = (item, context) => FetchLabel(item),
                 fetchDescription = (item, context) => FetchDescription(item),
@@ -173,6 +174,14 @@ namespace UnityEditor.Search.Providers
             };
         }
 
+        private static int GetItemInstanceId(in SearchItem item)
+        {
+            var info = GetInfo(item);
+            if (info.gid.targetObjectId == 0)
+                return AssetDatabase.GetMainAssetInstanceID(GetInfo(item).source);
+            return GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(info.gid);
+        }
+        
         private static ulong GetDocumentKey(SearchItem item)
         {
             return GetInfo(item).guid.GetHashCode64();
@@ -543,12 +552,13 @@ namespace UnityEditor.Search.Providers
                     results.Add(r);
             }, context.sessions.cancelToken);
 
-            while (results.Count > 0 || !searchTask.Wait(1) || results.Count > 0)
+            while (results.Count > 0 || !searchTask.IsCompleted || results.Count > 0)
             {
                 while (results.TryTake(out var e))
                     yield return CreateItem(context, provider, db, e);
 
-                yield return null;
+                if (!searchTask.Wait(0))
+                    yield return null;
             }
         }
 
@@ -572,11 +582,18 @@ namespace UnityEditor.Search.Providers
                 score <<= 2;
             if (!string.IsNullOrEmpty(docPath))
             {
-                var sourceFilename = Path.GetFileName(docPath);
-                foreach (var w in context.searchWords)
+                var sourceFilename = Path.GetFileName(Utils.RemoveInvalidCharsFromPath(docPath, '_'));
+                if (context.searchWords.Length == 0)
                 {
-                    if (sourceFilename.LastIndexOf(w, StringComparison.OrdinalIgnoreCase) != -1)
-                        score = (score >> 1) + sourceFilename.Length - w.Length;
+                    score = sourceFilename[0];
+                }
+                else
+                {
+                    foreach (var w in context.searchWords)
+                    {
+                        if (sourceFilename.LastIndexOf(w, StringComparison.OrdinalIgnoreCase) != -1)
+                            score = (score >> 1) + sourceFilename.Length - w.Length;
+                    }
                 }
             }
             return score;

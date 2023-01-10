@@ -57,6 +57,16 @@ namespace UnityEditor.Search.Providers
             return EnumeratePaths(context.searchQuery, context.filterType, context.options);
         }
 
+        static Dictionary<string, UnityEngine.Object[]> s_BundleResourceObjects = new Dictionary<string, UnityEngine.Object[]>();
+        static IEnumerable<UnityEngine.Object> GetAllResourcesAtPath(in string path)
+        {
+            if (s_BundleResourceObjects.TryGetValue(path, out var objects))
+                return objects;
+            objects = AssetDatabase.LoadAllAssetsAtPath(path).ToArray();
+            s_BundleResourceObjects[path] = objects;
+            return objects;
+        }
+        
         static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
         {
             if (context.empty && context.filterType == null)
@@ -70,10 +80,10 @@ namespace UnityEditor.Search.Providers
                 yield return AssetProvider.CreateItem("ADB", context, provider, context.filterType, null, path, 998, SearchDocumentFlags.Asset);
 
             // Search builtin resources
-            var resources = AssetDatabase.LoadAllAssetsAtPath("library/unity default resources")
-                .Concat(AssetDatabase.LoadAllAssetsAtPath("resources/unity_builtin_extra"));
+            var resources = GetAllResourcesAtPath("library/unity default resources")
+                .Concat(GetAllResourcesAtPath("resources/unity_builtin_extra"));
             if (context.wantsMore)
-                resources = resources.Concat(AssetDatabase.LoadAllAssetsAtPath("library/unity editor resources"));
+                resources = resources.Concat(GetAllResourcesAtPath("library/unity editor resources"));
 
             if (context.filterType != null)
                 resources = resources.Where(r => context.filterType.IsAssignableFrom(r.GetType()));

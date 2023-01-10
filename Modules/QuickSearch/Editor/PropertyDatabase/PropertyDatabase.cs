@@ -64,14 +64,6 @@ namespace UnityEditor.Search
         PropertyDatabaseLock(string propertyDatabasePath, SharedCounter counter)
         {
             m_Path = propertyDatabasePath;
-            lock (s_DatabaseFiles)
-            {
-                if (s_DatabaseFiles.TryGetValue(propertyDatabasePath, out var _))
-                {
-                    throw new Exception($"PropertyDatase {propertyDatabasePath} is in use.");
-                }
-                s_DatabaseFiles.Add(propertyDatabasePath, counter);
-            }
         }
 
         PropertyDatabaseLock(PropertyDatabaseLock other)
@@ -85,8 +77,18 @@ namespace UnityEditor.Search
             pdbl = null;
             try
             {
-                pdbl = new PropertyDatabaseLock(propertyDatabasePath, new SharedCounter(1));
-                return true;
+                lock (s_DatabaseFiles)
+                {
+                    if (s_DatabaseFiles.TryGetValue(propertyDatabasePath, out var _))
+                    {
+                        return false;
+                    }
+
+                    var counter = new SharedCounter(1);
+                    s_DatabaseFiles.Add(propertyDatabasePath, counter);
+                    pdbl = new PropertyDatabaseLock(propertyDatabasePath, counter);
+                    return true;
+                }
             }
             catch (Exception)
             {
@@ -102,7 +104,8 @@ namespace UnityEditor.Search
                 if (m_Disposed)
                     throw new ObjectDisposedException(m_Path, "Trying to share a lock that has already been disposed.");
 
-                s_DatabaseFiles.TryGetValue(m_Path, out var counter);
+                if (!s_DatabaseFiles.TryGetValue(m_Path, out var counter))
+                    throw new System.Exception($"Data base {m_Path} is not opened.");
                 ++counter.value;
                 return new PropertyDatabaseLock(this);
             }
@@ -126,12 +129,14 @@ namespace UnityEditor.Search
                 if (m_Disposed)
                     return;
 
-                s_DatabaseFiles.TryGetValue(m_Path, out var counter);
-                --counter.value;
-                if (counter.value == 0)
+                m_Disposed = true;
+                if (s_DatabaseFiles.TryGetValue(m_Path, out var counter))
                 {
-                    m_Disposed = true;
-                    s_DatabaseFiles.Remove(m_Path);
+                    --counter.value;
+                    if (counter.value == 0)
+                    {
+                        s_DatabaseFiles.Remove(m_Path);
+                    }
                 }
             }
         }
@@ -167,6 +172,8 @@ namespace UnityEditor.Search
 
         public PropertyDatabase(string filePath, bool autoFlush, double backgroundUpdateDebounceInSeconds = k_DefaultBackgroundUpdateDebounceInSeconds)
         {
+            if (string.IsNullOrEmpty(filePath))
+                throw new System.ArgumentNullException(nameof(filePath));
             this.filePath = filePath;
             stringTableFilePath = GetStringTablePath(filePath);
 
@@ -675,6 +682,7 @@ namespace UnityEditor.Search
             m_FileStoreView.Dispose();
             m_StringTableView.Dispose();
             m_Lock.Dispose();
+            m_Lock = null;
             m_DelayedSync = false;
             m_Disposed = true;
         }

@@ -240,8 +240,6 @@ namespace UnityEngine
         public static void LogAssertionFormat(Object context, string format, params object[] args) { unityLogger.LogFormat(LogType.Assert, context, format, args); }
 
         // In the Build Settings dialog there is a check box called "Development Build".
-        [StaticAccessor("GetBuildSettings()", StaticAccessorType.Dot)]
-        [NativeProperty(TargetType = TargetType.Field)]
         public static extern bool isDebugBuild { get; }
 
         [FreeFunction("DeveloperConsole_OpenConsoleFile")]

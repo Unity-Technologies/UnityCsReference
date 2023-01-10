@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Bee.Core;
 using NiceIO;
 
@@ -16,6 +17,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         private static TinyProfiler2 _tinyProfiler;
         private static Stack<IDisposable> m_ProfilerSections = new Stack<IDisposable>();
         private static Dictionary<NPath, DateTime> _lastWriteCache = new ();
+        private static List<Task> m_TasksToWaitForBeforeFinishing = new();
 
         public static TinyProfiler2 ProfilerInstance => _tinyProfiler;
 
@@ -23,6 +25,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             m_CurrentPlayerBuildProfilerOutputFile = path;
             m_BeeDriverForCurrentPlayerBuildIndex = 0;
+            m_TasksToWaitForBeforeFinishing.Clear();
             _tinyProfiler = new TinyProfiler2();
 
             // This is a workaround for the switch to BeeDriver2 breaking merging tool trace event files into the buildreport.
@@ -36,6 +39,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             if (m_CurrentPlayerBuildProfilerOutputFile == null)
                 return;
+
+            foreach (var task in m_TasksToWaitForBeforeFinishing)
+                task.Wait();
 
             // This is a workaround for the switch to BeeDriver2 breaking merging tool trace event files into the buildreport.
             // This is temporary and will be reverted once bee is fixed
@@ -82,6 +88,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        static public void AddTaskToWaitForBeforeFinishing(Task t) => m_TasksToWaitForBeforeFinishing.Add(t);
+        
         static public bool PerformingPlayerBuild => m_CurrentPlayerBuildProfilerOutputFile != null;
 
         static public NPath GetTraceEventsOutputForPlayerBuild()

@@ -97,10 +97,8 @@ namespace UnityEditor
                 else
                     DefaultBuildMethods.BuildPlayer(options);
             }
-            catch (BuildMethodException e)
+            catch (BuildMethodException)
             {
-                if (!string.IsNullOrEmpty(e.Message))
-                    Debug.LogError(e);
             }
             finally
             {
@@ -190,8 +188,8 @@ namespace UnityEditor
                             // it should not be automatically deleted by the Unity Editor, even if it is empty (case 1073851)
                             if (options.target != BuildTarget.XboxOne && !locationPathExistedBeforeBuild)
                                 DeleteBuildFolderIfEmpty(report.summary.outputPath);
-                            Debug.LogError(resultStr);
-                            throw new BuildMethodException(report.SummarizeErrors());
+                            Debug.LogError(resultStr + "\n" + report.SummarizeErrors());
+                            throw new BuildMethodException();
                         default:
                             Debug.Log(resultStr);
                             break;

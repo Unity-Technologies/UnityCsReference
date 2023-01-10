@@ -48,6 +48,7 @@ namespace PlayerBuildProgramLibrary.Data
         public string Architecture;
         public bool UseIl2Cpp;
         public bool UseCoreCLR;
+        public bool NoGUID;
         public bool InstallIntoBuildsFolder;
         public bool GenerateIdeProject;
         public bool Development;
@@ -61,6 +62,7 @@ namespace PlayerBuildProgramLibrary.Data
     public class BuiltFilesOutput
     {
         public string[] Files = new string[0];
+        public string BootConfigArtifact;
     }
 
     public class LinkerConfig

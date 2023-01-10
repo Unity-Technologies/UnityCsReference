@@ -704,7 +704,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public static readonly string listScrollViewUssClassName = ussClassName + "__scroll-view";
 
-        internal static readonly string backgroundFillUssClassName = ussClassName + "__background";
+        internal static readonly string backgroundFillUssClassName = ussClassName + "__background-fill";
 
         /// <summary>
         /// Creates a <see cref="BaseVerticalCollectionView"/> with all default properties.

@@ -189,10 +189,13 @@ namespace UnityEditor.ShaderKeywordFilter
         // settings tree structure out of it.
         // Returns null if no filter attributes were found.
         // This method is called recursively for the tree traversing purposes.
-        internal static SettingsNode GatherFilterData(string nodeName, object containerObject, Constraints parentConstraints = null)
+        internal static SettingsNode GatherFilterData(string nodeName, object containerObject, HashSet<object> visited, Constraints parentConstraints = null)
         {
             SettingsNode node = null; // defer construction to when filter data is actually found
             if (containerObject == null)
+                return node;
+
+            if (!visited.Add(containerObject))
                 return node;
 
             var containerConstraints = GetConstraintAttributes(containerObject.GetType());
@@ -233,7 +236,8 @@ namespace UnityEditor.ShaderKeywordFilter
                     bool hasDifferentChildren = (node != null) && (node.m_Children.Count > 0);
                     foreach (var e in enumerable)
                     {
-                        SettingsNode newBranch = GatherFilterData(f.Name, e, containerConstraints);
+                        var childVisited = new HashSet<object>(visited);
+                        SettingsNode newBranch = GatherFilterData(f.Name, e, childVisited, containerConstraints);
                         if (newBranch != null)
                         {
                             if (node == null)
@@ -252,7 +256,8 @@ namespace UnityEditor.ShaderKeywordFilter
                 }
                 else if (!type.IsValueType || (type.IsValueType && !type.IsPrimitive && !type.IsEnum)) // class or struct
                 {
-                    var nestedNode = GatherFilterData(f.Name, value, containerConstraints);
+                    var childVisited = new HashSet<object>(visited);
+                    var nestedNode = GatherFilterData(f.Name, value, childVisited, containerConstraints);
                     if (nestedNode != null)
                     {
                         if (node == null)

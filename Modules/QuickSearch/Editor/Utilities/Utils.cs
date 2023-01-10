@@ -329,6 +329,75 @@ namespace UnityEditor.Search
             Menu.GetMenuItemDefaultShortcuts(outItemNames, outItemDefaultShortcuts);
         }
 
+        static string PrintTabs(int level)
+        {
+            var tabs = string.Empty;
+            for (int i = 0; i < level; ++i)
+                tabs += "\t";
+            return tabs;
+        }
+        
+        static void Append(System.Text.StringBuilder sb, string name, object v, int level, HashSet<object> _seen)
+        {
+            try
+            {
+                var vt = v?.GetType();
+                if (v == null)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: nil");
+                else if (v is UnityEngine.Object ueo)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: ({ueo.GetInstanceID()}) {ueo.name} [{ueo.GetType()}]");
+                else if (v is string s)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: {s}");
+                else if (vt.IsPrimitive)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: {v}");
+                else if (v is Enum @enum)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: {@enum}");
+                else if (v is Delegate d)
+                    sb.AppendLine($"{PrintTabs(level)}{name}: {d.Method.DeclaringType.Name}.{d.Method.Name}");
+                else if (v is System.Collections.ICollection coll)
+                {
+                    sb.AppendLine($"{PrintTabs(level)}{name} ({coll.Count}):");
+                    int i = 0;
+                    foreach (var e in coll)
+                        Append(sb, $"[{i++}] {e?.GetType()}", e, level + 2, _seen);
+                }
+                else if (vt.FullName.StartsWith("System.", StringComparison.Ordinal))
+                    sb.AppendLine($"{PrintTabs(level)}{name}: {v}");
+                else
+                    sb.AppendLine(PrintObject(name, v, level + 1, _seen));
+            }
+            catch (Exception ex)
+            {
+                sb.AppendLine($"{PrintTabs(level)}{name}: <{ex.Message}>");
+            }
+        }
+        
+        static bool PrintField(FieldInfo fi)
+        {
+            if (!fi.DeclaringType.IsSerializable)
+                return false;
+            return fi.GetCustomAttribute<NonSerializedAttribute>() == null;
+        }
+        
+        public static string PrintObject(string label, object obj, int level = 1, HashSet<object> seen = null)
+        {
+            seen = seen ?? new HashSet<object>();
+            if (!seen.Contains(obj))
+            {
+                seen.Add(obj);
+                var t = obj.GetType();
+                var bindingAttr = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+                var sb = new System.Text.StringBuilder();
+                foreach (var item in t.GetFields(bindingAttr).Where(p => PrintField(p)))
+                    Append(sb, item.Name, item.GetValue(obj), level, seen);
+                var result = sb.ToString().Trim(' ', '\r', '\n');
+                if (result.Length > 0)
+                    result = "\r\n" + result;
+                return $"{PrintTabs(level - 1)}{label} [{obj?.GetHashCode() ?? -1:X}]: {result}";
+            }
+            return $"{PrintTabs(level - 1)}{label}: [{obj?.GetHashCode() ?? -1:X}]";
+        }
+        
         internal static string FormatProviderList(IEnumerable<SearchProvider> providers, bool fullTimingInfo = false, bool showFetchTime = true)
         {
             return string.Join(fullTimingInfo ? "\r\n" : ", ", providers.Select(p =>
@@ -595,7 +664,7 @@ namespace UnityEditor.Search
 
         internal static Type GetTypeFromName(string typeName)
         {
-            return TypeCache.GetTypesDerivedFrom<UnityEngine.Object>().FirstOrDefault(t => t.Name == typeName) ?? typeof(UnityEngine.Object);
+            return TypeCache.GetTypesDerivedFrom<UnityEngine.Object>().FirstOrDefault(t => string.Equals(t.Name, typeName, StringComparison.Ordinal)) ?? typeof(UnityEngine.Object);
         }
 
         internal static string StripHTML(string input)
@@ -1233,6 +1302,7 @@ namespace UnityEditor.Search
                 string.Equals(resPath, "resources/unity_builtin_extra", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(resPath, "library/unity default resources", StringComparison.OrdinalIgnoreCase);
         }
+
 
         public static int CombineHashCodes(params int[] hashCodes)
         {

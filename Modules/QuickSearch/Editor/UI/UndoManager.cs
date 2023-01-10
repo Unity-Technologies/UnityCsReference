@@ -2,10 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-//#define DEBUG_UNDO_REDO
+// #define DEBUG_UNDO_REDO
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
@@ -39,87 +42,208 @@ namespace UnityEditor.Search
             }
         }
 
-        private int m_UndoIndex;
-        private TextUndoInfo[] m_UndoStack;
-        private double m_UndoLastTime;
-        private int m_RecentSearchIndex;
-        private string m_CurrentText;
+        [Serializable]
+        internal class UndoQueue<T> : IEnumerable<T> where T : struct
+        {
+            public int capacity => m_Buffer.Length;
+
+            [SerializeField] T[] m_Buffer;
+            [SerializeField] int m_HeadIndex;
+            [SerializeField] int m_TailIndex;
+            [SerializeField] int m_CurrentIndex;
+
+            public int currentIndex => m_CurrentIndex;
+
+            public UndoQueue(int capacity)
+            {
+                if (capacity <= 0)
+                    throw new ArgumentOutOfRangeException(nameof(capacity), "Capacity should be higher than 0!");
+                m_Buffer = new T[capacity];
+                m_HeadIndex = 0;
+                m_TailIndex = -1;
+                m_CurrentIndex = -1;
+            }
+
+            public void Push(T data)
+            {
+                // Empty queue
+                if (m_TailIndex == -1)
+                {
+                    m_Buffer[m_HeadIndex] = data;
+                    m_TailIndex = m_CurrentIndex = 0;
+                    m_HeadIndex = NextIndex(0);
+                    return;
+                }
+
+                // Current is on top, i.e. not in the middle of the stack doing undo/redo operations
+                if (NextIndex(m_CurrentIndex) == m_HeadIndex)
+                {
+                    m_Buffer[m_HeadIndex] = data;
+
+                    if (m_HeadIndex == m_TailIndex)
+                        m_TailIndex = NextIndex(m_TailIndex);
+
+                    m_CurrentIndex = NextIndex(m_CurrentIndex);
+                    m_HeadIndex = NextIndex(m_HeadIndex);
+                    return;
+                }
+
+                m_CurrentIndex = NextIndex(m_CurrentIndex);
+                m_Buffer[m_CurrentIndex] = data;
+                m_HeadIndex = NextIndex(m_CurrentIndex);
+            }
+
+            public bool Undo(out T data)
+            {
+                data = default;
+                if (!CanUndo())
+                    return false;
+
+                m_CurrentIndex = PreviousIndex(m_CurrentIndex);
+                data = m_Buffer[m_CurrentIndex];
+                return true;
+            }
+
+            public bool Redo(out T data)
+            {
+                data = default;
+                if (!CanRedo())
+                    return false;
+
+                m_CurrentIndex = NextIndex(m_CurrentIndex);
+                data = m_Buffer[m_CurrentIndex];
+                return true;
+            }
+
+            public bool CanUndo()
+            {
+                return m_TailIndex != -1 && m_CurrentIndex != m_TailIndex;
+            }
+
+            public bool CanRedo()
+            {
+                return m_TailIndex != -1 && NextIndex(m_CurrentIndex) != m_HeadIndex;
+            }
+
+            public IEnumerator<T> GetEnumerator()
+            {
+                if (m_TailIndex == -1)
+                    yield break;
+                var index = m_TailIndex;
+                do
+                {
+                    yield return m_Buffer[index];
+                    index = NextIndex(index);
+                } while (index != m_HeadIndex);
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            int NextIndex(int index)
+            {
+                return Utils.Wrap(index + 1, capacity);
+            }
+
+            int PreviousIndex(int index)
+            {
+                return Utils.Wrap(index - 1, capacity);
+            }
+        }
+
+        [SerializeField] private UndoQueue<TextUndoInfo> m_UndoStack;
+        [SerializeField] private double m_UndoLastTime;
+        [SerializeField] private int m_RecentSearchIndex;
+        [SerializeField] private string m_CurrentText;
 
         public UndoManager(string text)
         {
             m_UndoLastTime = 0d;
-            m_UndoIndex = -1;
-            m_UndoStack = new TextUndoInfo[20];
+            m_UndoStack = new(20);
             m_RecentSearchIndex = -1;
 
             Save(text, null);
         }
 
-        public void Save(in double time, string text, TextEditor textEditor)
+        public void Save(in double time, string text, TextEditor textField)
         {
             if (time - m_UndoLastTime < 0.25d)
                 return;
 
             m_UndoLastTime = time;
-            Save(text, textEditor, out var ld);
-            if (ld > 5 && textEditor != null)
+            Save(text, textField, out var ld);
+            if (ld > 5 && textField != null)
             {
                 m_RecentSearchIndex = 0;
                 SearchSettings.AddRecentSearch(text);
             }
         }
 
-        public void Save(string text, TextEditor textEditor)
+        public void Save(string text, TextEditor textField)
         {
-            Save(text, textEditor, out _);
+            Save(text, textField, out _);
         }
 
-        private void Save(string text, TextEditor textEditor, out int distance)
+        private void Save(string text, TextEditor textField, out int distance)
         {
             distance = 0;
-            if (string.IsNullOrEmpty(text))
+
+            if (m_CurrentText != null && string.CompareOrdinal(text ?? string.Empty, m_CurrentText) == 0)
                 return;
 
-            if (string.CompareOrdinal(text, m_CurrentText) == 0)
-                return;
-
-            distance = Utils.LevenshteinDistance(m_CurrentText ?? string.Empty, text);
+            distance = m_CurrentText != null ? Utils.LevenshteinDistance(m_CurrentText, text) : int.MaxValue;
             if (distance <= 1)
                 return;
 
-            m_UndoIndex = Utils.Wrap(m_UndoIndex + 1, m_UndoStack.Length);
-            m_UndoStack[m_UndoIndex] = new TextUndoInfo(text, textEditor);
+            m_UndoStack.Push(new TextUndoInfo(text, textField));
 
 
-            m_CurrentText = text;
+            m_CurrentText = text ?? string.Empty;
         }
 
 
-        public bool HandleEvent(in Event evt, out string searchText, out int cursorPos, out int selectPos)
+        public bool HandleEvent(in UnityEngine.Event evt, out string searchText, out int cursorPos, out int selectPos)
         {
             searchText = null;
             cursorPos = -1;
             selectPos = -1;
 
-            if (evt.type != EventType.KeyDown)
-                return false;
 
-            if (evt.modifiers.HasAny(EventModifiers.Alt))
+            if (evt.alt)
             {
                 if (evt.keyCode == KeyCode.DownArrow)
+                {
                     searchText = CyclePreviousSearch(-1);
+                    return true;
+                }
                 else if (evt.keyCode == KeyCode.UpArrow)
+                {
                     searchText = CyclePreviousSearch(+1);
+                    return true;
+                }
             }
-            else if (m_UndoIndex != -1 && evt.keyCode == KeyCode.Z && (evt.command || evt.control))
+            else if (evt.command || evt.control)
             {
-                if (!UndoEdit(1, out searchText, out cursorPos, out selectPos))
-                    return false;
-            }
-            else if (m_UndoIndex != -1 && evt.keyCode == KeyCode.Y && (evt.command || evt.control))
-            {
-                if (!UndoEdit(-1, out searchText, out cursorPos, out selectPos))
-                    return false;
+                if (m_UndoStack.CanUndo() && evt.keyCode == KeyCode.Z)
+                {
+                    if (!m_UndoStack.Undo(out var undoData))
+                        return false;
+                    searchText = undoData.text;
+                    cursorPos = undoData.cursorPos;
+                    selectPos = undoData.selectPos;
+                    return true;
+                }
+                else if (m_UndoStack.CanRedo() && evt.keyCode == KeyCode.Y)
+                {
+                    if (!m_UndoStack.Redo(out var redoData))
+                        return false;
+                    searchText = redoData.text;
+                    cursorPos = redoData.cursorPos;
+                    selectPos = redoData.selectPos;
+                    return true;
+                }
             }
 
             if (searchText != null && string.CompareOrdinal(searchText, m_CurrentText) != 0)
@@ -138,23 +262,6 @@ namespace UnityEditor.Search
 
             m_RecentSearchIndex = Utils.Wrap(m_RecentSearchIndex + shift, SearchSettings.recentSearches.Count);
             return SearchSettings.recentSearches[m_RecentSearchIndex];
-        }
-
-        private bool UndoEdit(int direction, out string text, out int cursorPos, out int selectPos)
-        {
-            text = null;
-            cursorPos = -1;
-            selectPos = -1;
-
-            var nextIndex = Utils.Wrap(m_UndoIndex - direction, m_UndoStack.Length);
-            if (string.IsNullOrEmpty(m_UndoStack[nextIndex].text))
-                return false;
-
-            m_UndoIndex = nextIndex;
-            text = m_UndoStack[m_UndoIndex].text;
-            selectPos = m_UndoStack[m_UndoIndex].selectPos;
-            cursorPos = m_UndoStack[m_UndoIndex].cursorPos;
-            return true;
         }
     }
 }

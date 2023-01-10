@@ -133,5 +133,7 @@ namespace UnityEditor.Search
 
         public static bool HasAny(this FetchPreviewOptions flags, FetchPreviewOptions f) => (flags & f) != 0;
         public static bool HasAll(this FetchPreviewOptions flags, FetchPreviewOptions all) => (flags & all) == all;
+        public static bool HasAny(this RefreshFlags flags, RefreshFlags f) => (flags & f) != 0;
+        public static bool HasAll(this RefreshFlags flags, RefreshFlags all) => (flags & all) == all;
     }
 }

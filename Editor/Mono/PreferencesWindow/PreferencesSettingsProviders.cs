@@ -1163,6 +1163,7 @@ namespace UnityEditor
 
             m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalyticsV2", EditorPrefs.GetBool("EnableEditorAnalytics", true));
 
+            m_AutoSaveScenesBeforeBuilding = EditorPrefs.GetBool("SaveScenesBeforeBuilding");
             m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorPrefs.GetInt("ScriptCompilationDuringPlay", 0);
 
             m_DeveloperMode = Unsupported.IsDeveloperMode();

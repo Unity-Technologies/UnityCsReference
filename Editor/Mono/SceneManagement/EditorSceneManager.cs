@@ -10,6 +10,7 @@ namespace UnityEditor.SceneManagement
 {
     public sealed partial class EditorSceneManager
     {
+        public delegate void SceneManagerSetupRestoredCallback(Scene[] scenes);
         public delegate void NewSceneCreatedCallback(Scene scene, NewSceneSetup setup, NewSceneMode mode);
         public delegate void SceneOpeningCallback(string path, OpenSceneMode mode);
         public delegate void SceneOpenedCallback(Scene scene, OpenSceneMode mode);
@@ -19,30 +20,41 @@ namespace UnityEditor.SceneManagement
         public delegate void SceneSavedCallback(Scene scene);
         public delegate void SceneDirtiedCallback(Scene scene);
 
+        public static event SceneManagerSetupRestoredCallback sceneManagerSetupRestored
+        {
+            add => m_SceneManagerSetupRestoredEvent.Add(value);
+            remove => m_SceneManagerSetupRestoredEvent.Remove(value);
+        }
+        private static EventWithPerformanceTracker<SceneManagerSetupRestoredCallback> m_SceneManagerSetupRestoredEvent = new EventWithPerformanceTracker<SceneManagerSetupRestoredCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneManagerSetupRestored)}");
+
         public static event NewSceneCreatedCallback newSceneCreated
         {
             add => m_NewSceneCreatedEvent.Add(value);
             remove => m_NewSceneCreatedEvent.Remove(value);
         }
         private static EventWithPerformanceTracker<NewSceneCreatedCallback> m_NewSceneCreatedEvent = new EventWithPerformanceTracker<NewSceneCreatedCallback>($"{nameof(EditorSceneManager)}.{nameof(newSceneCreated)}");
+
         public static event SceneOpeningCallback sceneOpening
         {
             add => m_SceneOpeningEvent.Add(value);
             remove => m_SceneOpeningEvent.Remove(value);
         }
         private static EventWithPerformanceTracker<SceneOpeningCallback> m_SceneOpeningEvent = new EventWithPerformanceTracker<SceneOpeningCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneOpening)}");
+
         public static event SceneOpenedCallback sceneOpened
         {
             add => m_SceneOpenedEvent.Add(value);
             remove => m_SceneOpenedEvent.Remove(value);
         }
         private static EventWithPerformanceTracker<SceneOpenedCallback> m_SceneOpenedEvent = new EventWithPerformanceTracker<SceneOpenedCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneOpened)}");
+
         public static event SceneClosingCallback sceneClosing
         {
             add => m_SceneClosingEvent.Add(value);
             remove => m_SceneClosingEvent.Remove(value);
         }
         private static EventWithPerformanceTracker<SceneClosingCallback> m_SceneClosingEvent = new EventWithPerformanceTracker<SceneClosingCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneClosing)}");
+
         public static event SceneClosedCallback sceneClosed
         {
             add => m_SceneClosedEvent.Add(value);
@@ -67,6 +79,13 @@ namespace UnityEditor.SceneManagement
             remove => m_SceneDirtiedEvent.Remove(value);
         }
         private static EventWithPerformanceTracker<SceneDirtiedCallback> m_SceneDirtiedEvent = new EventWithPerformanceTracker<SceneDirtiedCallback>($"{nameof(EditorSceneManager)}.{nameof(sceneDirtied)}");
+
+        [RequiredByNativeCode]
+        private static void Internal_SceneManagerSetupRestored(Scene[] scenes)
+        {
+            foreach (var evt in m_SceneManagerSetupRestoredEvent)
+                evt(scenes);
+        }
 
         [RequiredByNativeCode]
         private static void Internal_NewSceneCreated(Scene scene, NewSceneSetup setup, NewSceneMode mode)

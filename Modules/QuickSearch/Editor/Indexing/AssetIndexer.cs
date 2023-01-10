@@ -68,17 +68,24 @@ namespace UnityEditor.Search
             return path;
         }
 
-        public void IndexTypes(Type objType, int documentIndex)
+        public void IndexTypes(Type objType, int documentIndex, string name = "t", bool exact = false)
         {
             while (objType != null && objType != typeof(Object))
             {
                 if (objType == typeof(GameObject))
-                    IndexProperty(documentIndex, "t", "prefab", saveKeyword: true);
+                    IndexProperty(documentIndex, name, "prefab", saveKeyword: true, exact: true);
                 if (objType == typeof(MonoScript))
-                    IndexProperty(documentIndex, "t", "script", saveKeyword: true);
-                IndexProperty(documentIndex, "t", objType.Name, saveKeyword: true);
+                    IndexProperty(documentIndex, name, "script", saveKeyword: true, exact: true);
+                IndexType(objType, documentIndex);
                 objType = objType.BaseType;
             }
+        }
+        
+        private void IndexType(Type objType, int documentIndex)
+        {
+            IndexProperty(documentIndex, "t", objType.Name, saveKeyword: true);
+            if (objType.Name != objType.FullName)
+                IndexProperty(documentIndex, "t", objType.FullName, exact: true, saveKeyword: true);
         }
 
         private void IndexSubAsset(Object subObj, string containerPath, bool checkIfDocumentExists, bool hasCustomIndexers)
@@ -89,7 +96,7 @@ namespace UnityEditor.Search
             var objPathName = Utils.RemoveInvalidCharsFromPath($"{containerName}/{subObj.name}", ' ');
             var subObjDocumentIndex = AddDocument(id, objPathName, containerPath, checkIfDocumentExists, SearchDocumentFlags.Nested | SearchDocumentFlags.Asset);
 
-            IndexTypes(subObj.GetType(), subObjDocumentIndex);
+            IndexTypes(subObj.GetType(), subObjDocumentIndex, exact: true);
             IndexProperty(subObjDocumentIndex, "is", "nested", saveKeyword: true, exact: true);
             IndexProperty(subObjDocumentIndex, "is", "subasset", saveKeyword: true, exact: true);
             if (settings.options.dependencies)
@@ -163,12 +170,17 @@ namespace UnityEditor.Search
 
                 if (settings.options.types)
                 {
+                    IndexProperty(documentIndex, "is", "main", saveKeyword: true, exact: true);
+                    if (AssetImporter.GetAtPath(path) is ModelImporter)
+                        IndexProperty(documentIndex, "t", "model", saveKeyword: true, exact: true);
                     foreach (var obj in AssetDatabase.LoadAllAssetRepresentationsAtPath(path).Where(o => o))
                     {
-                        IndexTypes(obj.GetType(), documentIndex);
 
                         if (AssetDatabase.IsSubAsset(obj))
+                        {
+                            IndexTypes(obj.GetType(), documentIndex, "has", exact: true);
                             IndexSubAsset(obj, path, checkIfDocumentExists, hasCustomIndexers);
+                        }
                         else if (!string.IsNullOrEmpty(obj.name))
                             IndexProperty(documentIndex, "name", obj.name, saveKeyword: true, exact: true);
                     }
@@ -184,7 +196,7 @@ namespace UnityEditor.Search
                                 var c = gocs[componentIndex];
                                 if (!c || (c.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
                                     continue;
-                                IndexProperty(documentIndex, "t", c.GetType().Name, saveKeyword: true);
+                                IndexType(c.GetType(), documentIndex);
                             }
                         }
                     }
@@ -328,7 +340,7 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, type, containerPath, exact: true, saveKeyword: false);
                 }
 
-                IndexWord(documentIndex, Path.GetFileName(transformPath));
+                IndexWord(documentIndex, Utils.RemoveInvalidCharsFromPath(obj.transform.name, '_'));
                 IndexProperty(documentIndex, "is", "nested", saveKeyword: true, exact: true);
                 IndexGameObject(documentIndex, obj, options);
                 IndexCustomGameObjectProperties(id, documentIndex, obj);

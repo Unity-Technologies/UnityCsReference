@@ -50,6 +50,7 @@ namespace UnityEditor.Search.Providers
 
             toObject = (item, type) => ObjectFromItem(item, type);
             toKey = (item) => ToKey(item);
+            toInstanceId = (item) => GetItemInstanceId(item);
 
             fetchItems = (context, items, provider) => SearchItems(context, provider);
 
@@ -98,6 +99,8 @@ namespace UnityEditor.Search.Providers
             fetchDescription = (item, context) =>
             {
                 var go = ObjectFromItem(item);
+                if (item.options.HasAny(SearchItemOptions.Compacted))
+                    return go.name;
                 return (item.description = SearchUtils.GetHierarchyPath(go));
             };
 
@@ -364,6 +367,12 @@ namespace UnityEditor.Search.Providers
             Selection.instanceIDs = objects.Select(o => o.GetHashCode()).ToArray();
             if (SceneView.lastActiveSceneView != null)
                 SceneView.lastActiveSceneView.FrameSelected();
+        }
+        
+        private int GetItemInstanceId(SearchItem item)
+        {
+            var obj = ObjectFromItem(item);
+            return obj.GetInstanceID();
         }
 
         private static GameObject ObjectFromItem(in SearchItem item)

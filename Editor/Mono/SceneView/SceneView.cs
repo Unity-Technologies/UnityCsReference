@@ -2948,8 +2948,24 @@ namespace UnityEditor
             return true;
         }
 
-        private void SetSceneCameraHDRAndDepthModes()
+        private void UpdateSceneCameraSettings()
         {
+            var mainCamera = GetMainCamera();
+
+            // update physical camera properties
+            if (mainCamera != null)
+            {
+                m_Camera.usePhysicalProperties = mainCamera.usePhysicalProperties;
+                m_Camera.iso = mainCamera.iso;
+                m_Camera.shutterSpeed = mainCamera.shutterSpeed;
+                m_Camera.aperture = mainCamera.aperture;
+                m_Camera.focusDistance = mainCamera.focusDistance;
+                m_Camera.focalLength = mainCamera.focalLength;
+                m_Camera.bladeCount = mainCamera.bladeCount;
+                m_Camera.barrelClipping = mainCamera.barrelClipping;
+                m_Camera.anamorphism = mainCamera.anamorphism;
+            }
+
             if (!m_SceneIsLit || !DoesCameraDrawModeSupportHDR(m_CameraMode.drawMode))
             {
                 m_Camera.allowHDR = false;
@@ -2957,7 +2973,7 @@ namespace UnityEditor
                 m_Camera.clearStencilAfterLightingPass = false;
                 return;
             }
-            var mainCamera = GetMainCamera();
+
             if (mainCamera == null)
             {
                 m_Camera.allowHDR = false;
@@ -3042,7 +3058,8 @@ namespace UnityEditor
             m_Camera.renderingPath = GetSceneViewRenderingPath();
             if (!CheckDrawModeForRenderingPath(m_CameraMode.drawMode))
                 m_CameraMode = GetBuiltinCameraMode(DrawCameraMode.Textured);
-            SetSceneCameraHDRAndDepthModes();
+
+            UpdateSceneCameraSettings();
 
             if (m_CameraMode.drawMode == DrawCameraMode.Textured ||
                 m_CameraMode.drawMode == DrawCameraMode.TexturedWire ||

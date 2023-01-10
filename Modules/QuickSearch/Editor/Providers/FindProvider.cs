@@ -10,7 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
-using UnityEngine;
+using UnityEditorInternal;
 
 namespace UnityEditor.Search.Providers
 {
@@ -128,7 +128,9 @@ namespace UnityEditor.Search.Providers
             {
                 options |= FindOptions.Packages;
             }
-            roots = roots ?? GetRoots(options);
+            
+            if (roots == null || roots.Count() == 0)
+                roots = GetRoots(options);
 
             var results = new ConcurrentBag<SearchDocument>();
             var searchTask = Task.Run(() =>
@@ -162,29 +164,18 @@ namespace UnityEditor.Search.Providers
                 }
                 else
                 {
-                    var docsBag = new ConcurrentBag<SearchDocument>();
                     var foundFiles = new ConcurrentDictionary<SearchDocument, byte>();
                     var baseScore = isPackage ? 1 : 0;
-                    var scanFileTask = Task.Run(() =>
-                    {
-                        var files = Directory.EnumerateFiles(root, "*.meta", SearchOption.AllDirectories);
-                        foreach (var f in files)
-                        {
-                            var p = f.Substring(0, f.Length - 5).Replace("\\", "/");
-                            var doc = new SearchDocument(p, null, null, baseScore, SearchDocumentFlags.Asset);
-                            if (foundFiles.TryAdd(doc, 0))
-                                docsBag.Add(doc);
-                        }
-                    });
 
-                    while (docsBag.Count > 0 || !scanFileTask.Wait(1) || docsBag.Count > 0)
+                    var files = Directory.EnumerateFiles(root, "*.meta", SearchOption.AllDirectories);
+                    foreach (var f in files)
                     {
-                        while (docsBag.TryTake(out var e))
-                            yield return e;
-
-                        if (scanFileTask.IsFaulted || scanFileTask.IsCanceled)
-                            yield break;
+                        var p = f.Substring(0, f.Length - 5).Replace("\\", "/");
+                        var doc = new SearchDocument(p, null, null, baseScore, SearchDocumentFlags.Asset);
+                        if (foundFiles.TryAdd(doc, 0))
+                            yield return doc;
                     }
+
                     s_RootFilePaths.TryAdd(root, foundFiles);
                 }
             }
@@ -288,15 +279,23 @@ namespace UnityEditor.Search.Providers
         {
             {
                 var results = new ConcurrentBag<SearchDocument>();
-                var searchTask = Task.Run(() => SearchWord(exclude, word, options, documents, results));
-
-                while (results.Count > 0 || !searchTask.Wait(1) || results.Count > 0)
+                if (InternalEditorUtility.CurrentThreadIsMainThread())
                 {
+                    var searchTask = Task.Run(() => SearchWord(exclude, word, options, documents, results));
+                    while (results.Count > 0 || !searchTask.Wait(1) || results.Count > 0)
+                    {
+                        while (results.TryTake(out var e))
+                            yield return e;
+
+                        if (searchTask.IsFaulted || searchTask.IsCanceled)
+                            break;
+                    }
+                }
+                else
+                {
+                    SearchWord(exclude, word, options, documents, results);
                     while (results.TryTake(out var e))
                         yield return e;
-
-                    if (searchTask.IsFaulted || searchTask.IsCanceled)
-                        break;
                 }
             }
         }
@@ -381,7 +380,7 @@ namespace UnityEditor.Search.Providers
         [MenuItem("Window/Search/Find Files", priority = 1269)]
         internal static void OpenShortcut()
         {
-            QuickSearch.OpenWithContextualProvider(providerId);
+            SearchUtils.OpenWithContextualProvider(providerId);
         }
     }
 }

@@ -109,6 +109,12 @@ namespace UnityEditor.Search
             m_SearchText = searchText;
             Build();
         }
+        
+        IEnumerable<QueryBlock> IQuerySource.EnumerateBlocks()
+        {
+            foreach (var b in blocks)
+                yield return b;
+        }
 
         public IEnumerable<QueryBlock> EnumerateBlocks()
         {
@@ -856,6 +862,19 @@ namespace UnityEditor.Search
                 SetSelection(-1);
 
             return false;
+        }
+
+        bool IQuerySource.SwapBlock(QueryBlock bl, QueryBlock br)
+        {
+            var il = blocks.IndexOf(bl);
+            var ir = blocks.IndexOf(br);
+            if (il == -1 || ir == -1)
+                return false;
+
+            blocks.RemoveAt(il);
+            blocks.Insert(ir, bl);
+            Apply();
+            return true;
         }
     }
 }

@@ -163,7 +163,8 @@ namespace UnityEditor.Search
                 return;
             foreach (var win in windows)
             {
-                win.Refresh();
+                if (!((ISearchView)win).IsPicker())
+                    win.Refresh();
             }
         }
 
@@ -334,16 +335,16 @@ namespace UnityEditor.Search
             if (options.HasAny(SearchFlags.WantsMore))
                 context.wantsMore = true;
 
-            if (options.HasAny(SearchFlags.Synchronous))
-                context.options |= SearchFlags.Synchronous;
-
+            // Transfer all options from options to context.options
+            context.options |= options;
+            
             int fetchProviderCount = 0;
             var allItems = new List<SearchItem>(3);
 
             if (TryParseExpression(context, out var expression))
             {
                 var iterator = EvaluateExpression(expression, context);
-                HandleItemsIteratorSession(iterator, allItems, s_SearchServiceProvider, context, options);
+                HandleItemsIteratorSession(iterator, allItems, s_SearchServiceProvider, context);
                 fetchProviderCount++;
             }
             else
@@ -356,7 +357,7 @@ namespace UnityEditor.Search
                         watch.Start();
                         fetchProviderCount++;
                         var iterator = provider.fetchItems(context, allItems, provider);
-                        HandleItemsIteratorSession(iterator, allItems, provider, context, options);
+                        HandleItemsIteratorSession(iterator, allItems, provider, context);
                         provider.RecordFetchTime(watch.Elapsed.TotalMilliseconds);
                     }
                     catch (Exception ex)
@@ -375,16 +376,16 @@ namespace UnityEditor.Search
             if (context.subset != null)
                 allItems = new List<SearchItem>(allItems.Intersect(context.subset));
 
-            if (!options.HasAny(SearchFlags.Sorted))
+            if (!context.options.HasAny(SearchFlags.Sorted))
                 return allItems;
 
             allItems.Sort(SortItemComparer);
             return allItems.GroupBy(i => i.id).Select(i => i.First()).ToList();
         }
 
-        static void HandleItemsIteratorSession(object iterator, List<SearchItem> allItems, SearchProvider provider, SearchContext context, SearchFlags options)
+        static void HandleItemsIteratorSession(object iterator, List<SearchItem> allItems, SearchProvider provider, SearchContext context)
         {
-            if (iterator != null && options.HasAny(SearchFlags.Synchronous))
+            if (iterator != null && context.options.HasAny(SearchFlags.Synchronous))
             {
                 using (var stackedEnumerator = new SearchEnumerator<SearchItem>(iterator))
                 {
@@ -401,9 +402,9 @@ namespace UnityEditor.Search
                 session.Reset(context.sessions.currentSessionContext, iterator, k_MaxFetchTimeMs, k_MaxSessionTimeMs);
                 session.Start();
                 var sessionEnded = !session.FetchSome(allItems, k_MaxFetchTimeMs);
-                if (options.HasAny(SearchFlags.FirstBatchAsync))
+                if (context.options.HasAny(SearchFlags.FirstBatchAsync))
                 {
-                    session.SendItems(context.subset != null ? allItems.Intersect(context.subset) : allItems);
+                    session.SendItems(allItems);
                     allItems.Clear();
                 }
                 if (sessionEnded)
@@ -419,6 +420,7 @@ namespace UnityEditor.Search
         /// <returns>Asynchronous list of search items.</returns>
         public static ISearchList Request(SearchContext context, SearchFlags options = SearchFlags.None)
         {
+            context.options |= options;
             ISearchList results = null;
             if (!InternalEditorUtility.CurrentThreadIsMainThread())
             {
@@ -426,19 +428,19 @@ namespace UnityEditor.Search
 
                 Dispatcher.Enqueue(() =>
                 {
-                    results.AddItems(GetItems(context, options));
+                    results.AddItems(GetItems(context, context.options));
                     (results as ConcurrentSearchList)?.GetItemsDone();
                 });
 
                 return results;
             }
 
-            if (options.HasAny(SearchFlags.Sorted))
+            if (context.options.HasAny(SearchFlags.Sorted))
                 results = new SortedSearchList(context);
             else
                 results = new AsyncSearchList(context);
 
-            results.AddItems(GetItems(context, options));
+            results.AddItems(GetItems(context, context.options));
             return results;
         }
 
@@ -451,7 +453,7 @@ namespace UnityEditor.Search
         {
             var activeProviders = GetActiveProviders();
             var context = CreateContext(activeProviders, searchText, options);
-            return Request(context, options);
+            return Request(context, context.options);
         }
 
         /// <summary>
@@ -465,7 +467,7 @@ namespace UnityEditor.Search
             {
                 onSearchCompleted?.Invoke(c, items);
                 c.Dispose();
-            }, options);
+            }, context.options);
         }
 
         /// <summary>
@@ -482,7 +484,7 @@ namespace UnityEditor.Search
             {
                 onSearchCompleted?.Invoke(c);
                 c.Dispose();
-            }, options);
+            }, context.options);
         }
 
         /// <summary>
@@ -495,7 +497,7 @@ namespace UnityEditor.Search
             Request(context,
                 (c, items) => results.AddRange(items),
                 (c) => onSearchCompleted?.Invoke(c, results),
-                options);
+                context.options);
         }
 
         /// <summary>
@@ -508,8 +510,9 @@ namespace UnityEditor.Search
             SearchFlags options = SearchFlags.None)
         {
             var requestId = Guid.NewGuid().ToString("N");
-            if (options.HasAny(SearchFlags.Debug))
-                Debug.Log($"{requestId} Request started {context.searchText} ({options | context.options})");
+            context.options |= options;
+            if (context.options.HasAny(SearchFlags.Debug))
+                Debug.Log($"{requestId} Request started {context.searchText} ({context.options})");
             var sessionCount = 0;
             var firstBatchResolved = false;
             var completed = false;
@@ -517,26 +520,26 @@ namespace UnityEditor.Search
 
             void ReceiveItems(SearchContext c, IEnumerable<SearchItem> items)
             {
-                if (options.HasAny(SearchFlags.Debug))
+                if (context.options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} #{batchCount++} Request incoming batch {context.searchText}");
                 onIncomingItems?.Invoke(c, items.Where(e => e != null));
             }
 
             void OnSessionStarted(SearchContext c)
             {
-                if (options.HasAny(SearchFlags.Debug))
+                if (context.options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} Request session begin {context.searchText}");
                 ++sessionCount;
             }
 
             void OnSessionEnded(SearchContext c)
             {
-                if (options.HasAny(SearchFlags.Debug))
+                if (context.options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} Request session ended {context.searchText}");
                 --sessionCount;
                 if (sessionCount == 0 && firstBatchResolved)
                 {
-                    if (options.HasAny(SearchFlags.Debug))
+                    if (context.options.HasAny(SearchFlags.Debug))
                         Debug.Log($"{requestId} Request async ended {context.searchText}");
                     context.asyncItemReceived -= ReceiveItems;
                     context.sessionStarted -= OnSessionStarted;
@@ -549,13 +552,13 @@ namespace UnityEditor.Search
             context.asyncItemReceived += ReceiveItems;
             context.sessionStarted += OnSessionStarted;
             context.sessionEnded += OnSessionEnded;
-            var firstResults = GetItems(context, options);
+            var firstResults = GetItems(context, context.options);
             if (firstResults.Count > 0)
                 ReceiveItems(context, firstResults);
             firstBatchResolved = true;
             if (sessionCount == 0 && !completed)
             {
-                if (options.HasAny(SearchFlags.Debug))
+                if (context.options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} Request sync ended {context.searchText}");
                 context.asyncItemReceived -= ReceiveItems;
                 context.sessionStarted -= OnSessionStarted;

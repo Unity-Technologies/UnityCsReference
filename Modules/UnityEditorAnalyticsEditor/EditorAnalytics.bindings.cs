@@ -134,14 +134,12 @@ namespace UnityEditor
 
         internal static bool SendEventBuildPackageList(object parameters)
         {
-            return EditorAnalytics.SendEvent("buildPackageList", parameters,
-                SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
+            return EditorAnalytics.SendEvent("buildPackageList", parameters, SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
         }
 
         internal static bool SendEventBuildTargetPermissions(object parameters)
         {
-            return EditorAnalytics.SendEvent("buildTargetPermissions", parameters,
-                SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
+            return EditorAnalytics.SendEvent("buildTargetPermissions", parameters, SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
         }
 
         internal static bool SendCollabUserAction(object parameters)
