@@ -327,7 +327,7 @@ namespace UnityEditor
 
             var textField = new TextField
             {
-                label = property.displayName,
+                label = preferredLabel,
                 multiline = true,
                 style =
                 {

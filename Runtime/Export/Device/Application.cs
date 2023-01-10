@@ -123,6 +123,7 @@ namespace UnityEngine.Device
             return ShimManager.applicationShim.CanStreamedLevelBeLoaded(levelName);
         }
 
+        [Obsolete("Application.GetBuildTags is no longer supported and will be removed.", false)]
         public static string[] GetBuildTags()
         {
             return ShimManager.applicationShim.GetBuildTags();
@@ -173,6 +174,7 @@ namespace UnityEngine.Device
             return ShimManager.applicationShim.RequestUserAuthorization(mode);
         }
 
+        [Obsolete("Application.SetBuildTags is no longer supported and will be removed.", false)]
         public static void SetBuildTags(string[] buildTags)
         {
             ShimManager.applicationShim.SetBuildTags(buildTags);

@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected string m_PackageName = string.Empty;
-        public string packageName
+        public virtual string packageName
         {
             get
             {
@@ -89,7 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override event Action<IOperation> onOperationFinalized = delegate {};
         public override event Action<IOperation> onOperationSuccess = delegate {};
         public override event Action<IOperation> onOperationProgress = delegate {};
-        public Action<T> onProcessResult = delegate {};
+        public virtual event Action<T> onProcessResult = delegate {};
 
         [SerializeField]
         protected T m_Request;

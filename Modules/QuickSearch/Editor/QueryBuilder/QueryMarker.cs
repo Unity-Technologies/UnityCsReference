@@ -18,10 +18,21 @@ namespace UnityEditor.Search
         public IEnumerable<object> Evaluate(SearchContext context, bool reevaluateLiterals = false)
         {
             if (expression == null)
-                return new[] { rawText.ToString() };
-            if (expression.types.HasAny(SearchExpressionType.Literal) && !reevaluateLiterals)
-                return new[] { value };
-            return expression.Execute(context).Where(item => item != null).Select(item => item.value);
+            {
+                yield return rawText.ToString();
+            }
+            else if (expression.types.HasAny(SearchExpressionType.Literal) && !reevaluateLiterals)
+            {
+                yield return value;
+            }
+            else
+            {
+                var oldOptions = context.options;
+                context.options |= SearchFlags.Synchronous;
+                foreach (var r in expression.Execute(context).Where(item => item != null).Select(item => item.value))
+                    yield return r;
+                context.options = oldOptions;
+            }
         }
 
         public IEnumerable<object> Evaluate(bool reevaluateLiterals = false)

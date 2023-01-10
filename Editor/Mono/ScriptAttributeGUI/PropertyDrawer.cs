@@ -14,12 +14,16 @@ namespace UnityEditor
     {
         internal PropertyAttribute m_Attribute;
         internal FieldInfo m_FieldInfo;
+        internal string m_PreferredLabel;
 
         // The [[PropertyAttribute]] for the property. Not applicable for custom class drawers. (RO)
         public PropertyAttribute attribute { get { return m_Attribute; } }
 
         // The reflection FieldInfo for the member this property represents. (RO)
         public FieldInfo fieldInfo { get { return m_FieldInfo; } }
+
+        // The preferred label for this property.
+        public string preferredLabel => m_PreferredLabel;
 
         internal void OnGUISafe(Rect position, SerializedProperty property, GUIContent label)
         {

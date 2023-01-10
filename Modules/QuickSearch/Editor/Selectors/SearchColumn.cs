@@ -226,6 +226,13 @@ namespace UnityEditor.Search
             return name;
         }
 
+        internal Type GetMatchingType()
+        {
+            var pos = path.IndexOf('/');
+            var typeName = pos == -1 ? path : path.Substring(0, pos);
+            return Utils.GetTypeFromName(typeName);
+        }
+        
         public void InitFunctors()
         {
             getter = getter ?? DefaultSelect;
@@ -233,7 +240,7 @@ namespace UnityEditor.Search
                 SearchColumnProvider.Initialize(this);
         }
 
-        private static object DefaultSelect(SearchColumnEventArgs args)
+        internal static object DefaultSelect(SearchColumnEventArgs args)
         {
             return args.column.SelectValue(args.item, args.context);
         }
@@ -257,10 +264,16 @@ namespace UnityEditor.Search
             var providerTypes = new HashSet<string>(context.providers.Select(p => p.type));
 
             // In case there is a valid search group selected in the search view, lets use that instead.
-            if (context.searchView is QuickSearch qs && !string.IsNullOrEmpty(qs.currentGroup) && !string.Equals(qs.currentGroup, "all"))
+            var currentGroup = "";
+            if (context.searchView != null)
+            {
+                currentGroup = ((QuickSearch)context.searchView).currentGroup;
+            }
+            
+            if (!string.IsNullOrEmpty(currentGroup) && !string.Equals(currentGroup, "all", StringComparison.Ordinal))
             {
                 providerTypes.Clear();
-                providerTypes.Add(qs.currentGroup);
+                providerTypes.Add(currentGroup);
             }
 
             foreach (var s in SelectorManager.selectors)
@@ -390,6 +403,9 @@ namespace UnityEditor.Search
                 if (!string.Equals(p.provider, column.provider, StringComparison.OrdinalIgnoreCase))
                     continue;
 
+                column.setter = null;
+                column.drawer = null;
+                column.comparer = null;
                 p.handler(column);
                 break;
             }

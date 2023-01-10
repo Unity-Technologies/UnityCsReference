@@ -25,7 +25,7 @@ namespace UnityEditor.Search
             return Path.GetFileName(GetAssetPath(item));
         }
 
-        [SearchSelector("type", priority: 99)]
+        [SearchSelector("type", priority: 99, cacheable = false)]
         static string GetAssetType(SearchItem item)
         {
             var itemType = item.provider?.toType?.Invoke(item, null);

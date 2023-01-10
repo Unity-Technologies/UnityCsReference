@@ -256,7 +256,7 @@ namespace UnityEditorInternal
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             m_Prop = property;
-            m_Text = property.displayName;
+            m_Text = preferredLabel;
             m_DummyEvent = GetDummyEvent(m_Prop);
 
             var listViewContainer = new VisualElement();

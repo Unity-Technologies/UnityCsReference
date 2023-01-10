@@ -652,16 +652,27 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
                 else if (background.sprite != null)
                 {
+                    ScaleMode scaleMode = BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(style.backgroundPositionX,
+                        style.backgroundPositionY,
+                        style.backgroundRepeat,
+                        style.backgroundSize,
+                        out bool validScaleMode);
+
+                    bool useRepeat = !validScaleMode || (scaleMode == ScaleMode.ScaleAndCrop);
+
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(
                         currentElement.rect,
                         background.sprite,
-                        ScaleMode.StretchToFill,
+                        useRepeat ? ScaleMode.StretchToFill : scaleMode,
                         currentElement.panel.contextType,
                         radiusParams.HasRadius(MeshBuilderNative.kEpsilon),
                         ref slices,
-                        true);
+                        useRepeat);
 
-                    rectParams.rect = new Rect(0, 0, background.sprite.rect.width, background.sprite.rect.height);
+                    if (rectParams.texture != null)
+                    {
+                        rectParams.rect = new Rect(0, 0, background.sprite.rect.width, background.sprite.rect.height);
+                    }
 
                     sliceScale *= UIElementsUtility.PixelsPerUnitScaleForElement(visualElement, background.sprite);
                 }

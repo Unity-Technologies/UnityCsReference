@@ -145,23 +145,27 @@ namespace UnityEditor.Search
             switch (matProp.type)
             {
                 case MaterialProperty.PropType.Color:
-                    if (matProp.colorValue != (Color)newValue)
-                        matProp.colorValue = (Color)newValue;
+                    if (newValue is Color c && matProp.colorValue != c)
+                        matProp.colorValue = c;
                     break;
 
                 case MaterialProperty.PropType.Vector:
-                    if (matProp.vectorValue != (Vector4)newValue)
-                        matProp.vectorValue = (Vector4)newValue;
+                    if (newValue is Vector4 v && matProp.vectorValue != v)
+                        matProp.vectorValue = v;
                     break;
 
                 case MaterialProperty.PropType.Float:
-                    if (matProp.floatValue != (float)newValue)
-                        matProp.floatValue = (float)newValue;
+                    {
+                        if (newValue is float f && matProp.floatValue != f)
+                            matProp.floatValue = f;
+                    }
                     break;
 
                 case MaterialProperty.PropType.Range:
-                    if (matProp.floatValue != (float)newValue)
-                        matProp.floatValue = (float)newValue;
+                    {
+                        if (newValue is float f && matProp.floatValue != f)
+                            matProp.floatValue = f;
+                    }
                     break;
 
                 case MaterialProperty.PropType.Texture:
@@ -185,7 +189,7 @@ namespace UnityEditor.Search
                 case MaterialProperty.PropType.Range:
                     return MaterialEditor.RangePropertyInternal(r, matProp, GUIContent.none);
                 case MaterialProperty.PropType.Vector:
-                    return MaterialEditor.VectorPropertyInternal(r, matProp, string.Empty);
+                    return MaterialEditor.VectorPropertyInternal(r, matProp, GUIContent.none);
                 case MaterialProperty.PropType.Texture:
                     return EditorGUI.DoObjectField(r, r, GUIUtility.GetControlID(FocusType.Passive), matProp.textureValue, matProp.targets[0], typeof(Texture), null, true);
             }
@@ -195,15 +199,6 @@ namespace UnityEditor.Search
 
         static int MaterialPropertyComparer(object lhsObj, object rhsObj, bool sortAscending)
         {
-            if (lhsObj == null && rhsObj == null)
-                return 0;
-
-            if (lhsObj == null && rhsObj != null)
-                return sortAscending ? 1 : -1;
-
-            if (lhsObj != null && rhsObj == null)
-                return sortAscending ? -1 : 1;
-
             if (!(lhsObj is MaterialProperty lm) || !(rhsObj is MaterialProperty rm) || lm.type != rm.type)
                 return 0;
 

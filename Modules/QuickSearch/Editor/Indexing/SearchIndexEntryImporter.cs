@@ -34,9 +34,9 @@ namespace UnityEditor.Search
 
     abstract class SearchIndexEntryImporter : ScriptedImporter
     {
-        public const int version = SearchIndexEntry.version | (0x0004 << 10);
+        public const int version = SearchIndexEntry.version | (0x0004 << 13);
 
-        protected abstract IndexingOptions options { get; }
+        public abstract IndexingOptions options { get; }
 
         private SearchDatabase.Options GetOptions()
         {
@@ -89,20 +89,20 @@ namespace UnityEditor.Search
 
     abstract class ASIEI : SearchIndexEntryImporter {}
 
-    [ScriptedImporter(version, "~aindex00", AllowCaching = true)] class ASIEI00 : ASIEI { protected override IndexingOptions options => 0x00; }
-    [ScriptedImporter(version, "~aindex01", AllowCaching = true)] class ASIEI01 : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x01; }
-    [ScriptedImporter(version, "~aindex02", AllowCaching = true)] class ASIEI02 : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x02; }
-    [ScriptedImporter(version, "~aindex03", AllowCaching = true)] class ASIEI03 : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x03; }
-    [ScriptedImporter(version, "~aindex04", AllowCaching = true)] class ASIEI04 : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x04; }
-    [ScriptedImporter(version, "~aindex05", AllowCaching = true)] class ASIEI05 : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x05; }
-    [ScriptedImporter(version, "~aindex06", AllowCaching = true)] class ASIEI06 : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x06; }
-    [ScriptedImporter(version, "~aindex07", AllowCaching = true)] class ASIEI07 : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x07; }
-    [ScriptedImporter(version, "~aindex08", AllowCaching = true)] class ASIEI08 : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x08; }
-    [ScriptedImporter(version, "~aindex09", AllowCaching = true)] class ASIEI09 : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x09; }
-    [ScriptedImporter(version, "~aindex0A", AllowCaching = true)] class ASIEI0A : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x0A; }
-    [ScriptedImporter(version, "~aindex0B", AllowCaching = true)] class ASIEI0B : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x0B; }
-    [ScriptedImporter(version, "~aindex0C", AllowCaching = true)] class ASIEI0C : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x0C; }
-    [ScriptedImporter(version, "~aindex0D", AllowCaching = true)] class ASIEI0D : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x0D; }
-    [ScriptedImporter(version, "~aindex0E", AllowCaching = true)] class ASIEI0E : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x0E; }
-    [ScriptedImporter(version, "~aindex0F", AllowCaching = true)] class ASIEI0F : ASIEI { protected override IndexingOptions options => (IndexingOptions)0x0F; }
+    [ScriptedImporter(version, "~aindex00", AllowCaching = true)] class ASIEI00 : ASIEI { public override IndexingOptions options => 0x00; }
+    [ScriptedImporter(version, "~aindex01", AllowCaching = true)] class ASIEI01 : ASIEI { public override IndexingOptions options => (IndexingOptions)0x01; }
+    [ScriptedImporter(version, "~aindex02", AllowCaching = true)] class ASIEI02 : ASIEI { public override IndexingOptions options => (IndexingOptions)0x02; }
+    [ScriptedImporter(version, "~aindex03", AllowCaching = true)] class ASIEI03 : ASIEI { public override IndexingOptions options => (IndexingOptions)0x03; }
+    [ScriptedImporter(version, "~aindex04", AllowCaching = true)] class ASIEI04 : ASIEI { public override IndexingOptions options => (IndexingOptions)0x04; }
+    [ScriptedImporter(version, "~aindex05", AllowCaching = true)] class ASIEI05 : ASIEI { public override IndexingOptions options => (IndexingOptions)0x05; }
+    [ScriptedImporter(version, "~aindex06", AllowCaching = true)] class ASIEI06 : ASIEI { public override IndexingOptions options => (IndexingOptions)0x06; }
+    [ScriptedImporter(version, "~aindex07", AllowCaching = true)] class ASIEI07 : ASIEI { public override IndexingOptions options => (IndexingOptions)0x07; }
+    [ScriptedImporter(version, "~aindex08", AllowCaching = true)] class ASIEI08 : ASIEI { public override IndexingOptions options => (IndexingOptions)0x08; }
+    [ScriptedImporter(version, "~aindex09", AllowCaching = true)] class ASIEI09 : ASIEI { public override IndexingOptions options => (IndexingOptions)0x09; }
+    [ScriptedImporter(version, "~aindex0A", AllowCaching = true)] class ASIEI0A : ASIEI { public override IndexingOptions options => (IndexingOptions)0x0A; }
+    [ScriptedImporter(version, "~aindex0B", AllowCaching = true)] class ASIEI0B : ASIEI { public override IndexingOptions options => (IndexingOptions)0x0B; }
+    [ScriptedImporter(version, "~aindex0C", AllowCaching = true)] class ASIEI0C : ASIEI { public override IndexingOptions options => (IndexingOptions)0x0C; }
+    [ScriptedImporter(version, "~aindex0D", AllowCaching = true)] class ASIEI0D : ASIEI { public override IndexingOptions options => (IndexingOptions)0x0D; }
+    [ScriptedImporter(version, "~aindex0E", AllowCaching = true)] class ASIEI0E : ASIEI { public override IndexingOptions options => (IndexingOptions)0x0E; }
+    [ScriptedImporter(version, "~aindex0F", AllowCaching = true)] class ASIEI0F : ASIEI { public override IndexingOptions options => (IndexingOptions)0x0F; }
 }

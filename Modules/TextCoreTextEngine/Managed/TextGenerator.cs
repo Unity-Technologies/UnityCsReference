@@ -274,7 +274,7 @@ namespace UnityEngine.TextCore.Text
             k_ZeroWidthSpace = 0x200B,
             k_NarrowNoBreakSpace = 0x202F,
             k_WordJoiner = 0x2060,
-            k_HorizontalEllipsis = 8230,
+            k_HorizontalEllipsis = 0x2026,
             k_RightSingleQuote = 8217,
             k_Square = 9633,
             k_HangulJamoStart = 0x1100,
@@ -290,7 +290,8 @@ namespace UnityEngine.TextCore.Text
             k_CjkFormsStart = 0xFE30,
             k_CjkFormsEnd = 0xFE4F,
             k_CjkHalfwidthStart = 0xFF00,
-            k_CjkHalfwidthEnd = 0xFFEF;
+            k_CjkHalfwidthEnd = 0xFFEF,
+            k_EndOfText = 0x03;
 
 
         const float k_FloatUnset = -32767;
@@ -485,7 +486,6 @@ namespace UnityEngine.TextCore.Text
         float m_Padding;
         SpriteAsset m_CurrentSpriteAsset;
         int m_TotalCharacterCount;
-        float m_FontScale;
         float m_FontSize;
         float m_FontScaleMultiplier;
         float m_CurrentFontSize;
@@ -606,6 +606,10 @@ namespace UnityEngine.TextCore.Text
             m_Padding = 6.0f; // generationSettings.extraPadding ? 5.5f : 1.5f;
 
             m_IsMaskingEnabled = false;
+
+            // Set the font style that is assigned by the builder
+            m_FontStyleInternal = generationSettings.fontStyle;
+            m_FontWeightInternal = (m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold ? TextFontWeight.Bold : generationSettings.fontWeight;
 
             // Find and cache Underline & Ellipsis characters.
             GetSpecialCharacters(generationSettings);
@@ -829,7 +833,7 @@ namespace UnityEngine.TextCore.Text
                 {
                     Debug.LogError("Line breaking recursion max threshold hit... Character [" + charCode + "] index: " + i);
                     characterToSubstitute.index = m_CharacterCount;
-                    characterToSubstitute.unicode = 0x03;
+                    characterToSubstitute.unicode = k_EndOfText;
                 }
 
                 // Skip characters that have been substituted.
@@ -881,14 +885,14 @@ namespace UnityEngine.TextCore.Text
 
                     switch (charCode)
                     {
-                        case 0x03:
-                            textInfo.textElementInfo[m_CharacterCount].textElement = m_CurrentFontAsset.characterLookupTable[0x03];
+                        case k_EndOfText:
+                            textInfo.textElementInfo[m_CharacterCount].textElement = m_CurrentFontAsset.characterLookupTable[k_EndOfText];
                             m_IsTextTruncated = true;
                             break;
                         case 0x2D:
                             //
                             break;
-                        case 0x2026:
+                        case k_HorizontalEllipsis:
                             textInfo.textElementInfo[m_CharacterCount].textElement = m_Ellipsis.character;
                             textInfo.textElementInfo[m_CharacterCount].elementType = TextElementType.Character;
                             textInfo.textElementInfo[m_CharacterCount].fontAsset = m_Ellipsis.fontAsset;
@@ -900,7 +904,7 @@ namespace UnityEngine.TextCore.Text
 
                             // End Of Text
                             characterToSubstitute.index = m_CharacterCount + 1;
-                            characterToSubstitute.unicode = 0x03;
+                            characterToSubstitute.unicode = k_EndOfText;
                             break;
                     }
                 }
@@ -909,7 +913,7 @@ namespace UnityEngine.TextCore.Text
 
                 // When using Linked text, mark character as ignored and skip to next character.
                 #region Linked Text
-                if (m_CharacterCount < generationSettings.firstVisibleCharacter && charCode != 0x03)
+                if (m_CharacterCount < generationSettings.firstVisibleCharacter && charCode != k_EndOfText)
                 {
                     textInfo.textElementInfo[m_CharacterCount].isVisible = false;
                     textInfo.textElementInfo[m_CharacterCount].character = (char)k_ZeroWidthSpace;
@@ -1029,7 +1033,7 @@ namespace UnityEngine.TextCore.Text
                         adjustedScale = m_CurrentFontSize * smallCapsMultiplier / m_CurrentFontAsset.m_FaceInfo.pointSize * m_CurrentFontAsset.m_FaceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f);
 
                     // Special handling for injected Ellipsis
-                    if (isInjectedCharacter && charCode == 0x2026)
+                    if (isInjectedCharacter && charCode == k_HorizontalEllipsis)
                     {
                         elementAscentLine = 0;
                         elementDescentLine = 0;
@@ -1046,7 +1050,7 @@ namespace UnityEngine.TextCore.Text
                     textInfo.textElementInfo[m_CharacterCount].elementType = TextElementType.Character;
                     textInfo.textElementInfo[m_CharacterCount].scale = currentElementScale;
 
-                    padding = m_CurrentMaterialIndex == 0 ? m_Padding : GetPaddingForMaterial(m_CurrentMaterial, generationSettings.extraPadding);
+                    padding = m_Padding;
                 }
                 #endregion
 
@@ -1054,7 +1058,7 @@ namespace UnityEngine.TextCore.Text
                 // Handle Soft Hyphen
                 #region Handle Soft Hyphen
                 float currentElementUnmodifiedScale = currentElementScale;
-                if (charCode == 0xAD || charCode == 0x03)
+                if (charCode == 0xAD || charCode == k_EndOfText)
                     currentElementScale = 0;
                 #endregion
 
@@ -1402,7 +1406,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Setup Mesh for visible text elements. ie. not a SPACE / LINEFEED / CARRIAGE RETURN.
                 #region Handle Visible Characters
-                if (charCode == k_Tab || ((wordWrap == TextWrappingMode.PreserveWhitespace || wordWrap == TextWrappingMode.PreserveWhitespaceNoWrap) && (isWhiteSpace || charCode == k_ZeroWidthSpace)) || (isWhiteSpace == false && charCode != k_ZeroWidthSpace && charCode != 0xAD && charCode != 0x03) || (charCode == 0xAD && isSoftHyphenIgnored == false) || m_TextElementType == TextElementType.Sprite)
+                if (charCode == k_Tab || ((wordWrap == TextWrappingMode.PreserveWhitespace || wordWrap == TextWrappingMode.PreserveWhitespaceNoWrap) && (isWhiteSpace || charCode == k_ZeroWidthSpace)) || (isWhiteSpace == false && charCode != k_ZeroWidthSpace && charCode != 0xAD && charCode != k_EndOfText) || (charCode == 0xAD && isSoftHyphenIgnored == false) || m_TextElementType == TextElementType.Sprite)
                 {
                     textInfo.textElementInfo[m_CharacterCount].isVisible = true;
 
@@ -1511,36 +1515,40 @@ namespace UnityEngine.TextCore.Text
                                 i = RestoreWordWrappingState(ref m_SavedLastValidState, textInfo);
 
                                 characterToSubstitute.index = testedCharacterCount;
-                                //characterToSubstitute.unicode = 0x03;
+                                //characterToSubstitute.unicode = k_EndOfText;
                                 continue;
 
                             case TextOverflowMode.Ellipsis:
-                                if (m_EllipsisInsertionCandidateStack.Count == 0)
+                                if (m_LineNumber > 0)
                                 {
-                                    i = -1;
-                                    m_CharacterCount = 0;
-                                    characterToSubstitute.index = 0;
-                                    characterToSubstitute.unicode = 0x03;
-                                    m_FirstCharacterOfLine = 0;
+                                    if (m_EllipsisInsertionCandidateStack.Count == 0)
+                                    {
+                                        i = -1;
+                                        m_CharacterCount = 0;
+                                        characterToSubstitute.index = 0;
+                                        characterToSubstitute.unicode = k_EndOfText;
+                                        m_FirstCharacterOfLine = 0;
+                                        continue;
+                                    }
+
+                                    var ellipsisState = m_EllipsisInsertionCandidateStack.Pop();
+                                    i = RestoreWordWrappingState(ref ellipsisState, textInfo);
+
+                                    i -= 1;
+                                    m_CharacterCount -= 1;
+                                    characterToSubstitute.index = m_CharacterCount;
+                                    characterToSubstitute.unicode = k_HorizontalEllipsis;
+
+                                    restoreCount += 1;
                                     continue;
                                 }
-
-                                var ellipsisState = m_EllipsisInsertionCandidateStack.Pop();
-                                i = RestoreWordWrappingState(ref ellipsisState, textInfo);
-
-                                i -= 1;
-                                m_CharacterCount -= 1;
-                                characterToSubstitute.index = m_CharacterCount;
-                                characterToSubstitute.unicode = 0x2026;
-
-                                restoreCount += 1;
-                                continue;
+                                break;
                             case TextOverflowMode.Linked:
                                 i = RestoreWordWrappingState(ref m_SavedLastValidState, textInfo);
 
                                 // Truncate remaining text
                                 characterToSubstitute.index = testedCharacterCount;
-                                characterToSubstitute.unicode = 0x03;
+                                characterToSubstitute.unicode = k_EndOfText;
                                 continue;
 
                             case TextOverflowMode.Page:
@@ -1550,7 +1558,7 @@ namespace UnityEngine.TextCore.Text
                                     i = -1;
                                     m_CharacterCount = 0;
                                     characterToSubstitute.index = 0;
-                                    characterToSubstitute.unicode = 0x03;
+                                    characterToSubstitute.unicode = k_EndOfText;
                                     continue;
                                 }
                                 else if (m_MaxLineAscender - m_MaxLineDescender > marginHeight + 0.0001f)
@@ -1560,7 +1568,7 @@ namespace UnityEngine.TextCore.Text
                                     i = RestoreWordWrappingState(ref m_SavedLineState, textInfo);
 
                                     characterToSubstitute.index = testedCharacterCount;
-                                    characterToSubstitute.unicode = 0x03;
+                                    characterToSubstitute.unicode = k_EndOfText;
                                     continue;
                                 }
 
@@ -1766,7 +1774,7 @@ namespace UnityEngine.TextCore.Text
                                         i = RestoreWordWrappingState(ref m_SavedLastValidState, textInfo);
 
                                         characterToSubstitute.index = testedCharacterCount;
-                                        characterToSubstitute.unicode = 0x03;
+                                        characterToSubstitute.unicode = k_EndOfText;
                                         continue;
 
                                     case TextOverflowMode.Ellipsis:
@@ -1775,7 +1783,7 @@ namespace UnityEngine.TextCore.Text
                                             i = -1;
                                             m_CharacterCount = 0;
                                             characterToSubstitute.index = 0;
-                                            characterToSubstitute.unicode = 0x03;
+                                            characterToSubstitute.unicode = k_EndOfText;
                                             m_FirstCharacterOfLine = 0;
                                             continue;
                                         }
@@ -1786,14 +1794,14 @@ namespace UnityEngine.TextCore.Text
                                         i -= 1;
                                         m_CharacterCount -= 1;
                                         characterToSubstitute.index = m_CharacterCount;
-                                        characterToSubstitute.unicode = 0x2026;
+                                        characterToSubstitute.unicode = k_HorizontalEllipsis;
 
                                         restoreCount += 1;
                                         continue;
                                     case TextOverflowMode.Linked:
                                         // Truncate remaining text
                                         characterToSubstitute.index = m_CharacterCount;
-                                        characterToSubstitute.unicode = 0x03;
+                                        characterToSubstitute.unicode = k_EndOfText;
                                         continue;
 
                                     case TextOverflowMode.Page:
@@ -1898,7 +1906,7 @@ namespace UnityEngine.TextCore.Text
                                     i = RestoreWordWrappingState(ref m_SavedWordWrapState, textInfo);
 
                                     characterToSubstitute.index = testedCharacterCount;
-                                    characterToSubstitute.unicode = 0x03;
+                                    characterToSubstitute.unicode = k_EndOfText;
                                     continue;
 
                                 case TextOverflowMode.Ellipsis:
@@ -1907,7 +1915,7 @@ namespace UnityEngine.TextCore.Text
                                         i = -1;
                                         m_CharacterCount = 0;
                                         characterToSubstitute.index = 0;
-                                        characterToSubstitute.unicode = 0x03;
+                                        characterToSubstitute.unicode = k_EndOfText;
                                         m_FirstCharacterOfLine = 0;
                                         continue;
                                     }
@@ -1918,7 +1926,7 @@ namespace UnityEngine.TextCore.Text
                                     i -= 1;
                                     m_CharacterCount -= 1;
                                     characterToSubstitute.index = m_CharacterCount;
-                                    characterToSubstitute.unicode = 0x2026;
+                                    characterToSubstitute.unicode = k_HorizontalEllipsis;
 
                                     restoreCount += 1;
                                     continue;
@@ -1927,7 +1935,7 @@ namespace UnityEngine.TextCore.Text
 
                                     // Truncate text the overflows the vertical bounds
                                     characterToSubstitute.index = m_CharacterCount;
-                                    characterToSubstitute.unicode = 0x03;
+                                    characterToSubstitute.unicode = k_EndOfText;
                                     continue;
                             }
 
@@ -2002,7 +2010,7 @@ namespace UnityEngine.TextCore.Text
 
                             // Truncate remaining text
                             characterToSubstitute.index = testedCharacterCount;
-                            characterToSubstitute.unicode = 0x03;
+                            characterToSubstitute.unicode = k_EndOfText;
                             continue;
                         }
                     }
@@ -2045,7 +2053,7 @@ namespace UnityEngine.TextCore.Text
                     float textWidth = Mathf.Abs(m_XAdvance) + (!generationSettings.isRightToLeft ? m_Ellipsis.character.m_Glyph.metrics.horizontalAdvance : 0) * (1 - m_CharWidthAdjDelta) * scale;
                     float widthOfTextAreaForEllipsis = m_Width != -1 ? Mathf.Min(marginWidth + 0.0001f - marginLeft - marginRight, m_Width) : marginWidth + 0.0001f - marginLeft - marginRight;
 
-                    if (textWidth < widthOfTextAreaForEllipsis * (isJustifiedOrFlush ? 1.05f : 1.0f) && textHeight < marginHeight + 0.0001f)
+                    if (textWidth < widthOfTextAreaForEllipsis * (isJustifiedOrFlush ? 1.05f : 1.0f))
                     {
                         SaveWordWrappingState(ref m_SavedEllipsisState, i, m_CharacterCount, textInfo);
                         m_EllipsisInsertionCandidateStack.Push(m_SavedEllipsisState);
@@ -2135,7 +2143,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Handle Line Spacing Adjustments + Word Wrapping & special case for last line.
                 #region Check for Line Feed and Last Character
-                if (charCode == k_LineFeed || charCode == 11 || charCode == 0x03 || charCode == 0x2028 || charCode == 0x2029 || (charCode == 0x2D && isInjectedCharacter) || m_CharacterCount == totalCharacterCount - 1)
+                if (charCode == k_LineFeed || charCode == 11 || charCode == k_EndOfText || charCode == 0x2028 || charCode == 0x2029 || (charCode == 0x2D && isInjectedCharacter) || m_CharacterCount == totalCharacterCount - 1)
                 {
                     // Adjust current line spacing (if necessary) before inserting new line
                     float baselineAdjustmentDelta = m_MaxLineAscender - m_StartOfLineAscender;
@@ -2245,7 +2253,7 @@ namespace UnityEngine.TextCore.Text
                     }
 
                     // If End of Text
-                    if (charCode == 0x03)
+                    if (charCode == k_EndOfText)
                         i = m_TextProcessingArray.Length;
                 }
                 #endregion Check for Linefeed or Last Character
@@ -2368,17 +2376,16 @@ namespace UnityEngine.TextCore.Text
                 Debug.Log("Auto Size Iteration Count: " + m_AutoSizeIterationCount + ". Final Point Size: " + m_FontSize);
 
             // If there are no visible characters or only character is End of Text (0x03)... no need to continue
-            if (m_CharacterCount == 0 || (m_CharacterCount == 1 && charCode == 0x03))
+            if (m_CharacterCount == 0 || (m_CharacterCount == 1 && charCode == k_EndOfText))
             {
                 ClearMesh(true, textInfo);
                 return;
             }
 
             // *** PHASE II of Text Generation ***
-            int lastVertIndex = m_MaterialReferences[m_Underline.materialIndex].referenceCount * 4;
 
             // Partial clear of the vertices array to mark unused vertices as degenerate.
-            textInfo.meshInfo[0].Clear(false);
+            textInfo.meshInfo[m_CurrentMaterialIndex].Clear(false);
 
             // Handle Text Alignment
             #region Text Vertical Alignment
@@ -2562,7 +2569,7 @@ namespace UnityEngine.TextCore.Text
                     case TextAlignment.MidlineFlush:
                     case TextAlignment.CaplineFlush:
                         // Skip Zero Width Characters and spaces outside of the margins.
-                        if (i > lineInfo.lastVisibleCharacterIndex || unicode == 0x0A || unicode == 0xAD || unicode == k_ZeroWidthSpace || unicode == k_WordJoiner || unicode == 0x03) break;
+                        if (i > lineInfo.lastVisibleCharacterIndex || unicode == 0x0A || unicode == 0xAD || unicode == k_ZeroWidthSpace || unicode == k_WordJoiner || unicode == k_EndOfText) break;
 
                         char lastCharOfCurrentLine = textElementInfos[lineInfo.lastCharacterIndex].character;
 
@@ -2940,7 +2947,7 @@ namespace UnityEngine.TextCore.Text
                 {
                     bool isUnderlineVisible = true;
                     int currentPage = textInfo.textElementInfo[i].pageNumber;
-                    textInfo.textElementInfo[i].underlineVertexIndex = lastVertIndex;
+                    textInfo.textElementInfo[i].underlineVertexIndex = m_MaterialReferences[m_Underline.materialIndex].referenceCount * 4;
 
                     if (i > generationSettings.maxVisibleCharacters || currentLine > generationSettings.maxVisibleLines || (generationSettings.overflowMode == TextOverflowMode.Page && currentPage + 1 != generationSettings.pageToDisplay))
                         isUnderlineVisible = false;
@@ -2950,7 +2957,7 @@ namespace UnityEngine.TextCore.Text
                     {
                         underlineMaxScale = Mathf.Max(underlineMaxScale, textInfo.textElementInfo[i].scale);
                         xScaleMax = Mathf.Max(xScaleMax, Mathf.Abs(xScale));
-                        underlineBaseLine = Mathf.Min(currentPage == lastPage ? underlineBaseLine : TextGeneratorUtilities.largePositiveFloat, textInfo.textElementInfo[i].baseLine + generationSettings.fontAsset.faceInfo.underlineOffset * underlineMaxScale);
+                        underlineBaseLine = Mathf.Min(currentPage == lastPage ? underlineBaseLine : TextGeneratorUtilities.largePositiveFloat, textInfo.textElementInfo[i].baseLine + currentFontAsset.faceInfo.underlineOffset * underlineMaxScale);
                         lastPage = currentPage; // Need to track pages to ensure we reset baseline for the new pages.
                     }
 
@@ -2979,7 +2986,7 @@ namespace UnityEngine.TextCore.Text
                         underlineEnd = new Vector3(textInfo.textElementInfo[i].topRight.x, underlineBaseLine, 0);
                         underlineEndScale = textInfo.textElementInfo[i].scale;
 
-                        DrawUnderlineMesh(underlineStart, underlineEnd, ref lastVertIndex, underlineStartScale, underlineEndScale, underlineMaxScale, xScaleMax, underlineColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(underlineStart, underlineEnd, underlineStartScale, underlineEndScale, underlineMaxScale, xScaleMax, underlineColor, generationSettings, textInfo);
                         underlineMaxScale = 0;
                         xScaleMax = 0;
                         underlineBaseLine = TextGeneratorUtilities.largePositiveFloat;
@@ -3000,7 +3007,7 @@ namespace UnityEngine.TextCore.Text
                         }
 
                         beginUnderline = false;
-                        DrawUnderlineMesh(underlineStart, underlineEnd, ref lastVertIndex, underlineStartScale, underlineEndScale, underlineMaxScale, xScaleMax, underlineColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(underlineStart, underlineEnd, underlineStartScale, underlineEndScale, underlineMaxScale, xScaleMax, underlineColor, generationSettings, textInfo);
                         underlineMaxScale = 0;
                         xScaleMax = 0;
                         underlineBaseLine = TextGeneratorUtilities.largePositiveFloat;
@@ -3011,7 +3018,7 @@ namespace UnityEngine.TextCore.Text
                         underlineEnd = new Vector3(textInfo.textElementInfo[i - 1].topRight.x, underlineBaseLine, 0);
                         underlineEndScale = textInfo.textElementInfo[i - 1].scale;
 
-                        DrawUnderlineMesh(underlineStart, underlineEnd, ref lastVertIndex, underlineStartScale, underlineEndScale, underlineMaxScale, xScaleMax, underlineColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(underlineStart, underlineEnd, underlineStartScale, underlineEndScale, underlineMaxScale, xScaleMax, underlineColor, generationSettings, textInfo);
                         underlineMaxScale = 0;
                         xScaleMax = 0;
                         underlineBaseLine = TextGeneratorUtilities.largePositiveFloat;
@@ -3023,7 +3030,7 @@ namespace UnityEngine.TextCore.Text
                         underlineEnd = new Vector3(textInfo.textElementInfo[i].topRight.x, underlineBaseLine, 0);
                         underlineEndScale = textInfo.textElementInfo[i].scale;
 
-                        DrawUnderlineMesh(underlineStart, underlineEnd, ref lastVertIndex, underlineStartScale, underlineEndScale, underlineMaxScale, xScaleMax, underlineColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(underlineStart, underlineEnd, underlineStartScale, underlineEndScale, underlineMaxScale, xScaleMax, underlineColor, generationSettings, textInfo);
                         underlineMaxScale = 0;
                         xScaleMax = 0;
                         underlineBaseLine = TextGeneratorUtilities.largePositiveFloat;
@@ -3038,7 +3045,7 @@ namespace UnityEngine.TextCore.Text
                         underlineEnd = new Vector3(textInfo.textElementInfo[i - 1].topRight.x, underlineBaseLine, 0);
                         underlineEndScale = textInfo.textElementInfo[i - 1].scale;
 
-                        DrawUnderlineMesh(underlineStart, underlineEnd, ref lastVertIndex, underlineStartScale, underlineEndScale, underlineMaxScale, xScaleMax, underlineColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(underlineStart, underlineEnd, underlineStartScale, underlineEndScale, underlineMaxScale, xScaleMax, underlineColor, generationSettings, textInfo);
                         underlineMaxScale = 0;
                         xScaleMax = 0;
                         underlineBaseLine = TextGeneratorUtilities.largePositiveFloat;
@@ -3051,12 +3058,12 @@ namespace UnityEngine.TextCore.Text
                 #region Strikethrough
                 // NOTE: Need to figure out how underline will be handled with multiple fonts and which font will be used for the underline.
                 bool isStrikethrough = (textInfo.textElementInfo[i].style & FontStyles.Strikethrough) == FontStyles.Strikethrough;
-                float strikethroughOffset = currentFontAsset.m_FaceInfo.strikethroughOffset;
+                float strikethroughOffset = currentFontAsset.faceInfo.strikethroughOffset;
 
                 if (isStrikethrough)
                 {
                     bool isStrikeThroughVisible = true;
-                    textInfo.textElementInfo[i].strikethroughVertexIndex = lastVertIndex;
+                    textInfo.textElementInfo[i].strikethroughVertexIndex = m_MaterialReferences[m_Underline.materialIndex].referenceCount * 4;
 
                     if (i > generationSettings.maxVisibleCharacters || currentLine > generationSettings.maxVisibleLines || (generationSettings.overflowMode == TextOverflowMode.Page && textInfo.textElementInfo[i].pageNumber + 1 != generationSettings.pageToDisplay))
                         isStrikeThroughVisible = false;
@@ -3082,7 +3089,7 @@ namespace UnityEngine.TextCore.Text
                         beginStrikethrough = false;
                         strikethroughEnd = new Vector3(textInfo.textElementInfo[i].topRight.x, textInfo.textElementInfo[i].baseLine + strikethroughOffset * strikethroughScale, 0);
 
-                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, ref lastVertIndex, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
                     }
                     else if (beginStrikethrough && i == lineInfo.lastCharacterIndex)
                     {
@@ -3099,7 +3106,7 @@ namespace UnityEngine.TextCore.Text
                         }
 
                         beginStrikethrough = false;
-                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, ref lastVertIndex, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
                     }
                     else if (beginStrikethrough && i < m_CharacterCount && (textInfo.textElementInfo[i + 1].pointSize != strikethroughPointSize || !TextGeneratorUtilities.Approximately(textInfo.textElementInfo[i + 1].baseLine + offset.y, strikethroughBaseline)))
                     {
@@ -3112,7 +3119,7 @@ namespace UnityEngine.TextCore.Text
                         else
                             strikethroughEnd = new Vector3(textInfo.textElementInfo[i].topRight.x, textInfo.textElementInfo[i].baseLine + strikethroughOffset * strikethroughScale, 0);
 
-                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, ref lastVertIndex, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
                     }
                     else if (beginStrikethrough && i < m_CharacterCount && currentFontAsset.GetInstanceID() != textElementInfos[i + 1].fontAsset.GetInstanceID())
                     {
@@ -3120,7 +3127,7 @@ namespace UnityEngine.TextCore.Text
                         beginStrikethrough = false;
                         strikethroughEnd = new Vector3(textInfo.textElementInfo[i].topRight.x, textInfo.textElementInfo[i].baseLine + strikethroughOffset * strikethroughScale, 0);
 
-                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, ref lastVertIndex, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
                     }
                     else if (beginStrikethrough && !isStrikeThroughVisible)
                     {
@@ -3128,7 +3135,7 @@ namespace UnityEngine.TextCore.Text
                         beginStrikethrough = false;
                         strikethroughEnd = new Vector3(textInfo.textElementInfo[i - 1].topRight.x, textInfo.textElementInfo[i - 1].baseLine + strikethroughOffset * strikethroughScale, 0);
 
-                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, ref lastVertIndex, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
                     }
                 }
                 else
@@ -3139,7 +3146,7 @@ namespace UnityEngine.TextCore.Text
                         beginStrikethrough = false;
                         strikethroughEnd = new Vector3(textInfo.textElementInfo[i - 1].topRight.x, textInfo.textElementInfo[i - 1].baseLine + strikethroughOffset * strikethroughScale, 0);
 
-                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, ref lastVertIndex, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
+                        DrawUnderlineMesh(strikethroughStart, strikethroughEnd, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
                     }
                 }
                 #endregion
@@ -3188,7 +3195,7 @@ namespace UnityEngine.TextCore.Text
                             highlightStart.y = Mathf.Min(highlightStart.y, currentCharacter.descender);
                             highlightEnd.y = Mathf.Max(highlightEnd.y, currentCharacter.ascender);
 
-                            DrawTextHighlight(highlightStart, highlightEnd, ref lastVertIndex, highlightState.color, generationSettings, textInfo);
+                            DrawTextHighlight(highlightStart, highlightEnd, highlightState.color, generationSettings, textInfo);
 
                             beginHighlight = true;
                             highlightStart = new Vector2(highlightEnd.x, currentCharacter.descender - currentState.padding.bottom);
@@ -3228,17 +3235,17 @@ namespace UnityEngine.TextCore.Text
                     {
                         beginHighlight = false;
 
-                        DrawTextHighlight(highlightStart, highlightEnd, ref lastVertIndex, highlightState.color, generationSettings, textInfo);
+                        DrawTextHighlight(highlightStart, highlightEnd, highlightState.color, generationSettings, textInfo);
                     }
                     else if (beginHighlight && (i == lineInfo.lastCharacterIndex || i >= lineInfo.lastVisibleCharacterIndex))
                     {
                         beginHighlight = false;
-                        DrawTextHighlight(highlightStart, highlightEnd, ref lastVertIndex, highlightState.color, generationSettings, textInfo);
+                        DrawTextHighlight(highlightStart, highlightEnd, highlightState.color, generationSettings, textInfo);
                     }
                     else if (beginHighlight && !isHighlightVisible)
                     {
                         beginHighlight = false;
-                        DrawTextHighlight(highlightStart, highlightEnd, ref lastVertIndex, highlightState.color, generationSettings, textInfo);
+                        DrawTextHighlight(highlightStart, highlightEnd, highlightState.color, generationSettings, textInfo);
                     }
                 }
                 else
@@ -3247,7 +3254,7 @@ namespace UnityEngine.TextCore.Text
                     if (beginHighlight == true)
                     {
                         beginHighlight = false;
-                        DrawTextHighlight(highlightStart, highlightEnd, ref lastVertIndex, highlightState.color, generationSettings, textInfo);
+                        DrawTextHighlight(highlightStart, highlightEnd, highlightState.color, generationSettings, textInfo);
                     }
                 }
                 #endregion
@@ -3255,9 +3262,6 @@ namespace UnityEngine.TextCore.Text
                 lastLine = currentLine;
             }
             #endregion
-
-            // Set vertex count for Underline geometry
-            textInfo.meshInfo[m_Underline.materialIndex].vertexCount = lastVertIndex;
 
             // METRICS ABOUT THE TEXT OBJECT
             textInfo.characterCount = m_CharacterCount;
@@ -3269,9 +3273,6 @@ namespace UnityEngine.TextCore.Text
             // Phase III - Update Mesh Vertex Data
 
             // *** UPLOAD MESH DATA ***
-            if (generationSettings.geometrySortingOrder != VertexSortingOrder.Normal)
-                textInfo.meshInfo[0].SortGeometry(VertexSortingOrder.Reverse);
-
             for (int i = 1; i < textInfo.materialCount; i++)
             {
                 // Clear unused vertices
@@ -3302,7 +3303,6 @@ namespace UnityEngine.TextCore.Text
             state.lastVisibleCharIndex = m_LastVisibleCharacterOfLine;
 
             state.fontStyle = m_FontStyleInternal;
-            state.fontScale = m_FontScale;
 
             state.fontScaleMultiplier = m_FontScaleMultiplier;
             state.currentFontSize = m_CurrentFontSize;
@@ -3382,7 +3382,6 @@ namespace UnityEngine.TextCore.Text
 
             m_FontStyleInternal = state.fontStyle;
             m_ItalicAngle = state.italicAngle;
-            m_FontScale = state.fontScale;
             m_FontScaleMultiplier = state.fontScaleMultiplier;
 
             m_CurrentFontSize = state.currentFontSize;
@@ -5224,29 +5223,27 @@ namespace UnityEngine.TextCore.Text
         /// <param name="underlineColor"></param>
         /// <param name="generationSettings"></param>
         /// <param name="textInfo"></param>
-        void DrawUnderlineMesh(Vector3 start, Vector3 end, ref int index, float startScale, float endScale, float maxScale, float sdfScale, Color32 underlineColor, TextGenerationSettings generationSettings, TextInfo textInfo)
+        void DrawUnderlineMesh(Vector3 start, Vector3 end, float startScale, float endScale, float maxScale, float sdfScale, Color32 underlineColor, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
-            TextSettings textSettings = generationSettings.textSettings;
-
             // Get Underline special character from the primary font asset.
             GetUnderlineSpecialCharacter(generationSettings);
 
             if (m_Underline.character == null)
             {
-                if (textSettings.displayWarnings)
+                if (generationSettings.textSettings.displayWarnings)
                     Debug.LogWarning("Unable to add underline or strikethrough since the character [0x5F] used by these features is not present in the Font Asset assigned to this text object.");
                 return;
             }
 
-            int underlineMaterialIndex = m_Underline.materialIndex;
-
-            int verticesCount = index + 12;
+            const int k_VertexIncrease = 12;
+            int index = textInfo.meshInfo[m_CurrentMaterialIndex].vertexCount;
+            int newVerticesCount = index + k_VertexIncrease;
 
             // Check to make sure our current mesh buffer allocations can hold these new Quads.
-            if (verticesCount > textInfo.meshInfo[underlineMaterialIndex].vertices.Length)
+            if (newVerticesCount > textInfo.meshInfo[m_CurrentMaterialIndex].vertices.Length)
             {
                 // Resize Mesh Buffers
-                textInfo.meshInfo[underlineMaterialIndex].ResizeMeshInfo(verticesCount / 4);
+                textInfo.meshInfo[m_CurrentMaterialIndex].ResizeMeshInfo(newVerticesCount / 4);
             }
 
             // Adjust the position of the underline based on the lowest character. This matters for subscript character.
@@ -5270,7 +5267,7 @@ namespace UnityEngine.TextCore.Text
 
             // UNDERLINE VERTICES FOR (3) LINE SEGMENTS
             #region UNDERLINE VERTICES
-            Vector3[] vertices = textInfo.meshInfo[underlineMaterialIndex].vertices;
+            Vector3[] vertices = textInfo.meshInfo[m_CurrentMaterialIndex].vertices;
 
             // Front Part of the Underline
             vertices[index + 0] = start + new Vector3(0, 0 - (underlineThickness + m_Padding) * maxScale, 0); // BL
@@ -5329,7 +5326,7 @@ namespace UnityEngine.TextCore.Text
 
             // UNDERLINE UV0
             #region HANDLE UV0
-            Vector4[] uvs0 = textInfo.meshInfo[underlineMaterialIndex].uvs0;
+            Vector4[] uvs0 = textInfo.meshInfo[m_CurrentMaterialIndex].uvs0;
 
             int atlasWidth = m_Underline.fontAsset.atlasWidth;
             int atlasHeight = m_Underline.fontAsset.atlasHeight;
@@ -5371,7 +5368,7 @@ namespace UnityEngine.TextCore.Text
             float minUvX = 0;
             float maxUvX = (vertices[index + 2].x - start.x) / (end.x - start.x);
 
-            Vector2[] uvs2 = textInfo.meshInfo[underlineMaterialIndex].uvs2;
+            Vector2[] uvs2 = textInfo.meshInfo[m_CurrentMaterialIndex].uvs2;
 
             uvs2[0 + index] = TextGeneratorUtilities.PackUV(0, 0, xScale);
             uvs2[1 + index] = TextGeneratorUtilities.PackUV(0, 1, xScale);
@@ -5399,7 +5396,7 @@ namespace UnityEngine.TextCore.Text
             // Alpha is the lower of the vertex color or tag color alpha used.
             underlineColor.a = m_FontColor32.a < underlineColor.a ? m_FontColor32.a : underlineColor.a;
 
-            Color32[] colors32 = textInfo.meshInfo[underlineMaterialIndex].colors32;
+            Color32[] colors32 = textInfo.meshInfo[m_CurrentMaterialIndex].colors32;
             colors32[0 + index] = underlineColor;
             colors32[1 + index] = underlineColor;
             colors32[2 + index] = underlineColor;
@@ -5416,40 +5413,35 @@ namespace UnityEngine.TextCore.Text
             colors32[11 + index] = underlineColor;
             #endregion
 
-            index += 12;
+            textInfo.meshInfo[m_CurrentMaterialIndex].vertexCount += k_VertexIncrease;
         }
 
-        void DrawTextHighlight(Vector3 start, Vector3 end, ref int index, Color32 highlightColor, TextGenerationSettings generationSettings, TextInfo textInfo)
+        void DrawTextHighlight(Vector3 start, Vector3 end, Color32 highlightColor, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
-            TextSettings textSettings = generationSettings.textSettings;
+            GetUnderlineSpecialCharacter(generationSettings);
 
             if (m_Underline.character == null)
             {
-                GetUnderlineSpecialCharacter(generationSettings);
+                if (generationSettings.textSettings.displayWarnings)
+                    Debug.LogWarning("Unable to add highlight since the primary Font Asset doesn't contain the underline character.");
 
-                if (m_Underline.character == null)
-                {
-                    if (textSettings.displayWarnings)
-                        Debug.LogWarning("Unable to add highlight since the primary Font Asset doesn't contain the underline character.");
-
-                    return;
-                }
+                return;
             }
 
-            int underlineMaterialIndex = m_Underline.materialIndex;
-
-            int verticesCount = index + 4;
+            const int k_VertexIncrease = 4;
+            int index = textInfo.meshInfo[m_CurrentMaterialIndex].vertexCount;
+            int newVerticesCount = index + k_VertexIncrease;
 
             // Check to make sure our current mesh buffer allocations can hold these new Quads.
-            if (verticesCount > textInfo.meshInfo[underlineMaterialIndex].vertices.Length)
+            if (newVerticesCount > textInfo.meshInfo[m_CurrentMaterialIndex].vertices.Length)
             {
                 // Resize Mesh Buffers
-                textInfo.meshInfo[underlineMaterialIndex].ResizeMeshInfo(verticesCount / 4);
+                textInfo.meshInfo[m_CurrentMaterialIndex].ResizeMeshInfo(newVerticesCount / 4);
             }
 
             // UNDERLINE VERTICES FOR (3) LINE SEGMENTS
             #region HIGHLIGHT VERTICES
-            Vector3[] vertices = textInfo.meshInfo[underlineMaterialIndex].vertices;
+            Vector3[] vertices = textInfo.meshInfo[m_CurrentMaterialIndex].vertices;
 
             // Front Part of the Underline
             vertices[index + 0] = start; // BL
@@ -5477,7 +5469,7 @@ namespace UnityEngine.TextCore.Text
 
             // UNDERLINE UV0
             #region HANDLE UV0
-            Vector4[] uvs0 = textInfo.meshInfo[underlineMaterialIndex].uvs0;
+            Vector4[] uvs0 = textInfo.meshInfo[m_CurrentMaterialIndex].uvs0;
 
             int atlasWidth = m_Underline.fontAsset.atlasWidth;
             int atlasHeight = m_Underline.fontAsset.atlasHeight;
@@ -5496,7 +5488,7 @@ namespace UnityEngine.TextCore.Text
 
             // HIGHLIGHT UV2
             #region HANDLE UV2 - SDF SCALE
-            Vector2[] uvs2 = textInfo.meshInfo[underlineMaterialIndex].uvs2;
+            Vector2[] uvs2 = textInfo.meshInfo[m_CurrentMaterialIndex].uvs2;
             Vector2 customUV = new Vector2(0, 1);
             uvs2[0 + index] = customUV;
             uvs2[1 + index] = customUV;
@@ -5509,14 +5501,14 @@ namespace UnityEngine.TextCore.Text
             // Alpha is the lower of the vertex color or tag color alpha used.
             highlightColor.a = m_FontColor32.a < highlightColor.a ? m_FontColor32.a : highlightColor.a;
 
-            Color32[] colors32 = textInfo.meshInfo[underlineMaterialIndex].colors32;
+            Color32[] colors32 = textInfo.meshInfo[m_CurrentMaterialIndex].colors32;
             colors32[0 + index] = highlightColor;
             colors32[1 + index] = highlightColor;
             colors32[2 + index] = highlightColor;
             colors32[3 + index] = highlightColor;
             #endregion
 
-            index += 4;
+            textInfo.meshInfo[m_CurrentMaterialIndex].vertexCount += k_VertexIncrease;
         }
 
         /// <summary>
@@ -5768,7 +5760,7 @@ namespace UnityEngine.TextCore.Text
                     if (character == null)
                     {
                         // Use End of Text (0x03) Glyph from the currently assigned font asset.
-                        unicode = textProcessingArray[i].unicode = 0x03;
+                        unicode = textProcessingArray[i].unicode = k_EndOfText;
                         character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
                     }
 
@@ -6134,31 +6126,31 @@ namespace UnityEngine.TextCore.Text
         {
             bool isUsingAlternativeTypeface;
 
-            FontAsset fontAsset = generationSettings.fontAsset;
+            FontAsset fontAsset = m_CurrentFontAsset ?? generationSettings.fontAsset;
             TextSettings textSettings = generationSettings.textSettings;
 
             // Search base font asset
-            Character character = FontAssetUtilities.GetCharacterFromFontAsset(0x2026, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+            Character character = FontAssetUtilities.GetCharacterFromFontAsset(k_HorizontalEllipsis, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
 
             if (character == null)
             {
                 // Search primary fallback list
                 if (fontAsset.m_FallbackFontAssetTable != null && fontAsset.m_FallbackFontAssetTable.Count > 0)
-                    character = FontAssetUtilities.GetCharacterFromFontAssets(0x2026, fontAsset, fontAsset.m_FallbackFontAssetTable, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    character = FontAssetUtilities.GetCharacterFromFontAssets(k_HorizontalEllipsis, fontAsset, fontAsset.m_FallbackFontAssetTable, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
             }
 
             // Search the setting's general fallback list
             if (character == null)
             {
                 if (textSettings.fallbackFontAssets != null && textSettings.fallbackFontAssets.Count > 0)
-                    character = FontAssetUtilities.GetCharacterFromFontAssets(0x2026, fontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    character = FontAssetUtilities.GetCharacterFromFontAssets(k_HorizontalEllipsis, fontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
             }
 
             // Search the setting's default font asset
             if (character == null)
             {
                 if (textSettings.defaultFontAsset != null)
-                    character = FontAssetUtilities.GetCharacterFromFontAsset(0x2026, textSettings.defaultFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    character = FontAssetUtilities.GetCharacterFromFontAsset(k_HorizontalEllipsis, textSettings.defaultFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
             }
 
             if (character != null)
@@ -6169,14 +6161,14 @@ namespace UnityEngine.TextCore.Text
         {
             bool isUsingAlternativeTypeface;
 
-            FontAsset fontAsset = generationSettings.fontAsset;
+            FontAsset fontAsset = m_CurrentFontAsset ?? generationSettings.fontAsset;
             TextSettings textSettings = generationSettings.textSettings;
 
             // Search base font asset
             Character character = FontAssetUtilities.GetCharacterFromFontAsset(0x5F, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
 
             if (character != null)
-                m_Underline = new SpecialCharacter(character, 0);
+                m_Underline = new SpecialCharacter(character, m_CurrentMaterialIndex);
         }
 
         /// <summary>
@@ -6252,7 +6244,7 @@ namespace UnityEngine.TextCore.Text
 
             while (m_IsAutoSizePointSizeSet == false)
             {
-                preferredHeight = CalculatePreferredValues(ref fontSize, margin, !generationSettings.autoSize, wrapMode, generationSettings, textInfo).y;
+                preferredHeight = CalculatePreferredValues(ref fontSize, margin, generationSettings.autoSize, wrapMode, generationSettings, textInfo).y;
                 m_AutoSizeIterationCount += 1;
             }
 
@@ -6271,12 +6263,12 @@ namespace UnityEngine.TextCore.Text
             m_MaxFontSize = generationSettings.fontSizeMax;
             m_CharWidthAdjDelta = 0;
 
-            Vector2 margin = new Vector2(m_MarginWidth != 0 ? m_MarginWidth : TextGeneratorUtilities.largePositiveFloat, TextGeneratorUtilities.largePositiveFloat);
+            Vector2 margin = new Vector2(m_MarginWidth != 0 ? m_MarginWidth : TextGeneratorUtilities.largePositiveFloat, m_MarginHeight != 0 ? m_MarginHeight : TextGeneratorUtilities.largePositiveFloat);
             TextWrappingMode wrapMode = generationSettings.wordWrap ? TextWrappingMode.Normal : TextWrappingMode.NoWrap;
 
             m_AutoSizeIterationCount = 0;
 
-            return CalculatePreferredValues(ref fontSize, margin, !generationSettings.autoSize, wrapMode, generationSettings, textInfo);
+            return CalculatePreferredValues(ref fontSize, margin, generationSettings.autoSize, wrapMode, generationSettings, textInfo);
         }
 
 
@@ -6453,14 +6445,14 @@ namespace UnityEngine.TextCore.Text
 
                     switch (charCode)
                     {
-                        case 0x03:
-                            m_InternalTextElementInfo[m_CharacterCount].textElement = m_CurrentFontAsset.characterLookupTable[0x03];
+                        case k_EndOfText:
+                            m_InternalTextElementInfo[m_CharacterCount].textElement = m_CurrentFontAsset.characterLookupTable[k_EndOfText];
                             m_IsTextTruncated = true;
                             break;
                         case 0x2D:
                             //
                             break;
-                        case 0x2026:
+                        case k_HorizontalEllipsis:
                             m_InternalTextElementInfo[m_CharacterCount].textElement = m_Ellipsis.character;
                             m_InternalTextElementInfo[m_CharacterCount].elementType = TextElementType.Character;
                             m_InternalTextElementInfo[m_CharacterCount].fontAsset = m_Ellipsis.fontAsset;
@@ -6472,7 +6464,7 @@ namespace UnityEngine.TextCore.Text
 
                             // End Of Text
                             characterToSubstitute.index = m_CharacterCount + 1;
-                            characterToSubstitute.unicode = 0x03;
+                            characterToSubstitute.unicode = k_EndOfText;
                             break;
                     }
                 }
@@ -6481,7 +6473,7 @@ namespace UnityEngine.TextCore.Text
 
                 // When using Linked text, mark character as ignored and skip to next character.
                 #region Linked Text
-                if (m_CharacterCount < generationSettings.firstVisibleCharacter && charCode != 0x03)
+                if (m_CharacterCount < generationSettings.firstVisibleCharacter && charCode != k_EndOfText)
                 {
                     m_InternalTextElementInfo[m_CharacterCount].isVisible = false;
                     m_InternalTextElementInfo[m_CharacterCount].character = (char)k_ZeroWidthSpace;
@@ -6582,7 +6574,7 @@ namespace UnityEngine.TextCore.Text
                         adjustedScale = m_CurrentFontSize * smallCapsMultiplier / m_CurrentFontAsset.m_FaceInfo.pointSize * m_CurrentFontAsset.m_FaceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f);
 
                     // Special handling for injected Ellipsis
-                    if (isInjectedCharacter && charCode == 0x2026)
+                    if (isInjectedCharacter && charCode == k_HorizontalEllipsis)
                     {
                         elementAscentLine = 0;
                         elementDescentLine = 0;
@@ -6603,7 +6595,7 @@ namespace UnityEngine.TextCore.Text
                 // Handle Soft Hyphen
                 #region Handle Soft Hyphen
                 float currentElementUnmodifiedScale = currentElementScale;
-                if (charCode == 0xAD || charCode == 0x03)
+                if (charCode == 0xAD || charCode == k_EndOfText)
                     currentElementScale = 0;
                 #endregion
 
@@ -6842,7 +6834,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Setup Mesh for visible text elements. ie. not a SPACE / LINEFEED / CARRIAGE RETURN.
                 #region Handle Visible Characters
-                if (charCode == k_Tab || charCode == k_ZeroWidthSpace || ((textWrapMode == TextWrappingMode.PreserveWhitespace || textWrapMode == TextWrappingMode.PreserveWhitespaceNoWrap) && (isWhiteSpace || charCode == k_ZeroWidthSpace)) || (isWhiteSpace == false && charCode != k_ZeroWidthSpace && charCode != 0xAD && charCode != 0x03) || (charCode == 0xAD && isSoftHyphenIgnored == false) || m_TextElementType == TextElementType.Sprite)
+                if (charCode == k_Tab || charCode == k_ZeroWidthSpace || ((textWrapMode == TextWrappingMode.PreserveWhitespace || textWrapMode == TextWrappingMode.PreserveWhitespaceNoWrap) && (isWhiteSpace || charCode == k_ZeroWidthSpace)) || (isWhiteSpace == false && charCode != k_ZeroWidthSpace && charCode != 0xAD && charCode != k_EndOfText) || (charCode == 0xAD && isSoftHyphenIgnored == false) || m_TextElementType == TextElementType.Sprite)
                 {
                     //float marginLeft = m_MarginLeft;
                     //float marginRight = m_MarginRight;
@@ -7050,7 +7042,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Handle Line Spacing Adjustments + Word Wrapping & special case for last line.
                 #region Check for Line Feed and Last Character
-                if (charCode == k_LineFeed || charCode == 11 || charCode == 0x03 || charCode == 0x2028 || charCode == 0x2029 || m_CharacterCount == totalCharacterCount - 1)
+                if (charCode == k_LineFeed || charCode == 11 || charCode == k_EndOfText || charCode == 0x2028 || charCode == 0x2029 || m_CharacterCount == totalCharacterCount - 1)
                 {
                     // Check if Line Spacing of previous line needs to be adjusted.
                     float baselineAdjustmentDelta = m_MaxLineAscender - m_StartOfLineAscender;
@@ -7105,7 +7097,7 @@ namespace UnityEngine.TextCore.Text
                     }
 
                     // If End of Text
-                    if (charCode == 0x03)
+                    if (charCode == k_EndOfText)
                         i = m_TextProcessingArray.Length;
                 }
                 #endregion Check for Linefeed or Last Character

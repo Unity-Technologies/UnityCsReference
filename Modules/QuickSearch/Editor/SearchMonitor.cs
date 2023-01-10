@@ -229,6 +229,16 @@ namespace UnityEditor.Search
             }
         }
 
+        static double refreshContentDelay
+        {
+            get
+            {
+                if (Utils.runningTests)
+                    return 0d;
+                return 1d;
+            }
+        }
+
         static SearchMonitor()
         {
             if (!Utils.IsMainProcess())
@@ -303,7 +313,7 @@ namespace UnityEditor.Search
             {
                 Log("Content changed", (ulong)(s_UpdatedItems.Count + s_RemovedItems.Count + s_MovedItems.Count));
                 s_ContentRefreshOff?.Invoke();
-                s_ContentRefreshOff = Utils.CallDelayed(RaiseContentRefreshed, 1d);
+                s_ContentRefreshOff = Utils.CallDelayed(RaiseContentRefreshed, refreshContentDelay);
             }
         }
 
@@ -490,7 +500,7 @@ namespace UnityEditor.Search
         {
             s_DocumentsToInvalidate.Add(documentKey);
             if (s_DelayedInvalidateOff == null)
-                s_DelayedInvalidateOff = Utils.CallDelayed(InvalidateDocuments, 1f);
+                s_DelayedInvalidateOff = Utils.CallDelayed(InvalidateDocuments, refreshContentDelay);
         }
 
         private static void InvalidateDocuments()

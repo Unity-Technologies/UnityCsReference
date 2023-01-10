@@ -80,8 +80,6 @@ namespace UnityEditor.Presets
             public static GUIStyle selectedPathLabel = "Label";
         }
 
-        internal static Object[] InspectedObjects { get; set; }
-
         // Filter
         string m_SearchField;
         IEnumerable<Preset> m_Presets;
@@ -167,6 +165,7 @@ namespace UnityEditor.Presets
             AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             m_ModalUndoGroup = Undo.GetCurrentGroup();
+            PresetEditorHelper.presetEditorOpen = true;
 
             // Freeze to prevent flicker on OSX.
             // Screen will be updated again when calling
@@ -219,7 +218,7 @@ namespace UnityEditor.Presets
         {
             // If a preset is currently inspected, it doesn't make sense for it to be applied on itself so we filter it from the list.
             Preset inspectedPreset = null;
-            if (InspectedObjects != null && InspectedObjects.Length == 1 && InspectedObjects[0] is Preset preset)
+            if (PresetEditorHelper.InspectedObjects != null && PresetEditorHelper.InspectedObjects.Length == 1 && PresetEditorHelper.InspectedObjects[0] is Preset preset)
                 inspectedPreset = preset;
 
             return AssetDatabase.FindAssets("t:Preset")
@@ -384,6 +383,7 @@ namespace UnityEditor.Presets
 
             EditorPrefs.SetFloat(k_PresetSelectorWidthEditorPref, position.width);
             EditorPrefs.SetFloat(k_PresetSelectorHeightEditorPref, position.height);
+            PresetEditorHelper.presetEditorOpen = false;
         }
 
         void OnDestroy()

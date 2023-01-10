@@ -1057,5 +1057,39 @@ namespace UnityEditor.Search
         {
             Utils.FrameAssetFromPath(path);
         }
+        
+        internal static ISearchView OpenWithContextualProvider(params string[] providerIds)
+        {
+            return OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
+        }
+
+        internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null)
+        {
+            var providers = SearchService.GetProviders(providerIds).ToArray();
+            if (providers.Length != providerIds.Length)
+                Debug.LogWarning($"Cannot find one of these search providers {string.Join(", ", providerIds)}");
+
+            if (providers.Length == 0)
+                return QuickSearch.OpenDefaultQuickSearch();
+
+            var context = SearchService.CreateContext(providers, searchQuery, flags);
+            topic = topic ?? string.Join(", ", providers.Select(p => p.name.ToLower()));
+            var qsWindow = QuickSearch.Create<QuickSearch>(context, topic);
+
+            var evt = SearchAnalytics.GenericEvent.Create(qsWindow.windowId, SearchAnalytics.GenericEventType.QuickSearchOpen, "Contextual");
+            evt.message = providers[0].id;
+            if (providers.Length > 1)
+                evt.description = providers[1].id;
+            if (providers.Length > 2)
+                evt.description = providers[2].id;
+            if (providers.Length > 3)
+                evt.stringPayload1 = providers[3].id;
+            if (providers.Length > 4)
+                evt.stringPayload1 = providers[4].id;
+
+            SearchAnalytics.SendEvent(evt);
+
+            return qsWindow.ShowWindow();
+        }
     }
 }

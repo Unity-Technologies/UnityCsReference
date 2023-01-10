@@ -39,7 +39,7 @@ namespace UnityEditor.Search
                 yield return CreateColumn("ID");
                 yield return CreateColumn("Name", null, "Name");
                 yield return CreateColumn("Value");
-                yield return CreateColumn("Thumbnail");
+                yield return CreateColumn("Thumbnail", "thumbnail", "Texture2D");
                 yield return CreateColumn("Default/Path", "path");
                 yield return CreateColumn("Default/Type", "type");
                 yield return CreateColumn("Default/Provider", "provider");

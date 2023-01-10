@@ -485,7 +485,7 @@ namespace UnityEngine.UIElements
 
         StyleEnum<ScaleMode> IResolvedStyle.unityBackgroundScaleMode => BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(
             computedStyle.backgroundPositionX, computedStyle.backgroundPositionY,
-            computedStyle.backgroundRepeat, computedStyle.backgroundSize);
+            computedStyle.backgroundRepeat, computedStyle.backgroundSize, out _);
 
         Rect m_Layout;
 

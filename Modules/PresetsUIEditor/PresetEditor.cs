@@ -147,7 +147,7 @@ namespace UnityEditor.Presets
 
         void DrawComponentTitleBar(VisualElement internalInspector)
         {
-            PresetSelector.InspectedObjects = targets;
+            PresetEditorHelper.InspectedObjects = targets;
             try
             {
                 bool wasVisible = InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target);
@@ -160,14 +160,14 @@ namespace UnityEditor.Presets
             }
             finally
             {
-                PresetSelector.InspectedObjects = null;
+                PresetEditorHelper.InspectedObjects = null;
             }
         }
 
         void DrawInternalEditorHeader()
         {
             var prevHierarchyMode = EditorGUIUtility.hierarchyMode;
-            PresetSelector.InspectedObjects = targets;
+            PresetEditorHelper.InspectedObjects = targets;
             try
             {
                 // This value is used in Editor.DrawHeader() to Begin/End vertical layout groups and to
@@ -183,7 +183,7 @@ namespace UnityEditor.Presets
             finally
             {
                 EditorGUIUtility.hierarchyMode = prevHierarchyMode;
-                PresetSelector.InspectedObjects = null;
+                PresetEditorHelper.InspectedObjects = null;
             }
         }
 

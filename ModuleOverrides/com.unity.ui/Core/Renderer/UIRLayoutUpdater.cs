@@ -14,7 +14,11 @@ namespace UnityEngine.UIElements
     // - Only call dirty repaint when the layout rect has changed instead of "yogaNode.HasNewLayout"
     internal class UIRLayoutUpdater : BaseVisualTreeUpdater
     {
-        const int kMaxValidateLayoutCount = 5;
+         // When changing this value, we always consider that some controls may require multiple passes to compute their layout.
+         // We also consider that these controls can also be nested inside other similar controls.
+         // For example, a simple scroll view may need more than 2 passes to lay out the viewport and scrollers.
+         // Therefore, having a deep hierachy of scroll views can require a fair amount of layout passes.
+        const int kMaxValidateLayoutCount = 10;
 
 
         private static readonly string s_Description = "Update Layout";
@@ -106,6 +110,22 @@ namespace UnityEngine.UIElements
             bool paddingPositionChanged = yogaPseudoPaddingRect.position != lastPseudoPaddingRect.position;
             if (layoutPositionChanged || paddingPositionChanged)
                 changeType |= VersionChangeType.Transform;
+
+            // If the scale or rotate value of the style are not default, a change in the size will affect the resulting
+            // translation part of the local transform. Only when the transformOrigin is at (0, 0) we do not need to
+            // update the transform.
+            if (((changeType & VersionChangeType.Size) != 0) && ((changeType & VersionChangeType.Transform) == 0))
+            {
+                if (!ve.hasDefaultRotationAndScale)
+                {
+                    // if the pivot is not at the top left, update the transform
+                    if (!Mathf.Approximately(ve.resolvedStyle.transformOrigin.x, 0.0f) ||
+                        !Mathf.Approximately(ve.resolvedStyle.transformOrigin.y, 0.0f))
+                    {
+                        changeType |= VersionChangeType.Transform;
+                    }
+                }
+            }
 
             isDisplayed &= ve.resolvedStyle.display != DisplayStyle.None;
             ve.isHierarchyDisplayed = isDisplayed;

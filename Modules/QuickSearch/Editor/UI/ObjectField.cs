@@ -347,6 +347,8 @@ namespace UnityEditor.Search
             {
                 title = $"{objectType.Name}"
             }.SetSearchViewFlags(searchViewFlags);
+            if (m_OriginalObject)
+                searchViewState.selectedIds = new int[] { m_OriginalObject.GetInstanceID() };
             SearchService.ShowPicker(searchViewState);
         }
 
@@ -925,7 +927,13 @@ namespace UnityEditor.Search
                 item => SendTrackingEvent(item, id), objType.ToString(), objType)
                     .SetSearchViewFlags(searchViewFlags);
             if (property != null)
+            { 
                 searchViewState.title = $"{property.displayName} ({objType.Name})";
+                if (property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue)
+                    searchViewState.selectedIds = new int[] { property.objectReferenceValue.GetInstanceID() };
+            }
+            else if (originalObject)
+                searchViewState.selectedIds = new int[] { originalObject.GetInstanceID() };
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, context.searchText, "object", "objectfield");
             SearchService.ShowPicker(searchViewState);
 

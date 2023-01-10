@@ -23,6 +23,7 @@ namespace UnityEditor
             public static readonly GUIContent Shape = EditorGUIUtility.TrTextContent("Shape");
             public static readonly GUIContent Mode = EditorGUIUtility.TrTextContent("Mode");
             public static readonly GUIContent Color = EditorGUIUtility.TrTextContent("Color");
+            public static readonly GUIContent Range = EditorGUIUtility.TrTextContent("Range");
             public static readonly GUIContent Intensity = EditorGUIUtility.TrTextContent("Intensity");
             public static readonly GUIContent IndirectMultiplier = EditorGUIUtility.TrTextContent("Indirect Multiplier");
             public static readonly GUIContent ShadowType = EditorGUIUtility.TrTextContent("Shadows");
@@ -340,7 +341,19 @@ namespace UnityEditor
                     }
                 }, null, null, new int[] { 2 }),     // 4: Mode
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Color, Styles.Color, "m_Color", 70), // 5: Color
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.Intensity, "m_Intensity", 60), // 6: Intensity
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.Range, "m_Range", 60, (r, prop, dep) => 
+                {
+                    var lightType = prop.serializedObject.FindProperty("m_Type");
+                    if (lightType != null)
+                    {
+                        bool directionalLight = lightType.enumValueIndex == (int)LightType.Directional;
+                        if (!directionalLight)
+                        {
+                            EditorGUI.PropertyField(r, prop, GUIContent.none);
+                        }
+                    }
+                }), // 6: Range
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.Intensity, "m_Intensity", 60), // 7: Intensity
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Float, Styles.IndirectMultiplier, "m_BounceIntensity", 110, (r, prop, dep) =>
                 {
                     bool realtimeLight = dep.Length > 1 && dep[0].intValue == (int)LightmapBakeType.Realtime;
@@ -349,7 +362,7 @@ namespace UnityEditor
                     {
                         EditorGUI.PropertyField(r, prop, GUIContent.none);
                     }
-                }, null, null, new int[] { 4 }), // 7: Indirect Multiplier
+                }, null, null, new int[] { 4 }), // 8: Indirect Multiplier
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Enum, Styles.ShadowType, "m_Shadows.m_Type", 100, (r, prop, dep) =>
                 {
                     bool areaLight = dep.Length > 1 && (dep[0].enumValueIndex == (int)LightType.Rectangle || dep[0].enumValueIndex == (int)LightType.Disc);
@@ -370,7 +383,7 @@ namespace UnityEditor
                     {
                         EditorGUI.PropertyField(r, prop, GUIContent.none);
                     }
-                }, null, null, new int[] { 2 }),     // 8: Shadow Type
+                }, null, null, new int[] { 2 }),     // 9: Shadow Type
             };
         }
 

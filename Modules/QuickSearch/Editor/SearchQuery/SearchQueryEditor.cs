@@ -18,32 +18,16 @@ namespace UnityEditor.Search
         private SerializedProperty m_IconProperty;
         private SerializedProperty m_DescriptionProperty;
         private SerializedProperty m_TextProperty;
-        private SerializedProperty m_ProvidersProperty;
         private SerializedProperty m_IsSearchTemplateProperty;
-        private ReorderableList m_ProvidersList;
-        private List<string> m_EnabledProviderIds;
-        private bool m_ProviderFoldout;
+        private SearchQueryAsset m_QueryAsset;
 
         public void OnEnable()
         {
+            m_QueryAsset = serializedObject.targetObject as SearchQueryAsset;
             m_IconProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.icon));
             m_DescriptionProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.description));
             m_TextProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.text));
-            m_ProvidersProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.providerIds));
             m_IsSearchTemplateProperty = serializedObject.FindProperty("m_IsSearchTemplate");
-
-            PopulateValidEnabledProviderIds();
-            m_ProviderFoldout = EditorPrefs.GetBool("SearchQuery.ShowProviderList", false);
-
-            m_ProvidersList = new ReorderableList(m_EnabledProviderIds, typeof(string), false, false, true, true)
-            {
-                onAddCallback = AddProvider,
-                onCanAddCallback = list => true,
-                onRemoveCallback = RemoveProvider,
-                onCanRemoveCallback = list => m_ProvidersProperty.arraySize > 0,
-                drawElementCallback = DrawProviderElement,
-                elementHeight = EditorGUIUtility.singleLineHeight
-            };
 
             SetupContext();
         }
@@ -53,24 +37,6 @@ namespace UnityEditor.Search
             m_SearchContext.asyncItemReceived -= OnAsyncItemsReceived;
             m_SearchContext.Dispose();
             m_Results.Dispose();
-        }
-
-        private void PopulateValidEnabledProviderIds()
-        {
-            m_EnabledProviderIds = new List<string>(m_ProvidersProperty.arraySize);
-            for (int i = 0; i < m_ProvidersProperty.arraySize; i++)
-            {
-                var id = m_ProvidersProperty.GetArrayElementAtIndex(i).stringValue;
-                if (SearchService.GetProvider(id) != null && !m_EnabledProviderIds.Contains(id))
-                {
-                    m_EnabledProviderIds.Add(id);
-                }
-            }
-        }
-
-        private IEnumerable<SearchProvider> GetDisabledProviders()
-        {
-            return SearchService.OrderedProviders.Where(p => !m_EnabledProviderIds.Contains(p.id));
         }
 
         private void SetupContext()
@@ -83,8 +49,7 @@ namespace UnityEditor.Search
                 m_SearchContext.asyncItemReceived -= OnAsyncItemsReceived;
             }
 
-            var providerIds = m_EnabledProviderIds.Count != 0 ? m_EnabledProviderIds : SearchService.GetActiveProviders().Select(p => p.id);
-            m_SearchContext = SearchService.CreateContext(providerIds, m_TextProperty.stringValue, SearchSettings.GetContextOptions());
+            m_SearchContext = SearchService.CreateContext(m_QueryAsset.viewState.providerIds, m_TextProperty.stringValue, SearchSettings.GetContextOptions());
             m_SearchContext.asyncItemReceived += OnAsyncItemsReceived;
             m_Results = new SortedSearchList(m_SearchContext);
             m_ResultView = new SearchResultView(m_Results);
@@ -158,19 +123,6 @@ namespace UnityEditor.Search
                 EditorGUILayout.EndVertical();
             }
             EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(20);
-            EditorGUI.BeginChangeCheck();
-            m_ProviderFoldout = EditorGUILayout.Foldout(m_ProviderFoldout, L10n.Tr("Providers"), true);
-            if (EditorGUI.EndChangeCheck())
-            {
-                EditorPrefs.SetBool("SearchQuery.ShowProviderList", m_ProviderFoldout);
-            }
-            EditorGUILayout.EndHorizontal();
-
-            if (m_ProviderFoldout)
-                m_ProvidersList.DoLayoutList();
 
             if (serializedObject.hasModifiedProperties)
                 serializedObject.ApplyModifiedProperties();
@@ -246,64 +198,6 @@ namespace UnityEditor.Search
             }
         }
 
-
-        void AddProvider(ReorderableList list)
-        {
-            var menu = new GenericMenu();
-            var disabledProviders = GetDisabledProviders().ToList();
-            for (var i = 0; i < disabledProviders.Count; ++i)
-            {
-                var provider = disabledProviders[i];
-                menu.AddItem(new GUIContent(provider.name), false, AddProvider, provider);
-                if (!provider.isExplicitProvider && i + 1 < disabledProviders.Count && disabledProviders[i + 1].isExplicitProvider)
-                {
-                    menu.AddSeparator(string.Empty);
-                }
-            }
-            menu.ShowAsContext();
-        }
-
-        void AddProvider(object providerObj)
-        {
-            if (providerObj is SearchProvider provider && !m_EnabledProviderIds.Contains(provider.id))
-            {
-                m_EnabledProviderIds.Add(provider.id);
-                UpdateEnabledProviders();
-            }
-        }
-
-        void RemoveProvider(ReorderableList list)
-        {
-            var index = list.index;
-            if (index != -1 && index < m_EnabledProviderIds.Count)
-            {
-                var toRemove = SearchService.GetProvider(m_EnabledProviderIds[index]);
-                if (toRemove == null)
-                    return;
-                m_EnabledProviderIds.Remove(toRemove.id);
-                UpdateEnabledProviders();
-
-                if (index >= list.count)
-                    list.index = list.count - 1;
-            }
-        }
-
-        void UpdateEnabledProviders()
-        {
-            m_ProvidersProperty.arraySize = m_EnabledProviderIds.Count;
-            for (var i = 0; i < m_EnabledProviderIds.Count; ++i)
-            {
-                m_ProvidersProperty.GetArrayElementAtIndex(i).stringValue = m_EnabledProviderIds[i];
-            }
-            serializedObject.ApplyModifiedProperties();
-            SetupContext();
-        }
-
-        void DrawProviderElement(Rect rect, int index, bool selected, bool focused)
-        {
-            if (index >= 0 && index < m_EnabledProviderIds.Count)
-                GUI.Label(rect, SearchService.GetProvider(m_EnabledProviderIds[index])?.name ?? "<unknown>");
-        }
 
         void CheckContext()
         {

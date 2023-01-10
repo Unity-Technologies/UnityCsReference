@@ -10,9 +10,10 @@ using System.Linq;
 
 namespace UnityEditor.Search
 {
-    using ItemsById = SortedDictionary<string, SearchItem>;
-    using ItemsByScore = SortedDictionary<int, SortedDictionary<string, SearchItem>>;
-    using ItemsByProvider = SortedDictionary<int, SortedDictionary<int, SortedDictionary<string, SearchItem>>>;
+    interface ISearchListComparer : IComparer<SearchItem>
+    {
+
+    }
 
     /// <summary>
     /// A search list represents a collection of search results that is filled
@@ -64,6 +65,8 @@ namespace UnityEditor.Search
         /// <param name="selector"></param>
         /// <returns></returns>
         IEnumerable<TResult> Select<TResult>(Func<SearchItem, TResult> selector);
+
+        internal void SortBy(ISearchListComparer comparer);
     }
 
     abstract class BaseSearchList : ISearchList, IList
@@ -199,29 +202,30 @@ namespace UnityEditor.Search
         {
             CopyTo(array as SearchItem[] ?? throw new ArgumentNullException(nameof(array)), index);
         }
+
+        void ISearchList.SortBy(ISearchListComparer comparer)
+        {
+            SortBy(comparer);
+        }
+
+        public virtual void SortBy(ISearchListComparer comparer)
+        {
+            throw new NotSupportedException();
+        }
     }
 
     class SortedSearchList : BaseSearchList
     {
-        private class IdComparer : Comparer<string>
-        {
-            public override int Compare(string x, string y)
-            {
-                return string.Compare(x, y, StringComparison.Ordinal);
-            }
-        }
+        private List<SearchItem> m_IncomingBatch;
+        private HashSet<int> m_IdHashes = new HashSet<int>();
+        private List<SearchItem> m_Items = new List<SearchItem>();
+        private ISearchListComparer m_Comparer = new SortByScoreComparer();
 
-        private ItemsByProvider m_Data = new ItemsByProvider();
-        private Dictionary<string, Tuple<int, int>> m_LUT = new Dictionary<string, Tuple<int, int>>();
-        private bool m_TemporaryUnordered = false;
-        private List<SearchItem> m_UnorderedItems = new List<SearchItem>();
-        private int m_Count = 0;
-
-        public override int Count => m_Count;
+        public override int Count => m_Items.Count;
 
         public override SearchItem this[int index]
         {
-            get => ElementAt(index);
+            get => m_Items[index];
             set => throw new NotSupportedException();
         }
 
@@ -236,146 +240,118 @@ namespace UnityEditor.Search
             AddItems(items);
         }
 
-        public SearchItem ElementAt(int index)
-        {
-            var it = GetEnumerator();
-            while (it.MoveNext() && index > 0)
-            {
-                index--;
-            }
+        public SearchItem ElementAt(int index) => m_Items[index];
 
-            return it.Current;
-        }
+        public override int IndexOf(SearchItem item) => m_Items.IndexOf(item);
 
         public override IEnumerable<SearchItem> Fetch()
         {
             if (context == null)
                 throw new Exception("Fetch can only be used if the search list was created with a search context.");
 
+            bool trackIncomingItems = false;
+            if (context.searchInProgress)
+            {
+                trackIncomingItems = true;
+                m_IncomingBatch = new List<SearchItem>();
+            }
+
+            // m_Items could be modified while yielding, copy the data
+            // since items can be inserted anywhere in the list.
+            var itemsCopy = m_Items.ToArray();
+            foreach (var item in itemsCopy)
+                yield return item;
+
+            int i = 0;
+            var nextCount = 0;
             while (context.searchInProgress)
             {
                 if (context.Tick())
                     yield return null;
+
+                if (trackIncomingItems && nextCount < m_IncomingBatch.Count)
+                {
+                    // m_IncomingBatch could be modified while yielding items. Do not use foreach.
+                    nextCount = m_IncomingBatch.Count;
+                    for (; i < nextCount; ++i)
+                        yield return m_IncomingBatch[i];
+                }
             }
 
-            var it = GetEnumerator();
-            while (it.MoveNext())
+            if (trackIncomingItems)
             {
-                if (it.Current != null)
-                    yield return it.Current;
+                for (; i < m_IncomingBatch.Count; ++i)
+                    yield return m_IncomingBatch[i];
+                m_IncomingBatch = null;
             }
         }
 
         public override void AddItems(IEnumerable<SearchItem> items)
         {
-            if (context.subset != null)
-                items = items.Intersect(context.subset);
-
             foreach (var item in items)
-            {
-                bool shouldAdd = true;
-                if (m_LUT.TryGetValue(item.id, out Tuple<int, int> alreadyContainedValues))
-                {
-                    if (item.provider.priority >= alreadyContainedValues.Item1 &&
-                        item.score >= alreadyContainedValues.Item2)
-                        shouldAdd = false;
-
-                    if (shouldAdd)
-                    {
-                        m_Data[alreadyContainedValues.Item1][alreadyContainedValues.Item2].Remove(item.id);
-                        m_LUT.Remove(item.id);
-                        --m_Count;
-                    }
-                }
-
-                if (!shouldAdd)
-                    continue;
-
-                if (!m_Data.TryGetValue(item.provider.priority, out var itemsByScore))
-                {
-                    itemsByScore = new ItemsByScore();
-                    m_Data.Add(item.provider.priority, itemsByScore);
-                }
-
-                if (!itemsByScore.TryGetValue(item.score, out var itemsById))
-                {
-                    itemsById = new ItemsById(new IdComparer());
-                    itemsByScore.Add(item.score, itemsById);
-                }
-
-                itemsById.Add(item.id, item);
-                m_LUT.Add(item.id, new Tuple<int, int>(item.provider.priority, item.score));
-                ++m_Count;
-            }
+                Add(item);
         }
 
         public override void Clear()
         {
-            m_Data.Clear();
-            m_LUT.Clear();
-            m_Count = 0;
-            m_TemporaryUnordered = false;
-            m_UnorderedItems.Clear();
+            m_Items.Clear();
+            m_IdHashes.Clear();
+            m_IncomingBatch?.Clear();
         }
 
         public override IEnumerator<SearchItem> GetEnumerator()
         {
-            if (m_TemporaryUnordered)
-            {
-                foreach (var item in m_UnorderedItems)
-                {
-                    yield return item;
-                }
-            }
-
-            foreach (var itemsByPriority in m_Data)
-            {
-                foreach (var itemsByScore in itemsByPriority.Value)
-                {
-                    foreach (var itemsById in itemsByScore.Value)
-                    {
-                        yield return itemsById.Value;
-                    }
-                }
-            }
+            return Fetch().GetEnumerator();
         }
 
         public override IEnumerable<SearchItem> GetRange(int skipCount, int count)
         {
-            int skipped = 0;
-            int counted = 0;
-            foreach (var item in this)
-            {
-                if (skipped < skipCount)
-                {
-                    ++skipped;
-                    continue;
-                }
-
-                if (counted >= count)
-                    yield break;
-
-                yield return item;
-                ++counted;
-            }
+            return m_Items.GetRange(skipCount, count);
         }
 
         public override void InsertRange(int index, IEnumerable<SearchItem> items)
         {
-            if (!m_TemporaryUnordered)
+            foreach (var e in items)
+                Add(e);
+        }
+
+        private bool AddItem(in SearchItem item)
+        {
+            if (item == null)
+                return false;
+
+            var itemHash = item.GetHashCode();
+            if (m_IdHashes.Contains(itemHash))
             {
-                m_TemporaryUnordered = true;
-                m_UnorderedItems = this.ToList();
+                var startIndex = m_Items.BinarySearch(item, m_Comparer);
+                if (startIndex < 0)
+                    startIndex = ~startIndex;
+                var itemIndex = m_Items.IndexOf(item, Math.Max(startIndex - 1, 0));
+                if (itemIndex >= 0 && item.score < m_Items[itemIndex].score)
+                {
+                    m_Items.RemoveAt(itemIndex);
+                    m_IdHashes.Remove(itemHash);
+                }
+                else
+                    return false;
             }
 
-            var tempList = items.ToList();
-            m_UnorderedItems.InsertRange(index, tempList);
-            m_Count += tempList.Count;
+            var insertAt = m_Items.BinarySearch(item, m_Comparer);
+            if (insertAt < 0)
+            {
+                insertAt = ~insertAt;
+                m_Items.Insert(insertAt, item);
+                m_IdHashes.Add(itemHash);
+                return true;
+            }
+
+            return false;
         }
 
         public override void Add(SearchItem item)
         {
-            AddItems(new[] {item});
+            if (AddItem(item) && m_IncomingBatch != null)
+                m_IncomingBatch.Add(item);
         }
 
         public override void CopyTo(SearchItem[] array, int arrayIndex)
@@ -388,40 +364,14 @@ namespace UnityEditor.Search
 
         public override bool Contains(SearchItem item)
         {
-            if (m_TemporaryUnordered)
-            {
-                if (m_UnorderedItems.Contains(item))
-                    return true;
-            }
-
-            foreach (var itemsByPriority in m_Data)
-            {
-                foreach (var itemsByScore in itemsByPriority.Value)
-                {
-                    if (itemsByScore.Value.ContainsValue(item))
-                        return true;
-                }
-            }
-
-            return false;
+            return m_IdHashes.Contains(item.GetHashCode());
         }
 
         public override bool Remove(SearchItem item)
         {
-            bool removed = false;
-            if (m_TemporaryUnordered)
-                removed = m_UnorderedItems.Remove(item);
-
-            foreach (var itemsByPriority in m_Data)
-            {
-                foreach (var itemsByScore in itemsByPriority.Value)
-                {
-                    if (itemsByScore.Value.Remove(item.id))
-                        return true;
-                }
-            }
-
-            return removed;
+            if (m_IdHashes.Remove(item.GetHashCode()))
+                return m_Items.Remove(item);
+            return false;
         }
     }
 
@@ -432,63 +382,63 @@ namespace UnityEditor.Search
         string type { get; }
         int count { get; }
         int priority { get; }
+        bool optional { get; set; }
         IEnumerable<SearchItem> items { get; }
 
         SearchItem ElementAt(int index);
         int IndexOf(SearchItem item);
         bool Add(SearchItem item);
+        void Sort();
+        void SortBy(ISearchListComparer comparer);
+        void Clear();
     }
 
-    class GroupedSearchList : BaseSearchList, ISearchList, IGroup
+    class GroupedSearchList : BaseSearchList
     {
         class Group : IGroup
         {
             public string id { get; private set; }
             public string name { get; private set; }
             public string type { get; private set; }
+            public bool optional { get; set; }
             public IEnumerable<SearchItem> items => m_Items;
             public int count => m_Items.Count;
 
-            class SortByScoreComparer : IComparer<SearchItem>
-            {
-                public int Compare(SearchItem x, SearchItem y)
-                {
-                    int c = x.score.CompareTo(y.score);
-                    if (c != 0)
-                        return c;
-                    return string.CompareOrdinal(x.id, y.id);
-                }
-            }
-
-            static readonly SortByScoreComparer sortByScoreComparer = new SortByScoreComparer();
-
             public int priority { get; set; }
 
-            private List<SearchItem> m_Items;
             private HashSet<int> m_IdHashes;
+            private List<SearchItem> m_Items;
+            private ISearchListComparer m_Comparer;
 
-            public Group(string id, string type, string name, int priority = int.MaxValue)
+            public Group(string id, string type, string name, ISearchListComparer comparer, int priority = int.MaxValue)
             {
                 this.id = id;
                 this.name = name;
                 this.type = type;
                 this.priority = priority;
+                this.optional = true;
                 m_Items = new List<SearchItem>();
                 m_IdHashes = new HashSet<int>();
+                m_Comparer = comparer ?? new SortByScoreComparer();
+            }
+
+            public void Clear()
+            {
+                m_Items.Clear();
+                m_IdHashes.Clear();
             }
 
             public SearchItem ElementAt(int index)
             {
-                return m_Items.ElementAt(index);
+                return m_Items[index];
             }
 
             public bool Add(SearchItem item)
             {
-                bool added = true;
                 var itemHash = item.GetHashCode();
                 if (m_IdHashes.Contains(itemHash))
                 {
-                    var startIndex = m_Items.BinarySearch(item, sortByScoreComparer);
+                    var startIndex = m_Items.BinarySearch(item, m_Comparer);
                     if (startIndex < 0)
                         startIndex = ~startIndex;
                     var itemIndex = m_Items.IndexOf(item, Math.Max(startIndex - 1, 0));
@@ -496,19 +446,18 @@ namespace UnityEditor.Search
                     {
                         m_Items.RemoveAt(itemIndex);
                         m_IdHashes.Remove(itemHash);
-                        added = false;
                     }
                     else
                         return false;
                 }
 
-                var insertAt = m_Items.BinarySearch(item, sortByScoreComparer);
+                var insertAt = m_Items.BinarySearch(item, m_Comparer);
                 if (insertAt < 0)
                 {
                     insertAt = ~insertAt;
                     m_Items.Insert(insertAt, item);
                     m_IdHashes.Add(itemHash);
-                    return added;
+                    return true;
                 }
 
                 return false;
@@ -523,22 +472,35 @@ namespace UnityEditor.Search
             {
                 return $"{id} ({m_Items.Count})";
             }
+
+            public void Sort()
+            {
+                if (m_Comparer == null)
+                    return;
+
+                m_Items.Sort(m_Comparer);
+            }
+
+            void IGroup.SortBy(ISearchListComparer comparer)
+            {
+                if (comparer == null)
+                    return;
+
+                if (comparer.GetHashCode() == m_Comparer.GetHashCode())
+                    return;
+
+                m_Comparer = comparer;
+                m_Items.Sort(comparer);
+            }
         }
 
-        private int m_TotalCount = 0;
-        private int m_CurrentGroupIndex = -1;
+        private int m_CurrentGroupIndex = 0;
         private string m_CurrentGroupId;
         private readonly List<IGroup> m_Groups = new List<IGroup>();
+        private ISearchListComparer m_DefaultComparer;
 
-        public override int Count => UseAll() ? m_TotalCount : m_Groups[m_CurrentGroupIndex].count;
-        public int TotalCount => m_TotalCount;
-
-        string IGroup.id => "all";
-        string IGroup.name => "All";
-        string IGroup.type => "all";
-        int IGroup.priority => int.MinValue + 1;
-        int IGroup.count => m_TotalCount;
-        IEnumerable<SearchItem> IGroup.items => GetAll();
+        public override int Count => m_Groups[m_CurrentGroupIndex >= 0 ? m_CurrentGroupIndex : 0].count;
+        public int TotalCount => m_Groups[0].count;
 
         public override SearchItem this[int index]
         {
@@ -546,25 +508,21 @@ namespace UnityEditor.Search
             set => throw new NotSupportedException();
         }
 
-        private bool UseAll()
+        public GroupedSearchList(SearchContext searchContext)
+            : this(searchContext, defaultComparer: null)
         {
-            return m_CurrentGroupIndex == -1 || m_Groups.Count == 0;
+        }
+
+        public GroupedSearchList(SearchContext searchContext, ISearchListComparer defaultComparer)
+            : base(searchContext, false)
+        {
+            m_DefaultComparer = defaultComparer;
+            Clear();
         }
 
         public override int IndexOf(SearchItem item)
         {
-            if (!UseAll())
-                return m_Groups[m_CurrentGroupIndex].IndexOf(item);
-
-            int index = 0;
-            foreach (var e in GetAll())
-            {
-                if (e == item)
-                    return index;
-                index++;
-            }
-
-            return -1;
+            return m_Groups[m_CurrentGroupIndex].IndexOf(item);
         }
 
         public SearchItem ElementAt(int index)
@@ -572,26 +530,7 @@ namespace UnityEditor.Search
             if (index < 0 || index >= Count)
                 throw new ArgumentOutOfRangeException($"Failed to access item {index} within {Count}/{TotalCount} items", nameof(index));
 
-            if (UseAll())
-            {
-                foreach (var g in m_Groups)
-                {
-                    if (index < g.count)
-                        return g.ElementAt(index);
-
-                    index -= g.count;
-                }
-            }
-            else
-                return m_Groups[m_CurrentGroupIndex].ElementAt(index);
-
-            return null;
-        }
-
-        public GroupedSearchList(SearchContext searchContext)
-            : base(searchContext, false)
-        {
-            Clear();
+            return m_Groups[m_CurrentGroupIndex].ElementAt(index);
         }
 
         protected override void Dispose(bool disposing)
@@ -601,7 +540,7 @@ namespace UnityEditor.Search
 
         public int GetGroupCount(bool showAll = true)
         {
-            return m_Groups.Count + (showAll ? 1 : 0);
+            return m_Groups.Count + (showAll ? 0 : -1);
         }
 
         public IGroup GetGroupById(string groupId)
@@ -616,15 +555,18 @@ namespace UnityEditor.Search
 
         public IEnumerable<IGroup> EnumerateGroups(bool showAll = true)
         {
-            if (showAll && m_Groups.Count > 1)
-                yield return this;
-            foreach (var g in m_Groups)
-                yield return g;
+            if (m_Groups.Count == 2 && m_Groups[0].count == m_Groups[1].count)
+                yield return m_Groups[1];
+            else
+            {
+                foreach (var g in m_Groups.Skip(showAll ? 0 : 1).Where(g => !g.optional || g.count > 0))
+                    yield return g;
+            }
         }
 
         public IEnumerable<SearchItem> GetAll()
         {
-            return m_Groups.SelectMany(g => g.items);
+            return m_Groups[0].items;
         }
 
         public override IEnumerable<SearchItem> Fetch()
@@ -633,29 +575,20 @@ namespace UnityEditor.Search
                 throw new Exception("Fetch can only be used if the search list was created with a search context.");
 
             while (context.searchInProgress)
+            {
                 yield return null;
+                Dispatcher.ProcessOne();
+            }
 
-            if (UseAll())
-            {
-                var it = GetEnumerator();
-                while (it.MoveNext())
-                {
-                    if (it.Current != null)
-                        yield return it.Current;
-                }
-            }
-            else
-            {
-                foreach (var item in m_Groups[m_CurrentGroupIndex].items)
-                    yield return item;
-            }
+            foreach (var item in m_Groups[m_CurrentGroupIndex].items)
+                yield return item;
         }
 
         private void AddDefaultGroups()
         {
             var defaultGroups = context.providers
                 .Where(p => p.showDetailsOptions.HasFlag(ShowDetailsOptions.DefaultGroup))
-                .Select(p => new Group(p.id, p.type, p.name, p.priority));
+                .Select(p => new Group(p.id, p.type, p.name, m_DefaultComparer, p.priority) { optional = false });
             m_Groups.AddRange(defaultGroups);
             m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
         }
@@ -665,22 +598,20 @@ namespace UnityEditor.Search
             var itemGroup = m_Groups.Find(g => string.Equals(g.id, searchProvider.id, StringComparison.Ordinal));
             if (itemGroup != null)
                 return itemGroup;
-            itemGroup = new Group(searchProvider.id, searchProvider.type, searchProvider.name, searchProvider.priority);
+            itemGroup = new Group(searchProvider.id, searchProvider.type, searchProvider.name, m_DefaultComparer, searchProvider.priority);
             m_Groups.Add(itemGroup);
             m_Groups.Sort((lhs, rhs) => lhs.priority.CompareTo(rhs.priority));
             if (!string.IsNullOrEmpty(m_CurrentGroupId))
                 m_CurrentGroupIndex = m_Groups.FindIndex(g => g.id == m_CurrentGroupId);
+            if (m_CurrentGroupIndex == -1)
+                m_CurrentGroupIndex = 0;
             return itemGroup;
         }
 
         public override void AddItems(IEnumerable<SearchItem> items)
         {
             foreach (var item in items)
-            {
-                var itemGroup = AddGroup(item.provider);
-                if (itemGroup.Add(item))
-                    m_TotalCount++;
-            }
+                Add(item);
 
             // Restore current group if possible
             if (m_CurrentGroupIndex == -1 && !string.IsNullOrEmpty(m_CurrentGroupId))
@@ -689,23 +620,29 @@ namespace UnityEditor.Search
 
         public override void Clear()
         {
-            m_CurrentGroupIndex = -1;
-            m_TotalCount = 0;
-            m_Groups.Clear();
-            AddDefaultGroups();
+            if (m_Groups.Count == 0)
+            {
+                m_CurrentGroupIndex = 0;
+                m_Groups.Add(new Group("all", "all", "All", m_DefaultComparer, int.MinValue));
+                AddDefaultGroups();
+            }
+            else
+            {
+                foreach (var g in m_Groups)
+                    g.Clear();
+            }
         }
 
         public override IEnumerator<SearchItem> GetEnumerator()
         {
-            if (UseAll())
-                return GetAll().GetEnumerator();
-
             return m_Groups[m_CurrentGroupIndex].items.GetEnumerator();
         }
 
         public override void Add(SearchItem item)
         {
-            AddItems(new[] { item });
+            var itemGroup = AddGroup(item.provider);
+            if (itemGroup.Add(item))
+                m_Groups[0].Add(item);
         }
 
         public override void CopyTo(SearchItem[] array, int arrayIndex)
@@ -720,7 +657,7 @@ namespace UnityEditor.Search
         {
             get
             {
-                return m_CurrentGroupId ?? (this as IGroup)?.id;
+                return m_CurrentGroupId ?? "all";
             }
 
             set
@@ -728,7 +665,7 @@ namespace UnityEditor.Search
                 if (value == null || !RestoreCurrentGroup(value))
                 {
                     m_CurrentGroupId = value;
-                    m_CurrentGroupIndex = -1;
+                    m_CurrentGroupIndex = 0;
                 }
             }
         }
@@ -739,21 +676,6 @@ namespace UnityEditor.Search
             if (m_CurrentGroupIndex != -1)
                 m_CurrentGroupId = groupId;
             return m_CurrentGroupIndex != -1;
-        }
-
-        SearchItem IGroup.ElementAt(int index)
-        {
-            return ElementAt(index);
-        }
-
-        bool IGroup.Add(SearchItem item)
-        {
-            throw new NotSupportedException();
-        }
-
-        int IGroup.IndexOf(SearchItem item)
-        {
-            throw new NotSupportedException();
         }
 
         internal int GetItemCount(IEnumerable<string> activeProviderTypes)
@@ -774,6 +696,17 @@ namespace UnityEditor.Search
             }
 
             return queryItemCount;
+        }
+
+        public void Sort()
+        {
+            m_Groups[m_CurrentGroupIndex].Sort();
+        }
+
+        public override void SortBy(ISearchListComparer comparer)
+        {
+            m_DefaultComparer = comparer;
+            m_Groups[m_CurrentGroupIndex].SortBy(comparer);
         }
     }
 
@@ -801,7 +734,7 @@ namespace UnityEditor.Search
 
         public override void AddItems(IEnumerable<SearchItem> items)
         {
-            m_UnorderedItems.AddRange(context.subset != null ? items.Intersect(context.subset) : items);
+            m_UnorderedItems.AddRange(items);
         }
 
         public override void Clear()
@@ -906,7 +839,7 @@ namespace UnityEditor.Search
 
         public override void AddItems(IEnumerable<SearchItem> items)
         {
-            var addedItems = context.subset != null ? items.Intersect(context.subset) : items;
+            var addedItems = items;
             foreach (var searchItem in addedItems)
             {
                 m_UnorderedItems.Add(searchItem);

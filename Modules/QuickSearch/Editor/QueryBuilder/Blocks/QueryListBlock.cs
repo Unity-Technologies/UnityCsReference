@@ -431,7 +431,7 @@ namespace UnityEditor.Search
             : base(source, id, value, attr)
         {
             icon = Utils.LoadIcon("Filter Icon");
-            alwaysDrawLabel = true;
+            alwaysDrawLabel = false;
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
@@ -443,6 +443,7 @@ namespace UnityEditor.Search
             yield return CreateProposition(flags, "Hidden", "hidden", "Search hierarchically hidden objects");
             yield return CreateProposition(flags, "Static", "static", "Search static objects");
             yield return CreateProposition(flags, "Prefab", "prefab", "Search prefab objects");
+            yield return CreateProposition(flags, "Main", "main", "Search main asset representation");
         }
     }
 }

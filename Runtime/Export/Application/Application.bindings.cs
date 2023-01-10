@@ -123,9 +123,11 @@ namespace UnityEngine
         }
 
         [FreeFunction("GetBuildSettings().GetBuildTags")]
+        [Obsolete("Application.GetBuildTags is no longer supported and will be removed.", false)]
         extern public static string[] GetBuildTags();
 
         [FreeFunction("GetBuildSettings().SetBuildTags")]
+        [Obsolete("Application.SetBuildTags is no longer supported and will be removed.", false)]
         extern public static void SetBuildTags(string[] buildTags);
 
         extern public static string buildGUID

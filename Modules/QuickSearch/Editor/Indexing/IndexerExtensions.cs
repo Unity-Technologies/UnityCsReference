@@ -113,25 +113,40 @@ namespace UnityEditor.Search
             }
         }
 
-        [CustomObjectIndexer(typeof(Texture2D), version = 1)]
+        [CustomObjectIndexer(typeof(Texture2D), version = 2)]
         internal static void Texture2DIndexing(CustomObjectIndexerTarget context, ObjectIndexer indexer)
         {
             if (!(context.target is Texture2D texture) || !indexer.settings.options.properties)
                 return;
 
-            indexer.AddProperty("format", texture.format.ToString().ToLowerInvariant(), context.documentIndex, saveKeyword: true, exact: true);
-            indexer.AddProperty("filtermode", texture.filterMode.ToString().ToLowerInvariant(), context.documentIndex, saveKeyword: true, exact: true);
-            indexer.AddProperty("dimension", texture.dimension.ToString().ToLowerInvariant(), context.documentIndex, saveKeyword: true, exact: true);
+            indexer.IndexProperty<TextureFormat, Texture2D>(context.documentIndex, "format", texture.format.ToString(), saveKeyword: true, exact: true);
+            indexer.IndexProperty<FilterMode, Texture2D>(context.documentIndex, "filtermode", texture.filterMode.ToString(), saveKeyword: true, exact: true);
+            indexer.IndexProperty<TextureDimension, Texture2D>(context.documentIndex, "dimension", texture.dimension.ToString(), saveKeyword: true, exact: true);
 
             var ti = AssetImporter.GetAtPath(context.id) as TextureImporter;
             if (ti)
             {
-                indexer.AddProperty("type", ti.textureType.ToString().ToLowerInvariant(), context.documentIndex, saveKeyword: true, exact: true);
-                indexer.AddProperty("shape", ti.textureShape.ToString().ToLowerInvariant(), context.documentIndex, saveKeyword: true, exact: true);
-                indexer.AddProperty("readable", ti.isReadable.ToString().ToLowerInvariant(), context.documentIndex, saveKeyword: false, exact: true);
-                indexer.AddProperty("srgb", ti.sRGBTexture.ToString().ToLowerInvariant(), context.documentIndex, saveKeyword: false, exact: true);
-                indexer.AddProperty("compression", ti.textureCompression.ToString().ToLowerInvariant(), context.documentIndex, saveKeyword: true, exact: true);
-                indexer.AddNumber("compressionquality", ti.compressionQuality, indexer.settings.baseScore, context.documentIndex);
+                indexer.IndexProperty<TextureImporterType, TextureImporter>(context.documentIndex, "type", ti.textureType.ToString(), saveKeyword: true, exact: true);
+                indexer.IndexProperty<TextureImporterShape, TextureImporter>(context.documentIndex, "shape", ti.textureShape.ToString(), saveKeyword: true, exact: true);
+                indexer.IndexProperty<bool, TextureImporter>(context.documentIndex, "readable", ti.isReadable.ToString(), saveKeyword: false, exact: true);
+                indexer.IndexProperty<bool, TextureImporter>(context.documentIndex, "srgb", ti.sRGBTexture.ToString(), saveKeyword: false, exact: true);
+                indexer.IndexProperty<TextureImporterCompression, TextureImporter>(context.documentIndex, "compression", ti.textureCompression.ToString(), saveKeyword: true, exact: true);
+                var so = new SerializedObject(ti);
+                var psArray = so.FindProperty("m_PlatformSettings");
+                if (psArray != null)
+                {
+                    for (var i = 0; i < psArray.arraySize; ++i)
+                    {
+                        var platformSettings = psArray.GetArrayElementAtIndex(i);
+                        var buildTarget = platformSettings.FindPropertyRelative("m_BuildTarget");
+                        if (buildTarget != null && buildTarget.stringValue == TextureImporter.defaultPlatformName)
+                        {
+                            var parentPath = platformSettings.propertyPath;
+                            indexer.IndexProperties(context.documentIndex, platformSettings, recursive: false, 2, p => p.propertyPath.StartsWith(parentPath));
+                            break;
+                        }
+                    }
+                }
             }
         }
 

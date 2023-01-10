@@ -61,7 +61,7 @@ namespace UnityEditor.Search
                 SelectGroup(firstProvider.type);
         }
 
-        private void RestoreSearchText(SearchViewState viewState)
+        protected override void RestoreSearchText(SearchViewState viewState)
         {
             if (Utils.IsRunningTests() || viewState.context == null)
                 return;
@@ -76,11 +76,10 @@ namespace UnityEditor.Search
             if (!viewState.excludeClearItem)
                 yield return SearchItem.clear;
 
+
             SearchSettings.ApplyContextOptions(context);
             foreach (var item in SearchService.GetItems(context))
             {
-                if (filterCallback != null && !filterCallback(item))
-                    continue;
                 yield return item;
             }
         }

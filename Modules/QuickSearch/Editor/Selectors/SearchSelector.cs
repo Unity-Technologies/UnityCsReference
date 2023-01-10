@@ -34,12 +34,14 @@ namespace UnityEditor.Search
             this.priority = priority;
             this.provider = provider;
             this.printable = printable;
+            this.cacheable = true;
         }
 
         internal Regex pattern { get; private set; }
         internal int priority { get; private set; }
         internal string provider { get; private set; }
         internal bool printable { get; private set; }
+        public bool cacheable { get; set; }
     }
 
     readonly struct SelectorGroup
@@ -102,17 +104,18 @@ namespace UnityEditor.Search
         public readonly bool printable;
         public readonly SearchSelectorHandler select;
         internal readonly string description;
+        public readonly bool cacheable;
 
         public bool valid => pattern != null && select != null;
 
         public string label => Regex.Replace(pattern.ToString(), @"[\^\$\?\<\>\+\.\(\)\[\]\p{C}]+", string.Empty);
 
         internal SearchSelector(SearchSelectorAttribute attr, SearchSelectorHandler select, string description = null)
-            : this(attr.pattern, attr.priority, attr.provider, attr.printable, select, description)
+            : this(attr.pattern, attr.priority, attr.provider, attr.printable, select, description, cacheable: attr.cacheable)
         {
         }
 
-        public SearchSelector(Regex pattern, int priority, string provider, bool printable, SearchSelectorHandler select, string description)
+        public SearchSelector(Regex pattern, int priority, string provider, bool printable, SearchSelectorHandler select, string description, bool cacheable)
         {
             this.pattern = pattern;
             this.priority = priority;
@@ -120,6 +123,7 @@ namespace UnityEditor.Search
             this.printable = printable;
             this.select = select;
             this.description = description;
+            this.cacheable = cacheable;
         }
 
         public override string ToString()
@@ -217,9 +221,11 @@ namespace UnityEditor.Search
             if (string.IsNullOrEmpty(selectorName))
                 return null;
 
+            var storeValue = !item.options.HasAny(SearchItemOptions.AlwaysRefresh);
             using (var view = SearchMonitor.GetView())
             {
-                if (view.TryLoadProperty(item.key, selectorName, out var recordKey, out var cv, out suggestedSelectorName))
+                PropertyDatabaseRecordKey recordKey = default;
+                if (storeValue && view.TryLoadProperty(item.key, selectorName, out recordKey, out var cv, out suggestedSelectorName))
                     return cv;
 
                 string localSuggestedSelectorName = null;
@@ -232,6 +238,8 @@ namespace UnityEditor.Search
                         var selectedValue = m.selector.select(selectorArgs);
                         if (selectedValue != null)
                         {
+                            if (!m.selector.cacheable)
+                                storeValue = false;
                             if (selectorArgs.name != null)
                                 localSuggestedSelectorName = selectorArgs.name;
                             return selectedValue;
@@ -247,7 +255,8 @@ namespace UnityEditor.Search
                 if (!string.IsNullOrEmpty(localSuggestedSelectorName))
                     suggestedSelectorName = localSuggestedSelectorName;
 
-                view.StoreProperty(recordKey, itemValue, suggestedSelectorName);
+                if (storeValue)
+                    view.StoreProperty(recordKey, itemValue, suggestedSelectorName);
 
                 return itemValue;
             }

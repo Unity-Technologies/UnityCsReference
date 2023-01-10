@@ -34,13 +34,15 @@ namespace UnityEngine.UIElements
         }
 
         public static ScaleMode ResolveUnityBackgroundScaleMode(BackgroundPosition backgroundPositionX, BackgroundPosition backgroundPositionY,
-            BackgroundRepeat backgroundRepeat, BackgroundSize backgroundSize)
+            BackgroundRepeat backgroundRepeat, BackgroundSize backgroundSize, out bool valid)
         {
+
             if (backgroundPositionX == BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleAndCrop) &&
                 backgroundPositionY == BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleAndCrop) &&
                 backgroundRepeat == BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.ScaleAndCrop) &&
                 backgroundSize == BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.ScaleAndCrop))
             {
+                valid = true;
                 return ScaleMode.ScaleAndCrop;
             }
             else if (backgroundPositionX == BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.ScaleToFit) &&
@@ -48,10 +50,20 @@ namespace UnityEngine.UIElements
                      backgroundRepeat == BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.ScaleToFit) &&
                      backgroundSize == BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.ScaleToFit))
             {
+                valid = true;
                 return ScaleMode.ScaleToFit;
+            }
+            else if (backgroundPositionX == BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.StretchToFill) &&
+                     backgroundPositionY == BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.StretchToFill) &&
+                     backgroundRepeat == BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.StretchToFill) &&
+                     backgroundSize == BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.StretchToFill))
+            {
+                valid = true;
+                return ScaleMode.StretchToFill;
             }
             else
             {
+                valid = false;
                 return ScaleMode.StretchToFill;
             }
         }

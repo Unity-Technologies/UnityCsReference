@@ -65,6 +65,8 @@ namespace UnityEngine.Rendering
 
         public virtual Shader defaultSpeedTree8Shader => null;
 
+        public virtual string renderPipelineShaderTag => string.Empty;
+
         protected abstract RenderPipeline CreatePipeline();
 
         protected virtual void OnValidate()

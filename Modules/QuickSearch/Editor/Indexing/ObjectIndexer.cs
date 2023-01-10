@@ -260,6 +260,11 @@ namespace UnityEditor.Search
                 AddProperty(name, valueLower, settings.baseScore, documentIndex, saveKeyword: saveKeyword);
         }
 
+        public void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, bool exact)
+        {
+            IndexProperty(documentIndex, name, value, saveKeyword, exact);
+            MapProperty(name, name, name, typeof(TProperty).Name, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
+        }
         /// <summary>
         /// Add a key-number value pair to the index. The key won't be added with variations. See <see cref="SearchIndexer.AddNumber"/>.
         /// </summary>
@@ -317,18 +322,8 @@ namespace UnityEditor.Search
             using (var so = new SerializedObject(obj))
             {
                 var p = so.GetIterator();
-                var next = p.NextVisible(true);
-                while (next)
-                {
-                    if (p.isValid)
-                    {
-                        var fieldName = p.displayName.Replace("m_", "").Replace(" ", "").ToLowerInvariant();
-                        if (p.propertyPath[p.propertyPath.Length - 1] != ']')
-                            IndexProperty(documentIndex, fieldName, p);
-                    }
-
-                    next = p.NextVisible(ShouldIndexChildren(p, recursive));
-                }
+                const int maxDepth = 1;
+                IndexProperties(documentIndex, p, recursive, maxDepth);
             }
         }
 
@@ -360,7 +355,33 @@ namespace UnityEditor.Search
             return p.hasVisibleChildren;
         }
 
-        private void IndexProperty(in int documentIndex, in string fieldName, in SerializedProperty p)
+        static string GetFieldName(string propertyName)
+        {
+            return propertyName.Replace("m_", "").Replace(" ", "").ToLowerInvariant();
+        }
+        
+        static Func<SerializedProperty, bool> s_IndexAllPropertiesFunc = p => true;
+        internal void IndexProperties(int documentIndex, in SerializedProperty p, bool recursive, int maxDepth)
+        {
+            IndexProperties(documentIndex, p, recursive, maxDepth, s_IndexAllPropertiesFunc);
+        }
+        
+        internal void IndexProperties(int documentIndex, in SerializedProperty p, bool recursive, int maxDepth, Func<SerializedProperty, bool> shouldContinueIterating)
+        {
+            var next = p.NextVisible(true);
+            while (next)
+            {
+                if (p.isValid)
+                {
+                    var fieldName = GetFieldName(p.displayName);
+                    if (p.propertyPath[p.propertyPath.Length - 1] != ']')
+                        IndexProperty(documentIndex, fieldName, p, maxDepth);
+                }
+                next = shouldContinueIterating(p) && p.NextVisible(ShouldIndexChildren(p, recursive));
+            }
+        }
+        
+        internal void IndexProperty(in int documentIndex, in string fieldName, in SerializedProperty p, int maxDepth)
         {
             if (ignoredProperties.Contains(fieldName))
                 return;
@@ -374,7 +395,7 @@ namespace UnityEditor.Search
                 LogProperty(fieldName, p, p.arraySize);
             }
 
-            if (p.depth > 1)
+            if (p.depth > maxDepth)
                 return;
 
             switch (p.propertyType)
@@ -511,7 +532,7 @@ namespace UnityEditor.Search
                 IndexProperty(documentIndex, "ref", assetPath, saveKeyword: false, exact: true);
             if (settings.options.properties)
             {
-                IndexPropertyStringComponents(documentIndex, propertyName, Path.GetFileNameWithoutExtension(objRef.name ?? assetPath));
+                IndexPropertyStringComponents(documentIndex, propertyName, Path.GetFileNameWithoutExtension(Utils.RemoveInvalidCharsFromPath(objRef.name ?? assetPath, '_')));
                 if (label != null && ownerPropertyType != null)
                     MapProperty(propertyName, label, null, objRef.GetType().AssemblyQualifiedName, ownerPropertyType.AssemblyQualifiedName, false);
             }

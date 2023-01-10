@@ -105,7 +105,17 @@ namespace UnityEditor.Search
 
         [Multiline]
         public string description;
-        public List<string> providerIds;
+        
+        public ICollection<string> providerIds
+        {
+            get => viewState?.providerIds ?? new string[0];
+            set
+            {
+                if (viewState != null)
+                    viewState.providerIds = value?.ToArray();
+            }
+        }
+        
         public SearchViewState viewState;
         public Texture2D icon;
 
@@ -203,6 +213,11 @@ namespace UnityEditor.Search
 
         public static bool SaveQuery(SearchQueryAsset asset, SearchContext context, string folder, string name = null)
         {
+            return SaveQuery(asset, context, new SearchViewState(context), folder, name);
+        }
+        
+        public static bool SaveQuery(SearchQueryAsset asset, SearchContext context, SearchViewState sourceViewState, string folder, string name = null)
+        {
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
 
@@ -223,9 +238,24 @@ namespace UnityEditor.Search
             else
             {
                 EditorUtility.SetDirty(asset);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(asset);
             }
             return createNew;
+        }
+        
+        public static void RemoveQuery(SearchQueryAsset queryAsset)
+        {
+            RemoveQuery(queryAsset, false);
+        }
+        
+        internal static void RemoveQuery(SearchQueryAsset queryAsset, bool skipDialog)
+        {
+            if (skipDialog || EditorUtility.DisplayDialog($"Deleting search query {queryAsset.name}?",
+                    $"You are about to delete the search query {queryAsset.name}, are you sure?", "Yes", "No"))
+            {
+                var oldViewState = queryAsset.viewState;
+                AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(queryAsset));
+            }
         }
 
         public static IEnumerable<SearchQueryAsset> GetFilteredSearchQueries(SearchContext context)
@@ -249,7 +279,7 @@ namespace UnityEditor.Search
             if (query == null)
                 return null;
 
-            return SearchQuery.Open(query, SearchFlags.Default);
+            return SearchQuery.Open(query, SearchFlags.OpenDefault);
         }
 
         public static void AddToRecentSearch(ISearchQuery query)
@@ -260,7 +290,7 @@ namespace UnityEditor.Search
         public SearchQuery ToSearchQuery()
         {
             var viewState = GetViewState();
-            return new SearchQuery(viewState, viewState.tableConfig);
+            return new SearchQuery(viewState);
         }
 
         [OnOpenAsset]

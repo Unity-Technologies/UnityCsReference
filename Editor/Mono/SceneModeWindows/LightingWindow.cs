@@ -356,16 +356,15 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(Lightmapping.lightingDataAsset.validityErrorMessage, MessageType.Warning);
                 }
 
-                bool entitiesPackage = IsPackageUsed("com.unity.entities");
+                bool isEntitiesPackageUsed = IsPackageUsed("com.unity.entities");
+                bool iterativeInLightingSettings = (m_WorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative);
 
-                if (entitiesPackage)
-                    EditorGUILayout.HelpBox("Auto Generate mode is unavailable when the Entities package is installed. When you generate lighting in a project where you have installed the Entities package, the Unity Editor opens all loaded subscenes. This may slow down Editor performance.", MessageType.Warning);
+                if (isEntitiesPackageUsed && iterativeInLightingSettings)
+                    EditorGUILayout.HelpBox("Unity ignores Auto Generate mode when the Entities package is installed. When you generate lighting in a project where you have installed the Entities package, the Unity Editor opens all loaded subscenes. This may slow down Editor performance.", MessageType.Warning);
 
                 EditorGUILayout.Space();
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-
-                bool iterative = (m_WorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative);
 
                 Rect rect = GUILayoutUtility.GetRect(Styles.continuousBakeLabel, GUIStyle.none);
 
@@ -373,25 +372,23 @@ namespace UnityEditor
 
                 // Auto Generate checkbox.
                 EditorGUI.BeginChangeCheck();
-                using (new EditorGUI.DisabledScope(m_LightingSettingsReadOnlyMode || entitiesPackage))
+                using (new EditorGUI.DisabledScope(m_LightingSettingsReadOnlyMode))
                 {
-                    if (entitiesPackage)
-                        iterative = false;
-
-                    iterative = GUILayout.Toggle(iterative, Styles.continuousBakeLabel);
+                    iterativeInLightingSettings = GUILayout.Toggle(iterativeInLightingSettings, Styles.continuousBakeLabel);
                 }
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    m_WorkflowMode.intValue = (int)(iterative ? Lightmapping.GIWorkflowMode.Iterative : Lightmapping.GIWorkflowMode.OnDemand);
+                    m_WorkflowMode.intValue = (int)(iterativeInLightingSettings ? Lightmapping.GIWorkflowMode.Iterative : Lightmapping.GIWorkflowMode.OnDemand);
                 }
 
                 EditorGUI.EndProperty();
 
-                using (new EditorGUI.DisabledScope(iterative))
+                bool resultingIterative = iterativeInLightingSettings && !isEntitiesPackageUsed;
+                using (new EditorGUI.DisabledScope(resultingIterative))
                 {
                     // Bake button if we are not currently baking
-                    bool showBakeButton = iterative || !Lightmapping.isRunning;
+                    bool showBakeButton = resultingIterative || !Lightmapping.isRunning;
                     if (showBakeButton)
                     {
                         if (EditorGUI.ButtonWithDropdownList(Styles.buildLabel, Styles.BakeModeStrings, BakeDropDownCallback, GUILayout.Width(170)))
