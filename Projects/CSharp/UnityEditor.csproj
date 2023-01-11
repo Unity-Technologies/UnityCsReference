@@ -884,30 +884,6 @@
     <Compile Include="..\..\Editor\Mono\DisplayUtility.cs">
       <Link>Editor\Mono\DisplayUtility.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\EditorDisplayFullscreenSetting.cs">
-      <Link>Editor\Mono\Display\EditorDisplayFullscreenSetting.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\EditorDisplayManager.cs">
-      <Link>Editor\Mono\Display\EditorDisplayManager.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\EditorDisplaySettingsProfile.cs">
-      <Link>Editor\Mono\Display\EditorDisplaySettingsProfile.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\EditorDisplayUtility.bindings.cs">
-      <Link>Editor\Mono\Display\EditorDisplayUtility.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\EditorFullscreenController.cs">
-      <Link>Editor\Mono\Display\EditorFullscreenController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\FullscreenSettingsForAttribute.cs">
-      <Link>Editor\Mono\Display\FullscreenSettingsForAttribute.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\GameViewFullscreenSettings.cs">
-      <Link>Editor\Mono\Display\GameViewFullscreenSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Display\IPlayModeViewFullscreenSettings.cs">
-      <Link>Editor\Mono\Display\IPlayModeViewFullscreenSettings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\DragAndDrop.bindings.cs">
       <Link>Editor\Mono\DragAndDrop.bindings.cs</Link>
     </Compile>
@@ -1627,12 +1603,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GameView\GameView.cs">
       <Link>Editor\Mono\GameView\GameView.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GameView\GameViewOnPlayMenu.cs">
-      <Link>Editor\Mono\GameView\GameViewOnPlayMenu.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\GameView\GameViewOnPlayMenuItemProvider.cs">
-      <Link>Editor\Mono\GameView\GameViewOnPlayMenuItemProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GameView\GameViewSize.cs">
       <Link>Editor\Mono\GameView\GameViewSize.cs</Link>
@@ -4193,6 +4163,9 @@
     <Compile Include="..\..\Modules\AssetDatabase\Editor\ScriptBindings\AssetOrigin.binding.cs">
       <Link>Modules\AssetDatabase\Editor\ScriptBindings\AssetOrigin.binding.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AssetDatabase\Editor\ScriptBindings\CacheServer.bindings.cs">
+      <Link>Modules\AssetDatabase\Editor\ScriptBindings\CacheServer.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\Managed\ArtifactDifferenceReporter.cs">
       <Link>Modules\AssetDatabase\Editor\V2\Managed\ArtifactDifferenceReporter.cs</Link>
     </Compile>
@@ -4588,6 +4561,9 @@
     </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\SnapSettings.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\SnapSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\StoreButton.cs">
+      <Link>Modules\EditorToolbar\ToolbarElements\StoreButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\UndoButton.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\UndoButton.cs</Link>
@@ -5555,9 +5531,6 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\ResizableElement.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\ResizableElement.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\SelectionBorder.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\SelectionBorder.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\WireBubble.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\UIElements\WireBubble.cs</Link>
     </Compile>
@@ -5809,6 +5782,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\RectUtils_Internal.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\Utils\RectUtils_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\ShortcutBlocker_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Utils\ShortcutBlocker_Internal.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\StringUtilsExtensions.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\Utils\StringUtilsExtensions.cs</Link>
@@ -9472,6 +9448,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\FieldValueInfo.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\FieldValueInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\FontDefinitionStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\FontDefinitionStyleField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\ImageStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\ImageStyleField.cs</Link>

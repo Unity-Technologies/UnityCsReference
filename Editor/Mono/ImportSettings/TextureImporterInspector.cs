@@ -1546,31 +1546,6 @@ namespace UnityEditor
             if (!string.IsNullOrEmpty(m_ImportWarning))
                 EditorGUILayout.HelpBox(m_ImportWarning, MessageType.Warning);
 
-            if (!m_TextureShape.hasMultipleDifferentValues && !m_EnableMipMap.hasMultipleDifferentValues && !m_NPOTScale.hasMultipleDifferentValues)
-            {
-                // To avoid complexity of combinations of settings (e.g., tex1 is rescaled to POT with mipmap enabled, tex2 is NPOT with mipmap disabled, then all is fine but we would still get warnings)
-                // we only show the warnings for a single texture (or a group with the same values)
-
-                if (m_TextureShape.intValue == (int)TextureImporterShape.Texture2D && m_EnableMipMap.boolValue && m_NPOTScale.intValue == (int)TextureImporterNPOTScale.None && TargetsHaveNPOTTextures())
-                {
-                    BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
-                    UnityEngine.Rendering.GraphicsDeviceType[] activeTargetGraphicsAPIs = PlayerSettings.GetGraphicsAPIs(buildTarget);
-                    if (Array.Exists(activeTargetGraphicsAPIs, api => api == UnityEngine.Rendering.GraphicsDeviceType.OpenGLES2))
-                    {
-                        GUIContent c;
-                        if (buildTarget == BuildTarget.WebGL)
-                            c = EditorGUIUtility.TrTextContent("NPOT textures are not fully supported on WebGL1. On these devices, mipmapping will be disabled.");
-                        else if (buildTarget == BuildTarget.Android)
-                            c = EditorGUIUtility.TrTextContent("Some Android devices running on OpenGLES2 may not support NPOT textures. If this is the case, mipmapping will be disabled.");
-                        else
-                            c = EditorGUIUtility.TrTextContent("Some devices running on OpenGLES2 may not support NPOT textures. If this is the case, mipmapping will be disabled.");
-
-                        EditorGUILayout.HelpBox(c.text, MessageType.Warning, true);
-                    }
-                }
-            }
-
-
             GUI.enabled = wasEnabled;
         }
 

@@ -45,17 +45,11 @@ namespace Unity.GraphToolsFoundation.Editor
                     undoStateUpdater.SaveState(graphModelState);
                 }
 
-                SetField(command, out var newModels, out var changedModels, out var deletedModels);
-
-                if (newModels != null || changedModels != null || deletedModels != null)
+                using (var updater = graphModelState.UpdateScope)
                 {
-                    using (var updater = graphModelState.UpdateScope)
-                    {
-                        updater.MarkNew(newModels);
-                        updater.MarkChanged(changedModels);
-                        updater.MarkDeleted(deletedModels);
-                        updater.MarkUpdated(changeScope.ChangeDescription);
-                    }
+                    SetField(command);
+                    updater.MarkUpdated(changeScope.ChangeDescription);
+					updater.MarkGraphPropertiesChanged();
                 }
             }
         }

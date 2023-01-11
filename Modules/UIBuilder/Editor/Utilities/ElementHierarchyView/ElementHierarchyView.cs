@@ -67,7 +67,10 @@ namespace Unity.UI.Builder
         BuilderClassDragger m_ClassDragger;
         BuilderExplorerDragger m_ExplorerDragger;
         BuilderElementContextMenu m_ContextMenuManipulator;
-
+        bool m_AllowMouseUpRenaming;
+        IVisualElementScheduledItem m_RenamingScheduledItem;
+        ManipulatorActivationFilter m_RenamingManipulatorFilter;
+        
         public VisualElement container
         {
             get { return m_Container; }
@@ -116,6 +119,7 @@ namespace Unity.UI.Builder
             m_Container.style.flexGrow = 1;
             m_ClassDragger.builderHierarchyRoot = m_Container;
             m_ExplorerDragger.builderHierarchyRoot = m_Container;
+            m_ExplorerDragger.onEndDrag += OnExplorerEndDrag;
             Add(m_Container);
 
             m_ClassPillTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
@@ -131,12 +135,70 @@ namespace Unity.UI.Builder
             m_TreeView.viewDataKey = "unity-builder-explorer-tree";
             m_TreeView.style.flexGrow = 1;
             m_TreeView.selectedIndicesChanged += OnSelectionChange;
+            m_TreeView.selectionNotChanged += OnSameItemSelection;
             m_TreeView.horizontalScrollingEnabled = true;
 
             m_TreeView.RegisterCallback<MouseDownEvent>(OnLeakedMouseClick);
             m_Container.Add(m_TreeView);
 
             m_ContextMenuManipulator.RegisterCallbacksOnTarget(m_Container);
+            
+            RegisterCallback<KeyDownEvent>(evt =>
+            {
+                if (selection.selectionCount != 1)
+                {
+                    return;
+                }
+
+                var selectedElement = selection.selection.First();
+                var explorerItem = selectedElement.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
+
+                if (explorerItem == null)
+                {
+                    return;
+                }
+                
+                switch (evt.keyCode)
+                {
+                    case KeyCode.Return:
+                    case KeyCode.KeypadEnter:
+                        if (Application.platform == RuntimePlatform.OSXEditor)
+                        {
+                            explorerItem.ActivateRenameElementMode();
+                            evt.PreventDefault();
+                        }
+
+                        break;
+                    case KeyCode.F2:
+                        if (Application.platform != RuntimePlatform.OSXEditor)
+                        {
+                            explorerItem.ActivateRenameElementMode();
+                            evt.PreventDefault();
+                        }
+                        break;                    
+                }
+            }, TrickleDown.TrickleDown);
+        }
+
+        private void OnExplorerEndDrag()
+        {
+            m_AllowMouseUpRenaming = false;
+        }
+
+        private void OnSameItemSelection()
+        {
+            if (m_Selection.isEmpty)
+            {
+                return;
+            }
+            
+            var selectedElement = m_Selection.selection.First();
+            var explorerItem = selectedElement.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
+
+            if (explorerItem != null && !explorerItem.IsRenamingActive())
+            {
+                m_AllowMouseUpRenaming = true;    
+            }
         }
 
         public void CopyTreeViewItemStates(VisualElementAsset sourceVEA, VisualElementAsset targetVEA)
@@ -660,7 +722,7 @@ namespace Unity.UI.Builder
                 HighlightItemInTargetWindow(documentElement);
             }
         }
-
+        
         VisualElement MakeItem()
         {
             var element = new BuilderExplorerItem();
@@ -704,7 +766,50 @@ namespace Unity.UI.Builder
                 styleBackgroundImage.value = new Background { texture = libraryIcon };
                 icon.style.backgroundImage = styleBackgroundImage;
             });
+            
+            element.RegisterCallback<ClickEvent>(evt =>
+            {
+                if (!m_RenamingManipulatorFilter.Matches(evt))
+                {
+                    return;
+                }
+                
+                if (evt.clickCount > 1)
+                {
+                    // Multiple clicks. Cancel rename
+                    m_RenamingScheduledItem?.Pause();
+                }
+                
+                if (evt.clickCount == 1 && m_AllowMouseUpRenaming)
+                {
+                    m_RenamingScheduledItem = element.schedule.Execute(() =>
+                    {
+                        if (m_Selection.selectionCount != 1 || !m_TreeView.IsFocused())
+                        {
+                            return;
+                        }
+                        
+                        var selectedElement = m_Selection.selection.First();
 
+                        if (!selectedElement.HasProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName))
+                        {
+                            return;
+                        }
+                        
+                        var explorerItem = selectedElement.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
+
+                        if (explorerItem == element)
+                        {
+                            element.ActivateRenameElementMode();    
+                        }
+                    }).StartingIn(500);
+                    evt.PreventDefault();
+                }
+                
+                m_AllowMouseUpRenaming = false;
+                
+            }, TrickleDown.TrickleDown);
+            
             return element;
         }
 

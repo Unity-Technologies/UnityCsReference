@@ -26,9 +26,8 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        public override bool UpdateDisplayedValue()
+        public override void UpdateDisplayedValue()
         {
-            return true;
         }
     }
 }

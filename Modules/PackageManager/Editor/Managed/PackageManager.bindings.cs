@@ -101,6 +101,7 @@ namespace UnityEditor.PackageManager
     {
         [NativeName("GetAllPackages")]
         public static extern PackageInfo[] GetAllRegisteredPackages();
+        public static extern bool IsPackageRegistered(string name);
 
         [NativeName("GetPredefinedPackageTypes")]
         internal static extern string[] GetPredefinedPackageTypes();
@@ -108,7 +109,11 @@ namespace UnityEditor.PackageManager
         [NativeName("GetPredefinedHiddenByDefaultPackageTypes")]
         internal static extern string[] GetPredefinedHiddenByDefaultPackageTypes();
 
-        private static extern PackageInfo GetPackageByAssetPath(string assetPath);
+        [NativeName("GetPackageByAssetPathFromScript")]
+        private static extern PackageInfo[] GetPackageByAssetPath(string assetPath);
+
+        [NativeName("GetPackageByNameFromScript")]
+        private static extern PackageInfo[] GetPackageByName(string name);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/PackageManagerImmutableAssets.h")]

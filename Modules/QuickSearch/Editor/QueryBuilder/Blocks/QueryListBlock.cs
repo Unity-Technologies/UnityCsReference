@@ -67,13 +67,23 @@ namespace UnityEditor.Search
             return icon == null ? QueryColors.type : QueryColors.typeIcon;
         }
 
-        internal SearchProposition CreateProposition(SearchPropositionFlags flags, string label, string data, string help = "", int score = 0)
+        internal IEnumerable<SearchProposition> GetEnumPropositions<TEnum>(SearchPropositionFlags flags, string helpTemplate) where TEnum : System.Enum
+        {
+            foreach (var obj in Enum.GetValues(typeof(TEnum)))
+            {
+                var e = (TEnum)obj;
+                yield return new SearchProposition(category: GetCategory(flags), label: e.ToString(), help: $"{helpTemplate} {e}",
+                        data: e, priority: 0, icon: null, type: GetType(), color: GetBackgroundColor());
+            }
+        }
+
+        internal SearchProposition CreateProposition(SearchPropositionFlags flags, string label, object data, string help = "", int score = 0)
         {
             return new SearchProposition(category: GetCategory(flags), label: label, help: help,
                     data: data, priority: score, icon: icon, type: GetType(), color: GetBackgroundColor());
         }
 
-        internal SearchProposition CreateProposition(SearchPropositionFlags flags, string label, string data, string help, Texture2D icon, int score = 0)
+        internal SearchProposition CreateProposition(SearchPropositionFlags flags, string label, object data, string help, Texture2D icon, int score = 0)
         {
             return new SearchProposition(category: GetCategory(flags), label: label, help: help,
                     data: data, priority: score, icon: icon, type: GetType(), color: GetBackgroundColor());
@@ -81,13 +91,14 @@ namespace UnityEditor.Search
 
         internal override void CreateBlockElement(VisualElement container)
         {
-            if (!icon || alwaysDrawLabel)
+            if ((label == null && label != value) || alwaysDrawLabel)
             {
                 base.CreateBlockElement(container);
                 return;
             }
 
-            AddIcon(container, icon);
+            if (icon != null)
+                AddIcon(container, icon);
             AddLabel(container, label ?? value);
             AddOpenEditorArrow(container);
         }

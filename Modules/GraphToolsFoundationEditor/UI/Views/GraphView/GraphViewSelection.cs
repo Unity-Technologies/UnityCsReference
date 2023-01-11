@@ -75,8 +75,7 @@ namespace Unity.GraphToolsFoundation.Editor
                             elementsToCopySet,
                             IsCopiable);
                         return false;
-                    },
-                    true);
+                    });
             }
 
             // copying wires between nodes in placemats

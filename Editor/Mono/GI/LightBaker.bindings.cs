@@ -544,19 +544,12 @@ namespace UnityEditor.LightBaking
             public extern LightmapRequest[] GetLightmapRequests();
             public extern void SetLightmapRequests(LightmapRequest[] requests);
 
-            private extern unsafe void SetProbePositions([Span("positionsLength", isReadOnly: true)] Vector3* positions, int positionsLength);
-
             public void SetProbePositions(Vector3[] positions)
             {
                 SetProbePositions(positions.AsSpan());
             }
-            public unsafe void SetProbePositions(ReadOnlySpan<Vector3> positions)
-            {
-                fixed (Vector3* positionsPtr = positions)
-                {
-                    SetProbePositions(positionsPtr, positions.Length);
-                }
-            }
+            public extern void SetProbePositions(ReadOnlySpan<Vector3> positions);
+            
             public extern Vector3[] GetProbePositions();
         }
         extern static public Result Bake(BakeInput input);

@@ -46,17 +46,7 @@ namespace UnityEngine
             set
             {
                 GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB);
-
-#pragma warning disable 618 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
-                if (requestedFormat == GraphicsFormat.DepthAuto || requestedFormat == GraphicsFormat.ShadowAuto)
-                {
-                    graphicsFormat = requestedFormat;
-                }
-#pragma warning restore 618
-                else
-                {
-                    graphicsFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
-                }
+                graphicsFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
             }
         }
 
@@ -112,22 +102,12 @@ namespace UnityEngine
         public RenderTextureDescriptor(int width, int height, RenderTextureFormat colorFormat, int depthBufferBits, int mipCount)
         {
             GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(colorFormat, false);
-
-#pragma warning disable 618 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
-            if (requestedFormat == GraphicsFormat.DepthAuto || requestedFormat == GraphicsFormat.ShadowAuto)
+            GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
+            if (requestedFormat != compatibleFormat)
             {
-                this = new RenderTextureDescriptor(width, height, requestedFormat, depthBufferBits, mipCount);
+                Debug.LogWarning(String.Format("'{0}' is not supported. RenderTexture::GetTemporary fallbacks to {1} format on this platform. Use 'SystemInfo.IsFormatSupported' C# API to check format support.", requestedFormat.ToString(), compatibleFormat.ToString()));
             }
-#pragma warning restore 618
-            else
-            {
-                GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
-                if (requestedFormat != compatibleFormat)
-                {
-                    Debug.LogWarning(String.Format("'{0}' is not supported. RenderTexture::GetTemporary fallbacks to {1} format on this platform. Use 'SystemInfo.IsFormatSupported' C# API to check format support.", requestedFormat.ToString(), compatibleFormat.ToString()));
-                }
-                this = new RenderTextureDescriptor(width, height, compatibleFormat, depthBufferBits, mipCount);
-            }
+            this = new RenderTextureDescriptor(width, height, compatibleFormat, depthBufferBits, mipCount);
         }
 
         [uei.ExcludeFromDocs]
@@ -386,14 +366,6 @@ namespace UnityEngine
         internal static GraphicsFormat GetCompatibleFormat(RenderTextureFormat renderTextureFormat, RenderTextureReadWrite readWrite)
         {
             GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(renderTextureFormat, readWrite);
-
-#pragma warning disable 618 // Disable deprecation warnings on the ShadowAuto and DepthAuto formats
-            if (requestedFormat == GraphicsFormat.DepthAuto || requestedFormat == GraphicsFormat.ShadowAuto)
-            {
-                return requestedFormat;
-            }
-#pragma warning restore 618
-
             GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
 
             if (requestedFormat == compatibleFormat)

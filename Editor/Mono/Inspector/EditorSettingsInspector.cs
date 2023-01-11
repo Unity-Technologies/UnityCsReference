@@ -461,7 +461,7 @@ namespace UnityEditor
             GUI.enabled = editorEnabled;
             if (GUILayout.Button(Content.ucbpLearnMore, EditorStyles.linkLabel))
             {
-                var help = Help.FindHelpNamed("AssetBundles-Building");
+                var help = Help.FindHelpNamed("Build-MultiProcess");
                 Application.OpenURL(help);
             }
             GUILayout.EndHorizontal();
@@ -821,10 +821,21 @@ namespace UnityEditor
                         if (address.Length == 2)
                             port = Convert.ToUInt16(address[1]);
 
-                        if (AssetDatabase.CanConnectToCacheServer(ip, port))
+                        bool canConnect = AssetDatabase.CanConnectToCacheServer(ip, port);
+                        bool isConnected = AssetDatabase.IsConnectedToCacheServer();
+                        if (canConnect)
                             m_CacheServerConnectionState = CacheServerConnectionState.Success;
                         else
                             m_CacheServerConnectionState = CacheServerConnectionState.Failure;
+
+                        //We have to check if we're out of sync. here.
+                        //If we can connect, but we're not connected, we need to update some UI
+                        //If we CANNOT connect, but we are connected, we are out of sync. too and
+                        //need to update some UI.
+                        //Calling RefreshSettings here fixes that, and this check encapsulates the
+                        //above 2 conditions.
+                        if (canConnect != isConnected)
+                            AssetDatabase.RefreshSettings();
                     }
 
                     GUILayout.Space(25);

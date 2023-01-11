@@ -174,6 +174,11 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
+        /// Returns true if the selection is empty.
+        /// </summary>
+        public bool IsSelectionEmpty => m_Selection.Count == 0;
+
+        /// <summary>
         /// Gets the list of selected graph element models. If not done yet, this
         /// function resolves the list of models from a list of GUID, using the graph.
         /// </summary>

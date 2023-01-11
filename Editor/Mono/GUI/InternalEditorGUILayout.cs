@@ -25,12 +25,6 @@ namespace UnityEditor
             EditorGUI.GameViewSizePopup(s_LastRect, groupType, selectedIndex, gameView, style);
         }
 
-        internal static void GameViewOnPlayPopup(int selectedIndex, IGameViewOnPlayMenuUser gameView, GUIStyle style, params GUILayoutOption[] options)
-        {
-            s_LastRect = GetControlRect(false, EditorGUI.kSingleLineHeight, style, options);
-            EditorGUI.GameViewOnPlayPopup(s_LastRect, selectedIndex, gameView, style);
-        }
-
         internal static void SortingLayerField(GUIContent label, SerializedProperty layerID, GUIStyle style, GUIStyle labelStyle)
         {
             s_LastRect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight, style);

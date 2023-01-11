@@ -868,6 +868,19 @@ namespace UnityEngine
         public static extern BlittableCornerCases[] ParameterBlittableCornerCaseStructArrayReturn();
     }
 
+    // --------------------------------------------------------------------
+    // System.Span tests
+    [NativeType("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    internal class ValueTypeSpanTests
+    {
+        [NativeThrows] public static extern void ParameterIntReadOnlySpan(ReadOnlySpan<int> param);
+        [NativeThrows] public static extern void ParameterIntSpan(Span<int> param);
+        [NativeThrows] public static extern void ParameterBoolReadOnlySpan(ReadOnlySpan<bool> param);
+        [NativeThrows] public static extern void ParameterCharReadOnlySpan(ReadOnlySpan<char> param);
+        [NativeThrows] public static extern void ParameterEnumReadOnlySpan(ReadOnlySpan<SomeEnum> param);
+        [NativeThrows] public static extern void ParameterBlittableCornerCaseStructReadOnlySpan(ReadOnlySpan<BlittableCornerCases> param);
+    }
+
     internal static class MarshallingTests
     {
         [FreeFunction("MarshallingTest::DisableMarshallingTestsVerification")]

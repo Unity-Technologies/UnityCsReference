@@ -162,8 +162,16 @@ namespace UnityEditor.Search
 
         public void Refresh(RefreshFlags reason = RefreshFlags.Default)
         {
-            m_AsyncRequestOff?.Invoke();
-            m_AsyncRequestOff = Utils.CallDelayed(AsyncRefresh, SearchSettings.debounceMs / 1000d);
+            // TODO FetchItemProperties (DOTSE-1994): remove this case and always refresh.
+            if (reason == RefreshFlags.DisplayModeChanged)
+            {
+                RefreshContent(reason);
+            }
+            else
+            {
+                m_AsyncRequestOff?.Invoke();
+                m_AsyncRequestOff = Utils.CallDelayed(AsyncRefresh, SearchSettings.debounceMs / 1000d);
+            }
         }
 
         private void AsyncRefresh()
@@ -268,7 +276,7 @@ namespace UnityEditor.Search
                         return false;
                     }
 
-                    nextView = new SearchEmptyView(this, hideHelpers);
+                    nextView = new SearchEmptyView(this, viewState.flags);
                 }
                 else
                 {

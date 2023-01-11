@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -40,8 +41,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
-            target.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
@@ -53,8 +52,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void UnregisterCallbacksFromTarget()
         {
-            target.UnregisterCallback<MouseEnterEvent>(OnMouseEnter);
-            target.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
@@ -82,7 +79,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
             }
 
-            // Check if the mouse is over the port hitbox.
+            // Check if the mouse is over the port hit box.
             if (!Port.GetPortHitBoxBounds(port, true).Contains(e.mousePosition))
             {
                 return;
@@ -95,6 +92,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (WireDragHelper.HandleMouseDown(e))
             {
+                // Disable all wires except the dragged one.
+                WireDragHelper.EnableAllWires_Internal(WireDragHelper.GraphView, false, new List<WireModel> { WireDragHelper.WireCandidateModel });
                 m_Active = true;
                 target.CaptureMouse();
                 e.StopPropagation();
@@ -105,16 +104,6 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        void OnMouseLeave(MouseLeaveEvent e)
-        {
-            SetHoveringOnPortHitBox(e.mousePosition, true);
-        }
-
-        void OnMouseEnter(MouseEnterEvent e)
-        {
-            SetHoveringOnPortHitBox(e.mousePosition);
-        }
-
         void OnCaptureOut(MouseCaptureOutEvent e)
         {
             StopManipulation(true);
@@ -122,8 +111,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected virtual void OnMouseMove(MouseMoveEvent e)
         {
-            SetHoveringOnPortHitBox(e.mousePosition);
-
             if (!m_Active) return;
             WireDragHelper.HandleMouseMove(e);
             e.StopPropagation();
@@ -173,15 +160,6 @@ namespace Unity.GraphToolsFoundation.Editor
         bool CanPerformConnection(Vector2 mousePosition)
         {
             return Vector2.Distance(m_MouseDownPosition, mousePosition) > connectionDistanceThreshold_Internal;
-        }
-
-        void SetHoveringOnPortHitBox(Vector2 mousePosition, bool endHover = false)
-        {
-            var port = target.GetFirstAncestorOfType<Port>();
-            if (port == null || port.PortModel.Capacity == PortCapacity.None)
-                return;
-
-            port.GetPortConnectorPart().Hovering = !endHover && Port.GetPortHitBoxBounds(port, true).Contains(mousePosition);
         }
 
         void StopManipulation(bool abort)

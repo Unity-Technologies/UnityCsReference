@@ -104,7 +104,7 @@ namespace UnityEditor
             var cameraRect = imguiContainer.rect;
             cameraRect.width = Mathf.Floor(cameraRect.width);
 
-            if (cameraRect.width < 1 || cameraRect.height < 1)
+            if (cameraRect.width < 1 || cameraRect.height < 1 || float.IsNaN(cameraRect.width) || float.IsNaN(cameraRect.height))
                 return;
 
             if (Event.current.type == EventType.Repaint)

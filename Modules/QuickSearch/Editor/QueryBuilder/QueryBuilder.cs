@@ -582,8 +582,7 @@ namespace UnityEditor.Search
                     m_TextBlock.GetSearchField()?.Focus();
                 }
             }
-            else if ((evt.keyCode == KeyCode.Backspace && cursorAtBeginning) ||
-                     (evt.keyCode == KeyCode.Delete && (cursorAtBeginning || cursorAtEnd)))
+            else if (evt.keyCode == KeyCode.Backspace || evt.keyCode == KeyCode.Delete)
             {
                 QueryBlock toRemoveBlock = currentBlock;
                 if (toRemoveBlock != null && !toRemoveBlock.@readonly)

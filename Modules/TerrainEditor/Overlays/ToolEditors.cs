@@ -22,13 +22,15 @@ namespace UnityEditor.TerrainTools
     {
         private Vector2 m_ScrollPos;
         private IMGUIContainer m_ImgContainer;
+        static Dictionary<Type, (MethodInfo, bool)> m_ToolTypeToGUIFunc = new (); // true for non-obsolete, false for obsolete
+
 
         public override VisualElement CreateInspectorGUI()
         {
             m_ImgContainer = new IMGUIContainer();
             m_ImgContainer.style.minWidth = 300;
             m_ImgContainer.style.maxWidth = 400;
-            m_ImgContainer.style.maxHeight =600;
+            m_ImgContainer.style.maxHeight = 600;
 
             m_ImgContainer.onGUIHandler = () =>
             {
@@ -67,12 +69,42 @@ namespace UnityEditor.TerrainTools
 
             if (tool.HasToolSettings)
             {
-                tool.OnToolSettingsGUI(tool.Terrain, new OnInspectorGUIContext(), true);
+                Type type = tool.GetType();
+
+                if (!m_ToolTypeToGUIFunc.ContainsKey(type))
+                {
+                    // store the tool type to function ONCE
+                    MethodInfo funcWithoutBoolean = type.GetMethod("OnToolSettingsGUI", new [] {typeof(Terrain), typeof(IOnInspectorGUI)}); // not obsolete
+                    MethodInfo funcWithBoolean = type.GetMethod("OnToolSettingsGUI", new [] {typeof(Terrain), typeof(IOnInspectorGUI), typeof(bool)}); // obsolete
+                    if (funcWithoutBoolean == null || funcWithBoolean == null) return;
+
+                    if (funcWithoutBoolean.DeclaringType != funcWithoutBoolean.GetBaseDefinition().DeclaringType)
+                    {
+                        // non obsolete method is overriden
+                        m_ToolTypeToGUIFunc[type] = (funcWithoutBoolean, true);
+                    } else if (funcWithBoolean.DeclaringType != funcWithBoolean.GetBaseDefinition().DeclaringType)
+                    {
+                        // obsolete method is overriden
+                        m_ToolTypeToGUIFunc[type] = (funcWithBoolean, false);
+                    }
+                    else
+                    {
+                        return; // shouldnt get here
+                    }
+                }
+
+                // invoke obsolete or non obsolete method depending on value of Item2 (bool)
+                m_ToolTypeToGUIFunc[type].Item1
+                    .Invoke(tool,
+                        m_ToolTypeToGUIFunc[type].Item2
+                            ? new object[] {tool.Terrain, new OnInspectorGUIContext()}
+                            : new object[] {tool.Terrain, new OnInspectorGUIContext(), false});
             }
             else
             {
                 GUILayout.Label("This tool has no extra tool settings!");
             }
+
             EditorGUILayout.EndScrollView();
         }
     }

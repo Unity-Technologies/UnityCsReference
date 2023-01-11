@@ -41,25 +41,23 @@ namespace Unity.GraphToolsFoundation.Editor
             if (m_Toggle != null)
             {
                 m_Toggle.SetValueWithoutNotify(value.ShouldShowInLibrary);
-                DisplayElement(m_WarningBox, m_Toggle.value && !m_GraphModel.CanBeSubgraph());
+                DisplayElement(m_WarningBox, value.ShouldShowInLibrary && !m_GraphModel.CanBeSubgraph());
 
                 if (m_WarningBox != null)
                     m_WarningBox.text = m_WarningMessage?? "The conditions for this graph to be usable as a subgraph are not met.";
 
                 if (m_PathTextField != null && m_DescriptionTextField != null)
                 {
-                    DisplayElement(m_ToggleContainer, m_Toggle.value);
+                    DisplayElement(m_ToggleContainer, value.ShouldShowInLibrary);
                     m_PathTextField.SetValueWithoutNotify(value.DisplayedPath);
 
                     var description = string.IsNullOrEmpty(value.Description)? k_Placeholder : value.Description;
                     m_DescriptionTextField.EnableInClassList(placeholderUssClassName, string.IsNullOrEmpty(value.Description) || value.Description == k_Placeholder);
                     m_DescriptionTextField.SetValueWithoutNotify(description);
                 }
-
-                return true;
             }
 
-            return false;
+            return true;
         }
 
 
@@ -158,9 +156,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 DisplayedPath = m_PathTextField.value,
                 Description = m_DescriptionTextField.value
             };
-
-            DisplayElement(m_WarningBox, e.newValue && !m_GraphModel.CanBeSubgraph());
-            DisplayElement(m_ToggleContainer, e.newValue);
 
             using (var ee = ChangeEvent<SubgraphPropertiesField>.GetPooled(oldPropertiesField, newPropertiesField))
             {

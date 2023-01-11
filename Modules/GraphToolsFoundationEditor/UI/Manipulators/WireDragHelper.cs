@@ -19,7 +19,7 @@ namespace Unity.GraphToolsFoundation.Editor
         List<PortModel> m_CompatiblePorts;
         GhostWireModel m_GhostWireModel;
         Wire m_GhostWire;
-        GraphView GraphView { get; }
+        public GraphView GraphView { get; }
         readonly Func<GraphModel, GhostWireModel> m_GhostWireViewModelCreator;
 
         GraphViewPanHelper_Internal m_PanHelper = new GraphViewPanHelper_Internal();
@@ -50,6 +50,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
         GhostWireModel m_WireCandidateModel;
         Wire m_WireCandidate;
+        PortModel m_PreviousEndPortModel;
+
         public GhostWireModel WireCandidateModel => m_WireCandidateModel;
 
         public void CreateWireCandidate(GraphModel graphModel)
@@ -71,14 +73,12 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (m_AllPorts != null)
             {
-                // Reset the highlights.
                 for (var i = 0; i < m_AllPorts.Count; i++)
                 {
                     var pv = m_AllPorts[i].GetView<Port>(GraphView);
                     if (pv != null)
                     {
                         pv.SetEnabled(true);
-                        pv.Highlighted = false;
                     }
                 }
                 m_AllPorts = null;
@@ -95,6 +95,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 GraphView.RemoveElement(m_WireCandidate);
             }
 
+            if (WireCandidateModel != null && m_GhostWireModel != null)
+            {
+                ClearWillConnect(m_GhostWireModel, WireCandidateModel.ToPort == null ? WireSide.To : WireSide.From);
+            }
+
             m_PanHelper.Stop();
 
             if (draggedPort != null)
@@ -105,9 +110,16 @@ namespace Unity.GraphToolsFoundation.Editor
 
             m_GhostWire = null;
             ClearWireCandidate();
+            EnableAllWires_Internal(GraphView);
         }
 
-        public bool HandleMouseDown(MouseDownEvent evt)
+        /// <summary>
+        /// Handles mouse down event.
+        /// </summary>
+        /// <param name="evt">The mouse down event.</param>
+        /// <param name="compatiblePortsFilter">The predicate that filters the compatible ports. Ports that don't match the predicate are discarded.</param>
+        /// <returns></returns>
+        public bool HandleMouseDown(MouseDownEvent evt, Predicate<PortModel> compatiblePortsFilter = null)
         {
             var mousePosition = evt.mousePosition;
 
@@ -140,12 +152,14 @@ namespace Unity.GraphToolsFoundation.Editor
                 WireCandidateModel.ToPort = draggedPort;
             }
 
-            var portUI = draggedPort.GetView<Port>(GraphView);
-            if (portUI != null)
-                portUI.WillConnect = true;
-
             m_AllPorts = GraphView.GraphModel.GetPortModels().ToList();
             m_CompatiblePorts = GraphView.GraphModel.GetCompatiblePorts(m_AllPorts, draggedPort);
+
+            // Filter compatible ports
+            if (compatiblePortsFilter != null)
+            {
+                m_CompatiblePorts = m_CompatiblePorts.FindAll(compatiblePortsFilter);
+            }
 
             // Only light compatible anchors when dragging a wire.
             for (var i = 0; i < m_AllPorts.Count; i++)
@@ -154,7 +168,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (pv != null)
                 {
                     pv.SetEnabled(false);
-                    pv.Highlighted = false;
                 }
             }
 
@@ -164,8 +177,14 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (pv != null)
                 {
                     pv.SetEnabled(true);
-                    pv.Highlighted = true;
                 }
+            }
+
+            var portUI = draggedPort.GetView<Port>(GraphView);
+            if (portUI != null)
+            {
+                portUI.WillConnect = true;
+                portUI.SetEnabled(true);
             }
 
             m_WireCandidate.UpdateFromModel();
@@ -189,6 +208,9 @@ namespace Unity.GraphToolsFoundation.Editor
             // Draw ghost wire if possible port exists.
             var endPort = GetEndPort(mousePosition);
 
+            if (m_PreviousEndPortModel != null && m_PreviousEndPortModel != endPort?.PortModel)
+                ClearWillConnect(m_PreviousEndPortModel);
+
             if (endPort != null)
             {
                 if (m_GhostWire == null)
@@ -211,6 +233,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_GhostWireModel.SetPort(otherSide, WireCandidateModel.GetPort(otherSide));
 
                 m_GhostWire.UpdateFromModel();
+                m_PreviousEndPortModel = endPort.PortModel;
             }
             else if (m_GhostWire != null && m_GhostWireModel != null)
             {
@@ -221,6 +244,21 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_GhostWireModel.FromPort = null;
                 m_GhostWireModel = null;
                 m_GhostWire = null;
+            }
+        }
+
+        internal static void EnableAllWires_Internal(GraphView graphView, bool isEnabled = true, List<WireModel> exemptedWires = null)
+        {
+            if (graphView.GraphViewModel == null || graphView.GraphModel == null)
+                return;
+
+            foreach (var otherWire in graphView.GraphModel.WireModels)
+            {
+                if (exemptedWires == null || !exemptedWires.Contains(otherWire))
+                {
+                    var view = otherWire.GetView_Internal(graphView);
+                    view?.SetEnabled(isEnabled);
+                }
             }
         }
 
@@ -255,14 +293,12 @@ namespace Unity.GraphToolsFoundation.Editor
             var scale = GraphView.ContentViewContainer.transform.scale;
             GraphView.Dispatch(new ReframeGraphViewCommand(position, scale));
 
-            // Reset the highlights.
             for (var i = 0; i < m_AllPorts.Count; i++)
             {
                 var pv = m_AllPorts[i].GetView<Port>(GraphView);
                 if (pv != null)
                 {
                     pv.SetEnabled(true);
-                    pv.Highlighted = false;
                 }
             }
 
@@ -354,7 +390,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 .Select(e => (e.wire.WireModel, e.port.Direction == PortDirection.Input ? WireSide.From : WireSide.To))
                 .ToList();
 
-            var wiresToDelete = wires.Where(w => w.IsGhostWire).Select(w => w.WireModel);
+            var wiresToDelete = wires.Where(w => w.IsGhostWire).Select(w => w.WireModel).ToList();
 
             stencil.CreateNodesFromWires(GraphView, wiresToConnect, worldPosition, wiresToDelete);
         }
@@ -380,16 +416,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (compatiblePortUI == null || compatiblePortUI.resolvedStyle.visibility != Visibility.Visible)
                     continue;
 
-                // Check if the mouse is over the port hitbox.
+                // Check if the mouse is over the port hit box.
                 if (Port.GetPortHitBoxBounds(compatiblePortUI).Contains(mousePosition))
-                {
-                    compatiblePortUI.GetPortConnectorPart().Hovering = true;
                     endPort = compatiblePortUI;
-                }
-                else
-                {
-                    compatiblePortUI.GetPortConnectorPart().Hovering = false;
-                }
             }
 
             return endPort;

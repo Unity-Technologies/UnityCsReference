@@ -110,7 +110,12 @@ namespace UnityEditor.Search
         }
 
         void IResultView.Focus() => m_ListView.Focus();
-        public virtual void Refresh(RefreshFlags flags) { }
+        public virtual void Refresh(RefreshFlags flags)
+        {
+            if (flags.HasAny(RefreshFlags.DisplayModeChanged))
+                OnDisplayModeChanged(null);
+        }
+
         void IResultView.OnGroupChanged(string prevGroupId, string newGroupId) => OnGroupChanged(prevGroupId, newGroupId);
 
         protected virtual void OnGroupChanged(string prevGroupId, string newGroupId)

@@ -134,7 +134,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             using (var undoStateUpdater = undoState.UpdateScope)
             {
-                var undoableStates = selectionHelper.UndoableSelectionStates.Append(graphModelState);
+                var undoableStates = selectionHelper.SelectionStates.Append<IUndoableStateComponent>(graphModelState);
                 undoStateUpdater.SaveStates(undoableStates);
             }
 

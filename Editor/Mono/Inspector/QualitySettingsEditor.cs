@@ -46,12 +46,13 @@ namespace UnityEditor
             public static readonly GUIContent kTextureMipmapLimitGroupsAddButton = EditorGUIUtility.TrIconContent("Toolbar Plus", "Create a new mipmap limit group. Note that this adds a group to all quality levels, not only the active one!");
             public static readonly GUIContent kTextureMipmapLimitGroupsRemoveButton = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove mipmap limit group. Note that this removes the group from all quality levels, not only the active one!");
 
-            public static readonly string kTextureMipmapLimitGroupsDialogTitle = L10n.Tr("Mipmap Limit Groups");
-            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRemove = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to remove '{0}' without modifying its associated textures. Relevant textures stay bound to '{0}' and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to remove '{0}' and reset the group property of associated textures to 'None'. This triggers a re-import and may take some time.\n\nSelect 'Cancel' if you do not wish to remove '{0}' anymore.");
-            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRename = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to rename '{0}' without modifying its associated textures. Relevant textures stay bound to '{0}' and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to rename '{0}' and update the group property of associated textures to '{1}'. This triggers a re-import and may take some time.\n\nSelect 'Cancel' if you do not wish to rename '{0}' anymore.");
-            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRenameFail = L10n.Tr("The mipmap limit group '{0}' already exists!\n'{1}' was not renamed.");
+            public static readonly string kTextureMipmapLimitGroupsDialogTitleOnUpdate = L10n.Tr("Mipmap Limit Groups: Update textures?");
+            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRemove = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to remove the group without modifying its associated textures. Relevant textures stay bound to the group and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to remove the group and reset the group property of associated textures to 'None'. This triggers a re-import and may take some time. An undo cannot revert the importer changes.");
+            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRename = L10n.Tr("Textures in your project may still be using '{0}'.\n\nSelect 'No' to rename the group without modifying its associated textures. Relevant textures stay bound to the group and fall back automatically to the global mipmap limit.\n\nSelect 'Yes' to rename the group and update the group property of associated textures to '{1}'. This triggers a re-import and may take some time. An undo cannot revert the importer changes.");
+            public static readonly string kTextureMipmapLimitGroupsDialogTitleOnFailure = L10n.Tr("Mipmap Limit Groups: Operation failed");
+            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnRenameFail = L10n.Tr("The mipmap limit group '{0}' already exists.\n'{1}' was not renamed.");
             public static readonly string kTextureMipmapLimitGroupsDialogMessageOnUpdateAssetsError = L10n.Tr("An error occured while updating texture assets: {0}");
-            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnIdentifyFail = L10n.Tr("No textures are linked to the mipmap limit group '{0}'!");
+            public static readonly string kTextureMipmapLimitGroupsDialogMessageOnIdentifyFail = L10n.Tr("No textures are linked to the mipmap limit group '{0}'.");
 
             public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Texture Streaming", "When enabled, Unity only streams texture mipmaps relevant to the current Camera's position in a Scene. This reduces the total amount of memory Unity needs for textures. Individual textures must also have 'Streaming Mip Maps' enabled in their Import Settings.");
             public static readonly GUIContent kStreamingMipmapsMemoryBudget = EditorGUIUtility.TrTextContent("Memory Budget", "The amount of memory (in megabytes) to allocate for all loaded textures.");
@@ -1034,37 +1035,40 @@ namespace UnityEditor
         {
             const string controlName = "TextFieldTextureMipmapLimitGroup";
 
-            using (var changed = new EditorGUI.ChangeCheckScope())
-            {
-                GUI.SetNextControlName(controlName);
-                string newName = EditorGUI.DelayedTextField(rect, label.text, EditorStyles.textField);
+            GUI.SetNextControlName(controlName);
+            EditorGUI.DelayedTextField(rect, label.text, EditorStyles.textField);
 
-                Event e = Event.current;
-                if (m_TextureMipmapLimitGroupsTextFieldNeedsFocus)
+            Event e = Event.current;
+            if (m_TextureMipmapLimitGroupsTextFieldNeedsFocus)
+            {
+                if (e.type == EventType.Repaint) // Wait until all other events are out of the way
                 {
-                    if (e.type == EventType.Repaint) // Wait until all other events are out of the way
-                    {
-                        EditorGUI.s_DelayedTextEditor.text = label.text; // Should already be the case, but just to make sure.
-                        EditorGUI.s_DelayedTextEditor.SelectAll();
-                        EditorGUI.FocusTextInControl(controlName);
-                        m_TextureMipmapLimitGroupsTextFieldNeedsFocus = false;
-                    }
+                    EditorGUI.s_DelayedTextEditor.text = label.text; // Should already be the case, but just to make sure.
+                    EditorGUI.s_DelayedTextEditor.SelectAll();
+                    EditorGUI.FocusTextInControl(controlName);
+                    m_TextureMipmapLimitGroupsTextFieldNeedsFocus = false;
                 }
-                else
+            }
+            else
+            {
+                // If clicking out, the rename is NOT cancelled.
+                if (e.isMouse && !rect.Contains(e.mousePosition))
                 {
-                    if (changed.changed)
-                    {
-                        EndRenamingTextureMipmapLimitGroup(newName);
-                    }
-                    // If clicking out, the rename is NOT cancelled.
-                    else if (e.isMouse && !rect.Contains(e.mousePosition))
+                    EndRenamingTextureMipmapLimitGroup(EditorGUI.s_DelayedTextEditor.text);
+                }
+                // If editing stops or focus is lost, submit the current content of the text editor.
+                // Pressing ESC effectively cancels the rename. Pressing Enter, Tab or clicking away
+                // submits the user's new group name. (renaming is cancelled if the name didn't change)
+                else if (!EditorGUIUtility.editingTextField || GUI.GetNameOfFocusedControl() != controlName)
+                {
+                    // Cannot open a dialog box until a Repaint event if the user clicked away from the QualitySettingsEditor.
+                    if (e.type == EventType.Repaint)
                     {
                         EndRenamingTextureMipmapLimitGroup(EditorGUI.s_DelayedTextEditor.text);
+                        GUIUtility.ExitGUI(); // Prevents layout errors when clicking on certain other windows. (Hierarchy)
                     }
-                    else if (!EditorGUIUtility.editingTextField)
-                    {
-                        EndRenamingTextureMipmapLimitGroup();
-                    }
+                    else
+                        GUI.InternalRepaintEditorWindow(); // Prevents missing controls when window doesn't repaint on its own.
                 }
             }
         }
@@ -1149,8 +1153,8 @@ namespace UnityEditor
 
             if (!Presets.Preset.IsEditorTargetAPreset(target))
             {
-                int selection = EditorUtility.DisplayDialogComplex(Content.kTextureMipmapLimitGroupsDialogTitle,
-                string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnRemove, nameOfGroupToRemove),
+                int selection = EditorUtility.DisplayDialogComplex(Content.kTextureMipmapLimitGroupsDialogTitleOnUpdate,
+                string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnRemove, GetShortTextureMipmapLimitGroupName(nameOfGroupToRemove)),
                 L10n.Tr("No"), L10n.Tr("Cancel"), L10n.Tr("Yes"));
 
                 switch (selection)
@@ -1211,14 +1215,23 @@ namespace UnityEditor
 
         void UpdateTextureAssetsLinkedToOldTextureMipmapLimitGroup(string oldName, string newName)
         {
+            // If we operate on importers while they are selected, the user will still be prompted to confirm changes
+            // that they already agreed to. To avoid this: reset the selection, and restore it after we're done.
+            Object[] originalSelection = Selection.objects;
+
             try
             {
-                string[] guids = AssetDatabase.FindAssets("t:texture");
+                Selection.objects = null;
+
+                string[] guids = AssetDatabase.FindAssets("t:texture t:preset");
                 AssetDatabase.StartAssetEditing();
 
                 for (int i = 0; i < guids.Length; ++i)
                 {
-                    AssetImporter importer = AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(guids[i]));
+                    string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
+                    Presets.Preset preset = AssetDatabase.LoadMainAssetAtPath(assetPath) as Presets.Preset;
+                    bool isPreset = preset is not null;
+                    AssetImporter importer = isPreset ? preset.GetReferenceObject() as AssetImporter : AssetImporter.GetAtPath(assetPath);
 
                     if (importer is TextureImporter)
                     {
@@ -1226,7 +1239,13 @@ namespace UnityEditor
                         if (texImporter.textureShape == TextureImporterShape.Texture2D && texImporter.mipmapLimitGroupName == oldName)
                         {
                             texImporter.mipmapLimitGroupName = newName;
-                            importer.SaveAndReimport();
+                            if (!isPreset)
+                                importer.SaveAndReimport();
+                            else
+                            {
+                                preset.UpdateProperties(importer);
+                                AssetDatabase.ImportAsset(assetPath);
+                            }
                         }
                     }
                     else if (importer is IHVImageFormatImporter)
@@ -1235,20 +1254,27 @@ namespace UnityEditor
                         if (ihvImporter.mipmapLimitGroupName == oldName)
                         {
                             ihvImporter.mipmapLimitGroupName = newName;
-                            importer.SaveAndReimport();
+                            if (!isPreset)
+                                importer.SaveAndReimport();
+                            else
+                            {
+                                preset.UpdateProperties(importer);
+                                AssetDatabase.ImportAsset(assetPath);
+                            }
                         }
                     }
                 }
             }
             catch (System.Exception e)
             {
-                EditorUtility.DisplayDialog(Content.kTextureMipmapLimitGroupsDialogTitle,
+                EditorUtility.DisplayDialog(Content.kTextureMipmapLimitGroupsDialogTitleOnFailure,
                     string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnUpdateAssetsError, e.Message),
                     L10n.Tr("OK"));
             }
             finally
             {
                 AssetDatabase.StopAssetEditing();
+                Selection.objects = originalSelection;
             }
         }
 
@@ -1283,8 +1309,8 @@ namespace UnityEditor
             }
             else
             {
-                EditorUtility.DisplayDialog(Content.kTextureMipmapLimitGroupsDialogTitle,
-                    string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnIdentifyFail, groupNameToIdentify),
+                EditorUtility.DisplayDialog(Content.kTextureMipmapLimitGroupsDialogTitleOnFailure,
+                    string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnIdentifyFail, GetShortTextureMipmapLimitGroupName(groupNameToIdentify)),
                     L10n.Tr("OK"));
             }
         }
@@ -1319,12 +1345,15 @@ namespace UnityEditor
                     return;
                 }
 
+                string shortNewName = GetShortTextureMipmapLimitGroupName(newName);
+                string shortToRename = GetShortTextureMipmapLimitGroupName(toRename);
+
                 for (int i = 0; i < m_TextureMipmapLimitGroupNamesProperty.arraySize; ++i)
                 {
                     if (m_TextureMipmapLimitGroupNamesProperty.GetArrayElementAtIndex(i).stringValue == newName)
                     {
-                        EditorUtility.DisplayDialog(Content.kTextureMipmapLimitGroupsDialogTitle,
-                            string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnRenameFail, newName, toRename),
+                        EditorUtility.DisplayDialog(Content.kTextureMipmapLimitGroupsDialogTitleOnFailure,
+                            string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnRenameFail, shortNewName, shortToRename),
                             L10n.Tr("OK"));
                         return;
                     }
@@ -1333,8 +1362,8 @@ namespace UnityEditor
                 bool applyModifiedProperties = true;
                 if (m_TextureMipmapLimitGroupsRenameShowUpdatePrompt)
                 {
-                    int selection = EditorUtility.DisplayDialogComplex(Content.kTextureMipmapLimitGroupsDialogTitle,
-                        string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnRename, toRename, newName),
+                    int selection = EditorUtility.DisplayDialogComplex(Content.kTextureMipmapLimitGroupsDialogTitleOnUpdate,
+                        string.Format(Content.kTextureMipmapLimitGroupsDialogMessageOnRename, shortToRename, shortNewName),
                         L10n.Tr("No"), L10n.Tr("Cancel"), L10n.Tr("Yes"));
 
                     switch (selection)
@@ -1386,6 +1415,20 @@ namespace UnityEditor
                 existingNames[i] = m_TextureMipmapLimitGroupNamesProperty.GetArrayElementAtIndex(i).stringValue;
             }
             return existingNames;
+        }
+
+        // Only meant to limit the length of various messages addressed to the user that concern mipmap limit groups.
+        // Don't use elsewhere.
+        string GetShortTextureMipmapLimitGroupName(string groupName)
+        {
+            const int maxGroupNameLength = 41;
+            // ^ Cannot fit more than this many characters on 1 line.
+            if (groupName.Length > maxGroupNameLength)
+            {
+                const string suffix = " (...)";
+                groupName = groupName.Substring(0, maxGroupNameLength - suffix.Length) + suffix;
+            }
+            return groupName;
         }
 
         [SettingsProvider]

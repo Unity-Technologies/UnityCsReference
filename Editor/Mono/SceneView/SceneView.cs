@@ -2956,14 +2956,9 @@ namespace UnityEditor
             // update physical camera properties
             if (mainCamera != null)
             {
-                m_Camera.usePhysicalProperties = mainCamera.usePhysicalProperties;
                 m_Camera.iso = mainCamera.iso;
                 m_Camera.shutterSpeed = mainCamera.shutterSpeed;
                 m_Camera.aperture = mainCamera.aperture;
-                m_Camera.focusDistance = mainCamera.focusDistance;
-                m_Camera.focalLength = mainCamera.focalLength;
-                m_Camera.bladeCount = mainCamera.bladeCount;
-                m_Camera.barrelClipping = mainCamera.barrelClipping;
                 m_Camera.anamorphism = mainCamera.anamorphism;
             }
 

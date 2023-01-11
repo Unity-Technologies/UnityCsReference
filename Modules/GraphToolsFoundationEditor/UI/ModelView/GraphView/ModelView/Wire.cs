@@ -318,6 +318,12 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc/>
+        protected override DynamicBorder CreateDynamicBorder()
+        {
+            return null;
+        }
+
+        /// <inheritdoc/>
         public override void SetElementLevelOfDetail(float zoom, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode)
         {
             base.SetElementLevelOfDetail(zoom, newZoomMode, oldZoomMode);

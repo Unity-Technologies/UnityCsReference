@@ -46,6 +46,13 @@ namespace UnityEditor
         Master = 2,
     }
 
+    // Must be in sync with Il2CppStacktraceInformation enum in SerializationMetaFlags.h
+    public enum Il2CppStacktraceInformation
+    {
+        MethodOnly = 0,
+        MethodFileLineNumber = 1,
+    }
+
     // Mac fullscreen mode
     public enum MacFullscreenMode
     {
@@ -736,6 +743,31 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetBatchingForPlatform(BuildTarget platform, int staticBatching, int dynamicBatching);
 
+        public static bool GetStaticBatchingForPlatform(BuildTarget platform)
+        {
+            PlayerSettings.GetBatchingForPlatform(platform, out var staticBatching, out _);
+            return staticBatching > 0;
+        }
+
+        public static void SetStaticBatchingForPlatform(BuildTarget platform, bool enable)
+        {
+            PlayerSettings.GetBatchingForPlatform(platform, out _, out var dynamicBatching);
+            PlayerSettings.SetBatchingForPlatform(platform, enable == true ? 1 : 0, dynamicBatching);
+        }
+
+        public static bool GetDynamicBatchingForPlatform(BuildTarget platform)
+        {
+
+            PlayerSettings.GetBatchingForPlatform(platform, out _, out var dynamicBatching);
+            return dynamicBatching > 0;
+        }
+
+        public static void SetDynamicBatchingForPlatform(BuildTarget platform, bool enable)
+        {
+            PlayerSettings.GetBatchingForPlatform(platform, out var staticBatching, out _);
+            PlayerSettings.SetBatchingForPlatform(platform, staticBatching, enable == true ? 1 : 0);
+        }
+
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         public static extern int GetShaderChunkSizeInMBForPlatform(BuildTarget buildTarget);
 
@@ -1120,6 +1152,20 @@ namespace UnityEditor
 
             SetIl2CppCompilerConfigurationInternal(buildTarget.TargetName, configuration);
         }
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        [NativeMethod("GetIl2CppStacktraceInformation")]
+        private static extern Il2CppStacktraceInformation GetIl2CppStacktraceInformationInternal(string buildTargetName);
+        public static Il2CppStacktraceInformation GetIl2CppStacktraceInformation(NamedBuildTarget buildTarget) =>
+            GetIl2CppStacktraceInformationInternal(buildTarget.TargetName);
+
+        [NativeThrows]
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        [NativeMethod("SetIl2CppStacktraceInformation")]
+        private static extern void SetIl2CppStacktraceInformationInternal(string buildTargetName, Il2CppStacktraceInformation option);
+        public static void SetIl2CppStacktraceInformation(NamedBuildTarget buildTarget, Il2CppStacktraceInformation option) =>
+            SetIl2CppStacktraceInformationInternal(buildTarget.TargetName, option);
 
         [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]

@@ -186,8 +186,6 @@ namespace Unity.GraphToolsFoundation.Editor
             m_EtchColor = new VisualElement() { name = k_EtchColorName };
             m_EtchColor.AddToClassList(etchColorUssClassName);
             m_Etch.Add(m_EtchColor);
-
-            Border.BringToFront();
         }
 
         /// <inheritdoc/>

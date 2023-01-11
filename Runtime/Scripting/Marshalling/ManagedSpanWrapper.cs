@@ -10,7 +10,7 @@ namespace UnityEngine.Bindings
     [StructLayout(LayoutKind.Sequential)]
     internal readonly ref struct ManagedSpanWrapper
     {
-        public unsafe readonly void* begin;
+        public readonly unsafe void* begin;
         public readonly int length;
 
         public unsafe ManagedSpanWrapper(void* begin, int length)

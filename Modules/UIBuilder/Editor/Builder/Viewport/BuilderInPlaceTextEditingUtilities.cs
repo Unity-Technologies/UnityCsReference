@@ -179,6 +179,7 @@ namespace Unity.UI.Builder
 
             // Note: Set the font here it because the font maybe still null of empty label of field in OpenEditor()
             s_Viewport.textEditor.Q(TextField.textInputUssName).style.unityFont = s_EditedTextElement.resolvedStyle.unityFont;
+            s_Viewport.textEditor.Q(TextField.textInputUssName).style.unityFontDefinition = s_EditedTextElement.resolvedStyle.unityFontDefinition;
 
             textEditorContainer.style.left = textElementPos.x;
             textEditorContainer.style.top = textElementPos.y;

@@ -79,9 +79,31 @@ namespace Unity.TLS.LowLevel
         public const int UNITYTLS_SSL_HANDSHAKE_CLIENT_FINISHED = 11;
         public const int UNITYTLS_SSL_HANDSHAKE_SERVER_CHANGE_CIPHER_SPEC = 12;
         public const int UNITYTLS_SSL_HANDSHAKE_SERVER_FINISHED = 13;
+        public const int UNITYTLS_SSL_HANDSHAKE_FLUSH_BUFFERS = 14;
+        public const int UNITYTLS_SSL_HANDSHAKE_WRAPUP = 15;
+        public const int UNITYTLS_SSL_HANDSHAKE_OVER = 16;
+        public const int UNITYTLS_SSL_HANDSHAKE_SERVER_NEW_SESSION_TICKET = 17;
+        public const int UNITYTLS_SSL_HANDSHAKE_HELLO_VERIFY_REQUIRED = 18;
+        /// <summary>Number of constant definitions</summary>
+        public const int UNITYTLS_SSL_HANDSHAKE_COUNT = 19;
+        /// <summary>Deprecated: for backward compatibility only</summary>
+        public const int UNITYTLS_SSL_HANDSHAKE_BEGIN = 0;
+        /// <summary>Deprecated: for backward compatibility only</summary>
+        public const int UNITYTLS_SSL_HANDSHAKE_DONE = 16;
+        /// <summary>Deprecated: for backward compatibility only</summary>
         public const int UNITYTLS_SSL_HANDSHAKE_HANDSHAKE_FLUSH_BUFFERS = 14;
+        /// <summary>Deprecated: for backward compatibility only</summary>
         public const int UNITYTLS_SSL_HANDSHAKE_HANDSHAKE_WRAPUP = 15;
+        /// <summary>Deprecated: for backward compatibility only</summary>
         public const int UNITYTLS_SSL_HANDSHAKE_HANDSHAKE_OVER = 16;
+        [StructLayout(LayoutKind.Sequential)]
+        public struct unitytls_errorstate
+        {
+            public uint magic;
+            public uint code;
+            /// <summary>Implementation specific error code/handle.</summary>
+            public ulong reserved;
+        }
         /// <summary>struct that encapsulates a data pointer and data length.</summary>
         [StructLayout(LayoutKind.Sequential)]
         public struct unitytls_dataRef
@@ -89,12 +111,12 @@ namespace Unity.TLS.LowLevel
             public byte* dataPtr;
             public size_t dataLen;
         }
-        public const int UnityTLSRole_None = 0;
-        public const int UnityTLSRole_Server = 1;
-        public const int UnityTLSRole_Client = 2;
         public const int UnityTLSClientAuth_None = 0;
         public const int UnityTLSClientAuth_Optional = 1;
         public const int UnityTLSClientAuth_Required = 2;
+        public const int UnityTLSRole_None = 0;
+        public const int UnityTLSRole_Server = 1;
+        public const int UnityTLSRole_Client = 2;
         public const int UnityTLSTransportProtocol_Stream = 0;
         public const int UnityTLSTransportProtocol_Datagram = 1;
         public const int UnityTLSClientState_None = 0;
@@ -197,7 +219,7 @@ namespace Unity.TLS.LowLevel
             /// <summary>server's hostname's name</summary>
             public byte* hostname;
             /// <summary>one of unitytls_log_level_t above.</summary>
-            public int tracelevel;
+            public uint tracelevel;
             /// <summary>callback for logging statements.</summary>
             // Delegates are managed types, putting it here directly would prevent us from creating pointers to this struct.
             // Use System.Runtime.InteropServices.GetFunctionPointerForDelegate to generate IntPtr from the original delegate.

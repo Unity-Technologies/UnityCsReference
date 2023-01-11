@@ -51,6 +51,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public VisualElement Connector => m_ConnectorBox;
 
+        public VisualElement Cap => m_ConnectorBoxCap;
+
         public bool Hovering
         {
             get => m_Hovering;
@@ -97,6 +99,23 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             container.Add(m_Root);
+            container.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
+            container.RegisterCallback<MouseMoveEvent>(OnMouseMove);
+        }
+
+        void OnMouseMove(MouseMoveEvent evt)
+        {
+            if (m_OwnerElement is not Port port)
+                return;
+
+            var mouseIsOnHitBox = Port.GetPortHitBoxBounds(port, true).Contains(evt.mousePosition);
+            if (mouseIsOnHitBox != Hovering)
+                Hovering = mouseIsOnHitBox;
+        }
+
+        void OnMouseLeave(MouseLeaveEvent evt)
+        {
+            Hovering = false;
         }
 
         /// <inheritdoc />
@@ -119,11 +138,20 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (m_ConnectorBoxCap != null)
             {
-                bool showCap = Hovering || (m_OwnerElement?.ClassListContains(Port.willConnectModifierUssClassName) ?? false);
-
-                if ((m_Model is PortModel portModel && portModel.IsConnected()) || showCap)
+                if (m_Model is PortModel portModel && portModel.IsConnected())
                 {
                     m_ConnectorBoxCap.style.visibility = StyleKeyword.Null;
+                }
+                else if (m_OwnerElement is Port port)
+                {
+                    var willConnect = port.ClassListContains(Port.willConnectModifierUssClassName);
+                    var isEnabled = port.enabledSelf;
+                    var portHasCapacity = port.PortModel.Capacity != PortCapacity.None;
+
+                    if (isEnabled && portHasCapacity && (Hovering || willConnect))
+                        m_ConnectorBoxCap.style.visibility = StyleKeyword.Null;
+                    else
+                        m_ConnectorBoxCap.style.visibility = Visibility.Hidden;
                 }
                 else
                 {

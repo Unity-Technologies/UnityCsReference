@@ -145,7 +145,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 PortModel connectedPort;
                 Port connectedPortUI;
 
-
                 if (m_DetachedFromInputPort)
                 {
                     connectedPort = m_Wire.Output;
@@ -169,40 +168,34 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_ConnectedWireDragHelper.WireCandidateModel.EndPoint = evt.mousePosition;
 
                 // Redirect the last mouse down event to active the drag helper
-
-                if (m_ConnectedWireDragHelper.HandleMouseDown(m_LastMouseDownEvent))
+                var needsSetup = true;
+                if (m_ConnectedWireDragHelper.HandleMouseDown(m_LastMouseDownEvent, compatiblePort =>
+                    {
+                        // We do the setup once here as to avoid getting the additional draggers if HandleMouseDown fails.
+                        if (needsSetup)
+                        {
+                            m_AdditionalWireDragHelpers = GetAdditionalWireDragHelpers(m_DetachedPort, m_Wire, view, connectedPort.GraphModel, evt);
+                            needsSetup = false;
+                        }
+                        return FilterCompatiblePort(compatiblePort);
+                    }))
                 {
                     m_Active = true;
 
-                    if (m_DetachedPort.GetConnectedWires().Count() > 1)
+                    if (m_AdditionalWireDragHelpers != null)
                     {
-                        m_AdditionalWireDragHelpers = new List<WireDragHelper>();
-
-                        foreach (var wire in m_DetachedPort.GetConnectedWires())
-                        {
-                            var wireUI = wire.GetView<Wire>(view);
-                            if (wireUI != null && wireUI != m_Wire && wireUI.IsSelected())
-                            {
-                                var otherPort = m_DetachedPort == wire.ToPort ? wire.FromPort : wire.ToPort;
-
-                                var wireDragHelper = otherPort.GetView<Port>(view)?.WireConnector.WireDragHelper;
-
-                                if (wireDragHelper != null)
-                                {
-                                    wireDragHelper.OriginalWire = wireUI;
-                                    wireDragHelper.draggedPort = otherPort;
-                                    wireDragHelper.CreateWireCandidate(connectedPort.GraphModel);
-                                    wireDragHelper.WireCandidateModel.EndPoint = evt.mousePosition;
-
-                                    m_AdditionalWireDragHelpers.Add(wireDragHelper);
-                                }
-                            }
-                        }
                         foreach (var wireDrag in m_AdditionalWireDragHelpers)
                         {
-                            wireDrag.HandleMouseDown(m_LastMouseDownEvent);
+                            wireDrag.HandleMouseDown(m_LastMouseDownEvent, compatiblePort => FilterCompatiblePort(compatiblePort));
                         }
                     }
+
+                    var draggedWires = new List<WireModel> { m_ConnectedWireDragHelper.OriginalWire.WireModel };
+                    if (m_AdditionalWireDragHelpers != null)
+                        draggedWires.AddRange(m_AdditionalWireDragHelpers.Select(wireDrag => wireDrag.OriginalWire.WireModel));
+
+                    // Disable all wires except the dragged ones.
+                    WireDragHelper.EnableAllWires_Internal(m_ConnectedWireDragHelper.GraphView, false, draggedWires);
                 }
                 else
                 {
@@ -240,9 +233,10 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         m_ConnectedWireDragHelper.HandleMouseUp(evt, true, Enumerable.Empty<Wire>(), Enumerable.Empty<PortModel>());
                     }
+
+                    evt.StopPropagation();
                 }
                 Reset();
-                evt.StopPropagation();
             }
         }
 
@@ -284,7 +278,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             distanceFromInput = float.NegativeInfinity;
             distanceFromOutput = float.NegativeInfinity;
-            
+
             var reference = input.GraphView.ContentViewContainer;
 
             var outputPos = reference.WorldToLocal(output.GetGlobalCenter());
@@ -303,6 +297,45 @@ namespace Unity.GraphToolsFoundation.Editor
             cursor.defaultCursorId = internalCursorId;
 
             panel.cursorManager.SetCursor(cursor);
+        }
+
+        static List<WireDragHelper> GetAdditionalWireDragHelpers(PortModel detachedPort, Wire targetWire, RootView rootView, GraphModel graphModel, IMouseEvent evt)
+        {
+            var connectedWires = detachedPort.GetConnectedWires().ToList();
+            if (connectedWires.Count == 0)
+                return null;
+
+            var additionalWireDragHelpers = new List<WireDragHelper>();
+
+            foreach (var wire in connectedWires)
+            {
+                var wireUI = wire.GetView<Wire>(rootView);
+                if (wireUI != null && wireUI != targetWire && wireUI.IsSelected())
+                {
+                    var otherPort = detachedPort == wire.ToPort ? wire.FromPort : wire.ToPort;
+
+                    var wireDragHelper = otherPort.GetView<Port>(rootView)?.WireConnector.WireDragHelper;
+
+                    if (wireDragHelper != null)
+                    {
+                        wireDragHelper.OriginalWire = wireUI;
+                        wireDragHelper.draggedPort = otherPort;
+                        wireDragHelper.CreateWireCandidate(graphModel);
+                        wireDragHelper.WireCandidateModel.EndPoint = evt.mousePosition;
+
+                        additionalWireDragHelpers.Add(wireDragHelper);
+                    }
+                }
+            }
+
+            return additionalWireDragHelpers;
+        }
+
+        bool FilterCompatiblePort(PortModel compatiblePort)
+        {
+            if (m_AdditionalWireDragHelpers?.Count > 0)
+                return compatiblePort.Capacity == PortCapacity.Multi;
+            return true;
         }
     }
 }

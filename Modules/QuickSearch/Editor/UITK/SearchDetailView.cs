@@ -28,6 +28,7 @@ namespace UnityEditor.Search
         private Action m_RefreshOff;
         private IVisualElementScheduledItem m_PreviewImageRefreshCallback;
         private IVisualElementScheduledItem m_ActionsRefreshCallback;
+        private ScrollView m_ScrollView;
 
         public static readonly string ussClassName = "search-details-view";
         public static readonly string inspectorLabelContainerClassName = ussClassName.WithUssElement("header");
@@ -51,8 +52,8 @@ namespace UnityEditor.Search
 
             m_ActiveElements = new List<VisualElement>();
 
-            var scrollView = new ScrollView(ScrollViewMode.Vertical);
-            scrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            m_ScrollView = new ScrollView(ScrollViewMode.Vertical);
+            m_ScrollView.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
 
             var labelWithIcon = Create<VisualElement>(null, inspectorLabelContainerClassName);
             labelWithIcon.Add(new Image() { image = previewInspectorContent.image });
@@ -74,15 +75,15 @@ namespace UnityEditor.Search
             m_ActiveElements.Add(m_DescriptionLabel);
             m_ActiveElements.Add(m_EditorContainer);
 
-            scrollView.Add(labelWithIcon);
-            scrollView.Add(actionsContainer);
-            scrollView.Add(m_SelectionLabel);
-            scrollView.Add(m_PreviewImage);
-            scrollView.Add(m_InteractivePreviewElement);
-            scrollView.Add(m_DescriptionLabel);
-            scrollView.Add(m_EditorContainer);
+            m_ScrollView.Add(labelWithIcon);
+            m_ScrollView.Add(actionsContainer);
+            m_ScrollView.Add(m_SelectionLabel);
+            m_ScrollView.Add(m_PreviewImage);
+            m_ScrollView.Add(m_InteractivePreviewElement);
+            m_ScrollView.Add(m_DescriptionLabel);
+            m_ScrollView.Add(m_EditorContainer);
 
-            Add(scrollView);
+            Add(m_ScrollView);
 
             HideElements(m_ActiveElements);
 
@@ -134,7 +135,7 @@ namespace UnityEditor.Search
                 selectionCount = evt.GetArgument<IEnumerable<int>>(0).ToList().Count;
                 if (selectionCount == 0)
                 {
-                    HideElements(m_ActiveElements);
+                    SetVisibleDetail(false);
                     return;
                 }
             }
@@ -194,13 +195,16 @@ namespace UnityEditor.Search
 
             var selectionCount = selection.Count;
 
-            HideElements(m_ActiveElements);
+            SetVisibleDetail(false);
 
             SetupEditors(selection, showOptions);
 
             if (selectionCount == 0)
+            {
                 return;
+            }
 
+            SetVisibleDetail(true);
             if (selectionCount > 1)
             {
                 ShowElements(m_SelectionLabel);
@@ -238,6 +242,19 @@ namespace UnityEditor.Search
 
             m_RefreshOff?.Invoke();
             m_RefreshOff = null;
+        }
+
+        private void SetVisibleDetail(bool visible)
+        {
+            if (visible)
+            {
+                m_ScrollView.verticalScrollerVisibility = ScrollerVisibility.Auto;
+            }
+            else
+            {
+                HideElements(m_ActiveElements);
+                m_ScrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            }
         }
 
         private void RefreshActions(SearchContext context)
@@ -311,7 +328,6 @@ namespace UnityEditor.Search
 
         private void RefreshMoreMenu(SearchSelection selection, IEnumerable<SearchAction> actions)
         {
-
             if (!actions.Any())
             {
                 return;
@@ -370,12 +386,11 @@ namespace UnityEditor.Search
             }
             else
             {
-                UpdatePreviewImage(ctx, item, resolvedStyle.width, m_PreviewImage);
-
+                UpdatePreviewImage(ctx, item, resolvedStyle.width, this);
                 if (item.provider?.id.Equals("store", StringComparison.Ordinal) == true)
                 {
                     m_PreviewImageRefreshCallback =
-                        m_PreviewImage.schedule.Execute(() => UpdatePreviewImage(ctx, item, resolvedStyle.width, m_PreviewImage));
+                        m_PreviewImage.schedule.Execute(() => UpdatePreviewImage(ctx, item, resolvedStyle.width, this));
                     m_PreviewImageRefreshCallback
                         .StartingIn(500)
                         .Every(500)
@@ -384,8 +399,12 @@ namespace UnityEditor.Search
             }
         }
 
-        static void UpdatePreviewImage(SearchContext ctx, SearchItem item, float width, Image m_PreviewImage)
+        static void UpdatePreviewImage(SearchContext ctx, SearchItem item, float width, SearchDetailView view)
         {
+            if (view.context.selection.Count == 0)
+                return;
+
+            var previewImage = view.m_PreviewImage;
             Texture2D thumbnail = null;
             if (SearchSettings.fetchPreview && width >= 32)
             {
@@ -399,8 +418,8 @@ namespace UnityEditor.Search
 
             if (!IsBuiltInIcon(thumbnail))
             {
-                m_PreviewImage.image = thumbnail;
-                ShowElements(m_PreviewImage);
+                previewImage.image = thumbnail;
+                ShowElements(previewImage);
             }
         }
 
@@ -424,6 +443,7 @@ namespace UnityEditor.Search
                     continue;
 
                 var editorElement = new SearchItemEditorElement(null, e);
+                editorElement.HideHeader(showOptions.HasFlag(ShowDetailsOptions.InspectorWithoutHeader));
                 m_EditorContainer.Add(editorElement);
                 hasValidEditor = true;
             }
@@ -524,3 +544,4 @@ namespace UnityEditor.Search
         }
     }
 }
+

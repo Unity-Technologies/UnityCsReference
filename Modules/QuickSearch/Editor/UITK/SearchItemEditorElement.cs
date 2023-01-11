@@ -52,6 +52,11 @@ namespace UnityEditor.Search
             Init();
         }
 
+        public void HideHeader(bool hide)
+        {
+            m_Header.visible = !hide;
+        }
+
         void Init()
         {
             m_EditorTarget = editor.targets[0];

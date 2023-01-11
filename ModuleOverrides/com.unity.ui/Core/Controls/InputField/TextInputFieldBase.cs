@@ -815,6 +815,11 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
+            /// The initial value of the input field before being edited.
+            /// </summary>
+            internal string originalText => textElement.originalText;
+
+            /// <summary>
             /// Converts a string to a value type.
             /// </summary>
             /// <param name="str">The string to convert.</param>

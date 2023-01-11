@@ -79,7 +79,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             using (var undoStateUpdater = undoState.UpdateScope)
             {
-                var undoableStates = selectionHelper.UndoableSelectionStates.Concat(new IUndoableStateComponent[] { graphModelState, blackboardViewState });
+                var undoableStates = selectionHelper.SelectionStates.Concat(new IUndoableStateComponent[] { graphModelState, blackboardViewState });
                 undoStateUpdater.SaveStates(undoableStates);
             }
 

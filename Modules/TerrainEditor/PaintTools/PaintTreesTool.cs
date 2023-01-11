@@ -440,7 +440,7 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             LoadTreeIcons(terrain);
 
@@ -578,14 +578,10 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
-        {
-            OnToolSettingsGUI(terrain, editContext, overlays);
-        }
-
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            OnInspectorGUI(terrain, editContext, false);
+            OnToolSettingsGUI(terrain, editContext);
         }
+
     }
 }

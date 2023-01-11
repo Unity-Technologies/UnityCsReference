@@ -66,25 +66,19 @@ namespace UnityEditor.TerrainTools
         public override bool HasBrushMask => true;
         public override bool HasBrushAttributes => true;
 
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             Styles styles = GetStyles();
             m_direction = EditorGUILayout.Slider(styles.direction, m_direction, -1.0f, 1.0f);
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
-        {
-            int textureRez = terrain.terrainData.heightmapResolution;
-            editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
-
-            OnToolSettingsGUI(terrain, editContext, overlays);
-        }
-
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            OnInspectorGUI(terrain, editContext, false);
-        }
+            OnToolSettingsGUI(terrain, editContext);
 
+            int textureRez = terrain.terrainData.heightmapResolution;
+            editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
+        }
 
         private void ApplyBrushInternal(PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
         {

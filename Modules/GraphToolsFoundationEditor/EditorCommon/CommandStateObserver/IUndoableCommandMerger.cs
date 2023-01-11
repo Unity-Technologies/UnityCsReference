@@ -12,10 +12,10 @@ interface IUndoableCommandMerger
     /// <summary>
     /// Indicate that you want to merge the next undoable commands into one undo.
     /// </summary>
-    void StartMerging();
+    void StartMergingUndoableCommands();
 
     /// <summary>
     /// Ends the merging of undoables commands into one undo.
     /// </summary>
-    void StopMerging();
+    void StopMergingUndoableCommands();
 }

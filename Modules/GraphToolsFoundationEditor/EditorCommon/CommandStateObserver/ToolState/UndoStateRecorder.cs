@@ -209,10 +209,16 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Signals the end of a recording. Sends the undo data to the editor undo system.
         /// </summary>
-        public void EndRecording()
+        /// <param name="stateComponents">Additional state components to record; they will be recorded only if there already was other recorded state components.</param>
+        public void EndRecording(params IUndoableStateComponent[] stateComponents)
         {
             if (m_StateComponents.Count > 0)
             {
+                if (stateComponents != null)
+                {
+                    RecordComponents(stateComponents);
+                }
+
                 var operation = new OperationRecord(m_OperationId);
                 for (var i = 0; i < m_StateComponents.Count; i++)
                 {

@@ -345,7 +345,19 @@ namespace UnityEditor.Modules
                 ToolChainPath = toolchainPath,
                 RelativeDataPath = relativeDataPath,
                 ExtraTypes = extraTypesFile?.ToString(),
+                GenerateUsymFile = PlayerSettings.GetIl2CppStacktraceInformation(NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(args.target))) == Il2CppStacktraceInformation.MethodFileLineNumber,
+                UsymtoolPath = GetUsymtoolPath(),
             };
+        }
+
+        static string GetUsymtoolPath()
+        {
+            if (Application.platform == RuntimePlatform.OSXEditor)
+                return Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "macosx", "usymtool");
+            if (Application.platform == RuntimePlatform.LinuxEditor)
+                return Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "usymtool");
+
+            return Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "usymtool.exe");
         }
 
         static bool IsNewInputSystemEnabled()
@@ -512,11 +524,20 @@ namespace UnityEditor.Modules
                 DefaultResultProcessor(node);
         }
 
+        void UsymtoolResultProcessor(NodeFinishedMessage node)
+        {
+            // Usymtool might print a message like "error: <something>" to stdout, even when
+            // it succeeds. So only process error messages when it fails.
+            if (node.ExitCode != 0)
+                DefaultResultProcessor(node);
+        }
+
         public BeeBuildPostprocessor()
         {
             ResultProcessors["IL2CPP_CodeGen"] = PrintStdoutOnErrorProcessor;
             ResultProcessors["UnityLinker"] = UnityLinkerResultProcessor;
             ResultProcessors["ExtractUsedFeatures"] = PrintStdoutOnErrorProcessor;
+            ResultProcessors["Usym"] = UsymtoolResultProcessor;
         }
 
         protected void DefaultResultProcessor(NodeFinishedMessage node, bool printErrors = true, bool printWarnings = true)

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -58,11 +59,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             foreach (var modelField in m_Fields)
             {
-                if (!modelField.UpdateDisplayedValue())
-                {
-                    BuildFields();
-                    break;
-                }
+                modelField.UpdateDisplayedValue();
             }
         }
 

@@ -440,19 +440,6 @@ namespace UnityEditor
             }
         }
 
-        private bool IsPackageUsed(string packageName)
-        {
-            PackageManager.PackageInfo[] allInfo = PackageManager.PackageInfo.GetAllRegisteredPackages();
-            foreach (PackageManager.PackageInfo info in allInfo)
-            {
-                if (info.name == packageName)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         void Buttons(Mode selectedMode)
         {
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
@@ -462,7 +449,7 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(Lightmapping.lightingDataAsset.validityErrorMessage, MessageType.Warning);
                 }
 
-                bool isEntitiesPackageUsed = IsPackageUsed("com.unity.entities");
+                bool isEntitiesPackageUsed = PackageManager.PackageInfo.IsPackageRegistered("com.unity.entities");
                 bool iterativeInLightingSettings = (m_WorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative);
 
                 if (isEntitiesPackageUsed && iterativeInLightingSettings)

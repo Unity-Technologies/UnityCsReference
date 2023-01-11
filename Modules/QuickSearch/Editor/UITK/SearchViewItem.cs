@@ -116,6 +116,7 @@ namespace UnityEditor.Search
             UpdatePreview();
 
             // Last tries at getting the preview. (For the AssetStoreProvider).
+            // TODO FetchItemProperties(DOTSE - 1994): All the fetching of async properties should be consolidated in the ResultView/SearchView.
             var counter = 0;
             m_PreviewRefreshCallback = m_Thumbnail.schedule.Execute(() =>
             {

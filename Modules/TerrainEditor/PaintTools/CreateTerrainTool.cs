@@ -94,7 +94,7 @@ namespace UnityEditor.TerrainTools
             EditorPrefs.SetInt("TerrainFillAddressMode", (int)m_FillAddressMode);
         }
 
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
@@ -113,15 +113,9 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
-        {
-            base.OnInspectorGUI(terrain, editContext);
-            OnToolSettingsGUI(terrain, editContext, overlays);
-        }
-
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            OnInspectorGUI(terrain, editContext, false);
+            OnToolSettingsGUI(terrain, editContext);
         }
 
         Terrain CreateNeighbor(Terrain parent, Vector3 position)

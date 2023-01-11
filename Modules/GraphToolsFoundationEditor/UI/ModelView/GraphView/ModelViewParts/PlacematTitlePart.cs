@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Cursor = UnityEngine.UIElements.Cursor;
 
 namespace Unity.GraphToolsFoundation.Editor;
 
@@ -12,8 +14,6 @@ class PlacematTitlePart : EditableTitlePart
 {
     const float k_TitleToHeight = 4;
     const float k_MinHeightAt12pt = 57;
-
-    float m_LastZoom;
 
     /// <summary>
     /// Creates a new instance of the <see cref="PlacematTitlePart"/> class.
@@ -47,9 +47,21 @@ class PlacematTitlePart : EditableTitlePart
     {
     }
 
+    static readonly string s_PlatformPath = (Application.platform == RuntimePlatform.WindowsEditor) ? "Windows/" : "macOS/";
+    static readonly Cursor s_MoveTitle = new Cursor{texture = EditorGUIUtility.Load("Cursors/" + s_PlatformPath + "Grid.MoveTool.png") as Texture2D,
+        hotspot = new Vector2(7, 6), defaultCursorId = (int)MouseCursor.CustomCursor};
 
     public static readonly string leftAlignClassName = ussClassName.WithUssModifier("left-align");
     public static readonly string rightAlignClassName = ussClassName.WithUssModifier("right-align");
+
+    GraphViewZoomMode m_CurrentMode;
+
+    protected override void BuildPartUI(VisualElement container)
+    {
+        base.BuildPartUI(container);
+
+        TitleContainer.Q<Label>().style.cursor = TitleContainer.style.cursor = s_MoveTitle;
+    }
 
     /// <inheritdoc />
     protected override void UpdatePartFromModel()
@@ -58,20 +70,15 @@ class PlacematTitlePart : EditableTitlePart
 
         if (m_Model is PlacematModel placematModel)
         {
-            var color = placematModel.Color;
-            color.a = 0.5f;
-            TitleContainer.style.backgroundColor = color;
-
             WantedTextSize = placematModel.TitleFontSize;
-
-
-            TitleLabel.style.height = Mathf.Max(k_MinHeightAt12pt, k_TitleToHeight + WantedTextSize*1.22f);
 
             TitleLabel.EnableInClassList(leftAlignClassName,placematModel.TitleAlignment == TextAlignment.Left );
             TitleLabel.EnableInClassList(rightAlignClassName,placematModel.TitleAlignment == TextAlignment.Right );
 
-            if( m_LastZoom != 0 )
-                base.SetLevelOfDetail(m_LastZoom, GraphViewZoomMode.Normal, GraphViewZoomMode.Normal);
+            if (m_CurrentZoom != 0)
+                base.SetLevelOfDetail(m_CurrentZoom, m_CurrentMode, GraphViewZoomMode.Normal);
+
+            TitleContainer.tooltip = placematModel.Title;
         }
     }
 
@@ -82,10 +89,30 @@ class PlacematTitlePart : EditableTitlePart
             LodMinTextSize = value;
     }
 
+    bool m_UpdateHeightRegistered;
+
     /// <inheritdoc />
     public override void SetLevelOfDetail(float zoom, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode)
     {
-        m_LastZoom = zoom;
+        m_CurrentMode = newZoomMode;
         base.SetLevelOfDetail(zoom, newZoomMode, oldZoomMode);
+
+        float height = TitleContainer.layout.height;
+
+        if (float.IsFinite(height))
+            TitleContainer.style.marginTop = -height;
+
+        if (!m_UpdateHeightRegistered)
+        {
+            TitleContainer.RegisterCallback<GeometryChangedEvent>(UpdateHeight);
+            m_UpdateHeightRegistered = true;
+        }
+    }
+
+    void UpdateHeight(GeometryChangedEvent e)
+    {
+        float height = TitleContainer.layout.height;
+        if (float.IsFinite(height) && TitleContainer.resolvedStyle.marginTop != height)
+            TitleContainer.style.marginTop = -height;
     }
 }

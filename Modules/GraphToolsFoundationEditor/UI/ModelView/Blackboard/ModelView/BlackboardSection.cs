@@ -41,6 +41,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         protected Button m_AddButton;
 
+        Blackboard m_Blackboard;
+
         public SectionModel SectionModel => Model as SectionModel;
 
         /// <inheritdoc />
@@ -89,8 +91,11 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
-
-        Blackboard m_Blackboard;
+        
+        protected internal override VisualElement CreateSelectionBorder()
+        {
+            return null;
+        }
 
         void OnAttachToPanel(AttachToPanelEvent e)
         {

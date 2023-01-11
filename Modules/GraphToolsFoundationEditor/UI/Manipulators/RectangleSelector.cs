@@ -98,6 +98,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (CanStartManipulation(e))
             {
+                graphView.StartMergingUndoableCommands();
                 if (!e.actionKey)
                 {
                     graphView.Dispatch(new ClearSelectionCommand());
@@ -152,7 +153,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             k_OnMouseUpAllUIs.Clear();
 
-            var mode = e.actionKey ? SelectElementsCommand.SelectionMode.Toggle : SelectElementsCommand.SelectionMode.Add;
+            var mode = e.actionKey ? SelectElementsCommand.SelectionMode.Toggle : SelectElementsCommand.SelectionMode.Replace;
             var allSelectedModels = newSelection
                 .Select(elem => elem.Model)
                 .OfType<GraphElementModel>()
@@ -174,7 +175,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 .Where(m => m is not WireModel wire
                             || PortIsSelected(wire.FromPort) && PortIsSelected(wire.ToPort))
                 .ToList();
+
             graphView.Dispatch(new SelectElementsCommand(mode, modelsToSelect));
+            graphView.StopMergingUndoableCommands();
 
             m_Active = false;
             target.ReleaseMouse();

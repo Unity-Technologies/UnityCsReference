@@ -506,10 +506,17 @@ namespace UnityEditor
                             info.instanceObject = targetComponent;
                             info.assetPath = AssetDatabase.GetAssetPath(sourceGo);
                             GameObject rootObject = PrefabUtility.GetRootGameObject(sourceGo);
-                            if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) || EditorUtility.IsPersistent(instanceGo))
+
+                            if (targetComponent.hideFlags.HasFlag(HideFlags.DontSaveInEditor) 
+                                || !PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject) 
+                                || EditorUtility.IsPersistent(instanceGo))
+                            {
                                 pm.AddDisabledItem(menuItemContent);
+                            }
                             else
+                            {
                                 pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedComponent, info);
+                            }
                         },
                         (menuItemContent) =>
                         {

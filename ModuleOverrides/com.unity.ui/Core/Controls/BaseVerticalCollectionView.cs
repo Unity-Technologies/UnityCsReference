@@ -214,6 +214,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public event Action itemsSourceChanged;
 
+        internal event Action selectionNotChanged;
+
         // [GR] We can get rid of this once the InternalTreeView is removed.
         private Func<int, int> m_GetItemId;
 
@@ -1314,11 +1316,17 @@ namespace UnityEngine.UIElements
                     }
                     else if (selectionType == SelectionType.Multiple && m_SelectedIndices.Contains(clickedIndex))
                     {
-                        // Do noting, selection will be processed OnPointerUp.
+                        // Do nothing, selection will be processed OnPointerUp.
                         // If drag and drop will be started ListViewDragger will capture the mouse and ListView will not receive the mouse up event.
+                        selectionNotChanged?.Invoke();
                     }
                     else // single
                     {
+                        if (selectionType == SelectionType.Single && m_SelectedIndices.Contains(clickedIndex))
+                        {
+                            selectionNotChanged?.Invoke();
+                        }
+
                         SetSelection(clickedIndex);
                     }
 

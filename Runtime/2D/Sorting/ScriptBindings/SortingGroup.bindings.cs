@@ -20,6 +20,9 @@ namespace UnityEngine.Rendering
         [StaticAccessor("SortingGroup", StaticAccessorType.DoubleColon)]
         public extern static void UpdateAllSortingGroups();
 
+        [StaticAccessor("SortingGroup", StaticAccessorType.DoubleColon)]
+        internal extern static SortingGroup GetSortingGroupByIndex(int index);
+
         public extern string sortingLayerName { get; set; }
         public extern int sortingLayerID { get; set; }
         public extern int sortingOrder { get; set; }

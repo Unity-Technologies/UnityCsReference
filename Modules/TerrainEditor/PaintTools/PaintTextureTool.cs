@@ -99,7 +99,7 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        private void TextureToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
         {
             GUILayout.Label("Settings", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
@@ -131,18 +131,18 @@ namespace UnityEditor.TerrainTools
 
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            OnToolSettingsGUI(terrain, editContext, overlays);
+            TextureToolSettingsGUI(terrain, editContext, false);
             // Texture painting needs to know the largest of the splat map and the height map, as the result goes to
             // the splat map, but the height map is used for previewing.
             int resolution = Mathf.Max(terrain.terrainData.heightmapResolution, terrain.terrainData.alphamapResolution);
             editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, resolution);
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            OnInspectorGUI(terrain, editContext, false);
+            TextureToolSettingsGUI(terrain, editContext, true);
         }
     }
 }

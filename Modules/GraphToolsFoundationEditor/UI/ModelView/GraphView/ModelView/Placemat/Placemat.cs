@@ -15,23 +15,12 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class Placemat : GraphElement
     {
-        enum MinSizePolicy
-        {
-            EnsureMinSize,
-            DoNotEnsureMinSize
-        }
-
         Vector2 m_LastModelSize;
 
         /// <summary>
         /// The uss class name added to <see cref="Placemat"/>.
         /// </summary>
         public new static readonly string ussClassName = "ge-placemat";
-
-        /// <summary>
-        /// The name of the <see cref="SelectionBorder"/>.
-        /// </summary>
-        public static readonly string selectionBorderElementName = "selection-border";
 
         /// <summary>
         /// The name of the <see cref="VisualElement"/> for the title container.
@@ -52,19 +41,14 @@ namespace Unity.GraphToolsFoundation.Editor
         protected static readonly float k_MinHeight = 100;
 
         /// <summary>
-        /// The container for the content of the <see cref="Placemat"/>.
+        /// The default placemat size.
         /// </summary>
-        protected VisualElement m_ContentContainer;
+        public static readonly Vector2 DefaultPlacematSize = new Vector2(600,300);
 
         /// <summary>
         /// The model that this <see cref="Placemat"/> displays.
         /// </summary>
         public PlacematModel PlacematModel => Model as PlacematModel;
-
-        /// <summary>
-        /// The container for the content of the <see cref="Placemat"/>.
-        /// </summary>
-        public override VisualElement contentContainer => m_ContentContainer ?? this;
 
         /// <summary>
         /// The container for the title of the <see cref="Placemat"/>.
@@ -74,7 +58,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Creates an instance of the <see cref="Placemat"/> class.
         /// </summary>
-        public Placemat()
+        public Placemat():base(true)
         {
             focusable = true;
         }
@@ -90,11 +74,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void BuildElementUI()
         {
-            var selectionBorder = new SelectionBorder { name = selectionBorderElementName };
-            selectionBorder.AddToClassList(ussClassName.WithUssElement(selectionBorderElementName));
-            Add(selectionBorder);
-            m_ContentContainer = selectionBorder.ContentContainer;
-
             base.BuildElementUI();
 
             usageHints = UsageHints.DynamicTransform;
@@ -226,7 +205,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         models.Add(e.GraphElementModel);
                         return true;
-                    },true);
+                    });
                     GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, models));
                 }
         }
@@ -253,73 +232,33 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         static readonly List<ModelView> k_ActOnGraphElementsOver2AllUIs = new List<ModelView>();
-        protected internal bool ActOnGraphElementsInside_Internal(Func<GraphElement, bool> act, bool includePlacemats)
+        protected internal bool ActOnGraphElementsInside_Internal(Func<GraphElement, bool> act)
         {
             GraphView.GraphModel.GraphElementModels
                 .Where(ge => ge.IsSelectable() && !(ge is WireModel) && ge is not IPlaceholder)
                 .GetAllViewsInList_Internal(GraphView, e => e.parent is GraphView.Layer, k_ActOnGraphElementsOver2AllUIs);
 
-            var retVal = RecurseActOnGraphElementsOver(this);
-            k_ActOnGraphElementsOver2AllUIs.Clear();
-            return retVal;
+            var currentActivePlacematRect = layout;
 
-            bool RecurseActOnGraphElementsOver(Placemat currentPlacemat)
+            foreach (var elem in k_ActOnGraphElementsOver2AllUIs.OfType<GraphElement>())
             {
-                var currentActivePlacematRect = currentPlacemat.layout;
-
-                var currentPlacematZOrder = currentPlacemat.PlacematModel.GetZOrder();
-                foreach (var elem in k_ActOnGraphElementsOver2AllUIs.OfType<GraphElement>())
+                var elemLayout = elem.layout;
+                if (currentActivePlacematRect.Contains(elemLayout.position) && currentActivePlacematRect.Contains(elemLayout.position + elemLayout.size))
                 {
-                    var elemLayout = elem.layout;
-                    if (currentActivePlacematRect.Contains(elemLayout.position) && currentActivePlacematRect.Contains(elemLayout.position + elemLayout.size))
-                    {
-                        var placemat = elem as Placemat;
-                        if (placemat != null && placemat.PlacematModel.GetZOrder() > currentPlacematZOrder)
-                            if (RecurseActOnGraphElementsOver(placemat))
-                                return true;
-
-                        if (placemat == null || (includePlacemats && placemat.PlacematModel.GetZOrder() > currentPlacematZOrder))
-                            if (elem.resolvedStyle.visibility != Visibility.Hidden)
-                                if (act(elem))
-                                    return true;
-                    }
+                    if (elem.resolvedStyle.visibility != Visibility.Hidden)
+                        if (act(elem))
+                            return true;
                 }
-
-                return false;
             }
+
+            k_ActOnGraphElementsOver2AllUIs.Clear();
+
+            return false;
         }
 
         protected internal bool WillDragNode_Internal(GraphElement node)
         {
-            return ActOnGraphElementsInside_Internal(t => node == t, true);
-        }
-
-        internal Rect ComputeGrowToFitElementsRect_Internal(List<GraphElement> elements = null)
-        {
-            if (elements == null)
-                elements = GetNodesOverThisPlacemat();
-
-            var pos = new Rect();
-            if (elements.Count > 0 && ComputeElementBounds(ref pos, elements, MinSizePolicy.DoNotEnsureMinSize))
-            {
-                // We don't resize to be snug. In other words: we don't ever decrease in size.
-                Rect currentRect = layout;
-                if (pos.xMin > currentRect.xMin)
-                    pos.xMin = currentRect.xMin;
-
-                if (pos.xMax < currentRect.xMax)
-                    pos.xMax = currentRect.xMax;
-
-                if (pos.yMin > currentRect.yMin)
-                    pos.yMin = currentRect.yMin;
-
-                if (pos.yMax < currentRect.yMax)
-                    pos.yMax = currentRect.yMax;
-
-                MakeRectAtLeastMinimalSize(ref pos);
-            }
-
-            return pos;
+            return ActOnGraphElementsInside_Internal(t => node == t);
         }
 
         internal Rect ComputeShrinkToFitElementsRect_Internal()
@@ -337,7 +276,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     collectedElementsToMove.Add(e);
                     return false;
-                }, true);
+                });
             }
         }
 
@@ -354,7 +293,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (!selectedPlacemats.Skip(1).Any()) // If there is only one placemat selected
             {
-                evt.menu.AppendAction("Select Placemat Contents",
+                evt.menu.AppendAction("Select All Placemat Contents",
                     _ =>
                     {
                         var elements = new List<GraphElementModel>();
@@ -362,7 +301,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         {
                             elements.Add(element.GraphElementModel);
                             return true;
-                        },true);
+                        });
                         GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, elements));
                     });
             }
@@ -428,12 +367,12 @@ namespace Unity.GraphToolsFoundation.Editor
         // Returns false if bounds could not be computed.
         protected internal static bool ComputeElementBounds_Internal(ref Rect pos, IEnumerable<GraphElement> elements)
         {
-            return ComputeElementBounds(ref pos, elements, MinSizePolicy.EnsureMinSize);
+            return ComputeElementBounds(ref pos, elements);
         }
 
         // Helper method that calculates how big a Placemat should be to fit the nodes on top of it currently.
         // Returns false if bounds could not be computed.
-        static bool ComputeElementBounds(ref Rect pos, IEnumerable<GraphElement> elements, MinSizePolicy ensureMinSize)
+        static bool ComputeElementBounds(ref Rect pos, IEnumerable<GraphElement> elements)
         {
             if (elements == null || !elements.Any())
                 return false;
@@ -467,8 +406,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 width,
                 height);
 
-            if (ensureMinSize == MinSizePolicy.EnsureMinSize)
-                MakeRectAtLeastMinimalSize(ref pos);
+            MakeRectAtLeastMinimalSize(ref pos);
 
             return true;
         }

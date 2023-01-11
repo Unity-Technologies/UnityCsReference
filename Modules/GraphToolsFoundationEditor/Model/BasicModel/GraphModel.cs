@@ -92,6 +92,7 @@ namespace Unity.GraphToolsFoundation.Editor
         List<IPlaceholder> m_Placeholders;
 
         [SerializeField]
+        [HideInInspector]
         List<GraphElementMetaData> m_GraphElementMetaData;
 
         SerializedValueDictionary<SerializableGUID, PlaceholderData> m_PlaceholderData;
@@ -699,12 +700,14 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public void RegisterPort(PortModel portModel)
         {
-            RegisterElement(portModel);
+            if (!portModel?.NodeModel?.SpawnFlags.IsOrphan() ?? false)
+                RegisterElement(portModel);
         }
 
         public void UnregisterPort(PortModel portModel)
         {
-            UnregisterElement(portModel);
+            if (!portModel?.NodeModel?.SpawnFlags.IsOrphan() ?? false)
+                UnregisterElement(portModel);
         }
 
         /// <inheritdoc />
@@ -1030,7 +1033,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual AbstractNodeModel CreateNode(Type nodeTypeToCreate, string nodeName, Vector2 position,
             SerializableGUID guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.None)
         {
-            var nodeModel = InstantiateNode(nodeTypeToCreate, nodeName, position, guid, initializationCallback);
+            var nodeModel = InstantiateNode(nodeTypeToCreate, nodeName, position, guid, initializationCallback, spawnFlags);
 
             if (!spawnFlags.IsOrphan())
             {
@@ -1048,9 +1051,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="position">The position of the node to create.</param>
         /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
         /// <param name="initializationCallback">An initialization method to be called right after the node is created.</param>
+        /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         /// <returns>The newly created node.</returns>
         protected virtual AbstractNodeModel InstantiateNode(Type nodeTypeToCreate, string nodeName, Vector2 position,
-            SerializableGUID guid = default, Action<AbstractNodeModel> initializationCallback = null)
+            SerializableGUID guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.None)
         {
             if (nodeTypeToCreate == null)
                 throw new ArgumentNullException(nameof(nodeTypeToCreate));
@@ -1066,6 +1070,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (nodeModel is IHasTitle titled)
                 titled.Title = nodeName ?? nodeTypeToCreate.Name;
 
+            nodeModel.SpawnFlags = spawnFlags;
             nodeModel.Position = position;
             if (guid.Valid)
                 nodeModel.SetGuid(guid);
@@ -1494,7 +1499,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var placematModelType = GetPlacematType();
             var placematModel = Instantiate<PlacematModel>(placematModelType);
             placematModel.TitleFontSize = 18;
-            placematModel.TitleAlignment = TextAlignment.Center;
+            placematModel.TitleAlignment = TextAlignment.Left;
             placematModel.PositionAndSize = position;
             placematModel.GraphModel = this;
             if (guid.Valid)

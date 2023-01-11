@@ -7,8 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Unity.CommandStateObserver;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -41,15 +43,33 @@ namespace Unity.GraphToolsFoundation.Editor
                 case null:
                     break;
 
-                case PopupField<string> _:
+                case PopupField<string>:
+                    Debug.Assert(typeof(Enum).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
                     RegisterChangedCallback<string>(evt => Enum.Parse(typeof(TValue), evt.newValue),
                         inspectedObjects, inspectedField);
                     break;
 
-                case BaseField<Enum> _:
+                case BaseField<Enum>:
+                    Debug.Assert(typeof(Enum).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
                     RegisterChangedCallback<Enum>(evt => evt.newValue, inspectedObjects, inspectedField);
                     break;
 
+                case ObjectField:
+                    Debug.Assert(typeof(Object).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
+                    RegisterChangedCallback<Object>(evt => evt.newValue, inspectedObjects, inspectedField);
+                    break;
+
+                case LayerMaskField:
+                    Debug.Assert(typeof(TValue) == typeof(LayerMask), $"Unexpected type for field {Label}.");
+                    RegisterChangedCallback<int>(evt => (LayerMask)evt.newValue, inspectedObjects, inspectedField);
+                    break;
+
+                case TextField { maxLength: 1 }:
+                    Debug.Assert(typeof(TValue) == typeof(char), $"Unexpected type for field {Label}.");
+                    RegisterChangedCallback<string>(evt => evt.newValue[0], inspectedObjects, inspectedField);
+                    break;
+
+                // For BaseField<TValue> and fields build by ICustomPropertyFieldBuilder.
                 default:
                     RegisterChangedCallback<TValue>(evt => evt.newValue, inspectedObjects, inspectedField);
                     break;

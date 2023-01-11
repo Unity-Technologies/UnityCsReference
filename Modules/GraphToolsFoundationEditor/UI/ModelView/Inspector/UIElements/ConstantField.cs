@@ -59,12 +59,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void OnLabelMouseCapture(MouseCaptureEvent e)
         {
-            (CommandTarget as IUndoableCommandMerger)?.StartMerging();
+            (CommandTarget as IUndoableCommandMerger)?.StartMergingUndoableCommands();
         }
 
         void OnLabelMouseRelease(MouseCaptureOutEvent e)
         {
-            (CommandTarget as IUndoableCommandMerger)?.StopMerging();
+            (CommandTarget as IUndoableCommandMerger)?.StopMergingUndoableCommands();
         }
 
         void SetFieldChangedCallback()
@@ -141,12 +141,13 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         bool m_IgnoreEventBecauseMixedIsBuggish = false;
+        bool m_LogUpdateException = true;
 
         /// <inheritdoc />
-        public override bool UpdateDisplayedValue()
+        public override void UpdateDisplayedValue()
         {
             if (m_Field == null)
-                return false;
+                return;
 
 
             bool isConnected = false;
@@ -229,12 +230,14 @@ namespace Unity.GraphToolsFoundation.Editor
                     setValueMethod?.Invoke(field, new[] { value });
                 }
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                return false;
+                if (m_LogUpdateException)
+                {
+                    Debug.Log($"Exception caught while updating constant field {Label}: {exception.Message}");
+                    m_LogUpdateException = false;
+                }
             }
-
-            return true;
         }
 
         VisualElement CreateField()

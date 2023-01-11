@@ -51,6 +51,7 @@ namespace UnityEditor.Search
         }
 
         internal QueryBuilder builder => m_QueryBuilder;
+        internal TextField searchField => m_TextField;
 
         public SearchQueryBuilderView(string name, ISearchView viewModel, SearchFieldBase<TextField, string> searchField)
             : base(name, viewModel, ussClassName)
@@ -120,7 +121,10 @@ namespace UnityEditor.Search
         private void OnQueryChanged(ChangeEvent<string> evt)
         {
             if (m_QueryBuilder != null)
+            {
                 m_QueryBuilder.wordText = evt.newValue;
+                m_ViewModel.SetSelection();
+            }
         }
 
         private void OnKeyDown(KeyDownEvent evt)

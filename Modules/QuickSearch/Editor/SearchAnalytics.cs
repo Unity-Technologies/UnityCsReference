@@ -261,7 +261,9 @@ namespace UnityEditor.Search
             QuickSearchToggleBuilder,
             QuickSearchHelperWidgetExecuted,
 
-            ObjectSelectorSettingsReset
+            ObjectSelectorSettingsReset,
+
+            BrowseAssetStoreWeb
         }
 
         public static readonly string Package = "com.unity.quicksearch";

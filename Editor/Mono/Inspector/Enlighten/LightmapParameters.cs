@@ -76,7 +76,19 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_Resolution, Styles.resolutionContent);
                     EditorGUILayout.Slider(m_ClusterResolution, 0.1F, 1.0F, Styles.clusterResolutionContent);
                     EditorGUILayout.IntSlider(m_IrradianceBudget, 32, 2048, Styles.irradianceBudgetContent);
-                    EditorGUILayout.IntSlider(m_IrradianceQuality, 512, 131072, Styles.irradianceQualityContent);
+                    if (m_IrradianceQuality.hasMultipleDifferentValues)
+                    {
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUI.showMixedValue = true;
+
+                        int newValue = (int) EditorGUILayout.LogarithmicIntSlider(Styles.irradianceQualityContent, value: m_IrradianceQuality.intValue, leftValue: 512, rightValue: 131072, logbase: 2, 512, 131072);
+                        if (EditorGUI.EndChangeCheck())
+                            m_IrradianceQuality.intValue = newValue;
+                        
+                        EditorGUI.showMixedValue = false;
+                    }
+                    else
+                        m_IrradianceQuality.intValue = EditorGUILayout.LogarithmicIntSlider(Styles.irradianceQualityContent, value: m_IrradianceQuality.intValue, leftValue: 512, rightValue: 131072, logbase: 2, 512, 131072);
                     EditorGUILayout.Slider(m_ModellingTolerance, 0.0f, 1.0f, Styles.modellingToleranceContent);
                     EditorGUILayout.PropertyField(m_EdgeStitching, Styles.edgeStitchingContent);
                     EditorGUILayout.PropertyField(m_IsTransparent, Styles.isTransparent);

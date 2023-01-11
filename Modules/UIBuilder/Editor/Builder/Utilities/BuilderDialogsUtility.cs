@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor;
 using UnityEngine;
 
@@ -45,20 +46,21 @@ namespace Unity.UI.Builder
                 return null;
 
             if (string.IsNullOrEmpty(directory))
-                directory = Application.dataPath;
+                directory = BuilderAssetUtilities.assetsPath;
 
             var newPath = EditorUtility.OpenFilePanel(
                 title,
                 directory,
                 extension);
 
-            if (string.IsNullOrEmpty(newPath?.Trim()))
+            if (string.IsNullOrWhiteSpace(newPath))
                 return null;
 
-            var appPathLength = Application.dataPath.Length - 6; // - "Assets".Length
-            newPath = newPath.Substring(appPathLength);
-
-            return newPath;
+            
+            var projectPath = BuilderAssetUtilities.GetPathRelativeToProject(newPath.Trim());
+            if (string.IsNullOrWhiteSpace(projectPath))
+                DisplayDialog("Opening document failed", $"Could not open the document at the requested path ('{newPath}'): the path is outside of the project.");
+            return projectPath;
         }
 
         public static string DisplaySaveFileDialog(string title, string directory, string defaultName, string extension)
@@ -67,7 +69,7 @@ namespace Unity.UI.Builder
                 return null;
 
             if (string.IsNullOrEmpty(directory))
-                directory = Application.dataPath;
+                directory = BuilderAssetUtilities.assetsPath;
 
             var newPath = EditorUtility.SaveFilePanel(
                 title,
@@ -75,13 +77,14 @@ namespace Unity.UI.Builder
                 defaultName,
                 extension);
 
-            if (string.IsNullOrEmpty(newPath?.Trim()))
+            if (string.IsNullOrWhiteSpace(newPath))
                 return null;
 
-            var appPathLength = Application.dataPath.Length - 6; // - "Assets".Length
-            newPath = newPath.Substring(appPathLength);
+            var projectPath = BuilderAssetUtilities.GetPathRelativeToProject(newPath.Trim());
 
-            return newPath;
+            if (string.IsNullOrWhiteSpace(projectPath))
+                DisplayDialog("Saving new document failed", $"Could not save the current document at the requested path ('{newPath}'): the path is outside of the project.");
+            return projectPath;
         }
     }
 }

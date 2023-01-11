@@ -168,8 +168,7 @@ namespace UnityEditor
             public readonly GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
             public readonly GUIContent duplicateTab = EditorGUIUtility.TrTextContent("This inspector tab is not the active Terrain inspector, paint functionality disabled.");
             public readonly GUIContent makeMeActive = EditorGUIUtility.TrTextContent("Activate this inspector");
-            public readonly GUIContent gles2NotSupported = EditorGUIUtility.TrTextContentWithIcon("Terrain editting is not supported in GLES2.", MessageType.Info);
-
+ 
             // Heightmaps
             public readonly GUIContent textures = EditorGUIUtility.TrTextContent("Texture Resolutions (On Terrain Data)");
             public readonly GUIContent requireResampling = EditorGUIUtility.TrTextContent("Require resampling on change");
@@ -2208,35 +2207,28 @@ namespace UnityEditor
             EditorGUI.BeginDisabledGroup(s_activeTerrainInspector != GetInstanceID() || s_activeTerrainInspectorInstance != this);
 
             int tool = (int)selectedCategory;
-            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES2)
+            // Show the master tool selector
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();          // flexible space on either end centers the toolbar
+            GUI.changed = false;
+            int newlySelectedTool = GUILayout.Toolbar(tool, styles.toolIcons, styles.command);
+
+            if (newlySelectedTool != tool)
             {
-                EditorGUILayout.HelpBox(styles.gles2NotSupported);
-                tool = (int)TerrainTool.TerrainSettings;
+                SelectCategory((TerrainTool) newlySelectedTool);
+
+                // Need to repaint other terrain inspectors as their previously selected tool is now deselected.
+                InspectorWindow.RepaintAllInspectors();
+
+                if (Toolbar.get != null)
+                    Toolbar.get.Repaint();
             }
-            else
-            {
-                // Show the master tool selector
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();          // flexible space on either end centers the toolbar
-                GUI.changed = false;
-                int newlySelectedTool = GUILayout.Toolbar(tool, styles.toolIcons, styles.command);
 
-                if (newlySelectedTool != tool)
-                {
-                    SelectCategory((TerrainTool) newlySelectedTool);
-
-                    // Need to repaint other terrain inspectors as their previously selected tool is now deselected.
-                    InspectorWindow.RepaintAllInspectors();
-
-                    if (Toolbar.get != null)
-                        Toolbar.get.Repaint();
-                }
-
-                GUILayout.FlexibleSpace();
-                GUILayout.EndHorizontal();
-            }
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
 
             EditorGUI.EndDisabledGroup();
+
 
             switch ((TerrainTool)tool)
             {

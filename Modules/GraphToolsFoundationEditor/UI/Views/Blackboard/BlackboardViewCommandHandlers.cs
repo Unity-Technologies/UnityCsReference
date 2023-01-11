@@ -26,7 +26,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 using (var undoStateUpdater = undoState.UpdateScope)
                 {
                     undoStateUpdater.SaveState(graphModelState);
-                    undoStateUpdater.SaveStates(selectionHelper.UndoableSelectionStates);
+                    undoStateUpdater.SaveStates(selectionHelper.SelectionStates);
                 }
 
                 using (var graphViewUpdater = graphModelState.UpdateScope)

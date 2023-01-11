@@ -99,6 +99,8 @@ namespace PlayerBuildProgramLibrary.Data
         public string SysRootPath;
         public string ToolChainPath;
         public string RelativeDataPath;
+        public bool GenerateUsymFile;
+        public string UsymtoolPath;
     }
 
     public class Services

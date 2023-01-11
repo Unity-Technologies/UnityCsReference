@@ -13,9 +13,18 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/BlockVariable.h")]
     internal struct BlockVariableInternal : IInternalType<BlockVariableInternal>
     {
+        // these enums must match the declarations in BlockVariable.h
+        [Flags]
+        internal enum Flags : UInt32
+        {
+            kNone = 0,
+            kInput = 1 << 0,
+            kOutput = 1 << 1,
+        };
         internal FoundryHandle m_TypeHandle;
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_AttributeListHandle;
+        internal Flags m_Flags;
 
         internal static extern BlockVariableInternal Invalid();
         internal extern bool IsValid();
@@ -55,6 +64,8 @@ namespace UnityEditor.ShaderFoundry
                 }
             }
         }
+        public bool IsInput => variable.m_Flags.HasFlag(BlockVariableInternal.Flags.kInput);
+        public bool IsOutput => variable.m_Flags.HasFlag(BlockVariableInternal.Flags.kOutput);
 
         // private
         internal BlockVariable(ShaderContainer container, FoundryHandle handle)
@@ -80,6 +91,25 @@ namespace UnityEditor.ShaderFoundry
             public string Name { get; set; }
             public List<ShaderAttribute> Attributes { get; set; } = new List<ShaderAttribute>();
             public ShaderContainer Container => container;
+            BlockVariableInternal.Flags m_Flags = BlockVariableInternal.Flags.kInput;
+
+            public bool IsInput
+            {
+                get { return m_Flags.HasFlag(BlockVariableInternal.Flags.kInput); }
+                set { SetFlag(BlockVariableInternal.Flags.kInput, value); }
+            }
+            public bool IsOutput
+            {
+                get { return m_Flags.HasFlag(BlockVariableInternal.Flags.kOutput); }
+                set { SetFlag(BlockVariableInternal.Flags.kOutput, value); }
+            }
+            void SetFlag(BlockVariableInternal.Flags flag, bool state)
+            {
+                if (state)
+                    m_Flags |= flag;
+                else
+                    m_Flags &= ~flag;
+            }
 
             public Builder(ShaderContainer container)
             {
@@ -93,6 +123,9 @@ namespace UnityEditor.ShaderFoundry
 
             public BlockVariable Build()
             {
+                if (IsInput == false && IsOutput == false)
+                    throw new InvalidOperationException("BlockVariable is neither an input or an output. At least one must be true.");
+
                 var blockVariableInternal = new BlockVariableInternal()
                 {
                     m_TypeHandle = Type.handle,
@@ -101,6 +134,7 @@ namespace UnityEditor.ShaderFoundry
                 blockVariableInternal.m_AttributeListHandle = container.AddHandleBlob((uint)Attributes.Count);
                 for (int i = 0; i < Attributes.Count; ++i)
                     container.SetHandleBlobElement(blockVariableInternal.m_AttributeListHandle, (uint)i, Attributes[i].handle);
+                blockVariableInternal.m_Flags = m_Flags;
 
                 var returnTypeHandle = container.Add(blockVariableInternal);
                 return new BlockVariable(container, returnTypeHandle);

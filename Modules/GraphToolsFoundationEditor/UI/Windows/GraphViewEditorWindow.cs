@@ -59,9 +59,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 window = windowList.FirstOrDefault(w => w.GraphTool.ToolState.CurrentGraph.GetGraphModel() == null);
             }
 
+            bool isAssetOfSameTypeOpened = windowList.FirstOrDefault(w => w is TWindow) != null;
+
             if (window == null)
             {
-                window = CreateWindow<TWindow>(desiredDockNextTo: typeof(TWindow));
+                window = CreateWindow<TWindow>(isAssetOfSameTypeOpened ? typeof(TWindow) : typeof(SceneView));
             }
 
             window.Show();
@@ -92,6 +94,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected BlankPage m_BlankPage;
         protected Label m_GraphProcessingPendingLabel;
         List<string> m_DisplayedOverlays;
+        protected ShortcutBlocker_Internal m_ShortcutBlocker;
 
         AutomaticGraphProcessingObserver m_AutomaticGraphProcessingObserver;
         GraphProcessingStatusObserver_Internal m_GraphProcessingStatusObserver;
@@ -294,6 +297,9 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             m_UnsavedChangesWindowIsEnabled = IsUnsavedChangesWindowEnabled();
+
+            m_ShortcutBlocker = new ShortcutBlocker_Internal();
+            m_ShortcutBlocker.Enable(baseRootVisualElement);
         }
 
         protected virtual void OnDisable()
@@ -314,6 +320,9 @@ namespace Unity.GraphToolsFoundation.Editor
             m_GraphContainer = null;
             m_GraphView = null;
             m_BlankPage = null;
+
+            m_ShortcutBlocker.Disable();
+            m_ShortcutBlocker = null;
         }
 
         protected virtual void OnFocus()

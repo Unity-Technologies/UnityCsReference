@@ -161,7 +161,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             else if (evt.commandName == EventCommandNames.SelectAll)
             {
-                m_View.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Add, SelectableModels.ToList()));
+                m_View.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, SelectableModels.ToList()));
                 evt.StopPropagation();
             }
             else if (evt.commandName == EventCommandNames.DeselectAll)
@@ -212,8 +212,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         /// <summary>
         /// Serializes the selection and related elements to the clipboard.
+        /// <returns>The copied elements</returns>
         /// </summary>
-        protected virtual void CopySelection()
+        protected virtual IEnumerable<GraphElementModel> CopySelection()
         {
             var elementsToCopySet = CollectCopyableGraphElements(GetSelection());
             var copyPasteData = BuildCopyPasteData(elementsToCopySet);
@@ -222,6 +223,8 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 Clipboard_Internal = k_SerializedDataMimeType + " " + serializedData;
             }
+
+            return elementsToCopySet;
         }
 
         /// <summary>
@@ -229,8 +232,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         protected virtual void CutSelection()
         {
-            CopySelection();
-            m_View.Dispatch(new DeleteElementsCommand(GetSelection()) { UndoString = "Cut" });
+            var copiedElements = CopySelection();
+            m_View.Dispatch(new DeleteElementsCommand(copiedElements.ToList()) { UndoString = "Cut" });
         }
 
         /// <summary>

@@ -24,7 +24,6 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string readOnlyModifierUssClassName = ussClassName.WithUssModifier("read-only");
         public static readonly string writeOnlyModifierUssClassName = ussClassName.WithUssModifier("write-only");
 
-        public static readonly string selectionBorderElementName = "selection-border";
         public static readonly string disabledOverlayElementName = "disabled-overlay";
         public static readonly string titleContainerPartName = "title-container";
         public static readonly string nodeSettingsContainerPartName = "node-settings";
@@ -39,15 +38,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public static readonly string nodeCachePartName = "cache";
 
-        protected VisualElement m_ContentContainer;
-
         public AbstractNodeModel NodeModel => Model as AbstractNodeModel;
 
-        /// <inheritdoc />
-        public override VisualElement contentContainer => m_ContentContainer ?? this;
 
-        /// The <see cref="DynamicBorder"/> used to display selection, hover and highlight.
-        protected DynamicBorder Border { get; private set; }
+        public Node():base(true)
+        {}
 
         /// <inheritdoc />
         protected override void BuildPartList()
@@ -60,28 +55,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void BuildElementUI()
         {
-            var selectionBorder = new SelectionBorder { name = selectionBorderElementName };
-            selectionBorder.AddToClassList(ussClassName.WithUssElement(selectionBorderElementName));
-            Add(selectionBorder);
-            m_ContentContainer = selectionBorder.ContentContainer;
-
             base.BuildElementUI();
 
             var disabledOverlay = new VisualElement { name = disabledOverlayElementName, pickingMode = PickingMode.Ignore };
             hierarchy.Add(disabledOverlay);
-
-            Border = CreateDynamicBorder();
-            Border.AddToClassList(ussClassName.WithUssElement("dynamic-border"));
-            hierarchy.Add(Border);
-        }
-
-        /// <summary>
-        /// Creates a <see cref="DynamicBorder"/> for this node.
-        /// </summary>
-        /// <returns>A <see cref="DynamicBorder"/> for this node.</returns>
-        protected virtual DynamicBorder CreateDynamicBorder()
-        {
-            return new DynamicBorder(this);
         }
 
         /// <inheritdoc />
@@ -117,8 +94,6 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             tooltip = NodeModel.Tooltip;
-
-            Border.Selected = IsSelected();
         }
 
         public override void ActivateRename()
@@ -127,14 +102,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
 
             label.BeginEditing();
-        }
-
-        /// <inheritdoc />
-        public override void SetElementLevelOfDetail(float zoom, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode)
-        {
-            base.SetElementLevelOfDetail(zoom, newZoomMode, oldZoomMode);
-
-            Border.Zoom = zoom;
         }
     }
 }
