@@ -15,7 +15,10 @@ namespace Unity.UI.Builder
         {
             get
             {
-                return PackageInfo.GetAllRegisteredPackages().Any(x => x.name == "com.unity.2d.sprite" && x.version == "1.0.0");
+                var packageInfo = PackageInfo.FindForPackageName("com.unity.2d.sprite");
+                if (packageInfo != null)
+                    return packageInfo.version == "1.0.0";
+                return false;
             }
         }
 

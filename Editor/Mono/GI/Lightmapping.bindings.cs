@@ -672,29 +672,18 @@ namespace UnityEditor.Experimental
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         public static extern bool probesIgnoreDirectEnvironment { get; set; }
 
-        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
-        private static extern unsafe void SetCustomBakeInputs([Span("inputDataLength", isReadOnly:true)]Vector4* inputData, int inputDataLength, int sampleCount);
-
         public static void SetCustomBakeInputs(Vector4[] inputData, int sampleCount)
         {
             SetCustomBakeInputs(inputData.AsSpan(), sampleCount);
         }
-        public static unsafe void SetCustomBakeInputs(ReadOnlySpan<Vector4> inputData, int sampleCount)
-        {
-            fixed(Vector4* inputDataPtr = inputData)
-            {
-                SetCustomBakeInputs(inputDataPtr, inputData.Length, sampleCount);
-            }
-        }
-
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
+        public static extern void SetCustomBakeInputs(ReadOnlySpan<Vector4> inputData, int sampleCount);
 
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
-        private static extern unsafe bool GetCustomBakeResultsCopy([Span("resultsLength")]Vector4* results, int resultsLength);
-        public static unsafe bool GetCustomBakeResults(Span<Vector4> results)
+        private static extern unsafe bool GetCustomBakeResultsCopy(Span<Vector4> results);
+        public static bool GetCustomBakeResults(Span<Vector4> results)
         {
-            fixed (Vector4* resultsPtr = results) {
-                return GetCustomBakeResultsCopy(resultsPtr, results.Length);
-            }
+            return GetCustomBakeResultsCopy(results);
         }
         public static bool GetCustomBakeResults([Out] Vector4[] results)
         {
@@ -796,9 +785,6 @@ namespace UnityEditor.Experimental
             return GetAdditionalBakedProbes(id, shPtr, validityPtr, octahedralDepthPtr, outBakedProbeSH.Length);
         }
 
-        [FreeFunction]
-        private static extern unsafe void SetAdditionalBakedProbes(int id, [Span("positionsLength", isReadOnly:true)]Vector3 * positions, int positionsLength, bool dering);
-
         public static void SetAdditionalBakedProbes(int id, Vector3[] positions)
         {
             SetAdditionalBakedProbes(id, positions.AsSpan(), true);
@@ -807,13 +793,8 @@ namespace UnityEditor.Experimental
         {
             SetAdditionalBakedProbes(id, positions, true);
         }
-        public static unsafe void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions, bool dering)
-        {
-            fixed(Vector3* positionsPtr = positions)
-            {
-                SetAdditionalBakedProbes(id, positionsPtr, positions.Length, dering);
-            }
-        }
+        [FreeFunction]
+        public static extern void SetAdditionalBakedProbes(int id, ReadOnlySpan<Vector3> positions, bool dering);
 
         [FreeFunction]
         public static extern void SetLightDirty(Light light);

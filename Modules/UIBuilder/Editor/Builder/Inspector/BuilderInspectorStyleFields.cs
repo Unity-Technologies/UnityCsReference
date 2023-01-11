@@ -184,16 +184,14 @@ namespace Unity.UI.Builder
                 var uiField = fieldElement as ColorField;
                 uiField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
             }
-            else if (IsComputedStyleFont(val, styleName) && fieldElement is ObjectField)
+            else if (IsComputedStyleFont(val, styleName) && fieldElement is ObjectField fontField)
             {
-                var uiField = fieldElement as ObjectField;
-                uiField.objectType = typeof(Font);
-                uiField.RegisterValueChangedCallback(e => OnFieldValueChangeFont(e, styleName));
+                fontField.objectType = typeof(Font);
+                fontField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
             }
-            else if (IsComputedStyleFontAsset(val, styleName) && fieldElement is ObjectField objectField)
+            else if (IsComputedStyleFontAsset(val, styleName) && fieldElement is FontDefinitionStyleField fontAssetField)
             {
-                objectField.objectType = typeof(FontAsset);
-                objectField.RegisterValueChangedCallback(e => OnFieldValueChangeFont(e, styleName));
+                fontAssetField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleTextShadow(val) && fieldElement is TextShadowStyleField textShadowStyleField)
             {
@@ -747,7 +745,7 @@ namespace Unity.UI.Builder
 
                 uiField.SetValueWithoutNotify(value);
             }
-            else if (IsComputedStyleFontAsset(val, styleName) && fieldElement is ObjectField objectField)
+            else if (IsComputedStyleFontAsset(val, styleName) && fieldElement is FontDefinitionStyleField objectField)
             {
                 var value = GetComputedStyleFontAssetValue(val);
                 objectField.SetValueWithoutNotify(useStyleProperty
@@ -1004,7 +1002,7 @@ namespace Unity.UI.Builder
             {
                 DispatchChangeEvent(objectFontField);
             }
-            else if (IsComputedStyleFontAsset(val, styleName) && fieldElement is ObjectField objectFontAssetField)
+            else if (IsComputedStyleFontAsset(val, styleName) && fieldElement is FontDefinitionStyleField objectFontAssetField)
             {
                 DispatchChangeEvent(objectFontAssetField);
             }
@@ -2044,27 +2042,6 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(target as VisualElement, styleProperty, styleName, isNewValue);
         }
 
-        void OnFieldValueChangeFont(ChangeEvent<Object> e, string styleName)
-        {
-            var field = e.target as ObjectField;
-            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
-            var isNewValue = styleProperty.values.Length == 0;
-
-            if (!isNewValue && styleProperty.IsVariable())
-            {
-                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-                styleProperty.values = new StyleValueHandle[0];
-                isNewValue = true;
-            }
-
-            if (isNewValue)
-                styleSheet.AddValue(styleProperty, e.newValue);
-            else // TODO: Assume only one value.
-                styleSheet.SetValue(styleProperty.values[0], e.newValue);
-
-            PostStyleFieldSteps(field, styleProperty, styleName, isNewValue);
-        }
-
         void OnFieldValueChangeTextShadow(ChangeEvent<BuilderTextShadow> e, string styleName)
         {
             var field = e.target as TextShadowStyleField;
@@ -2382,16 +2359,20 @@ namespace Unity.UI.Builder
             return style.value;
         }
 
-        static public FontAsset GetComputedStyleFontAssetValue(object val)
+        private static Object GetComputedStyleFontAssetValue(object val)
         {
-            if (val is FontAsset fontAsset)
-                return fontAsset;
-
-            if (val is FontDefinition fontDefinition)
-                return (FontAsset)fontDefinition.fontAsset;
-
-            var style = (StyleFontDefinition)val;
-            return (FontAsset)style.value.fontAsset;
+            switch (val)
+            {
+                case Font font: return font;
+                case FontAsset fontAsset: return fontAsset;
+                case FontDefinition fontDefinition: return (Object)fontDefinition.fontAsset ?? fontDefinition.font;
+                case StyleFont styleFont: return styleFont.value;
+                case StyleFontDefinition styleFontDefinition: return (Object)styleFontDefinition.value.fontAsset ?? styleFontDefinition.value.font; 
+                default:
+                {
+                    throw new ArgumentOutOfRangeException();
+                }
+            }
         }
 
         static public Background GetComputedStyleBackgroundValue(object val)

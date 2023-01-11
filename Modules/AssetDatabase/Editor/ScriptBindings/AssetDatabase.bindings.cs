@@ -987,20 +987,7 @@ namespace UnityEditor
         public extern static Type GetImporterType(GUID guid);
 
         [FreeFunction("AssetDatabase::GetImporterTypes")]
-        private static extern unsafe Type[] GetImporterTypes_Internal([Span("guidsLength", isReadOnly: true)]GUID* guids, int guidsLength);
-
-        private static unsafe Type[] GetImporterTypesUnsafe_Internal(ReadOnlySpan<GUID> guids)
-        {
-            fixed (GUID* guidsPtr = guids)
-            {
-                return GetImporterTypes_Internal(guidsPtr, guids.Length);
-            }
-        }
-
-        public static Type[] GetImporterTypes(ReadOnlySpan<GUID> guids)
-        {
-            return GetImporterTypesUnsafe_Internal(guids);
-        }
+        public static extern Type[] GetImporterTypes(ReadOnlySpan<GUID> guids);
 
         //Since extern method overloads are not supported
         //this is the name we pick, but users end up being able

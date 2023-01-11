@@ -67,11 +67,17 @@ namespace Unity.GraphToolsFoundation.Editor
 
             painter.lineWidth = wantedWidth;
 
+            r.position += Vector2.one * wantedWidth * 0.5f;
+            r.size -= Vector2.one * wantedWidth;
+
             var bounds = Node.Etch_Internal.worldBound;
             var rectEtch = this.WorldToLocal(bounds);
             rectEtch.y -= wantedWidth * 0.5f;
-            rectEtch.height += wantedWidth * 0.5f;
+            rectEtch.height += wantedWidth;
+            rectEtch.x -= wantedWidth * 0.5f;
+            rectEtch.width += wantedWidth;
 
+            const float etchRadius = 4;
 
             painter.BeginPath();
             painter.strokeColor = colors[0];
@@ -82,10 +88,10 @@ namespace Unity.GraphToolsFoundation.Editor
             painter.LineTo(new Vector2(r.xMax, r.yMax - corners[2].y));
             painter.ArcTo(new Vector2(r.xMax, r.yMax), new Vector2(r.xMax - corners[2].x, r.yMax), corners[2].x);
             painter.LineTo(new Vector2(rectEtch.xMax, r.yMax));
-            painter.LineTo(new Vector2(rectEtch.xMax, rectEtch.yMax - 3.0f));
-            painter.ArcTo(new Vector2(rectEtch.xMax, rectEtch.yMax), new Vector2(rectEtch.xMax - 3, rectEtch.yMax), 3);
-            painter.LineTo(new Vector2(rectEtch.xMin + 3.0f, rectEtch.yMax));
-            painter.ArcTo(new Vector2(rectEtch.xMin, rectEtch.yMax), new Vector2(rectEtch.xMin, rectEtch.yMax - 3), 3);
+            painter.LineTo(new Vector2(rectEtch.xMax, rectEtch.yMax - etchRadius));
+            painter.ArcTo(new Vector2(rectEtch.xMax, rectEtch.yMax), new Vector2(rectEtch.xMax - etchRadius, rectEtch.yMax), etchRadius);
+            painter.LineTo(new Vector2(rectEtch.xMin + etchRadius, rectEtch.yMax));
+            painter.ArcTo(new Vector2(rectEtch.xMin, rectEtch.yMax), new Vector2(rectEtch.xMin, rectEtch.yMax - etchRadius), etchRadius);
             painter.LineTo(new Vector2(rectEtch.xMin, r.yMax));
             painter.LineTo(new Vector2(r.xMin + corners[3].y,  r.yMax));
             painter.ArcTo(new Vector2(r.xMin , r.yMax), new Vector2(r.xMin, r.yMax - corners[3].y),corners[3].y);

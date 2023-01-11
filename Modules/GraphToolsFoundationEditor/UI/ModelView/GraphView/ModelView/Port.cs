@@ -22,7 +22,6 @@ namespace Unity.GraphToolsFoundation.Editor
     class Port : ModelView, ISelectionDraggerTarget
     {
         public static readonly string ussClassName = "ge-port";
-        public static readonly string highlightedModifierUssClassName = ussClassName.WithUssModifier("highlighted");
         public static readonly string willConnectModifierUssClassName = ussClassName.WithUssModifier("will-connect");
         public static readonly string connectedModifierUssClassName = ussClassName.WithUssModifier("connected");
         public static readonly string notConnectedModifierUssClassName = ussClassName.WithUssModifier("not-connected");
@@ -92,21 +91,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public bool WillConnect
         {
-            set => EnableInClassList(willConnectModifierUssClassName, value);
-        }
-
-        public bool Highlighted
-        {
             set
             {
-                EnableInClassList(highlightedModifierUssClassName, value);
-                var connectedWires = PortModel.GetConnectedWires();
-                for (int i = 0; i < connectedWires.Count; i++)
-                {
-                    var wireView = connectedWires[i].GetView<Wire>(RootView);
-                    if (wireView != null)
-                        wireView.UpdateFromModel();
-                }
+                EnableInClassList(willConnectModifierUssClassName, value);
+                GetPortConnectorPart().Hovering = value;
             }
         }
 

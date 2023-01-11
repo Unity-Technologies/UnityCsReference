@@ -22,21 +22,20 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string themeClassNamePrefix = ussClassName.WithUssModifier("theme-");
         public static readonly string sizeClassNamePrefix = ussClassName.WithUssModifier("size-");
 
-        public static readonly string selectionBorderElementName = "selection-border";
-        public static readonly string disabledOverlayElementName = "disabled-overlay";
         public static readonly string titleContainerPartName = "title-container";
         public static readonly string contentContainerPartName = "text-container";
         public static readonly string resizerPartName = "resizer";
 
-        protected VisualElement m_ContentContainer;
-
         string m_CurrentThemeClassName;
         string m_CurrentSizeClassName;
 
-        /// <inheritdoc />
-        public override VisualElement contentContainer => m_ContentContainer ?? this;
-
         public StickyNoteModel StickyNoteModel => Model as StickyNoteModel;
+
+        /// <summary>
+        /// Creates an instance of the <see cref="StickyNote"/> class.
+        /// </summary>
+        public StickyNote():base(true)
+        {}
 
         /// <inheritdoc />
         protected override void BuildPartList()
@@ -44,20 +43,6 @@ namespace Unity.GraphToolsFoundation.Editor
             PartList.AppendPart(EditableTitlePart.Create(titleContainerPartName, Model, this, ussClassName, true, true, false));
             PartList.AppendPart(StickyNoteContentPart.Create(contentContainerPartName, Model, this, ussClassName));
             PartList.AppendPart(FourWayResizerPart.Create(resizerPartName, Model, this, ussClassName));
-        }
-
-        /// <inheritdoc />
-        protected override void BuildElementUI()
-        {
-            var selectionBorder = new SelectionBorder { name = selectionBorderElementName };
-            selectionBorder.AddToClassList(ussClassName.WithUssElement(selectionBorderElementName));
-            Add(selectionBorder);
-            m_ContentContainer = selectionBorder.ContentContainer;
-
-            base.BuildElementUI();
-
-            var disabledOverlay = new VisualElement { name = disabledOverlayElementName, pickingMode = PickingMode.Ignore };
-            hierarchy.Add(disabledOverlay);
         }
 
         /// <inheritdoc />

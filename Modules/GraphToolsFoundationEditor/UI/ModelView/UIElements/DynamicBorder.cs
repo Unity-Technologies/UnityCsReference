@@ -24,7 +24,6 @@ namespace Unity.GraphToolsFoundation.Editor
         static readonly CustomStyleProperty<float> k_HoverWidthProperty = new CustomStyleProperty<float>("--hover-width");
         static readonly CustomStyleProperty<float> k_SmallWidthThresholdProperty = new CustomStyleProperty<float>("--small-width-threshold");
         static readonly CustomStyleProperty<float> k_CornersThresholdProperty = new CustomStyleProperty<float>("--corners-threshold");
-        static readonly CustomStyleProperty<float> k_SelectionBorderMarginProperty = new CustomStyleProperty<float>("--selection-border-margin");
 
         static readonly CustomStyleProperty<Color> k_SelectionColorProperty = new CustomStyleProperty<Color>("--selection-color");
         static readonly CustomStyleProperty<Color> k_HoverOnlyColorProperty = new CustomStyleProperty<Color>("--hover-only-color");
@@ -66,11 +65,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// The zoom threshold at which the corners are no longer rounded.
         /// </summary>
         public float CornersThreshold { get; private set; } = 0.33f;
-
-        /// <summary>
-        /// The margin of the selection border.
-        /// </summary>
-        public float SelectionBorderMargin { get; private set; } = 3;
 
         /// <summary>
         /// The color of the outline when the <see cref="GraphElement"/> is selected.
@@ -171,7 +165,7 @@ namespace Unity.GraphToolsFoundation.Editor
             view.RegisterCallback<MouseLeaveEvent>(OnLeave);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
 
-            float maxMargin = (SmallSelectionWidth+HoverWidth) / k_MinZoom + SelectionBorderMargin;
+            float maxMargin = (SmallSelectionWidth+HoverWidth) / k_MinZoom;
             style.left = -maxMargin;
             style.right = -maxMargin;
             style.bottom = -maxMargin;
@@ -206,8 +200,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 SmallWidthThreshold = value;
             if (e.customStyle.TryGetValue(k_CornersThresholdProperty, out value))
                 CornersThreshold = value;
-            if (e.customStyle.TryGetValue(k_SelectionBorderMarginProperty, out value))
-                SelectionBorderMargin = value;
 
             if (e.customStyle.TryGetValue(k_SelectionColorProperty, out var colorValue))
                 SelectionColor = colorValue;
@@ -216,7 +208,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (e.customStyle.TryGetValue(k_HighlightColorProperty, out colorValue))
                 HighlightColor = colorValue;
 
-            float maxMargin = (SmallSelectionWidth+HoverWidth) / k_MinZoom + SelectionBorderMargin;
+            float maxMargin = (SmallSelectionWidth+HoverWidth) / k_MinZoom;
             style.left = -maxMargin;
             style.right = -maxMargin;
             style.bottom = -maxMargin;
@@ -230,7 +222,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var bound = localBound;
             bound.position -= layout.position;
-            float maxMargin = (SmallSelectionWidth+HoverWidth) / k_MinZoom + SelectionBorderMargin;
+            float maxMargin = (SmallSelectionWidth+HoverWidth) / k_MinZoom;
 
             float zoomLevel = Zoom;
             float wantedWidth;
@@ -272,8 +264,8 @@ namespace Unity.GraphToolsFoundation.Editor
             s_Colors[2] = s_Colors[0];
             s_Colors[3] = s_Colors[0];
 
-            bound.position += Vector2.one * (maxMargin - width -1);
-            bound.size -= Vector2.one * (maxMargin - width - 1)* 2 ;
+            bound.position += Vector2.one * (maxMargin - width);
+            bound.size -= Vector2.one * (maxMargin - width)* 2 ;
 
             DrawBorder(mgc, bound, wantedWidth / zoomLevel, s_Colors, corners);
         }

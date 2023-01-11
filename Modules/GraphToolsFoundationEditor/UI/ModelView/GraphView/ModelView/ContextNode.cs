@@ -70,21 +70,9 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             base.BuildElementUI();
 
-            var selectionBorder = this.SafeQ(selectionBorderElementName);
-            var selectionBorderParent = selectionBorder.parent;
-
-            //Move the selection border from being the entire container for the node to being on top of the context-border
-            int cpt = 0;
-            while (selectionBorder.childCount > 0)
-            {
-                var elementAt = selectionBorder.ElementAt(0);
-                selectionBorderParent.hierarchy.Insert(cpt++, elementAt); // use hierarchy because selectionBorderParent has a content container defined
-            }
-
             m_ContextBorder = new VisualElement { name = k_ContextBorderName };
             m_ContextBorder.AddToClassList(contextBorderUssClassName);
             contentContainer.Insert(0, m_ContextBorder);
-            m_ContextBorder.Add(selectionBorder);
 
             m_ContextTitleBkgnd = new VisualElement() { name = k_ContextBorderTitleName };
             m_ContextTitleBkgnd.AddToClassList(contextBorderTitleUssClassName);

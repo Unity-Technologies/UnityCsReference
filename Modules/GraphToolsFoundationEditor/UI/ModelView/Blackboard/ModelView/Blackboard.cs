@@ -16,6 +16,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// The uss class name for this element.
         /// </summary>
         public static new readonly string ussClassName = "ge-blackboard";
+        public static readonly string contentContainerElementName = "content-container";
 
         /// <summary>
         /// The name of the header part.
@@ -28,12 +29,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string blackboardContentPartName = "content";
 
         /// <summary>
-        /// The element containing the sections.
+        /// The container for the content of the <see cref="BlackboardElement"/>, if any.
         /// </summary>
         protected VisualElement m_ContentContainer;
-
-        /// <inheritdoc />
-        public override VisualElement contentContainer => m_ContentContainer;
 
         /// <summary>
         /// The ScrollView used for the whole blackboard.
@@ -41,10 +39,19 @@ namespace Unity.GraphToolsFoundation.Editor
         public ScrollView ScrollView { get; protected set; }
 
         /// <summary>
+        /// The container for the content of the <see cref="BlackboardElement"/>.
+        /// </summary>
+        public override VisualElement contentContainer => m_ContentContainer;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Blackboard"/> class.
         /// </summary>
         public Blackboard()
         {
+            m_ContentContainer = new VisualElement { name = contentContainerElementName, pickingMode = PickingMode.Ignore };
+            m_ContentContainer.AddToClassList(ussClassName.WithUssElement(contentContainerElementName));
+            hierarchy.Add(m_ContentContainer);
+
             RegisterCallback<DragUpdatedEvent>(e =>
             {
                 e.StopPropagation();
@@ -78,10 +85,9 @@ namespace Unity.GraphToolsFoundation.Editor
             base.BuildElementUI();
 
             ScrollView = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
-            m_ContentContainer = new VisualElement { name = "content-container" };
 
             hierarchy.Add(ScrollView);
-            ScrollView.Add(m_ContentContainer);
+            ScrollView.Add(contentContainer);
         }
 
         /// <inheritdoc />

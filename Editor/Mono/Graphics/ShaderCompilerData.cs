@@ -69,6 +69,7 @@ namespace UnityEditor.Rendering
     {
         None            = 0, // For non initialized variable.
         D3D             = 4, // Direct3D 11 (FL10.0 and up) and Direct3D 12, compiled with MS D3DCompiler
+        [System.Obsolete(@"OpenGL ES 2.0 is no longer supported since Unity 2023.1")]
         GLES20          = 5, // OpenGL ES 2.0 / WebGL 1.0, compiled with MS D3DCompiler + HLSLcc
         GLES3x          = 9, // OpenGL ES 3.0+ / WebGL 2.0, compiled with MS D3DCompiler + HLSLcc
         PS4             = 11, // Sony PS4

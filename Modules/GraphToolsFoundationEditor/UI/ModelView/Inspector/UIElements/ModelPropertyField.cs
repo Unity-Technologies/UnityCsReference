@@ -8,8 +8,10 @@ using System.Linq;
 using System.Reflection;
 using Unity.CommandStateObserver;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -53,6 +55,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// A function to get the current value of the property.
         /// </summary>
         protected Func<TValue> m_ValueGetter;
+
+        bool m_LogUpdateError = true;
 
         /// <summary>
         /// The model that owns the property.
@@ -110,7 +114,8 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 switch (m_Field)
                 {
-                    case PopupField<string> _:
+                    case PopupField<string>:
+                        Debug.Assert(typeof(Enum).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
                         m_Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>(
                             (e, f) =>
                             {
@@ -119,11 +124,31 @@ namespace Unity.GraphToolsFoundation.Editor
                             }, this);
                         break;
 
-                    case BaseField<Enum> _:
+                    case BaseField<Enum>:
+                        Debug.Assert(typeof(Enum).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
                         m_Field.RegisterCallback<ChangeEvent<Enum>, ModelPropertyField<TValue>>(
                             (e, f) => onValueChanged((TValue)(object)e.newValue, f), this);
                         break;
 
+                    case ObjectField:
+                        Debug.Assert(typeof(Object).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
+                        m_Field.RegisterCallback<ChangeEvent<Object>, ModelPropertyField<TValue>>(
+                            (e, f) => onValueChanged((TValue)(object)e.newValue, f), this);
+                        break;
+
+                    case LayerMaskField:
+                        Debug.Assert(typeof(TValue) == typeof(LayerMask), $"Unexpected type for field {Label}.");
+                        m_Field.RegisterCallback<ChangeEvent<int>, ModelPropertyField<TValue>>(
+                            (e, f) => onValueChanged((TValue)(object)e.newValue, f), this);
+                        break;
+
+                    case TextField { maxLength: 1 }:
+                        Debug.Assert(typeof(TValue) == typeof(char), $"Unexpected type for field {Label}.");
+                        m_Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>(
+                            (e, f) => onValueChanged((TValue)(object)e.newValue[0], f), this);
+                        break;
+
+                    // For BaseField<TValue> and fields build by ICustomPropertyFieldBuilder.
                     default:
                         m_Field.RegisterCallback<ChangeEvent<TValue>, ModelPropertyField<TValue>>(
                             (e, f) => onValueChanged(e.newValue, f), this);
@@ -194,7 +219,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             switch (m_Field)
             {
-                case PopupField<string> _:
+                case PopupField<string>:
+                    Debug.Assert(typeof(Enum).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
                     m_Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>((e, f) =>
                     {
                         var value = (TValue)Enum.Parse(typeof(TValue), e.newValue);
@@ -203,14 +229,44 @@ namespace Unity.GraphToolsFoundation.Editor
                     }, this);
                     break;
 
-                case BaseField<Enum> _:
+                case BaseField<Enum>:
+                    Debug.Assert(typeof(Enum).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
                     m_Field.RegisterCallback<ChangeEvent<Enum>, ModelPropertyField<TValue>>((e, f) =>
                     {
-                        if (Activator.CreateInstance(commandType, e.newValue, f.Models) is ICommand command)
+                        if (Activator.CreateInstance(commandType, (TValue)(object)e.newValue, f.Models) is ICommand command)
                             f.CommandTarget.Dispatch(command);
                     }, this);
                     break;
 
+                case ObjectField:
+                    Debug.Assert(typeof(Object).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
+                    m_Field.RegisterCallback<ChangeEvent<Object>, ModelPropertyField<TValue>>((e, f) =>
+                    {
+                        if (Activator.CreateInstance(commandType, (TValue)(object)e.newValue, f.Models) is ICommand command)
+                            f.CommandTarget.Dispatch(command);
+                    }, this);
+                    break;
+
+                case LayerMaskField:
+                    Debug.Assert(typeof(TValue) == typeof(LayerMask), $"Unexpected type for field {Label}.");
+                    m_Field.RegisterCallback<ChangeEvent<int>, ModelPropertyField<TValue>>((e, f) =>
+                    {
+                        LayerMask mask = e.newValue;
+                        if (Activator.CreateInstance(commandType, mask, f.Models) is ICommand command)
+                            f.CommandTarget.Dispatch(command);
+                    }, this);
+                    break;
+
+                case TextField { maxLength: 1 }:
+                    Debug.Assert(typeof(TValue) == typeof(char), $"Unexpected type for field {Label}.");
+                    m_Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>((e, f) =>
+                    {
+                        if (Activator.CreateInstance(commandType, e.newValue[0], f.Models) is ICommand command)
+                            f.CommandTarget.Dispatch(command);
+                    }, this);
+                    break;
+
+                // For BaseField<TValue> and fields build by ICustomPropertyFieldBuilder.
                 default:
                     m_Field.RegisterCallback<ChangeEvent<TValue>, ModelPropertyField<TValue>>((e, f) =>
                     {
@@ -249,7 +305,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        public override bool UpdateDisplayedValue()
+        public override void UpdateDisplayedValue()
         {
             if (m_ValueGetter != null)
             {
@@ -258,50 +314,102 @@ namespace Unity.GraphToolsFoundation.Editor
                     if (m_CustomFieldBuilder != null)
                     {
                         m_CustomFieldBuilder.SetMixed();
-                        return true;
+                        return;
                     }
 
-                    switch (m_Field)
+                    if (m_Field is BaseField<TValue> baseField)
                     {
-                        case PopupField<string> popupField:
-                            popupField.showMixedValue = true;
-                            return true;
-
-                        case BaseField<Enum> baseField:
-                            baseField.showMixedValue = true;
-                            return true;
-
-                        case BaseField<TValue> baseField:
-                            baseField.showMixedValue = true;
-                            return true;
+                        baseField.showMixedValue = true;
+                        return;
                     }
                 }
                 else
                 {
+                    var newValue = m_ValueGetter.Invoke();
+
                     if (m_CustomFieldBuilder != null)
                     {
-                        return m_CustomFieldBuilder.UpdateDisplayedValue(m_ValueGetter.Invoke());
+                        if (m_CustomFieldBuilder.UpdateDisplayedValue(newValue))
+                            return;
                     }
-
-                    switch (m_Field)
+                    else
                     {
-                        case PopupField<string> popupField:
-                            popupField.SetValueWithoutNotify(m_ValueGetter.Invoke().ToString());
-                            return true;
+                        switch (m_Field)
+                        {
+                            case PopupField<string> popupField:
+                            {
+                                if (newValue is Enum value)
+                                {
+                                    popupField.SetValueWithoutNotify(value.ToString());
+                                    return;
+                                }
 
-                        case BaseField<Enum> baseField:
-                            baseField.SetValueWithoutNotify(m_ValueGetter.Invoke() as Enum);
-                            return true;
+                                break;
+                            }
 
-                        case BaseField<TValue> baseField:
-                            baseField.SetValueWithoutNotify(m_ValueGetter.Invoke());
-                            return true;
+                            case BaseField<Enum> baseField:
+                            {
+                                if (newValue is Enum value)
+                                {
+                                    baseField.SetValueWithoutNotify(value);
+                                    return;
+                                }
+
+                                break;
+                            }
+
+                            case ObjectField objectField:
+                            {
+                                if (newValue is Object value)
+                                {
+                                    objectField.SetValueWithoutNotify(value);
+                                    return;
+                                }
+
+                                if (newValue == null)
+                                {
+                                    objectField.SetValueWithoutNotify(null);
+                                    return;
+                                }
+
+                                break;
+                            }
+
+                            case LayerMaskField layerMaskField:
+                            {
+                                if (newValue is LayerMask value)
+                                {
+                                    layerMaskField.SetValueWithoutNotify(value);
+                                    return;
+                                }
+
+                                break;
+                            }
+
+                            case TextField { maxLength: 1 } charField:
+                            {
+                                if (newValue is char value)
+                                {
+                                    charField.SetValueWithoutNotify($"{value}");
+                                    return;
+                                }
+
+                                break;
+                            }
+
+                            case BaseField<TValue> baseField:
+                                baseField.SetValueWithoutNotify(newValue);
+                                return;
+                        }
                     }
                 }
-
             }
 
-            return false;
+            if (m_LogUpdateError)
+            {
+                Debug.Log($"Could not update field {Label}");
+                m_LogUpdateError = false;
+            }
         }
 
         VisualElement CreateFieldFromProperty(string propertyName, string fieldTooltip)
@@ -311,7 +419,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 TryCreateCustomPropertyFieldBuilder(out m_CustomFieldBuilder);
             }
 
-            return m_CustomFieldBuilder?.Build(CommandTarget, Label, fieldTooltip, Models, propertyName) ?? CreateDefaultFieldForType(typeof(TValue), fieldTooltip);
+            return m_CustomFieldBuilder?.Build(CommandTarget, Label, fieldTooltip, Models, propertyName) ??
+                CreateDefaultFieldForType(typeof(TValue), fieldTooltip);
         }
     }
 }

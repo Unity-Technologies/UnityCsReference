@@ -83,11 +83,8 @@ namespace UnityEditor.PackageManager
             if (string.IsNullOrWhiteSpace(packageName))
                 throw new ArgumentException("Package name cannot be null, empty or whitespace", nameof(packageName));
 
-            var packageInfo = PackageInfo.GetAllRegisteredPackages().FirstOrDefault(p => p.name == packageName);
-            if (packageInfo == null)
+            if (!PackageInfo.IsPackageRegistered(packageName))
                 throw new InvalidOperationException($"Cannot embed package [{packageName}] because it is not registered in the Asset Database.");
-
-            Debug.Assert(packageInfo.entitlements.isAllowed, "Expected [entitlements.isAllowed] flag to be true.");
 
             long operationId;
             var status = Embed(out operationId, packageName);

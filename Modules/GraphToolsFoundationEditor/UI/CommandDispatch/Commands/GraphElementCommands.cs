@@ -311,9 +311,22 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(mainSelectionState);
 
+                var currentSelection = new HashSet<GraphElementModel>();
+                foreach (var selectionStateComponent in selectionHelper.SelectionStates)
+                {
+                    currentSelection.UnionWith(selectionStateComponent.GetSelection(graphModelState.GraphModel));
+                }
+
+                currentSelection.SymmetricExceptWith(command.Models);
+                if (currentSelection.Count == 0)
+                {
+                    // currentSelection is already the same as command.Models
+                    return;
+                }
+
                 using (var undoStateUpdater = undoState.UpdateScope)
                 {
-                    undoStateUpdater.SaveStates(selectionHelper.UndoableSelectionStates);
+                    undoStateUpdater.SaveStates(selectionHelper.SelectionStates);
                 }
 
                 using (var updaters = selectionHelper.UpdateScopes)
@@ -328,6 +341,23 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             else
             {
+                switch (command.Mode)
+                {
+                    case SelectionMode.Add:
+                        if (command.Models.All(mainSelectionState.IsSelected))
+                        {
+                            return;
+                        }
+                        break;
+
+                    case SelectionMode.Remove:
+                        if (command.Models.All(m => !mainSelectionState.IsSelected(m)))
+                        {
+                            return;
+                        }
+                        break;
+                }
+
                 using (var undoStateUpdater = undoState.UpdateScope)
                 {
                     undoStateUpdater.SaveState(mainSelectionState);
@@ -380,9 +410,12 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
 
+            if (selectionHelper.SelectionStates.All(s => s.IsSelectionEmpty))
+                return;
+
             using (var undoStateUpdater = undoState.UpdateScope)
             {
-                undoStateUpdater.SaveStates(selectionHelper.UndoableSelectionStates);
+                undoStateUpdater.SaveStates(selectionHelper.SelectionStates);
             }
 
             using (var updaters = selectionHelper.UpdateScopes)

@@ -243,18 +243,6 @@ namespace UnityEditor
             }
         }
 
-        internal static void GameViewOnPlayPopup(Rect buttonRect, int selectedIndex, IGameViewOnPlayMenuUser gameView, GUIStyle guiStyle)
-        {
-            var text = GameViewOnPlayMenu.GetOnPlayBehaviorName(selectedIndex);
-
-            if (EditorGUI.DropdownButton(buttonRect, GUIContent.Temp(text), FocusType.Passive, guiStyle))
-            {
-                var menuData = new GameViewOnPlayMenuItemProvider();
-                var flexibleMenu = new GameViewOnPlayMenu(menuData, selectedIndex, null, gameView);
-                PopupWindow.Show(buttonRect, flexibleMenu);
-            }
-        }
-
         public static void DrawRect(Rect rect, Color color)
         {
             if (Event.current.type != EventType.Repaint)

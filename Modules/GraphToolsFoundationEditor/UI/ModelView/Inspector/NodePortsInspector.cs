@@ -38,21 +38,11 @@ namespace Unity.GraphToolsFoundation.Editor
             if (ShouldRebuildFields())
             {
                 BuildFields();
-                foreach (var modelField in m_Fields)
-                {
-                    modelField.UpdateDisplayedValue();
-                }
             }
-            else
+
+            foreach (var modelField in m_Fields)
             {
-                foreach (var modelField in m_Fields)
-                {
-                    if (!modelField.UpdateDisplayedValue())
-                    {
-                        BuildFields();
-                        break;
-                    }
-                }
+                modelField.UpdateDisplayedValue();
             }
         }
 

@@ -32,12 +32,18 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public static readonly string ussClassName = "ge-graph-element";
         public static readonly string selectableModifierUssClassName = ussClassName.WithUssModifier("selectable");
+        public static readonly string contentContainerElementName = "content-container";
 
         int m_Layer;
 
         bool m_LayerIsInline;
 
         ClickSelector m_ClickSelector;
+
+        /// <summary>
+        /// The container for the content of the <see cref="GraphElement"/>, if any.
+        /// </summary>
+        VisualElement m_ContentContainer;
 
         public GraphElementModel GraphElementModel => Model as GraphElementModel;
 
@@ -64,14 +70,29 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
+        /// The container for the content of the <see cref="GraphElement"/>.
+        /// </summary>
+        public override VisualElement contentContainer => m_ContentContainer ?? this;
+
+        /// The <see cref="DynamicBorder"/> used to display selection, hover and highlight. Can be null.
+        protected DynamicBorder Border { get; private set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GraphElement"/> class.
         /// </summary>
-        protected GraphElement()
+        protected GraphElement(bool hasContentContainer = false)
         {
             RegisterCallback<KeyDownEvent>(OnRenameKeyDown_Internal);
             focusable = true;
 
             ContextualMenuManipulator = new GraphViewContextualMenuManipulator(BuildContextualMenu);
+
+            if (hasContentContainer)
+            {
+                m_ContentContainer = new VisualElement { name = contentContainerElementName, pickingMode = PickingMode.Ignore };
+                m_ContentContainer.AddToClassList(ussClassName.WithUssElement(contentContainerElementName));
+                hierarchy.Add(m_ContentContainer);
+            }
         }
 
         public void ResetLayer()
@@ -92,8 +113,25 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void PostBuildUI()
         {
+            // added here because it should be added last.
+            Border = CreateDynamicBorder();
+            if (Border != null)
+            {
+                Border.AddToClassList(ussClassName.WithUssElement("dynamic-border"));
+                hierarchy.Add(Border);
+            }
+
             AddToClassList(ussClassName);
             this.AddStylesheet_Internal("GraphElement.uss");
+        }
+
+        /// <summary>
+        /// Creates a <see cref="DynamicBorder"/> for this graph element.
+        /// </summary>
+        /// <returns>A <see cref="DynamicBorder"/> for this graph element.</returns>
+        protected virtual DynamicBorder CreateDynamicBorder()
+        {
+            return new DynamicBorder(this);
         }
 
         /// <summary>
@@ -123,6 +161,9 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 pseudoStates &= ~PseudoStates.Checked;
             }
+
+            if (Border != null)
+                Border.Selected = IsSelected();
         }
 
         /// <summary>
@@ -139,6 +180,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 var component = PartList.Parts[i];
                 (component as GraphElementPart)?.SetLevelOfDetail(zoom, newZoomMode, oldZoomMode);
             }
+
+            if (Border != null)
+                Border.Zoom = zoom;
         }
 
 

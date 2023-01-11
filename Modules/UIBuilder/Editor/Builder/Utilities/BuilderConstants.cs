@@ -529,7 +529,7 @@ namespace Unity.UI.Builder
         {
             get
             {
-                var path = Application.dataPath + "/../" + BuilderDocumentDiskJsonFolderPath;
+                var path = BuilderAssetUtilities.projectPath + "/" + BuilderDocumentDiskJsonFolderPath;
                 path = Path.GetFullPath(path);
                 return path;
             }
@@ -548,7 +548,7 @@ namespace Unity.UI.Builder
         {
             get
             {
-                var path = Application.dataPath + "/../" + BuilderDocumentDiskSettingsJsonFolderPath;
+                var path = BuilderAssetUtilities.projectPath + "/" + BuilderDocumentDiskSettingsJsonFolderPath;
                 path = Path.GetFullPath(path);
                 return path;
             }

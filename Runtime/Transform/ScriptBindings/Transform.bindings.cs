@@ -233,23 +233,18 @@ namespace UnityEngine
         public Vector3 TransformDirection(float x, float y, float z) { return TransformDirection(new Vector3(x, y, z)); }
 
         // Transforms multiple directions from local space to world space.
-        internal unsafe extern void TransformDirections([Span("count", isReadOnly: true)] Vector3* directions, int count, [Span("transformedCount", isReadOnly: false)] Vector3* transformedDirections, int transformedCount);
+        [NativeMethod(Name = "TransformDirections")]
+        internal unsafe extern void TransformDirectionsInternal(ReadOnlySpan<Vector3> directions, Span<Vector3> transformedDirections);
         public unsafe void TransformDirections(ReadOnlySpan<Vector3> directions, Span<Vector3> transformedDirections)
         {
             if (directions.Length != transformedDirections.Length)
                 throw new InvalidOperationException($"Both spans passed to Transform.TransformDirections() must be the same length");
 
-            fixed (Vector3* srcPtr = directions)
-            {
-                fixed (Vector3* destPtr = transformedDirections)
-                {
-                    TransformDirections(srcPtr, directions.Length, destPtr, transformedDirections.Length);
-                }
-            }
+           TransformDirectionsInternal(directions, transformedDirections);
         }
         public unsafe void TransformDirections(Span<Vector3> directions)
         {
-            TransformDirections(directions, directions);
+            TransformDirectionsInternal(directions, directions);
         }
 
 
@@ -260,23 +255,18 @@ namespace UnityEngine
         public Vector3 InverseTransformDirection(float x, float y, float z) { return InverseTransformDirection(new Vector3(x, y, z)); }
 
         // Transforms multiple directions from world space to local space. The opposite of Transform.TransformDirections.
-        internal unsafe extern void InverseTransformDirections([Span("count", isReadOnly: true)] Vector3* directions, int count, [Span("transformedCount", isReadOnly: false)] Vector3* transformedDirections, int transformedCount);
+        [NativeMethod(Name = "InverseTransformDirections")]
+        internal unsafe extern void InverseTransformDirectionsInternal(ReadOnlySpan<Vector3> directions, Span<Vector3> transformedDirections);
         public unsafe void InverseTransformDirections(ReadOnlySpan<Vector3> directions, Span<Vector3> transformedDirections)
         {
             if (directions.Length != transformedDirections.Length)
                 throw new InvalidOperationException($"Both spans passed to Transform.InverseTransformDirections() must be the same length");
 
-            fixed (Vector3* srcPtr = directions)
-            {
-                fixed (Vector3* destPtr = transformedDirections)
-                {
-                    InverseTransformDirections(srcPtr, directions.Length, destPtr, transformedDirections.Length);
-                }
-            }
+           InverseTransformDirectionsInternal(directions, transformedDirections);
         }
         public unsafe void InverseTransformDirections(Span<Vector3> directions)
         {
-            InverseTransformDirections(directions, directions);
+            InverseTransformDirectionsInternal(directions, directions);
         }
 
 
@@ -287,23 +277,18 @@ namespace UnityEngine
         public Vector3 TransformVector(float x, float y, float z) { return TransformVector(new Vector3(x, y, z)); }
 
         // Transforms multiple vectors from local space to world space.
-        internal unsafe extern void TransformVectors([Span("count", isReadOnly: true)] Vector3* vectors, int count, [Span("transformedCount", isReadOnly: false)] Vector3* transformedVectors, int transformedCount);
+        [NativeMethod(Name = "TransformVectors")]
+        internal unsafe extern void TransformVectorsInternal(ReadOnlySpan<Vector3> vectors, Span<Vector3> transformedVectors);
         public unsafe void TransformVectors(ReadOnlySpan<Vector3> vectors, Span<Vector3> transformedVectors)
         {
             if (vectors.Length != transformedVectors.Length)
                 throw new InvalidOperationException($"Both spans passed to Transform.TransformVectors() must be the same length");
 
-            fixed (Vector3* srcPtr = vectors)
-            {
-                fixed (Vector3* destPtr = transformedVectors)
-                {
-                    TransformVectors(srcPtr, vectors.Length, destPtr, transformedVectors.Length);
-                }
-            }
+           TransformVectorsInternal(vectors, transformedVectors);
         }
         public unsafe void TransformVectors(Span<Vector3> vectors)
         {
-            TransformVectors(vectors, vectors);
+            TransformVectorsInternal(vectors, vectors);
         }
 
 
@@ -314,23 +299,18 @@ namespace UnityEngine
         public Vector3 InverseTransformVector(float x, float y, float z) { return InverseTransformVector(new Vector3(x, y, z)); }
 
         // Transforms multiple vectors from world space to local space. The opposite of Transform.TransformVectors.
-        internal unsafe extern void InverseTransformVectors([Span("count", isReadOnly: true)] Vector3* vectors, int count, [Span("transformedCount", isReadOnly: false)] Vector3* transformedVectors, int transformedCount);
+        [NativeMethod(Name = "InverseTransformVectors")]
+        internal unsafe extern void InverseTransformVectorsInternal(ReadOnlySpan<Vector3> vectors, Span<Vector3> transformedVectors);
         public unsafe void InverseTransformVectors(ReadOnlySpan<Vector3> vectors, Span<Vector3> transformedVectors)
         {
             if (vectors.Length != transformedVectors.Length)
                 throw new InvalidOperationException($"Both spans passed to Transform.InverseTransformVectors() must be the same length");
 
-            fixed (Vector3* srcPtr = vectors)
-            {
-                fixed (Vector3* destPtr = transformedVectors)
-                {
-                    InverseTransformVectors(srcPtr, vectors.Length, destPtr, transformedVectors.Length);
-                }
-            }
+            InverseTransformVectorsInternal(vectors, transformedVectors);
         }
         public unsafe void InverseTransformVectors(Span<Vector3> vectors)
         {
-            InverseTransformVectors(vectors, vectors);
+            InverseTransformVectorsInternal(vectors, vectors);
         }
 
 
@@ -341,23 +321,18 @@ namespace UnityEngine
         public Vector3 TransformPoint(float x, float y, float z) { return TransformPoint(new Vector3(x, y, z)); }
 
         // Transforms multiple positions from local space to world space.
-        internal unsafe extern void TransformPoints([Span("count", isReadOnly: true)] Vector3* positions, int count, [Span("transformedCount", isReadOnly: false)] Vector3* transformedPositions, int transformedCount);
+        [NativeMethod(Name = "TransformPoints")]
+        internal unsafe extern void TransformPointsInternal(ReadOnlySpan<Vector3> positions, Span<Vector3> transformedPositions);
         public unsafe void TransformPoints(ReadOnlySpan<Vector3> positions, Span<Vector3> transformedPositions)
         {
             if (positions.Length != transformedPositions.Length)
                 throw new InvalidOperationException($"Both spans passed to Transform.TransformPoints() must be the same length");
 
-            fixed (Vector3* srcPtr = positions)
-            {
-                fixed (Vector3* destPtr = transformedPositions)
-                {
-                    TransformPoints(srcPtr, positions.Length, destPtr, transformedPositions.Length);
-                }
-            }
+            TransformPointsInternal(positions, transformedPositions);
         }
         public unsafe void TransformPoints(Span<Vector3> positions)
         {
-            TransformPoints(positions, positions);
+            TransformPointsInternal(positions, positions);
         }
 
 
@@ -368,19 +343,14 @@ namespace UnityEngine
         public Vector3 InverseTransformPoint(float x, float y, float z) { return InverseTransformPoint(new Vector3(x, y, z)); }
 
         // Transforms multiple positions from world space to local space. The opposite of Transform.TransformPoints.
-        internal unsafe extern void InverseTransformPoints([Span("count", isReadOnly: true)] Vector3* positions, int count, [Span("transformedCount", isReadOnly: false)] Vector3* transformedPositions, int transformedCount);
+        [NativeMethod(Name = "InverseTransformPoints")]
+        internal unsafe extern void InverseTransformPointsInternal(ReadOnlySpan<Vector3> positions, Span<Vector3> transformedPositions);
         public unsafe void InverseTransformPoints(ReadOnlySpan<Vector3> positions, Span<Vector3> transformedPositions)
         {
             if (positions.Length != transformedPositions.Length)
                 throw new InvalidOperationException($"Both spans passed to Transform.InverseTransformPoints() must be the same length");
 
-            fixed (Vector3* srcPtr = positions)
-            {
-                fixed (Vector3* destPtr = transformedPositions)
-                {
-                    InverseTransformPoints(srcPtr, positions.Length, destPtr, transformedPositions.Length);
-                }
-            }
+            InverseTransformPointsInternal(positions, transformedPositions);
         }
         public unsafe void InverseTransformPoints(Span<Vector3> positions)
         {

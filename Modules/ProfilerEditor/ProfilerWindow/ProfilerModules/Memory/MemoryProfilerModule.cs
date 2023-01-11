@@ -610,14 +610,7 @@ namespace UnityEditorInternal.Profiling
 
         bool IsMemoryProfilerPackageInstalled()
         {
-            var installedPackages = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages();
-            foreach (var package in installedPackages)
-            {
-                if (package.name == m_MemoryProfilerPackageName)
-                    return true;
-            }
-
-            return false;
+            return UnityEditor.PackageManager.PackageInfo.IsPackageRegistered(m_MemoryProfilerPackageName);
         }
 
         bool MemoryProfilerPackageAvailabilityCheckMoveNext()

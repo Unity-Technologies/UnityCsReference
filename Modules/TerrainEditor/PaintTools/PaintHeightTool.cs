@@ -59,16 +59,12 @@ namespace UnityEditor.TerrainTools
             return GetStyles().description.text;
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             int textureRez = terrain.terrainData.heightmapResolution;
             editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
-        }
 
         private void ApplyBrushInternal(PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
         {

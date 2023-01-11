@@ -80,6 +80,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (CanStartManipulation(e))
             {
+                m_GraphView.StartMergingUndoableCommands();
                 m_GraphView.Dispatch(new ClearSelectionCommand());
 
                 m_GraphView.ContentViewContainer.Add(m_FreehandElement);
@@ -143,8 +144,9 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             else
             {
-                m_GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Add, selectedModels));
+                m_GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, selectedModels));
             }
+            m_GraphView.StopMergingUndoableCommands();
 
             m_Active = false;
             target.ReleaseMouse();

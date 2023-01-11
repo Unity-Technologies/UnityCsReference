@@ -45,9 +45,9 @@ namespace Unity.GraphToolsFoundation.Editor
         List<SelectionStateComponent> m_AllSelectionStates;
 
         /// <summary>
-        /// All the <see cref="SelectionStateComponent"/> present in the state cast as <see cref="IUndoableStateComponent"/>.
+        /// All the <see cref="SelectionStateComponent"/> present in the state.
         /// </summary>
-        public IEnumerable<IUndoableStateComponent> UndoableSelectionStates => m_AllSelectionStates;
+        public IEnumerable<SelectionStateComponent> SelectionStates => m_AllSelectionStates;
 
         /// <summary>
         /// The <see cref="SelectionStateComponent.StateUpdater"/> for each of the <see cref="SelectionStateComponent"/> present in the state.

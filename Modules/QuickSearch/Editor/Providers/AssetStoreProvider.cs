@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+// #define QUICK_SEARCH_STORE
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -10,12 +11,124 @@ using System.Text;
 using System.Linq;
 using Debug = UnityEngine.Debug;
 using UnityEditor.Connect;
+using System.Globalization;
 
 namespace UnityEditor.Search.Providers
 {
     static class AssetStoreProvider
     {
-        #pragma warning disable CS0649
+#pragma warning disable CS0649
+        class AssetDocumentWrapper : UnityEngine.ScriptableObject
+        {
+            public SearchItem item;
+        }
+
+        [CustomEditor(typeof(AssetDocumentWrapper))]
+        class AssetDocumentWrapperEditor : UnityEditor.Editor
+        {
+
+            static class Styles
+            {
+                static Styles()
+                {
+                    SetupMargin(label);
+                    SetupMargin(nameLabel);
+                    SetupMargin(linkButton);
+                    SetupMargin(separator);
+                    SetupMargin(button);
+                }
+
+                public static GUIStyle label = new GUIStyle("label")
+                {
+                    richText = true,
+                    wordWrap = true,
+                };
+
+                public static GUIStyle nameLabel = new GUIStyle(label)
+                {
+                    fontSize = label.fontSize + 2
+                };
+
+                public static GUIStyle separator = new GUIStyle("AnimLeftPaneSeparator");
+
+                public static GUIStyle linkButton = new GUIStyle(EditorStyles.linkLabel);
+                public static GUIStyle button = new GUIStyle(GUI.skin.button);
+
+                public static GUIContent viewMyAsset = new GUIContent(L10n.Tr("View in My Assets"));
+                public static GUIContent addToMyAsset = new GUIContent(L10n.Tr("Add to My Assets"));
+                public static GUIContent viewOnWeb = new GUIContent(L10n.Tr("View on Web"));
+                public static GUIContent eula = new GUIContent(L10n.Tr("Standard Unity Asset Store EULA"));
+
+                static void SetupMargin(GUIStyle style)
+                {
+                    style.margin = new RectOffset(8, 8, style.margin.top, style.margin.bottom);
+                }
+            }
+
+
+            private void OnEnable()
+            {
+            }
+
+            public override bool UseDefaultMargins()
+            {
+                return false;
+            }
+
+            public override void OnInspectorGUI()
+            {
+                var wrapper = (AssetDocumentWrapper)target;
+                var item = wrapper.item;
+                var desc = (AssetDocument)item.data;
+                if (desc != null)
+                {
+                    GUILayout.Label($"<b>{desc.name_en_US}</b>", Styles.nameLabel);
+                    GUILayout.Label($"by {desc.publisher}", Styles.label);
+                    var isOwned = IsItemOwned(item);
+                    var price = GetPrice(desc);
+                    string priceStr;
+                    if (isOwned)
+                        priceStr = "Owned";
+                    else if (price == 0)
+                        priceStr = "Free";
+                    else
+                        priceStr = $"{currencySymbol}{price} ({currency})";
+                    GUILayout.Label(priceStr, Styles.label);
+                    var lastRect = GUILayoutUtility.GetLastRect();
+                    if (desc.productDetail != null && !string.IsNullOrEmpty(desc.productDetail.elevatorPitch))
+                        GUILayout.Label(desc.productDetail.elevatorPitch, Styles.label);
+
+                    GUILayout.Space(10);
+                    var sepRect = GUILayoutUtility.GetRect(lastRect.width, lastRect.height);
+                    if (Event.current.type == EventType.Repaint)
+                    {
+                        Styles.separator.Draw(sepRect, false, false, false, false);
+                    }
+                    GUILayout.Space(15);
+
+                    if (isOwned)
+                    {
+                        if (GUILayout.Button(Styles.viewMyAsset, Styles.button))
+                            OpenPackageManager(item);
+                    }
+                    if (GUILayout.Button(Styles.viewOnWeb, Styles.button))
+                    {
+                        BrowseAssetStoreItem(item);
+                    }
+
+                    if (GUILayout.Button(Styles.eula, Styles.linkButton))
+                    {
+                        Application.OpenURL("https://unity.com/legal/as-terms");
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.LabelField($"Name", item.label);
+                }
+
+            }
+        }
+
         [Serializable]
         class StoreSearchRequest
         {
@@ -50,23 +163,24 @@ namespace UnityEditor.Search.Providers
             public string id;
             public string name_en_US;
             public float price_USD;
+            public float price_EUR;
             public string publisher;
             public string[] icon;
             public string url;
             public string category_slug;
-            // public string type;
+            public string type;
             // public string name_ja-JP;
             // public string name_ko-KR;
             // public string name_zh-CN;
-            // public int avg_rating;
+            public int avg_rating;
             // public int ratings;
             // public int publisher_id;
-            // public string on_sale;
+            public string on_sale;
             // public string plus_pro;
             public string[] key_images;
             // public float original_price_USD;
             // public float original_price_EUR;
-            // public int age;
+            public int age;
             // public string new;
             // public string partner;
 
@@ -159,6 +273,11 @@ namespace UnityEditor.Search.Providers
             public string small;
             public string url;
             public string facebook;
+
+            public override string ToString()
+            {
+                return $"{big} - {icon} - {small}";
+            }
         }
 
         [Serializable]
@@ -172,7 +291,6 @@ namespace UnityEditor.Search.Providers
             public PurchaseDetailCategory category;
             public PurchaseDetailMainImage mainImage;
         }
-
 
         [Serializable]
         class ProductListResponse
@@ -188,6 +306,11 @@ namespace UnityEditor.Search.Providers
             public string imageUrl;
             public string thumbnailUrl;
             public string type;
+
+            public override string ToString()
+            {
+                return $"{type} - ({width},{height})";
+            }
         }
 
         [Serializable]
@@ -196,10 +319,49 @@ namespace UnityEditor.Search.Providers
             // public string id;
             // public string packageId;
             // public string slug;
+            public string displayName;
+            public string description;
+            public string elevatorPitch;
+            public string keyFeatures;
             public PurchaseDetailMainImage mainImage;
             public ImageDesc[] images;
+
+            public override string ToString()
+            {
+                return displayName;
+            }
         }
-        #pragma warning restore CS0649
+
+        const string k_OpenBrowserFromToolbar = "unity-editor-toolbar";
+        const string k_OpenBrowserFromSearch = "unity-editor-search";
+
+        struct QueryValue
+        {
+            public QueryValue(string displayName, string queryToken = null, object value = null, object value2 = null)
+            {
+                this.displayName = displayName;
+                if (queryToken != null)
+                {
+                    this.queryToken = queryToken.ToLowerInvariant();
+                }
+                else
+                {
+                    this.queryToken = displayName.Replace(" ", "-").ToLowerInvariant();
+                }
+                this.value = value ?? this.queryToken;
+                this.value2 = value2;
+            }
+
+            public string displayName;
+            public string queryToken;
+            public object value;
+            public object value2;
+
+            public override string ToString()
+            {
+                return $"{displayName} - {queryToken}";
+            }
+        }
 
         class PreviewData
         {
@@ -208,30 +370,58 @@ namespace UnityEditor.Search.Providers
             public UnityWebRequestAsyncOperation requestOp;
         }
 
-        enum QueryParamType
+        class AssetsLoadingPage : IComparable<AssetsLoadingPage>
         {
-            kString,
-            kFloat,
-            kBoolean,
-            kStringArray,
-            kInteger
-        }
-
-        class QueryParam
-        {
-            public QueryParamType type;
-            public string name;
-            public string keyword;
-            public string queryName;
-
-            public QueryParam(QueryParamType type, string name, string queryName = null)
+            public AssetsLoadingPage(int startIndex, int endIndex)
             {
-                this.type = type;
-                this.name = name;
-                keyword = name + ":";
-                this.queryName = queryName ?? name;
+                this.startIndex = startIndex;
+                this.endIndex = endIndex;
+                items = new List<SearchItem>(size);
+            }
+
+            public List<SearchItem> items;
+            public int startIndex;
+            public int endIndex;
+            public int size => endIndex - startIndex;
+            public UnityWebRequest request;
+            public bool isLoaded;
+
+            public int CompareTo(AssetsLoadingPage other)
+            {
+                return startIndex.CompareTo(other.startIndex);
             }
         }
+
+        class QueryDescriptor
+        {
+            public QueryDescriptor()
+            {
+                max_price = min_price = 0;
+                publisher = "";
+                unity_version = "2022";
+                free = false;
+                on_sale = false;
+                category = "";
+                min_rating = 0;
+                release = ReleaseDate.OneYearAgo;
+                platform = "ios";
+                sort = SortOrder.Relevance;
+                currency = 0; // 1: Euro
+            }
+            public float min_price;
+            public float max_price;
+            public string publisher;
+            public string unity_version;
+            public bool free;
+            public bool on_sale;
+            public string category;
+            public int min_rating;
+            public int currency;
+            public ReleaseDate release;
+            public string platform;
+            public SortOrder sort;
+        }
+#pragma warning restore CS0649
 
         private const string kSearchEndPoint = "https://assetstore.unity.com/api/search";
         private const string kProductDetailsEndPoint = "https://api.unity.com/v1/products/list";
@@ -245,40 +435,289 @@ namespace UnityEditor.Search.Providers
         private static AccessToken s_AccessTokenData;
         private static TokenInfo s_TokenInfo;
         private static UserInfo s_UserInfo;
+        const string k_MultiValueQueryParameter = "multivalue";
+        private static QueryEngine<QueryDescriptor> s_QueryEngine;
+        private static List<AssetsLoadingPage> s_AssetsPage;
+        private static Dictionary<string, object> s_QueryParams;
+        private static ISearchView s_CurrentSearchView;
+        const int kAssetsPerPage = 100;
 
-        private static readonly List<QueryParam> k_QueryParams = new List<QueryParam>
+        private static readonly HashSet<string> k_EuroCountries = new HashSet<string>(new[] { "AT", "BE", "ES", "FI", "FR", "DE", "GR", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PT", "SK", "SI", "ES", "BG", "HR", "CZ", "HU", "PL", "RO", "SE" });
+
+        static QueryValue[] k_Categories =
         {
-            new QueryParam(QueryParamType.kFloat, "min_price"),
-            new QueryParam(QueryParamType.kFloat, "max_price"),
-            new QueryParam(QueryParamType.kStringArray, "publisher"),
-            new QueryParam(QueryParamType.kString, "version", "unity_version"),
-            new QueryParam(QueryParamType.kBoolean, "free"),
-            new QueryParam(QueryParamType.kBoolean, "on_sale"),
-            new QueryParam(QueryParamType.kBoolean, "plus_pro_sale"),
-            new QueryParam(QueryParamType.kStringArray, "category"),
-            new QueryParam(QueryParamType.kInteger, "min_rating"),
-            new QueryParam(QueryParamType.kInteger, "sort"),
-            new QueryParam(QueryParamType.kBoolean, "reverse"),
-            new QueryParam(QueryParamType.kInteger, "start"),
-            new QueryParam(QueryParamType.kInteger, "rows"),
-            new QueryParam(QueryParamType.kString, "lang"),
+            new QueryValue("3D/All 3D", "3d"),
+            new QueryValue("3D/Animations"),
+            new QueryValue("3D/Characters"),
+            new QueryValue("3D/Environments"),
+            new QueryValue("3D/GUI"),
+            new QueryValue("3D/Props"),
+            new QueryValue("3D/Vegetation"),
+            new QueryValue("3D/Vehicules"),
+            new QueryValue("2D/All 2D", "2d"),
+            new QueryValue("2D/Characters"),
+            new QueryValue("2D/Environments"),
+            new QueryValue("2D/Fonts"),
+            new QueryValue("2D/GUI"),
+            new QueryValue("2D/Textures & materials", "2d/textures-materials"),
+            new QueryValue("Add Ons/All Add Ons", "Add Ons"),
+            new QueryValue("Add Ons/Machine Learning", "add-ons/machinelearning"),
+            new QueryValue("Add Ons/Services"),
+            new QueryValue("Audio/All Audio", "Audio"),
+            new QueryValue("Audio/Ambient"),
+            new QueryValue("Audio/Music"),
+            new QueryValue("Audio/Sound FX"),
+            new QueryValue("Essentials/All Essentials", "Essentials"),
+            new QueryValue("Essentials/Asset Packs"),
+            new QueryValue("Essentials/Tutorial Projects"),
+            new QueryValue("Templates"),
+            new QueryValue("Tools"),
+            new QueryValue("Vfx"),
         };
+
+        [QueryListBlock("Category", "Category", "category", "=", 1)]
+        class QueryCategoryBlock : QueryListBlock
+        {
+            public QueryCategoryBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+                 : base(source, id, value, attr)
+            {
+                var labelValue = k_Categories.FirstOrDefault(c => (string)c.value == value);
+                if (labelValue.displayName != null)
+                    label = labelValue.displayName.Split("/").Last();
+            }
+
+            public override void Apply(in SearchProposition searchProposition)
+            {
+                label = searchProposition.label.Split("/").Last();
+                base.Apply(searchProposition);
+            }
+
+            public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+            {
+                foreach (var cat in k_Categories)
+                {
+                    yield return CreateProposition(flags, cat.displayName, cat.queryToken, $"Assets in category: {cat.displayName}");
+                }
+            }
+        }
+
+        static QueryValue[] k_UnityVersions =
+        {
+            new QueryValue("2022"),
+            new QueryValue("2021"),
+            new QueryValue("2020"),
+            new QueryValue("2019"),
+            new QueryValue("2018"),
+            new QueryValue("2017"),
+            new QueryValue("Unity 5.x", "5"),
+        };
+
+        [QueryListBlock("Unity Version", "Unity Version", "unity_version", "=", 1)]
+        class QueryVersionBlock : QueryListBlock
+        {
+            public QueryVersionBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+                 : base(source, id, value, attr)
+            {
+            }
+
+            public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+            {
+                foreach (var cat in k_UnityVersions)
+                {
+                    yield return CreateProposition(flags, cat.displayName, cat.queryToken, $"Assets for Unity version: {cat.displayName}");
+                }
+            }
+        }
+
+        static QueryValue[] k_Platforms =
+        {
+            new QueryValue("Windows", "standalonewindows64"),
+            new QueryValue("Mac OS X", "standaloneosxuniversal"),
+            new QueryValue("Linux", "standalonelinuxuniversal"),
+            new QueryValue("iOS"),
+            new QueryValue("Android"),
+            new QueryValue("Web GL", "webgl")
+        };
+
+        [QueryListBlock("Platform", "Platform", "platform", "=", 1)]
+        class QueryPlatformBlock : QueryListBlock
+        {
+            public QueryPlatformBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+                 : base(source, id, value, attr)
+            {
+            }
+
+            public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+            {
+                foreach (var cat in k_Platforms)
+                {
+                    yield return CreateProposition(flags, cat.displayName, cat.queryToken, $"Assets for Platform: {cat.displayName}");
+                }
+            }
+        }
+
+        enum ReleaseDate
+        {
+            OneDayAgo = 1,
+            OneWeekAgo = 7,
+            OneMonthAgo = 31,
+            SixMonthsAgo = 180,
+            OneYearAgo = 365
+        }
+
+        [QueryListBlock("Release", "Release since (days)", "release", "=", 1)]
+        class QueryReleaseBlock : QueryListBlock
+        {
+            public QueryReleaseBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+                 : base(source, id, value, attr)
+            {
+            }
+
+            public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+            {
+                return GetEnumPropositions<ReleaseDate>(flags, "Find Asset by Release day:");
+            }
+        }
+
+        enum SortOrder
+        {
+            Relevance = 0,
+            Popularity = 1,
+            Name = 2,
+            Price = 4,
+            Rating = 5
+        }
+
+        [QueryListBlock("Sorting order", "Sorting order", "sort", "=", 1)]
+        class QuerySortOrderBlock : QueryListBlock
+        {
+            public QuerySortOrderBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+                 : base(source, id, value, attr)
+            {
+            }
+
+            public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+            {
+                return GetEnumPropositions<SortOrder>(flags, "Set item sorting by:");
+            }
+        }
+
+
+        static QueryValue[] k_MinRating =
+        {
+            new QueryValue("5", null, 5),
+            new QueryValue("4", null, 4),
+            new QueryValue("3", null, 3),
+            new QueryValue("2", null, 2),
+            new QueryValue("1", null, 1),
+        };
+
+        [QueryListBlock("Star Rating", "Star Rating", "min_rating", "=", 5)]
+        class QueryMinRatingBlock : QueryListBlock
+        {
+            public QueryMinRatingBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+                 : base(source, id, value, attr)
+            {
+            }
+
+            public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+            {
+                foreach (var cat in k_MinRating)
+                {
+                    yield return CreateProposition(flags, cat.displayName, cat.value, $"Minimum star rating for assets: {cat.displayName}");
+                }
+            }
+        }
+
+        static QueryValue[] k_PriceRange =
+        {
+            new QueryValue($"Free", null, 0),
+            new QueryValue($"1-5 {currencySymbol}", null, 5, 1),
+            new QueryValue($"6-10 {currencySymbol}", null, 10, 6),
+            new QueryValue($"11-20 {currencySymbol}", null, 20, 11),
+            new QueryValue($"21-50 {currencySymbol}", null, 50, 21),
+            new QueryValue($"51-100 {currencySymbol}", null, 100, 51),
+            new QueryValue($"101-250 {currencySymbol}", null, 250, 101),
+            new QueryValue($"251-500 {currencySymbol}", null, 500, 251),
+            new QueryValue("No limit", null, 100000, 1),
+        };
+
+        [QueryListBlock("Price Range", "Price Range", "price", "=", 1)]
+        class QueryPriceBlock : QueryListBlock
+        {
+            public QueryPriceBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+                 : base(source, id, value, attr)
+            {
+                int valueInt = Convert.ToInt32(value);
+                var labelValue = k_PriceRange.FirstOrDefault(c => (int)c.value == valueInt);
+                if (labelValue.displayName != null)
+                    label = labelValue.displayName;
+            }
+
+            public override void Apply(in SearchProposition searchProposition)
+            {
+                label = searchProposition.label;
+                base.Apply(searchProposition);
+            }
+
+            public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+            {
+                var category = flags.HasAny(SearchPropositionFlags.NoCategory) ? null : $"Price Range ({currencySymbol})";
+                int priority = 0;
+                foreach (var p in k_PriceRange)
+                {
+                    yield return new SearchProposition(category: category, label: p.displayName, help: $"Price range ({currencySymbol}) for assets: {p.displayName}",
+                                data: p.value, priority: priority++, icon: icon, type: GetType(), color: GetBackgroundColor());
+                }
+            }
+        }
+
+        enum Currency
+        {
+            None,
+            Euro,
+            USD
+        }
+
+        static Currency s_Currency;
+        private static Currency currency
+        {
+            get
+            {
+                if (s_Currency == Currency.None)
+                {
+                    var c = CultureInfo.CurrentUICulture;
+                    s_Currency = Currency.USD;
+                    if (k_EuroCountries.Contains(c.TwoLetterISOLanguageName))
+                    {
+                        s_Currency = Currency.Euro;
+                    }
+                }
+                return s_Currency;
+            }
+        }
+
+        private static string currencySymbol => currency == Currency.USD ? "$" : "€";
 
         private static IEnumerable<SearchItem> SearchStore(SearchContext context, SearchProvider provider)
         {
+            ClearSearchSession();
             if (s_RequestCheckPurchases)
                 CheckPurchases(null);
 
             if (string.IsNullOrEmpty(context.searchQuery))
                 yield break;
 
-            var requestQuery = new Dictionary<string, object>()
+            var query = s_QueryEngine.ParseQuery(context.searchQuery);
+            if (!query.valid)
             {
-                { "q", string.Join(" ", context.searchWords).Trim() }
-            };
-            ProcessFilter(context, requestQuery);
+                Debug.LogError(string.Join(" ", query.errors.Select(e => e.reason)));
+                yield break;
+            }
 
-            var requestStr = Utils.JsonSerialize(requestQuery);
+            s_CurrentSearchView = context.searchView;
+
+            var requestStr = FormatQuery(query, context, 0);
             using (var webRequest = Post(kSearchEndPoint, requestStr))
             {
                 var rao = webRequest.SendWebRequest();
@@ -287,7 +726,7 @@ namespace UnityEditor.Search.Providers
 
                 if (webRequest.result != UnityWebRequest.Result.Success)
                 {
-                    Debug.Log($"Asset store request error: {webRequest.error}");
+                    // Debug.LogError($"Asset store request error: {webRequest.error}");
                 }
                 else
                 {
@@ -305,86 +744,168 @@ namespace UnityEditor.Search.Providers
                     }
                     else
                     {
-                        var scoreIndex = 1;
+                        
+                        // Use score Index as an unofficial ids for items:
+                        var scoreIndex = 0;
                         foreach (var doc in response.response.docs)
                         {
                             yield return CreateItem(context, provider, doc, scoreIndex++);
                         }
+
+                        // Create pages:
+                        var totalNbItems = response.response.numFound;
+                        var nbPages = (int)(totalNbItems / kAssetsPerPage) + 1;
+                        if (s_AssetsPage.Capacity < nbPages)
+                            s_AssetsPage.Capacity = nbPages;
+
+                        var startIndex = scoreIndex;
+                        for(var pageIndex = 0; pageIndex < nbPages; ++pageIndex)
+                        {
+                            var endIndex = startIndex + kAssetsPerPage;
+                            var page = new AssetsLoadingPage(startIndex, endIndex);
+                            s_AssetsPage.Add(page);
+                            for(var itemIndex = startIndex; itemIndex < endIndex && itemIndex < totalNbItems; ++itemIndex)
+                            {
+                                var id = $"store_item_{itemIndex}";
+                                var item = provider.CreateItem(context, id, itemIndex, label: null, description: null, Icons.store, null);
+                                page.items.Add(item);
+                                yield return item;
+                            }
+                            startIndex = endIndex;
+                        }
                     }
                 }
             }
         }
 
-        static void ProcessFilter(SearchContext context, Dictionary<string, object> request)
+        static void ClearSearchSession()
         {
-            foreach (var filter in context.textFilters)
+            s_AssetsPage?.Clear();
+            s_QueryParams?.Clear();
+            s_CurrentSearchView = null;
+        }
+
+        static void GetQueryParts(IQueryNode n, List<IFilterNode> filters, List<ISearchNode> searches)
+        {
+            if (n == null)
+                return;
+            if (n is IFilterNode filterNode)
             {
-                var filterTokens = filter.Split(':');
-                var qp = k_QueryParams.Find(p => p.name == filterTokens[0]);
-                if (qp == null || (filterTokens.Length != 2 && qp.type != QueryParamType.kBoolean))
-                    continue;
-                switch (qp.type)
+                filters.Add(filterNode);
+            }
+            else if (n is ISearchNode searchNode)
+            {
+                searches.Add(searchNode);
+            }
+
+            if (n.children != null)
+            {
+                foreach (var child in n.children)
                 {
-                    case QueryParamType.kBoolean:
-                    {
-                        var isOn = false;
-                        if (filterTokens.Length == 2)
-                        {
-                            isOn = TryConvert.ToBool(filterTokens[1]);
-                        }
-                        else
-                        {
-                            isOn = true;
-                        }
-                        request.Add(qp.queryName, isOn);
-                        break;
-                    }
-                    case QueryParamType.kInteger:
-                    {
-                        var value = TryConvert.ToInt(filterTokens[1]);
-                        request.Add(qp.queryName, value);
-                        break;
-                    }
-                    case QueryParamType.kFloat:
-                    {
-                        var value = TryConvert.ToFloat(filterTokens[1]);
-                        request.Add(qp.queryName, value);
-                        break;
-                    }
-                    case QueryParamType.kString:
-                    {
-                        request.Add(qp.queryName, filterTokens[1]);
-                        break;
-                    }
-                    case QueryParamType.kStringArray:
-                    {
-                        request.Add(qp.queryName, new object[] { filterTokens[1] });
-                        break;
-                    }
+                    GetQueryParts(child, filters, searches);
                 }
             }
+        }
+
+        static string FormatQuery(ParsedQuery<QueryDescriptor> query, SearchContext context, int startIndex)
+        {
+            List<IFilterNode> filters = new();
+            List<ISearchNode> searches = new();
+            GetQueryParts(query.queryGraph.root, filters, searches);
+
+            var searchStr = string.Join(" ", searches.Select(s => s.searchValue)).Trim();
+            s_QueryParams = new Dictionary<string, object>()
+            {
+                { "q", searchStr },
+                { "rows", kAssetsPerPage },
+                { "currency", currency == Currency.USD ? 0 : 1 }
+            };
+
+            SetQueryStartIndex(s_QueryParams, startIndex);
+
+            foreach (var f in filters)
+            {
+                var filter = s_QueryEngine.GetFilter(f.filterId);
+                if (filter == null)
+                    continue;
+
+                if (f.filterId == "price")
+                {
+                    var queryvalue = k_PriceRange.FirstOrDefault(qv => qv.value.ToString() == f.filterValue);
+                    if (queryvalue.value == null)
+                        continue;
+                    s_QueryParams.Add("max_price", queryvalue.value);
+                    if (queryvalue.value2 != null)
+                        s_QueryParams.Add("min_price", queryvalue.value2);
+                }
+                if (filter.metaInfo.ContainsKey(k_MultiValueQueryParameter))
+                {
+                    if (!s_QueryParams.TryGetValue(f.filterId, out var values))
+                    {
+                        values = new List<string>();
+                        s_QueryParams.TryAdd(f.filterId, values);
+                    }
+                    (values as List<string>).Add(f.filterValue);
+                }
+                else if (filter.type == typeof(bool))
+                {
+                    s_QueryParams.TryAdd(f.filterId, Convert.ToBoolean(f.filterValue));
+                }
+                else if (filter.type == typeof(float))
+                {
+                    s_QueryParams.TryAdd(f.filterId, Convert.ToSingle(f.filterValue));
+                }
+                else if (filter.type == typeof(int))
+                {
+                    s_QueryParams.TryAdd(f.filterId, Convert.ToInt32(f.filterValue));
+                }
+                else if (filter.type.IsEnum)
+                {
+                    foreach(var e in Enum.GetValues(filter.type))
+                    {
+                        if (e.ToString().ToLowerInvariant() == f.filterValue.ToLowerInvariant())
+                        {
+                            s_QueryParams.TryAdd(f.filterId, (int)e);
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    s_QueryParams.TryAdd(f.filterId, f.filterValue);
+                }
+            }
+
+            if (!s_QueryParams.ContainsKey("sort"))
+            {
+                s_QueryParams.TryAdd("sort", 0);
+            }
+
+            var requestStr = Json.Serialize(s_QueryParams, true);
+            // Debug.Log($"query: {requestStr}");
+            return requestStr;
+        }
+
+        static void SetQueryStartIndex(Dictionary<string, object> queryParams, int startIndex)
+        {
+            queryParams["start"] = startIndex;
         }
 
         static SearchItem CreateItem(SearchContext context, SearchProvider provider, AssetDocument doc, int score)
         {
-            var label = doc.name_en_US;
-            if (purchasePackageIds != null && purchasePackageIds.Contains(doc.id))
-            {
-                label += " (Owned)";
-            }
-            else if (doc.price_USD == 0)
-            {
-                label += " (Free)";
-            }
+            var item = provider.CreateItem(context, doc.id);
+            item.score = score;
+            UpdateItem(item, doc);
+            return item;
+        }
 
-            var description = $"{doc.name_en_US} - {doc.publisher} - {doc.category_slug}";
-            var item = provider.CreateItem(context, doc.id, score, label, description, null, doc);
+        static void UpdateItem(SearchItem item, AssetDocument doc)
+        {
+            item.data = doc;
             item.options &= ~SearchItemOptions.FuzzyHighlight;
             item.options &= ~SearchItemOptions.Highlight;
-
             doc.productDetail = null;
             doc.url = $"https://assetstore.unity.com/packages/{doc.category_slug}/{doc.id}";
-            return item;
         }
 
         static UnityWebRequest Post(string url, string jsonData)
@@ -399,13 +920,41 @@ namespace UnityEditor.Search.Providers
 
         static void OnEnable()
         {
+            s_QueryEngine = new();
+            s_QueryEngine.SetSearchDataCallback(data =>
+            {
+                return new[] { "dummy" };
+            });
+
+            s_QueryEngine.SetFilter("free", data => data.free, new[] { "=" })
+                .AddOrUpdatePropositionData(category: null, label: "Free", replacement: "free=true", help: "Search for free asset");
+            s_QueryEngine.SetFilter("on_sale", data => data.on_sale, new[] { "=" })
+                .AddOrUpdatePropositionData(category: null, label: "On Sale", replacement: "on_sale=true", help: "Search for free asset");
+            s_QueryEngine.SetFilter("publisher", data => data.publisher, new[] { "=", ":" })
+                .AddOrUpdatePropositionData(category: null, label: "Publisher", replacement: "publisher=Unity", help: "Search Assets from Publisher")
+                .AddOrUpdateMetaInfo(k_MultiValueQueryParameter, k_MultiValueQueryParameter);
+
+            // ListBlock
+            s_QueryEngine.SetFilter("category", data => data.category, new[] { "=" })
+                .AddOrUpdateMetaInfo(k_MultiValueQueryParameter, k_MultiValueQueryParameter);
+            s_QueryEngine.SetFilter("unity_version", data => data.unity_version, new[] { "=" });
+            s_QueryEngine.SetFilter("platform", data => data.platform, new[] { "=" });
+            s_QueryEngine.SetFilter("release", data => data.release, new[] { "=" });
+            s_QueryEngine.SetFilter("sort", data => data.sort, new[] { "=" });
+            s_QueryEngine.SetFilter("price", data => data.max_price, new[] { "=" });
+            s_QueryEngine.SetFilter("min_rating", data => data.min_rating, new[] { "=" });
+
             s_RequestCheckPurchases = true;
+
+            s_AssetsPage = new();
+
             UnityConnect.instance.UserStateChanged -= OnUserStateChanged;
             UnityConnect.instance.UserStateChanged += OnUserStateChanged;
         }
 
         static void OnDisable()
         {
+            ClearSearchSession();
             UnityConnect.instance.UserStateChanged -= OnUserStateChanged;
         }
 
@@ -473,6 +1022,7 @@ namespace UnityEditor.Search.Providers
         }
 
         const string k_ProviderId = "store";
+        const string k_FilterId = "store:";
 
         [SearchItemProvider]
         internal static SearchProvider CreateProvider()
@@ -481,23 +1031,165 @@ namespace UnityEditor.Search.Providers
             {
                 active = true,
                 isExplicitProvider = true,
-                filterId = "store:",
+                filterId = k_FilterId,
                 onEnable = OnEnable,
                 onDisable = OnDisable,
-                showDetails = true,
                 fetchItems = (context, items, provider) => SearchStore(context, provider),
-                fetchThumbnail = (item, context) => FetchImage(((AssetDocument)item.data).icon, false, s_Previews) ?? Icons.store,
-                fetchPreview = FetchPreview
+                fetchThumbnail = (item, context) => FetchIcons(item, animateCarrousel: false, s_Previews) ?? Icons.store,
+                fetchPropositions = (context, options) => FetchPropositions(context, options),
+                fetchPreview = FetchPreview,
+                fetchDescription = FetchDescription,
+                fetchLabel = FetchLabel,
+                showDetails = true,
+                trackSelection = OnTrackSelection,
+                showDetailsOptions = ShowDetailsOptions.Preview | ShowDetailsOptions.Inspector | ShowDetailsOptions.InspectorWithoutHeader,
+                toObject = (item, type) =>
+                {            
+                    var wrapper = AssetDocumentWrapper.CreateInstance<AssetDocumentWrapper>();
+                    wrapper.item = item;
+                    return wrapper;
+                },
+            
+                tableConfig = GetDefaultTableConfig
             };
         }
 
-        private static Texture2D FetchPreview(SearchItem item, SearchContext context, Vector2 size, FetchPreviewOptions options)
+        [SearchTemplate(description = "Find all free assets", providerId = k_ProviderId)] internal static string ST1() => @"free=true";
+        [SearchTemplate(description = "Find on sale assets", providerId = k_ProviderId)] internal static string ST2() => @"on_sale=true";
+        [SearchTemplate(description = "Find 3D assets", providerId = k_ProviderId)] internal static string ST3() => @"category=3d";
+        [SearchTemplate(description = "Find 2D assets", providerId = k_ProviderId)] internal static string ST4() => @"category=2d";
+
+        private static IEnumerable<SearchProposition> FetchPropositions(SearchContext ctx, SearchPropositionOptions flags)
+        {
+            foreach (var p in QueryListBlockAttribute.GetPropositions(typeof(QueryCategoryBlock)))
+                yield return p;
+
+            foreach (var p in QueryListBlockAttribute.GetPropositions(typeof(QueryVersionBlock)))
+                yield return p;
+
+            foreach (var p in QueryListBlockAttribute.GetPropositions(typeof(QueryPlatformBlock)))
+                yield return p;
+
+            foreach (var p in QueryListBlockAttribute.GetPropositions(typeof(QueryReleaseBlock)))
+                yield return p;
+
+            foreach (var p in QueryListBlockAttribute.GetPropositions(typeof(QuerySortOrderBlock)))
+                yield return p;
+
+            foreach (var p in QueryListBlockAttribute.GetPropositions(typeof(QueryMinRatingBlock)))
+                yield return p;
+
+            foreach (var p in QueryListBlockAttribute.GetPropositions(typeof(QueryPriceBlock)))
+                yield return p;
+
+            foreach (var p in s_QueryEngine.GetPropositions())
+                yield return p;
+        }
+
+        [SearchColumnProvider(nameof(AssetDocument))]
+        internal static void AssetDocumentColumnProvider(SearchColumn column)
+        {
+            column.getter = args =>
+            {
+                var data = (AssetDocument)args.item.data;
+                if (data != null)
+                {
+                    switch (column.selector)
+                    {
+                        case "id": return data.id;
+                        case "publisher": return data.publisher;
+                        case "category": return data.category_slug;
+                        case "avg_rating": return data.avg_rating;
+                        case "on_sale": return data.on_sale;
+                        case "price": return GetPrice(data);
+                        case "free": return IsFree(data);
+                        case "age": return data.age;
+                    }
+                }
+                return null;
+            };
+        }
+
+        static float GetPrice(AssetDocument doc)
+        {
+            return currency == Currency.USD ? doc.price_USD : doc.price_EUR;
+        }
+
+        static bool IsFree(AssetDocument doc)
+        {
+            return doc != null && GetPrice(doc) == 0;
+        }
+
+        static void OnTrackSelection(SearchItem item, SearchContext context)
+        {
+            var win = context.searchView as SearchWindow;
+            if (win != null && !win.state.flags.HasFlag(UnityEngine.Search.SearchViewFlags.OpenInspectorPreview))
+            {
+                win.TogglePanelView(UnityEngine.Search.SearchViewFlags.OpenInspectorPreview);
+            }
+        }
+
+        static IEnumerable<SearchColumn> FetchColumns(SearchContext context, IEnumerable<SearchItem> items)
+        {
+            yield return new SearchColumn("Asset Store/Publisher", "publisher", nameof(AssetDocument));
+            yield return new SearchColumn("Asset Store/Category", "category", nameof(AssetDocument));
+            yield return new SearchColumn("Asset Store/Rating", "avg_rating", nameof(AssetDocument));
+            yield return new SearchColumn("Asset Store/Price", "price", nameof(AssetDocument));
+            yield return new SearchColumn("Asset Store/On Sale", "on_sale", nameof(AssetDocument));
+            yield return new SearchColumn("Asset Store/Age (in days)", "age", nameof(AssetDocument));
+            yield return new SearchColumn("Asset Store/Id", "id", nameof(AssetDocument));
+        }
+
+        static SearchTable GetDefaultTableConfig(SearchContext context)
+        {
+            return new SearchTable(k_ProviderId, new[] { new SearchColumn("Name", "label") }.Concat(FetchColumns(context, null)));
+        }
+
+        static string FetchDescription(SearchItem item, SearchContext context)
+        {
+            if (item.data == null)
+                return null;
+            var doc = (AssetDocument)item.data;
+            return $"{doc.name_en_US} - {doc.publisher} - {doc.category_slug}";
+        }
+
+        static string FetchLabel(SearchItem item, SearchContext context)
+        {
+            if (item.data == null)
+            {
+                // Found page for asset:
+                var page = s_AssetsPage.FirstOrDefault(p => p.startIndex <= item.score && item.score < p.endIndex);
+                if (page == null)
+                {
+                    // Can this happen?
+                    Debug.LogError($"Cannot find page to load for item: {item.score} {item.id}");
+                    return null;
+                }
+                LoadPage(page, item);
+                return null;
+            }
+
+            var doc = (AssetDocument)item.data;
+            var label = doc.name_en_US;
+            if (purchasePackageIds != null && purchasePackageIds.Contains(doc.id))
+            {
+                label += " (Owned)";
+            }
+            else if (IsFree(doc))
+            {
+                label += " (Free)";
+            }
+
+            return label;
+        }
+
+        static Texture2D FetchPreview(SearchItem item, SearchContext context, Vector2 size, FetchPreviewOptions options)
         {
             if (!options.HasFlag(FetchPreviewOptions.Large))
                 return null;
 
             var doc = (AssetDocument)item.data;
-            if (s_PackagesKey != null)
+            if (doc != null && s_PackagesKey != null)
             {
                 if (doc.productDetail == null)
                 {
@@ -514,12 +1206,75 @@ namespace UnityEditor.Search.Providers
             }
 
             if (doc.productDetail?.images.Length > 0)
-                return (doc.lastPreview = FetchImage(doc.images, true, s_Previews) ?? doc.lastPreview);
+                return (doc.lastPreview = FetchImage(doc.images, false, s_Previews) ?? doc.lastPreview);
 
-            if (doc.key_images.Length > 0)
-                return (doc.lastPreview = FetchImage(doc.key_images, true, s_Previews) ?? doc.lastPreview);
+            return null;
+        }
 
-            return (doc.lastPreview = FetchImage(doc.icon, true, s_Previews) ?? doc.lastPreview);
+        static void LoadPage(AssetsLoadingPage page, SearchItem item)
+        {
+            if (page.isLoaded)
+            {
+                // Can this happen?
+                Debug.LogError($"Page already loaded: {page.startIndex}");
+                return;
+            }
+
+            if (page.request != null)
+            {
+                // Request already started
+                return;
+            }
+
+            // Load the page:
+            SetQueryStartIndex(s_QueryParams, page.startIndex);
+            var requestStr = Json.Serialize(s_QueryParams, true);
+            // Debug.Log($"LoadPage: {page.startIndex} from {item.score} {item.id} {requestStr}");
+
+            var request = Post(kSearchEndPoint, requestStr);
+            page.request = request;
+            var asyncOp = page.request.SendWebRequest();
+            asyncOp.completed += op =>
+            {
+                if (!s_AssetsPage.Contains(page))
+                {
+                    // Debug.LogError($"Page does not exists: {page.startIndex}");
+                    request.Dispose();
+                    return;
+                }
+
+                if (request.result != UnityWebRequest.Result.Success)
+                {
+                    // What to do?
+                    // Debug.LogError($"Error while loading page {page.startIndex}. {request.error}");
+                }
+                else
+                {
+                    var saneJsonStr = request.downloadHandler.text.Replace("name_en-US\"", "name_en_US\"");
+                    var response = JsonUtility.FromJson<StoreSearchResponse>(saneJsonStr);
+                    var nbUpdate = Mathf.Min(response.response.docs.Length, page.items.Count);
+                    // Go over all items in this page and update them according to the fetched data:
+                    for (var i = 0; i < nbUpdate; ++i)
+                    {
+                        var assetDoc = response.response.docs[i];
+                        var item = page.items[i];
+                        UpdateItem(item, assetDoc);
+                    }
+
+                    // TODO FetchItemProperties(DOTSE - 1994): keep this unless the view can tick all activeitems for all async properties (label, desc, thumbnail)
+                    s_CurrentSearchView?.Refresh(RefreshFlags.DisplayModeChanged);
+                    s_AssetsPage.Remove(page);
+                }
+                request.Dispose();
+            };
+        }
+
+        static Texture2D FetchIcons(SearchItem item, bool animateCarrousel, Dictionary<string, PreviewData> imageDb)
+        {
+            var doc = item.data as AssetDocument;
+            if (doc == null)
+                return null;
+            return FetchImage(doc.icon, animateCarrousel, imageDb);
         }
 
         static Texture2D FetchImage(string[] imageUrls, bool animateCarrousel, Dictionary<string, PreviewData> imageDb)
@@ -556,17 +1311,23 @@ namespace UnityEditor.Search.Providers
             return newPreview.preview;
         }
 
-        static bool IsItemOwned(IReadOnlyCollection<SearchItem> items)
+        static bool CanShowInPackageManager(SearchItem item)
+        {
+            var doc = item.data as AssetDocument;
+            return IsItemOwned(item);
+        }
+
+        static bool CanShowInPackageManager(IReadOnlyCollection<SearchItem> items)
         {
             if (items.Count > 1)
                 return false;
-            return IsItemOwned(items.First());
+            return CanShowInPackageManager(items.First());
         }
 
         static bool IsItemOwned(SearchItem item)
         {
             var doc = (AssetDocument)item.data;
-            return purchasePackageIds != null && purchasePackageIds.Contains(doc.id);
+            return doc != null && purchasePackageIds != null && purchasePackageIds.Contains(doc.id);
         }
 
         [SearchActionsProvider]
@@ -580,16 +1341,16 @@ namespace UnityEditor.Search.Providers
                     {
                         foreach (var item in items)
                             BrowseAssetStoreItem(item);
-                    }
+                    },
+                    closeWindowAfterExecution = false
                 },
                 new SearchAction(k_ProviderId, "open", new GUIContent("Show in Package Manager"))
                 {
                     handler = (item) =>
                     {
-                        if (IsItemOwned(item))
+                        if (CanShowInPackageManager(item))
                         {
-                            var doc = (AssetDocument)item.data;
-                            Utils.OpenPackageManager(doc.id);
+                            OpenPackageManager(item);
                         }
                         else
                         {
@@ -597,16 +1358,34 @@ namespace UnityEditor.Search.Providers
                         }
 
                     },
-                    enabled = IsItemOwned
+                    closeWindowAfterExecution = false,
+                    enabled = CanShowInPackageManager
                 }
             };
+        }
+
+        static void OpenPackageManager(SearchItem item)
+        {
+            var doc = (AssetDocument)item.data;
+            Utils.OpenPackageManager(doc.id);
         }
 
         static void BrowseAssetStoreItem(SearchItem item)
         {
             var doc = (AssetDocument)item.data;
-            Utils.OpenInBrowser(doc.url);
-            CheckPurchases(null);
+            if (doc != null)
+            {
+                var url = MakeAssetStoreURL(doc.url, k_OpenBrowserFromSearch);
+                Utils.OpenInBrowser(url);
+                CheckPurchases(null);
+            }
+        }
+
+        static string MakeAssetStoreURL(string url, string source)
+        {
+            // These params helps google analytics track when the asset store is opened and which source opened it.
+            url += $"?utm_source={source}&utm_medium=desktop-app";
+            return url;
         }
 
         static void GetAuthCode(Action<string, Exception> done)
@@ -785,7 +1564,7 @@ namespace UnityEditor.Search.Providers
             });
         }
 
-        #region Requests
+#region Requests
         static void RequestUserInfo(string accessToken, string userId, Action<UserInfo, string> done)
         {
             var url = $"https://api.unity.com/v1/users/{userId}";
@@ -897,17 +1676,46 @@ namespace UnityEditor.Search.Providers
             };
         }
 
-        #endregion
+#endregion
 
         [MenuItem("Window/Search/Asset Store", priority = 1270)]
-        internal static void SearchAssetStoreMenu()
+        static void SearchAssetStoreMenu()
+        {
+            SearchStore();
+        }
+
+        [CommandHandler("OpenSearchStore")]
+        internal static void OpenStoreCommand(CommandExecuteContext c)
+        {
+            SearchStore();
+        }
+
+        [CommandHandler("OpenAssetStoreInBrowser")]
+        private static void OpenAssetStoreInBrowser(CommandExecuteContext c)
+        {
+            SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.BrowseAssetStoreWeb);
+            string assetStoreUrl = MakeAssetStoreURL(UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudAssetStoreUrl), k_OpenBrowserFromToolbar);
+            if (UnityEditor.Connect.UnityConnect.instance.loggedIn)
+            {
+                UnityEditor.Connect.UnityConnect.instance.OpenAuthorizedURLInWebBrowser(assetStoreUrl);
+            }
+            else
+            {
+                Application.OpenURL(assetStoreUrl);
+            }
+        }
+
+        static void SearchStore()
         {
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchOpen, "SearchAssetStore");
             var storeContext = SearchService.CreateContext(SearchService.GetProvider(k_ProviderId));
-            var qs = SearchWindow.Create(storeContext, topic: "asset store");
-            qs.itemIconSize = (int)DisplayMode.Grid;
-            qs.SetSearchText(string.Empty);
-            qs.ShowWindow();
+            var viewState = SearchViewState.LoadDefaults();
+            viewState.flags &= ~UnityEngine.Search.SearchViewFlags.OpenInspectorPreview;
+            viewState.flags |= UnityEngine.Search.SearchViewFlags.DisableNoResultTips;
+            viewState.context = storeContext;
+            viewState.itemSize = (int)DisplayMode.Grid;
+            viewState.queryBuilderEnabled = true;
+            SearchService.ShowWindow(viewState);
         }
 
         static void Refresh()

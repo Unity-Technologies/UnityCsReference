@@ -553,6 +553,8 @@ namespace UnityEngine.UIElements
         }
 
         string m_OriginalText;
+        internal string originalText => m_OriginalText;
+
         private char m_MaskChar;
         private bool m_IsPassword;
         private bool m_HidePlaceholderTextOnFocus;

@@ -85,7 +85,11 @@ namespace Unity.GraphToolsFoundation.Editor
         bool m_SetWidth;
 
         string m_PreviousTitle;
-        float m_CurrentZoom;
+
+        /// <summary>
+        /// The current zoom level of the graph.
+        /// </summary>
+        protected float m_CurrentZoom;
 
         /// <summary>
         /// The root element of the part.
@@ -265,38 +269,38 @@ namespace Unity.GraphToolsFoundation.Editor
                 Root.schedule.Execute(SetupLod).ExecuteLater(0);
         }
 
-            void SetupLod()
-            {
+        void SetupLod()
+        {
             if (WantedTextSize != 0 && m_CurrentZoom != 0)
-                {
-                    TextElement te = null;
-                    if (TitleLabel is EditableLabel editableLabel)
-                        te = editableLabel.MandatoryQ<Label>();
-                    else if (TitleLabel is Label label)
-                        te = label;
+            {
+                TextElement te = null;
+                if (TitleLabel is EditableLabel editableLabel)
+                    te = editableLabel.MandatoryQ<Label>();
+                else if (TitleLabel is Label label)
+                    te = label;
 
-                    if (!string.IsNullOrEmpty(te?.text))
-                    {
+                if (!string.IsNullOrEmpty(te?.text))
+                {
                     float inverseZoom = 1 / m_CurrentZoom;
 
-                        if (inverseZoom * LodMinTextSize > WantedTextSize)
-                        {
-                            TitleLabel.style.fontSize = LodMinTextSize * inverseZoom;
-                        }
-                        else
-                        {
-                            if (TitleLabel.style.fontSize.value != WantedTextSize)
-                            {
-                                TitleLabel.style.fontSize = WantedTextSize;
-                            }
-                        }
+                    if (inverseZoom * LodMinTextSize > WantedTextSize)
+                    {
+                        TitleLabel.style.fontSize = LodMinTextSize * inverseZoom;
                     }
                     else
                     {
-                        TitleLabel.style.fontSize = WantedTextSize;
+                        if (TitleLabel.style.fontSize.value != WantedTextSize)
+                        {
+                            TitleLabel.style.fontSize = WantedTextSize;
+                        }
                     }
                 }
+                else
+                {
+                    TitleLabel.style.fontSize = WantedTextSize;
+                }
             }
+        }
 
         void SetupWidthFromOriginalSize()
         {

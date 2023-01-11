@@ -80,6 +80,8 @@ namespace UnityEditor
 
         public static extern bool IsNativeCodeBuiltInReleaseMode();
 
+        internal static extern void CheckCorrectAwakeUsage();
+
         [FreeFunction(IsThreadSafe = true)]
         public static extern string GetBaseUnityDeveloperFolder();
 

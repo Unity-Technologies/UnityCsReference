@@ -10,10 +10,11 @@ namespace UnityEngine.Rendering
     {
         internal RenderPipeline InternalCreatePipeline()
         {
+            RenderPipeline pipeline = null;
             try
             {
                 EnsureGlobalSettings();
-                return CreatePipeline();
+                pipeline = CreatePipeline();
             }
             catch (InvalidImportException)
             {
@@ -21,12 +22,15 @@ namespace UnityEngine.Rendering
                 // When this happens, the GUID can be get but the resource loaded will be null.
                 // In SRP using the ResourceReloader mechanism in CoreRP, it checks this and add InvalidImport data when this occurs.
             }
+
             catch (Exception e)
             {
                 Debug.LogException(e);
             }
-
-            return null;
+            
+            if (renderPipelineType != null && pipeline != null && renderPipelineType != pipeline.GetType())
+                Debug.LogWarning($"{GetType()}.{nameof(CreatePipeline)}. Type error: {renderPipelineType} is different from {pipeline.GetType()}. The property {nameof(renderPipelineType)} must return the same type");
+            return pipeline;
         }
 
         public virtual int terrainBrushPassIndex => (int)UnityEngine.Rendering.RenderQueue.GeometryLast;
@@ -74,6 +78,16 @@ namespace UnityEngine.Rendering
 
         protected abstract RenderPipeline CreatePipeline();
 
+        protected internal virtual Type renderPipelineType
+        {
+            get
+            {
+                Debug.LogWarning(
+                    $"You must either inherit from {nameof(RenderPipelineAsset)}<TRenderPipeline> or override {nameof(renderPipelineType)} property");
+                return null;
+            }
+        }
+
         protected virtual void EnsureGlobalSettings()
         {
 
@@ -92,5 +106,11 @@ namespace UnityEngine.Rendering
         {
             RenderPipelineManager.CleanupRenderPipeline();
         }
+    }
+
+    public abstract class RenderPipelineAsset<TRenderPipeline> : RenderPipelineAsset
+        where TRenderPipeline : RenderPipeline
+    {
+        protected internal sealed override Type renderPipelineType => typeof(TRenderPipeline);
     }
 }

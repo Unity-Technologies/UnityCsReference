@@ -28,6 +28,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Updates the value displayed by the custom UI.
         /// </summary>
         /// <returns>True if the value was updated.</returns>
-        public abstract bool UpdateDisplayedValue();
+        public abstract void UpdateDisplayedValue();
     }
 }

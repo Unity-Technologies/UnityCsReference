@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Search;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
@@ -39,12 +40,13 @@ namespace UnityEditor.Search
             None,
             HideHelpersNoResult,
             SearchInProgress,
+            NoResult,
             NoResultWithTips,
             QueryHelpersText,
             QueryHelpersBlock
         }
 
-        public bool hideHelpers { get; set; }
+        public SearchViewFlags searchViewFlags { get; set; }
 
         int IResultView.ComputeVisibleItemCapacity(float width, float height)
         {
@@ -71,10 +73,10 @@ namespace UnityEditor.Search
         static readonly string k_AddFilterOrKeywordLabel = L10n.Tr("The search query is empty. Try adding some filters or keywords.");
         static readonly string k_TryAQueryLabel = L10n.Tr("The search query is empty. Try one of these queries:");
 
-        public SearchEmptyView(ISearchView viewModel, bool hideHelpers = false)
+        public SearchEmptyView(ISearchView viewModel, SearchViewFlags flags)
             : base("SearchEmptyView", viewModel, ussClassName)
         {
-            this.hideHelpers = hideHelpers;
+            searchViewFlags = flags;
 
             BuildView();
         }
@@ -89,19 +91,28 @@ namespace UnityEditor.Search
 
         private SearchEmptyViewMode GetDisplayMode()
         {
-            if (hideHelpers)
+            if (searchViewFlags.HasFlag(SearchViewFlags.DisableQueryHelpers))
                 return SearchEmptyViewMode.HideHelpersNoResult;
 
             if (m_ViewModel.searchInProgress)
                 return SearchEmptyViewMode.SearchInProgress;
 
-            if (!context.empty)
-                return SearchEmptyViewMode.NoResultWithTips;
+            if (!QueryEmpty())
+            {
+                return searchViewFlags.HasFlag(SearchViewFlags.DisableNoResultTips) ?
+                    SearchEmptyViewMode.NoResult :
+                    SearchEmptyViewMode.NoResultWithTips;
+            }
 
             if (viewState.queryBuilderEnabled)
                 return SearchEmptyViewMode.QueryHelpersBlock;
 
             return SearchEmptyViewMode.QueryHelpersText;
+        }
+
+        private bool QueryEmpty()
+        {
+            return string.IsNullOrEmpty(context.searchText);
         }
 
         private void BuildView(bool forceBuild = false)
@@ -113,25 +124,41 @@ namespace UnityEditor.Search
 
             Clear();
 
-            if (hideHelpers)
-                AddNoResultLabel(k_NoResultsLabel);
-            else if (m_ViewModel.searchInProgress)
-                AddNoResultLabel(k_SearchInProgressLabel);
-            else if (!context.empty)
-                BuildNoResultsTips();
-            else
-                BuildQueryHelpers();
+            switch(m_DisplayMode)
+            {
+                case SearchEmptyViewMode.HideHelpersNoResult:
+                    AddNoResultLabel(k_NoResultsLabel);
+                    break;
+                case SearchEmptyViewMode.NoResult:
+                    AddNoResultLabel(k_NoResultsLabel);
+                    break;
+                case SearchEmptyViewMode.NoResultWithTips:
+                    BuildNoResultsTips();
+                    break;
+                case SearchEmptyViewMode.SearchInProgress:
+                    AddNoResultLabel(k_SearchInProgressLabel);
+                    break;
+                default:
+                    BuildQueryHelpers();
+                    break;
+            }
 
-            EnableInClassList(helperBackgroundClassName, hideHelpers || context.empty);
+            EnableInClassList(helperBackgroundClassName, m_DisplayMode == SearchEmptyViewMode.HideHelpersNoResult || QueryEmpty());
         }
 
         private void BuildQueryHelpers()
         {
-            Add(CreateHeader(k_NarrowYourSearchLabel));
-
             m_QueriesContainer = new VisualElement();
             m_QueriesContainer.name = "QueryHelpersContainer";
-            Add(CreateProviderHelpers(viewState.queryBuilderEnabled));
+            if (GetActiveHelperProviders(viewState.queryBuilderEnabled).Count() > 1)
+            {
+                Add(CreateHeader(k_NarrowYourSearchLabel));
+                Add(CreateProviderHelpers(viewState.queryBuilderEnabled));
+            }
+            else
+            {
+                BuildSearches();
+            }
 
             Add(m_QueriesContainer);
         }

@@ -33,6 +33,7 @@ namespace UnityEditor
         public static void OpenAssetStoreInBrowser()
         {
             string assetStoreUrl = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudAssetStoreUrl);
+            assetStoreUrl += "?utm_source=unity-editor-window-menu&utm_medium=desktop-app";
             if (UnityConnect.instance.loggedIn)
                 UnityConnect.instance.OpenAuthorizedURLInWebBrowser(assetStoreUrl);
             else Application.OpenURL(assetStoreUrl);

@@ -318,9 +318,9 @@ namespace UnityEngine.Rendering
                 if (begin == 0 && length == 0)
                     continue;
 
-                bool isBeginValid = begin >= 0 && begin < cullingInfos.splitBuffer.Length;
-                bool isLengthValid = length > 0;
-                bool isEndValid = end > begin && end <= cullingInfos.splitBuffer.Length;
+                bool isBeginValid = begin >= 0 && begin <= cullingInfos.splitBuffer.Length;
+                bool isLengthValid = length >= 0;
+                bool isEndValid = end >= begin && end <= cullingInfos.splitBuffer.Length;
                 bool isRangeValid = isBeginValid && isLengthValid && isEndValid;
                 if (!isRangeValid)
                 {
@@ -332,7 +332,7 @@ namespace UnityEngine.Rendering
                 if (length > 0 && infos.projectionType == BatchCullingProjectionType.Unknown)
                 {
                     throw new UnityException($"ShadowCastersCullingInfos.perLightInfos[{i}].projectionType == {infos.projectionType}. "
-                        + "The range however appears to be valid. splitRange.start ({range.start}) splitRange.length ({range.length})\n");
+                        + $"The range however appears to be valid. splitRange.start ({range.start}) splitRange.length ({range.length})\n");
                 }
             }
         }

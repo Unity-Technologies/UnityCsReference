@@ -25,8 +25,6 @@ namespace UnityEditor
         [SerializeField] Vector2 m_MaxSize = new Vector2(8192, 8192);
         [SerializeField] bool m_Maximized;
 
-        internal int m_DisplayIndex;
-        internal bool m_IsFullscreenContainer;
         internal bool m_IsMppmCloneWindow;
 
         internal bool m_DontSaveToLayout = false;
@@ -149,21 +147,20 @@ namespace UnityEditor
         static Color skinBackgroundColor => EditorGUIUtility.isProSkin ? darkSkinColor : lightSkinColor;
 
         // Show the editor window.
-        public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus, int displayIndex = 0)
+        public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus)
         {
             try
             {
                 if (showMode == ShowMode.MainWindow && s_MainWindow && s_MainWindow != this)
                     throw new InvalidOperationException("Trying to create a second main window from layout when one already exists.");
 
-                bool useMousePos = showMode == ShowMode.AuxWindow || showMode == ShowMode.Fullscreen;
+                bool useMousePos = showMode == ShowMode.AuxWindow;
                 if (showMode == ShowMode.AuxWindow)
                     showMode = ShowMode.Utility;
 
                 if (showMode == ShowMode.Utility
                     || showMode == ShowMode.ModalUtility
                     || showMode == ShowMode.AuxWindow
-                    || showMode == ShowMode.Fullscreen
                     || IsPopup(showMode))
                     m_DontSaveToLayout = true;
 
@@ -177,7 +174,7 @@ namespace UnityEditor
 
                 var initialMaximizedState = m_Maximized;
 
-                Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize, displayIndex);
+                Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
 
                 // Tell the main view its now in this window (quick hack to get platform-specific code to move its views to the right window)
                 if (m_RootView)

@@ -332,7 +332,7 @@ namespace UnityEditor.Search
 
         private void OnQueryChanged(ChangeEvent<string> evt)
         {
-            if (evt.target != m_SearchTextInput)
+            if (m_SearchTextInput != evt.target)
                 return;
 
             m_ViewModel.SetSearchText(evt.newValue, TextCursorPlacement.None);

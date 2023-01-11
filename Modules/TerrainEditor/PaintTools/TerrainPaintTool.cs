@@ -114,9 +114,12 @@ namespace UnityEditor.TerrainTools
 
         bool HasToolSettings => false;
 
-        // function for drawing GUI for specific tool
+        [Obsolete("Use OnToolSettingsGUI without the overlays boolean")]
         void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays);
 
+        void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editorContext);
+
+        [Obsolete("Use OnInspectorGUI without the overlays boolean")]
         void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays);
     }
 
@@ -192,8 +195,12 @@ namespace UnityEditor.TerrainTools
         public virtual bool HasBrushMask => false;
         public virtual bool HasBrushAttributes => false;
 
-        // function for drawing GUI for specific tool
-        public virtual void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays) { }
+        [Obsolete("Use OnToolSettingsGUI without the overlays boolean")]
+        public virtual void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        { }
+
+        public virtual void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext) { }
+
         public Terrain Terrain { get; set; }
         public abstract string GetName();
         public abstract string GetDescription();
@@ -201,7 +208,10 @@ namespace UnityEditor.TerrainTools
         public virtual void OnDisable() {}
         public virtual void OnEnterToolMode() { }
         public virtual void OnExitToolMode() { }
+
         public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) { }
+
+        [Obsolete("Use OnInspectorGUI without the overlays boolean")]
         public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays) { }
         public virtual void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext) { }
         public virtual void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext) { }

@@ -669,12 +669,12 @@ namespace Unity.GraphToolsFoundation.Editor
                         }
                         else
                         {
-                            Dispatch(new CreatePlacematCommand(new Rect(graphPosition.x, graphPosition.y, 200, 200)));
+                            Dispatch(new CreatePlacematCommand(graphPosition));
                         }
                     }
                     else
                     {
-                        Dispatch(new CreatePlacematCommand(new Rect(graphPosition.x, graphPosition.y, 200, 200)));
+                        Dispatch(new CreatePlacematCommand(graphPosition));
                     }
                 });
 
@@ -1656,8 +1656,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 var changeset = GraphTool.HighlighterState.GetAggregatedChangeset(highlighterObservation.LastObservedVersion);
                 changedModels.UnionWith(changeset.ChangedModels.SelectMany(guid =>
                 {
+                    var declarations = GraphModel.VariableDeclarations.Union(GraphModel.PortalDeclarations);
                     var variableDeclarationPlaceholders = GraphModel.Placeholders.OfType<VariableDeclarationModel>();
-                    var declarationModel = GraphModel.VariableDeclarations.Union(variableDeclarationPlaceholders).FirstOrDefault(d => d != null && d.Guid == guid);
+                    var declarationModel = declarations.Union(variableDeclarationPlaceholders).FirstOrDefault(d => d != null && d.Guid == guid);
                     return declarationModel != null ? GraphModel.FindReferencesInGraph(declarationModel) : Enumerable.Empty<IHasDeclarationModel>();
                 }).OfType<AbstractNodeModel>().Select(m => m.Guid));
             }

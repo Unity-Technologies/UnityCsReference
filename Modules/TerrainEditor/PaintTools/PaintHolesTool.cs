@@ -44,16 +44,12 @@ namespace UnityEditor.TerrainTools
             return "Left click to paint a hole.\n\nHold shift and left click to erase it.";
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             int textureRez = terrain.terrainData.holesResolution;
             editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
-        }
 
         public override void OnRenderBrushPreview(Terrain terrain, IOnSceneGUI editContext)
         {

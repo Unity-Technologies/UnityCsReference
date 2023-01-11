@@ -22,6 +22,7 @@ namespace UnityEditor
             m_Editor = new SharedLightingSettingsEditor();
             m_Editor.OnEnable();
             m_Editor.UpdateSettings(serializedObject);
+            m_Editor.ClampMaxRanges();
         }
 
         internal override void OnHeaderControlsGUI()
@@ -37,6 +38,11 @@ namespace UnityEditor
             m_Editor.OnGUI(true, true);
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void OnFocus() 
+        {
+            m_Editor.ClampMaxRanges();
         }
     }
 
@@ -69,6 +75,7 @@ namespace UnityEditor
         SerializedProperty m_CompAOExponentDirect;
         SerializedProperty m_LightmapCompression;
         SerializedProperty m_LightmapMaxSize;
+        SerializedProperty m_LightmapSizeFixed;
         SerializedProperty m_BakeBackend;
         // pvr
         SerializedProperty m_PVRSampleCount;
@@ -193,7 +200,6 @@ namespace UnityEditor
             public static readonly GUIContent mixedLightsLabel = EditorGUIUtility.TrTextContent("Mixed Lighting", "Bake Global Illumination for mixed lights and static objects. May bake both direct and/or indirect lighting based on settings. Only static objects are blocking and bouncing light, dynamic objects receive baked lighting via light probes.");
             public static readonly GUIContent generalLightmapLabel = EditorGUIUtility.TrTextContent("Lightmapping Settings", "Settings that apply to both Global Illumination modes (Precomputed Realtime and Baked).");
             public static readonly GUIContent internalLabel = EditorGUIUtility.TrTextContent("Internal Settings", "Internal only settings. ");
-            public static readonly GUIContent noRealtimeGIInSM2AndGLES2 = EditorGUIUtility.TrTextContent("Realtime Global Illumination is not supported on SM2.0 hardware nor when using GLES2.0.");
             public static readonly GUIContent forceWhiteAlbedo = EditorGUIUtility.TrTextContent("Force White Albedo", "Force white albedo during lighting calculations.");
             public static readonly GUIContent forceUpdates = EditorGUIUtility.TrTextContent("Force Updates", "Force continuous updates of runtime indirect lighting calculations.");
             public static readonly GUIContent filterMode = EditorGUIUtility.TrTextContent("Filter Mode");
@@ -203,6 +209,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution", "Sets the resolution in texels used per unit for objects lit by baked global illumination. The higher this value is, the more time the Editor needs to bake lighting.");
             public static readonly GUIContent padding = EditorGUIUtility.TrTextContent("Lightmap Padding", "Sets the separation in texels between shapes in the baked lightmap.");
             public static readonly GUIContent lightmapMaxSize = EditorGUIUtility.TrTextContent("Max Lightmap Size", "Sets the max size of the full lightmap Texture in pixels. Values are squared, so a setting of 1024 can produce a 1024x1024 pixel sized lightmap.");
+            public static readonly GUIContent lightmapSizeFixed = EditorGUIUtility.TrTextContent("Fixed Lightmap Size", "Forces all lightmap textures to use the same size. These can be no larger than Max Lightmap Size.");
             public static readonly GUIContent lightmapCompression = EditorGUIUtility.TrTextContent("Lightmap Compression", "Compresses baked lightmaps created using this Lighting Settings Asset. Lower quality compression reduces memory and storage requirements, at the cost of more visual artifacts. Higher quality compression requires more memory and storage, but provides better visual results.");
             public static readonly GUIContent tiledBaking = EditorGUIUtility.TrTextContent("Tiled baking", "Determines the tiled baking mode. Auto: Memory status triggers tiling. If Auto is not enabled, bakes may fail. Disabled: Never use tiling.");
             public static readonly GUIContent ambientOcclusion = EditorGUIUtility.TrTextContent("Ambient Occlusion", "Specifies whether to include ambient occlusion or not in the baked lightmap result. Enabling this results in simulating the soft shadows that occur in cracks and crevices of objects when light is reflected onto them.");
@@ -243,6 +250,11 @@ namespace UnityEditor
             public static readonly GUIStyle labelStyle = EditorStyles.wordWrappedMiniLabel;
         }
 
+        private int maxDirectSamples = 1024;
+        private int maxIndirectSamples = 8192;
+        private int maxEnvironmentSamples = 2048;
+        private SerializedObject currentLSO;
+
         public void OnEnable()
         {
             m_ShowRealtimeLightsSettings = new SavedBool("LightingSettings.ShowRealtimeLightsSettings", false);
@@ -272,6 +284,12 @@ namespace UnityEditor
                 EditorGUILayout.Space();
             }
 
+            if (currentLSO == null || currentLSO != m_GIWorkflowMode.serializedObject)
+            {
+                currentLSO = m_GIWorkflowMode.serializedObject;
+                ClampMaxRanges();
+            }
+
             RealtimeLightingGUI(compact);
             MixedLightingGUI(compact);
             GeneralLightmapSettingsGUI(compact);
@@ -297,6 +315,7 @@ namespace UnityEditor
             m_AlbedoBoost = lightingSettingsObject.FindProperty("m_AlbedoBoost");
             m_IndirectOutputScale = lightingSettingsObject.FindProperty("m_IndirectOutputScale");
             m_LightmapMaxSize = lightingSettingsObject.FindProperty("m_LightmapMaxSize");
+            m_LightmapSizeFixed = lightingSettingsObject.FindProperty("m_LightmapSizeFixed");
             m_LightmapParameters = lightingSettingsObject.FindProperty("m_LightmapParameters");
             m_LightmapDirectionalMode = lightingSettingsObject.FindProperty("m_LightmapsBakeMode");
             m_BakeResolution = lightingSettingsObject.FindProperty("m_BakeResolution");
@@ -359,11 +378,6 @@ namespace UnityEditor
                 EditorGUI.indentLevel++;
 
                 EditorGUILayout.PropertyField(m_EnableRealtimeGI, Styles.useRealtimeGI);
-
-                if (m_EnableRealtimeGI.boolValue && PlayerHasSM20Support())
-                {
-                    EditorGUILayout.HelpBox(Styles.noRealtimeGIInSM2AndGLES2.text, MessageType.Warning);
-                }
 
                 EditorGUI.indentLevel++;
 
@@ -514,9 +528,12 @@ namespace UnityEditor
                                 }
                                 EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
 
-                                MultiEditableDelayedIntField(m_PVRDirectSampleCount, Styles.directSampleCount);
-                                MultiEditableDelayedIntField(m_PVRSampleCount, Styles.indirectSampleCount);
-                                MultiEditableDelayedIntField(m_PVREnvironmentSampleCount, Styles.environmentSampleCount);
+                                MultiEditableLogarithmicIntSlider(m_PVRDirectSampleCount, Styles.directSampleCount, 1, maxDirectSamples, 1, 1 << 30);
+                                MultiEditableLogarithmicIntSlider(m_PVRSampleCount, Styles.indirectSampleCount, 1, maxIndirectSamples, 1, 1 << 30);
+                                MultiEditableLogarithmicIntSlider(m_PVREnvironmentSampleCount, Styles.environmentSampleCount, 1, maxEnvironmentSamples, 1, 1 << 30);
+
+                                maxDirectSamples = (int)Mathf.ClosestPowerOfTwo(Math.Max(maxDirectSamples, m_PVRDirectSampleCount.intValue));
+                                maxIndirectSamples = (int)Mathf.ClosestPowerOfTwo(Math.Max(maxIndirectSamples, m_PVRSampleCount.intValue));
 
                                 using (new EditorGUI.DisabledScope(EditorSettings.useLegacyProbeSampleCount))
                                 {
@@ -625,6 +642,8 @@ namespace UnityEditor
 
                             EditorGUILayout.IntPopup(m_LightmapMaxSize, Styles.lightmapMaxSizeStrings, Styles.lightmapMaxSizeValues, Styles.lightmapMaxSize);
 
+                            EditorGUILayout.PropertyField(m_LightmapSizeFixed, Styles.lightmapSizeFixed);
+
                             EditorGUILayout.IntPopup(m_LightmapCompression, Styles.lightmapCompressionStrings, Styles.lightmapCompressionValues, Styles.lightmapCompression);
 
                             EditorGUILayout.PropertyField(m_AmbientOcclusion, Styles.ambientOcclusion);
@@ -717,13 +736,6 @@ namespace UnityEditor
         }
 
         // Helper methods
-
-        static bool PlayerHasSM20Support()
-        {
-            var apis = PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget);
-            bool hasSM20Api = apis.Contains(UnityEngine.Rendering.GraphicsDeviceType.OpenGLES2);
-            return hasSM20Api;
-        }
 
         static void DrawPropertyFieldWithPostfixLabel(SerializedProperty property, GUIContent label, GUIContent postfixLabel)
         {
@@ -952,26 +964,30 @@ namespace UnityEditor
             EditorGUI.EndProperty();
         }
 
-        void MultiEditableDelayedIntField(SerializedProperty property, GUIContent style)
+        int MultiEditableLogarithmicIntSlider(SerializedProperty property, GUIContent style, int min, int max, int textFieldMin, int textFieldMax)
         {
             if (property.hasMultipleDifferentValues)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = true;
 
-                int fieldValue = EditorGUILayout.DelayedIntField(style, property.intValue);
-
+                int newValue = EditorGUILayout.LogarithmicIntSlider(style, property.intValue, min, max, 2, textFieldMin, textFieldMax);
                 if (EditorGUI.EndChangeCheck())
-                    property.intValue = fieldValue;
+                    property.intValue = newValue;
                 
                 EditorGUI.showMixedValue = false;
-            }
-
+            } 
             else
-            {
-                int fieldValue = EditorGUILayout.DelayedIntField(style, property.intValue);
-                property.intValue = fieldValue;
-            }
+                property.intValue = EditorGUILayout.LogarithmicIntSlider(style, property.intValue, min, max, 2, textFieldMin, textFieldMax);
+
+            return property.intValue;
+        }
+
+        internal void ClampMaxRanges()
+        {
+            maxDirectSamples = Mathf.Max(m_PVRDirectSampleCount.intValue, 1024);
+            maxIndirectSamples = Mathf.Max(m_PVRSampleCount.intValue, 8192);
+            maxEnvironmentSamples = Mathf.Max(m_PVREnvironmentSampleCount.intValue, 2048);
         }
     }
 }

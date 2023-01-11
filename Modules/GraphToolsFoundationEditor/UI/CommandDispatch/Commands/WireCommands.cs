@@ -16,6 +16,16 @@ namespace Unity.GraphToolsFoundation.Editor
         public const int nodeOffset = 60;
     }
 
+    static class WireCommandHelper_Internal
+    {
+        public static IEnumerable<WireModel> GetDropWireModelsToDelete(PortModel portModel)
+        {
+            if (portModel == null || portModel.Capacity == PortCapacity.Multi)
+                return Enumerable.Empty<WireModel>();
+            return portModel.GetConnectedWires().Where(e => !(e is IGhostWire));
+        }
+    }
+
     /// <summary>
     /// Command to create a new wire.
     /// </summary>
@@ -74,7 +84,7 @@ namespace Unity.GraphToolsFoundation.Editor
             using (var undoStateUpdater = undoState.UpdateScope)
             {
                 undoStateUpdater.SaveState(graphModelState);
-                undoStateUpdater.SaveStates(selectionHelper.UndoableSelectionStates);
+                undoStateUpdater.SaveStates(selectionHelper.SelectionStates);
             }
 
             var createdElements = new List<GraphElementModel>();
@@ -86,8 +96,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 var fromPortModel = command.FromPortModel;
                 var toPortModel = command.ToPortModel;
 
-                var wiresToDelete = GetDropWireModelsToDelete(command.FromPortModel)
-                    .Concat(GetDropWireModelsToDelete(command.ToPortModel))
+                var wiresToDelete = WireCommandHelper_Internal.GetDropWireModelsToDelete(command.FromPortModel)
+                    .Concat(WireCommandHelper_Internal.GetDropWireModelsToDelete(command.ToPortModel))
                     .ToList();
 
                 if (wiresToDelete.Count > 0)
@@ -128,13 +138,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     selectionUpdaters.MainUpdateScope.SelectElements(createdElements, true);
                 }
             }
-        }
-
-        static IEnumerable<WireModel> GetDropWireModelsToDelete(PortModel portModel)
-        {
-            if (portModel == null || portModel.Capacity == PortCapacity.Multi)
-                return Enumerable.Empty<WireModel>();
-            return portModel.GetConnectedWires().Where(e => !(e is IGhostWire));
         }
     }
 
@@ -232,16 +235,25 @@ namespace Unity.GraphToolsFoundation.Editor
             if (command.Models == null || !command.Models.Any())
                 return;
 
+            if (command.Models.Count > 1 && command.NewPortModel?.Capacity == PortCapacity.Single)
+                return;
+
             using (var undoStateUpdater = undoState.UpdateScope)
             {
                 undoStateUpdater.SaveState(graphModelState);
             }
 
+            var graphModel = graphModelState.GraphModel;
             using (var graphUpdater = graphModelState.UpdateScope)
-            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
             {
                 var wiresToMove = command.Models;
                 wiresToMove = wiresToMove.OrderBy(w => w, WiresOrderComparer.Default).ToList();
+
+                var wiresToDelete = WireCommandHelper_Internal.GetDropWireModelsToDelete(command.NewPortModel).Except(wiresToMove).ToList();
+
+                if (wiresToDelete.Count > 0)
+                    graphModel.DeleteWires(wiresToDelete);
 
                 foreach (var wire in wiresToMove)
                 {

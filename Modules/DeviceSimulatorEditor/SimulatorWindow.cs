@@ -14,7 +14,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.DeviceSimulation
 {
     [EditorWindowTitle(title = "Simulator", useTypeNameAsIconName = true)]
-    internal class SimulatorWindow : PlayModeView, IHasCustomMenu, ISerializationCallbackReceiver, IGameViewOnPlayMenuUser
+    internal class SimulatorWindow : PlayModeView, IHasCustomMenu, ISerializationCallbackReceiver
     {
         private static List<SimulatorWindow> s_SimulatorInstances = new List<SimulatorWindow>();
         private bool m_DeviceListDirty;
@@ -23,8 +23,6 @@ namespace UnityEditor.DeviceSimulation
         private SimulationState m_State = SimulationState.Enabled;
         private DeviceSimulatorMain m_Main;
 
-        private bool m_PlayFocused = false;
-        private bool m_VsyncEnabled = false;
 
         private Vector2 simulatorViewPadding
         {
@@ -59,8 +57,6 @@ namespace UnityEditor.DeviceSimulation
 
         private float simulatorViewMouseScale => 1f / m_Main.userInterface.DeviceView.Scale;
 
-        public bool playFocused { get => m_PlayFocused; set => m_PlayFocused = value; }
-        public bool vSyncEnabled { get => m_VsyncEnabled; set => m_VsyncEnabled = value; }
         public DeviceSimulatorMain main => m_Main;
 
         [MenuItem("Window/General/Device Simulator", false, 2000)]
@@ -182,25 +178,6 @@ namespace UnityEditor.DeviceSimulation
         protected override void OnEnterPlayModeBehaviorChange()
         {
             m_Main.userInterface.UpdateEnterPlayModeBehaviorMsg();
-        }
-
-        public void OnPlayPopupSelection(int indexClicked, object objectSelected)
-        {
-            playModeBehaviorIdx = indexClicked;
-            if (playModeBehaviorIdx == 0)
-            {
-                if (playFocused)
-                    enterPlayModeBehavior = EnterPlayModeBehavior.PlayFocused;
-                else
-                    enterPlayModeBehavior = EnterPlayModeBehavior.PlayUnfocused;
-                fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
-            }
-            else if (playModeBehaviorIdx == 1)
-            {
-                enterPlayModeBehavior = EnterPlayModeBehavior.PlayMaximized;
-                fullscreenMonitorIdx = PlayModeView.kFullscreenNone;
-            }
-            OnEnterPlayModeBehaviorChange();
         }
 
         private void OnDevicePackageStatus(DevicePackageStatus status)

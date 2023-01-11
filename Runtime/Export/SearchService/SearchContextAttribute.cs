@@ -33,6 +33,7 @@ namespace UnityEngine.Search
         DisableBuilderModeToggle = 1 << 24,
         Borderless = 1 << 25,
         DisableQueryHelpers = 1 << 26,
+        DisableNoResultTips = 1 << 27,
 
         ContextSwitchPreservedMask = Borderless | OpenLeftSidePanel | OpenInspectorPreview
     }

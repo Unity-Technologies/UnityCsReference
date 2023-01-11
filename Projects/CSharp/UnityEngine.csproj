@@ -2255,9 +2255,6 @@
     <Compile Include="..\..\Modules\SharedInternals\BindingsAttributes.cs">
       <Link>Modules\SharedInternals\BindingsAttributes.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\SharedInternals\ManagedSpanWrapper.cs">
-      <Link>Modules\SharedInternals\ManagedSpanWrapper.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\SharedInternals\UnityString.cs">
       <Link>Modules\SharedInternals\UnityString.cs</Link>
     </Compile>
@@ -3152,6 +3149,9 @@
     <Compile Include="..\..\Runtime\Export\Graphics\GraphicsRenderers.bindings.cs">
       <Link>Runtime\Export\Graphics\GraphicsRenderers.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsSettings.RenderPipelineGlobalSettings.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsSettings.RenderPipelineGlobalSettings.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\GraphicsSettings.bindings.cs">
       <Link>Runtime\Export\Graphics\GraphicsSettings.bindings.cs</Link>
     </Compile>
@@ -3926,6 +3926,9 @@
     <Compile Include="..\..\Runtime\Export\UnityEngineInternal\WrappedTypes.cs">
       <Link>Runtime\Export\UnityEngineInternal\WrappedTypes.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\UnityEvent\PropertyChangedEvent.cs">
+      <Link>Runtime\Export\UnityEvent\PropertyChangedEvent.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\UnityEvent\UnityEvent.cs">
       <Link>Runtime\Export\UnityEvent\UnityEvent.cs</Link>
     </Compile>
@@ -4084,6 +4087,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Scripting\ManagedAttributeManagerTests.cs">
       <Link>Runtime\Scripting\ManagedAttributeManagerTests.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs">
+      <Link>Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Transform\ScriptBindings\RectTransform.bindings.cs">
       <Link>Runtime\Transform\ScriptBindings\RectTransform.bindings.cs</Link>

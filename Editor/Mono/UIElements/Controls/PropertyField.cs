@@ -361,6 +361,12 @@ namespace UnityEditor.UIElements
                     if (!serializedProperty.isValid)
                         return;
 
+                    if (m_InspectorElement is InspectorElement inspectorElement)
+                    {
+                        //set the current PropertyHandlerCache to the current editor
+                        ScriptAttributeUtility.propertyHandlerCache = inspectorElement.editor.propertyHandlerCache;
+                    }
+
                     EditorGUI.BeginChangeCheck();
                     serializedProperty.serializedObject.Update();
 

@@ -189,112 +189,34 @@ namespace UnityEngine
         public delegate void DisplaysUpdatedDelegate();
         public static event DisplaysUpdatedDelegate onDisplaysUpdated = null;
 
+        [FreeFunction("UnityDisplayManager_DisplaySystemResolution")]
+        extern private static void GetSystemExtImpl(IntPtr nativeDisplay, out int w, out int h);
 
-        internal delegate void GetSystemExtDelegate(IntPtr nativeDisplay, out int w, out int h);
-        internal delegate void GetRenderingExtDelegate(IntPtr nativeDisplay, out int w, out int h);
-        internal delegate void GetRenderingBuffersDelegate(IntPtr nativeDisplay, out RenderBuffer color,
-            out RenderBuffer depth);
-        internal delegate void SetRenderingResolutionDelegate(IntPtr nativeDisplay, int w, int h);
-        internal delegate void ActivateDisplayDelegate(IntPtr nativeDisplay, int width, int height, RefreshRate refreshRate);
-        internal delegate void SetParamsDelegate(IntPtr nativeDisplay, int width, int height, int x, int y);
-        internal delegate int RelativeMouseAtDelegate(int x, int y, out int rx, out int ry);
-        internal delegate bool GetActiveDelegate(IntPtr nativeDisplay);
-        internal delegate bool RequiresBlitToBackbufferDelegate(IntPtr nativeDisplay);
+        [FreeFunction("UnityDisplayManager_DisplayRenderingResolution")]
+        extern private static void GetRenderingExtImpl(IntPtr nativeDisplay, out int w, out int h);
 
-        internal delegate bool RequiresSrgbBlitToBackbufferDelegate(IntPtr nativeDisplay);
-        internal static event GetSystemExtDelegate onGetSystemExt = null;
-        internal static event GetRenderingExtDelegate onGetRenderingExt = null;
-        internal static event GetRenderingBuffersDelegate onGetRenderingBuffers = null;
-        internal static event SetRenderingResolutionDelegate onSetRenderingResolution = null;
-        internal static event ActivateDisplayDelegate onActivateDisplay = null;
-        internal static event SetParamsDelegate onSetParams = null;
-        internal static event RelativeMouseAtDelegate onRelativeMouseAt = null;
-        internal static event GetActiveDelegate onGetActive = null;
-        internal static event RequiresBlitToBackbufferDelegate onRequiresBlitToBackbuffer = null;
-        internal static event RequiresSrgbBlitToBackbufferDelegate onRequiresSrgbBlitToBackbuffer = null;
+        [FreeFunction("UnityDisplayManager_GetRenderingBuffersWrapper")]
+        extern private static void GetRenderingBuffersImpl(IntPtr nativeDisplay, out RenderBuffer color, out RenderBuffer depth);
 
+        [FreeFunction("UnityDisplayManager_SetRenderingResolution")]
+        extern private static void SetRenderingResolutionImpl(IntPtr nativeDisplay, int w, int h);
 
-        private static void GetSystemExtImpl(IntPtr nativeDisplay, out int w, out int h)
-        {
-            if (onGetSystemExt != null)
-            {
-                onGetSystemExt(nativeDisplay, out w, out h);
-            }
-            else
-            {
-                w = 0;
-                h = 0;
-            }
-        }
+        [FreeFunction("UnityDisplayManager_ActivateDisplay")]
+        extern private static void ActivateDisplayImpl(IntPtr nativeDisplay, int width, int height, RefreshRate refreshRate);
 
-        private static void GetRenderingExtImpl(IntPtr nativeDisplay, out int w, out int h)
-        {
-            if (onGetRenderingExt != null)
-            {
-                onGetRenderingExt(nativeDisplay, out w, out h);
-            }
-            else
-            {
-                w = 0;
-                h = 0;
-            }
-        }
+        [FreeFunction("UnityDisplayManager_SetDisplayParam")]
+        extern private static void SetParamsImpl(IntPtr nativeDisplay, int width, int height, int x, int y);
 
-        private static void GetRenderingBuffersImpl(IntPtr nativeDisplay, out RenderBuffer color,
-            out RenderBuffer depth)
-        {
-            if (onGetRenderingBuffers != null)
-            {
-                onGetRenderingBuffers(nativeDisplay, out color, out depth);
-            }
-            else
-            {
-                color = new RenderBuffer();
-                depth = new RenderBuffer();
-            }
-        }
+        [FreeFunction("UnityDisplayManager_RelativeMouseAt")]
+        extern private static int RelativeMouseAtImpl(int x, int y, out int rx, out int ry);
 
-        private static void SetRenderingResolutionImpl(IntPtr nativeDisplay, int w, int h)
-        {
-            onSetRenderingResolution?.Invoke(nativeDisplay, w, h);
-        }
+        [FreeFunction("UnityDisplayManager_DisplayActive")]
+        extern private static bool GetActiveImpl(IntPtr nativeDisplay);
 
-        private static void ActivateDisplayImpl(IntPtr nativeDisplay, int width, int height, RefreshRate refreshRate)
-        {
-            onActivateDisplay?.Invoke(nativeDisplay, width, height, refreshRate);
-        }
+        [FreeFunction("UnityDisplayManager_RequiresBlitToBackbuffer")]
+        extern private static bool RequiresBlitToBackbufferImpl(IntPtr nativeDisplay);
 
-        private static void SetParamsImpl(IntPtr nativeDisplay, int width, int height, int x, int y)
-        {
-            onSetParams?.Invoke(nativeDisplay, width, height, x, y);
-        }
-
-        private static int RelativeMouseAtImpl(int x, int y, out int rx, out int ry)
-        {
-            if (onRelativeMouseAt != null)
-            {
-                return onRelativeMouseAt(x, y, out rx, out ry);
-            }
-            rx = 0;
-            ry = 0;
-
-            return 0;
-        }
-
-        private static bool GetActiveImpl(IntPtr nativeDisplay)
-        {
-            return onGetActive != null && onGetActive(nativeDisplay);
-        }
-
-        private static bool RequiresBlitToBackbufferImpl(IntPtr nativeDisplay)
-        {
-            return onRequiresBlitToBackbuffer != null && onRequiresBlitToBackbuffer(nativeDisplay);
-        }
-
-        private static bool RequiresSrgbBlitToBackbufferImpl(IntPtr nativeDisplay)
-        {
-            return onRequiresSrgbBlitToBackbuffer != null && onRequiresSrgbBlitToBackbuffer(nativeDisplay);
-        }
-
+        [FreeFunction("UnityDisplayManager_RequiresSRGBBlitToBackbuffer")]
+        extern private static bool RequiresSrgbBlitToBackbufferImpl(IntPtr nativeDisplay);
     }
 }

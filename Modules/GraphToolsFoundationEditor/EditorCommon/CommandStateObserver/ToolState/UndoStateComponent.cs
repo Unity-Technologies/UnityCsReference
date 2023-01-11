@@ -80,8 +80,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public void EndOperation()
         {
-            m_UndoStateRecorder.RecordComponent(m_ToolStateComponent);
-            m_UndoStateRecorder.EndRecording();
+            m_UndoStateRecorder.EndRecording(m_ToolStateComponent);
         }
 
         /// <inheritdoc />

@@ -269,7 +269,7 @@ namespace Unity.UI.Builder
             UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
             foreach (var openUSS in m_OpenUSSFiles)
                 openUSS.FixRuleReferences();
-            m_CurrentDocumentRootElement.IncrementVersion((VersionChangeType)(-1));
+            m_CurrentDocumentRootElement.IncrementVersion((VersionChangeType) (-1));
         }
 
         public void MarkStyleSheetsDirty()
@@ -392,8 +392,6 @@ namespace Unity.UI.Builder
         {
             needsFullRefresh = false;
 
-            ClearUndo();
-
             // Re-use or ask the user for the UXML path.
             var newUxmlPath = uxmlPath;
             if (string.IsNullOrEmpty(newUxmlPath) || isSaveAs)
@@ -409,6 +407,8 @@ namespace Unity.UI.Builder
                         return false;
                 }
             }
+            
+            ClearUndo();
 
             var startTime = DateTime.UtcNow;
             var savedUSSFiles = new List<BuilderDocumentOpenUSS>();
@@ -488,7 +488,7 @@ namespace Unity.UI.Builder
                 ReloadDocumentToCanvas(documentRootElement);
 
             hasUnsavedChanges = false;
-            
+
             var assetSize = uxmlText?.Length ?? 0;
             BuilderAnalyticsUtility.SendSaveEvent(startTime, this, newUxmlPath, assetSize);
 
@@ -754,6 +754,7 @@ namespace Unity.UI.Builder
                 found = true;
                 break;
             }
+
             if (!found)
                 m_ActiveStyleSheet = firstStyleSheet;
         }
@@ -937,6 +938,7 @@ namespace Unity.UI.Builder
                         continue;
                     sibling.style.opacity = BuilderConstants.OpacityFadeOutFactor;
                 }
+
                 currentRoot = currentParent;
             }
         }
@@ -957,6 +959,7 @@ namespace Unity.UI.Builder
                 Debug.LogError("Invalid UXML or USS: " + e.ToString());
                 Clear();
             }
+
             parentElement.SetProperty(
                 BuilderConstants.ElementLinkedVisualTreeAssetVEPropertyName, vta);
         }
@@ -1027,6 +1030,7 @@ namespace Unity.UI.Builder
                 var hash = UXMLImporterImpl.GenerateHash(localUxmlPath);
                 m_VisualTreeAsset.contentHash = hash.GetHashCode();
             }
+
             return needsFullRefresh;
         }
     }

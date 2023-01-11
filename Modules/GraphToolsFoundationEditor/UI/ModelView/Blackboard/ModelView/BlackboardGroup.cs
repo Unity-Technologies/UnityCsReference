@@ -17,11 +17,6 @@ namespace Unity.GraphToolsFoundation.Editor
     class BlackboardGroup : BlackboardElement, IModelViewContainer_Internal
     {
         /// <summary>
-        /// The name for the selection border.
-        /// </summary>
-        public static readonly string selectionBorderElementName = "selection-border";
-
-        /// <summary>
         /// The uss class for this element.
         /// </summary>
         public static new readonly string ussClassName = "ge-blackboard-variable-group";
@@ -40,11 +35,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// The uss class for the drag indicator.
         /// </summary>
         public static readonly string dragIndicatorUssClassName = ussClassName.WithUssElement("drag-indicator");
-
-        /// <summary>
-        /// The uss class for the selection border.
-        /// </summary>
-        public static readonly string selectionBorderUssClassName = ussClassName.WithUssElement(selectionBorderElementName);
 
         /// <summary>
         /// The uss class for the element with the collapsed modifier.
@@ -76,18 +66,11 @@ namespace Unity.GraphToolsFoundation.Editor
         protected VisualElement m_DragIndicator;
 
         /// <summary>
-        /// The selection border element.
-        /// </summary>
-        protected SelectionBorder m_SelectionBorder;
-
-        /// <summary>
         /// The title element.
         /// </summary>
         protected VisualElement m_Title;
 
         SelectionDropper m_SelectionDropper;
-
-        VisualElement m_ContentContainer;
 
         /// <summary>
         /// The name of the title part.
@@ -121,9 +104,6 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        /// <inheritdoc />
-        public override VisualElement contentContainer => m_ContentContainer;
-
         /// <summary>
         /// The element containing all item ui representations
         /// </summary>
@@ -137,15 +117,6 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCallback<DragPerformEvent>(OnDragPerformEvent);
             RegisterCallback<DragUpdatedEvent>(OnDragUpdatedEvent);
             RegisterCallback<DragLeaveEvent>(OnDragLeaveEvent);
-
-            m_SelectionBorder = new SelectionBorder { name = selectionBorderElementName };
-            m_SelectionBorder.AddToClassList(selectionBorderUssClassName);
-
-            m_ContentContainer = new VisualElement();
-
-            hierarchy.Add(m_ContentContainer);
-            hierarchy.Add(m_SelectionBorder);
-
         }
 
         /// <inheritdoc />
@@ -169,6 +140,10 @@ namespace Unity.GraphToolsFoundation.Editor
             m_DragIndicator = new VisualElement { name = "drag-indicator" };
             m_DragIndicator.AddToClassList(dragIndicatorUssClassName);
             Add(m_DragIndicator);
+
+            var selectionBorder = CreateSelectionBorder();
+            if( selectionBorder != null)
+                hierarchy.Add(selectionBorder);
         }
 
         /// <inheritdoc />

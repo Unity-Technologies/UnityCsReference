@@ -23,6 +23,9 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeField, HideInInspector]
         string m_Tooltip;
 
+        [SerializeField, HideInInspector]
+        SpawnFlags m_SpawnFlags;
+
         internal static string titleFieldName_Internal = nameof(m_Title);
         internal static string positionFieldName_Internal = nameof(m_Position);
 
@@ -87,6 +90,15 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_Position = value;
                 GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Layout);
             }
+        }
+
+        /// <summary>
+        /// The flags specifying how the node is to be spawned.
+        /// </summary>
+        public virtual SpawnFlags SpawnFlags
+        {
+            get => m_SpawnFlags;
+            set => m_SpawnFlags = value;
         }
 
         /// <summary>

@@ -88,7 +88,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Indicate that you want to merge the next undoable commands into one undo.
         /// </summary>
-        public virtual void StartMerging()
+        public virtual void StartMergingUndoableCommands()
         {
             m_StartMergeGroup = Undo.GetCurrentGroup();
         }
@@ -96,7 +96,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Ends the merging of undoables commands into one undo.
         /// </summary>
-        public virtual void StopMerging()
+        public virtual void StopMergingUndoableCommands()
         {
             Undo.CollapseUndoOperations(m_StartMergeGroup);
         }

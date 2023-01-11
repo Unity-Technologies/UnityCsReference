@@ -2901,7 +2901,7 @@ namespace UnityEditor
             var id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
             var controlRect = PrefixLabel(position, id, label);
             var dragZone = LabelHasContent(label) ? EditorGUIUtility.DragZoneRect(position) : new Rect(); // Ensure dragzone is empty when we have no label
-            return DoSlider(controlRect, dragZone, id, value, sliderMin, sliderMax, kFloatFieldFormatString, textFieldMin, textFieldMax, 1f,
+            return DoSlider(controlRect, dragZone, id, value, sliderMin, sliderMax, kFloatFieldFormatString, textFieldMin, textFieldMax, 1f, 1f,
                 textfieldStyle, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
         }
 
@@ -2923,6 +2923,24 @@ namespace UnityEditor
             Rect controlRect = PrefixLabel(position, id, label);
             Rect dragZone = LabelHasContent(label) ? EditorGUIUtility.DragZoneRect(position) : new Rect(); // Ensure dragzone is empty when we have no label
             return DoSlider(controlRect, dragZone, id, sliderValue, leftValue, rightValue, kFloatFieldFormatString, textfieldStyle, power);
+        }
+
+        internal static int LogarithmicIntSlider(Rect position, string label, int sliderValue, int leftValue, int rightValue, int logbase, int textFieldMin, int textFieldMax)
+        {
+            return LogarithmicIntSlider(position, EditorGUIUtility.TempContent(label), sliderValue, leftValue, rightValue, logbase, textFieldMin, textFieldMax);
+        }
+
+        internal static int LogarithmicIntSlider(Rect position, GUIContent label, int sliderValue, int leftValue, int rightValue, int logbase, int textFieldMin, int textFieldMax)
+        {
+            return LogarithmicIntSlider(position, label, sliderValue, leftValue, rightValue, EditorStyles.numberField, logbase, textFieldMin, textFieldMax);
+        }
+
+        internal static int LogarithmicIntSlider(Rect position, GUIContent label, int sliderValue, int leftValue, int rightValue, GUIStyle textfieldStyle, int logbase, int textFieldMin, int textFieldMax)
+        {
+            int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
+            Rect controlRect = PrefixLabel(position, id, label);
+            Rect dragZone = LabelHasContent(label) ? EditorGUIUtility.DragZoneRect(position) : new Rect(); // Ensure dragzone is empty when we have no label
+            return Mathf.RoundToInt(DoSlider(controlRect, dragZone, id, (float) sliderValue, (float) leftValue, (float) rightValue, kIntFieldFormatString, power:1, logbase: logbase, textFieldMin: textFieldMin, textFieldMax: textFieldMax));
         }
 
         private static float PowPreserveSign(float f, float p)
@@ -3319,11 +3337,11 @@ namespace UnityEditor
             EndProperty();
         }
 
-        internal static int IntSlider(Rect position, int value, int leftValue, int rightValue, float power = -1,
+        internal static int IntSlider(Rect position, int value, int leftValue, int rightValue, float power = -1, float logbase = 1,
             GUIStyle textfieldStyle = null, GUIStyle sliderStyle = null, GUIStyle thumbStyle = null, Texture2D sliderBackground = null, GUIStyle thumbStyleExtent = null)
         {
             int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
-            return Mathf.RoundToInt(DoSlider(IndentedRect(position), EditorGUIUtility.DragZoneRect(position), id, value, leftValue, rightValue, kIntFieldFormatString, power,
+            return Mathf.RoundToInt(DoSlider(IndentedRect(position), EditorGUIUtility.DragZoneRect(position), id, value, leftValue, rightValue, kIntFieldFormatString, power, logbase,
                 textfieldStyle ?? EditorStyles.numberField,
                 sliderStyle ?? GUI.skin.horizontalSlider,
                 thumbStyle ?? GUI.skin.horizontalSliderThumb,
@@ -3392,24 +3410,29 @@ namespace UnityEditor
             labelStyle.alignment = oldAlignment;
         }
 
-        internal static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power = 1f)
+        internal static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power = 1f, float logbase = 1f)
         {
-            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, power, EditorStyles.numberField, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
+            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, power, logbase, EditorStyles.numberField, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
         }
 
-        internal static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, GUIStyle textfieldStyle, float power = 1f)
+        internal static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float textFieldMin, float textFieldMax, float power = 1f, float logbase = 1f)
         {
-            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, power, textfieldStyle, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
+            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, textFieldMin, textFieldMax, power, logbase, EditorStyles.numberField, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
         }
 
-        private static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power, GUIStyle textfieldStyle, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent)
+        internal static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, GUIStyle textfieldStyle, float power = 1f, float logbase = 1f)
         {
-            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, left, right, power, textfieldStyle, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
+            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, power, logbase, textfieldStyle, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, null, GUI.skin.horizontalSliderThumbExtent);
+        }
+
+        private static float DoSlider(Rect position, Rect dragZonePosition, int id, float value, float left, float right, string formatString, float power, float logbase, GUIStyle textfieldStyle, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent)
+        {
+            return DoSlider(position, dragZonePosition, id, value, left, right, formatString, left, right, power, logbase, textfieldStyle, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
         }
 
         private static float DoSlider(
             Rect position, Rect dragZonePosition, int id, float value, float sliderMin, float sliderMax, string formatString, float textFieldMin
-            , float textFieldMax, float power, GUIStyle textfieldStyle, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent
+            , float textFieldMax, float power, float logbase, GUIStyle textfieldStyle, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent
         )
         {
             int sliderId = GUIUtility.GetControlID(s_SliderKnobHash, FocusType.Passive, position);
@@ -3440,6 +3463,12 @@ namespace UnityEditor
                     remapRight = PowPreserveSign(sliderMax, 1f / power);
                     newSliderValue = PowPreserveSign(value, 1f / power);
                 }
+                else if (logbase != 1f)
+                {
+                    remapLeft = Mathf.Log(sliderMin, logbase);
+                    remapRight = Mathf.Log(sliderMax, logbase);
+                    newSliderValue = Mathf.Log(value, logbase);
+                }
 
                 Rect sliderRect = new Rect(position.x, position.y, sWidth, position.height);
 
@@ -3455,6 +3484,11 @@ namespace UnityEditor
                     newSliderValue = PowPreserveSign(newSliderValue, power);
                     newSliderValue = Mathf.Clamp(newSliderValue, Mathf.Min(sliderMin, sliderMax), Mathf.Max(sliderMin, sliderMax));
                 }
+                else if (logbase != 1f)
+                {
+                    newSliderValue = Mathf.Pow(logbase, newSliderValue);
+                }
+
 
                 // Do slider labels if present
                 if (EditorGUIUtility.sliderLabels.HasLabels())
@@ -9823,6 +9857,17 @@ namespace UnityEditor
             return EditorGUI.PowerSlider(r, label, value, leftValue, rightValue, power);
         }
 
+        internal static int LogarithmicIntSlider(string label, int value, int leftValue, int rightValue, int logbase, int textFieldMin, int textFieldMax, params GUILayoutOption[] options)
+        {
+            return LogarithmicIntSlider(EditorGUIUtility.TempContent(label), value, leftValue, rightValue, logbase, textFieldMin, textFieldMax, options);
+        }
+
+        internal static int LogarithmicIntSlider(GUIContent label, int value, int leftValue, int rightValue, int logbase, int textFieldMin, int textFieldMax, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetSliderRect(true, options);
+            return EditorGUI.LogarithmicIntSlider(r, label, value, leftValue, rightValue, logbase, textFieldMin, textFieldMax);
+        }
+
         public static int IntSlider(int value, int leftValue, int rightValue, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetSliderRect(false, options);
@@ -9842,7 +9887,7 @@ namespace UnityEditor
             GUIStyle textfieldStyle, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground, GUIStyle thumbStyleExtent, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetSliderRect(false, sliderStyle, options);
-            return EditorGUI.IntSlider(r, value, leftValue, rightValue, power, textfieldStyle, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
+            return EditorGUI.IntSlider(r, value, leftValue, rightValue, power, logbase: 1, textfieldStyle, sliderStyle, thumbStyle, sliderBackground, thumbStyleExtent);
         }
 
         public static int IntSlider(string label, int value, int leftValue, int rightValue, params GUILayoutOption[] options)

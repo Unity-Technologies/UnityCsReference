@@ -14,6 +14,7 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         public static readonly string ussClassName = "ge-blackboard-element";
         public static readonly string selectableModifierUssClassName = ussClassName.WithUssModifier("selectable");
+        public static readonly string selectionBorderUssClassName = ussClassName.WithUssElement("selection-border");
 
         ClickSelector m_ClickSelector;
 
@@ -36,15 +37,24 @@ namespace Unity.GraphToolsFoundation.Editor
             set => this.ReplaceManipulator(ref m_ClickSelector, value);
         }
 
+
         /// <summary>
         /// Initializes a new instance of the <see cref="BlackboardElement"/> class.
         /// </summary>
-        public BlackboardElement()
+        public BlackboardElement(bool hasContentContainer = false)
         {
             RegisterCallback<KeyDownEvent>(OnRenameKeyDown);
             focusable = true;
 
             ContextualMenuManipulator = new BlackboardContextualMenuManipulator(BuildContextualMenu);
+        }
+
+        protected internal virtual VisualElement CreateSelectionBorder()
+        {
+            var selectionBorder = new VisualElement();
+            selectionBorder.pickingMode = PickingMode.Ignore;
+            selectionBorder.AddToClassList(selectionBorderUssClassName);
+            return selectionBorder;
         }
 
         /// <inheritdoc />

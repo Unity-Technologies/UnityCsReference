@@ -230,6 +230,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 somethingChanged |= m_State.CurrentChangeset.AddDeletedModels(changes.DeletedModels);
                 SetDirty(somethingChanged);
             }
+
+            public void MarkGraphPropertiesChanged()
+            {
+                m_State.SetUpdateType(UpdateType.Partial);
+                m_State.CurrentChangeset.AddChangedModels(new[] { m_State.GraphModel }, ChangeHint.Data);
+                SetDirty(true);
+            }
         }
 
         /// <summary>
@@ -358,11 +365,11 @@ namespace Unity.GraphToolsFoundation.Editor
             /// </summary>
             /// <param name="models">The models to add.</param>
             /// <returns>True if at least one model was added to the list of new models, false otherwise.</returns>
-            public bool AddNewModels(IEnumerable<GraphElementModel> models)
+            public bool AddNewModels(IEnumerable<Model> models)
             {
                 var somethingChanged = false;
 
-                foreach (var model in models ?? Enumerable.Empty<GraphElementModel>())
+                foreach (var model in models ?? Enumerable.Empty<Model>())
                 {
                     if (model == null || m_DeletedModels.Contains(model.Guid))
                         continue;
@@ -406,12 +413,12 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <param name="models">The models to add.</param>
             /// <param name="changeHint">A hint about what changed on the models.</param>
             /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
-            public bool AddChangedModels(IEnumerable<GraphElementModel> models, ChangeHint changeHint = null)
+            public bool AddChangedModels(IEnumerable<Model> models, ChangeHint changeHint = null)
             {
                 var somethingChanged = false;
                 changeHint ??= ChangeHint.Unspecified;
 
-                foreach (var model in models ?? Enumerable.Empty<GraphElementModel>())
+                foreach (var model in models ?? Enumerable.Empty<Model>())
                 {
                     if (model == null ||
                         m_NewModels.Contains(model.Guid) ||
@@ -433,12 +440,12 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <param name="models">The models to add.</param>
             /// <param name="changeHints">Hints about what changed on the models. The hints apply to all models.</param>
             /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
-            public bool AddChangedModels(IEnumerable<GraphElementModel> models, List<ChangeHint> changeHints)
+            public bool AddChangedModels(IEnumerable<Model> models, IReadOnlyList<ChangeHint> changeHints)
             {
                 var somethingChanged = false;
                 changeHints ??= k_DefaultChangeHints;
 
-                foreach (var model in models ?? Enumerable.Empty<GraphElementModel>())
+                foreach (var model in models ?? Enumerable.Empty<Model>())
                 {
                     if (model == null ||
                         m_NewModels.Contains(model.Guid) ||
@@ -495,10 +502,10 @@ namespace Unity.GraphToolsFoundation.Editor
             /// </summary>
             /// <param name="models">The models to add.</param>
             /// <returns>True if at least one model was added to the list of deleted models, false otherwise.</returns>
-            public bool AddDeletedModels(IEnumerable<GraphElementModel> models)
+            public bool AddDeletedModels(IEnumerable<Model> models)
             {
                 var somethingChanged = false;
-                foreach (var model in models ?? Enumerable.Empty<GraphElementModel>())
+                foreach (var model in models ?? Enumerable.Empty<Model>())
                 {
                     if (model == null)
                         continue;

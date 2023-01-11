@@ -83,6 +83,11 @@ namespace UnityEditor.Search
         DefaultGroup = 1 << 5,
 
         /// <summary>
+        /// Show inspector of this provider without a header.
+        /// </summary>
+        InspectorWithoutHeader = 1 << 6,
+
+        /// <summary>
         /// Default set of options used when [[showDetails]] is set to true.
         /// </summary>
         Default = Preview | Actions | Description

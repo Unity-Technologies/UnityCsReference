@@ -11,25 +11,27 @@ namespace UnityEditor
 {
     internal static class SceneViewMotion
     {
-        const string k_temporaryPanTool2D = "Scene View/Temporary Pan Tool for 2D Mode";
-        const string k_temporaryPanTool1 = "Scene View/Temporary Pan Tool 1";
-        const string k_temporaryPanTool2 = "Scene View/Temporary Pan Tool 2";
-        const string k_temporaryPanTool3 = "Scene View/Temporary Pan Tool 3";
-        const string k_temporaryPanTool4 = "Scene View/Temporary Pan Tool 4";
-        const string k_temporaryZoomTool = "Scene View/Temporary Zoom Tool";
-        const string k_temporaryOrbitTool = "Scene View/Temporary Orbit Tool";
-        const string k_temporaryFpsTool = "Scene View/Temporary FPS Tool";
+        const string k_TemporaryPanTool2D = "Scene View/Temporary Pan Tool for 2D Mode";
+        const string k_TemporaryPanTool1 = "Scene View/Temporary Pan Tool 1";
+        const string k_TemporaryPanTool2 = "Scene View/Temporary Pan Tool 2";
+        const string k_TemporaryPanTool3 = "Scene View/Temporary Pan Tool 3";
+        const string k_TemporaryPanTool4 = "Scene View/Temporary Pan Tool 4";
+        const string k_TemporaryZoomTool1 = "Scene View/Temporary Zoom Tool 1";
+        const string k_TemporaryZoomTool2 = "Scene View/Temporary Zoom Tool 2";
+        const string k_TemporaryOrbitTool = "Scene View/Temporary Orbit Tool";
+        const string k_TemporaryFpsTool = "Scene View/Temporary FPS Tool";
 
         static readonly ShortcutEntry[] ViewToolShortcuts =
         {
-            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryPanTool2D),
-            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryPanTool1),
-            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryPanTool2),
-            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryPanTool3),
-            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryPanTool4),
-            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryZoomTool),
-            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryOrbitTool),
-            ShortcutIntegration.instance.directory.FindShortcutEntry(k_temporaryFpsTool),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_TemporaryPanTool2D),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_TemporaryPanTool1),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_TemporaryPanTool2),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_TemporaryPanTool3),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_TemporaryPanTool4),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_TemporaryZoomTool1),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_TemporaryZoomTool2),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_TemporaryOrbitTool),
+            ShortcutIntegration.instance.directory.FindShortcutEntry(k_TemporaryFpsTool),
         };
 
         [NonSerialized]
@@ -116,11 +118,11 @@ namespace UnityEditor
                 && ((!SceneView.lastActiveSceneView?.in2DMode ?? false) && (!SceneView.lastActiveSceneView?.isRotationLocked ?? false));
         }
 
-        [ClutchShortcut(k_temporaryPanTool2D, typeof(SceneViewViewport2D), KeyCode.Mouse1)]
-        [ClutchShortcut(k_temporaryPanTool1, typeof(SceneViewViewport), KeyCode.Mouse2)]
-        [ClutchShortcut(k_temporaryPanTool2, typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Alt)]
-        [ClutchShortcut(k_temporaryPanTool3, typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
-        [ClutchShortcut(k_temporaryPanTool4, typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_TemporaryPanTool2D, typeof(SceneViewViewport2D), KeyCode.Mouse1)]
+        [ClutchShortcut(k_TemporaryPanTool1, typeof(SceneViewViewport), KeyCode.Mouse2)]
+        [ClutchShortcut(k_TemporaryPanTool2, typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_TemporaryPanTool3, typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_TemporaryPanTool4, typeof(SceneViewViewport), KeyCode.Mouse2, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
         static void TemporaryPan(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin)
@@ -129,7 +131,8 @@ namespace UnityEditor
                 HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
-        [ClutchShortcut(k_temporaryZoomTool, typeof(SceneViewViewport), KeyCode.Mouse1, ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_TemporaryZoomTool1, typeof(SceneViewViewport), KeyCode.Mouse1, ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_TemporaryZoomTool2, typeof(SceneViewViewport), KeyCode.Mouse1, ShortcutModifiers.Action | ShortcutModifiers.Alt)]
         static void TemporaryZoom(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin)
@@ -138,7 +141,7 @@ namespace UnityEditor
                 HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
-        [ClutchShortcut(k_temporaryOrbitTool, typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Alt)]
+        [ClutchShortcut(k_TemporaryOrbitTool, typeof(SceneViewViewport), KeyCode.Mouse0, ShortcutModifiers.Alt)]
         static void TemporaryOrbit(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin)
@@ -147,7 +150,7 @@ namespace UnityEditor
                 HandleMouseUp(s_CurrentSceneView, s_ViewToolID, 0, 0);
         }
 
-        [ClutchShortcut(k_temporaryFpsTool, typeof(SceneViewViewport3D), KeyCode.Mouse1)]
+        [ClutchShortcut(k_TemporaryFpsTool, typeof(SceneViewViewport3D), KeyCode.Mouse1)]
         static void TemporaryFPS(ShortcutArguments args)
         {
             if (args.stage == ShortcutStage.Begin)
@@ -239,7 +242,7 @@ namespace UnityEditor
             var eventKeyCombination = new[] { KeyCombination.FromInput(evt) };
 
             foreach (var shortcut in ViewToolShortcuts)
-                viewShortcut |= shortcut.StartsWith(eventKeyCombination);
+                viewShortcut |= shortcut?.StartsWith(eventKeyCombination) ?? false;
 
             bool shouldBeActive = Tools.s_LockedViewTool != ViewTool.None || Tools.current == Tool.View || viewShortcut;
             if (shouldBeActive != s_ViewToolActive)

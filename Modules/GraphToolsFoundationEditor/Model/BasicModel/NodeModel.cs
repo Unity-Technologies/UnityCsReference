@@ -211,6 +211,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
                 portModelToAdd.DataTypeHandle = model.DataTypeHandle;
                 portModelToAdd.PortType = model.PortType;
+                if (GraphModel != null && !GraphModel.TryGetModelFromGuid(portModelToAdd.Guid, out _))
+                    GraphModel.RegisterPort(portModelToAdd);
             }
             else
             {
@@ -345,19 +347,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_InputConstantsById[id] = newConstant;
                 GraphModel.Asset.Dirty = true;
             }
-        }
-
-        /// <inheritdoc />
-        public override void OnAfterDeserialize()
-        {
-            base.OnAfterDeserialize();
-
-            m_PreviousInputs = null;
-            m_PreviousOutputs = null;
-            m_OutputsById = new OrderedPorts();
-            m_InputsById = new OrderedPorts();
-
-            // DefineNode() will be called by the GraphModel.
         }
 
         /// <inheritdoc />

@@ -17,8 +17,8 @@ namespace UnityEngine.TextCore.Text
     [UsedByNativeCode("MeshInfo")]
     internal struct MeshInfoBindings
     {
-        public int vertexCount;
         public TextCoreVertex[] vertexData;
         public Material material;
+        public int vertexCount;
     }
 }

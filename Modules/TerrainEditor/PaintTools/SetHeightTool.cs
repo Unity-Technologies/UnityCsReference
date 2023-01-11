@@ -164,7 +164,7 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnToolSettingsGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             Styles styles = GetStyles();
 
@@ -193,18 +193,13 @@ namespace UnityEditor.TerrainTools
 
         }
 
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext, bool overlays)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
+            OnToolSettingsGUI(terrain, editContext);
+
             // show built-in brushes
             int textureRez = terrain.terrainData.heightmapResolution;
             editContext.ShowBrushesGUI(5, BrushGUIEditFlags.All, textureRez);
-
-            OnToolSettingsGUI(terrain, editContext, overlays);
-        }
-
-        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
-        {
-            OnInspectorGUI(terrain, editContext, false);
         }
     }
 }

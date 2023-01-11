@@ -43,6 +43,15 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CreatePlacematCommand"/> class.
+        /// </summary>
+        /// <param name="position">The position of the new placemat.</param>
+        /// <param name="title">The title of the new placemat.</param>
+        public CreatePlacematCommand(Vector2 position, string title = null) : this(new Rect(position, Placemat.DefaultPlacematSize), title)
+        {
+        }
+
+        /// <summary>
         /// Default command handler.
         /// </summary>
         /// <param name="undoState">The undo state component.</param>

@@ -16,6 +16,7 @@ namespace UnityEditor
             {
                 yield return "Services/Account";
                 yield return "Services/Cloud";
+                yield return "Editor Utility/Store";
                 yield return "Editor Utility/Imgui Subtoolbars";
             }
         }

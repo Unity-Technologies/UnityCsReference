@@ -1383,6 +1383,7 @@ namespace UnityEngine.Rendering
         Null = 4,
         [System.Obsolete("Xbox360 is no longer supported in Unity 5.5+")]
         Xbox360 = 6,
+        [System.Obsolete("OpenGL ES 2.0 is no longer supported in Unity 2023.1")]
         OpenGLES2 = 8,
         OpenGLES3 = 11,
         [System.Obsolete("PVita is no longer supported as of Unity 2018")]
@@ -1908,7 +1909,7 @@ namespace UnityEngine.Rendering
         UNITY_PBS_USE_BRDF1,
         UNITY_PBS_USE_BRDF2,
         UNITY_PBS_USE_BRDF3,
-        UNITY_NO_FULL_STANDARD_SHADER,
+        [Obsolete("UNITY_NO_FULL_STANDARD_SHADER is never defined since OpenGL ES 2.0 was removed.")] UNITY_NO_FULL_STANDARD_SHADER,
         UNITY_SPECCUBE_BOX_PROJECTION,
         UNITY_SPECCUBE_BLENDING,
         UNITY_ENABLE_DETAIL_NORMALMAP,
@@ -1919,7 +1920,7 @@ namespace UnityEngine.Rendering
         UNITY_HARDWARE_TIER3,
         UNITY_COLORSPACE_GAMMA,
         UNITY_LIGHT_PROBE_PROXY_VOLUME,
-        UNITY_HALF_PRECISION_FRAGMENT_SHADER_REGISTERS,
+        [Obsolete("UNITY_HALF_PRECISION_FRAGMENT_SHADER_REGISTERS is never defined since OpenGL ES 2.0 was removed.")] UNITY_HALF_PRECISION_FRAGMENT_SHADER_REGISTERS,
         UNITY_LIGHTMAP_DLDR_ENCODING,
         UNITY_LIGHTMAP_RGBM_ENCODING,
         UNITY_LIGHTMAP_FULL_HDR,
@@ -2070,6 +2071,7 @@ namespace UnityEngine.Rendering
     public enum OpenGLESVersion
     {
         None,
+        [System.Obsolete("OpenGL ES 2.0 is no longer supported in Unity 2023.1")]
         OpenGLES20,
         OpenGLES30,
         OpenGLES31,

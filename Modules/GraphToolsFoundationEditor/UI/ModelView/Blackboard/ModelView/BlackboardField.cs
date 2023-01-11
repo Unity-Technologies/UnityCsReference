@@ -64,11 +64,6 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string iconExposedModifierUssClassName = iconUssClassName.WithUssModifier("exposed");
 
         /// <summary>
-        /// The selection border element.
-        /// </summary>
-        public static readonly string selectionBorderElementName = "selection-border";
-
-        /// <summary>
         /// The label containing the type name.
         /// </summary>
         protected Label m_TypeLabel;
@@ -100,7 +95,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Initializes a new instance of the <see cref="BlackboardField"/> class.
         /// </summary>
-        public BlackboardField()
+        public BlackboardField():base(false)
         {
             SelectionDropper = new SelectionDropper();
         }
@@ -110,13 +105,9 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             base.BuildElementUI();
 
-            var selectionBorder = new SelectionBorder { name = selectionBorderElementName };
-            selectionBorder.AddToClassList(ussClassName.WithUssElement(selectionBorderElementName));
-            Add(selectionBorder);
-
             var capsule = new VisualElement();
             capsule.AddToClassList(capsuleUssClassName);
-            selectionBorder.ContentContainer.Add(capsule);
+            Add(capsule);
 
             m_Icon = new Image();
             m_Icon.AddToClassList(iconUssClassName);
@@ -130,6 +121,9 @@ namespace Unity.GraphToolsFoundation.Editor
             m_TypeLabel = new Label() { name = "type-label" };
             m_TypeLabel.AddToClassList(typeLabelUssClassName);
             Add(m_TypeLabel);
+
+            var selectionBorder = CreateSelectionBorder();
+            capsule.Add(selectionBorder);
         }
 
         /// <inheritdoc />

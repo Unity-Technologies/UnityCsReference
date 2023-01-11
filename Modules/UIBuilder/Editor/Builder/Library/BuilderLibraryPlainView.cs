@@ -204,8 +204,10 @@ namespace Unity.UI.Builder
 
                 plainViewItem.RegisterCallback<MouseDownEvent>(e =>
                 {
-                    if (e.clickCount == 2)
+                    if (e.clickCount == 2 && e.button == (int)MouseButton.LeftMouse)
+                    {
                         AddItemToTheDocument(libraryTreeItem);
+                    }
                 });
                 itemsParent?.Add(plainViewItem);
                 m_PlainViewItems.Add(plainViewItem);
@@ -257,6 +259,13 @@ namespace Unity.UI.Builder
 
         void OnContextualMenuPopulateEvent(ContextualMenuPopulateEvent evt)
         {
+            if (m_Dragger.active)
+            {
+                evt.PreventDefault();
+                evt.StopImmediatePropagation();
+                return;
+            }
+            
             var libraryItem = GetLibraryTreeItem(evt.elementTarget);
 
             evt.menu.AppendAction(

@@ -50,9 +50,6 @@ namespace UnityEditor
 
         class SettingsContent
         {
-            public static readonly GUIContent frameTimingStatsWebGLWarning = EditorGUIUtility.TrTextContent("Frame timing stats are supported in WebGL 2 only. Uncheck 'Automatic Graphics API' if it is set and remove the WebGL 1 API.");
-            public static readonly GUIContent lightmapEncodingWebGLWarning = EditorGUIUtility.TrTextContent("High quality lightmap encoding requires WebGL 2. Navigate to 'WebGL Player Settings', uncheck 'Automatic Graphics API' if it is set and remove the WebGL 1 API.");
-            public static readonly GUIContent hdrCubemapEncodingWebGLWarning = EditorGUIUtility.TrTextContent("High quality HDR cubemap encoding requires WebGL 2. Navigate to 'WebGL Player Settings', uncheck 'Automatic Graphics API' if it is set and remove the WebGL 1 API.");
             public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, remove OpenGL ES 2 API from the list. Blit Type for non-SRP projects must be Always Blit or Auto.");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2, uncheck 'Automatic Graphics API' to remove WebGL 1 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2/3 APIs.");
@@ -206,7 +203,8 @@ namespace UnityEditor
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent il2cppCodeGeneration = EditorGUIUtility.TrTextContent("IL2CPP Code Generation", "Determines whether IL2CPP should generate code optimized for runtime performance or build size/iteration.");
-            public static readonly GUIContent[] il2cppCodeGenerationNames = new GUIContent[] { EditorGUIUtility.TrTextContent("Faster runtime"), EditorGUIUtility.TrTextContent("Faster (smaller) builds") };
+            public static readonly GUIContent[] il2cppCodeGenerationNames =  new GUIContent[] { EditorGUIUtility.TrTextContent("Faster runtime"), EditorGUIUtility.TrTextContent("Faster (smaller) builds") };
+            public static readonly GUIContent il2cppStacktraceInformation = EditorGUIUtility.TrTextContent("IL2CPP Stacktrace Information", "Which information to include in stack traces. Including the file name and line number may increase build size.");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingCoreCLR = EditorGUIUtility.TrTextContent("CoreCLR");
@@ -240,8 +238,6 @@ namespace UnityEditor
             public static readonly GUIContent[] hdrCubemapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality") };
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming", "Only load larger lightmap mipmaps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mipmap streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
-            public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The Lightmap Encoding scheme you have selected requires OpenGL ES 3.0 or Vulkan. Navigate to 'Android Player Settings' > 'Rendering' and disable the OpenGL ES 2 API.");
-            public static readonly GUIContent hdrCubemapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The HDR Cubemap Encoding scheme you have selected requires OpenGL ES 3.0 or Vulkan. Navigate to 'Android Player Settings' > 'Rendering' and disable the OpenGL ES 2 API.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
             public static readonly GUIContent virtualTexturingSupportEnabled = EditorGUIUtility.TrTextContent("Virtual Texturing (Experimental)*", "Enable Virtual Texturing. This feature is experimental and not ready for production use. Changing this value requires an Editor restart.");
             public static readonly GUIContent virtualTexturingUnsupportedPlatformWarning = EditorGUIUtility.TrTextContent("The current target platform does not support Virtual Texturing. To build for this platform, uncheck Enable Virtual Texturing.");
@@ -459,6 +455,7 @@ namespace UnityEditor
         SerializedProperty m_EditorAssembliesCompatibilityLevel;
         SerializedProperty m_Il2CppCompilerConfiguration;
         SerializedProperty m_Il2CppCodeGeneration;
+        SerializedProperty m_Il2CppStacktraceInformation;
         SerializedProperty m_ScriptingDefines;
         SerializedProperty m_AdditionalCompilerArguments;
         SerializedProperty m_StackTraceTypes;
@@ -603,6 +600,7 @@ namespace UnityEditor
             m_EditorAssembliesCompatibilityLevel = FindPropertyAssert("editorAssembliesCompatibilityLevel");
             m_Il2CppCompilerConfiguration   = FindPropertyAssert("il2cppCompilerConfiguration");
             m_Il2CppCodeGeneration          = FindPropertyAssert("il2cppCodeGeneration");
+            m_Il2CppStacktraceInformation   = FindPropertyAssert("il2cppStacktraceInformation");
             m_ScriptingDefines              = FindPropertyAssert("scriptingDefineSymbols");
             m_StackTraceTypes               = FindPropertyAssert("m_StackTraceTypes");
             m_ManagedStrippingLevel         = FindPropertyAssert("managedStrippingLevel");
@@ -1189,19 +1187,9 @@ namespace UnityEditor
         {
             if (target == BuildTarget.WebGL)
             {
-                if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2) return "WebGL 1 (Deprecated)";
                 if (graphicsDeviceType == GraphicsDeviceType.OpenGLES3) return "WebGL 2";
             }
             string name = graphicsDeviceType.ToString();
-            if (target == BuildTarget.iOS || target == BuildTarget.tvOS)
-            {
-                if (name.Contains("OpenGLES"))
-                    name += " (Deprecated)";
-            }
-            else if (graphicsDeviceType == GraphicsDeviceType.OpenGLES2)
-            {
-                name += " (Deprecated)";
-            }
             return name;
         }
 
@@ -1210,7 +1198,6 @@ namespace UnityEditor
         {
             graphicsDeviceType = graphicsDeviceType.Replace(" (Deprecated)", "");
             graphicsDeviceType = graphicsDeviceType.Replace(" (Experimental)", "");
-            if (graphicsDeviceType == "WebGL 1") return GraphicsDeviceType.OpenGLES2;
             if (graphicsDeviceType == "WebGL 2") return GraphicsDeviceType.OpenGLES3;
             return (GraphicsDeviceType)Enum.Parse(typeof(GraphicsDeviceType), graphicsDeviceType, true);
         }
@@ -1399,8 +1386,8 @@ namespace UnityEditor
                 return;
 
             var apis = PlayerSettings.GetGraphicsAPIs(targetPlatform);
-            // only available if we include ES3, and not ES2
-            var hasMinES3 = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+            // only available if we include ES3
+            var hasMinES3 = apis.Contains(GraphicsDeviceType.OpenGLES3);
             if (!hasMinES3)
                 return;
 
@@ -1862,39 +1849,13 @@ namespace UnityEditor
                 }
             }
 
-            // Display a warning for platforms that some devices don't support linear rendering if the settings are not fine for linear colorspace
+            // Special cases for some platform with limitations regarding linear colorspace
             if (PlayerSettings.colorSpace == ColorSpace.Linear)
             {
-                bool showWarning = false;
-                GUIContent warningMessage = null;
-                var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
-
-                if (platform.namedBuildTarget == NamedBuildTarget.Android)
+                if (platform.namedBuildTarget == NamedBuildTarget.EmbeddedLinux)
                 {
-                    // SRP should handle blits internally
-                    bool hasBlitDisabled = (PlayerSettings.Android.blitType == AndroidBlitType.Never) && (GraphicsSettings.currentRenderPipeline == null);
-                    showWarning = hasBlitDisabled || apis.Contains(GraphicsDeviceType.OpenGLES2);
-                    warningMessage = SettingsContent.colorSpaceAndroidWarning;
-                }
-                else if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
-                {
-                    showWarning = apis.Contains(GraphicsDeviceType.OpenGLES3) || apis.Contains(GraphicsDeviceType.OpenGLES2);
-                    warningMessage = SettingsContent.colorSpaceIOSWarning;
-                }
-                else if ((platform.namedBuildTarget == NamedBuildTarget.WebGL))
-                {
-                    showWarning = apis.Contains(GraphicsDeviceType.OpenGLES2);
-                    warningMessage = SettingsContent.colorSpaceWebGLWarning;
-                }
-                else if ((platform.namedBuildTarget == NamedBuildTarget.EmbeddedLinux))
-                {
-                    showWarning = apis.Contains(GraphicsDeviceType.OpenGLES2);
-                    warningMessage = SettingsContent.colorSpaceEmbeddedLinuxWarning;
                     EditorGUILayout.PropertyField(m_ForceSRGBBlit, SettingsContent.forceSRGBBlit);
                 }
-
-                if (showWarning)
-                    EditorGUILayout.HelpBox(warningMessage.text, MessageType.Warning);
             }
 
             // Graphics APIs
@@ -2186,21 +2147,6 @@ namespace UnityEditor
 
                             GUIUtility.ExitGUI();
                         }
-
-                        if (encodingQuality == LightmapEncodingQuality.High &&
-                            platform.namedBuildTarget == NamedBuildTarget.WebGL &&
-                            PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL).Contains(GraphicsDeviceType.OpenGLES2))
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.lightmapEncodingWebGLWarning.text, MessageType.Warning);
-                        }
-
-                        if (encodingQuality != LightmapEncodingQuality.Low && platform.namedBuildTarget == NamedBuildTarget.Android)
-                        {
-                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
-                            var hasMinAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                            if (!hasMinAPI)
-                                EditorGUILayout.HelpBox(SettingsContent.lightmapQualityAndroidWarning.text, MessageType.Warning);
-                        }
                     }
 
                     {
@@ -2217,21 +2163,6 @@ namespace UnityEditor
                             serializedObject.ApplyModifiedProperties();
 
                             GUIUtility.ExitGUI();
-                        }
-
-                        if (encodingQuality == HDRCubemapEncodingQuality.High &&
-                            platform.namedBuildTarget == NamedBuildTarget.WebGL &&
-                            PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL).Contains(GraphicsDeviceType.OpenGLES2))
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.hdrCubemapEncodingWebGLWarning.text, MessageType.Warning);
-                        }
-
-                        if (encodingQuality != HDRCubemapEncodingQuality.Low && platform.namedBuildTarget == NamedBuildTarget.Android)
-                        {
-                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
-                            var hasMinAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                            if (!hasMinAPI)
-                                EditorGUILayout.HelpBox(SettingsContent.hdrCubemapQualityAndroidWarning.text, MessageType.Warning);
                         }
                     }
                 }
@@ -2271,14 +2202,6 @@ namespace UnityEditor
                 if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.WebGL || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
                 {
                     PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
-                    if (PlayerSettings.enableFrameTimingStats && platform.namedBuildTarget == NamedBuildTarget.WebGL)
-                    {
-                        var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
-                        if (apis.Contains(GraphicsDeviceType.OpenGLES2))
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.frameTimingStatsWebGLWarning.text, MessageType.Warning);
-                        }
-                    }
                     if (PlayerSettings.enableFrameTimingStats)
                     {
                         EditorGUILayout.HelpBox(SettingsContent.openGLFrameTimingStatsOnGPURecordersOffInfo.text, MessageType.Info);
@@ -2625,6 +2548,14 @@ namespace UnityEditor
                 return Il2CppCodeGeneration.OptimizeSpeed;
         }
 
+        private Il2CppStacktraceInformation GetCurrentIl2CppStacktraceInformationOptionForTarget(NamedBuildTarget namedBuildTarget)
+        {
+            if (m_Il2CppStacktraceInformation.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
+                return (Il2CppStacktraceInformation)entry.FindPropertyRelative("second").intValue;
+            else
+                return Il2CppStacktraceInformation.MethodOnly;
+        }
+
         private ManagedStrippingLevel GetCurrentManagedStrippingLevelForTarget(NamedBuildTarget namedBuildTarget, ScriptingImplementation backend)
         {
             if (m_ManagedStrippingLevel.TryGetMapEntry(namedBuildTarget.TargetName, out var entry))
@@ -2828,6 +2759,18 @@ namespace UnityEditor
                             }
                         }
                     }
+                }
+
+                // Il2Cpp Stacktrace Configuration
+                using (new EditorGUI.DisabledScope(currentBackend != ScriptingImplementation.IL2CPP))
+                {
+                    Il2CppStacktraceInformation config = GetCurrentIl2CppStacktraceInformationOptionForTarget(platform.namedBuildTarget);
+
+                    var newConfiguration = BuildEnumPopup(SettingsContent.il2cppStacktraceInformation, config,
+                        GetIl2CppStacktraceOptions(), GetIl2CppStacktraceOptionNames());
+
+                    if (config != newConfiguration)
+                        m_Il2CppStacktraceInformation.SetMapValue(platform.namedBuildTarget.TargetName, (int)newConfiguration);
                 }
 
                 bool gcIncrementalEnabled = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", platform.defaultTarget);
@@ -3328,6 +3271,31 @@ namespace UnityEditor
             }
 
             return m_Il2cppCompilerConfigurationNames;
+        }
+
+        static Il2CppStacktraceInformation[] m_Il2cppStacktraceOptions;
+        static GUIContent[] m_Il2cppStacktraceOptionNames;
+
+        private Il2CppStacktraceInformation[] GetIl2CppStacktraceOptions()
+        {
+            if (m_Il2cppStacktraceOptions == null)
+                m_Il2cppStacktraceOptions = (Il2CppStacktraceInformation[])Enum.GetValues(typeof(Il2CppStacktraceInformation));
+
+            return m_Il2cppStacktraceOptions;
+        }
+
+        private GUIContent[] GetIl2CppStacktraceOptionNames()
+        {
+            if (m_Il2cppStacktraceOptionNames == null)
+            {
+                m_Il2cppStacktraceOptionNames = new GUIContent[]
+                {
+                    EditorGUIUtility.TextContent("Method Name"),
+                    EditorGUIUtility.TextContent("Method Name, File Name, and Line Number"),
+                };
+            }
+
+            return m_Il2cppStacktraceOptionNames;
         }
 
         public static bool IsLatestApiCompatibility(ApiCompatibilityLevel level)
