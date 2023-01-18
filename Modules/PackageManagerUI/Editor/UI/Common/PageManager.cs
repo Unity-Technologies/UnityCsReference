@@ -86,10 +86,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     supportFilters = true,
                     orderingValues = new[]
                     {
-                        new PageCapability.Ordering("Name (asc)", "name", PageCapability.Order.Ascending),
-                        new PageCapability.Ordering("Name (desc)", "name", PageCapability.Order.Descending),
                         new PageCapability.Ordering("Purchased date", "purchased_date", PageCapability.Order.Descending),
-                        new PageCapability.Ordering("Recently updated", "update_date", PageCapability.Order.Descending)
+                        new PageCapability.Ordering("Recently updated", "update_date", PageCapability.Order.Descending),
+                        new PageCapability.Ordering("Name (asc)", "name", PageCapability.Order.Ascending),
+                        new PageCapability.Ordering("Name (desc)", "name", PageCapability.Order.Descending)
                     }
                 });
             }

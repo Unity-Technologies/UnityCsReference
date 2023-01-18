@@ -209,7 +209,6 @@ namespace UnityEditor
 
 
         extern internal static void OpenCompiledShader(Shader shader, int mode, int externPlatformsMask, bool includeAllVariants, bool preprocessOnly, bool stripLineDirectives);
-        extern internal static void CompileShaderForTargetCompilerPlatform(Shader shader, ShaderCompilerPlatform platform);
 
         extern internal static void OpenCompiledComputeShader(ComputeShader shader, bool allVariantsAndPlatforms, bool showPreprocessed, bool stripLineDirectives);
         extern internal static void OpenParsedSurfaceShader(Shader shader);

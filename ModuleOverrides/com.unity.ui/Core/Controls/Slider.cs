@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="Slider"/>.
         /// </summary>
-        public new class UxmlTraits : BaseSlider<float>.UxmlTraits
+        public new class UxmlTraits : UxmlTraits<UxmlFloatAttributeDescription>
         {
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value" };
             UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "high-value", defaultValue = kDefaultHighValue };

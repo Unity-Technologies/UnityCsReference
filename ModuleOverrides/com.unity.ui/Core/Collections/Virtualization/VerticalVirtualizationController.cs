@@ -11,13 +11,14 @@ namespace UnityEngine.UIElements
     // TODO [GR] Could move some of that stuff to a base CollectionVirtualizationController<T> class (pool, active items, visible items, etc.)
     abstract class VerticalVirtualizationController<T> : CollectionVirtualizationController where T : ReusableCollectionItem, new()
     {
+        readonly UnityEngine.Pool.ObjectPool<T> m_Pool = new (() => new T(), null, i => i.DetachElement());
+
         protected BaseVerticalCollectionView m_CollectionView;
         protected const int k_ExtraVisibleItems = 2;
-
-        protected readonly UnityEngine.Pool.ObjectPool<T> m_Pool = new UnityEngine.Pool.ObjectPool<T>(() => new T(), null, i => i.DetachElement());
         protected List<T> m_ActiveItems;
+        protected T m_DraggedItem;
 
-        public override IEnumerable<ReusableCollectionItem> activeItems => m_ActiveItems as IEnumerable<ReusableCollectionItem>;
+        public override IEnumerable<ReusableCollectionItem> activeItems => m_ActiveItems;
 
         int m_LastFocusedElementIndex = -1;
         List<int> m_LastFocusedElementTreeChildIndexes = new List<int>();
@@ -29,28 +30,23 @@ namespace UnityEngine.UIElements
                 ? m_CollectionView.itemsSource.Count - 1
                 : m_CollectionView.itemsSource.Count;
 
-        protected virtual bool VisibleItemPredicate(T i)
-        {
-            var isBeingDragged = false;
-            if (m_CollectionView.dragger is ListViewDraggerAnimated dragger)
-                isBeingDragged = dragger.isDragging && i.index == dragger.draggedItem.index;
-
-            return i.rootElement.style.display == DisplayStyle.Flex && !isBeingDragged;
-        }
+        protected virtual bool VisibleItemPredicate(T i)=> i.rootElement.style.display == DisplayStyle.Flex;
 
         internal T firstVisibleItem => m_ActiveItems.FirstOrDefault(m_VisibleItemPredicateDelegate);
         internal T lastVisibleItem => m_ActiveItems.LastOrDefault(m_VisibleItemPredicateDelegate);
 
         public override int visibleItemCount => m_ActiveItems.Count(m_VisibleItemPredicateDelegate);
 
+        protected SerializedVirtualizationData serializedData => m_CollectionView.serializedVirtualizationData;
+
         public override int firstVisibleIndex
         {
-            get => Mathf.Min(m_CollectionView.serializedVirtualizationData.firstVisibleIndex, m_CollectionView.viewController.GetItemsCount() - 1);
-            protected set => m_CollectionView.serializedVirtualizationData.firstVisibleIndex = value;
+            get => Mathf.Min(serializedData.firstVisibleIndex, m_CollectionView.viewController.GetItemsCount() - 1);
+            protected set => serializedData.firstVisibleIndex = value;
         }
 
         // we keep this list in order to minimize temporary gc allocs
-        protected List<T> m_ScrollInsertionList = new List<T>();
+        protected List<T> m_ScrollInsertionList = new ();
 
         VisualElement m_EmptyRows;
 
@@ -92,9 +88,17 @@ namespace UnityEngine.UIElements
 
                 if (m_CollectionView.itemsSource != null && index >= 0 && index < itemsCount)
                 {
-                    if (hasValidBindings && isVisible)
+                    if (!hasValidBindings)
+                        continue;
+
+                    // Rebind visible items.
+                    if (isVisible)
                     {
-                        m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                        if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
+                        {
+                            m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                        }
+
                         recycledItem.index = ReusableCollectionItem.UndefinedIndex;
                         Setup(recycledItem, index);
                     }
@@ -116,9 +120,27 @@ namespace UnityEngine.UIElements
         protected void Setup(T recycledItem, int newIndex)
         {
             // We want to skip the item that is being reordered with the animated dragger.
-            if (m_CollectionView.dragger is ListViewDraggerAnimated dragger)
-                if (dragger.isDragging && (dragger.draggedItem.index == newIndex || dragger.draggedItem == recycledItem))
-                    return;
+            var wasGhostItem = recycledItem.isDragGhost;
+            if (GetDraggedIndex() == newIndex)
+            {
+                if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
+                    m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+
+                recycledItem.isDragGhost = true;
+                recycledItem.index = m_DraggedItem.index;
+                recycledItem.rootElement.style.maxHeight = 0;
+                recycledItem.rootElement.style.display = DisplayStyle.Flex;
+                recycledItem.bindableElement.style.display = DisplayStyle.None;
+                return;
+            }
+
+            // Restore the state of the item if it was hidden by a drag.
+            if (wasGhostItem)
+            {
+                recycledItem.isDragGhost = false;
+                recycledItem.rootElement.style.maxHeight = StyleKeyword.Null;
+                recycledItem.bindableElement.style.display = DisplayStyle.Flex;
+            }
 
             if (newIndex >= itemsCount)
             {
@@ -268,28 +290,62 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public override void ReplaceActiveItem(int index)
+        internal override void StartDragItem(ReusableCollectionItem item)
         {
-            var i = 0;
-            foreach (var item in m_ActiveItems)
+            m_DraggedItem = item as T;
+
+            // Remove the active item from the list to prevent recycling it.
+            var activeIndex = m_ActiveItems.IndexOf(m_DraggedItem);
+            m_ActiveItems.RemoveAt(activeIndex);
+
+            // Create a replacement item. Flag it as being dragged, so that we know it needs to stay hidden during item cycling.
+            var replacementItem = GetOrMakeItemAtIndex(activeIndex, activeIndex);
+            Setup(replacementItem, m_DraggedItem.index);
+        }
+
+        internal override void EndDrag(int dropIndex)
+        {
+            // Reinsert the dragged item.
+            var item = m_CollectionView.GetRecycledItemFromIndex(dropIndex);
+            var activeItemIndex = item != null ? m_ScrollView.IndexOf(item.rootElement) : m_ActiveItems.Count;
+            m_ScrollView.Insert(activeItemIndex, m_DraggedItem.rootElement);
+            m_ActiveItems.Insert(activeItemIndex, m_DraggedItem);
+
+            // Release the ghost items.
+            for (var i = 0; i < m_ActiveItems.Count; i++)
             {
-                if (item.index == index)
+                var activeItem = m_ActiveItems[i];
+                if (activeItem.isDragGhost)
                 {
-                    // Detach the old one
-                    var scrollViewIndex = m_ScrollView.IndexOf(item.rootElement);
-                    m_CollectionView.viewController.InvokeUnbindItem(item, index);
-                    m_CollectionView.viewController.InvokeDestroyItem(item);
-                    item.DetachElement();
-                    m_ActiveItems.Remove(item);
-
-                    // Attach and setup new one.
-                    var recycledItem = GetOrMakeItemAtIndex(i, scrollViewIndex);
-                    Setup(recycledItem, index);
-                    break;
+                    // Clear index so that it doesn't get unbound since it was never bound, then restore and release it.
+                    activeItem.index = ReusableCollectionItem.UndefinedIndex;
+                    activeItem.bindableElement.style.display = DisplayStyle.Flex;
+                    ReleaseItem(i);
+                    i--;
                 }
-
-                i++;
             }
+
+            // We want to avoid releasing items in Refresh, that happens when an item is out of bounds and visible,
+            // so we set the last one invisible and let the virtualization display it if necessary.
+            if (dropIndex != m_DraggedItem.index)
+            {
+                if (lastVisibleItem != null)
+                    lastVisibleItem.rootElement.style.display = DisplayStyle.None;
+
+                // We unbind in order.
+                if (m_DraggedItem.index < dropIndex)
+                {
+                    m_CollectionView.viewController.InvokeUnbindItem(m_DraggedItem, m_DraggedItem.index);
+                    m_DraggedItem.index = ReusableCollectionItem.UndefinedIndex;
+                }
+                else if (item != null)
+                {
+                    m_CollectionView.viewController.InvokeUnbindItem(item, item.index);
+                    item.index = ReusableCollectionItem.UndefinedIndex;
+                }
+            }
+
+            m_DraggedItem = null;
         }
 
         internal virtual T GetOrMakeItemAtIndex(int activeItemIndex = -1, int scrollViewIndex = -1)
@@ -327,15 +383,21 @@ namespace UnityEngine.UIElements
         internal virtual void ReleaseItem(int activeItemsIndex)
         {
             var item = m_ActiveItems[activeItemsIndex];
-            var index = item.index;
-
-            if (index != ReusableCollectionItem.UndefinedIndex)
+            if (item.index != ReusableCollectionItem.UndefinedIndex)
             {
-                m_CollectionView.viewController.InvokeUnbindItem(item, index);
+                m_CollectionView.viewController.InvokeUnbindItem(item, item.index);
             }
 
             m_Pool.Release(item);
-            m_ActiveItems.RemoveAt(activeItemsIndex);
+            m_ActiveItems.Remove(item);
+        }
+
+        protected int GetDraggedIndex()
+        {
+            if (m_CollectionView.dragger is ListViewDraggerAnimated { isDragging: true } dragger)
+                return dragger.draggedItem.index;
+
+            return ReusableCollectionItem.UndefinedIndex;
         }
     }
 }

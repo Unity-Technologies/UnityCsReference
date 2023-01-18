@@ -558,6 +558,26 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void ClearManualLayout()
+        {
+            // Mark layout manual false to re-enable layout calculation.
+            isLayoutManual = false;
+
+            // Remove inline values.
+            var styleAccess = style;
+            styleAccess.position = StyleKeyword.Null;
+            styleAccess.marginLeft = StyleKeyword.Null;
+            styleAccess.marginRight = StyleKeyword.Null;
+            styleAccess.marginBottom = StyleKeyword.Null;
+            styleAccess.marginTop = StyleKeyword.Null;
+            styleAccess.left = StyleKeyword.Null;
+            styleAccess.top = StyleKeyword.Null;
+            styleAccess.right = StyleKeyword.Null;
+            styleAccess.bottom = StyleKeyword.Null;
+            styleAccess.width = StyleKeyword.Null;
+            styleAccess.height = StyleKeyword.Null;
+        }
+
         /// <summary>
         /// The rectangle of the content area of the element, in the local space of the element.
         /// </summary>

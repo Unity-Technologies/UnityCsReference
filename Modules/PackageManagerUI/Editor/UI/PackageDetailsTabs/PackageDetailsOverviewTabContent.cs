@@ -72,7 +72,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshPurchasedDate(IPackageVersion version)
         {
-            detailPurchasedDate.SetValueWithoutNotify(version.package.product.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty);
+            detailPurchasedDate.SetValueWithoutNotify(version.package.product?.purchasedTime?.ToString("MMMM dd, yyyy", CultureInfo.CreateSpecificCulture("en-US")) ?? string.Empty);
             UIUtils.SetElementDisplay(detailPurchasedDateContainer, !string.IsNullOrEmpty(detailPurchasedDate.text));
         }
 

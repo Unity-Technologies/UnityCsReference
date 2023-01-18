@@ -19,6 +19,7 @@ namespace UnityEditor.UIElements
         private static readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
         internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
+        static readonly string listViewNamePrefix = "unity-list-";
 
         /// <summary>
         /// Instantiates a <see cref="PropertyField"/> using the data read from a UXML file.
@@ -585,10 +586,13 @@ namespace UnityEditor.UIElements
         private VisualElement CreateFoldout(SerializedProperty property, object originalField = null)
         {
             property = property.Copy();
-            var foldout = originalField != null && originalField is Foldout ? originalField as Foldout : new Foldout();
-            bool hasCustomLabel = !string.IsNullOrEmpty(label);
+            if (originalField is not Foldout foldout)
+            {
+                foldout = new Foldout();
+            }
+
+            var hasCustomLabel = !string.IsNullOrEmpty(label);
             foldout.text = hasCustomLabel ? label : property.localizedDisplayName;
-            foldout.value = property.isExpanded;
             foldout.bindingPath = property.propertyPath;
             foldout.name = "unity-foldout-" + property.propertyPath;
 
@@ -661,23 +665,27 @@ namespace UnityEditor.UIElements
 
         VisualElement ConfigureListView(ListView listView, SerializedProperty property, Func<ListView> factory)
         {
-            listView ??= factory();
+            if (listView == null)
+            {
+                listView = factory();
+                listView.showBorder = true;
+                listView.showAddRemoveFooter = true;
+                listView.showBoundCollectionSize = true;
+                listView.showFoldoutHeader = true;
+                listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+                listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
+            }
+
             var propertyCopy = property.Copy();
-            listView.reorderMode = ListViewReorderMode.Animated;
-            listView.reorderable = PropertyHandler.IsArrayReorderable(property);
-            listView.showBorder = true;
-            listView.showAddRemoveFooter = true;
-            listView.showBoundCollectionSize = true;
-            listView.showFoldoutHeader = true;
+            var isReorderable = PropertyHandler.IsArrayReorderable(property);
+            var listViewName = $"{listViewNamePrefix}{property.propertyPath}";
+            listView.reorderable = isReorderable;
+            listView.reorderMode = isReorderable ? ListViewReorderMode.Animated : ListViewReorderMode.Simple;
             listView.headerTitle = string.IsNullOrEmpty(label) ? propertyCopy.localizedDisplayName : label;
-            listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
             listView.userData = propertyCopy;
-            listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
             listView.bindingPath = property.propertyPath;
-            listView.viewDataKey = property.propertyPath;
-            listView.name = "unity-list-" + property.propertyPath;
-            listView.headerFoldout.viewDataKey = property.propertyPath;
-            listView.Bind(property.serializedObject);
+            listView.viewDataKey = listViewName;
+            listView.name = listViewName;
             return listView;
         }
 

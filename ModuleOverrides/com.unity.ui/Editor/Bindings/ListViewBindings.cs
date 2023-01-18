@@ -6,18 +6,18 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using System.Collections;
+using UnityEngine;
 
 namespace UnityEditor.UIElements.Bindings
 {
     class ListViewSerializedObjectBinding : SerializedObjectBindingBase, IInternalListViewBinding
     {
-        public static ObjectPool<ListViewSerializedObjectBinding> s_Pool =
-            new ObjectPool<ListViewSerializedObjectBinding>(() => new ListViewSerializedObjectBinding(), 32);
+        static ObjectPool<ListViewSerializedObjectBinding> s_Pool = new (() => new ListViewSerializedObjectBinding(), 32);
 
         ListView listView
         {
-            get { return boundElement as ListView; }
-            set { boundElement = value; }
+            get => boundElement as ListView;
+            set => boundElement = value;
         }
 
         SerializedObjectList m_DataList;
@@ -29,8 +29,10 @@ namespace UnityEditor.UIElements.Bindings
         Func<VisualElement> m_DefaultMakeItem;
         Action<VisualElement, int> m_DefaultBindItem;
         Action<VisualElement, int> m_DefaultUnbindItem;
-        Action<VisualElement> m_DefaultDestroyItem;
+        EventCallback<DragUpdatedEvent> m_DragUpdatedCallback;
+        EventCallback<DragPerformEvent> m_DragPerformCallback;
         EventCallback<SerializedObjectBindEvent> m_SerializedObjectBindEventCallback;
+        EventCallback<SerializedPropertyBindEvent> m_SerializedPropertyBindEventCallback;
 
         public static void CreateBind(ListView listView,
             SerializedObjectBindingContext context,
@@ -41,100 +43,110 @@ namespace UnityEditor.UIElements.Bindings
             newBinding.SetBinding(listView, context, prop);
         }
 
-        protected void SetBinding(ListView listView, SerializedObjectBindingContext context,
-            SerializedProperty prop)
+        public ListViewSerializedObjectBinding()
         {
-            m_DataList = new SerializedObjectList(prop, listView.sourceIncludesArraySize);
-            m_ArraySize = m_DataList.ArraySize;
-
             m_DefaultMakeItem = MakeListViewItem;
             m_DefaultBindItem = BindListViewItem;
             m_DefaultUnbindItem = UnbindListViewItem;
-            m_DefaultDestroyItem = DestroyListViewItem;
+            m_DragUpdatedCallback = OnDragUpdated;
+            m_DragPerformCallback = OnDragPerform;
             m_SerializedObjectBindEventCallback = SerializedObjectBindEventCallback;
+            m_SerializedPropertyBindEventCallback = SerializedPropertyBindEventCallback;
+        }
 
+        protected void SetBinding(ListView targetList, SerializedObjectBindingContext context,
+            SerializedProperty prop)
+        {
+            m_DataList = new SerializedObjectList(prop, targetList.sourceIncludesArraySize);
+            m_ArraySize = m_DataList.ArraySize;
             m_ListViewArraySize = m_DataList.ArraySize.intValue;
-            m_LastSourceIncludesArraySize = listView.sourceIncludesArraySize;
-            SetListView(listView);
+            m_LastSourceIncludesArraySize = targetList.sourceIncludesArraySize;
+
+            SetListView(targetList);
             SetContext(context, m_ArraySize);
 
-            listView.RefreshItems();
+            targetList.RefreshItems();
         }
 
         private void SetListView(ListView lv)
         {
             if (listView != null)
             {
-                listView.itemsSource = null;
-                listView.Rebuild();
-
-                if (listView.bindItem == m_DefaultBindItem)
-                    listView.SetBindItemWithoutNotify(null);
-                if (listView.makeItem == m_DefaultMakeItem)
-                    listView.SetMakeItemWithoutNotify(null);
-                if (listView.unbindItem == m_DefaultUnbindItem)
-                    listView.unbindItem = null;
-                if (listView.destroyItem == m_DefaultDestroyItem)
-                    listView.destroyItem = null;
-
-                listView.SetViewController(null);
-                listView.SetDragAndDropController(null);
-
-                var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
-                if (foldoutInput != null)
-                {
-                    foldoutInput.UnregisterCallback<DragUpdatedEvent>(OnDragUpdated);
-                    foldoutInput.UnregisterCallback<DragPerformEvent>(OnDragPerform);
-                }
+                Debug.LogError("[UI Toolkit] Internal ListViewBindings error. Please report this with Help -> Report a bug...");
+                return;
             }
 
             listView = lv;
 
-            if (listView != null)
+            if (listView.makeItem == null)
             {
-                if (listView.makeItem == null)
-                {
-                    listView.SetMakeItemWithoutNotify(m_DefaultMakeItem);
-                }
-
-                if (listView.bindItem == null)
-                {
-                    listView.SetBindItemWithoutNotify(m_DefaultBindItem);
-                }
-
-                if (listView.unbindItem == null)
-                {
-                    listView.unbindItem = m_DefaultUnbindItem;
-                }
-
-                if (listView.destroyItem == null)
-                {
-                    listView.destroyItem = m_DefaultDestroyItem;
-                }
-
-                listView.SetViewController(new EditorListViewController());
-                listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView));
-                listView.itemsSource = m_DataList;
-
-                var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
-                if (foldoutInput != null)
-                {
-                    foldoutInput.RegisterCallback<DragUpdatedEvent>(OnDragUpdated);
-                    foldoutInput.RegisterCallback<DragPerformEvent>(OnDragPerform);
-                }
+                listView.SetMakeItemWithoutNotify(m_DefaultMakeItem);
             }
+
+            if (listView.bindItem == null)
+            {
+                listView.SetBindItemWithoutNotify(m_DefaultBindItem);
+            }
+
+            if (listView.unbindItem == null)
+            {
+                listView.unbindItem = m_DefaultUnbindItem;
+            }
+
+            // We prevent hierarchy binding under the contentContainer.
+            listView.scrollView.contentContainer.RegisterCallback(m_SerializedObjectBindEventCallback);
+            listView.scrollView.contentContainer.RegisterCallback(m_SerializedPropertyBindEventCallback);
+
+            var reorderable = listView.reorderable;
+            listView.SetViewController(new EditorListViewController());
+            listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView)
+            {
+                enableReordering = reorderable,
+            });
+            listView.itemsSource = m_DataList;
+
+            var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
+            if (foldoutInput != null)
+            {
+                foldoutInput.RegisterCallback(m_DragUpdatedCallback);
+                foldoutInput.RegisterCallback(m_DragPerformCallback);
+            }
+        }
+
+        private void ClearListView()
+        {
+            if (listView == null)
+            {
+                Debug.LogError("[UI Toolkit] Internal ListViewBindings error during release. Please report this with Help -> Report a bug...");
+                return;
+            }
+
+            listView.itemsSource = null;
+            listView.Rebuild();
+
+            listView.SetBindItemWithoutNotify(null);
+            listView.SetMakeItemWithoutNotify(null);
+            listView.unbindItem = null;
+
+            listView.scrollView.contentContainer.UnregisterCallback(m_SerializedObjectBindEventCallback);
+            listView.scrollView.contentContainer.UnregisterCallback(m_SerializedPropertyBindEventCallback);
+
+            listView.SetViewController(null);
+            listView.SetDragAndDropController(null);
+
+            var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
+            if (foldoutInput != null)
+            {
+                foldoutInput.UnregisterCallback(m_DragUpdatedCallback);
+                foldoutInput.UnregisterCallback(m_DragPerformCallback);
+            }
+
+            listView = null;
         }
 
         VisualElement MakeListViewItem()
         {
-            var prop = new PropertyField();
-            prop.RegisterCallback(m_SerializedObjectBindEventCallback);
-            return prop;
-        }
-
-        void DestroyListViewItem(VisualElement element)
-        {
-            element.UnregisterCallback(m_SerializedObjectBindEventCallback);
+            return new PropertyField();
         }
 
         void BindListViewItem(VisualElement ve, int index)
@@ -159,10 +171,6 @@ namespace UnityEditor.UIElements.Bindings
 
             var item = m_DataList[index];
             var itemProp = item as SerializedProperty;
-
-            // No need to rebind to the same path. We should use a Rebuild if we need to force it.
-            if (field.bindingPath == itemProp.propertyPath)
-                return;
 
             m_IsBinding = true;
             field.bindingPath = itemProp.propertyPath;
@@ -196,11 +204,20 @@ namespace UnityEditor.UIElements.Bindings
 
         void SerializedObjectBindEventCallback(SerializedObjectBindEvent evt)
         {
-            if (!m_IsBinding)
-            {
-                evt.PreventDefault();
-                evt.StopPropagation();
-            }
+            if (m_IsBinding)
+                return;
+
+            evt.PreventDefault();
+            evt.StopPropagation();
+        }
+
+        void SerializedPropertyBindEventCallback(SerializedPropertyBindEvent evt)
+        {
+            if (m_IsBinding) 
+                return;
+
+            evt.PreventDefault();
+            evt.StopPropagation();
         }
 
         void OnDragUpdated(DragUpdatedEvent evt)
@@ -254,7 +271,7 @@ namespace UnityEditor.UIElements.Bindings
         {
             isReleased = true;
 
-            SetListView(null);
+            ClearListView();
 
             ResetContext();
             m_DataList = null;
@@ -513,18 +530,21 @@ namespace UnityEditor.UIElements.Bindings
         {
             if (index >= 0 && index < Count)
             {
-                var currentProperty = ArrayProperty.GetArrayElementAtIndex(index);
-                for (var i = index + 1; i < Count; i++)
+                ArrayProperty.DeleteArrayElementAtIndex(index);
+
+                if (index < Count - 1)
                 {
-                    var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
-                    if (nextProperty != null)
+                    var currentProperty = ArrayProperty.GetArrayElementAtIndex(index);
+                    for (var i = index + 1; i < Count; i++)
                     {
-                        currentProperty.isExpanded = nextProperty.isExpanded;
-                        currentProperty = nextProperty;
+                        var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
+                        if (nextProperty != null)
+                        {
+                            currentProperty.isExpanded = nextProperty.isExpanded;
+                            currentProperty = nextProperty;
+                        }
                     }
                 }
-
-                ArrayProperty.DeleteArrayElementAtIndex(index);
             }
         }
     }

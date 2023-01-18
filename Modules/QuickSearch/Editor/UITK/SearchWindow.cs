@@ -328,6 +328,11 @@ namespace UnityEditor.Search
             var oldText = context.searchText;
             m_SearchView.SetSearchText(searchText, moveCursor);
             Dispatcher.Emit(SearchEvent.SearchTextChanged, new SearchEventPayload(this, oldText, context.searchText, moveCursor, cursorInsertPosition));
+
+            if (viewState.queryBuilderEnabled && queryBuilder != null && queryBuilder.BuildQuery() != searchText)
+            {
+                Dispatcher.Emit(SearchEvent.RefreshBuilder, new SearchEventPayload(this));
+            }
         }
 
         public virtual void Refresh(RefreshFlags flags = RefreshFlags.Default)

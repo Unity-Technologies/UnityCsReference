@@ -60,7 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 // If a list operation is still in progress when extra fetch returns, we'll wait until the list operation results
                 // are processed, such that the extra fetch result won't be overwritten by the list result.
-                if (m_ListOperation.isInProgress)
+                if (m_ListOperation?.isInProgress == true)
                     m_ListOperation.onOperationFinalized += op => onProductExtraFetched?.Invoke(productId);
                 else
                     onProductExtraFetched?.Invoke(productId);
@@ -75,7 +75,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_AssetStoreCache.GetPurchaseInfo(productId) != null)
                 return;
 
-            if (m_ListOperation.isInProgress)
+            if (m_ListOperation?.isInProgress == true)
             {
                 m_ListOperation.onOperationFinalized += op => FetchPurchaseInfoWithRetry(productId, checkHiddenPurchases);
                 return;

@@ -103,6 +103,9 @@ namespace UnityEditor.Search.Providers
             if (!options.flags.HasAny(SearchPropositionFlags.QueryBuilder))
                 yield break;
 
+            foreach (var p in QueryAndOrBlock.BuiltInQueryBuilderPropositions())
+                yield return p;
+
             foreach (var f in SettingsProviderCache.queryEngine.GetPropositions())
                 yield return f;
         }
