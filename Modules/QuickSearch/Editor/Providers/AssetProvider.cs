@@ -393,6 +393,9 @@ namespace UnityEditor.Search.Providers
             foreach (var p in FetchIndexPropositions())
                 yield return p;
 
+            foreach (var p in QueryAndOrBlock.BuiltInQueryBuilderPropositions())
+                yield return p;
+
             foreach (var l in QueryListBlockAttribute.GetPropositions(typeof(QueryLabelBlock)))
                 yield return l;
 

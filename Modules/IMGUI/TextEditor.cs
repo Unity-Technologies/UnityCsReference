@@ -457,7 +457,7 @@ namespace UnityEngine
 
             // ... and height/y as well
             // If there is plenty of room, simply show entire string
-            if (contentSize.y < viewRect.height || viewRect.height == 0)
+            if (Mathf.Round(contentSize.y) <= Mathf.Round(viewRect.height) || viewRect.height == 0)
                 newYOffset = 0;
             else if (showCursor && Math.Abs(lastCursorPos.y - localGraphicalCursorPos.y) > epsilon)
             {

@@ -494,7 +494,7 @@ namespace UnityEngine.UIElements
         void OnItemsSourceSizeChanged()
         {
             // When bound, the ListViewBinding class takes care of refreshing when the array size is updated.
-            if (!(binding is IInternalListViewBinding))
+            if (binding is not IInternalListViewBinding)
                 RefreshItems();
         }
 

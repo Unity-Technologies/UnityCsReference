@@ -319,7 +319,10 @@ namespace UnityEditor
                 }
                 else
                 {
-                    ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
+                    bool VREnabled = BuildPipeline.IsFeatureSupported("ENABLE_VR", platform.defaultTarget);
+
+                    if (VREnabled)
+                        ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
 
                     if (TargetSupportsOptionalBuiltinSplashScreen(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension))
                         BuiltinCustomSplashScreenGUI(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension);

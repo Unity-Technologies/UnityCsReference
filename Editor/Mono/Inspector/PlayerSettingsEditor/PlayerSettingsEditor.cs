@@ -2209,7 +2209,7 @@ namespace UnityEditor
                 }
 
                 // Tickbox for OpenGL-only option to toggle Profiler GPU Recorders.
-                if (platform.namedBuildTarget == NamedBuildTarget.Standalone || platform.namedBuildTarget == NamedBuildTarget.Android)
+                if (platform.namedBuildTarget == NamedBuildTarget.Standalone || platform.namedBuildTarget == NamedBuildTarget.Android || platform.namedBuildTarget == NamedBuildTarget.EmbeddedLinux  || platform.namedBuildTarget == NamedBuildTarget.QNX)
                 {
                     PlayerSettings.enableOpenGLProfilerGPURecorders = EditorGUILayout.Toggle(SettingsContent.enableOpenGLProfilerGPURecorders, PlayerSettings.enableOpenGLProfilerGPURecorders);
 

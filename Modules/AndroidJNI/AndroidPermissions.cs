@@ -18,6 +18,7 @@ namespace UnityEngine.Android
 
         public event Action<string> PermissionGranted;
         public event Action<string> PermissionDenied;
+        [Obsolete("Unreliable. Query ShouldShowRequestPermissionRationale and use PermissionDenied event.", false)]
         public event Action<string> PermissionDeniedAndDontAskAgain;
         public event Action<string> PermissionRequestDismissed;
 
@@ -85,6 +86,13 @@ namespace UnityEngine.Android
                 return m_UnityPermissions;
             m_UnityPermissions = new AndroidJavaClass("com.unity3d.player.UnityPermissions");
             return m_UnityPermissions;
+        }
+
+        public static bool ShouldShowRequestPermissionRationale(string permission)
+        {
+            if (string.IsNullOrWhiteSpace(permission))
+                return false;
+            return true;
         }
 
         public static bool HasUserAuthorizedPermission(string permission)

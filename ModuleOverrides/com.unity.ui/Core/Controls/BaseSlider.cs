@@ -47,14 +47,20 @@ namespace UnityEngine.UIElements
         [SerializeField, DontCreateProperty]
         private TValueType m_LowValue;
 
+        [Obsolete($"Use the generic BaseSlider<TValueType>.UxmlTraits<TValueUxmlAttributeType> class", true)]
+        public new class UxmlTraits : BaseField<TValueType>.UxmlTraits {}
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseSlider"/>.
+        ///
+        /// This class must be used instead of the non-generic inherited UxmlTraits equivalent.
         /// </summary>
         /// <remarks>
         /// This class defines the properties of a BaseSlider element that you can
         /// use in a UXML asset.
         /// </remarks>
-        public new class UxmlTraits : BaseField<TValueType>.UxmlTraits
+        public class UxmlTraits<TValueUxmlAttributeType> : BaseFieldTraits<TValueType, TValueUxmlAttributeType>
+            where TValueUxmlAttributeType : TypedUxmlAttributeDescription<TValueType>, new()
         {
             /// <summary>
             /// Constructor.

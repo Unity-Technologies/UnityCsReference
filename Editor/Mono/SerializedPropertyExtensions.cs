@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Assertions;
 
 namespace UnityEditor
@@ -21,6 +24,7 @@ namespace UnityEditor
                     return true;
                 }
             }
+
             entry = null;
             return false;
         }
@@ -38,6 +42,7 @@ namespace UnityEditor
                     return true;
                 }
             }
+
             entry = null;
             return false;
         }
@@ -51,6 +56,7 @@ namespace UnityEditor
                 Assert.IsTrue(innerMap.type == "map");
                 return innerMap.TryGetMapEntry(elementMapKey, out entry);
             }
+
             entry = null;
             return false;
         }
@@ -187,6 +193,80 @@ namespace UnityEditor
                 element.FindPropertyRelative("first").stringValue = key;
                 innerMap.SetMapValue(elementMapKey, elementMapValue);
             }
+        }
+
+        public static void SetValue<DataSourceType>(this SerializedProperty serializedProperty, Action<SerializedProperty, DataSourceType> serialziedPropertySetter, IList<DataSourceType> dstValues)
+        {
+            if (serializedProperty != null && serializedProperty.isArray && serialziedPropertySetter != null)
+            {
+                var numElementSerialized = serializedProperty.arraySize;
+                var numElementToInsert = dstValues.Count;
+                if (numElementSerialized > numElementToInsert)
+                {
+                    for (var i = numElementSerialized - 1; i >= numElementToInsert; i--)
+                    {
+                        serializedProperty.DeleteArrayElementAtIndex(i);
+                    }
+                }
+
+                for (var i = 0; i < numElementToInsert; i++)
+                {
+                    if (i >= numElementSerialized)
+                    {
+                        serializedProperty.InsertArrayElementAtIndex(i);
+                        numElementSerialized = serializedProperty.arraySize;
+                    }
+
+                    var objToEdit = serializedProperty.GetArrayElementAtIndex(i);
+                    DataSourceType newValue = dstValues[i];
+                    serialziedPropertySetter.Invoke(objToEdit, newValue);
+                }
+            }
+        }
+
+        public static void Setter(SerializedProperty serializedProperty, int value)
+        {
+            serializedProperty.intValue = value;
+        }
+
+        public static void Setter(SerializedProperty serializedProperty, double value)
+        {
+            serializedProperty.doubleValue = value;
+        }
+
+        public static void Setter(SerializedProperty serializedProperty, bool value)
+        {
+            serializedProperty.boolValue = value;
+        }
+
+        public static void Setter(SerializedProperty serializedProperty, string value)
+        {
+            serializedProperty.stringValue = value;
+        }
+
+        public static void Setter(SerializedProperty serializedProperty, long value)
+        {
+            serializedProperty.longValue = value;
+        }
+
+        public static void Setter(SerializedProperty serializedProperty, Color value)
+        {
+            serializedProperty.colorValue = value;
+        }
+
+        public static void Setter(SerializedProperty serializedProperty, AnimationCurve value)
+        {
+            serializedProperty.animationCurveValue = value;
+        }
+
+        public static void Setter(SerializedProperty serializedProperty, Bounds value)
+        {
+            serializedProperty.boundsValue = value;
+        }
+
+        public static void Setter(SerializedProperty serializedProperty, object value)
+        {
+            serializedProperty.boxedValue = value;
         }
     }
 }

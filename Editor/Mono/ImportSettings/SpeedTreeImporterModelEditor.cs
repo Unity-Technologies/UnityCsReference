@@ -323,13 +323,36 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
         }
+
+        bool ShouldRenderHueVariationDropdown()
+        {
+            SpeedTreeImporter importer = importers.First();
+
+            if (importer.enableHueByDefault)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < importer.enableHue.Length; ++i)
+            {
+                if (importer.enableSettingOverride[i] && importer.enableHue[i])
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public void ShowMaterialGUI()
         {
             EditorGUILayout.LabelField("Material", EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_MainColor, Styles.MainColor);
             EditorGUILayout.PropertyField(m_EnableHueVariation, Styles.EnableColorVariation);
-            if (importers.First().enableHueByDefault)
+
+            
+            if (ShouldRenderHueVariationDropdown())
             {
                 EditorGUILayout.PropertyField(m_HueVariation, Styles.HueVariation);
             }

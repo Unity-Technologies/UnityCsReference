@@ -49,10 +49,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        static readonly string k_HeaderContainerViewDataKey = "HeaderContainer";
-
         Columns m_Columns;
-        VisualElement m_HeaderContainer;
 
         bool m_SortingEnabled;
         SortColumnDescriptions m_SortColumnDescriptions = new SortColumnDescriptions();
@@ -62,11 +59,6 @@ namespace UnityEngine.UIElements
         /// The view controller for this view, cast as a <see cref="MultiColumnListViewController"/>.
         /// </summary>
         public new MultiColumnListViewController viewController => base.viewController as MultiColumnListViewController;
-
-        /// <summary>
-        /// The content container.
-        /// </summary>
-        public override VisualElement contentContainer => m_HeaderContainer;
 
         /// <summary>
         /// If a column is clicked to change sorting, this event is raised to allow users to sort the tree view items.
@@ -154,10 +146,6 @@ namespace UnityEngine.UIElements
         /// <param name="columns">Column definitions used to initialize the header.</param>
         public MultiColumnListView(Columns columns)
         {
-            m_HeaderContainer = new VisualElement() { name = MultiColumnController.headerContainerUssClassName };
-            m_HeaderContainer.AddToClassList(MultiColumnController.headerContainerUssClassName);
-            m_HeaderContainer.viewDataKey = k_HeaderContainerViewDataKey;
-            scrollView.hierarchy.Insert(0, m_HeaderContainer);
             this.columns = columns ?? new Columns();
         }
 

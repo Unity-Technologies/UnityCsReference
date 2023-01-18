@@ -116,7 +116,7 @@ namespace UnityEngine.UIElements
         /// <remarks>For example, the index will be different from the id in a tree.</remarks>
         public virtual int GetIdForIndex(int index)
         {
-            return m_View.getItemId?.Invoke(index) ?? index;
+            return index;
         }
 
         /// <summary>
