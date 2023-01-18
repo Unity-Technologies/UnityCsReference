@@ -138,7 +138,7 @@ namespace UnityEditor
             m_IsBeingDestroyed = true;
 
             if (hasFocus)
-                m_OnLostFocus?.Invoke();
+                OnLostFocus();
 
             actualView = null;
 
