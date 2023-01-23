@@ -247,6 +247,7 @@ namespace UnityEngine.UIElements
                 // Dispatch all timer update messages to each scheduled item
                 panel.UpdateAssetTrackers();
                 panel.timerEventScheduler.UpdateScheduledEvents();
+                panel.ValidateFocus();
                 panel.UpdateAnimations();
                 panel.UpdateBindings();
             }

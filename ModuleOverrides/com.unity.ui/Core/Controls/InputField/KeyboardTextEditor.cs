@@ -73,13 +73,13 @@ namespace UnityEngine.UIElements
 
         void OnKeyDown(KeyDownEvent evt)
         {
-            if (!textElement.edition.hasFocus)
+            if (!textElement.hasFocus)
                 return;
 
             m_Changed = false;
 
             evt.GetEquivalentImguiEvent(m_ImguiEvent);
-            if (editingUtilities.HandleKeyEvent(m_ImguiEvent, false))
+            if (editingUtilities.HandleKeyEvent(m_ImguiEvent))
             {
                 if (textElement.text != editingUtilities.text)
                     m_Changed = true;
@@ -94,11 +94,13 @@ namespace UnityEngine.UIElements
                     return;
 
                 // We rely on KeyCode.Tab for both navigation and inserting tabulation.
-                if (c == '\t')
+                // On Linux Platform regular tab event occupies both keycode and character fields
+                if (c == '\t' && evt.keyCode == KeyCode.None && evt.modifiers == EventModifiers.None)
                     return;
 
                 // Ignore tab in single-line text fields, modifier+tab in multiline text fields
-                if (evt.keyCode == KeyCode.Tab)
+                // On Linux Platform modifier+tab case will be represented as keycode=None and character='\t'
+                if (evt.keyCode == KeyCode.Tab || (evt.keyCode == KeyCode.Tab && evt.character == '\t' && evt.modifiers == EventModifiers.Shift))
                 {
                     if(!textElement.edition.multiline || evt.shiftKey)
                     {
@@ -198,7 +200,7 @@ namespace UnityEngine.UIElements
 
         void OnValidateCommandEvent(ValidateCommandEvent evt)
         {
-            if (!textElement.edition.hasFocus)
+            if (!textElement.hasFocus)
                 return;
 
             switch (evt.commandName)
@@ -227,7 +229,7 @@ namespace UnityEngine.UIElements
 
         void OnExecuteCommandEvent(ExecuteCommandEvent evt)
         {
-            if (!textElement.edition.hasFocus)
+            if (!textElement.hasFocus)
                 return;
 
 

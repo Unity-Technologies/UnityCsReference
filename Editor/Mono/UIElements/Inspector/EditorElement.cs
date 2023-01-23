@@ -237,6 +237,9 @@ namespace UnityEditor.UIElements
             if (null == editor || null != m_InspectorElement || m_IsCulled)
                 return;
 
+            //set the current PropertyHandlerCache to the current editor
+            ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
+
             // Need to update the cache for multi-object edit detection.
             if (editor.targets.Length != Selection.objects.Length)
                 inspectorWindow.tracker.RebuildIfNecessary();

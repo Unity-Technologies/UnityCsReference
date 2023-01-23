@@ -4123,9 +4123,7 @@ namespace UnityEditor
 
         public static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, [DefaultValue("false")] bool includeObsolete, [DefaultValue("null")] GUIStyle style = null)
         {
-            int changedFlags;
-            bool changedToValue;
-            return EnumFlagsField(position, label, enumValue, includeObsolete, out changedFlags, out changedToValue, style ?? EditorStyles.popup);
+            return EnumFlagsField(position, label, enumValue, includeObsolete, out _, out _, style ?? EditorStyles.popup);
         }
 
         // Internal version that also gives you back which flags were changed and what they were changed to.

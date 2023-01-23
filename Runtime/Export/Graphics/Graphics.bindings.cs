@@ -1254,3 +1254,12 @@ namespace UnityEngine.Experimental.Rendering
         extern public static GraphicsJobsSyncPoint graphicsJobsSyncPoint { get; set; }
     }
 }
+
+namespace UnityEngine.Rendering
+{
+    public static partial class LoadStoreActionDebugModeSettings
+    {
+        [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)]
+        extern public static bool LoadStoreDebugModeEnabled { get; set; }
+    }
+}

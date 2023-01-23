@@ -103,7 +103,6 @@ namespace UnityEngine.UIElements
             (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
         }
 
-        [SerializeField]
         private string m_Text = String.Empty;
 
         /// <summary>
@@ -130,6 +129,22 @@ namespace UnityEngine.UIElements
             {
                 if (m_EnableRichText == value) return;
                 m_EnableRichText = value;
+                MarkDirtyRepaint();
+            }
+        }
+
+        bool m_ParseEscapeSequences = true;
+        /// <summary>
+        /// Specifies whether escape sequences are displayed as is or if they are replaced by the character they represent.
+        /// </summary>
+        public bool parseEscapeSequences
+        {
+            get => m_ParseEscapeSequences;
+            set
+            {
+                if (m_ParseEscapeSequences == value) return;
+
+                m_ParseEscapeSequences = value;
                 MarkDirtyRepaint();
             }
         }
@@ -318,6 +333,7 @@ namespace UnityEngine.UIElements
             return computedStyle.textOverflow == TextOverflow.Ellipsis && computedStyle.overflow == OverflowInternal.Hidden;
         }
 
+        internal bool hasFocus => elementPanel != null && elementPanel.focusController?.GetLeafFocusedElement() == this;
         /// <summary>
         /// Computes the size needed to display a text string based on element style values such as font, font-size, word-wrap, and so on.
         /// </summary>
@@ -377,7 +393,8 @@ namespace UnityEngine.UIElements
                     SaveViewData();
             }
 
-            if (!edition.isReadOnly && editingManipulator?.editingUtilities.text != newValue)
+            // Always sync the manipulator if it exists even if the element is read-only or disabled. See issue UUM-8802
+            if (editingManipulator != null)
                 editingManipulator.editingUtilities.text = newValue;
         }
     }

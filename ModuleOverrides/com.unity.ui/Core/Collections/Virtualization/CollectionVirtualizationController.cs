@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
 
         public abstract void Refresh(bool rebuild);
         public abstract void ScrollToItem(int id);
-        public abstract void Resize(Vector2 size, int layoutPass);
+        public abstract void Resize(Vector2 size);
         public abstract void OnScroll(Vector2 offset);
         public abstract int GetIndexFromPosition(Vector2 position);
         public abstract float GetExpectedItemHeight(int index);
@@ -30,6 +30,8 @@ namespace UnityEngine.UIElements
         public abstract void UpdateBackground();
 
         public abstract IEnumerable<ReusableCollectionItem> activeItems { get; }
-        public abstract void ReplaceActiveItem(int index);
+
+        internal abstract void StartDragItem(ReusableCollectionItem item);
+        internal abstract void EndDrag(int dropIndex);
     }
 }

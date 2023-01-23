@@ -43,7 +43,8 @@ namespace UnityEngine.UIElements
         /// <returns>The integer parsed from the string.</returns>
         protected override int StringToValue(string str)
         {
-            return UINumericFieldsUtils.StringToLong(str, out var v) ? Mathf.ClampToInt(v) : rawValue;
+            var success = UINumericFieldsUtils.StringToInt(str, textInputBase.originalText, out var v);
+            return success ? v : rawValue;
         }
 
         /// <summary>
@@ -132,9 +133,8 @@ namespace UnityEngine.UIElements
 
             protected override int StringToValue(string str)
             {
-                long v;
-                UINumericFieldsUtils.StringToLong(str, out v);
-                return Mathf.ClampToInt(v);
+                UINumericFieldsUtils.StringToInt(str, originalText, out var v);
+                return v;
             }
         }
     }

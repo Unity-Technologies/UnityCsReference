@@ -221,7 +221,7 @@ namespace UnityEngine.UIElements
                 if (!Mathf.Approximately(scrollDelta.x, 0f) || !Mathf.Approximately(scrollDelta.y, 0f))
                 {
                     SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
-                        (panelPosition, _, t) => WheelEvent.GetPooled(panelPosition, -1, 0, t.scrollDelta, t.modifiers),
+                        (panelPosition, _, t) => WheelEvent.GetPooled(t.scrollDelta, panelPosition, t.modifiers),
                         (modifiers: m_CurrentModifiers, scrollDelta));
                 }
             }

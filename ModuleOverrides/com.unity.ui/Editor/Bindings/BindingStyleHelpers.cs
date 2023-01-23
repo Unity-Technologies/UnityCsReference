@@ -343,14 +343,18 @@ namespace UnityEditor.UIElements.Bindings
             UpdatePrefabOverrideOrLivePropertyBarStyle(bar);
         }
 
+        // Stop ContextClickEvent because the context menu in the UITk inspector is shown on PointerUpEvent and not on ContextualMenuPopulateEvent (UUM-11643).
+        static void StopContextClickEvent(ContextClickEvent e)
+        {
+            e.StopImmediatePropagation();
+            e.PreventDefault();
+        }
+
         internal static void RegisterRightClickMenu<TValue>(BaseField<TValue> field, SerializedProperty property)
         {
-            var fieldLabelElement = field.Q<Label>(className: BaseField<TValue>.labelUssClassName);
-            if (fieldLabelElement != null)
-            {
-                fieldLabelElement.userData = property.Copy();
-                fieldLabelElement.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled);
-            }
+            field.userData = property.Copy();
+            field.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled);
+            field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
         }
 
         internal static void RegisterRightClickMenu(Foldout field, SerializedProperty property)
@@ -360,19 +364,22 @@ namespace UnityEditor.UIElements.Bindings
             {
                 toggle.userData = property.Copy();
                 toggle.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled);
+                toggle.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
             }
         }
 
         internal static void UnregisterRightClickMenu<TValue>(BaseField<TValue> field)
         {
-            var fieldLabelElement = field.Q<Label>(className: BaseField<TValue>.labelUssClassName);
-            fieldLabelElement?.UnregisterCallback(s_RightClickMenuCallback);
+           field.userData = null;
+           field.UnregisterCallback(s_RightClickMenuCallback);
+           field.UnregisterCallback<ContextClickEvent>(StopContextClickEvent);
         }
 
         internal static void UnregisterRightClickMenu(Foldout field)
         {
             var toggle = field.Q<Toggle>(className: Foldout.toggleUssClassName);
             toggle?.UnregisterCallback(s_RightClickMenuCallback);
+            toggle?.UnregisterCallback<ContextClickEvent>(StopContextClickEvent);
         }
 
         internal static void RightClickFieldMenuEvent(PointerUpEvent evt)
@@ -394,9 +401,10 @@ namespace UnityEditor.UIElements.Bindings
             var menu = EditorGUI.FillPropertyContextMenu(property);
             GUI.enabled = wasEnabled;
 
-            var menuPosition = new Vector2(element.layout.xMin, element.layout.height);
-            menuPosition = element.LocalToWorld(menuPosition);
-            var menuRect = new Rect(menuPosition, Vector2.zero);
+            if (menu == null)
+                return;
+
+            var menuRect = new Rect(evt.position, Vector2.zero);
             menu.DropDown(menuRect);
 
             evt.PreventDefault();

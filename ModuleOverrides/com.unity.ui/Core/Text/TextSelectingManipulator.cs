@@ -23,10 +23,6 @@ namespace UnityEngine.UIElements
             {
                 if (m_IsClicking == value) return;
                 m_IsClicking = value;
-                if (m_IsClicking)
-                    m_TextElement.CaptureMouse();
-                else
-                    m_TextElement.ReleaseMouse();
             }
         }
 
@@ -99,15 +95,17 @@ namespace UnityEngine.UIElements
                 case BlurEvent be:
                     OnBlurEvent(be);
                     break;
-                // TODO change to pointerup
-                case MouseDownEvent mde:
-                    OnMouseDownEvent(mde);
+                case PointerDownEvent pde:
+                    OnPointerDownEvent(pde);
                     break;
-                case MouseMoveEvent mme:
-                    OnMouseMoveEvent(mme);
+                case KeyDownEvent kde:
+                    OnKeyDown(kde);
                     break;
-                case MouseUpEvent mue:
-                    OnMouseUpEvent(mue);
+                case PointerMoveEvent pme:
+                    OnPointerMoveEvent(pme);
+                    break;
+                case PointerUpEvent pue:
+                    OnPointerUpEvent(pue);
                     break;
                 case ValidateCommandEvent vce:
                     OnValidateCommandEvent(vce);
@@ -135,9 +133,20 @@ namespace UnityEngine.UIElements
             selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp;
         }
 
-        void OnMouseDownEvent(MouseDownEvent evt)
+        readonly Event m_ImguiEvent = new Event();
+        void OnKeyDown(KeyDownEvent evt)
         {
-            var mousePosition = evt.localMousePosition - m_TextElement.contentRect.min;
+            if (!m_TextElement.hasFocus)
+                return;
+
+            evt.GetEquivalentImguiEvent(m_ImguiEvent);
+            if (m_SelectingUtilities.HandleKeyEvent(m_ImguiEvent))
+                evt.StopPropagation();
+        }
+
+        void OnPointerDownEvent(PointerDownEvent evt)
+        {
+            var pointerPosition = evt.localPosition - (Vector3)m_TextElement.contentRect.min;
             if (evt.button == (int)MouseButton.LeftMouse)
             {
                 if (evt.clickCount == 2 && m_TextElement.selection.doubleClickSelectsWord)
@@ -146,27 +155,27 @@ namespace UnityEngine.UIElements
                     m_SelectingUtilities.SelectCurrentParagraph();
                 else
                 {
-                    m_SelectingUtilities.MoveCursorToPosition_Internal(mousePosition, evt.shiftKey);
+                    m_SelectingUtilities.MoveCursorToPosition_Internal(pointerPosition, evt.shiftKey);
                     m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
                 }
 
                 isClicking = true;
-                m_ClickStartPosition = mousePosition;
+                m_TextElement.CapturePointer(evt.pointerId);
+                m_ClickStartPosition = pointerPosition;
                 evt.StopPropagation();
             }
         }
 
-        void OnMouseMoveEvent(MouseMoveEvent evt)
+        void OnPointerMoveEvent(PointerMoveEvent evt)
         {
-            if (evt.button != (int)MouseButton.LeftMouse || !isClicking)
+            if (!isClicking)
                 return;
 
-            var mousePosition = evt.localMousePosition - m_TextElement.contentRect.min;
-
-            m_Dragged = m_Dragged || MoveDistanceQualifiesForDrag(m_ClickStartPosition, mousePosition);
+            var pointerPosition = evt.localPosition - (Vector3)m_TextElement.contentRect.min;
+            m_Dragged = m_Dragged || MoveDistanceQualifiesForDrag(m_ClickStartPosition, pointerPosition);
             if (m_Dragged)
             {
-                m_SelectingUtilities.SelectToPosition(mousePosition);
+                m_SelectingUtilities.SelectToPosition(pointerPosition);
                 m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
 
                 selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp && !m_SelectingUtilities.hasSelection;
@@ -175,7 +184,7 @@ namespace UnityEngine.UIElements
             evt.StopPropagation();
         }
 
-        void OnMouseUpEvent(MouseUpEvent evt)
+        void OnPointerUpEvent(PointerUpEvent evt)
         {
             if (evt.button != (int)MouseButton.LeftMouse || !isClicking)
                 return;
@@ -186,12 +195,13 @@ namespace UnityEngine.UIElements
             selectAllOnMouseUp = false;
             m_Dragged = false;
             isClicking = false;
+            m_TextElement.ReleasePointer(evt.pointerId);
             evt.StopPropagation();
         }
 
         void OnValidateCommandEvent(ValidateCommandEvent evt)
         {
-            if (!m_TextElement.edition.hasFocus)
+            if (!m_TextElement.hasFocus)
                 return;
 
             switch (evt.commandName)
@@ -213,7 +223,7 @@ namespace UnityEngine.UIElements
 
         void OnExecuteCommandEvent(ExecuteCommandEvent evt)
         {
-            if (!m_TextElement.edition.hasFocus)
+            if (!m_TextElement.hasFocus)
                 return;
 
             switch (evt.commandName)

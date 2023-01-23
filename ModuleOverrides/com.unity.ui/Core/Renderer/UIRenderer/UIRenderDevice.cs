@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements.UIR
 
     internal class UIRenderDevice : IDisposable
     {
-        struct AllocToUpdate
+        internal struct AllocToUpdate
         {
             public uint id; // Never 0
             public uint allocTime; // Frame this update was registered
@@ -406,11 +406,33 @@ namespace UnityEngine.UIElements.UIR
                 vertexData = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, (int)vertexCount);
                 indexData = mesh.allocPage.indices.cpuData.Slice((int)mesh.allocIndices.start, (int)indexCount);
                 indexOffset = (UInt16)mesh.allocVerts.start;
+
+                // Case 1419340, having a nudge update, followed by a visuals update which causes a winding order change
+                // was not working because the copyBackIndices flag was left to "false".
+                UpdateCopyBackIndices(mesh, true);
+
                 return;
             }
 
             AllocToUpdate allocToUpdate;
             UpdateAfterGPUUsedData(mesh, vertexCount, indexCount, out vertexData, out indexData, out indexOffset, out allocToUpdate, true);
+        }
+
+        void UpdateCopyBackIndices(MeshHandle mesh, bool copyBackIndices)
+        {
+            if (mesh.updateAllocID == 0)
+                return; // Not a alloc update
+
+            int activeUpdateIndex = (int)(mesh.updateAllocID - 1); // -1 since 1 is the first update id in a frame
+            var updates = ActiveUpdatesForMeshHandle(mesh);
+            var update = updates[activeUpdateIndex];
+            update.copyBackIndices = true;
+            updates[activeUpdateIndex] = update;
+        }
+
+        internal List<AllocToUpdate> ActiveUpdatesForMeshHandle(MeshHandle mesh) // Internal for tests
+        {
+            return m_Updates[(int)mesh.allocTime % m_Updates.Count];
         }
 
         bool TryAllocFromPage(Page page, uint vertexCount, uint indexCount, ref Alloc va, ref Alloc ia, bool shortLived)

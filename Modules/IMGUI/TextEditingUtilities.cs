@@ -12,16 +12,18 @@ namespace UnityEngine
 
     enum TextEditOp
     {
-        MoveLeft, MoveRight, MoveUp, MoveDown, MoveLineStart, MoveLineEnd, MoveTextStart, MoveTextEnd, MovePageUp, MovePageDown,
-        MoveGraphicalLineStart, MoveGraphicalLineEnd, MoveWordLeft, MoveWordRight,
-        MoveParagraphForward, MoveParagraphBackward,  MoveToStartOfNextWord, MoveToEndOfPreviousWord,
+        MoveLeft, MoveRight, MoveUp, MoveDown, MoveLineStart, MoveLineEnd, MoveTextStart, MoveTextEnd, MovePageUp,
+        MovePageDown, MoveGraphicalLineStart, MoveGraphicalLineEnd, MoveWordLeft, MoveWordRight, MoveParagraphForward,
+        MoveParagraphBackward,  MoveToStartOfNextWord, MoveToEndOfPreviousWord, Delete, Backspace, DeleteWordBack,
+        DeleteWordForward, DeleteLineBack, Cut, Paste, ScrollStart, ScrollEnd, ScrollPageUp, ScrollPageDown
+    }
+
+    enum TextSelectOp
+    {
         SelectLeft, SelectRight, SelectUp, SelectDown, SelectTextStart, SelectTextEnd, SelectPageUp, SelectPageDown,
         ExpandSelectGraphicalLineStart, ExpandSelectGraphicalLineEnd, SelectGraphicalLineStart, SelectGraphicalLineEnd,
-        SelectWordLeft, SelectWordRight, SelectToEndOfPreviousWord, SelectToStartOfNextWord,
-        SelectParagraphBackward, SelectParagraphForward,
-        Delete, Backspace, DeleteWordBack, DeleteWordForward, DeleteLineBack,
-        Cut, Copy, Paste, SelectAll, SelectNone,
-        ScrollStart, ScrollEnd, ScrollPageUp, ScrollPageDown
+        SelectWordLeft, SelectWordRight, SelectToEndOfPreviousWord, SelectToStartOfNextWord, SelectParagraphBackward,
+        SelectParagraphForward, Copy, SelectAll, SelectNone
     }
 
     internal class TextEditingUtilities
@@ -144,16 +146,16 @@ namespace UnityEngine
         }
 
         [VisibleToOtherModules]
-        internal bool HandleKeyEvent(Event e, bool textIsReadOnly)
+        internal bool HandleKeyEvent(Event e)
         {
             RestoreCursorState();
             InitKeyActions();
             EventModifiers m = e.modifiers;
             e.modifiers &= ~EventModifiers.CapsLock;
-            if (s_Keyactions.ContainsKey(e))
+            if (s_KeyEditOps.ContainsKey(e))
             {
-                TextEditOp op = (TextEditOp)s_Keyactions[e];
-                PerformOperation(op, textIsReadOnly);
+                TextEditOp op = (TextEditOp)s_KeyEditOps[e];
+                PerformOperation(op);
                 e.modifiers = m;
                 return true;
             }
@@ -161,7 +163,7 @@ namespace UnityEngine
             return false;
         }
 
-        bool PerformOperation(TextEditOp operation, bool textIsReadOnly)
+        void PerformOperation(TextEditOp operation)
         {
             revealCursor = true;
 
@@ -186,86 +188,42 @@ namespace UnityEngine
                 //      case TextEditOp.MovePageDown:       return MovePageDown (); break;
                 case TextEditOp.MoveGraphicalLineStart: m_TextSelectingUtility.MoveGraphicalLineStart(); break;
                 case TextEditOp.MoveGraphicalLineEnd: m_TextSelectingUtility.MoveGraphicalLineEnd(); break;
-                case TextEditOp.SelectLeft:         m_TextSelectingUtility.SelectLeft(); break;
-                case TextEditOp.SelectRight:            m_TextSelectingUtility.SelectRight(); break;
-                case TextEditOp.SelectUp:           m_TextSelectingUtility.SelectUp(); break;
-                case TextEditOp.SelectDown:         m_TextSelectingUtility.SelectDown(); break;
-                case TextEditOp.SelectWordRight:        m_TextSelectingUtility.SelectWordRight(); break;
-                case TextEditOp.SelectWordLeft:     m_TextSelectingUtility.SelectWordLeft(); break;
-                case TextEditOp.SelectToEndOfPreviousWord:  m_TextSelectingUtility.SelectToEndOfPreviousWord(); break;
-                case TextEditOp.SelectToStartOfNextWord:    m_TextSelectingUtility.SelectToStartOfNextWord(); break;
-
-                case TextEditOp.SelectTextStart:        m_TextSelectingUtility.SelectTextStart(); break;
-                case TextEditOp.SelectTextEnd:      m_TextSelectingUtility.SelectTextEnd(); break;
-                case TextEditOp.ExpandSelectGraphicalLineStart: m_TextSelectingUtility.ExpandSelectGraphicalLineStart(); break;
-                case TextEditOp.ExpandSelectGraphicalLineEnd: m_TextSelectingUtility.ExpandSelectGraphicalLineEnd(); break;
-                case TextEditOp.SelectParagraphForward:     m_TextSelectingUtility.SelectParagraphForward(); break;
-                case TextEditOp.SelectParagraphBackward:    m_TextSelectingUtility.SelectParagraphBackward(); break;
-                case TextEditOp.SelectGraphicalLineStart: m_TextSelectingUtility.SelectGraphicalLineStart(); break;
-                case TextEditOp.SelectGraphicalLineEnd: m_TextSelectingUtility.SelectGraphicalLineEnd(); break;
-                //      case TextEditOp.SelectPageUp:                   return SelectPageUp (); break;
-                //      case TextEditOp.SelectPageDown:             return SelectPageDown (); break;
-                case TextEditOp.Delete:
-                    if (textIsReadOnly) return false;
-                    else return Delete();
-                case TextEditOp.Backspace:
-                    if (textIsReadOnly) return false;
-                    else return Backspace();
-                case TextEditOp.Cut:
-                    if (textIsReadOnly) return false;
-                    else return Cut();
-                case TextEditOp.Copy:
-                    m_TextSelectingUtility.Copy(); break;
-                case TextEditOp.Paste:
-                    if (textIsReadOnly) return false;
-                    else return Paste();
-                case TextEditOp.SelectAll:                          m_TextSelectingUtility.SelectAll(); break;
-                case TextEditOp.SelectNone:                     m_TextSelectingUtility.SelectNone(); break;
+                case TextEditOp.Delete: Delete(); break;
+                case TextEditOp.Backspace: Backspace(); break;
+                case TextEditOp.Cut: Cut(); break;
+                case TextEditOp.Paste: Paste(); break;
                 //      case TextEditOp.ScrollStart:            return ScrollStart (); break;
                 //      case TextEditOp.ScrollEnd:          return ScrollEnd (); break;
                 //      case TextEditOp.ScrollPageUp:       return ScrollPageUp (); break;
                 //      case TextEditOp.ScrollPageDown:     return ScrollPageDown (); break;
-                case TextEditOp.DeleteWordBack:
-                    if (textIsReadOnly) return false;
-                    else return DeleteWordBack();
-                case TextEditOp.DeleteLineBack:
-                    if (textIsReadOnly) return false;
-                    else return DeleteLineBack();
-                case TextEditOp.DeleteWordForward:
-                    if (textIsReadOnly) return false;
-                    else return DeleteWordForward();
+                case TextEditOp.DeleteWordBack: DeleteWordBack(); break;
+                case TextEditOp.DeleteLineBack: DeleteLineBack(); break;
+                case TextEditOp.DeleteWordForward: DeleteWordForward(); break;
                 default:
                     Debug.Log("Unimplemented: " + operation);
                     break;
             }
-
-            return false;
         }
 
 
         static void MapKey(string key, TextEditOp action)
         {
-            s_Keyactions[Event.KeyboardEvent(key)] = action;
+            s_KeyEditOps[Event.KeyboardEvent(key)] = action;
         }
 
-        static Dictionary<Event, TextEditOp> s_Keyactions;
+        static Dictionary<Event, TextEditOp> s_KeyEditOps;
         /// Set up a platform independent keyboard->Edit action map. This varies depending on whether we are on mac or windows.
         void InitKeyActions()
         {
-            if (s_Keyactions != null)
+            if (s_KeyEditOps != null)
                 return;
-            s_Keyactions = new Dictionary<Event, TextEditOp>();
+            s_KeyEditOps = new Dictionary<Event, TextEditOp>();
 
             // key mappings shared by the platforms
             MapKey("left", TextEditOp.MoveLeft);
             MapKey("right", TextEditOp.MoveRight);
             MapKey("up", TextEditOp.MoveUp);
             MapKey("down", TextEditOp.MoveDown);
-
-            MapKey("#left", TextEditOp.SelectLeft);
-            MapKey("#right", TextEditOp.SelectRight);
-            MapKey("#up", TextEditOp.SelectUp);
-            MapKey("#down", TextEditOp.SelectDown);
 
             MapKey("delete", TextEditOp.Delete);
             MapKey("backspace", TextEditOp.Backspace);
@@ -295,29 +253,7 @@ namespace UnityEngine
                 MapKey("%up", TextEditOp.MoveTextStart);
                 MapKey("%down", TextEditOp.MoveTextEnd);
 
-                MapKey("#home", TextEditOp.SelectTextStart);
-                MapKey("#end", TextEditOp.SelectTextEnd);
-                // TODO         MapKey ("#page up", TextEditOp.SelectPageUp);
-                // TODO         MapKey ("#page down", TextEditOp.SelectPageDown);
-
-                MapKey("#^left", TextEditOp.ExpandSelectGraphicalLineStart);
-                MapKey("#^right", TextEditOp.ExpandSelectGraphicalLineEnd);
-                MapKey("#^up", TextEditOp.SelectParagraphBackward);
-                MapKey("#^down", TextEditOp.SelectParagraphForward);
-
-                MapKey("#&left", TextEditOp.SelectWordLeft);
-                MapKey("#&right", TextEditOp.SelectWordRight);
-                MapKey("#&up", TextEditOp.SelectParagraphBackward);
-                MapKey("#&down", TextEditOp.SelectParagraphForward);
-
-                MapKey("#%left", TextEditOp.ExpandSelectGraphicalLineStart);
-                MapKey("#%right", TextEditOp.ExpandSelectGraphicalLineEnd);
-                MapKey("#%up", TextEditOp.SelectTextStart);
-                MapKey("#%down", TextEditOp.SelectTextEnd);
-
-                MapKey("%a", TextEditOp.SelectAll);
                 MapKey("%x", TextEditOp.Cut);
-                MapKey("%c", TextEditOp.Copy);
                 MapKey("%v", TextEditOp.Paste);
 
                 // emacs-like keybindings
@@ -350,13 +286,6 @@ namespace UnityEngine
                 MapKey("^up", TextEditOp.MoveParagraphBackward);
                 MapKey("^down", TextEditOp.MoveParagraphForward);
 
-                MapKey("#^left", TextEditOp.SelectToEndOfPreviousWord);
-                MapKey("#^right", TextEditOp.SelectToStartOfNextWord);
-                MapKey("#^up", TextEditOp.SelectParagraphBackward);
-                MapKey("#^down", TextEditOp.SelectParagraphForward);
-
-                MapKey("#home", TextEditOp.SelectGraphicalLineStart);
-                MapKey("#end", TextEditOp.SelectGraphicalLineEnd);
                 // TODO         MapKey ("#page up", TextEditOp.SelectPageUp);
                 // TODO         MapKey ("#page down", TextEditOp.SelectPageDown);
 
@@ -364,12 +293,9 @@ namespace UnityEngine
                 MapKey("^backspace", TextEditOp.DeleteWordBack);
                 MapKey("%backspace", TextEditOp.DeleteLineBack);
 
-                MapKey("^a", TextEditOp.SelectAll);
                 MapKey("^x", TextEditOp.Cut);
-                MapKey("^c", TextEditOp.Copy);
                 MapKey("^v", TextEditOp.Paste);
                 MapKey("#delete", TextEditOp.Cut);
-                MapKey("^insert", TextEditOp.Copy);
                 MapKey("#insert", TextEditOp.Paste);
             }
         }
@@ -518,7 +444,7 @@ namespace UnityEngine
             m_TextSelectingUtility.ClearCursorPos();
         }
 
-        /// Replacted the selection with /c/
+        /// Replaced the selection with /c/
         public void Insert(char c)
         {
             ReplaceSelection(c.ToString());
@@ -584,6 +510,21 @@ namespace UnityEngine
         {
             revealCursor = false;
             m_TextSelectingUtility.SelectNone();
+        }
+
+        // Returns true if the TouchScreenKeyboard should be used. On Android and Chrome OS, we only want to use the
+        // TouchScreenKeyboard if in-place editing is not allowed (i.e. when we do not have a hardware keyboard available).
+        internal bool TouchScreenKeyboardShouldBeUsed()
+        {
+            RuntimePlatform platform = Application.platform;
+            switch (platform)
+            {
+                case RuntimePlatform.Android:
+                case RuntimePlatform.WebGLPlayer:
+                    return !TouchScreenKeyboard.isInPlaceEditingAllowed;
+                default:
+                    return TouchScreenKeyboard.isSupported;
+            }
         }
     }
 }

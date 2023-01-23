@@ -145,7 +145,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static MonoCreateAssetItem[] ExtractCreateAssetMenuItems(Assembly assembly)
+        static MonoCreateAssetItem[] ExtractCreateAssetMenuItems()
         {
             var result = new List<MonoCreateAssetItem>();
 

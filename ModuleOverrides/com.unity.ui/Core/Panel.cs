@@ -301,6 +301,7 @@ namespace UnityEngine.UIElements
         }
 
         public abstract void Repaint(Event e);
+        public abstract void ValidateFocus();
         public abstract void ValidateLayout();
         public abstract void UpdateAnimations();
         public abstract void UpdateBindings();
@@ -545,11 +546,10 @@ namespace UnityEngine.UIElements
             scheduler.UpdateScheduledEvents();
             // This call is already on UIElementsUtility.UpdateSchedulers() but it's also necessary here for Runtime UI
             UpdateAssetTrackers();
+            ValidateFocus();
             ValidateLayout();
             UpdateAnimations();
             UpdateBindings();
-
-            focusController.ValidateInternalState(this);
         }
     }
 
@@ -661,14 +661,29 @@ namespace UnityEngine.UIElements
             return obj;
         }
 
+        private bool m_JustReceivedFocus;
         internal void Focus()
         {
-            focusController?.SetFocusToLastFocusedElement();
+            // Case 1345260: wait for the next editor update to set focus back to the element that had it before the
+            // panel last lost the focus. This delay avoids setting the focus and immediately setting it again when the
+            // panel is selected through clicking it.
+            m_JustReceivedFocus = true;
         }
 
         internal void Blur()
         {
             focusController?.BlurLastFocusedElement();
+        }
+
+        public override void ValidateFocus()
+        {
+            if (m_JustReceivedFocus)
+            {
+                m_JustReceivedFocus = false;
+                focusController?.SetFocusToLastFocusedElement();
+            }
+
+            focusController?.ValidateInternalState(this);
         }
 
         internal string name

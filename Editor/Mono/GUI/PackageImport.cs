@@ -243,12 +243,14 @@ namespace UnityEditor
             {
                 PackageImportWizard.instance.CancelImport();
             }
-            if (PackageImportWizard.instance.IsProjectSettingStep && GUILayout.Button(EditorGUIUtility.TrTextContent("Back")))
+
+            var isSecondStep = PackageImportWizard.instance.IsMultiStepWizard &&
+                               PackageImportWizard.instance.IsProjectSettingStep;
+            if (isSecondStep && GUILayout.Button(EditorGUIUtility.TrTextContent("Back")))
             {
                 PackageImportWizard.instance.DoPreviousStep(m_ImportPackageItems);
             }
-            var buttonText = PackageImportWizard.instance.IsMultiStepWizard
-                && !PackageImportWizard.instance.IsProjectSettingStep ? "Next" : "Import";
+            var buttonText = isSecondStep || !PackageImportWizard.instance.IsMultiStepWizard ? "Import" : "Next";
             if (GUILayout.Button(EditorGUIUtility.TrTextContent(buttonText)))
             {
                 if (m_ImportPackageItems != null)
@@ -436,8 +438,14 @@ namespace UnityEditor
                     m_AssetContentItems.Add(item);
             }
 
-            m_IsMultiStepWizard = m_ProjectSettingItems.Any();
-            ShowImportWindow(m_AssetContentItems.ToArray());
+            m_IsMultiStepWizard = m_AssetContentItems.Any() && m_ProjectSettingItems.Any();
+            if (m_AssetContentItems.Any())
+                ShowImportWindow(m_AssetContentItems.ToArray());
+            else if (m_ProjectSettingItems.Any())
+            {
+                m_IsProjectSettingStep = true;
+                ShowImportWindow(m_ProjectSettingItems.ToArray());
+            }
         }
 
         public void DoNextStep(ImportPackageItem[] importPackageItems)
@@ -459,12 +467,12 @@ namespace UnityEditor
 
         public void DoPreviousStep(ImportPackageItem[] importPackageItems)
         {
-            if (IsProjectSettingStep)
-            {
-                m_ProjectSettingItems = new List<ImportPackageItem>(importPackageItems);
-                m_IsProjectSettingStep = false;
-                ShowImportWindow(m_AssetContentItems.ToArray());
-            }
+            if (!IsProjectSettingStep || !IsMultiStepWizard)
+                return;
+
+            m_ProjectSettingItems = new List<ImportPackageItem>(importPackageItems);
+            m_IsProjectSettingStep = false;
+            ShowImportWindow(m_AssetContentItems.ToArray());
         }
 
         public void CancelImport()
@@ -491,8 +499,7 @@ namespace UnityEditor
 
         private void FinishImport()
         {
-            var completeItemList = IsMultiStepWizard ? m_AssetContentItems.Concat(m_ProjectSettingItems) : m_AssetContentItems;
-            PackageUtility.ImportPackageAssets(m_PackageName, completeItemList.ToArray());
+            PackageUtility.ImportPackageAssets(m_PackageName, m_AssetContentItems.Concat(m_ProjectSettingItems).ToArray());
             CloseImportWindow();
         }
 
