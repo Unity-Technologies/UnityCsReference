@@ -662,6 +662,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(
                         currentElement.rect,
+                        new Rect(0, 0, 1, 1),
                         background.sprite,
                         useRepeat ? ScaleMode.StretchToFill : scaleMode,
                         currentElement.panel.contextType,

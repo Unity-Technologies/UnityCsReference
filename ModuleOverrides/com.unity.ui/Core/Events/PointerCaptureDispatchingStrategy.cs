@@ -68,11 +68,9 @@ namespace UnityEngine.UIElements
             // Exclusive processing by capturing element.
             evt.dispatch = true;
             evt.target = targetOverride;
-            evt.currentTarget = targetOverride;
-            evt.propagationPhase = PropagationPhase.AtTarget;
             evt.skipDisabledElements = false;
 
-            targetOverride.HandleEvent(evt);
+            (targetOverride as CallbackEventHandler)?.HandleEventAtTargetPhase(evt);
 
             // Leave evt.target = originalCaptureElement for ExecuteDefaultAction()
             evt.currentTarget = null;

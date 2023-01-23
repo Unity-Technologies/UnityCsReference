@@ -110,9 +110,7 @@ namespace UnityEditor.UIElements.Bindings
                 return;
             }
 
-            var field = element as IBindable;
-
-            if (field != null)
+            if (element is IBindable field)
             {
                 if (!string.IsNullOrEmpty(field.bindingPath))
                 {
@@ -174,8 +172,7 @@ namespace UnityEditor.UIElements.Bindings
             if (property == null)
                 property = serializedObject?.FindProperty(field.bindingPath);
 
-            var fieldElement = field as VisualElement;
-            if (property == null || fieldElement == null)
+            if (property == null || field is not VisualElement fieldElement)
             {
                 // Object is null or property was not found, we have nothing to do here
                 return property;
@@ -206,10 +203,9 @@ namespace UnityEditor.UIElements.Bindings
         private void CreateBindingObjectForProperty(VisualElement element, SerializedProperty prop)
         {
             // A bound Foldout (a PropertyField with child properties) is special.
-            if (element is Foldout)
+            if (element is Foldout foldout)
             {
                 // We bind to the given propertyPath but we only bind to its 'isExpanded' state, not its value.
-                var foldout = element as Foldout;
                 SerializedObjectBinding<bool>.CreateBind(
                     foldout, this, prop,
                     p => p.isExpanded,
@@ -218,12 +214,11 @@ namespace UnityEditor.UIElements.Bindings
 
                 return;
             }
-            else if (element is Label && element.GetProperty(PropertyField.foldoutTitleBoundLabelProperty) != null)
+            else if (element is Label label && label.GetProperty(PropertyField.foldoutTitleBoundLabelProperty) != null)
             {
                 // We bind to the given propertyPath but we only bind to its 'localizedDisplayName' state, not its value.
                 // This is a feature from IMGUI where the title of a Foldout will change if one of the child
                 // properties is named "Name" and its value changes.
-                var label = element as Label;
                 SerializedObjectBinding<string>.CreateBind(
                     label, this, prop,
                     p => p.localizedDisplayName,
@@ -232,9 +227,16 @@ namespace UnityEditor.UIElements.Bindings
 
                 return;
             }
-            if (element is ListView)
+            if (element is ListView listView)
             {
-                BindListView(element as ListView,  prop);
+                BindListView(listView, prop);
+
+                if (listView.headerFoldout != null)
+                {
+                    // The foldout will be bound as hierarchy binding continues.
+                    listView.headerFoldout.bindingPath = prop.propertyPath;
+                }
+
                 return;
             }
 
@@ -1109,10 +1111,7 @@ namespace UnityEditor.UIElements.Bindings
 
             public void Bind(VisualElement element)
             {
-                if (context == null)
-                {
-                    context = FindOrCreateBindingContext(element, obj);
-                }
+                context ??= FindOrCreateBindingContext(element, obj);
 
                 switch (requestType)
                 {
@@ -1579,7 +1578,8 @@ namespace UnityEditor.UIElements.Bindings
                     BindingsStyleHelpers.UpdateElementStyle(veField, currentPropertyIterator);
                     return;
                 }
-            }catch (ArgumentNullException)
+            }
+            catch (ArgumentNullException)
             {
                 //this can happen when serializedObject has been disposed of
             }

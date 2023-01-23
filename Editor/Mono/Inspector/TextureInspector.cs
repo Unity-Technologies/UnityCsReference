@@ -69,7 +69,7 @@ namespace UnityEditor
         class Styles
         {
             public GUIContent smallZoom, largeZoom;
-            public GUIStyle toolbarButton, previewSlider, previewSliderThumb, previewLabel;
+            public GUIStyle toolbarButton, previewSlider, previewSliderThumb, previewLabel, mipLevelLabel;
 
             public readonly GUIContent[] previewButtonContents =
             {
@@ -111,6 +111,10 @@ namespace UnityEditor
                 previewSlider = "preSlider";
                 previewSliderThumb = "preSliderThumb";
                 previewLabel = "toolbarLabel";
+
+                mipLevelLabel = "PreOverlayLabel";
+                mipLevelLabel.alignment = TextAnchor.UpperCenter;
+                mipLevelLabel.padding.top = 5;
             }
         }
         static Styles s_Styles;
@@ -281,6 +285,15 @@ namespace UnityEditor
                 return m_CubemapPreview.GetMipLevelForRendering(target as Texture);
             else
                 return Mathf.Min(m_MipLevel, TextureUtil.GetMipmapCount(target as Texture) - 1);
+        }
+
+        public int GetMipmapLimit(Texture t)
+        {
+            if (t is Texture2D)
+            {
+                return (t as Texture2D).activeMipmapLimit;
+            }
+            return 0;
         }
 
         public float mipLevel
@@ -680,9 +693,17 @@ namespace UnityEditor
 
             if (mipCount > 1)
             {
+                int mipmapLimit = GetMipmapLimit(target as Texture);
                 GUILayout.Box(s_Styles.smallZoom, s_Styles.previewLabel);
                 GUI.changed = false;
-                m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, mipCount - 1, 0, s_Styles.previewSlider, s_Styles.previewSliderThumb, GUILayout.MaxWidth(64)));
+
+                int leftValue = mipCount - mipmapLimit - 1;
+                if (m_MipLevel > leftValue)
+                {
+                    // Left value can change depending on the mipmap limit. Cap slider value appropriately.
+                    m_MipLevel = leftValue;
+                }
+                m_MipLevel = Mathf.Round(GUILayout.HorizontalSlider(m_MipLevel, leftValue, 0, s_Styles.previewSlider, s_Styles.previewSliderThumb, GUILayout.MaxWidth(64)));
 
                 //For now, we don't have mipmaps smaller than the tile size when using VT.
                 if (EditorGUI.UseVTMaterial(tex))
@@ -847,9 +868,20 @@ namespace UnityEditor
 
             TextureUtil.SetFilterModeNoDirty(t, oldFilter);
 
+            int mipmapLimit = GetMipmapLimit(target as Texture);
+            int cpuMipLevel = Mathf.Min(TextureUtil.GetMipmapCount(target as Texture) - 1, (int)mipLevel + mipmapLimit);
             m_Pos = PreviewGUI.EndScrollView();
-            if (mipLevel != 0)
-                EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 20), "Mip " + mipLevel);
+            if (cpuMipLevel != 0)
+            {
+                GUIContent mipLevelTextContent = new GUIContent((cpuMipLevel != mipLevel)
+                        ? string.Format("Mip {0}\nMip {1} on GPU (Texture Limit)", cpuMipLevel, mipLevel)
+                        : string.Format("Mip {0}", mipLevel));
+                Vector2 size = s_Styles.mipLevelLabel.CalcSize(mipLevelTextContent);
+                if (size.x <= r.width)
+                {
+                    EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, size.y), mipLevelTextContent, s_Styles.mipLevelLabel);
+                }
+            }
         }
 
         private void DrawRect(Rect rect)

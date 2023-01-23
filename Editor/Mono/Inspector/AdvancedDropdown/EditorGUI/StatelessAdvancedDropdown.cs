@@ -181,7 +181,7 @@ namespace UnityEditor
         {
             var enumData = EnumDataUtility.GetCachedEnumData(options.GetType());
             var optionValue = EnumDataUtility.EnumFlagsToInt(enumData, options);
-            MaskFieldGUI.GetMenuOptions(optionValue, enumData.displayNames, enumData.flagValues, out var buttonText, out var buttonTextMixed, out var optionNames, out var optionMaskValues, out var selectedOptions);
+            MaskFieldGUI.GetMenuOptions(optionValue, enumData.displayNames, enumData.flagValues, out var buttonText, out var buttonTextMixed, out _, out _, out _);
 
             var id = EditorGUIUtility.GetControlID("AdvancedDropdown".GetHashCode(), FocusType.Keyboard, rect);
 
@@ -244,7 +244,7 @@ namespace UnityEditor
             for (int i = 0; i < flagValues.Length; ++i)
                 flagValues[i] = (1 << i);
 
-            MaskFieldGUI.GetMenuOptions(mask, displayedOptions, flagValues, out var buttonText, out var buttonTextMixed, out var optionNames, out var optionMaskValues, out var selectedOptions);
+            MaskFieldGUI.GetMenuOptions(mask, displayedOptions, flagValues, out var buttonText, out var buttonTextMixed, out _, out _, out _);
 
             var id = EditorGUIUtility.GetControlID("AdvancedDropdown".GetHashCode(), FocusType.Keyboard, rect);
 

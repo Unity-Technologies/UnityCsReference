@@ -449,12 +449,11 @@ namespace UnityEditor
                 return;
 
             HandleUtility.ApplyWireMaterial(zTest);
-            GL.Color(color * lineTransparency);
-
             GL.PushMatrix();
             GL.MultMatrix(matrix);
 
             GL.Begin(GL.LINE_STRIP);
+            GL.Color(color * lineTransparency);
             Vector3 p1, p2, p3, p6, p7, p8;
             {
                 Vector3 halfsize = size * 0.5f;
@@ -478,22 +477,13 @@ namespace UnityEditor
             }
             GL.End();
             GL.Begin(GL.LINES);
-            {
-                GL.Vertex(p1);
-                GL.Vertex(p6);
-            }
-            GL.End();
-            GL.Begin(GL.LINES);
-            {
-                GL.Vertex(p2);
-                GL.Vertex(p7);
-            }
-            GL.End();
-            GL.Begin(GL.LINES);
-            {
-                GL.Vertex(p3);
-                GL.Vertex(p8);
-            }
+            GL.Color(color * lineTransparency);
+            GL.Vertex(p1);
+            GL.Vertex(p6);
+            GL.Vertex(p2);
+            GL.Vertex(p7);
+            GL.Vertex(p3);
+            GL.Vertex(p8);
             GL.End();
 
             GL.PopMatrix();

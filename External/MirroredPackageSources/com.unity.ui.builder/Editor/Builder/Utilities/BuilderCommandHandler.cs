@@ -335,7 +335,8 @@ namespace Unity.UI.Builder
             if (BuilderSharedStyles.IsSelectorsContainerElement(element) ||
                 BuilderSharedStyles.IsStyleSheetElement(element) ||
                 BuilderSharedStyles.IsDocumentElement(element) ||
-                !element.IsLinkedToAsset())
+                !element.IsLinkedToAsset() ||
+                (!BuilderSharedStyles.IsSelectorElement(element) && !element.IsPartOfActiveVisualTreeAsset(m_PaneWindow.document)))
                 return false;
 
             if (BuilderSharedStyles.IsSelectorElement(element))

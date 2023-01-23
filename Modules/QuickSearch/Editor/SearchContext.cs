@@ -30,6 +30,8 @@ namespace UnityEditor.Search
         public SceneSearchContext sceneSearchContext => searchEngineContext.engineScope == SearchEngineScope.Scene ? (SceneSearchContext)searchEngineContext : null;
         public ObjectSelectorSearchContext selectorSearchContext => searchEngineContext.engineScope == SearchEngineScope.ObjectSelector ? (ObjectSelectorSearchContext)searchEngineContext : null;
 
+        public string contextId;
+
         Object m_CurrentObject;
         public Object currentObject
         {

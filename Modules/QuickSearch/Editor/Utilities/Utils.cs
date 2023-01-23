@@ -980,7 +980,7 @@ namespace UnityEditor.Search
             return true;
         }
 
-        public static bool TryParse<T>(string expression, out T result)
+        public static bool TryParse<T>(string expression, out T result, bool supportNamedNumber = true)
         {
             expression = expression.Replace(',', '.');
             expression = expression.TrimEnd('f');
@@ -990,7 +990,7 @@ namespace UnityEditor.Search
             result = default;
             if (typeof(T) == typeof(float))
             {
-                if (expression == "pi")
+                if (supportNamedNumber && expression == "pi")
                 {
                     success = true;
                     result = (T)(object)(float)Math.PI;
@@ -1013,7 +1013,7 @@ namespace UnityEditor.Search
             }
             else if (typeof(T) == typeof(double))
             {
-                if (expression == "pi")
+                if (supportNamedNumber && expression == "pi")
                 {
                     success = true;
                     result = (T)(object)Math.PI;

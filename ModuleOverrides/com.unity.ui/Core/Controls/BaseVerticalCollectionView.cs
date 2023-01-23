@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Profiling;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -53,7 +54,10 @@ namespace UnityEngine.UIElements
     {
         public Vector2 scrollOffset;
         public int firstVisibleIndex;
-        public float storedPadding;
+        public float contentPadding;
+        public float contentHeight;
+        public int anchoredItemIndex;
+        public float anchorOffset;
     }
 
     /// <summary>
@@ -191,18 +195,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public event Action itemsSourceChanged;
 
-        // [GR] We can get rid of this once the InternalTreeView is removed.
-        private Func<int, int> m_GetItemId;
-
-        internal Func<int, int> getItemId
-        {
-            get => m_GetItemId;
-            set
-            {
-                m_GetItemId = value;
-                RefreshItems();
-            }
-        }
+        internal event Action selectionNotChanged;
 
         /// <summary>
         /// The data source for collection items.
@@ -403,14 +396,15 @@ namespace UnityEngine.UIElements
         /// </summary>
         public bool horizontalScrollingEnabled
         {
-            get { return m_HorizontalScrollingEnabled; }
+            get => m_HorizontalScrollingEnabled;
             set
             {
                 if (m_HorizontalScrollingEnabled == value)
                     return;
 
                 m_HorizontalScrollingEnabled = value;
-                m_ScrollView.mode = (value ? ScrollViewMode.VerticalAndHorizontal : ScrollViewMode.Vertical);
+                m_ScrollView.horizontalScrollerVisibility = value ? ScrollerVisibility.Auto : ScrollerVisibility.Hidden;
+                m_ScrollView.mode = value ? ScrollViewMode.VerticalAndHorizontal : ScrollViewMode.Vertical;
             }
         }
 
@@ -485,6 +479,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// This property must be set when using the <see cref="virtualizationMethod"/> is set to <c>FixedHeight</c>, for the collection view to function.
+        /// If set when <see cref="virtualizationMethod"/> is <c>DynamicHeight</c>, it serves as the default height to help calculate the
+        /// number of items necessary and the scrollable area, before items are laid out. It should be set to the minimum expected height of an item.
         /// </remarks>
         public float fixedItemHeight
         {
@@ -688,10 +684,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// Unity adds this USS class to every odd-numbered item in the BaseVerticalCollectionView when the
-        /// <see cref="BaseVerticalCollectionView.showAlternatingRowBackground"/> property is set to <c>ContentOnly</c> or <c>All</c>.
-        /// When the <c>showAlternatingRowBackground</c> property is set to either of those values, odd-numbered items
+        /// <see cref="BaseVerticalCollectionView.showAlternatingRowBackgrounds"/> property is set to <c>ContentOnly</c> or <c>All</c>.
+        /// When the <c>showAlternatingRowBackgrounds</c> property is set to either of those values, odd-numbered items
         /// are displayed with a different background color than even-numbered items. This USS class is used to differentiate
-        /// odd-numbered items from even-numbered items. When the <c>showAlternatingRowBackground</c> property is set to
+        /// odd-numbered items from even-numbered items. When the <c>showAlternatingRowBackgrounds</c> property is set to
         /// <c>None</c>, the USS class is not added, and any styling or behavior that relies on it's invalidated.
         /// </remarks>
         public static readonly string itemAlternativeBackgroundUssClassName = itemUssClassName + "--alternative-background";
@@ -708,7 +704,7 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Creates a <see cref="BaseVerticalCollectionView"/> with all default properties.
-        /// The <see cref="BaseVerticalCollectionView.itemSource"/> must all be set for the BaseVerticalCollectionView to function properly.
+        /// The <see cref="BaseVerticalCollectionView.itemsSource"/> must all be set for the BaseVerticalCollectionView to function properly.
         /// </summary>
         public BaseVerticalCollectionView()
         {
@@ -717,11 +713,10 @@ namespace UnityEngine.UIElements
             selectionType = SelectionType.Single;
 
             m_ScrollView = new ScrollView();
-            m_ScrollView.viewDataKey = "list-view__scroll-view";
             m_ScrollView.AddToClassList(listScrollViewUssClassName);
             m_ScrollView.verticalScroller.valueChanged += v => OnScroll(new Vector2(0, v));
 
-            RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
+            m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnSizeChanged);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
 
             m_ScrollView.contentContainer.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -783,10 +778,14 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Gets the root element the specified TreeView item.
+        /// Gets the root element of the specified collection view item.
         /// </summary>
-        /// <param name="id">The TreeView item identifier.</param>
-        /// <returns>The TreeView item's root element.</returns>
+        /// <param name="id">The item identifier.</param>
+        /// <returns>The item's root element.</returns>
+        /// <remarks>
+        /// This method provides an entry point to re-style elements added by Unity over the user-driven content.
+        /// Ex. the drag handle in a ListView, or the Toggle in a TreeView.
+        /// </remarks>
         public VisualElement GetRootElementForId(int id)
         {
             return activeItems.FirstOrDefault(t => t.id == id)?.rootElement;
@@ -814,10 +813,7 @@ namespace UnityEngine.UIElements
         void OnItemIndexChanged(int srcIndex, int dstIndex)
         {
             itemIndexChanged?.Invoke(srcIndex, dstIndex);
-            if (!(binding is IInternalListViewBinding))
-                RefreshItems();
-            else
-                schedule.Execute(RefreshItems).ExecuteLater(100);
+            RefreshItems();
         }
 
         void OnItemsSourceChanged()
@@ -974,9 +970,9 @@ namespace UnityEngine.UIElements
             virtualizationController.OnScroll(offset);
         }
 
-        private void Resize(Vector2 size, int layoutPass = -1)
+        private void Resize(Vector2 size)
         {
-            virtualizationController.Resize(size, layoutPass);
+            virtualizationController.Resize(size);
             m_LastHeight = size.y;
             virtualizationController.UpdateBackground();
         }
@@ -1241,11 +1237,17 @@ namespace UnityEngine.UIElements
                     }
                     else if (selectionType == SelectionType.Multiple && m_SelectedIndices.Contains(clickedIndex))
                     {
-                        // Do noting, selection will be processed OnPointerUp.
+                        // Do nothing, selection will be processed OnPointerUp.
                         // If drag and drop will be started ListViewDragger will capture the mouse and ListView will not receive the mouse up event.
+                        selectionNotChanged?.Invoke();
                     }
                     else // single
                     {
+                        if (selectionType == SelectionType.Single && m_SelectedIndices.Contains(clickedIndex))
+                        {
+                            selectionNotChanged?.Invoke();
+                        }
+
                         SetSelection(clickedIndex);
                     }
 
@@ -1429,6 +1431,9 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings() || indices == null)
                 return;
 
+            if (MatchesExistingSelection(indices))
+                return;
+
             ClearSelectionWithoutValidation();
             foreach (var index in indices)
                 AddToSelectionWithoutValidation(index);
@@ -1437,6 +1442,28 @@ namespace UnityEngine.UIElements
                 NotifyOfSelectionChange();
 
             SaveViewData();
+        }
+
+        private bool MatchesExistingSelection(IEnumerable<int> indices)
+        {
+            var pooled = ListPool<int>.Get();
+            try
+            {
+                pooled.AddRange(indices);
+                if (pooled.Count != m_SelectedIndices.Count)
+                    return false;
+                for (var i = 0; i < pooled.Count; ++i)
+                {
+                    if (pooled[i] != m_SelectedIndices[i])
+                        return false;
+                }
+
+                return true;
+            }
+            finally
+            {
+                ListPool<int>.Release(pooled);
+            }
         }
 
         private void NotifyOfSelectionChange()
@@ -1455,6 +1482,7 @@ namespace UnityEngine.UIElements
         {
             if (!HasValidDataAndBindings() || m_SelectedIds.Count == 0)
                 return;
+
 
             ClearSelectionWithoutValidation();
             NotifyOfSelectionChange();
@@ -1520,7 +1548,7 @@ namespace UnityEngine.UIElements
                 Mathf.Approximately(evt.newRect.height, evt.oldRect.height))
                 return;
 
-            Resize(evt.newRect.size, evt.layoutPass);
+            Resize(evt.newRect.size);
         }
 
         private void OnCustomStyleResolved(CustomStyleResolvedEvent e)

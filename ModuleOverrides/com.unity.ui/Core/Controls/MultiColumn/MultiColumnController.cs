@@ -18,6 +18,7 @@ namespace UnityEngine.UIElements
         internal static readonly PropertyName bindableElementPropertyName = "__unity-multi-column-bindable-element";
 
         internal static readonly string baseUssClassName = "unity-multi-column-view";
+        static readonly string k_HeaderContainerViewDataKey = "unity-multi-column-header-container";
 
         /// <summary>
         /// The USS class name for the header container inside a multi column view.
@@ -48,6 +49,7 @@ namespace UnityEngine.UIElements
         public event Action<ContextualMenuPopulateEvent, Column> headerContextMenuPopulateEvent;
 
         BaseVerticalCollectionView m_View;
+        VisualElement m_HeaderContainer;
         MultiColumnCollectionHeader m_MultiColumnHeader;
         internal MultiColumnCollectionHeader header => m_MultiColumnHeader;
 
@@ -203,8 +205,12 @@ namespace UnityEngine.UIElements
 
             m_View = collectionView;
 
-            // Insert header to the view.
-            collectionView.Insert(0, m_MultiColumnHeader);
+            // Insert header to the multi column view.
+            m_HeaderContainer = new VisualElement { name = headerContainerUssClassName };
+            m_HeaderContainer.AddToClassList(headerContainerUssClassName);
+            m_HeaderContainer.viewDataKey = k_HeaderContainerViewDataKey;
+            collectionView.scrollView.hierarchy.Insert(0, m_HeaderContainer);
+            m_HeaderContainer.Add(m_MultiColumnHeader);
 
             // Handle horizontal scrolling
             m_View.scrollView.horizontalScroller.valueChanged += OnHorizontalScrollerValueChanged;
@@ -236,6 +242,9 @@ namespace UnityEngine.UIElements
             m_MultiColumnHeader.RemoveFromHierarchy();
             m_MultiColumnHeader.Dispose();
             m_MultiColumnHeader = null;
+
+            m_HeaderContainer.RemoveFromHierarchy();
+            m_HeaderContainer = null;
         }
 
         void OnHorizontalScrollerValueChanged(float v)

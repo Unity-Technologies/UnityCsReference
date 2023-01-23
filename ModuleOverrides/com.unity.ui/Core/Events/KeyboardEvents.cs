@@ -331,6 +331,7 @@ namespace UnityEngine.UIElements
         internal static bool ShouldSendNavigationMoveEvent(this KeyDownEvent e)
         {
             // We must rely on KeyCode.Tab as Shift+Tab on Mac doesn't send the \t character. It sends char(25) instead.
+            // On linux Platform shift+tab event does contain both key code and character=='\t'
             return e.keyCode == KeyCode.Tab && !e.ctrlKey && !e.altKey && !e.commandKey && !e.functionKey;
         }
 

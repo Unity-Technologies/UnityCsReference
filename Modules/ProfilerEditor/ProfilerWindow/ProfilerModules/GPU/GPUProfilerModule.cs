@@ -149,5 +149,10 @@ namespace UnityEditorInternal.Profiling
         {
             SessionState.SetBool(activeStatePreferenceKey, active);
         }
+
+        private protected override void DeleteActiveState()
+        {
+            SessionState.EraseBool(activeStatePreferenceKey);
+        }
     }
 }

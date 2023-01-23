@@ -8,11 +8,11 @@ namespace Unity.UI.Builder
     {
         VisualElement m_DocumentRootElement;
         BuilderSelection m_Selection;
-        BuilderLibraryDragger m_Dragger;
         BuilderTooltipPreview m_TooltipPreview;
         BuilderPaneContent m_BuilderPaneContent;
 
         protected BuilderPaneWindow m_PaneWindow;
+        protected BuilderLibraryDragger m_Dragger;
 
         public abstract VisualElement primaryFocusable { get; }
 
@@ -93,8 +93,8 @@ namespace Unity.UI.Builder
                 BuilderAssetUtilities.AddElementToAsset(
                     m_PaneWindow.document, newElement, item.makeElementAssetCallback);
 
-            m_Selection.NotifyOfHierarchyChange(); 
-            m_Selection.Select(null, newElement); 
+            m_Selection.NotifyOfHierarchyChange();
+            m_Selection.Select(null, newElement);
         }
 
         void OnItemMouseEnter(MouseEnterEvent evt)

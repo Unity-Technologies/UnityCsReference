@@ -354,7 +354,7 @@ namespace UnityEngine.UIElements
         }
 
         private Focusable m_LastFocusedElement;
-        private Focusable m_LastPendingFocusedElement;
+        internal Focusable m_LastPendingFocusedElement;
         private int m_PendingFocusCount = 0;
 
         internal void ValidateInternalState(IPanel panel)

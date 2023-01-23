@@ -68,11 +68,11 @@ namespace UnityEditor.Search
             return path;
         }
 
-        public void IndexTypes(Type objType, int documentIndex, string name = "t", bool exact = false)
+        public void IndexTypes(Type objType, int documentIndex, bool isPrefabDocument, string name = "t", bool exact = false)
         {
             while (objType != null && objType != typeof(Object))
             {
-                if (objType == typeof(GameObject))
+                if (isPrefabDocument && objType == typeof(GameObject))
                     IndexProperty(documentIndex, name, "prefab", saveKeyword: true, exact: true);
                 if (objType == typeof(MonoScript))
                     IndexProperty(documentIndex, name, "script", saveKeyword: true, exact: true);
@@ -93,10 +93,11 @@ namespace UnityEditor.Search
             var gid = GlobalObjectId.GetGlobalObjectIdSlow(subObj);
             var id = gid.ToString();
             var containerName = Path.GetFileNameWithoutExtension(containerPath);
+            var isPrefabDocument = containerPath.EndsWith(".prefab");
             var objPathName = Utils.RemoveInvalidCharsFromPath($"{containerName}/{subObj.name}", ' ');
             var subObjDocumentIndex = AddDocument(id, objPathName, containerPath, checkIfDocumentExists, SearchDocumentFlags.Nested | SearchDocumentFlags.Asset);
 
-            IndexTypes(subObj.GetType(), subObjDocumentIndex, exact: true);
+            IndexTypes(subObj.GetType(), subObjDocumentIndex, isPrefabDocument, exact: true);
             IndexProperty(subObjDocumentIndex, "is", "nested", saveKeyword: true, exact: true);
             IndexProperty(subObjDocumentIndex, "is", "subasset", saveKeyword: true, exact: true);
             if (settings.options.dependencies)
@@ -123,8 +124,8 @@ namespace UnityEditor.Search
 
             var fileName = Path.GetFileName(path);
             IndexWordComponents(documentIndex, fileName);
-            IndexProperty(documentIndex, "name", Path.GetFileNameWithoutExtension(fileName), saveKeyword: true, exact: true);
-
+            IndexPropertyComponents(documentIndex, "name", Path.GetFileNameWithoutExtension(fileName));
+            
             if (path.StartsWith("Packages/", StringComparison.Ordinal))
                 IndexProperty(documentIndex, "a", "packages", saveKeyword: true, exact: true);
             else
@@ -166,7 +167,7 @@ namespace UnityEditor.Search
             if (at != null)
             {
                 IndexWordComponents(documentIndex, at.Name);
-                IndexTypes(at, documentIndex);
+                IndexTypes(at, documentIndex, isPrefab);
 
                 if (settings.options.types)
                 {
@@ -178,7 +179,7 @@ namespace UnityEditor.Search
 
                         if (AssetDatabase.IsSubAsset(obj))
                         {
-                            IndexTypes(obj.GetType(), documentIndex, "has", exact: true);
+                            IndexTypes(obj.GetType(), documentIndex, isPrefab, "has", exact: true);
                             IndexSubAsset(obj, path, checkIfDocumentExists, hasCustomIndexers);
                         }
                         else if (!string.IsNullOrEmpty(obj.name))

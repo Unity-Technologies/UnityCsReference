@@ -247,21 +247,13 @@ namespace UnityEngine.UIElements
         const float k_ScrollPageOverlapFactor = 0.1f;
         internal const float k_UnsetPageSizeValue = -1.0f;
 
-        internal bool needsHorizontal
-        {
-            get
-            {
-                return horizontalScrollerVisibility == ScrollerVisibility.AlwaysVisible || (horizontalScrollerVisibility == ScrollerVisibility.Auto && scrollableWidth > k_SizeThreshold);
-            }
-        }
+        internal bool needsHorizontal => mode != ScrollViewMode.Vertical &&
+            horizontalScrollerVisibility == ScrollerVisibility.AlwaysVisible || 
+            (horizontalScrollerVisibility == ScrollerVisibility.Auto && scrollableWidth > k_SizeThreshold);
 
-        internal bool needsVertical
-        {
-            get
-            {
-                return verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible || (verticalScrollerVisibility == ScrollerVisibility.Auto && scrollableHeight > k_SizeThreshold);
-            }
-        }
+        internal bool needsVertical => mode != ScrollViewMode.Horizontal && 
+            verticalScrollerVisibility == ScrollerVisibility.AlwaysVisible || 
+            (verticalScrollerVisibility == ScrollerVisibility.Auto && scrollableHeight > k_SizeThreshold);
 
         internal bool isVerticalScrollDisplayed
         {
@@ -501,7 +493,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void UpdateContentViewTransform()
+        internal void UpdateContentViewTransform()
         {
             // Adjust contentContainer's position
             var t = contentContainer.transform.position;
@@ -613,16 +605,16 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Represents the visible part of contentContainer.
         /// </summary>
-        public VisualElement contentViewport { get; private set; } // Represents the visible part of contentContainer
+        public VisualElement contentViewport { get; } // Represents the visible part of contentContainer
 
         /// <summary>
         /// Horizontal scrollbar.
         /// </summary>
-        public Scroller horizontalScroller { get; private set; }
+        public Scroller horizontalScroller { get; }
         /// <summary>
         /// Vertical Scrollbar.
         /// </summary>
-        public Scroller verticalScroller { get; private set; }
+        public Scroller verticalScroller { get; }
 
         private VisualElement m_ContentContainer;
         private VisualElement m_ContentAndVerticalScrollContainer;
@@ -1462,16 +1454,6 @@ namespace UnityEngine.UIElements
             verticalScroller.highValue = scrollableHeight;
             horizontalScroller.lowValue = 0f;
             horizontalScroller.highValue = scrollableWidth;
-
-            if (scrollableHeight <= 0f)
-            {
-                verticalScroller.value = 0f;
-            }
-
-            if (scrollableWidth <= 0f)
-            {
-                horizontalScroller.value = 0f;
-            }
         }
 
         private void OnScrollersGeometryChanged(GeometryChangedEvent evt)

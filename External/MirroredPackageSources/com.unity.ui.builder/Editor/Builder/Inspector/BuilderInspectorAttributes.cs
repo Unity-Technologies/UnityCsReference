@@ -779,6 +779,10 @@ namespace Unity.UI.Builder
 
         void BuildAttributeFieldContextualMenu(DropdownMenu menu, VisualElement fieldElement)
         {
+            // if the context menu is already populated by the field (text field) then ignore
+            if (menu.MenuItems() != null & menu.MenuItems().Count > 0)
+                return;
+
             menu.AppendAction(
                 BuilderConstants.ContextMenuUnsetMessage,
                 UnsetAttributeProperty,

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -62,6 +63,12 @@ namespace Unity.UI.Builder
                 if (newParent == element || newParent.HasAncestor(element))
                     continue;
 
+                // When editing in context the new parent has to be null so it's inserted at the root of the active vta
+                if (newParent.IsActiveSubDocumentRoot(paneWindow.document))
+                {
+                    newParent = null;
+                }
+
                 BuilderAssetUtilities.ReparentElementInAsset(
                     paneWindow.document, element, newParent, index, undo);
 
@@ -78,6 +85,9 @@ namespace Unity.UI.Builder
         protected override bool IsPickedElementValid(VisualElement element)
         {
             if (element == null)
+                return true;
+
+            if (element.IsActiveSubDocumentRoot(paneWindow.document))
                 return true;
 
             if (element.contentContainer == null)
@@ -134,7 +144,12 @@ namespace Unity.UI.Builder
 
         protected override IEnumerable<VisualElement> GetSelectedElements()
         {
-            return documentRootElement.FindSelectedElements();
+            var selectedElements = selection.selection;
+            var sortedSelectedElementsInAsset = documentRootElement.FindSelectedElements();
+
+            sortedSelectedElementsInAsset.RemoveAll(x => !selectedElements.Contains(x));
+
+            return sortedSelectedElementsInAsset;
         }
     }
 }

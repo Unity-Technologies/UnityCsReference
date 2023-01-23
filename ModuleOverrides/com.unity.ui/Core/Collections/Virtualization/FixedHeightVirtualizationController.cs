@@ -64,7 +64,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public override void Resize(Vector2 size, int layoutPass)
+        public override void Resize(Vector2 size)
         {
             var pixelAlignedItemHeight = resolvedItemHeight;
             var contentHeight = GetExpectedContentHeight();
@@ -75,7 +75,7 @@ namespace UnityEngine.UIElements
             // the ScrollView's OnGeometryChanged() didn't update the low
             // and highValues.
             var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
-            var scrollOffset = Mathf.Min(m_CollectionView.serializedVirtualizationData.scrollOffset.y, scrollableHeight);
+            var scrollOffset = Mathf.Min(serializedData.scrollOffset.y, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
 
@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
 
             m_ScrollView.contentContainer.style.paddingTop = firstVisibleItemIndex * pixelAlignedItemHeight;
             m_ScrollView.contentContainer.style.height = itemsCount * pixelAlignedItemHeight;
-            m_CollectionView.serializedVirtualizationData.scrollOffset.y = scrollOffset.y;
+            serializedData.scrollOffset.y = scrollOffset.y;
 
             if (firstVisibleItemIndex != firstVisibleIndex)
             {
@@ -141,7 +141,7 @@ namespace UnityEngine.UIElements
 
                         for (int i = 0; i < count && m_ActiveItems.Count > 0; ++i)
                         {
-                            var last = m_ActiveItems[m_ActiveItems.Count - 1];
+                            var last = m_ActiveItems[^1];
                             inserting.Add(last);
                             m_ActiveItems.RemoveAt(m_ActiveItems.Count - 1); //we remove from the end
 
@@ -153,7 +153,7 @@ namespace UnityEngine.UIElements
                     }
                     else //down
                     {
-                        if (firstVisibleIndex < m_ActiveItems[m_ActiveItems.Count - 1].index)
+                        if (firstVisibleIndex < m_ActiveItems[^1].index)
                         {
                             var inserting = m_ScrollInsertionList;
 
@@ -188,6 +188,18 @@ namespace UnityEngine.UIElements
             var item = base.GetOrMakeItemAtIndex(activeItemIndex, scrollViewIndex);
             item.rootElement.style.height = resolvedItemHeight;
             return item;
+        }
+
+        internal override void EndDrag(int dropIndex)
+        {
+            m_DraggedItem.rootElement.style.height = resolvedItemHeight;
+
+            if (firstVisibleIndex > m_DraggedItem.index)
+            {
+                m_ScrollView.verticalScroller.value = serializedData.scrollOffset.y - resolvedItemHeight;
+            }
+
+            base.EndDrag(dropIndex);
         }
     }
 }
