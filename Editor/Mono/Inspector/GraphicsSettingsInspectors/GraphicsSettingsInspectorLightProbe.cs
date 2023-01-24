@@ -43,6 +43,8 @@ namespace UnityEditor
         {
             using var highlightScope = new EditorGUI.LabelHighlightScope(m_SettingsWindow.GetSearchText(), HighlightSelectionColor, HighlightColor);
             using var changeScope = new EditorGUI.ChangeCheckScope();
+            using var settingsScope = new LabelWidthScope();
+            using var wideScreenScope = new WideScreenScope(this);
             EditorGUILayout.IntPopup(m_LightProbeOutsideHullStrategy, Styles.lightProbeOutsideHullStrategyStrings, Styles.lightProbeOutsideHullStrategyValues, Styles.lightProbeOutsideHullStrategy);
             if (changeScope.changed)
                 m_SerializedObject.ApplyModifiedProperties();

@@ -118,20 +118,6 @@ namespace UnityEditor
             s_GUIContents.Clear();
         }
 
-        internal override void DoWindowDecorationStart()
-        {
-            // On windows, we want both close window and side resizes.
-            // Titlebar dragging is done at the end, so we can drag next to tabs.
-            if (window != null)
-                window.HandleWindowDecorationStart(windowPosition);
-        }
-
-        internal override void DoWindowDecorationEnd()
-        {
-            if (window != null)
-                window.HandleWindowDecorationEnd(windowPosition);
-        }
-
         protected override void OnDestroy()
         {
             // Prevents double-destroy that may be indirectly caused if Close() is called by OnLostFocus()

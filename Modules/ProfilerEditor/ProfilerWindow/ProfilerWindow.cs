@@ -71,7 +71,7 @@ namespace UnityEditor
             public static readonly GUIContent saveWindowTitle = EditorGUIUtility.TrTextContent("Save Window");
             public static readonly GUIContent saveProfilingData = EditorGUIUtility.TrIconContent("SaveAs", "Save current profiling information to a binary file");
             public static readonly GUIContent loadWindowTitle = EditorGUIUtility.TrTextContent("Load Window");
-            public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrIconContent("Profiler.Open", "Load binary profiling information from a file. Shift click to append to the existing data");
+            public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrIconContent("Import", "Load binary profiling information from a file. Shift click to append to the existing data");
             public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files"), "data,raw", L10n.Tr("All files"), "*" };
 
             public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("_Menu", "Additional Options");
@@ -1151,7 +1151,6 @@ namespace UnityEditor
             if (GUI.Button(overflowMenuRect, Styles.optionsButtonContent, EditorStyles.toolbarButtonRight))
             {
                 GenericMenu menu = new GenericMenu();
-                menu.AddItem(Styles.accessibilityModeLabel, UserAccessiblitySettings.colorBlindCondition != ColorBlindCondition.Default, OnToggleColorBlindMode);
                 menu.AddItem(Styles.showStatsLabelsOnCurrentFrameLabel, ProfilerUserSettings.showStatsLabelsOnCurrentFrame, OnToggleShowStatsLabelsOnCurrentFrame);
                 menu.AddSeparator("");
                 menu.AddItem(Styles.preferencesButtonContent, false, OpenProfilerPreferences);

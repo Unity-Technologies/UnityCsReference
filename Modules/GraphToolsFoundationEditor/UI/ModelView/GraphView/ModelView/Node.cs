@@ -26,7 +26,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public static readonly string disabledOverlayElementName = "disabled-overlay";
         public static readonly string titleContainerPartName = "title-container";
-        public static readonly string nodeSettingsContainerPartName = "node-settings";
+
+        public static readonly string nodeOptionsContainerPartName = "node-options";
+        [Obsolete("nodeSettingsContainerPartName has been deprecated. Use nodeOptionsContainerPartName instead.")]
+        public static readonly string nodeSettingsContainerPartName = "node-options";
 
         /// <summary>
         /// The name of the port container part.
@@ -48,7 +51,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected override void BuildPartList()
         {
             PartList.AppendPart(EditableTitlePart.Create(titleContainerPartName, Model, this, ussClassName));
-            PartList.AppendPart(SerializedFieldsInspector.Create(nodeSettingsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.BasicSettingsFilter));
+            PartList.AppendPart(SerializedFieldsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.NodeOptionsFilter));
             PartList.AppendPart(PortContainerPart.Create(portContainerPartName, Model, this, ussClassName));
         }
 

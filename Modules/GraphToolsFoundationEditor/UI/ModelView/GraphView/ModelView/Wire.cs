@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -213,6 +214,34 @@ namespace Unity.GraphToolsFoundation.Editor
             return WireControl.ContainsPoint(this.ChangeCoordinatesTo(WireControl, localPoint));
         }
 
+        /// <summary>
+        /// Gets the wire data required to create portals.
+        /// </summary>
+        /// <param name="wires">The wires that will be converted to portals.</param>
+        /// <param name="rootView">The <paramref name="RootView"/> that contains the portals.</param>
+        internal static List<(WireModel, Vector2, Vector2)> GetPortalsWireData(IEnumerable<WireModel> wires, RootView rootView)
+        {
+            var wireData = wires.Select(
+                wireModel =>
+                {
+                    var outputPort = wireModel.FromPort.GetView<Port>(rootView);
+                    var inputPort = wireModel.ToPort.GetView<Port>(rootView);
+                    var outputNode = wireModel.FromPort.NodeModel.GetView<Node>(rootView);
+                    var inputNode = wireModel.ToPort.NodeModel.GetView<Node>(rootView);
+                    var wire = wireModel.GetView<Wire>(rootView);
+
+                    if (outputNode == null || inputNode == null || outputPort == null || inputPort == null || wire == null)
+                        return (null, Vector2.zero, Vector2.zero);
+
+                    return (wireModel,
+                        outputPort.ChangeCoordinatesTo(wire.contentContainer, outputPort.layout.center),
+                        inputPort.ChangeCoordinatesTo(wire.contentContainer, inputPort.layout.center));
+                }
+            ).Where(tuple => tuple.Item1 != null).ToList();
+
+            return wireData;
+        }
+
         /// <inheritdoc />
         protected override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
@@ -227,7 +256,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var selection = GraphView.GetSelection().ToList();
 
             // If any element in the selection is not a wire, the graph view context menu is opened instead.
-            if (selection.Any(ge => !ge.GetType().IsAssignableFrom(typeof(WireModel))))
+            if (selection.Any(ge => !typeof(WireModel).IsInstanceOfType(ge)))
                 return;
 
             evt.menu.AppendAction("Insert Node on Wire", menuAction =>
@@ -240,26 +269,10 @@ namespace Unity.GraphToolsFoundation.Editor
             var wires = selection.OfType<WireModel>().ToList();
             if (wires.Count > 0)
             {
-                var wireData = wires.Select(
-                    wireModel =>
-                    {
-                        var outputPort = wireModel.FromPort.GetView<Port>(GraphView);
-                        var inputPort = wireModel.ToPort.GetView<Port>(GraphView);
-                        var outputNode = wireModel.FromPort.NodeModel.GetView<Node>(GraphView);
-                        var inputNode = wireModel.ToPort.NodeModel.GetView<Node>(GraphView);
-
-                        if (outputNode == null || inputNode == null || outputPort == null || inputPort == null)
-                            return (null, Vector2.zero, Vector2.zero);
-
-                        return (wireModel,
-                            outputPort.ChangeCoordinatesTo(contentContainer, outputPort.layout.center),
-                            inputPort.ChangeCoordinatesTo(contentContainer, inputPort.layout.center));
-                    }
-                ).Where(tuple => tuple.Item1 != null).ToList();
-
+                var wireData = GetPortalsWireData(wires, GraphView);
                 evt.menu.AppendAction("Add Portals", _ =>
                 {
-                    GraphView.Dispatch(new ConvertWiresToPortalsCommand(wireData));
+                    GraphView.Dispatch(new ConvertWiresToPortalsCommand(wireData, GraphView));
                 });
             }
 

@@ -46,7 +46,7 @@ namespace Unity.GraphToolsFoundation.Editor
             PartList.AppendPart(VerticalPortContainerPart.Create(topPortContainerPartName, PortDirection.Input, Model, this, ussClassName));
 
             PartList.AppendPart(IconTitleProgressPart.Create(titleIconContainerPartName, Model, this, ussClassName, true));
-            PartList.AppendPart(SerializedFieldsInspector.Create(nodeSettingsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.BasicSettingsFilter));
+            PartList.AppendPart(SerializedFieldsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.NodeOptionsFilter));
             PartList.AppendPart(InOutPortContainerPart.Create(portContainerPartName, Model, this, ussClassName));
 
             PartList.AppendPart(VerticalPortContainerPart.Create(bottomPortContainerPartName, PortDirection.Output, Model, this, ussClassName));

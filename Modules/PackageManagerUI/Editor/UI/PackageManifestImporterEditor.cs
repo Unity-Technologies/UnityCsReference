@@ -198,6 +198,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             base.OnEnable();
 
+            //Ensure UIElements handles the IMGUI container with margins
+            alwaysAllowExpansion = true;
+
             errorMessages = new List<string>();
             warningMessages = new List<string>();
 

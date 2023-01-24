@@ -64,5 +64,15 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             return Type.GenerateTypeHandle();
         }
+
+        /// <summary>
+        /// Tells whether this constant can accept values to type <paramref name="t"/>.
+        /// </summary>
+        /// <param name="t">The type of value.</param>
+        /// <returns>True if this constant can accept values to type <paramref name="t"/>, false otherwise.</returns>
+        public virtual bool IsAssignableFrom(Type t)
+        {
+            return Type.IsAssignableFrom(t);
+        }
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -73,6 +74,12 @@ namespace UnityEditor
 
             DrawListElement(drawPos, "Skybox", state.showSkybox, value => state.showSkybox = value);
             drawPos.y += EditorGUI.kSingleLineHeight;
+
+            if(SupportedRenderingFeatures.active.supportsClouds)
+            {
+                DrawListElement(drawPos, "Clouds", state.showClouds, value => state.showClouds = value);
+                drawPos.y += EditorGUI.kSingleLineHeight;
+            }
 
             DrawListElement(drawPos, "Fog", state.showFog, value => state.showFog = value);
             drawPos.y += EditorGUI.kSingleLineHeight;

@@ -304,7 +304,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     portDefinitionType = inputPort.DataTypeHandle.Resolve();
                 }
 
-                if (!constant.Type.IsAssignableFrom(portDefinitionType) || (constant.Type.IsEnum && constant.Type != portDefinitionType))
+                if (!constant.IsAssignableFrom(portDefinitionType))
                 {
                     m_InputConstantsById.Remove(id);
                 }

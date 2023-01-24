@@ -322,6 +322,9 @@ namespace UnityEngine
             }
         }
 
+        [NativeConditional("UNITY_EDITOR")]
+        extern public bool renderCloudsInSceneView { get; set; }
+
 
         // TODO: it should be collapsed with others
         [NativeName("RenderToCubemap")] extern private bool RenderToCubemapEyeImpl(RenderTexture cubemap, int faceMask, MonoOrStereoscopicEye stereoEye);

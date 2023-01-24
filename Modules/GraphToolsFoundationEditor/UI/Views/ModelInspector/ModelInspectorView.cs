@@ -20,13 +20,21 @@ namespace Unity.GraphToolsFoundation.Editor
     class ModelInspectorView : RootView, IMultipleModelPartContainer
     {
         /// <summary>
-        /// Determines if a field should be displayed in the basic settings section of the inspector.
+        /// Determines if a field should be displayed in the node options section of the inspector.
         /// </summary>
         /// <param name="f">The field to inspect.</param>
-        /// <returns>True if a field should be displayed in the basic settings section of the inspector. False otherwise.</returns>
+        /// <returns>True if a field should be displayed in the node options section of the inspector. False otherwise.</returns>
+        public static bool NodeOptionsFilter(FieldInfo f)
+        {
+#pragma warning disable 618
+            return SerializedFieldsInspector.CanBeInspected(f) && f.CustomAttributes.Any(a => a.AttributeType == typeof(NodeOptionAttribute) || a.AttributeType == typeof(ModelSettingAttribute));
+#pragma warning restore 618
+        }
+
+        [Obsolete("BasicSettingsFilter has been deprecated. Use NodeOptionsFilter instead.")]
         public static bool BasicSettingsFilter(FieldInfo f)
         {
-            return SerializedFieldsInspector.CanBeInspected(f) && f.CustomAttributes.Any(a => a.AttributeType == typeof(ModelSettingAttribute));
+            return NodeOptionsFilter(f);
         }
 
         /// <summary>
@@ -36,7 +44,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>True if a field should be displayed in the advanced settings section of the inspector. False otherwise.</returns>
         public static bool AdvancedSettingsFilter(FieldInfo f)
         {
-            return SerializedFieldsInspector.CanBeInspected(f) && f.CustomAttributes.All(a => a.AttributeType != typeof(ModelSettingAttribute));
+#pragma warning disable 618
+            return SerializedFieldsInspector.CanBeInspected(f) && f.CustomAttributes.All(a => a.AttributeType != typeof(NodeOptionAttribute) && a.AttributeType != typeof(ModelSettingAttribute));
+#pragma warning restore 618
         }
 
         static readonly List<ModelView> k_UpdateAllUIs = new List<ModelView>();

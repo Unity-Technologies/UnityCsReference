@@ -8,6 +8,7 @@ using System.Linq;
 using Unity.CommandStateObserver;
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.UIElements;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -23,6 +24,82 @@ namespace Unity.GraphToolsFoundation.Editor
             if (portModel == null || portModel.Capacity == PortCapacity.Multi)
                 return Enumerable.Empty<WireModel>();
             return portModel.GetConnectedWires().Where(e => !(e is IGhostWire));
+        }
+
+        /// <summary>
+        /// Gets the elements to frame during portals creation.
+        /// </summary>
+        /// <remarks>Framing is only necessary when it is not possible to see all created portals on screen.</remarks>
+        public static List<GraphElement> GetElementsToFrameDuringPortalsCreation(IEnumerable<WireModel> wireModels, GraphView graphView)
+        {
+            var outputNodes = new List<GraphElement>();
+            var inputNodes = new List<GraphElement>();
+            var nodesBoundingRect = new Rect
+            {
+                xMin = float.MaxValue,
+                xMax = float.MinValue,
+                yMin = float.MaxValue,
+                yMax = float.MinValue
+            };
+
+            var shouldFrame = false;
+            foreach (var wireModel in wireModels)
+            {
+                var outputNode = wireModel.FromPort.NodeModel.GetView_Internal(graphView) as GraphElement;
+                var inputNode = wireModel.ToPort.NodeModel.GetView_Internal(graphView) as GraphElement;
+
+                if (outputNode != null && inputNode != null)
+                {
+                    outputNodes.Add(outputNode);
+                    inputNodes.Add(inputNode);
+
+                    if (!graphView.boundingBox.Contains(outputNode.worldBoundingBox.center) || !graphView.boundingBox.Contains(inputNode.worldBoundingBox.center))
+                        shouldFrame = true;
+
+                    nodesBoundingRect = RectUtils_Internal.Encompass(nodesBoundingRect, outputNode.layout);
+                    nodesBoundingRect = RectUtils_Internal.Encompass(nodesBoundingRect, inputNode.layout);
+                }
+            }
+
+            // Frame only when it is not possible to see both entry and exit portals on screen.
+            if (!shouldFrame)
+                return new List<GraphElement>();
+
+            // If it is not possible possible to see all portals on screen at the minimal zoom scale out, prioritize entry portals.
+            if (!RectFitInScreenAtMinScale(nodesBoundingRect, graphView))
+            {
+                var outputNodesBoundingRect = new Rect
+                {
+                    xMin = float.MaxValue,
+                    xMax = float.MinValue,
+                    yMin = float.MaxValue,
+                    yMax = float.MinValue
+                };
+
+                foreach (var outputNode in outputNodes)
+                    outputNodesBoundingRect = RectUtils_Internal.Encompass(outputNodesBoundingRect, outputNode.layout);
+
+                // If it is not possible possible to see all entry portals on screen at the minimal zoom scale out, prioritize the first one.
+                return RectFitInScreenAtMinScale(outputNodesBoundingRect, graphView) ? outputNodes : new List<GraphElement> { outputNodes.First() };
+            }
+
+            return outputNodes.Concat(inputNodes).ToList();
+
+            static bool RectFitInScreenAtMinScale(Rect rectToFit, VisualElement graphView)
+            {
+                var screenRect = new Rect
+                {
+                    xMin = GraphView.frameBorder,
+                    xMax = graphView.layout.width - GraphView.frameBorder,
+                    yMin = GraphView.frameBorder,
+                    yMax = graphView.layout.height - GraphView.frameBorder
+                };
+
+                var identity = GUIUtility.ScreenToGUIRect(screenRect);
+                var zoomLevel = Math.Min(identity.width / rectToFit.width, identity.height / rectToFit.height);
+
+                return zoomLevel > ContentZoomer.DefaultMinScale;
+            }
         }
     }
 
@@ -490,6 +567,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public List<(WireModel wire, Vector2 startPortPos, Vector2 endPortPos)> WireData;
 
         /// <summary>
+        /// The <see cref="GraphView"/> that will contain the portals.
+        /// </summary>
+        public GraphView GraphView;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ConvertWiresToPortalsCommand"/> class.
         /// </summary>
         public ConvertWiresToPortalsCommand()
@@ -501,9 +583,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Initializes a new instance of the <see cref="ConvertWiresToPortalsCommand"/> class.
         /// </summary>
         /// <param name="wireData">A list of tuple, each tuple containing the wire to convert, the position of the entry portal node and the position of the exit portal node.</param>
-        public ConvertWiresToPortalsCommand(IReadOnlyList<(WireModel, Vector2, Vector2)> wireData) : this()
+        /// <param name="graphView">The <see cref="GraphView"/> that will contain the portals.</param>
+        public ConvertWiresToPortalsCommand(IReadOnlyList<(WireModel, Vector2, Vector2)> wireData, GraphView graphView) : this()
         {
             WireData = wireData?.ToList();
+            GraphView = graphView;
             UndoString = (WireData?.Count ?? 0) <= 1 ? k_UndoStringSingular : k_UndoStringPlural;
         }
 
@@ -511,10 +595,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Default command handler.
         /// </summary>
         /// <param name="undoState">The undo state component.</param>
+        /// <param name="graphViewState">The graph view state component.</param>
         /// <param name="graphModelState">The graph model state component.</param>
         /// <param name="selectionState">The selection state component.</param>
         /// <param name="command">The command.</param>
-        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, ConvertWiresToPortalsCommand command)
+        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphViewStateComponent graphViewState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, ConvertWiresToPortalsCommand command)
         {
             if (command.WireData == null || !command.WireData.Any())
                 return;
@@ -526,7 +611,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var createdElements = new List<GraphElementModel>();
             var graphModel = graphModelState.GraphModel;
-            using (var updater = graphModelState.UpdateScope)
+
+            var elementsToFrame = new List<GraphElement>();
+            if (command.GraphView != null)
+                elementsToFrame = WireCommandHelper_Internal.GetElementsToFrameDuringPortalsCreation(command.WireData.Select(d => d.wire).ToList(), command.GraphView);
+
+            using (var graphModelUpdater = graphModelState.UpdateScope)
             using (var changeScope = graphModel.ChangeDescriptionScope)
             {
                 var existingPortalEntries = new Dictionary<PortModel, WirePortalModel>();
@@ -538,7 +628,6 @@ namespace Unity.GraphToolsFoundation.Editor
                         wireModel.startPortPos + k_EntryPortalBaseOffset,
                         wireModel.endPortPos + k_ExitPortalBaseOffset,
                         k_PortalHeight, existingPortalEntries, existingPortalExits);
-
 
                 // Adjust placement in case of multiple incoming exit portals so they don't overlap
                 foreach (var portalList in existingPortalExits.Values.Where(l => l.Count > 1))
@@ -554,8 +643,18 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                 }
 
-                updater.MarkUpdated(changeScope.ChangeDescription);
+                graphModelUpdater.MarkUpdated(changeScope.ChangeDescription);
                 createdElements.AddRange(changeScope.ChangeDescription.NewModels.OfType<AbstractNodeModel>());
+            }
+
+            if (command.GraphView != null && elementsToFrame.Any())
+            {
+                using (var graphViewUpdater = graphViewState.UpdateScope)
+                {
+                    command.GraphView.CalculateFrameTransformToFitElements(elementsToFrame, out var frameTranslation, out var frameScaling, 0.75f);
+                    graphViewUpdater.Position = frameTranslation;
+                    graphViewUpdater.Scale = frameScaling;
+                }
             }
 
             if (createdElements.Any())

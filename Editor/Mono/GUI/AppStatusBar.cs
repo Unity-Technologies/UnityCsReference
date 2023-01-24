@@ -185,7 +185,6 @@ namespace UnityEditor
             }
             GUILayout.EndHorizontal();
 
-            DoWindowDecorationEnd();
             EditorGUI.ShowRepaints();
         }
 

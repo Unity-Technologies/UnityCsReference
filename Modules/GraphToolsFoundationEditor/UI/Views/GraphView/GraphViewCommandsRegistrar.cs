@@ -70,8 +70,11 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCommandHandler<MoveWireCommand>(MoveWireCommand.DefaultCommandHandler);
             RegisterCommandHandler<ReorderWireCommand>(ReorderWireCommand.DefaultCommandHandler);
             RegisterCommandHandler<SplitWireAndInsertExistingNodeCommand>(SplitWireAndInsertExistingNodeCommand.DefaultCommandHandler);
-            RegisterCommandHandler<ConvertWiresToPortalsCommand>(ConvertWiresToPortalsCommand.DefaultCommandHandler);
             RegisterCommandHandler<DisconnectNodeCommand>(DisconnectNodeCommand.DefaultCommandHandler);
+            
+            m_CommandTarget.RegisterCommandHandler<UndoStateComponent, GraphViewStateComponent, GraphModelStateComponent, SelectionStateComponent, ConvertWiresToPortalsCommand>(
+                ConvertWiresToPortalsCommand.DefaultCommandHandler, m_GraphTool.UndoStateComponent, m_GraphViewState, m_GraphModelState, m_SelectionState);
+
             RegisterCommandHandler<ChangeNodeStateCommand>(ChangeNodeStateCommand.DefaultCommandHandler);
             RegisterCommandHandler<CollapseNodeCommand>(CollapseNodeCommand.DefaultCommandHandler);
             RegisterCommandHandler<UpdateConstantValueCommand>(UpdateConstantValueCommand.DefaultCommandHandler);

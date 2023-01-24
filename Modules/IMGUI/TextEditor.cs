@@ -141,7 +141,7 @@ namespace UnityEngine
         public TextEditor()
         {
             var style = GUIStyle.none;
-            m_TextHandle = IMGUITextHandle.GetTextHandle(style, position, textWithWhitespace, Color.white, true);
+            m_TextHandle = new IMGUITextHandle();
             m_TextSelecting = new TextSelectingUtilities(m_TextHandle);
             m_TextEditing = new TextEditingUtilities(m_TextSelecting, m_TextHandle, m_Content.text);
             m_Content.OnTextChanged += OnContentTextChangedHandle;

@@ -83,6 +83,12 @@ namespace Unity.GraphToolsFoundation.Editor
             return base.FromObject(value);
         }
 
+        /// <inheritdoc />
+        public override bool IsAssignableFrom(Type t)
+        {
+            return Type == t;
+        }
+
         public void OnBeforeSerialize()
         {
         }

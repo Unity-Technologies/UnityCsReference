@@ -164,8 +164,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (abortPreviousRequest && !string.IsNullOrEmpty(tag))
                 m_HttpClientFactory.AbortByTag(tag);
 
-            m_AssetStoreOAuth.FetchUserInfo(
-                userInfo =>
+            m_AssetStoreOAuth.FetchAccessToken(
+                token =>
                 {
                     var maxRetryCount = k_MaxRetries;
 
@@ -176,7 +176,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         httpRequest.tag = tag ?? httpRequest.tag;
 
                         httpRequest.header["Content-Type"] = "application/json";
-                        httpRequest.header["Authorization"] = "Bearer " + userInfo.accessToken;
+                        httpRequest.header["Authorization"] = "Bearer " + token.accessToken;
                         httpRequest.doneCallback = request =>
                         {
                             // Ignore if aborted
@@ -204,7 +204,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                                 return;
                             }
 
-                            var parsedResult = AssetStoreUtils.ParseResponseAsDictionary(request);
+                            var parsedResult = m_HttpClientFactory.ParseResponseAsDictionary(request);
                             if (parsedResult == null)
                                 retryCallbackAction?.Invoke(responseCode);
                             else

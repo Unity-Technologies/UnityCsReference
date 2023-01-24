@@ -302,7 +302,6 @@ namespace UnityEditor
         {
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
-            DoWindowDecorationStart();
 
             using (new GUILayout.VerticalScope(Styles.background))
             {
@@ -318,7 +317,6 @@ namespace UnityEditor
                 {
                     CheckNotificationStatus();
 
-                    DoWindowDecorationEnd();
                     EditorGUI.ShowRepaints();
                 }
             }
@@ -500,7 +498,6 @@ namespace UnityEditor
             if (!this)
                 return;
 
-            DoWindowDecorationStart();
             BeginOffsetArea(m_ActualView.rootVisualElement.worldBound, GUIContent.none, Styles.tabWindowBackground);
 
             EditorGUIUtility.ResetGUIState();
@@ -532,8 +529,6 @@ namespace UnityEditor
                     EndOffsetArea();
 
                     EditorGUIUtility.ResetGUIState();
-
-                    DoWindowDecorationEnd();
 
                     if (Event.current != null && Event.current.type == EventType.Repaint)
                         Styles.overlay.Draw(onGUIPosition, GUIContent.none, 0);

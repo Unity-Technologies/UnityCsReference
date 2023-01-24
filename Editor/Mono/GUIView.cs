@@ -222,15 +222,6 @@ namespace UnityEditor
             base.OnDestroy();
         }
 
-        // Draw resize handles, etc.
-        internal virtual void DoWindowDecorationStart()
-        {
-        }
-
-        internal virtual void DoWindowDecorationEnd()
-        {
-        }
-
         [RequiredByNativeCode]
         internal string GetViewName()
         {

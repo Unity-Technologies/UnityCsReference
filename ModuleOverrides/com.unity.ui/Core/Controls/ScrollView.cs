@@ -579,6 +579,7 @@ namespace UnityEngine.UIElements
             if (!contentContainer.Contains(child))
                 throw new ArgumentException("Cannot scroll to a VisualElement that's not a child of the ScrollView content-container.");
 
+            m_Velocity = Vector2.zero;
             float yDeltaOffset = 0, xDeltaOffset = 0;
 
             if (scrollableHeight > 0)
@@ -915,11 +916,11 @@ namespace UnityEngine.UIElements
 
             if (evt.destinationPanel.contextType == ContextType.Player)
             {
-                m_ContentAndVerticalScrollContainer.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
                 m_ContentAndVerticalScrollContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
-                m_ContentAndVerticalScrollContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
-                m_ContentAndVerticalScrollContainer.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
 
+                contentContainer.RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+                contentContainer.RegisterCallback<PointerCancelEvent>(OnPointerCancel);
+                contentContainer.RegisterCallback<PointerUpEvent>(OnPointerUp, TrickleDown.TrickleDown);
                 contentContainer.RegisterCallback<PointerCaptureEvent>(OnPointerCapture);
                 contentContainer.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
             }
@@ -1224,7 +1225,8 @@ namespace UnityEngine.UIElements
             scrollOffset = newOffset;
         }
 
-        private void ApplyScrollInertia()
+        // Internal for tests.
+        internal void ApplyScrollInertia()
         {
             if (hasInertia && m_Velocity != Vector2.zero)
             {

@@ -16,12 +16,18 @@ namespace UnityEditor.LightBaking
         public class SourceMap : IDisposable
         {
             internal IntPtr m_Ptr;
+            internal bool m_OwnsPtr;
 
             public SourceMap()
             {
                 m_Ptr = Internal_Create();
+                m_OwnsPtr = true;
             }
-
+            public SourceMap(IntPtr ptr)
+            {
+                m_Ptr = ptr;
+                m_OwnsPtr = false;
+            }
             ~SourceMap()
             {
                 Destroy();
@@ -35,7 +41,7 @@ namespace UnityEditor.LightBaking
 
             void Destroy()
             {
-                if (m_Ptr != IntPtr.Zero)
+                if (m_OwnsPtr && m_Ptr != IntPtr.Zero)
                 {
                     Internal_Destroy(m_Ptr);
                     m_Ptr = IntPtr.Zero;

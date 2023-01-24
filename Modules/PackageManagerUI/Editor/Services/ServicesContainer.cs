@@ -26,6 +26,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private IOProxy m_IOProxy;
 
+        private DateTimeProxy m_DateTimeProxy;
+
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
 
         private ClientProxy m_ClientProxy;
@@ -143,6 +145,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ApplicationProxy = new ApplicationProxy();
             m_EditorAnalyticsProxy = new EditorAnalyticsProxy();
             m_IOProxy = new IOProxy();
+            m_DateTimeProxy = new DateTimeProxy();
             m_SettingsProxy = new PackageManagerProjectSettingsProxy();
             m_ClientProxy = new ClientProxy();
             m_SelectionWindowProxy = new SelectionWindowProxy();
@@ -201,7 +204,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_AssetStoreCache.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_IOProxy, m_UniqueIdMapper);
             m_AssetStoreClient.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_FetchStatusTracker, m_AssetDatabaseProxy);
-            m_AssetStoreOAuth.ResolveDependencies(m_UnityConnectProxy, m_UnityOAuthProxy, m_HttpClientFactory);
+            m_AssetStoreOAuth.ResolveDependencies(m_DateTimeProxy, m_UnityConnectProxy, m_UnityOAuthProxy, m_HttpClientFactory);
             m_AssetStoreRestAPI.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreOAuth, m_JsonParser, m_HttpClientFactory);
             m_AssetStorePackageInstaller.ResolveDependencies(m_IOProxy, m_AssetStoreCache, m_AssetDatabaseProxy, m_AssetSelectionHandler);
             m_AssetStoreDownloadManager.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_UnityConnectProxy, m_IOProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCachePathProxy);
@@ -305,6 +308,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(m_ExtensionManager);
             Register(m_EditorAnalyticsProxy);
             Register(m_IOProxy);
+            Register(m_DateTimeProxy);
             Register(m_SettingsProxy);
             Register(m_ClientProxy);
             Register(m_SelectionWindowProxy);

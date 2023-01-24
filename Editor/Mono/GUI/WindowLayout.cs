@@ -443,12 +443,12 @@ namespace UnityEditor
         {
             // steps 1-4
             foreach (var layout in GetLastLayout())
-                if (LoadWindowLayout(layout, layout != ProjectLayoutPath, false, keepMainWindow))
+                if (LoadWindowLayout(layout, layout != ProjectLayoutPath, false, keepMainWindow, false))
                     return;
 
             // step 5
             foreach (var layout in GetCurrentModeLayouts())
-                if (LoadWindowLayout(layout, layout != ProjectLayoutPath, false, keepMainWindow))
+                if (LoadWindowLayout(layout, layout != ProjectLayoutPath, false, keepMainWindow, false))
                     return;
 
             // step 6
@@ -456,7 +456,7 @@ namespace UnityEditor
 
             // If all else fails, load the default layout that ships with the editor. If that fails, prompt the user to
             // restore the default layouts.
-            if (!LoadWindowLayout(defaultLayout, true, false, keepMainWindow))
+            if (!LoadWindowLayout(defaultLayout, true, false, keepMainWindow, false))
             {
                 int option = 0;
 
@@ -637,7 +637,7 @@ namespace UnityEditor
                 foreach (var layoutPath in layoutPaths)
                 {
                     var name = Path.GetFileNameWithoutExtension(layoutPath);
-                    Menu.AddMenuItem("Window/Layouts/" + name, "", false, layoutMenuItemPriority++, () => LoadWindowLayout(layoutPath, false, true, true), null);
+                    Menu.AddMenuItem("Window/Layouts/" + name, "", false, layoutMenuItemPriority++, () => LoadWindowLayout(layoutPath, false, true, true, true), null);
                 }
 
                 layoutMenuItemPriority += 500;
@@ -655,7 +655,7 @@ namespace UnityEditor
                     if (!File.Exists(layoutPath))
                         continue;
                     var name = Path.GetFileNameWithoutExtension(layoutPath);
-                    Menu.AddMenuItem("Window/Layouts/" + name, "", Toolbar.lastLoadedLayoutName == name, layoutMenuItemPriority++, () => LoadWindowLayout(layoutPath, false), null);
+                    Menu.AddMenuItem("Window/Layouts/" + name, "", Toolbar.lastLoadedLayoutName == name, layoutMenuItemPriority++, () => TryLoadWindowLayout(layoutPath, false), null);
                 }
             }
 
@@ -678,7 +678,7 @@ namespace UnityEditor
             const string legacyRootMenu = "Window/Layouts/Other Versions";
             const string legacyCurrentLayoutPath = "Library/CurrentLayout-default.dwlt";
             if (File.Exists(legacyCurrentLayoutPath))
-                Menu.AddMenuItem($"{legacyRootMenu}/Default (2020)", "", false, layoutMenuItemPriority++, () => LoadWindowLayout(legacyCurrentLayoutPath, false, true, false), null);
+                Menu.AddMenuItem($"{legacyRootMenu}/Default (2020)", "", false, layoutMenuItemPriority++, () => LoadWindowLayout(legacyCurrentLayoutPath, false, true, false, true), null);
 
             if (!Directory.Exists(layoutsProjectPath))
                 return;
@@ -695,7 +695,7 @@ namespace UnityEditor
                     name = ObjectNames.NicifyVariableName(names[0]);
                     menuName = $"{legacyRootMenu}/{name} ({names[1]})";
                 }
-                Menu.AddMenuItem(menuName, "", false, layoutMenuItemPriority++, () => LoadWindowLayout(layoutPath, false, true, false), null);
+                Menu.AddMenuItem(menuName, "", false, layoutMenuItemPriority++, () => LoadWindowLayout(layoutPath, false, true, false, true), null);
             }
         }
 
@@ -1209,12 +1209,17 @@ namespace UnityEditor
             ShortcutIntegration.instance.RebuildShortcuts();
         }
 
-        public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated)
+        // Attempts to load a layout. If unsuccessful, restores the previous layout.
+        public static bool TryLoadWindowLayout(string path, bool newProjectLayoutWasCreated)
         {
-            return LoadWindowLayout(path, newProjectLayoutWasCreated, true, false);
+            SaveDefaultWindowPreferences();
+            if (LoadWindowLayout(path, newProjectLayoutWasCreated, true, false, true))
+                return true;
+            LoadCurrentModeLayout(FindMainWindow());
+            return false;
         }
 
-        public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow)
+        public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow, bool logErrorsToConsole)
         {
             Console.WriteLine($"[LAYOUT] About to load {path}, keepMainWindow={keepMainWindow}");
 
@@ -1223,8 +1228,6 @@ namespace UnityEditor
 
             bool mainWindowMaximized = ContainerWindow.mainWindow?.maximized ?? false;
             Rect mainWindowPosition = ContainerWindow.mainWindow?.position ?? new Rect();
-
-            bool layoutLoadingIssue = false;
 
             // Load new windows and show them
             try
@@ -1268,7 +1271,6 @@ namespace UnityEditor
                             Console.WriteLine($"[LAYOUT] Removed un-parented EditorWindow while reading window layout" +
                                               $" window #{i}, type={o.GetType()} instanceID={o.GetInstanceID()}");
                             UnityObject.DestroyImmediate(editorWin, true);
-                            layoutLoadingIssue = true;
                             continue;
                         }
                     }
@@ -1374,7 +1376,16 @@ namespace UnityEditor
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to load window layout \"{path}\": {ex}");
+                // When loading a new project we don't want to log an error if one of the last saved layouts throws.
+                // There isn't anything useful a user can do about it, and we can gracefully recover. However when a
+                // layout is loaded from the menu or a mode change, we do want to let the user know about layout loading
+                // problems because they can act on it by either deleting the layout or importing whatever asset is
+                // missing.
+                var error = $"Failed to load window layout \"{path}\": {ex}";
+                if(logErrorsToConsole)
+                    Debug.LogError(error);
+                else
+                    Console.WriteLine($"[LAYOUT] {error}");
                 return false;
             }
             finally
@@ -1386,9 +1397,6 @@ namespace UnityEditor
                 else
                     Toolbar.lastLoadedLayoutName = null;
             }
-
-            if (layoutLoadingIssue)
-                Debug.LogWarning($"The layout \"{path}\" could not be fully loaded, this can happen when the layout contains EditorWindows not available in this project.");
 
             return true;
         }
@@ -1406,7 +1414,7 @@ namespace UnityEditor
             }
             Debug.Assert(File.Exists(ProjectLayoutPath));
 
-            LoadWindowLayout(ProjectLayoutPath, true);
+            LoadWindowLayout(ProjectLayoutPath, true, true, false, false);
         }
 
         public static void CloseWindows()
@@ -1528,11 +1536,9 @@ namespace UnityEditor
         public static void LoadFromFile()
         {
             var layoutFilePath = EditorUtility.OpenFilePanelWithFilters("Load layout from disk...", "", new[] {"Layout", "wlt"});
-            if (String.IsNullOrEmpty(layoutFilePath))
+            if (string.IsNullOrEmpty(layoutFilePath))
                 return;
-
-            if (LoadWindowLayout(layoutFilePath, false))
-                Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, "Loaded layout from " + layoutFilePath);
+            TryLoadWindowLayout(layoutFilePath, false);
         }
 
         public static void SaveToFile()

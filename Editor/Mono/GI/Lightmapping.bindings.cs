@@ -388,13 +388,17 @@ namespace UnityEditor
         }
 
         // This event is fired when BakeInput has been populated, but before passing it to Bake().
-        // Create a LightBaker.BakeInput by passing the IntPtr but don't access it beyond the call-back.
-        internal static event Action<IntPtr> createdBakeInputForTestingOnly;
+        // Do not store and access BakeInput beyond the call-back.
+        internal static event Action<LightBaker.BakeInput, InputExtraction.SourceMap> createdBakeInput;
 
-        internal static void Internal_CallOnCreatedBakeInputForTestingOnly(IntPtr ptr)
+        internal static void Internal_CallOnCreatedBakeInput(IntPtr p_BakeInput, IntPtr p_SourceMap)
         {
-            if (createdBakeInputForTestingOnly != null)
-                createdBakeInputForTestingOnly(ptr);
+            if (createdBakeInput != null)
+            {
+                using var bakeInput = new LightBaker.BakeInput(p_BakeInput);
+                using var sourceMap = new InputExtraction.SourceMap(p_SourceMap);
+                createdBakeInput(bakeInput, sourceMap);
+            }
         }
 
         [System.Obsolete("OnCompletedFunction.completed is obsolete, please use event bakeCompleted instead. ", false)]
