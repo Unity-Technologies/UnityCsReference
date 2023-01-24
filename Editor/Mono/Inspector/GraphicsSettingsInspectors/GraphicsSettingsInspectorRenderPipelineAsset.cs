@@ -31,6 +31,8 @@ namespace UnityEditor
 
         void Draw()
         {
+            using var settingsScope = new LabelWidthScope();
+            using var wideScreenScope = new WideScreenScope(this);
             GUILayout.Label(Styles.renderPipeSettings, EditorStyles.boldLabel);
             EditorGUI.RenderPipelineAssetField(m_SerializedObject, m_ScriptableRenderLoop);
 

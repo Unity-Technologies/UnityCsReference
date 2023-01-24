@@ -134,7 +134,9 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 if (!(block.Model is BlockNodeModel blockModel) || blockModels.ContainsValue(blockModel))
                     continue;
-                block.RemoveFromRootView();
+                // Only remove it from the root view if the block is not part of another context node.
+                if (blockModel.ContextNodeModel == null || blockModel.ContextNodeModel == ContextNodeModel)
+                    block.RemoveFromRootView();
                 block.RemoveFromHierarchy();
             }
             if (blockModels.Count == 0)

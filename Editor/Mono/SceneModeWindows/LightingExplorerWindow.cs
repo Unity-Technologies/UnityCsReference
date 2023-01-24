@@ -54,6 +54,12 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            OnDisableTabsAndExtension();
+            EditorApplication.searchChanged -= Repaint;
+        }
+
+        void OnDisableTabsAndExtension()
+        {
             if (m_TableTabs != null)
             {
                 for (int i = 0; i < m_TableTabs.Length; i++)
@@ -66,8 +72,6 @@ namespace UnityEditor
             {
                 m_CurrentLightingExplorerExtension.OnDisable();
             }
-
-            EditorApplication.searchChanged -= Repaint;
         }
 
         void OnInspectorUpdate()
@@ -159,10 +163,7 @@ namespace UnityEditor
             {
                 m_CurrentSRPType = SRPType;
 
-                if (m_CurrentLightingExplorerExtension != null)
-                {
-                    m_CurrentLightingExplorerExtension.OnDisable();
-                }
+                OnDisableTabsAndExtension();
 
                 m_CurrentLightingExplorerExtension = GetLightExplorerExtension(SRPType);
                 m_CurrentLightingExplorerExtension.OnEnable();

@@ -38,7 +38,6 @@ namespace UnityEditor
         internal const float kButtonWidth = 16f, kButtonHeight = 16f;
 
         static internal bool macEditor => Application.platform == RuntimePlatform.OSXEditor;
-        static internal bool linuxEditor => Application.platform == RuntimePlatform.LinuxEditor;
 
         static internal bool s_Modal = false;
         private static ContainerWindow s_MainWindow;
@@ -46,28 +45,16 @@ namespace UnityEditor
 
         private static class Styles
         {
-            // Title Bar Buttons (Non)
-            public static GUIStyle buttonMin = "WinBtnMinMac";
-            public static GUIStyle buttonClose = macEditor ? "WinBtnCloseMac" : "WinBtnClose";
-            public static GUIStyle buttonMax = macEditor ? "WinBtnMaxMac" : "WinBtnMax";
-            public static GUIStyle buttonRestore = macEditor ? "WinBtnRestoreMac" : "WinBtnRestore";
-
             public static float borderSize => macEditor ? osxBorderSize : winBorderSize;
             public static float buttonMargin => macEditor ? osxBorderMargin : winBorderMargin;
-
-            public static SVC<float> buttonTop = new SVC<float>("--container-window-button-top-margin");
 
             private static SVC<float> winBorderSize = new SVC<float>("--container-window-buttons-right-margin-win");
             private static SVC<float> osxBorderSize = new SVC<float>("--container-window-buttons-right-margin-osx");
             private static SVC<float> winBorderMargin = new SVC<float>("--container-window-button-left-right-margin-win");
             private static SVC<float> osxBorderMargin = new SVC<float>("--container-window-button-left-right-margin-osx");
         }
-
-        private const float kButtonCountOSX = 0;
-        private const float kButtonCountWin = 2;
         static internal float buttonHorizontalSpace => (kButtonWidth + Styles.buttonMargin * 2f);
-        static internal float buttonStackWidth => buttonHorizontalSpace * (macEditor || linuxEditor ? kButtonCountOSX : kButtonCountWin) + Styles.borderSize;
-
+        static internal float buttonStackWidth => Styles.borderSize;
         public ContainerWindow()
         {
             m_PixelRect = new Rect(0, 0, 400, 300);
@@ -656,142 +643,5 @@ namespace UnityEditor
             return PopupLocationHelper.GetDropDownRect(buttonRect, minSize, maxSize, this);
         }
 
-        public void HandleWindowDecorationEnd(Rect windowPosition)
-        {
-            // No Op
-        }
-
-        public void HandleWindowDecorationStart(Rect windowPosition)
-        {
-            if (!macEditor && !linuxEditor)
-            {
-                bool hasTitleBar = (windowPosition.y == 0 && (showMode != ShowMode.Utility && showMode != ShowMode.MainWindow) && !isPopup);
-
-                if (!hasTitleBar)
-                    return;
-
-                bool hasWindowButtons = Mathf.Abs(windowPosition.xMax - position.width) < 2;
-                if (hasWindowButtons)
-                {
-                    GUIStyle min = Styles.buttonMin;
-                    GUIStyle close = Styles.buttonClose;
-                    GUIStyle maxOrRestore = maximized ? Styles.buttonRestore : Styles.buttonMax;
-
-                    BeginTitleBarButtons(windowPosition);
-                    if (TitleBarButton(close))
-                    {
-                        if (InternalRequestClose())
-                        {
-                            Close();
-                            GUIUtility.ExitGUI();
-                        }
-                    }
-
-                    var canMaximize = m_MaxSize.x == 0 || m_MaxSize.y == 0 || m_MaxSize.x >= Screen.currentResolution.width || m_MaxSize.y >= Screen.currentResolution.height;
-                    EditorGUI.BeginDisabled(!canMaximize);
-                    if (TitleBarButton(maxOrRestore))
-                        ToggleMaximize();
-                    EditorGUI.EndDisabled();
-                }
-
-                DragTitleBar(new Rect(0, 0, position.width, kTitleHeight));
-            }
-        }
-
-        private void BeginTitleBarButtons(Rect windowPosition)
-        {
-            m_ButtonCount = 0;
-            m_TitleBarWidth = windowPosition.width;
-        }
-
-        private bool TitleBarButton(GUIStyle style)
-        {
-            var buttonRect = new Rect(m_TitleBarWidth - Styles.borderSize - (buttonHorizontalSpace * ++m_ButtonCount), Styles.buttonTop, kButtonWidth, kButtonHeight);
-            var guiView = rootView as GUIView;
-            if (guiView == null)
-            {
-                var splitView = rootView as SplitView;
-                if (splitView != null)
-                    guiView = splitView.children.Length > 0 ? splitView.children[0] as GUIView : null;
-            }
-            if (guiView != null)
-                guiView.MarkHotRegion(GUIClip.UnclipToWindow(buttonRect));
-
-            return GUI.Button(buttonRect, GUIContent.none, style);
-        }
-
-        // Snapping windows
-        private static Vector2 s_LastDragMousePos;
-        private float startDragDpi;
-
-        // Indicates that we are using the native title bar caption dragging.
-        private bool m_DraggingNativeTitleBarCaption = false;
-
-        private void DragTitleBar(Rect titleBarRect)
-        {
-            int id = GUIUtility.GetControlID(FocusType.Passive);
-            Event evt = Event.current;
-
-            switch (evt.GetTypeForControl(id))
-            {
-                case EventType.Repaint:
-                    if (m_DraggingNativeTitleBarCaption)
-                        m_DraggingNativeTitleBarCaption = false;
-                    EditorGUIUtility.AddCursorRect(titleBarRect, MouseCursor.Arrow);
-                    break;
-                case EventType.MouseDown:
-                    // If the mouse is inside the title bar rect, we say that we're the hot control
-                    if (titleBarRect.Contains(evt.mousePosition) && GUIUtility.hotControl == 0 && evt.button == 0)
-                    {
-                        Event.current.Use();
-                        m_DraggingNativeTitleBarCaption = true;
-                        SendCaptionEvent(m_DraggingNativeTitleBarCaption);
-                    }
-                    break;
-                case EventType.MouseUp:
-                    if (m_DraggingNativeTitleBarCaption)
-                        break;
-
-                    if (GUIUtility.hotControl == id)
-                    {
-                        GUIUtility.hotControl = 0;
-                        Event.current.Use();
-                        Unsupported.SetAllowCursorLock(true, Unsupported.DisallowCursorLockReasons.SizeMove);
-                    }
-                    break;
-                case EventType.MouseDrag:
-                    if (m_DraggingNativeTitleBarCaption)
-                        break;
-
-                    if (GUIUtility.hotControl == id)
-                    {
-                        Vector2 mousePos = evt.mousePosition;
-                        if (startDragDpi != GUIUtility.pixelsPerPoint)
-                        {
-                            // We ignore this mouse event when changing screens in multi monitor setups with
-                            // different dpi scalings as funky things might/will happen
-                            startDragDpi = GUIUtility.pixelsPerPoint;
-                            s_LastDragMousePos = mousePos;
-                        }
-                        else
-                        {
-                            Vector2 movement = mousePos - s_LastDragMousePos;
-
-                            float minimumDelta = 1.0f / GUIUtility.pixelsPerPoint;
-
-                            if (Mathf.Abs(movement.x) >= minimumDelta || Mathf.Abs(movement.y) >= minimumDelta)
-                            {
-                                Rect dragPosition = position;
-                                dragPosition.x += movement.x;
-                                dragPosition.y += movement.y;
-                                position = dragPosition;
-
-                                GUI.changed = true;
-                            }
-                        }
-                    }
-                    break;
-            }
-        }
     }
 } //namespace

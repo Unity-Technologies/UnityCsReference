@@ -139,8 +139,28 @@ namespace UnityEngine
             settings.screenRect = new Rect(0, 0, rect.width, rect.height);
             settings.text = text;
 
+            var tempAlignment = style.alignment;
+            if (style.imagePosition == ImagePosition.ImageAbove)
+            {
+                switch (style.alignment)
+                {
+                    case TextAnchor.MiddleRight:
+                    case TextAnchor.LowerRight:
+                        tempAlignment = TextAnchor.UpperRight;
+                        break;
+                    case TextAnchor.MiddleCenter:
+                    case TextAnchor.LowerCenter:
+                        tempAlignment = TextAnchor.UpperCenter;
+                        break;
+                    case TextAnchor.MiddleLeft:
+                    case TextAnchor.LowerLeft:
+                        tempAlignment = TextAnchor.UpperLeft;
+                        break;
+                }
+            }
+
             settings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.fontStyle);
-            settings.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.alignment);
+            settings.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(tempAlignment);
             settings.wordWrap = rect.width > 0 ? style.wordWrap : false;
             settings.wordWrappingRatio = 0.4f;
             settings.richText = style.richText;

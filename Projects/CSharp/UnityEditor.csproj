@@ -2054,6 +2054,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorVideoShader.cs">
       <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorVideoShader.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsScopes.cs">
+      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsScopes.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\IEditorElement.cs">
       <Link>Editor\Mono\Inspector\IEditorElement.cs</Link>
     </Compile>
@@ -4739,6 +4742,9 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Attributes\ModelSettingAttribute.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\Attributes\ModelSettingAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Attributes\NodeOptionAttribute.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Attributes\NodeOptionAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\AbstractNodeModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\AbstractNodeModel.cs</Link>
     </Compile>
@@ -6439,6 +6445,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\ClientProxy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\DateTimeProxy.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Proxies\DateTimeProxy.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Proxies\EditorAnalyticsProxy.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Proxies\EditorAnalyticsProxy.cs</Link>

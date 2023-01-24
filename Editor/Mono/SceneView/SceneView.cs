@@ -400,11 +400,18 @@ namespace UnityEditor
                 set => m_AlwaysRefresh = value;
             }
 
+            public bool showClouds
+            {
+                get => m_ShowClouds;
+                set => m_ShowClouds = value;
+            }
+
             public bool showSkybox = true;
             public bool showFlares = true;
             public bool showImageEffects = true;
             public bool showParticleSystems = true;
             public bool showVisualEffectGraphs = true;
+            bool m_ShowClouds = true;
 
             public bool fogEnabled => fxEnabled && showFog;
             // marked obsolete by @karlh 2020/4/14
@@ -413,6 +420,7 @@ namespace UnityEditor
             public bool materialUpdateEnabled => alwaysRefreshEnabled;
             public bool alwaysRefreshEnabled => fxEnabled && alwaysRefresh;
             public bool skyboxEnabled => fxEnabled && showSkybox;
+            public bool cloudsEnabled => fxEnabled && showClouds;
             public bool flaresEnabled => fxEnabled && showFlares;
             public bool imageEffectsEnabled => fxEnabled && showImageEffects;
             public bool particleSystemsEnabled => fxEnabled && showParticleSystems;
@@ -433,6 +441,7 @@ namespace UnityEditor
                 showFog = other.showFog;
                 alwaysRefresh = other.alwaysRefresh;
                 showSkybox = other.showSkybox;
+                showClouds = other.showClouds;
                 showFlares = other.showFlares;
                 showImageEffects = other.showImageEffects;
                 showParticleSystems = other.showParticleSystems;
@@ -449,7 +458,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    bool all =  showFog && alwaysRefresh && showSkybox && showFlares && showImageEffects && showParticleSystems;
+                    bool all =  showFog && alwaysRefresh && showSkybox && showClouds && showFlares && showImageEffects && showParticleSystems;
                     if (UnityEngine.VFX.VFXManager.activateVFX)
                         all = all && showVisualEffectGraphs;
                     return all;
@@ -467,6 +476,7 @@ namespace UnityEditor
                 showFog = value;
                 alwaysRefresh = value;
                 showSkybox = value;
+                showClouds = value;
                 showFlares = value;
                 showImageEffects = value;
                 showParticleSystems = value;
@@ -3007,6 +3017,7 @@ namespace UnityEditor
             ParticleSystemEditorUtils.renderInSceneView = m_SceneViewState.particleSystemsEnabled;
             UnityEngine.VFX.VFXManager.renderInSceneView = m_SceneViewState.visualEffectGraphsEnabled;
             SceneVisibilityManager.instance.enableSceneVisibility = m_SceneVisActive;
+            m_Camera.renderCloudsInSceneView = m_SceneViewState.cloudsEnabled;
             ResetIfNaN();
 
             m_Camera.transform.rotation = m_2DMode && !m_Rotation.isAnimating ? Quaternion.identity : m_Rotation.value;

@@ -33,6 +33,8 @@ namespace UnityEditor
         void Draw()
         {
             using var highlightScope = new EditorGUI.LabelHighlightScope(m_SettingsWindow.GetSearchText(), HighlightSelectionColor, HighlightColor);
+            using var settingsScope = new LabelWidthScope();
+            using var wideScreenScope = new WideScreenScope(this);
             GUILayout.Label(Styles.cameraSettings, EditorStyles.boldLabel);
 
             using var changeScope = new EditorGUI.ChangeCheckScope();

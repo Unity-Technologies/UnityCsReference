@@ -93,7 +93,7 @@ namespace Unity.Collections
 
             // NativeArray constructor does not support custom allocator
             if (allocator >= Allocator.FirstUserIndex)
-                throw new ArgumentException("Use CollectionHelper.CreateNativeArray for custom allocator", nameof(allocator));
+                throw new ArgumentException("Use CollectionHelper.CreateNativeArray in com.unity.collections package for custom allocator", nameof(allocator));
 
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), "Length must be >= 0");
@@ -200,6 +200,11 @@ namespace Unity.Collections
                 throw new InvalidOperationException("The NativeArray can not be Disposed because it was not allocated with a valid allocator.");
             }
 
+            if (m_AllocatorLabel >= Allocator.FirstUserIndex)
+            {
+                throw new InvalidOperationException("The NativeArray can not be Disposed because it was allocated with a custom allocator, use CollectionHelper.Dispose in com.unity.collections package.");
+            }
+
             if (m_AllocatorLabel > Allocator.None)
             {
                 AtomicSafetyHandle.DisposeHandle(ref m_Safety);
@@ -215,6 +220,11 @@ namespace Unity.Collections
             if (m_AllocatorLabel == Allocator.Invalid)
             {
                 throw new InvalidOperationException("The NativeArray can not be Disposed because it was not allocated with a valid allocator.");
+            }
+
+            if (m_AllocatorLabel >= Allocator.FirstUserIndex)
+            {
+                throw new InvalidOperationException("The NativeArray can not be Disposed because it was allocated with a custom allocator, use CollectionHelper.Dispose in com.unity.collections package.");
             }
 
             if (m_Buffer == null)

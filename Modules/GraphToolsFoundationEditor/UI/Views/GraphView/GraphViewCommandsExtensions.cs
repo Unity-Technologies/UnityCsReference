@@ -180,11 +180,24 @@ namespace Unity.GraphToolsFoundation.Editor
             if (!graphElements.Any())
                 return;
 
-            var rectToFit = CalculateRectToFitElements(self, graphElements);
-            self.CalculateFrameTransform(rectToFit, self.layout, GraphView.frameBorder, out var frameTranslation, out var frameScaling);
+            self.CalculateFrameTransformToFitElements(graphElements, out var frameTranslation, out var frameScaling);
 
             self.Dispatch(new ReframeGraphViewCommand(frameTranslation, frameScaling,
                 select ? graphElements.Select(e => e.GraphElementModel).ToList() : null));
+        }
+
+        /// <summary>
+        /// Computes the frame transform needed to fit a list of graph elements.
+        /// </summary>
+        /// <param name="self">The GraphView.</param>
+        /// <param name="graphElements">The list of elements to frame.</param>
+        /// <param name="frameTranslation">The translation needed to frame the graph elements.</param>
+        /// <param name="frameScaling">The scaling needed to frame the graph elements.</param>
+        /// <param name="maxZoomLevel">The maximum zoom level permitted.</param>
+        public static void CalculateFrameTransformToFitElements(this GraphView self, IReadOnlyList<GraphElement> graphElements, out Vector3 frameTranslation, out Vector3 frameScaling, float maxZoomLevel = -1.0f)
+        {
+            var rectToFit = CalculateRectToFitElements(self, graphElements);
+            self.CalculateFrameTransform(rectToFit, self.layout, GraphView.frameBorder, out frameTranslation, out frameScaling, maxZoomLevel);
         }
     }
 }

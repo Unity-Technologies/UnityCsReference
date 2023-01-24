@@ -80,7 +80,7 @@ namespace UnityEditor
 
         public static bool LoadWindowLayout(string path)
         {
-            return WindowLayout.LoadWindowLayout(path, false);
+            return WindowLayout.TryLoadWindowLayout(path, false);
         }
 
         public static void CompressTexture(Texture2D texture, TextureFormat format, TextureCompressionQuality quality)

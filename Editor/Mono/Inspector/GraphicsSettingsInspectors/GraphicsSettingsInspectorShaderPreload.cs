@@ -39,6 +39,8 @@ namespace UnityEditor
         {
             using var highlightScope = new EditorGUI.LabelHighlightScope(m_SettingsWindow.GetSearchText(), HighlightSelectionColor, HighlightColor);
             using var check = new EditorGUI.ChangeCheckScope();
+            using var settingsScope = new LabelWidthScope();
+            using var wideScreenScope = new WideScreenScope(this);
             EditorGUILayout.PropertyField(m_PreloadedShaders, true);
 
             m_DelayShaderPreload = EditorGUILayout.Toggle(Styles.delayShaderPreload, m_DelayShaderPreload);

@@ -15,7 +15,9 @@ namespace Unity.GraphToolsFoundation.Editor
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Model")]
     enum SectionType
     {
-        Settings,
+        [Obsolete("SectionType.Settings has been deprecated. Use SectionType.Options instead")]
+        Settings = 0,
+        Options = 0,
         Properties,
         Advanced
     }

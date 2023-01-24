@@ -71,6 +71,8 @@ namespace UnityEditor
         {
             using var highlightScope = new EditorGUI.LabelHighlightScope(m_SettingsWindow.GetSearchText(), HighlightSelectionColor, HighlightColor);
             using var check = new EditorGUI.ChangeCheckScope();
+            using var settingsScope = new LabelWidthScope();
+            using var wideScreenScope = new WideScreenScope(this);
 
             EditorGUILayout.LabelField(Styles.shaderStrippingSettings, EditorStyles.boldLabel);
 

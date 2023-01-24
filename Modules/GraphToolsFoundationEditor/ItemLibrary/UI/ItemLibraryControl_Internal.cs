@@ -51,7 +51,7 @@ namespace Unity.ItemLibrary.Editor
         const string k_HideDetailsTooltip = "Hide Preview";
         const string k_ShowDetailsTooltip = "Show Preview";
         const string k_DetailsPanelHiddenClassName = "hidden";
-        const string k_SearchplaceholderlabelHiddenClassName = "searchPlaceholderLabel--hidden";
+        const string k_SearchPlaceholderLabelHiddenClassName = "searchPlaceholderLabel--hidden";
 
         const string k_IndexingDatabaseStatusText = "Indexing Databases...";
 
@@ -63,6 +63,7 @@ namespace Unity.ItemLibrary.Editor
         internal Label TitleLabel_Internal => m_TitleLabel;
         internal Toggle DetailsToggle_Internal => m_DetailsToggle;
         internal TextField SearchTextField_Internal => m_SearchTextField;
+        internal LibraryTreeView_Internal TreeView_Internal => m_TreeView;
         internal static string DetailsPanelHiddenClassName_Internal => k_DetailsPanelHiddenClassName;
         internal bool IsIndexing_Internal { get; private set; }
         internal static string IndexingDatabaseStatusText_Internal => k_IndexingDatabaseStatusText;
@@ -151,11 +152,13 @@ namespace Unity.ItemLibrary.Editor
             {
                 m_SearchTextField.focusable = true;
                 m_SearchTextField.RegisterCallback<InputEvent>(OnSearchTextFieldTextChanged);
+                m_SearchTextField.RegisterCallback<KeyDownEvent>(OnSearchTextFieldKeyDown, TrickleDown.TrickleDown);
+                m_SearchTextField.RegisterCallback<NavigationMoveEvent>(OnSearchTextFieldNavigationMove);
+                m_SearchTextField.RegisterCallback<NavigationSubmitEvent>(OnSearchTextFieldNavigationSubmit);
+                m_SearchTextField.RegisterCallback<NavigationCancelEvent>(OnSearchTextFieldNavigationCancel);
+                m_SearchTextField.AddToClassList(TextInputBaseField<string>.ussClassName);
 
                 m_SearchTextInput = m_SearchTextField.Q(TextInputBaseField<string>.textInputUssName);
-                m_SearchTextInput.RegisterCallback<KeyDownEvent>(OnSearchTextFieldKeyDown, TrickleDown.TrickleDown);
-
-                m_SearchTextField.AddToClassList(TextInputBaseField<string>.ussClassName);
             }
 
             m_AutoCompleteLabel = this.Q<Label>(k_WindowAutoCompleteLabelName);
@@ -364,7 +367,7 @@ namespace Unity.ItemLibrary.Editor
             var query = m_Text;
             var noQuery = string.IsNullOrEmpty(query);
 
-            m_SearchPlaceholderLabel.EnableInClassList(k_SearchplaceholderlabelHiddenClassName, !string.IsNullOrEmpty(query));
+            m_SearchPlaceholderLabel.EnableInClassList(k_SearchPlaceholderLabelHiddenClassName, !string.IsNullOrEmpty(query));
             var results = m_Library.Search(query).ToList();
 
             m_SuggestedCompletion = string.Empty;
@@ -398,11 +401,11 @@ namespace Unity.ItemLibrary.Editor
         {
             var text = inputEvent.newData;
 
+            // This is necessary due to OnTextChanged(...) being called after user inputs that have no impact on the text.
+            // Ex: Moving the caret.
             if (string.Equals(text, m_Text))
                 return;
 
-            // This is necessary due to OnTextChanged(...) being called after user inputs that have no impact on the text.
-            // Ex: Moving the caret.
             m_Text = text;
 
             // If backspace is pressed and no text remain, clear the suggestion label.
@@ -431,73 +434,150 @@ namespace Unity.ItemLibrary.Editor
 
         void OnSearchTextFieldKeyDown(KeyDownEvent keyDownEvent)
         {
-            // First, check if we cancelled the search.
-            if (keyDownEvent.keyCode == KeyCode.Escape)
-            {
-                itemChosen_Internal?.Invoke(null);
-                keyDownEvent.StopPropagation();
-                return;
-            }
-
-            // For some reason the KeyDown event is raised twice when entering a character.
+            // KeyDown event is raised twice when entering a character: once with a key code, once with a character.
             // As such, we ignore one of the duplicate event.
-            // This workaround was recommended by the Editor team. The cause of the issue relates to how IMGUI works
-            // and a fix was not in the works at the moment of this writing.
             if (keyDownEvent.character == k_TabCharacter)
             {
                 // Prevent switching focus to another visual element.
+                keyDownEvent.StopPropagation();
                 keyDownEvent.PreventDefault();
-
                 return;
             }
 
-            // If Tab is pressed, complete the query with the suggested term.
-            if (keyDownEvent.keyCode == KeyCode.Tab)
+            switch (keyDownEvent.keyCode)
             {
-                // Used to prevent the TAB input from executing it's default behavior. We're hijacking it for auto-completion.
-                keyDownEvent.PreventDefault();
-
-                if (!string.IsNullOrEmpty(m_SuggestedCompletion))
+                case KeyCode.Escape:
                 {
-                    SelectAndReplaceCurrentWord();
-                    m_AutoCompleteLabel.text = string.Empty;
+                    // Close window with no selection and prevent text field from processing the event.
+                    itemChosen_Internal?.Invoke(null);
+                    keyDownEvent.StopPropagation();
+                    keyDownEvent.PreventDefault();
+                    break;
+                }
+                case KeyCode.Tab:
+                {
+                    // Complete the query with the suggested term and prevent text field from processing the event.
 
-                    // TODO: Revisit, we shouldn't need to do this here.
-                    m_Text = m_SearchTextField.text;
+                    if (!string.IsNullOrEmpty(m_SuggestedCompletion))
+                    {
+                        SelectAndReplaceCurrentWord();
+                        m_AutoCompleteLabel.text = string.Empty;
 
-                    Refresh();
+                        Refresh();
 
-                    m_SuggestedCompletion = string.Empty;
+                        m_SuggestedCompletion = string.Empty;
+                    }
+
+                    keyDownEvent.StopPropagation();
+                    keyDownEvent.PreventDefault();
+                    break;
+                }
+                case KeyCode.Home:
+                case KeyCode.End:
+                case KeyCode.PageUp:
+                case KeyCode.PageDown:
+                {
+                    // Forward a copy of the event to the tree view and prevent text field from processing the event.
+                    using (var eKeyDown = KeyDownEvent.GetPooled(keyDownEvent.character, keyDownEvent.keyCode,
+                               keyDownEvent.modifiers))
+                    {
+                        eKeyDown.target = m_TreeView.scrollView.contentContainer;
+                        SendEvent(eKeyDown);
+                    }
+
+                    keyDownEvent.StopPropagation();
+                    keyDownEvent.PreventDefault();
+                    break;
+                }
+                case KeyCode.LeftArrow:
+                case KeyCode.RightArrow:
+                {
+                    // Forward a copy of the event to the tree view and prevent text field from processing the event
+                    // if the tree view handled it. If it was not handled by the tree view, we want the text field
+                    // to move the cursor left or right.
+                    using (var eKeyDown = KeyDownEvent.GetPooled(keyDownEvent.character, keyDownEvent.keyCode,
+                               keyDownEvent.modifiers))
+                    {
+                        eKeyDown.target = m_TreeView;
+                        SendEvent(eKeyDown);
+
+                        if (eKeyDown.isPropagationStopped)
+                        {
+                            keyDownEvent.StopPropagation();
+                            keyDownEvent.PreventDefault();
+                        }
+                    }
+
+                    break;
+                }
+                case KeyCode.UpArrow:
+                case KeyCode.DownArrow:
+                {
+                    // Ignore those events. They will be translated to NavigationMoveEvent.
+                    keyDownEvent.StopPropagation();
+                    keyDownEvent.PreventDefault();
+                    break;
+                }
+                case KeyCode.Space:
+                {
+                    // We do not want space to trigger a submit event to the tree view.
+                    m_SkipSubmit = true;
+                    break;
                 }
             }
-            else
+        }
+
+        bool m_SkipSubmit;
+
+        void OnSearchTextFieldNavigationCancel(NavigationCancelEvent evt)
+        {
+            // Forward a copy of the event to the tree view and prevent text field from processing the event.
+            using (var ee = NavigationCancelEvent.GetPooled(evt.deviceType, evt.modifiers))
             {
-                keyDownEvent.StopPropagation();
-                using (var eKeyDown = KeyDownEvent.GetPooled(keyDownEvent.character, keyDownEvent.keyCode,
-                    keyDownEvent.modifiers))
-                {
-                    eKeyDown.target = m_TreeView;
-                    SendEvent(eKeyDown);
-                }
+                ee.target = m_TreeView.scrollView.contentContainer;
+                SendEvent(ee);
             }
+            evt.StopPropagation();
+            evt.PreventDefault();
+        }
+
+        void OnSearchTextFieldNavigationSubmit(NavigationSubmitEvent evt)
+        {
+            if (m_SkipSubmit)
+            {
+                m_SkipSubmit = false;
+                return;
+            }
+
+            // Forward a copy of the event to the tree view and prevent text field from processing the event.
+            using (var ee = NavigationSubmitEvent.GetPooled(evt.deviceType, evt.modifiers))
+            {
+                ee.target = m_TreeView.scrollView.contentContainer;
+                SendEvent(ee);
+            }
+            evt.StopPropagation();
+            evt.PreventDefault();
+        }
+
+        void OnSearchTextFieldNavigationMove(NavigationMoveEvent evt)
+        {
+            // Forward a copy of the event to the tree view and prevent text field from processing the event.
+            using (var ee = NavigationMoveEvent.GetPooled(evt.move, evt.deviceType, evt.modifiers))
+            {
+                ee.target = m_TreeView.scrollView.contentContainer;
+                SendEvent(ee);
+            }
+            evt.StopPropagation();
+            evt.PreventDefault();
         }
 
         void SelectAndReplaceCurrentWord()
         {
             var newText = m_SearchTextField.value + m_SuggestedCompletion;
-
-            // Wait for SelectRange api to reach trunk
-            //#if UNITY_2018_3_OR_NEWER
-            //            m_SearchTextField.value = newText;
-            //            m_SearchTextField.SelectRange(m_SearchTextField.value.Length, m_SearchTextField.value.Length);
-            //#else
-            // HACK - relies on the textfield moving the caret when being assigned a value and skipping
-            // all low surrogate characters
-            var magicMoveCursorToEndString = new string('\uDC00', newText.Length);
-            m_SearchTextField.value = magicMoveCursorToEndString;
             m_SearchTextField.value = newText;
-
-            //#endif
+            m_Text = newText;
+            m_SearchTextField.textInputBase.textElement.uitkTextHandle.Update();
+            m_SearchTextField.textSelection.MoveTextEnd();
         }
     }
 }

@@ -52,6 +52,18 @@ namespace Unity.GraphToolsFoundation.Editor
         static readonly Vector2 k_HitBoxSize = new Vector2(40, 20);
         int m_ConnectedWiresCount = Int32.MinValue;
 
+        protected string m_CurrentDropHighlightClass = dropHighlightAcceptedClass;
+
+        string m_CurrentDataClassName;
+        string m_CurrentTypeClassName;
+
+        bool m_Hovering;
+        bool m_WillConnect;
+
+        WireConnector m_WireConnector;
+
+        VisualElement m_ConnectorCache;
+
         static Color DefaultPortColor
         {
             get
@@ -70,8 +82,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public GraphView GraphView => RootView as GraphView;
 
-        WireConnector m_WireConnector;
-
         public PortModel PortModel => Model as PortModel;
 
         public WireConnector WireConnector
@@ -89,21 +99,21 @@ namespace Unity.GraphToolsFoundation.Editor
             private set;
         }
 
+        /// <summary>
+        /// Whether the port will be connected during an edge drag if the mouse is released where it is.
+        /// </summary>
         public bool WillConnect
         {
+            get => m_WillConnect;
             set
-            {
+        {
+                m_WillConnect = value;
                 EnableInClassList(willConnectModifierUssClassName, value);
-                GetPortConnectorPart().Hovering = value;
+                GetConnector()?.MarkDirtyRepaint();
             }
         }
 
         public Color PortColor { get; protected set; } = DefaultPortColor;
-
-        protected string m_CurrentDropHighlightClass = dropHighlightAcceptedClass;
-
-        string m_CurrentDataClassName;
-        string m_CurrentTypeClassName;
 
         /// <inheritdoc />
         public virtual bool CanAcceptDrop(IReadOnlyList<GraphElementModel> droppedElements)
@@ -331,6 +341,14 @@ namespace Unity.GraphToolsFoundation.Editor
             tooltip = PortModel.Orientation == PortOrientation.Horizontal ? PortModel.ToolTip :
                 string.IsNullOrEmpty(PortModel.ToolTip) ? PortModel.UniqueName :
                 PortModel.UniqueName + "\n" + PortModel.ToolTip;
+
+            var connector = GetConnector();
+            if (connector != null)
+            {
+                connector.generateVisualContent = PortModel.PortType == PortType.Execution ? OnGenerateExecutionConnectorVisualContent : OnGenerateDataConnectorVisualContent;
+                connector.MarkDirtyRepaint();
+            }
+
         }
 
         static readonly Dictionary<Type, string> k_TypeClassNameSuffix = new Dictionary<Type, string>();
@@ -374,14 +392,32 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public VisualElement GetConnector()
         {
-            var portConnector = PartList.GetPart(connectorPartName) as PortConnectorPart;
-            return portConnector?.Connector ?? portConnector?.Root ?? this;
+            if (m_ConnectorCache == null)
+            {
+                var portConnector = PartList.GetPart(connectorPartName) as PortConnectorPart;
+                m_ConnectorCache = portConnector?.Connector ?? portConnector?.Root ?? this;
+            }
+
+            return m_ConnectorCache;
         }
 
-        public PortConnectorPart GetPortConnectorPart()
+        /// <summary>
+        /// Whether the mouse is Hovering the port.
+        /// </summary>
+        public bool Hovering
         {
-            return PartList.GetPart(connectorPartName) as PortConnectorPart;
+            get => m_Hovering;
+            set
+            {
+                m_Hovering = value;
+                GetConnector()?.MarkDirtyRepaint();
+            }
         }
+
+        /// <summary>
+        /// Whether the port cap should actually be visible.
+        /// </summary>
+        public bool IsCapVisible => Hovering || WillConnect || PortModel.IsConnected();
 
         /// <summary>
         /// Gets the port hit box.
@@ -445,6 +481,77 @@ namespace Unity.GraphToolsFoundation.Editor
         PortModel GetPortToConnect(GraphElementModel selectable)
         {
             return (selectable as PortNodeModel)?.GetPortFitToConnectTo(PortModel);
+        }
+
+        void OnGenerateExecutionConnectorVisualContent(MeshGenerationContext mgc)
+        {
+            mgc.painter2D.strokeColor = PortColor;
+            mgc.painter2D.lineJoin = LineJoin.Round;
+
+            var paintRect = GetConnector().localBound;
+            paintRect.position = Vector2.zero;
+
+            MakeTriangle(mgc.painter2D, paintRect);
+            mgc.painter2D.lineWidth = 1.0f;
+            mgc.painter2D.Stroke();
+
+            if (IsCapVisible)
+            {
+                paintRect.position += PortModel?.Orientation == PortOrientation.Horizontal ? new Vector2(1.33f, 2) : new Vector2(2, 1.33f);
+                paintRect.size -= Vector2.one * 4;
+                mgc.painter2D.fillColor = PortColor;
+                MakeTriangle(mgc.painter2D, paintRect);
+                mgc.painter2D.Fill();
+            }
+        }
+
+        void OnGenerateDataConnectorVisualContent(MeshGenerationContext mgc)
+        {
+            mgc.painter2D.strokeColor = PortColor;
+            mgc.painter2D.lineJoin = LineJoin.Round;
+
+            var paintRect = GetConnector().localBound;
+            paintRect.position = Vector2.zero;
+
+            MakeCircle(mgc.painter2D, paintRect);
+            mgc.painter2D.lineWidth = 1.0f;
+            mgc.painter2D.Stroke();
+
+            if (IsCapVisible)
+            {
+                paintRect.position += Vector2.one * 2;
+                paintRect.size -= Vector2.one * 4;
+                mgc.painter2D.fillColor = PortColor;
+                MakeCircle(mgc.painter2D, paintRect);
+                mgc.painter2D.Fill();
+            }
+        }
+
+        void MakeTriangle(Painter2D painter2D, Rect paintRect)
+        {
+            painter2D.BeginPath();
+            if (PortModel?.Orientation == PortOrientation.Horizontal)
+            {
+                painter2D.MoveTo(new Vector2(paintRect.xMin, paintRect.yMin));
+                painter2D.LineTo(new Vector2(paintRect.xMax, paintRect.center.y));
+                painter2D.LineTo(new Vector2(paintRect.xMin, paintRect.yMax));
+                painter2D.LineTo(new Vector2(paintRect.xMin, paintRect.yMin));
+            }
+            else
+            {
+                painter2D.MoveTo(new Vector2(paintRect.xMin, paintRect.yMin));
+                painter2D.LineTo(new Vector2(paintRect.xMax, paintRect.yMin));
+                painter2D.LineTo(new Vector2(paintRect.center.x, paintRect.yMax));
+                painter2D.LineTo(new Vector2(paintRect.xMin, paintRect.yMin));
+            }
+            painter2D.ClosePath();
+        }
+
+        void MakeCircle(Painter2D painter2D, Rect paintRect)
+        {
+            painter2D.BeginPath();
+            painter2D.Arc(paintRect.center, paintRect.width * 0.5f, 0, Angle.Turns(1));
+            painter2D.ClosePath();
         }
     }
 }

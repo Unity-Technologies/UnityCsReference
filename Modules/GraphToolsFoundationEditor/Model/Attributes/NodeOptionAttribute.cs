@@ -6,9 +6,12 @@ using System;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
+    /// <summary>
+    /// Attribute to mark a field as being a node option, one that appear in the Node Options section
+    /// of the model inspector.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Field)]
-    [Obsolete("ModelSettingAttribute has been deprecated. Use NodeOptionAttribute instead.")]
-    class ModelSettingAttribute : Attribute
+    class NodeOptionAttribute : Attribute
     {
     }
 }

@@ -65,7 +65,7 @@ namespace UnityEditor
                         System.IO.Directory.CreateDirectory(parentDir);
                     File.Copy(systemProfilerLayoutPath, userPrefProfilerLayoutPath, true);
                 }
-                WindowLayout.LoadWindowLayout(userPrefProfilerLayoutPath, false);
+                WindowLayout.TryLoadWindowLayout(userPrefProfilerLayoutPath, false);
 
                 SessionState.SetBool("OOPP.Initialized", true);
                 EditorApplication.CallDelayed(InitializeProfilerProcessDomain);

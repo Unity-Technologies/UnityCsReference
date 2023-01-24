@@ -15,7 +15,6 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         public static readonly string ussClassName = "ge-port-connector-part";
         public static readonly string connectorUssName = "connector";
-        public static readonly string connectorCapUssName = "cap";
         public static readonly string labelName = "label";
 
         /// <summary>
@@ -40,28 +39,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected VisualElement m_ConnectorBox;
 
-        protected VisualElement m_ConnectorBoxCap;
-
         protected VisualElement m_Root;
-
-        bool m_Hovering;
 
         /// <inheritdoc />
         public override VisualElement Root => m_Root;
 
         public VisualElement Connector => m_ConnectorBox;
-
-        public VisualElement Cap => m_ConnectorBoxCap;
-
-        public bool Hovering
-        {
-            get => m_Hovering;
-            set
-            {
-                m_Hovering = value;
-                ShowCap();
-            }
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortConnectorPart"/> class.
@@ -71,7 +54,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         protected PortConnectorPart(string name, Model model, ModelView ownerElement, string parentClassName)
-            : base(name, model, ownerElement, parentClassName) {}
+            : base(name, model, ownerElement, parentClassName)
+        {
+        }
 
         /// <inheritdoc />
         protected override void BuildPartUI(VisualElement container)
@@ -84,11 +69,6 @@ namespace Unity.GraphToolsFoundation.Editor
             m_ConnectorBox.AddToClassList(ussClassName.WithUssElement(connectorUssName));
             m_ConnectorBox.AddToClassList(m_ParentClassName.WithUssElement(connectorUssName));
             m_Root.Add(m_ConnectorBox);
-
-            m_ConnectorBoxCap = new VisualElement { name = connectorCapUssName };
-            m_ConnectorBoxCap.AddToClassList(ussClassName.WithUssElement(connectorCapUssName));
-            m_ConnectorBoxCap.AddToClassList(m_ParentClassName.WithUssElement(connectorCapUssName));
-            m_ConnectorBox.Add(m_ConnectorBoxCap);
 
             if (m_Model is IHasTitle)
             {
@@ -109,13 +89,16 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
 
             var mouseIsOnHitBox = Port.GetPortHitBoxBounds(port, true).Contains(evt.mousePosition);
-            if (mouseIsOnHitBox != Hovering)
-                Hovering = mouseIsOnHitBox;
+            if (mouseIsOnHitBox != port.Hovering)
+                port.Hovering = mouseIsOnHitBox;
         }
 
         void OnMouseLeave(MouseLeaveEvent evt)
         {
-            Hovering = false;
+            if (m_OwnerElement is not Port port)
+                return;
+
+            port.Hovering = false;
         }
 
         /// <inheritdoc />
@@ -131,33 +114,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (m_ConnectorLabel != null)
                 m_ConnectorLabel.text = (m_Model as IHasTitle)?.DisplayTitle ?? String.Empty;
 
-            ShowCap();
-        }
-
-        protected void ShowCap()
-        {
-            if (m_ConnectorBoxCap != null)
-            {
-                if (m_Model is PortModel portModel && portModel.IsConnected())
-                {
-                    m_ConnectorBoxCap.style.visibility = StyleKeyword.Null;
-                }
-                else if (m_OwnerElement is Port port)
-                {
-                    var willConnect = port.ClassListContains(Port.willConnectModifierUssClassName);
-                    var isEnabled = port.enabledSelf;
-                    var portHasCapacity = port.PortModel.Capacity != PortCapacity.None;
-
-                    if (isEnabled && portHasCapacity && (Hovering || willConnect))
-                        m_ConnectorBoxCap.style.visibility = StyleKeyword.Null;
-                    else
-                        m_ConnectorBoxCap.style.visibility = Visibility.Hidden;
-                }
-                else
-                {
-                    m_ConnectorBoxCap.style.visibility = Visibility.Hidden;
-                }
-            }
+            m_ConnectorBox.MarkDirtyRepaint();
         }
     }
 }

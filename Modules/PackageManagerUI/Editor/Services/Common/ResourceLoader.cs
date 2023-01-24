@@ -268,7 +268,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void Reset()
         {
             foreach (var styleSheetId in s_ResolvedDarkStyleSheetIds.Concat(s_ResolvedLightStyleSheetIds).Where(id => id != 0))
-                UnityEngine.Object.Destroy(UnityEngine.Object.FindObjectFromInstanceID(styleSheetId));
+                UnityEngine.Object.DestroyImmediate(UnityEngine.Object.FindObjectFromInstanceID(styleSheetId));
 
             for (var i = 0; i < (int)StyleSheetType.Count; i++)
             {

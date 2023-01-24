@@ -219,29 +219,19 @@ namespace Unity.ItemLibrary.Editor
 
             switch (evt.keyCode)
             {
-                case KeyCode.Return:
-                case KeyCode.KeypadEnter:
-                    OnItemChosen(itemView?.Item);
-                    break;
                 case KeyCode.LeftArrow:
                     if (categoryView != null)
+                    {
                         Collapse(categoryView);
+                        evt.StopPropagation();
+                    }
                     break;
                 case KeyCode.RightArrow:
                     if (categoryView != null)
+                    {
                         Expand(categoryView);
-                    break;
-                case KeyCode.UpArrow:
-                    SelectItemInListView(selectedIndex - 1);
-                    break;
-                case KeyCode.DownArrow:
-                    SelectItemInListView(selectedIndex + 1);
-                    break;
-                case KeyCode.PageUp:
-                    SelectItemInListView(0);
-                    break;
-                case KeyCode.PageDown:
-                    SelectItemInListView(itemsSource.Count - 1);
+                        evt.StopPropagation();
+                    }
                     break;
             }
         }

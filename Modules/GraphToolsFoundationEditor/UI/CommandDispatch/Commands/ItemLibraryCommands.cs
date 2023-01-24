@@ -244,13 +244,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
                     var guid = creationData.Guid.Valid ? creationData.Guid : SerializableGUID.Generate();
 
-                    // Delete previous connections
-                    if (connectionsToMake == ConnectionsToMake.ExistingPort && creationData.PortModel.Capacity != PortCapacity.Multi)
-                    {
-                        var wiresToDelete = creationData.PortModel.GetConnectedWires();
-                        graphModel.DeleteWires(wiresToDelete);
-                    }
-
                     // Create new element
                     GraphElementModel createdElement;
                     if (creationData.VariableDeclaration != null)
@@ -277,6 +270,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         graphUpdater.MarkForRename(createdElement);
                     }
 
+                    var wiresToDelete = new List<WireModel>();
                     var portNodeModel = createdElement as PortNodeModel;
                     switch (connectionsToMake)
                     {
@@ -287,6 +281,9 @@ namespace Unity.GraphToolsFoundation.Editor
                             var newPortToConnect = portNodeModel?.GetPortFitToConnectTo(existingPortToConnect);
                             if (newPortToConnect != null)
                             {
+                                // Old wires to delete
+                                wiresToDelete = WireCommandHelper_Internal.GetDropWireModelsToDelete(creationData.PortModel).ToList();
+
                                 WireModel newWire;
                                 if (existingPortToConnect.Direction == PortDirection.Output)
                                 {
@@ -320,13 +317,11 @@ namespace Unity.GraphToolsFoundation.Editor
                                 var wireInput = creationData.WireToInsertOn.ToPort;
                                 var wireOutput = creationData.WireToInsertOn.FromPort;
 
-                                // Delete old wire
-                                graphModel.DeleteWire(creationData.WireToInsertOn);
+                                // Old wire to delete
+                                wiresToDelete.Add(creationData.WireToInsertOn);
 
                                 // Connect input port
-                                var inputPortModel =
-                                    newModelToConnect.InputsByDisplayOrder.FirstOrDefault(p =>
-                                        p?.PortType == wireOutput?.PortType);
+                                var inputPortModel = newModelToConnect.GetPortFitToConnectTo(wireOutput);
 
                                 if (inputPortModel != null)
                                 {
@@ -343,7 +338,7 @@ namespace Unity.GraphToolsFoundation.Editor
                             }
                             break;
                         case ConnectionsToMake.ExistingWires:
-                            foreach (var wire in creationData.WiresToConnect)
+                            foreach (var wire in creationData.WiresToConnect.ToList())
                             {
                                 var wireModel = wire.model;
                                 var portToConnect = creationData.LibraryItem.Data is NodeItemLibraryData nodeData ? nodeData.PortToConnect : null;
@@ -353,6 +348,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
                                 if (newPort != null)
                                 {
+                                    // Old wires to delete
+                                    wiresToDelete.AddRange(WireCommandHelper_Internal.GetDropWireModelsToDelete(wireModel.GetOtherPort(wire.side)).Except(new [] { wireModel }));
+
                                     if (wire.model is IGhostWire _)
                                     {
                                         var toPort = wire.side == WireSide.To ? newPort : wire.model.ToPort;
@@ -370,6 +368,10 @@ namespace Unity.GraphToolsFoundation.Editor
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
+
+                    // Delete old wires
+                    if (wiresToDelete.Any())
+                        graphModel.DeleteWires(wiresToDelete);
                 }
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }

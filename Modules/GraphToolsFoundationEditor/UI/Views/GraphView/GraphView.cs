@@ -856,26 +856,10 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         evt.menu.AppendSeparator();
 
-                        var wireData = wires.Select(
-                            wireModel =>
-                            {
-                                var outputPort = wireModel.FromPort.GetView<Port>(this);
-                                var inputPort = wireModel.ToPort.GetView<Port>(this);
-                                var outputNode = wireModel.FromPort.NodeModel.GetView<Node>(this);
-                                var inputNode = wireModel.ToPort.NodeModel.GetView<Node>(this);
-
-                                if (outputNode == null || inputNode == null || outputPort == null || inputPort == null)
-                                    return (null, Vector2.zero, Vector2.zero);
-
-                                return (wireModel,
-                                    outputPort.ChangeCoordinatesTo(contentContainer, outputPort.layout.center),
-                                    inputPort.ChangeCoordinatesTo(contentContainer, inputPort.layout.center));
-                            }
-                        ).Where(tuple => tuple.Item1 != null).ToList();
-
+                        var wireData = Wire.GetPortalsWireData(wires, this);
                         evt.menu.AppendAction("Add Portals", _ =>
                         {
-                            Dispatch(new ConvertWiresToPortalsCommand(wireData));
+                            Dispatch(new ConvertWiresToPortalsCommand(wireData, this));
                         });
                     }
 
@@ -1214,7 +1198,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return rectToFit;
         }
 
-        public void CalculateFrameTransform(Rect rectToFit, Rect clientRect, int border, out Vector3 frameTranslation, out Vector3 frameScaling)
+        public void CalculateFrameTransform(Rect rectToFit, Rect clientRect, int border, out Vector3 frameTranslation, out Vector3 frameScaling, float maxZoomLevel = -1.0f)
         {
             // bring slightly smaller screen rect into GUI space
             var screenRect = new Rect
@@ -1233,7 +1217,7 @@ namespace Unity.GraphToolsFoundation.Editor
             float zoomLevel = Math.Min(identity.width / rectToFit.width, identity.height / rectToFit.height);
 
             // clamp
-            zoomLevel = Mathf.Clamp(zoomLevel, m_MinScale, Math.Min(m_MaxScale, m_MaxScaleOnFrame));
+            zoomLevel = Mathf.Clamp(zoomLevel, m_MinScale, Math.Min(m_MaxScale, maxZoomLevel > 0 ? maxZoomLevel : m_MaxScaleOnFrame));
 
             var trs = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(zoomLevel, zoomLevel, 1.0f));
 
@@ -2152,12 +2136,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 GraphModel.TryGetModelFromGuid(modelToReposition.Model, out AbstractNodeModel nodeModel);
                 GraphModel.TryGetModelFromGuid(modelToReposition.WireModel, out WireModel wireModel);
 
-                if (nodeModel != null && wireModel != null)
-                {
-                    var nodeUI = nodeModel.GetView<Node>(this);
-                    if (nodeUI == null)
-                        continue;
+                var nodeUI = nodeModel?.GetView<Node>(this);
+                if (nodeUI == null)
+                    continue;
 
+                if (wireModel != null)
+                {
                     var portModel = modelToReposition.WireSide == WireSide.From ? wireModel.FromPort : wireModel.ToPort;
 
                     // Get the orientation of the connection
@@ -2195,9 +2179,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                     nodeModel.Position = new Vector2(newPosX, newPosY);
 
-                    // The node and wire's visibility was set to hidden before the first layout pass. Now, they should be set to visible.
-                    nodeUI.visible = true;
-
+                    // The wire's visibility was set to hidden before the first layout pass. Now, it should be set to visible.
                     var wireUI = wireModel.GetView<Wire>(this);
                     if (wireUI != null)
                     {
@@ -2205,6 +2187,8 @@ namespace Unity.GraphToolsFoundation.Editor
                         graphUpdater.MarkChanged(wireModel, ChangeHint.Layout);
                     }
                 }
+                // The node was set to hidden before the first layout pass. Now, it should be set to visible.
+                nodeUI.visible = true;
             }
             graphUpdater.MarkUpdated(changeScope.ChangeDescription);
         }

@@ -36,9 +36,9 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 switch (inspectorSectionContext.Section.SectionType)
                 {
-                    case SectionType.Settings:
+                    case SectionType.Options:
                         {
-                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.BasicSettingsFilter);
+                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
                             ui.PartList.AppendPart(inspectorFields);
                             break;
                         }
@@ -77,9 +77,9 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 switch (inspectorSectionContext.Section.SectionType)
                 {
-                    case SectionType.Settings:
+                    case SectionType.Options:
                         {
-                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.BasicSettingsFilter);
+                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
                             ui.PartList.AppendPart(inspectorFields);
                             break;
                         }
@@ -115,7 +115,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     case SectionType.Properties:
                         {
-                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.BasicSettingsFilter);
+                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
                             ui.PartList.AppendPart(inspectorFields);
                             break;
                         }
@@ -151,7 +151,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     case SectionType.Properties:
                     {
-                        var inspectorFields = WireFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.BasicSettingsFilter);
+                        var inspectorFields = WireFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
                         ui.PartList.AppendPart(inspectorFields);
                         break;
                     }

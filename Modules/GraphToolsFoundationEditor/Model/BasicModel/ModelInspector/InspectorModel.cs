@@ -106,7 +106,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         {
                             Title = null,
                             Collapsible = false,
-                            SectionType = SectionType.Settings
+                            SectionType = SectionType.Options
                         });
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
@@ -126,7 +126,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         {
                             Title = null,
                             Collapsible = false,
-                            SectionType = SectionType.Settings
+                            SectionType = SectionType.Options
                         });
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
@@ -140,7 +140,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         {
                             Title = null,
                             Collapsible = false,
-                            SectionType = SectionType.Settings
+                            SectionType = SectionType.Options
                         });
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
@@ -160,7 +160,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         {
                             Title = k_PlacematPropertiesTitle,
                             Collapsed = false,
-                            SectionType = SectionType.Settings
+                            SectionType = SectionType.Options
                         });
                         break;
                     case GraphModel _:
@@ -168,7 +168,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         {
                             Title = k_GraphSettingsTitle,
                             Collapsed = false,
-                            SectionType = SectionType.Settings
+                            SectionType = SectionType.Options
                         });
                         m_SectionModels.Add(new InspectorSectionModel()
                         {
@@ -188,7 +188,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         Title = null,
                         Collapsible = false,
-                        SectionType = SectionType.Settings
+                        SectionType = SectionType.Options
                     });
                     m_SectionModels.Add(new InspectorSectionModel()
                     {
@@ -209,7 +209,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         Title = null,
                         Collapsible = false,
-                        SectionType = SectionType.Settings
+                        SectionType = SectionType.Options
                     });
                     m_SectionModels.Add(new InspectorSectionModel()
                     {
@@ -224,7 +224,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         Title = null,
                         Collapsed = false,
-                        SectionType = SectionType.Settings
+                        SectionType = SectionType.Options
                     });
                     m_SectionModels.Add(new InspectorSectionModel()
                     {
@@ -245,7 +245,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         Title = k_PlacematPropertiesTitle,
                         Collapsed = false,
-                        SectionType = SectionType.Settings
+                        SectionType = SectionType.Options
                     });
                 }
                 else if (typeof(GraphModel).IsAssignableFrom(type))
@@ -254,7 +254,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         Title = k_GraphSettingsTitle,
                         Collapsed = false,
-                        SectionType = SectionType.Settings
+                        SectionType = SectionType.Options
                     });
                     m_SectionModels.Add(new InspectorSectionModel()
                     {

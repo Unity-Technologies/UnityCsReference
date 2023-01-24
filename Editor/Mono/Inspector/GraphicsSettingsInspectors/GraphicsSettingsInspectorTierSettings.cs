@@ -164,7 +164,6 @@ namespace UnityEditor
 
         void Draw()
         {
-            var labelWidth = EditorGUIUtility.labelWidth;
             if (GraphicsSettings.isScriptableRenderPipelineEnabled)
             {
                 var window = TierSettingsWindow.GetInstance();
@@ -173,13 +172,13 @@ namespace UnityEditor
             }
             else
             {
+                using var settingsScope = new LabelWidthScope();
+                using var wideScreenScope = new WideScreenScope(this);
                 if (m_TierSettingsAnimator == null)
                     OnInspectorGUI();
                 else
                     TierSettingsGUI();
             }
-
-            EditorGUIUtility.labelWidth = labelWidth;
         }
 
         void HandleEditorWindowButton()
