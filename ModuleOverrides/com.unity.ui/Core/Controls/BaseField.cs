@@ -7,10 +7,15 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    internal interface IPrefixLabel
+    {
+        string label { get; }
+    }
+
     /// <summary>
     /// Abstract base class for controls.
     /// </summary>
-    public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport
+    public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel
     {
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseField"/>.

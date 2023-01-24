@@ -79,7 +79,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the text input visual element which presents the value in the field.
         /// </summary>
-        protected TextInputBase textInputBase => m_TextInputBase;
+        protected internal TextInputBase textInputBase => m_TextInputBase;
 
         internal const int kMaxLengthNone = -1;
         internal const char kMaskCharDefault = '*';
@@ -435,9 +435,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This is the input text base class visual representation.
         /// </summary>
-        protected abstract class TextInputBase : VisualElement, ITextInputField
+        protected internal abstract class TextInputBase : VisualElement, ITextInputField
         {
             string m_OriginalText;
+            internal string originalText => m_OriginalText;
 
             /// <summary>
             /// Resets the text contained in the field.

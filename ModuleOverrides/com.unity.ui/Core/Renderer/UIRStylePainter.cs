@@ -565,6 +565,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 {
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(
                         currentElement.rect,
+                        new Rect(0, 0, 1, 1),
                         background.sprite,
                         style.unityBackgroundScaleMode,
                         currentElement.panel.contextType,

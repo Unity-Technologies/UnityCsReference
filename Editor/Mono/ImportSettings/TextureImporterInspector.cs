@@ -1287,6 +1287,7 @@ namespace UnityEditor
                 // NB we do these weird things partly because ApplyTextureType has early out
                 // NB hence we want settings to have *old* textureType when calling it
                 TextureImporterSettings settings = GetSerializedPropertySettings();
+                settings.textureType = (TextureImporterType)oldTextureType;
                 settings.ApplyTextureType((TextureImporterType)newTextureType);
                 settings.textureType = (TextureImporterType)newTextureType;
 

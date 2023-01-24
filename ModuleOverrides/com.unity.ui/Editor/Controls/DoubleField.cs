@@ -43,9 +43,8 @@ namespace UnityEditor.UIElements
         /// <returns>The double parsed from the string.</returns>
         protected override double StringToValue(string str)
         {
-            double v;
-            EditorGUI.StringToDouble(str, out v);
-            return v;
+            var success = EditorGUI.StringToDouble(str, textInputBase.originalText, out var v);
+            return success ? v : rawValue;
         }
 
         /// <summary>
@@ -137,8 +136,7 @@ namespace UnityEditor.UIElements
 
             protected override double StringToValue(string str)
             {
-                double v;
-                EditorGUI.StringToDouble(str, out v);
+                EditorGUI.StringToDouble(str, originalText, out var v);
                 return v;
             }
         }

@@ -107,7 +107,8 @@ namespace UnityEditor.Search.Providers
             while (menus == null)
                 yield return null;
 
-            foreach (var m in query.Apply(menus, false))
+            var results = query == null ? menus : query.Apply(menus, false);
+            foreach (var m in results)
                 yield return provider.CreateItem(context, m.path);
         }
 

@@ -128,6 +128,42 @@ namespace UnityEngine.Jobs
 
         public bool isValid => hierarchy != IntPtr.Zero;
 
+        public void SetPositionAndRotation(Vector3 position, Quaternion rotation)
+        {
+            CheckHierarchyValid();
+            SetPositionAndRotation_Internal(ref this, ref position, ref rotation);
+        }
+
+        public void SetLocalPositionAndRotation(Vector3 localPosition, Quaternion localRotation)
+        {
+            CheckHierarchyValid();
+            SetLocalPositionAndRotation_Internal(ref this, ref localPosition, ref localRotation);
+        }
+
+        public void GetPositionAndRotation(out Vector3 position, out Quaternion rotation)
+        {
+            CheckHierarchyValid();
+            GetPositionAndRotation_Internal(ref this, out position, out rotation);
+        }
+
+        public void GetLocalPositionAndRotation(out Vector3 localPosition, out Quaternion localRotation)
+        {
+            CheckHierarchyValid();
+            GetLocalPositionAndRotation_Internal(ref this, out localPosition, out localRotation);
+        }
+
+        [NativeMethod(Name = "TransformAccessBindings::SetPositionAndRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void SetPositionAndRotation_Internal(ref TransformAccess access, ref Vector3 position, ref Quaternion rotation);
+
+        [NativeMethod(Name = "TransformAccessBindings::SetLocalPositionAndRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void SetLocalPositionAndRotation_Internal(ref TransformAccess access, ref Vector3 localPosition, ref Quaternion localRotation);
+
+        [NativeMethod(Name = "TransformAccessBindings::GetPositionAndRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void GetPositionAndRotation_Internal(ref TransformAccess access, out Vector3 position, out Quaternion rotation);
+
+        [NativeMethod(Name = "TransformAccessBindings::GetLocalPositionAndRotation", IsThreadSafe = true, IsFreeFunction = true, ThrowsException = true)]
+        private static extern void GetLocalPositionAndRotation_Internal(ref TransformAccess access, out Vector3 localPosition, out Quaternion localRotation);
+
         //@TODO: Static code analysis needs to prevent creation of TransformAccess except through TransformAccessArray accessor.
         // Code below assumes this to be true since it doesn't check if TransformAccess is valid
 

@@ -281,13 +281,11 @@ namespace UnityEngine.UIElements
         static void UpdateGenerationSettingsCommon(MeshGenerationContextUtils.TextParams painterParams,
             UnityEngine.TextCore.Text.TextGenerationSettings settings)
         {
-            if (settings.textSettings == null)
-            {
-                settings.textSettings = TextUtilities.GetTextSettingsFrom(painterParams);
-                if (settings.textSettings == null)
-                    return;
-            }
-
+			settings.textSettings = TextUtilities.GetTextSettingsFrom(painterParams);
+  
+			if (settings.textSettings == null)
+				return;
+            
             settings.fontAsset = TextUtilities.GetFontAsset(painterParams);
             if (settings.fontAsset == null)
                 return;

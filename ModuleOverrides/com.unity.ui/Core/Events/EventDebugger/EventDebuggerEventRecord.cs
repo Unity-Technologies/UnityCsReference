@@ -129,6 +129,7 @@ namespace UnityEngine.UIElements
             IKeyboardEvent keyboardEvent = evt as IKeyboardEvent;
             if (keyboardEvent != null)
             {
+                modifiers = keyboardEvent.modifiers;
                 character = keyboardEvent.character;
                 keyCode = keyboardEvent.keyCode;
             }

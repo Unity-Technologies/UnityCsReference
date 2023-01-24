@@ -11,6 +11,31 @@ namespace Unity.UI.Builder
 {
     internal static class BuilderAssetUtilities
     {
+        public static string assetsPath { get; } = Application.dataPath;
+        public static string projectPath { get; } = assetsPath.Substring(0, Application.dataPath.Length - "/Assets".Length);
+        public static string packagesPath { get; } = projectPath + "/Packages";
+
+        static string GetFullPath(string path)
+        {
+            return Path.GetFullPath(path).Replace("\\", "/");
+        }
+
+        public static bool IsPathInProject(string path)
+        {
+            var fullPath = GetFullPath(path);
+
+            return fullPath.StartsWith(assetsPath, StringComparison.InvariantCultureIgnoreCase) ||
+                   fullPath.StartsWith(packagesPath, StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        public static string GetPathRelativeToProject(string path)
+        {
+            if (!IsPathInProject(path))
+                return null;
+            var fullPath = GetFullPath(path);
+            return fullPath.Substring(projectPath.Length + 1); // "/"
+        }
+        
         public static string GetResourcesPathForAsset(Object asset)
         {
             var assetPath = AssetDatabase.GetAssetPath(asset);

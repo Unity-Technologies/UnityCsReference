@@ -397,7 +397,7 @@ namespace UnityEditor.Search.Providers
                     Dispatcher.ProcessOne();
 
                 yield return new SearchProposition(
-                    category: "Area",
+                    category: "Area (Index)",
                     label: db.name,
                     replacement: $"a:{db.name}",
                     help: $"Search assets index by {db.name}.index",

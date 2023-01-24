@@ -42,9 +42,8 @@ namespace UnityEditor.UIElements
         /// <returns>The float parsed from the string.</returns>
         protected override float StringToValue(string str)
         {
-            double v;
-            EditorGUI.StringToDouble(str, out v);
-            return MathUtils.ClampToFloat(v);
+            var success = EditorGUI.StringToFloat(str, textInputBase.originalText, out var v);
+            return success ? v : rawValue;
         }
 
         /// <summary>
@@ -133,9 +132,8 @@ namespace UnityEditor.UIElements
 
             protected override float StringToValue(string str)
             {
-                double v;
-                EditorGUI.StringToDouble(str, out v);
-                return MathUtils.ClampToFloat(v);
+                EditorGUI.StringToFloat(str, originalText, out var v);
+                return v;
             }
         }
     }

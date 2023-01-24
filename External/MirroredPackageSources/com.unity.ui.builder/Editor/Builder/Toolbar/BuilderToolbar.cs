@@ -446,10 +446,9 @@ namespace Unity.UI.Builder
                 if (string.IsNullOrEmpty(path))
                     return;
 
-                var appPath = Application.dataPath;
-                if (path.StartsWith(appPath))
+                if (BuilderAssetUtilities.IsPathInProject(path))
                 {
-                    path = "Assets/" + path.Substring(appPath.Length);
+                    path = BuilderAssetUtilities.GetPathRelativeToProject(path);
                 }
                 else
                 {

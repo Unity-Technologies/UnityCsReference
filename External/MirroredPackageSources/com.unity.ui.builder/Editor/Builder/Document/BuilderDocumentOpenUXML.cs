@@ -395,8 +395,6 @@ namespace Unity.UI.Builder
         {
             needsFullRefresh = false;
 
-            ClearUndo();
-
             // Re-use or ask the user for the UXML path.
             var newUxmlPath = uxmlPath;
             if (string.IsNullOrEmpty(newUxmlPath) || isSaveAs)
@@ -412,6 +410,8 @@ namespace Unity.UI.Builder
                         return false;
                 }
             }
+            
+            ClearUndo();
 
             List<BuilderDocumentOpenUSS> savedUSSFiles = new List<BuilderDocumentOpenUSS>();
 

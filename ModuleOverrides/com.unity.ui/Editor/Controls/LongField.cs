@@ -43,9 +43,8 @@ namespace UnityEditor.UIElements
         /// <returns>The long integer parsed from the string.</returns>
         protected override long StringToValue(string str)
         {
-            long v;
-            EditorGUI.StringToLong(str, out v);
-            return v;
+            var success = EditorGUI.StringToLong(str, textInputBase.originalText, out var v);
+            return success ? v : rawValue;
         }
 
         /// <summary>
@@ -137,8 +136,7 @@ namespace UnityEditor.UIElements
 
             protected override long StringToValue(string str)
             {
-                long v;
-                EditorGUI.StringToLong(str, out v);
+                EditorGUI.StringToLong(str, originalText, out var v);
                 return v;
             }
         }

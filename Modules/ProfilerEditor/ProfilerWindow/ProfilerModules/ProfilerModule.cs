@@ -292,14 +292,16 @@ namespace Unity.Profiling.Editor
             active = !active;
         }
 
-        internal void ResetOrderIndexToDefault()
+        internal void ResetToDefaultPreferences()
         {
-            EditorPrefs.DeleteKey(orderIndexPreferenceKey);
+            DeleteAllPreferences();
+            active = ReadActiveState();
+            Rebuild();
         }
 
         internal void DeleteAllPreferences()
         {
-            EditorPrefs.DeleteKey(activeStatePreferenceKey);
+            DeleteActiveState();
             EditorPrefs.DeleteKey(orderIndexPreferenceKey);
             m_Chart.DeleteSettings();
         }
@@ -333,6 +335,11 @@ namespace Unity.Profiling.Editor
         private protected virtual void SaveActiveState()
         {
             EditorPrefs.SetBool(activeStatePreferenceKey, active);
+        }
+
+        private protected virtual void DeleteActiveState()
+        {
+            EditorPrefs.DeleteKey(activeStatePreferenceKey);
         }
 
         private protected virtual ProfilerChart InstantiateChart(float defaultChartScale, float chartMaximumScaleInterpolationValue)

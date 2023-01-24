@@ -60,6 +60,8 @@ namespace UnityEditor
         protected EditorWindowDelegate m_ModifierKeysChanged;
         protected EditorWindowShowButtonDelegate m_ShowButton;
 
+        private bool m_IsLosingFocus = false;
+
         internal EditorWindow actualView
         {
             get { return m_ActualView; }
@@ -295,8 +297,22 @@ namespace UnityEditor
 
         internal void OnLostFocus()
         {
+            // Avoid calling OnLostFocus script callback if we are already processing the focus lost.
+            // This can happen when user scripts call Close() in OnLostFocus() callback.
+            if (m_IsLosingFocus)
+                return;
+
             EditorGUI.EndEditingActiveTextField();
-            m_OnLostFocus?.Invoke();
+
+            try
+            {
+                m_IsLosingFocus = true;
+                m_OnLostFocus?.Invoke();
+            }
+            finally
+            {
+                m_IsLosingFocus = false;
+            }
 
             // Callback could have killed us
             if (!this)
@@ -570,14 +586,13 @@ namespace UnityEditor
 
             if (clearActualView)
             {
-                var onLostFocus = m_OnLostFocus;
                 var onBecameInvisible = m_OnBecameInvisible;
 
                 m_ActualView = null;
 
                 if (sendEvents)
                 {
-                    onLostFocus?.Invoke();
+                    OnLostFocus();
                     onBecameInvisible?.Invoke();
                 }
                 ClearDelegates();

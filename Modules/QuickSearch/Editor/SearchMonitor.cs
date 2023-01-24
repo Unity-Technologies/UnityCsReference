@@ -190,7 +190,7 @@ namespace UnityEditor.Search
         static readonly HashSet<string> s_MovedItems = new HashSet<string>();
 
         static Action s_ContentRefreshOff;
-        static Action s_DelayedInvalidateOff;
+        static Delayer s_DelayedInvalidate;
         static readonly HashSet<ulong> s_DocumentsToInvalidate = new HashSet<ulong>();
 
         public static bool pending => s_UpdatedItems.Count > 0 || s_RemovedItems.Count > 0 || s_MovedItems.Count > 0;
@@ -259,7 +259,10 @@ namespace UnityEditor.Search
             PrefabStage.prefabStageOpened += _ => InvalidateCurrentScene();
             PrefabStage.prefabStageClosing += _ => InvalidateCurrentScene();
 
+            s_DelayedInvalidate = Delayer.Debounce(_ => InvalidateDocuments());
+
             ObjectChangeEvents.changesPublished += OnObjectChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
 
             s_Initialize = true;
         }
@@ -329,6 +332,23 @@ namespace UnityEditor.Search
             return new SearchMonitorView(propertyDatabase, propertyAliases, delayedSync);
         }
 
+
+        static void OnPlayModeChanged(PlayModeStateChange playMode)
+        {
+            if (playMode == PlayModeStateChange.EnteredPlayMode)
+            {
+                EditorApplication.hierarchyChanged += OnHierarchyChanged;
+            }
+            else
+            {
+                EditorApplication.hierarchyChanged -= OnHierarchyChanged;
+            }
+        }
+
+        static void OnHierarchyChanged()
+        {
+            InvalidateCurrentScene();
+        }
 
         static void DisableContentRefresh()
         {
@@ -489,8 +509,7 @@ namespace UnityEditor.Search
         private static void InvalidateDocument(ulong documentKey)
         {
             s_DocumentsToInvalidate.Add(documentKey);
-            if (s_DelayedInvalidateOff == null)
-                s_DelayedInvalidateOff = Utils.CallDelayed(InvalidateDocuments, 1f);
+            s_DelayedInvalidate?.Execute();
         }
 
         private static void InvalidateDocuments()
@@ -501,7 +520,6 @@ namespace UnityEditor.Search
                     view.InvalidateDocument(k);
             }
             s_DocumentsToInvalidate.Clear();
-            s_DelayedInvalidateOff = null;
             documentsInvalidated?.Invoke();
         }
 
