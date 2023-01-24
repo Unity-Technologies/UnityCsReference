@@ -2398,39 +2398,89 @@ namespace UnityEditor
 
         internal static bool StringToDouble(string str, out double value)
         {
-            NumberFieldValue v = default;
-            StringToDouble(str, ref v);
-            value = v.doubleVal;
-            return v.success;
+            return StringToDouble(str, out value, out _);
+        }
+
+        internal static bool StringToDouble(string str, out double value, out ExpressionEvaluator.Expression expression)
+        {
+            var success = true;
+            value = default;
+            expression = null;
+            string lowered = str.ToLower();
+            if (lowered == "inf" || lowered == "infinity")
+                value = double.PositiveInfinity;
+            else if (lowered == "-inf" || lowered == "-infinity")
+                value = double.NegativeInfinity;
+            else if (lowered == "nan")
+                value = double.NaN;
+            else
+                success = ExpressionEvaluator.Evaluate(str, out value, out expression);
+            return success;
         }
 
         static void StringToDouble(string str, ref NumberFieldValue value)
         {
-            value.expression = null;
-            value.success = true;
-            string lowered = str.ToLower();
-            if (lowered == "inf" || lowered == "infinity")
-                value.doubleVal = double.PositiveInfinity;
-            else if (lowered == "-inf" || lowered == "-infinity")
-                value.doubleVal = double.NegativeInfinity;
-            else if (lowered == "nan")
-                value.doubleVal = double.NaN;
-            else
-                value.success = ExpressionEvaluator.Evaluate(str, out value.doubleVal, out value.expression);
+            value.success = StringToDouble(str, out value.doubleVal, out value.expression);
+        }
+
+        internal static bool StringToDouble(string str, string initialValueAsString, out double value)
+        {
+            var success = StringToDouble(str, out value, out var expression);
+
+            if (!success && expression != null && !string.IsNullOrEmpty(initialValueAsString))
+            {
+                if (StringToDouble(initialValueAsString, out var oldValue, out _))
+                {
+                    value = oldValue;
+                    success = expression.Evaluate(ref value);
+                }
+            }
+            return success;
+        }
+
+        internal static bool StringToFloat(string str, string initialValueAsString, out float value)
+        {
+            var success = StringToDouble(str, initialValueAsString, out var v);
+            value = MathUtils.ClampToFloat(v);
+            return success;
         }
 
         internal static bool StringToLong(string str, out long value)
         {
-            NumberFieldValue v = default;
-            StringToLong(str, ref v);
-            value = v.longVal;
-            return v.success;
+            return StringToLong(str, out value, out _);
+        }
+
+        internal static bool StringToLong(string str, out long value, out ExpressionEvaluator.Expression expression)
+        {
+            expression = null;
+            return ExpressionEvaluator.Evaluate(str, out value, out expression);
         }
 
         static void StringToLong(string str, ref NumberFieldValue value)
         {
-            value.expression = null;
-            value.success = ExpressionEvaluator.Evaluate(str, out value.longVal, out value.expression);
+            value.success = StringToLong(str, out value.longVal, out value.expression);
+        }
+
+        internal static bool StringToLong(string str, string initialValueAsString, out long value)
+        {
+            var success = StringToLong(str, out value, out var expression);
+
+            if (!success && expression != null && !string.IsNullOrEmpty(initialValueAsString))
+            {
+                if (StringToLong(initialValueAsString, out var oldValue, out _))
+                {
+                    value = oldValue;
+                    success = expression.Evaluate(ref value);
+                }
+            }
+            return success;
+        }
+
+        internal static bool StringToInt(string str, string initialValueAsString, out int value)
+        {
+            var success = StringToLong(str, initialValueAsString, out var v);
+            value = MathUtils.ClampToInt(v);
+            return success;
         }
 
         internal static int ArraySizeField(Rect position, GUIContent label, int value, GUIStyle style)

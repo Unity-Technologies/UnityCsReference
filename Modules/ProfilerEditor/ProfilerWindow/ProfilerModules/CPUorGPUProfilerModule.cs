@@ -276,8 +276,6 @@ namespace UnityEditorInternal.Profiling
 
             m_ViewType = (ProfilerViewType)EditorPrefs.GetInt(ViewTypeSettingsKey, (int)DefaultViewTypeSetting);
             m_ProfilerViewFilteringOptions = SessionState.GetInt(ProfilerViewFilteringOptionsKey, m_ProfilerViewFilteringOptions);
-
-            TryRestoringSelection();
         }
 
         private protected override void OnSelected()
@@ -645,7 +643,7 @@ namespace UnityEditorInternal.Profiling
             // Only CPU view currently supports Chart filtering by property path
         }
 
-        void TryRestoringSelection()
+        protected void TryRestoringSelection()
         {
             if (selection != null)
             {

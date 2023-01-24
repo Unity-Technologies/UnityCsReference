@@ -7,13 +7,15 @@ using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.TextCore.LowLevel;
+using System;
+using System.Text;
 
 namespace UnityEngine.TextCore.Text
 {
     internal enum TextOverflowMode { Overflow = 0, Ellipsis = 1, Masking = 2, Truncate = 3, ScrollRect = 4, Page = 5, Linked = 6 }
     enum TextureMapping { Character = 0, Line = 1, Paragraph = 2, MatchAspect = 3 }
 
-    internal class TextGenerationSettings
+    internal class TextGenerationSettings : IEquatable<TextGenerationSettings>
     {
         public string text;
 
@@ -73,32 +75,32 @@ namespace UnityEngine.TextCore.Text
 
         public float charWidthMaxAdj;
 
-        protected bool Equals(TextGenerationSettings other)
+        public bool Equals(TextGenerationSettings other)
         {
-            return string.Equals(text, other.text) && screenRect.Equals(other.screenRect) &&
-                margins.Equals(other.margins) && scale.Equals(other.scale) &&
-                Equals(fontAsset, other.fontAsset) && Equals(material, other.material) &&
-                Equals(spriteAsset, other.spriteAsset) && fontStyle == other.fontStyle &&
+            if (ReferenceEquals(null, other)) return false;
+            if (ReferenceEquals(this, other)) return true;
+            return text == other.text && screenRect.Equals(other.screenRect) && margins.Equals(other.margins) &&
+                scale.Equals(other.scale) && Equals(fontAsset, other.fontAsset) && Equals(material, other.material) &&
+                Equals(spriteAsset, other.spriteAsset) && Equals(styleSheet, other.styleSheet) &&
+                fontStyle == other.fontStyle && Equals(textSettings, other.textSettings) &&
                 textAlignment == other.textAlignment && overflowMode == other.overflowMode &&
                 wordWrap == other.wordWrap && wordWrappingRatio.Equals(other.wordWrappingRatio) &&
                 color.Equals(other.color) && Equals(fontColorGradient, other.fontColorGradient) &&
                 tintSprites == other.tintSprites &&
-                overrideRichTextColors == other.overrideRichTextColors && fontSize.Equals(other.fontSize) &&
-                autoSize == other.autoSize &&
-                fontSizeMin.Equals(other.fontSizeMin) && fontSizeMax.Equals(other.fontSizeMax) &&
-                enableKerning == other.enableKerning && richText == other.richText &&
-                isRightToLeft == other.isRightToLeft && extraPadding == other.extraPadding &&
-                parseControlCharacters == other.parseControlCharacters &&
+                overrideRichTextColors == other.overrideRichTextColors &&
+                fontSize.Equals(other.fontSize) &&
+                autoSize == other.autoSize && fontSizeMin.Equals(other.fontSizeMin) &&
+                fontSizeMax.Equals(other.fontSizeMax) && enableKerning == other.enableKerning &&
+                richText == other.richText && isRightToLeft == other.isRightToLeft &&
+                extraPadding == other.extraPadding && parseControlCharacters == other.parseControlCharacters &&
                 characterSpacing.Equals(other.characterSpacing) && wordSpacing.Equals(other.wordSpacing) &&
-                lineSpacing.Equals(other.lineSpacing) &&
-                paragraphSpacing.Equals(other.paragraphSpacing) && lineSpacingMax.Equals(other.lineSpacingMax) &&
-                maxVisibleCharacters == other.maxVisibleCharacters &&
-                maxVisibleWords == other.maxVisibleWords && maxVisibleLines == other.maxVisibleLines &&
-                firstVisibleCharacter == other.firstVisibleCharacter &&
+                lineSpacing.Equals(other.lineSpacing) && paragraphSpacing.Equals(other.paragraphSpacing) &&
+                lineSpacingMax.Equals(other.lineSpacingMax) &&
+                maxVisibleCharacters == other.maxVisibleCharacters && maxVisibleWords == other.maxVisibleWords &&
+                maxVisibleLines == other.maxVisibleLines && firstVisibleCharacter == other.firstVisibleCharacter &&
                 useMaxVisibleDescender == other.useMaxVisibleDescender && fontWeight == other.fontWeight &&
-                pageToDisplay == other.pageToDisplay &&
-                horizontalMapping == other.horizontalMapping && verticalMapping == other.verticalMapping &&
-                uvLineOffset.Equals(other.uvLineOffset) &&
+                pageToDisplay == other.pageToDisplay && horizontalMapping == other.horizontalMapping &&
+                verticalMapping == other.verticalMapping && uvLineOffset.Equals(other.uvLineOffset) &&
                 geometrySortingOrder == other.geometrySortingOrder && inverseYAxis == other.inverseYAxis &&
                 charWidthMaxAdj.Equals(other.charWidthMaxAdj);
         }
@@ -123,6 +125,7 @@ namespace UnityEngine.TextCore.Text
                 hashCode = (hashCode * 397) ^ (material != null ? material.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (spriteAsset != null ? spriteAsset.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (int)fontStyle;
+                hashCode = (hashCode * 397) ^ (textSettings != null ? textSettings.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (int)textAlignment;
                 hashCode = (hashCode * 397) ^ (int)overflowMode;
                 hashCode = (hashCode * 397) ^ wordWrap.GetHashCode();
@@ -162,77 +165,20 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        public static bool operator==(TextGenerationSettings left, TextGenerationSettings right)
+        public static bool operator ==(TextGenerationSettings left, TextGenerationSettings right)
         {
             return Equals(left, right);
         }
 
-        public static bool operator!=(TextGenerationSettings left, TextGenerationSettings right)
+        public static bool operator !=(TextGenerationSettings left, TextGenerationSettings right)
         {
             return !Equals(left, right);
         }
 
-        public void Copy(TextGenerationSettings other)
+        public override string ToString()
         {
-            if (other == null)
-                return;
-
-            text = other.text;
-
-            screenRect = other.screenRect;
-            margins =  other.margins;
-            scale = other.scale;
-
-            fontAsset = other.fontAsset;
-            material = other.material;
-            spriteAsset = other.spriteAsset;
-            fontStyle = other.fontStyle;
-
-            textAlignment = other.textAlignment;
-            overflowMode = other.overflowMode;
-            wordWrap = other.wordWrap;
-            wordWrappingRatio = other.wordWrappingRatio;
-
-            color = other.color;
-            fontColorGradient = other.fontColorGradient;
-            tintSprites = other.tintSprites;
-            overrideRichTextColors = other.overrideRichTextColors;
-
-            fontSize = other.fontSize;
-            autoSize = other.autoSize;
-            fontSizeMin = other.fontSizeMin;
-            fontSizeMax = other.fontSizeMax;
-
-            enableKerning = other.enableKerning;
-            richText = other.richText;
-            isRightToLeft = other.isRightToLeft;
-            extraPadding = other.extraPadding;
-            parseControlCharacters = other.parseControlCharacters;
-
-            characterSpacing = other.characterSpacing;
-            wordSpacing = other.wordSpacing;
-            lineSpacing = other.lineSpacing;
-            paragraphSpacing = other.paragraphSpacing;
-            lineSpacingMax = other.lineSpacingMax;
-
-            maxVisibleCharacters = other.maxVisibleCharacters;
-            maxVisibleWords = other.maxVisibleWords;
-            maxVisibleLines = other.maxVisibleLines;
-            firstVisibleCharacter = other.firstVisibleCharacter;
-            useMaxVisibleDescender = other.useMaxVisibleDescender;
-
-            fontWeight = other.fontWeight;
-            pageToDisplay = other.pageToDisplay;
-
-            horizontalMapping = other.horizontalMapping;
-            verticalMapping = other.verticalMapping;
-            uvLineOffset = other.uvLineOffset;
-            geometrySortingOrder = other.geometrySortingOrder;
-            inverseYAxis = other.inverseYAxis;
-
-            charWidthMaxAdj = other.charWidthMaxAdj;
+            return $"{nameof(text)}: {text}\n {nameof(screenRect)}: {screenRect}\n {nameof(margins)}: {margins}\n {nameof(scale)}: {scale}\n {nameof(fontAsset)}: {fontAsset}\n {nameof(material)}: {material}\n {nameof(spriteAsset)}: {spriteAsset}\n {nameof(styleSheet)}: {styleSheet}\n {nameof(fontStyle)}: {fontStyle}\n {nameof(textSettings)}: {textSettings}\n {nameof(textAlignment)}: {textAlignment}\n {nameof(overflowMode)}: {overflowMode}\n {nameof(wordWrap)}: {wordWrap}\n {nameof(wordWrappingRatio)}: {wordWrappingRatio}\n {nameof(color)}: {color}\n {nameof(fontColorGradient)}: {fontColorGradient}\n {nameof(tintSprites)}: {tintSprites}\n {nameof(overrideRichTextColors)}: {overrideRichTextColors}\n  {nameof(fontSize)}: {fontSize}\n {nameof(autoSize)}: {autoSize}\n {nameof(fontSizeMin)}: {fontSizeMin}\n {nameof(fontSizeMax)}: {fontSizeMax}\n {nameof(enableKerning)}: {enableKerning}\n {nameof(richText)}: {richText}\n {nameof(isRightToLeft)}: {isRightToLeft}\n {nameof(extraPadding)}: {extraPadding}\n {nameof(parseControlCharacters)}: {parseControlCharacters}\n {nameof(characterSpacing)}: {characterSpacing}\n {nameof(wordSpacing)}: {wordSpacing}\n {nameof(lineSpacing)}: {lineSpacing}\n {nameof(paragraphSpacing)}: {paragraphSpacing}\n {nameof(lineSpacingMax)}: {lineSpacingMax}\n {nameof(maxVisibleCharacters)}: {maxVisibleCharacters}\n {nameof(maxVisibleWords)}: {maxVisibleWords}\n {nameof(maxVisibleLines)}: {maxVisibleLines}\n {nameof(firstVisibleCharacter)}: {firstVisibleCharacter}\n {nameof(useMaxVisibleDescender)}: {useMaxVisibleDescender}\n {nameof(fontWeight)}: {fontWeight}\n {nameof(pageToDisplay)}: {pageToDisplay}\n {nameof(horizontalMapping)}: {horizontalMapping}\n {nameof(verticalMapping)}: {verticalMapping}\n {nameof(uvLineOffset)}: {uvLineOffset}\n {nameof(geometrySortingOrder)}: {geometrySortingOrder}\n {nameof(inverseYAxis)}: {inverseYAxis}\n {nameof(charWidthMaxAdj)}: {charWidthMaxAdj}";        }
         }
-    }
 
     internal class TextGenerator
     {

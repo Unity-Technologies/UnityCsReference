@@ -1694,7 +1694,7 @@ namespace UnityEditor.Search
                 else if (value is string)
                 {
                     var valueString = (string)value;
-                    if (Utils.TryParse(valueString, out number))
+                    if (Utils.TryParse(valueString, out number, false))
                     {
                         if (!exclude && op != SearchIndexOperator.NotEqual)
                             matches = SearchNumber(name, number, op, subset);

@@ -98,7 +98,8 @@ namespace UnityEditor.ShaderKeywordFilter
                 if (rpAsset == null)
                     continue;
 
-                var node = SettingsNode.GatherFilterData(rpAsset.name, rpAsset);
+                var visited = new HashSet<object>();
+                var node = SettingsNode.GatherFilterData(rpAsset.name, rpAsset, visited);
                 if (node != null)
                     root.Children.Add(node);
             }

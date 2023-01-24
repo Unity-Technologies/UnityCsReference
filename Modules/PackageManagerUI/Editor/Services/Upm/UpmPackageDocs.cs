@@ -49,14 +49,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var docsFolder = IOProxy.PathsCombine(packageInfo.resolvedPath, "Documentation~");
                     if (!IOProxy.DirectoryExists(docsFolder))
                         docsFolder = IOProxy.PathsCombine(packageInfo.resolvedPath, "Documentation");
-                    if (IOProxy.DirectoryExists(docsFolder))
+                    if (!IOProxy.DirectoryExists(docsFolder))
                     {
-                        var mdFiles = IOProxy.DirectoryGetFiles(docsFolder, "*.md", System.IO.SearchOption.TopDirectoryOnly);
-                        var docsMd = mdFiles.FirstOrDefault(d => IOProxy.GetFileName(d).ToLower() == "index.md")
-                            ?? mdFiles.FirstOrDefault(d => IOProxy.GetFileName(d).ToLower() == "tableofcontents.md") ?? mdFiles.FirstOrDefault();
-                        if (!string.IsNullOrEmpty(docsMd))
-                            return docsMd;
+                        var readMeFile = IOProxy.PathsCombine(packageInfo.resolvedPath, "README.md");
+                        return IOProxy.FileExists(readMeFile) ? readMeFile : string.Empty;
                     }
+                    var mdFiles = IOProxy.DirectoryGetFiles(docsFolder, "*.md", System.IO.SearchOption.TopDirectoryOnly);
+                    var docsMd = mdFiles.FirstOrDefault(d => IOProxy.GetFileName(d).ToLower() == "index.md")
+                        ?? mdFiles.FirstOrDefault(d => IOProxy.GetFileName(d).ToLower() == "tableofcontents.md") ?? mdFiles.FirstOrDefault();
+                    if (!string.IsNullOrEmpty(docsMd))
+                        return docsMd;
                 }
                 catch (System.IO.IOException) {}
             }
@@ -71,7 +73,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return semVer == null ? string.Empty : UpmPackageVersion.FormatPackageId(packageInfo.name, semVer.Value.ShortVersion());
         }
 
-        public static string[] GetDocumentationUrl(PackageInfo packageInfo)
+        public static string[] GetDocumentationUrl(PackageInfo packageInfo, bool isUnityPackage = true)
         {
             if (!string.IsNullOrEmpty(packageInfo?.documentationUrl))
                 return new string[] { packageInfo.documentationUrl };
@@ -80,18 +82,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return FetchUrlsFromDescription(packageInfo);
 
             var shortVersionId = GetShortVersionId(packageInfo);
-            if (string.IsNullOrEmpty(shortVersionId))
+            if (!isUnityPackage || string.IsNullOrEmpty(shortVersionId))
                 return new string[0];
             return new string[] { $"https://docs.unity3d.com/Packages/{shortVersionId}/index.html" };
         }
 
-        public static string GetChangelogUrl(PackageInfo packageInfo)
+        public static string GetChangelogUrl(PackageInfo packageInfo, bool isUnityPackage = true)
         {
             if (!string.IsNullOrEmpty(packageInfo?.changelogUrl))
                 return packageInfo.changelogUrl;
 
             var shortVersionId = GetShortVersionId(packageInfo);
-            if (string.IsNullOrEmpty(shortVersionId))
+            if (!isUnityPackage || string.IsNullOrEmpty(shortVersionId))
                 return string.Empty;
             return $"https://docs.unity3d.com/Packages/{shortVersionId}/changelog/CHANGELOG.html";
         }
@@ -110,13 +112,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             return string.Empty;
         }
 
-        public static string GetLicensesUrl(PackageInfo packageInfo)
+        public static string GetLicensesUrl(PackageInfo packageInfo, bool isUnityPackage = true)
         {
             if (!string.IsNullOrEmpty(packageInfo?.licensesUrl))
                 return packageInfo.licensesUrl;
 
             var shortVersionId = GetShortVersionId(packageInfo);
-            if (string.IsNullOrEmpty(shortVersionId))
+            if (!isUnityPackage || string.IsNullOrEmpty(shortVersionId))
                 return string.Empty;
             return $"https://docs.unity3d.com/Packages/{shortVersionId}/license/index.html";
         }

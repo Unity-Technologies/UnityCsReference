@@ -1460,7 +1460,7 @@ namespace UnityEditor
                     DeleteProfilerModuleAtIndex(index);
                 }
 
-                module.ResetOrderIndexToDefault();
+                module.ResetToDefaultPreferences();
 
                 index--;
             }

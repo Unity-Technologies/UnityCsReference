@@ -72,6 +72,7 @@ namespace UnityEditor
         }
 
         internal virtual bool liveReloadPreferenceDefault => false;
+        internal bool isUIToolkitWindow => m_UIRootElement != null && m_UIRootElement.childCount > 0;
 
         [HideInInspector]
         [SerializeField]

@@ -172,7 +172,8 @@ namespace UnityEditor.DeviceSimulation
             Event.current.mousePosition = new Vector2(m_TouchInput.pointerPosition.x, m_ScreenSimulation.height - m_TouchInput.pointerPosition.y);
 
             // This sends keyboard events to input systems and UI
-            EditorGUIUtility.QueueGameViewInputEvent(Event.current);
+            if (Event.current.isKey)
+                EditorGUIUtility.QueueGameViewInputEvent(Event.current);
 
             var useEvent = Event.current.rawType != EventType.MouseUp || m_TouchInput.isPointerInsideDeviceScreen;
 

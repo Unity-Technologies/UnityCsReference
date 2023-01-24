@@ -96,7 +96,7 @@ namespace UnityEngine
         public Rendering.ShaderTagId FindSubshaderTagValue(int subshaderIndex, Rendering.ShaderTagId tagName)
         {
             if (subshaderIndex < 0 || subshaderIndex >= subshaderCount)
-                throw new ArgumentOutOfRangeException("subshaderIndex");
+                throw new ArgumentOutOfRangeException($"Invalid subshaderIndex {subshaderIndex}. Value must be in the range [0, {subshaderCount})");
             var id = Internal_FindSubshaderTagValue(subshaderIndex, tagName.id);
             return new Rendering.ShaderTagId { id = id };
         }
