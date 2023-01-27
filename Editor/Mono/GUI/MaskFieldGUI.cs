@@ -234,6 +234,38 @@ namespace UnityEditor
 
             return content;
         }
+        internal static void CalculateMaskValues(int mask, int[] flagValues, ref int[] optionMaskValues)
+        {
+            uint selectedValue = (uint)mask;
+
+            if (mask == int.MaxValue)
+            {
+                uint allLayersMask = 0;
+                for (var flagIndex = 2; flagIndex < flagValues.Length; flagIndex++)
+                {
+                    allLayersMask |= (uint)flagValues[flagIndex];
+                }
+
+                selectedValue = allLayersMask;
+            }
+
+            var flagStartIndex = 0;
+            if (flagValues[0] == 0)
+                flagStartIndex++;
+            if (flagValues.Length > 1 && flagValues[1] == -1)
+                flagStartIndex++;
+
+            var flagEndIndex = flagStartIndex + optionMaskValues.Length - 2;
+
+            for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
+            {
+                uint flagValue = (uint)flagValues[flagIndex];
+
+                bool flagSet = ((selectedValue & flagValue) == flagValue);
+
+                optionMaskValues[flagIndex-flagStartIndex+2] = (int)(flagSet ? selectedValue & ~flagValue : selectedValue | flagValue);
+            }
+        }
 
         internal static void GetMenuOptions(int mask, string[] flagNames, int[] flagValues,
             out string buttonText, out string buttonMixedValuesText, out string[] optionNames, out int[] optionMaskValues, out int[] selectedOptions, Type enumType = null)
@@ -342,15 +374,8 @@ namespace UnityEditor
             optionMaskValues[1] = everythingValue;
             if (EditorGUI.showMixedValue)
                 intermediateMask = 0;
-            for (var flagIndex = flagStartIndex; flagIndex < flagEndIndex; flagIndex++)
-            {
-                var optionIndex = flagIndex - flagStartIndex + 2;
-                var flagValue = flagValues[flagIndex];
-                var flagSet = ((intermediateMask & flagValue) == flagValue);
-                var newMask = (flagSet ? intermediateMask & ~flagValue : intermediateMask | flagValue);
 
-                optionMaskValues[optionIndex] = newMask;
-            }
+            CalculateMaskValues(intermediateMask, flagValues, ref optionMaskValues);
         }
     }
 }

@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
         Vector3 m_CurrentPointerPosition;
         ReusableCollectionItem m_Item;
         ReusableCollectionItem m_OffsetItem;
-        public bool isDragging => m_Item != null;
+        public bool isDragging { get; private set; }
         public ReusableCollectionItem draggedItem => m_Item;
 
         internal override bool supportsDragEvents => false;
@@ -34,9 +34,13 @@ namespace UnityEngine.UIElements
 
             targetListView.SetSelection(recycledItem.index);
 
+            isDragging = true;
             m_Item = recycledItem;
+            targetListView.virtualizationController.StartDragItem(m_Item);
+
             var y = m_Item.rootElement.layout.y;
             m_SelectionHeight = m_Item.rootElement.layout.height;
+
             m_Item.rootElement.style.position = Position.Absolute;
             m_Item.rootElement.style.height = m_Item.rootElement.layout.height;
             m_Item.rootElement.style.width = m_Item.rootElement.layout.width;
@@ -81,32 +85,30 @@ namespace UnityEngine.UIElements
             m_CurrentIndex = -1;
             foreach (var item in targetListView.activeItems)
             {
-                if (item.rootElement.style.display == DisplayStyle.None)
+                if (item.index < 0 || (item.rootElement.style.display == DisplayStyle.None && !item.isDragGhost))
                     continue;
 
-                var child = item;
-                if (child == m_Item)
+                if (item.index == m_Item.index)
                 {
                     continue;
                 }
 
-                var trueHeight = child.rootElement.layout.height - child.rootElement.resolvedStyle.paddingTop;
-
-                var shouldSkip = targetListView.sourceIncludesArraySize && child.index == 0;
-                if (!shouldSkip && m_CurrentIndex == -1 && itemLayout.y <= y + trueHeight * 0.5f)
+                var expectedHeight = targetListView.virtualizationController.GetExpectedItemHeight(item.index);
+                var shouldSkip = targetListView.sourceIncludesArraySize && item.index == 0;
+                if (!shouldSkip && m_CurrentIndex == -1 && itemLayout.y <= y + expectedHeight * 0.5f)
                 {
-                    m_CurrentIndex = child.index;
+                    m_CurrentIndex = item.index;
 
-                    if (m_OffsetItem == child)
+                    if (m_OffsetItem == item)
                         break;
 
                     Animate(m_OffsetItem, 0);
-                    Animate(child, m_SelectionHeight);
-                    m_OffsetItem = child;
+                    Animate(item, m_SelectionHeight);
+                    m_OffsetItem = item;
                     break;
                 }
 
-                y += trueHeight;
+                y += expectedHeight;
             }
 
             if (m_CurrentIndex == -1)
@@ -143,10 +145,10 @@ namespace UnityEngine.UIElements
 
         protected internal override void OnDrop(Vector3 pointerPosition)
         {
-            if (m_Item != null && targetListView.binding == null)
-            {
-                targetListView.virtualizationController.ReplaceActiveItem(m_Item.index);
-            }
+            // Stop dragging first, to allow the list to refresh properly dragged items.
+            isDragging = false;
+            m_Item.rootElement.ClearManualLayout();
+            targetListView.virtualizationController.EndDrag(m_CurrentIndex);
 
             if (m_OffsetItem != null)
             {
@@ -160,13 +162,8 @@ namespace UnityEngine.UIElements
 
             base.OnDrop(pointerPosition);
 
-            if (m_Item != null && targetListView.binding != null)
-            {
-                targetListView.virtualizationController.ReplaceActiveItem(m_Item.index);
-            }
-
-            m_OffsetItem = null;
             m_Item = null;
+            m_OffsetItem = null;
         }
 
         protected override void ClearDragAndDropUI()

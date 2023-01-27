@@ -43,7 +43,6 @@ namespace UnityEngine.UIElements
         private bool m_ScaleModeIsInline;
         private bool m_TintColorIsInline;
 
-
         /// <summary>
         /// The texture to display in this image.
         /// </summary>
@@ -251,9 +250,10 @@ namespace UnityEngine.UIElements
 
             // covers the MeasureMode.Exactly case
             Rect rect = sourceRect;
-            bool hasImagePosition = rect != Rect.zero;
-            measuredWidth = hasImagePosition ? rect.width : sourceSize.x;
-            measuredHeight = hasImagePosition ? rect.height : sourceSize.y;
+            bool hasRect = rect != Rect.zero;
+            // UUM-17229: rect width/height can be negative (e.g. when the UVs are flipped)
+            measuredWidth = hasRect ? Mathf.Abs(rect.width) : sourceSize.x;
+            measuredHeight = hasRect ? Mathf.Abs(rect.height) : sourceSize.y;
 
             if (widthMode == MeasureMode.AtMost)
             {
@@ -281,7 +281,7 @@ namespace UnityEngine.UIElements
             else if (sprite != null)
             {
                 var slices = Vector4.zero;
-                rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(alignedRect, sprite, scaleMode, panel.contextType, false, ref slices);
+                rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(alignedRect, uv, sprite, scaleMode, panel.contextType, false, ref slices);
             }
             else if (vectorImage != null)
                 rectParams = MeshGenerationContextUtils.RectangleParams.MakeVectorTextured(alignedRect, uv, vectorImage, scaleMode, panel.contextType);

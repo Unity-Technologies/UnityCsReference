@@ -28,6 +28,9 @@ namespace UnityEngine.UIElements
             UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "mask-character", obsoleteNames = new[] { "maskCharacter" }, defaultValue = kMaskCharDefault.ToString()};
             UxmlBoolAttributeDescription m_IsReadOnly = new UxmlBoolAttributeDescription { name = "readonly" };
             UxmlBoolAttributeDescription m_IsDelayed = new UxmlBoolAttributeDescription {name = "is-delayed"};
+            UxmlBoolAttributeDescription m_HideMobileInput = new UxmlBoolAttributeDescription { name = "hide-mobile-input" };
+            UxmlEnumAttributeDescription<TouchScreenKeyboardType> m_KeyboardType = new UxmlEnumAttributeDescription<TouchScreenKeyboardType> { name = "keyboard-type" };
+            UxmlBoolAttributeDescription m_AutoCorrection = new UxmlBoolAttributeDescription { name = "auto-correction" };
 
             /// <summary>
             /// Initialize the traits for this field.
@@ -44,6 +47,9 @@ namespace UnityEngine.UIElements
                 field.isPasswordField = m_Password.GetValueFromBag(bag, cc);
                 field.isReadOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
                 field.isDelayed = m_IsDelayed.GetValueFromBag(bag, cc);
+                field.hideMobileInput = m_HideMobileInput.GetValueFromBag(bag, cc);
+                field.keyboardType = m_KeyboardType.GetValueFromBag(bag, cc);
+                field.autoCorrection = m_AutoCorrection.GetValueFromBag(bag, cc);
                 string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
                 if (!string.IsNullOrEmpty(maskCharacter))
                 {
@@ -138,6 +144,41 @@ namespace UnityEngine.UIElements
                 m_TextInputBase.isPasswordField = value;
                 m_TextInputBase.IncrementVersion(VersionChangeType.Repaint);
             }
+        }
+
+        /// <summary>
+        /// Determines if the touch screen keyboard auto correction is turned on or off.
+        /// </summary>
+        public bool autoCorrection
+        {
+            get => textEdition.autoCorrection;
+            set => textEdition.autoCorrection = value;
+        }
+
+        /// <summary>
+        /// Hides or shows the mobile input field.
+        /// </summary>
+        public bool hideMobileInput
+        {
+            get => textEdition.hideMobileInput;
+            set => textEdition.hideMobileInput = value;
+        }
+
+        /// <summary>
+        /// The type of mobile keyboard that will be used.
+        /// </summary>
+        public TouchScreenKeyboardType keyboardType
+        {
+            get => textEdition.keyboardType;
+            set => textEdition.keyboardType = value;
+        }
+
+        /// <summary>
+        /// The active touch keyboard being displayed.
+        /// </summary>
+        public TouchScreenKeyboard touchScreenKeyboard
+        {
+            get => textEdition.touchScreenKeyboard;
         }
 
         /// <summary>
@@ -297,7 +338,7 @@ namespace UnityEngine.UIElements
             return TextUtilities.MeasureVisualElementTextSize(m_TextInputBase.textElement, textToMeasure, width, widthMode, height, heightMode);
         }
 
-        internal bool hasFocus => textEdition.hasFocus;
+        internal bool hasFocus => textInputBase.textElement.hasFocus;
 
         /// <summary>
         /// Converts a value of the specified generic type from the subclass to a string representation.
@@ -494,6 +535,11 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
+            /// The initial value of the input field before being edited.
+            /// </summary>
+            internal string originalText => textElement.originalText;
+
+            /// <summary>
             /// Converts a string to a value type.
             /// </summary>
             /// <param name="str">The string to convert.</param>
@@ -646,6 +692,8 @@ namespace UnityEngine.UIElements
                 textElement = new TextElement();
                 textElement.selection.isSelectable = true;
                 textEdition.isReadOnly = false;
+                textEdition.keyboardType = TouchScreenKeyboardType.Default;
+                textEdition.autoCorrection = false;
                 textSelection.isSelectable = true;
                 textElement.enableRichText = false;
                 textSelection.selectAllOnFocus = true;
@@ -745,6 +793,7 @@ namespace UnityEngine.UIElements
             {
                 if (e.oldRect.size == e.newRect.size)
                     return;
+
                 UpdateScrollOffset();
             }
 
@@ -753,7 +802,9 @@ namespace UnityEngine.UIElements
                 if (e.oldRect.size == e.newRect.size)
                     return;
 
-                UpdateScrollOffset();
+                var widthChanged = Math.Abs(e.oldRect.size.x - e.newRect.size.x) > float.Epsilon;
+
+                UpdateScrollOffset(isBackspace: false, widthChanged);
             }
 
             internal void OnInputCustomStyleResolved(CustomStyleResolvedEvent e)
@@ -780,10 +831,15 @@ namespace UnityEngine.UIElements
                 return !isReadOnly && enabledInHierarchy;
             }
 
+            internal void UpdateScrollOffset(bool isBackspace = false)
+            {
+                UpdateScrollOffset(isBackspace, widthChanged: false);
+            }
+
             // scrollOffset is used in automated tests
             internal Vector2 scrollOffset = Vector2.zero;
             bool m_ScrollViewWasClamped;
-            internal void UpdateScrollOffset(bool isBackspace = false)
+            internal void UpdateScrollOffset(bool isBackspace, bool widthChanged)
             {
                 var selection = textSelection;
                 if (selection.cursorIndex < 0)
@@ -791,7 +847,7 @@ namespace UnityEngine.UIElements
 
                 if (scrollView != null)
                 {
-                    scrollOffset = GetScrollOffset(scrollView.scrollOffset.x, scrollView.scrollOffset.y, scrollView.contentViewport.layout.width, isBackspace);
+                    scrollOffset = GetScrollOffset(scrollView.scrollOffset.x, scrollView.scrollOffset.y, scrollView.contentViewport.layout.width, isBackspace, widthChanged);
                     scrollView.scrollOffset = scrollOffset;
 
                     m_ScrollViewWasClamped = scrollOffset.x > scrollView.scrollOffset.x || scrollOffset.y > scrollView.scrollOffset.y;
@@ -800,7 +856,7 @@ namespace UnityEngine.UIElements
                 {
                     var t = textElement.transform.position;
 
-                    scrollOffset = GetScrollOffset(scrollOffset.x, scrollOffset.y, contentRect.width, isBackspace);
+                    scrollOffset = GetScrollOffset(scrollOffset.x, scrollOffset.y, contentRect.width, isBackspace, widthChanged);
 
                     t.y = -Mathf.Min(scrollOffset.y, Math.Abs(textElement.contentRect.height - contentRect.height));
                     t.x = -scrollOffset.x;
@@ -811,7 +867,7 @@ namespace UnityEngine.UIElements
             }
 
             Vector2 lastCursorPos = Vector2.zero;
-            Vector2 GetScrollOffset(float xOffset, float yOffset, float contentViewportWidth, bool isBackspace = false)
+            Vector2 GetScrollOffset(float xOffset, float yOffset, float contentViewportWidth, bool isBackspace, bool widthChanged)
             {
                 var cursorPos = textSelection.cursorPosition;
                 var cursorWidth = textSelection.cursorWidth;
@@ -828,14 +884,21 @@ namespace UnityEngine.UIElements
                 // {
                 //     newXOffset = xOffset + cursorPos.x - lastCursorPos.x;
                 // }
-                if (Math.Abs(lastCursorPos.x - cursorPos.x) > epsilon || m_ScrollViewWasClamped)
+
+                if (Math.Abs(lastCursorPos.x - cursorPos.x) > epsilon || m_ScrollViewWasClamped || widthChanged)
                 {
-                    // Update scrollOffset when cursor moves right.
-                    if (cursorPos.x > xOffset + contentViewportWidth - cursorWidth)
-                        newXOffset = cursorPos.x + cursorWidth - contentViewportWidth;
+                    // Update scrollOffset when cursor moves right or when the offset is not needed anymore.
+                    if (cursorPos.x > xOffset + contentViewportWidth - cursorWidth
+                        || xOffset > 0 && widthChanged)
+                    {
+                        var roundedValue = Mathf.Ceil(cursorPos.x + cursorWidth - contentViewportWidth);
+                        newXOffset = Mathf.Max(roundedValue, 0);
+                    }
                     // Update scrollOffset when cursor moves left.
                     else if (cursorPos.x < xOffset + leftScrollOffsetPadding)
+                    {
                         newXOffset = Mathf.Max(cursorPos.x - leftScrollOffsetPadding, 0);
+                    }
                 }
 
                 if (textEdition.multiline && (Math.Abs(lastCursorPos.y - cursorPos.y) > epsilon || m_ScrollViewWasClamped))
@@ -850,8 +913,10 @@ namespace UnityEngine.UIElements
 
                 lastCursorPos = cursorPos;
 
-                if (xOffset != newXOffset || yOffset != newYOffset)
+                if (Math.Abs(xOffset - newXOffset) > epsilon || Math.Abs(yOffset - newYOffset) > epsilon)
+                {
                     return new Vector2(newXOffset, newYOffset);
+                }
 
                 return scrollView != null ? scrollView.scrollOffset : scrollOffset;
             }

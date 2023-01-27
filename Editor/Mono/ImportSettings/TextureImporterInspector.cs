@@ -1222,7 +1222,8 @@ namespace UnityEditor
             {
                 EditorGUI.indentLevel++;
 
-                if ((TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.Texture2D)
+                // If VTOnly, then we don't show the MipmapLimits GUI since its values are ignored anyway
+                if ((TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.Texture2D && !m_VTOnly.boolValue)
                 {
                     DoMipmapLimitsGUI(m_IgnoreMipmapLimit, m_MipmapLimitGroupName);
                 }
@@ -1440,6 +1441,7 @@ namespace UnityEditor
                 // NB we do these weird things partly because ApplyTextureType has early out
                 // NB hence we want settings to have *old* textureType when calling it
                 TextureImporterSettings settings = GetSerializedPropertySettings();
+                settings.textureType = (TextureImporterType)oldTextureType;
                 settings.ApplyTextureType((TextureImporterType)newTextureType);
                 settings.textureType = (TextureImporterType)newTextureType;
 

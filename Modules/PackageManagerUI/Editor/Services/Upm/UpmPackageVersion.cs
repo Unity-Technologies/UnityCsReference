@@ -44,7 +44,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private bool m_IsUnityPackage;
-        public override bool isUnityPackage => m_IsUnityPackage;
+        public override bool isUnityPackage
+        {
+            get
+            {
+                if (HasTag(PackageTag.Bundled))
+                    return true;
+                if (HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom))
+                    return false;
+                return m_IsUnityPackage;
+            }
+        }
 
         [SerializeField]
         private PackageSource m_Source;

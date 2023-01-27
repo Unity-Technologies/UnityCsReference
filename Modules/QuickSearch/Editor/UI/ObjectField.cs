@@ -337,6 +337,7 @@ namespace UnityEditor.Search
             m_OriginalObject = value;
             var runtimeContext = new RuntimeSearchContext
             {
+                contextId = bindingPath ?? name ?? label,
                 pickerType = SearchPickerType.ObjectField,
                 currentObject = m_OriginalObject,
                 requiredTypes = new[] { objectType },

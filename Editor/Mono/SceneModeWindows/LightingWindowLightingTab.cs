@@ -35,6 +35,7 @@ namespace UnityEditor
             public static readonly GUIContent progressiveGPUChangeWarning = EditorGUIUtility.TrTextContent("Changing the compute device used by the Progressive GPU Lightmapper requires the editor to be relaunched. Do you want to change device and restart?");
             public static readonly GUIContent concurrentJobs = EditorGUIUtility.TrTextContent("Concurrent Jobs", "The amount of simultaneously scheduled jobs.");
             public static readonly GUIContent progressiveGPUUnknownDeviceInfo = EditorGUIUtility.TrTextContent("No devices found. Please start an initial bake to make this information available.");
+            public static readonly GUIContent recalculateEnvironmentLighting = EditorGUIUtility.TrTextContent("Recalculate Environment Lighting", "Whether to automatically generate environment lighting in cases where the Active Scene has not previously been baked. This affects the ambient Light Probe and default cubemap which are both generated from the sky.");
 
             public static readonly int[] progressiveGPUUnknownDeviceValues = { 0 };
             public static readonly GUIContent[] progressiveGPUUnknownDeviceStrings =
@@ -226,6 +227,12 @@ namespace UnityEditor
 
                     if (EditorGUI.EndChangeCheck())
                         EditorApplication.SetSceneRepaintDirty();
+                }
+
+                // If either auto ambient or auto reflection baking is supported, show the SkyManager toggle.
+                if (SupportedRenderingFeatures.active.autoAmbientProbeBaking || SupportedRenderingFeatures.active.autoDefaultReflectionProbeBaking)
+                {
+                    BuiltinSkyManager.enabled = EditorGUILayout.Toggle(Styles.recalculateEnvironmentLighting, BuiltinSkyManager.enabled);
                 }
 
                 if (Unsupported.IsDeveloperMode())

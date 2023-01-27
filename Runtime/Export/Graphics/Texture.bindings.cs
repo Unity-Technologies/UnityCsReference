@@ -197,6 +197,11 @@ namespace UnityEngine
             [NativeName("GetMipmapLimitGroupName")] get;
         }
 
+        extern public int activeMipmapLimit
+        {
+            [NativeName("GetMipmapLimit")] get;
+        }
+
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D whiteTexture { get; }
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D blackTexture { get; }
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D redTexture { get; }

@@ -6802,6 +6802,9 @@
     <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilerSettingsProvider.cs">
       <Link>Modules\ProfilerEditor\Public\ProfilerSettingsProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\Public\ProfilingSessionMetaData.bindings.cs">
+      <Link>Modules\ProfilerEditor\Public\ProfilingSessionMetaData.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\RawFrameDataView.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\RawFrameDataView.bindings.cs</Link>
     </Compile>
@@ -8335,7 +8338,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_33df/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_fa9e/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using System.IO;
 using System.Linq;
 using UnityEditor.Modules;
@@ -174,7 +175,7 @@ namespace UnityEditor
                 return true;
 
             string ext = FileUtil.GetPathExtension(imp.assetPath).ToLower();
-            return ext == "so" || ext == "bundle" || ext == "dylib" || IsCppPluginFile(imp.assetPath);
+            return ext == "bundle" || ext == "dylib" || IsLinuxLibrary(imp.assetPath) || IsCppPluginFile(imp.assetPath);
         }
 
         private bool IsUsableOnLinux(PluginImporter imp)
@@ -182,8 +183,7 @@ namespace UnityEditor
             if (!imp.isNativePlugin)
                 return true;
 
-            string ext = FileUtil.GetPathExtension(imp.assetPath).ToLower();
-            return ext == "so" || IsCppPluginFile(imp.assetPath);
+            return IsLinuxLibrary(imp.assetPath) || IsCppPluginFile(imp.assetPath);
         }
 
         public override void OnPlatformSettingsGUI(PluginImporterInspector inspector)
@@ -272,6 +272,13 @@ namespace UnityEditor
 
             // For files this will return filename, for directories, this will return last path component
             return Path.GetFileName(imp.assetPath);
+        }
+
+        // Regex that matchers strings ending in ".so" or ".so.12" or ".so.4.7" and so on.
+        private static Regex LinuxLibraryRegex = new Regex(@"\.so(\.[0-9]+)*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        internal static bool IsLinuxLibrary(string assetPath)
+        {
+            return LinuxLibraryRegex.IsMatch(assetPath);
         }
 
         internal static bool IsCppPluginFile(string assetPath)

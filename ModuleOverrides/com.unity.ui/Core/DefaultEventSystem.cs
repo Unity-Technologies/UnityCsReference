@@ -166,8 +166,24 @@ namespace UnityEngine.UIElements
                     SendFocusBasedEvent(self => UIElementsRuntimeUtility.CreateEvent(self.m_Event), this);
                     ProcessTabEvent(m_Event, m_CurrentModifiers);
                 }
+                else if (m_Event.type == EventType.ScrollWheel)
+                {
+                    // There's different scrollDelta rates between Input Manager, New Input and IMGUI. UITK events use
+                    // IMGUI conventions. Factors can vary between platforms (they come from PlatformDependent code).
+                    // For example, InputEvent::InputEvent (InputEventWin.cpp) and NewInput::OnMessage (NewInput.cpp)
+                    // read data differently from the WM_MOUSEWHEEL message.
+                    // Since we want to rely as little as possible on IMGUI event position for multiple display support,
+                    // we use the mouse position from input and combine it with the scroll delta from IMGUI.
+                    var position = UIElementsRuntimeUtility.MultiDisplayBottomLeftToPanelPosition(input.mousePosition, out var targetDisplay);
+                    var delta = position - m_LastMousePosition;
+                    var scrollDelta = m_Event.delta;
+
+                    SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
+                        (panelPosition, _, t) => WheelEvent.GetPooled(t.scrollDelta, panelPosition, t.modifiers),
+                        (modifiers: m_CurrentModifiers, scrollDelta));
+                }
                 else if (!m_SendingTouchEvents && !m_SendingPenEvent && m_Event.pointerType != UnityEngine.PointerType.Mouse ||
-                         m_Event.type == EventType.MouseEnterWindow || m_Event.type == EventType.MouseLeaveWindow)
+                             m_Event.type == EventType.MouseEnterWindow || m_Event.type == EventType.MouseLeaveWindow)
                 {
                     int pointerType =
                         m_Event.pointerType == UnityEngine.PointerType.Mouse ? PointerId.mousePointerId :
@@ -198,7 +214,6 @@ namespace UnityEngine.UIElements
 
             var position = UIElementsRuntimeUtility.MultiDisplayBottomLeftToPanelPosition(input.mousePosition, out var targetDisplay);
             var delta = position - m_LastMousePosition;
-            var scrollDelta = input.mouseScrollDelta;
 
             if (!m_MouseProcessedAtLeastOnce)
             {
@@ -216,13 +231,6 @@ namespace UnityEngine.UIElements
                     SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
                         (panelPosition, panelDelta, self) => PointerMoveEvent.GetPooled(EventType.MouseMove,
                             panelPosition, panelDelta, -1, 0, self.m_CurrentModifiers), this);
-                }
-
-                if (!Mathf.Approximately(scrollDelta.x, 0f) || !Mathf.Approximately(scrollDelta.y, 0f))
-                {
-                    SendPositionBasedEvent(position, delta, PointerId.mousePointerId, targetDisplay,
-                        (panelPosition, _, t) => WheelEvent.GetPooled(panelPosition, -1, 0, t.scrollDelta, t.modifiers),
-                        (modifiers: m_CurrentModifiers, scrollDelta));
                 }
             }
 

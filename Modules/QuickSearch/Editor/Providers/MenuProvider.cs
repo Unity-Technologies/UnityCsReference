@@ -114,10 +114,8 @@ namespace UnityEditor.Search.Providers
 
         private static IEnumerable<SearchItem> FetchItems(SearchContext context, List<SearchItem> items, SearchProvider provider)
         {
-            if (string.IsNullOrEmpty(context.searchQuery))
-                yield break;
-            var query = queryEngine.ParseQuery(context.searchQuery);
-            if (!query.valid)
+            var query = (string.IsNullOrEmpty(context.searchQuery) && context.providers.Count() == 1) ? null : queryEngine.ParseQuery(context.searchQuery);
+            if (query != null && !query.valid)
             {
                 context.AddSearchQueryErrors(query.errors.Select(e => new SearchQueryError(e, context, provider)));
                 yield break;
@@ -126,7 +124,8 @@ namespace UnityEditor.Search.Providers
             while (menus == null)
                 yield return null;
 
-            foreach (var m in query.Apply(menus, false))
+            var results = query == null ? menus : query.Apply(menus, false);
+            foreach (var m in results)
                 yield return provider.CreateItem(context, m.path);
         }
 

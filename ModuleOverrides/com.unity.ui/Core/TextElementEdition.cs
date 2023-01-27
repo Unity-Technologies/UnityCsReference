@@ -52,10 +52,8 @@ namespace UnityEngine.UIElements
 
         internal string CullString(string s);
 
-        internal bool hasFocus { get; }
-
         /// <summary>
-        /// The character used for masking when in password mode
+        /// The character used for masking when in password mode.
         /// </summary>
         public char maskChar { get; set; }
 
@@ -63,6 +61,57 @@ namespace UnityEngine.UIElements
         /// Returns true if the field is used to edit a password.
         /// </summary>
         public bool isPassword { get; set; }
+
+        /// <summary>
+        /// Determines if the soft keyboard auto correction is turned on or off.
+        /// </summary>
+        public bool autoCorrection
+        {
+            get
+            {
+                Debug.Log($"Type {GetType().Name} implementing interface {nameof(ITextEdition)} is missing the implementation for {nameof(autoCorrection)}. Calling {nameof(ITextEdition)}.{nameof(autoCorrection)} of this type will always return false.");
+                return false;
+            }
+            set => Debug.Log($"Type {GetType().Name} implementing interface {nameof(ITextEdition)} is missing the implementation for {nameof(autoCorrection)}. Assigning a value to {nameof(ITextEdition)}.{nameof(autoCorrection)} will not update its value.");
+        }
+
+        /// <summary>
+        /// Hides or shows the mobile input field.
+        /// </summary>
+        public bool hideMobileInput
+        {
+            get
+            {
+                Debug.Log($"Type {GetType().Name} implementing interface {nameof(ITextEdition)} is missing the implementation for {nameof(hideMobileInput)}. Calling {nameof(ITextEdition)}.{nameof(hideMobileInput)} of this type will always return false.");
+                return false;
+            }
+            set => Debug.Log($"Type {GetType().Name} implementing interface {nameof(ITextEdition)} is missing the implementation for {nameof(hideMobileInput)}. Assigning a value to {nameof(ITextEdition)}.{nameof(hideMobileInput)} will not update its value.");
+        }
+
+        /// <summary>
+        /// The TouchScreenKeyboard being used to edit the Input Field.
+        /// </summary>
+        public TouchScreenKeyboard touchScreenKeyboard
+        {
+            get
+            {
+                Debug.Log($"Type {GetType().Name} implementing interface {nameof(ITextEdition)} is missing the implementation for {nameof(touchScreenKeyboard)}. Calling {nameof(ITextEdition)}.{nameof(touchScreenKeyboard)} of this type will always return null.");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The type of mobile keyboard that will be used.
+        /// </summary>
+        public TouchScreenKeyboardType keyboardType
+        {
+            get
+            {
+                Debug.Log($"Type {GetType().Name} implementing interface {nameof(ITextEdition)} is missing the implementation for {nameof(keyboardType)}. Calling {nameof(ITextEdition)}.{nameof(keyboardType)} of this type will always return {nameof(TouchScreenKeyboardType.Default)}.");
+                return TouchScreenKeyboardType.Default;
+            }
+            set => Debug.Log($"Type {GetType().Name} implementing interface {nameof(ITextEdition)} is missing the implementation for {nameof(keyboardType)}. Assigning a value to {nameof(ITextEdition)}.{nameof(keyboardType)} will not update its value.");
+        }
     }
 
     // Text editing and selection management implementation
@@ -87,6 +136,54 @@ namespace UnityEngine.UIElements
                     if (!edition.isReadOnly)
                         editingManipulator.editingUtilities.multiline = value;
                     m_Multiline = value;
+                }
+            }
+        }
+
+        internal TouchScreenKeyboard m_TouchScreenKeyboard;
+
+        TouchScreenKeyboard ITextEdition.touchScreenKeyboard
+        {
+            get => m_TouchScreenKeyboard;
+        }
+
+        internal TouchScreenKeyboardType m_KeyboardType = TouchScreenKeyboardType.Default;
+
+        TouchScreenKeyboardType ITextEdition.keyboardType
+        {
+            get => m_KeyboardType;
+            set => m_KeyboardType = value;
+        }
+
+        bool m_HideMobileInput;
+
+        bool ITextEdition.hideMobileInput
+        {
+            get
+            {
+                switch (Application.platform)
+                {
+                    case RuntimePlatform.Android:
+                    case RuntimePlatform.IPhonePlayer:
+                    case RuntimePlatform.tvOS:
+                    case RuntimePlatform.WebGLPlayer:
+                        return m_HideMobileInput;
+                }
+                return m_HideMobileInput;
+            }
+            set
+            {
+                switch(Application.platform)
+                {
+                    case RuntimePlatform.Android:
+                    case RuntimePlatform.IPhonePlayer:
+                    case RuntimePlatform.tvOS:
+                    case RuntimePlatform.WebGLPlayer:
+                        m_HideMobileInput = value;
+                        break;
+                    default:
+                        m_HideMobileInput = value;
+                        break;
                 }
             }
         }
@@ -173,16 +270,17 @@ namespace UnityEngine.UIElements
         // From SelectingManipulator.ExecuteDefaultActionAtTarget, EditingManipulator.ExecuteDefaultActionAtTarget
         [EventInterest(typeof(ContextualMenuPopulateEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
             typeof(KeyDownEvent), typeof(KeyUpEvent), typeof(FocusEvent), typeof(BlurEvent),
-            typeof(MouseUpEvent), typeof(MouseDownEvent), typeof(MouseMoveEvent), typeof(ValidateCommandEvent),
-            typeof(ExecuteCommandEvent), typeof(PointerDownEvent), typeof(PointerUpEvent),
+            typeof(ValidateCommandEvent), typeof(ExecuteCommandEvent),
+            typeof(PointerDownEvent), typeof(PointerUpEvent), typeof(PointerMoveEvent),
             typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent))]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             if (selection.isSelectable)
             {
-                // Selecting is currently not supported with softKeyboard.
-                if (!editingManipulator?.touchScreenTextField ?? true)
-                    selectingManipulator.ExecuteDefaultActionAtTarget(evt);
+                var useTouchScreenKeyboard = editingManipulator?.editingUtilities.TouchScreenKeyboardShouldBeUsed() ?? false;
+
+                if (!useTouchScreenKeyboard || useTouchScreenKeyboard && edition.hideMobileInput)
+                    selectingManipulator?.ExecuteDefaultActionAtTarget(evt);
                 if (!edition.isReadOnly)
                     editingManipulator?.ExecuteDefaultActionAtTarget(evt);
                 elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
@@ -242,6 +340,9 @@ namespace UnityEngine.UIElements
 
         void ITextEdition.UpdateText(string value)
         {
+            if (m_TouchScreenKeyboard != null && m_TouchScreenKeyboard.text != value)
+                m_TouchScreenKeyboard.text = value;
+
             if (text != value)
             {
                 // Setting the VisualElement text here cause a repaint since it dirty the layout flag.
@@ -260,8 +361,6 @@ namespace UnityEngine.UIElements
                 return s.Substring(0, mLength);
             return s;
         }
-
-        bool ITextEdition.hasFocus => elementPanel != null && elementPanel.focusController.GetLeafFocusedElement() == this;
 
         char ITextEdition.maskChar
         {
@@ -298,6 +397,12 @@ namespace UnityEngine.UIElements
             }
         }
 
+        bool ITextEdition.autoCorrection
+        {
+            get => m_AutoCorrection;
+            set => m_AutoCorrection = value;
+        }
+
         string m_RenderedText;
         internal string renderedText
         {
@@ -316,7 +421,10 @@ namespace UnityEngine.UIElements
         }
 
         string m_OriginalText;
+        internal string originalText => m_OriginalText;
+
         private char m_MaskChar;
         private bool m_IsPassword;
+        private bool m_AutoCorrection;
     }
 }

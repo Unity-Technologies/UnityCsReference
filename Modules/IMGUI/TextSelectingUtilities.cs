@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.TextCore.Text;
 using static UnityEngine.TextEditor;
 
@@ -101,6 +102,114 @@ namespace UnityEngine
         {
             m_TextHandle = textHandle;
         }
+
+        internal bool HandleKeyEvent(Event e)
+        {
+            InitKeyActions();
+            EventModifiers m = e.modifiers;
+            e.modifiers &= ~EventModifiers.CapsLock;
+            if (s_KeySelectOps.ContainsKey(e))
+            {
+                var op = (TextSelectOp)s_KeySelectOps[e];
+                PerformOperation(op);
+                e.modifiers = m;
+                return true;
+            }
+            e.modifiers = m;
+            return false;
+        }
+
+        bool PerformOperation(TextSelectOp operation)
+        {
+            switch (operation)
+            {
+                case TextSelectOp.SelectLeft: SelectLeft(); break;
+                case TextSelectOp.SelectRight: SelectRight(); break;
+                case TextSelectOp.SelectUp: SelectUp(); break;
+                case TextSelectOp.SelectDown: SelectDown(); break;
+                case TextSelectOp.SelectWordRight: SelectWordRight(); break;
+                case TextSelectOp.SelectWordLeft: SelectWordLeft(); break;
+                case TextSelectOp.SelectToEndOfPreviousWord: SelectToEndOfPreviousWord(); break;
+                case TextSelectOp.SelectToStartOfNextWord: SelectToStartOfNextWord(); break;
+                case TextSelectOp.SelectTextStart: SelectTextStart(); break;
+                case TextSelectOp.SelectTextEnd: SelectTextEnd(); break;
+                case TextSelectOp.ExpandSelectGraphicalLineStart: ExpandSelectGraphicalLineStart(); break;
+                case TextSelectOp.ExpandSelectGraphicalLineEnd: ExpandSelectGraphicalLineEnd(); break;
+                case TextSelectOp.SelectParagraphForward: SelectParagraphForward(); break;
+                case TextSelectOp.SelectParagraphBackward: SelectParagraphBackward(); break;
+                case TextSelectOp.SelectGraphicalLineStart: SelectGraphicalLineStart(); break;
+                case TextSelectOp.SelectGraphicalLineEnd: SelectGraphicalLineEnd(); break;
+                case TextSelectOp.Copy: Copy(); break;
+                case TextSelectOp.SelectAll: SelectAll(); break;
+                case TextSelectOp.SelectNone: SelectNone(); break;
+                 default:
+                     Debug.Log("Unimplemented: " + operation);
+                     break;
+            }
+
+            return false;
+        }
+
+        static Dictionary<Event, TextSelectOp> s_KeySelectOps;
+        static void MapKey(string key, TextSelectOp action)
+        {
+            s_KeySelectOps[Event.KeyboardEvent(key)] = action;
+        }
+
+        void InitKeyActions()
+        {
+            if (s_KeySelectOps != null)
+                return;
+            s_KeySelectOps = new Dictionary<Event, TextSelectOp>();
+
+            // key mappings shared by the platforms
+            MapKey("#left", TextSelectOp.SelectLeft);
+            MapKey("#right", TextSelectOp.SelectRight);
+            MapKey("#up", TextSelectOp.SelectUp);
+            MapKey("#down", TextSelectOp.SelectDown);
+
+            // OSX is the special case for input shortcuts
+            if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
+            {
+                // Keyboard mappings for mac
+                MapKey("#home", TextSelectOp.SelectTextStart);
+                MapKey("#end", TextSelectOp.SelectTextEnd);
+
+                MapKey("#^left", TextSelectOp.ExpandSelectGraphicalLineStart);
+                MapKey("#^right", TextSelectOp.ExpandSelectGraphicalLineEnd);
+                MapKey("#^up", TextSelectOp.SelectParagraphBackward);
+                MapKey("#^down", TextSelectOp.SelectParagraphForward);
+
+                MapKey("#&left", TextSelectOp.SelectWordLeft);
+                MapKey("#&right", TextSelectOp.SelectWordRight);
+                MapKey("#&up", TextSelectOp.SelectParagraphBackward);
+                MapKey("#&down", TextSelectOp.SelectParagraphForward);
+
+                MapKey("#%left", TextSelectOp.ExpandSelectGraphicalLineStart);
+                MapKey("#%right", TextSelectOp.ExpandSelectGraphicalLineEnd);
+                MapKey("#%up", TextSelectOp.SelectTextStart);
+                MapKey("#%down", TextSelectOp.SelectTextEnd);
+
+                MapKey("%a", TextSelectOp.SelectAll);
+                MapKey("%c", TextSelectOp.Copy);
+            }
+            else
+            {
+                // Windows/Linux keymappings
+                MapKey("#^left", TextSelectOp.SelectToEndOfPreviousWord);
+                MapKey("#^right", TextSelectOp.SelectToStartOfNextWord);
+                MapKey("#^up", TextSelectOp.SelectParagraphBackward);
+                MapKey("#^down", TextSelectOp.SelectParagraphForward);
+
+                MapKey("#home", TextSelectOp.SelectGraphicalLineStart);
+                MapKey("#end", TextSelectOp.SelectGraphicalLineEnd);
+
+                MapKey("^a", TextSelectOp.SelectAll);
+                MapKey("^c", TextSelectOp.Copy);
+                MapKey("^insert", TextSelectOp.Copy);
+            }
+        }
+
 
         public void ClearCursorPos()
         {

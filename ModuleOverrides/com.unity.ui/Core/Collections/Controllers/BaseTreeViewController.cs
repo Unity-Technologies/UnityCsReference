@@ -489,7 +489,10 @@ namespace UnityEngine.UIElements
 
             foreach (var id in treeViewItemIds)
             {
-                var wrapper = new TreeViewItemWrapper(m_TreeItems[id], depth);
+                if (!m_TreeItems.TryGetValue(id, out var treeItem))
+                    continue;
+
+                var wrapper = new TreeViewItemWrapper(treeItem, depth);
                 wrappers.Add(wrapper);
 
                 if (baseTreeView?.expandedItemIds == null)

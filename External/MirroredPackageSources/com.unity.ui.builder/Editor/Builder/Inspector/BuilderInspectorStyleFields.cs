@@ -1127,6 +1127,10 @@ namespace Unity.UI.Builder
 
         void BuildStyleFieldContextualMenu(DropdownMenu menu, VisualElement fieldElement)
         {
+            // if the context menu is already populated by the field (text field) then ignore
+            if (menu.MenuItems() != null & menu.MenuItems().Count > 0)
+                return;
+
             var isSelector = BuilderSharedStyles.IsSelectorElement(currentVisualElement);
 
             if (fieldElement.HasProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName))

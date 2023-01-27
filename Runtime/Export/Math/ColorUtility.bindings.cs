@@ -6,10 +6,10 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
-    [NativeHeader("Runtime/Export/Math/ColorUtility.bindings.h")]
+    [NativeHeader("Runtime/Math/ColorUtility.h")]
     public partial class ColorUtility
     {
-        [FreeFunction]
+        [FreeFunction("TryParseHtmlColor", true)]
         extern internal static bool DoTryParseHtmlColor(string htmlString, out Color32 color);
     }
 }

@@ -50,6 +50,13 @@ namespace Unity.UI.Builder
         {
             var libraryItem = GetLibraryTreeItem((VisualElement)evt.target);
 
+            if (m_Dragger.active)
+            {
+                evt.PreventDefault();
+                evt.StopImmediatePropagation();
+                return;
+            }
+
             evt.menu.AppendAction(
                 "Add",
                 action => { AddItemToTheDocument(libraryItem); },

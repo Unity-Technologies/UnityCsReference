@@ -277,7 +277,6 @@ namespace UnityEditor
                     Selection.objects = newObjects;
                     break;
             }
-            GUIUtility.ExitGUI();
         }
 
         // When rect selecting, we update the selected objects based on which modifier keys are currently held down,

@@ -252,27 +252,29 @@ namespace UnityEditor
             public static readonly GUIContent loadStoreDebugModeCheckbox = EditorGUIUtility.TrTextContent("Load/Store Action Debug Mode", "Initializes Framebuffer such that errors in the load/store actions will be visually apparent. (Removed in Release Builds)");
             public static readonly GUIContent loadStoreDebugModeEditorOnlyCheckbox = EditorGUIUtility.TrTextContent("Editor Only", "Load/Store Action Debug Mode will only affect the Editor");
 
-            public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
-            public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
-            public static string undoChangedScriptingDefineString { get { return LocalizationDatabase.GetLocalizedString("Changed Scripting Define Settings"); } }
-            public static string undoChangedGraphicsJobsString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Jobs Setting"); } }
-            public static string undoChangedGraphicsJobModeString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics Job Mode Setting"); } }
-            public static string changeColorSpaceString { get { return LocalizationDatabase.GetLocalizedString("Changing the color space may take a significant amount of time."); } }
-            public static string undoChangedPlatformShaderChunkSizeString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Size Platform Setting"); } }
-            public static string undoChangedPlatformShaderChunkCountString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Count Platform Setting"); } }
-            public static string undoChangedDefaultShaderChunkSizeString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Size Default Setting"); } }
-            public static string undoChangedDefaultShaderChunkCountString { get { return LocalizationDatabase.GetLocalizedString("Changed Shader Chunk Count Default Setting"); } }
+            public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
+            public static readonly string undoChangedGraphicsAPIString              = L10n.Tr("Changed Graphics API Settings");
+            public static readonly string undoChangedScriptingDefineString          = L10n.Tr("Changed Scripting Define Settings");
+            public static readonly string undoChangedGraphicsJobsString             = L10n.Tr("Changed Graphics Jobs Setting");
+            public static readonly string undoChangedGraphicsJobModeString          = L10n.Tr("Changed Graphics Job Mode Setting");
+            public static readonly string changeColorSpaceString                    = L10n.Tr("Changing the color space may take a significant amount of time.");
+            public static readonly string undoChangedPlatformShaderChunkSizeString  = L10n.Tr("Changed Shader Chunk Size Platform Setting");
+            public static readonly string undoChangedPlatformShaderChunkCountString = L10n.Tr("Changed Shader Chunk Count Platform Setting");
+            public static readonly string undoChangedDefaultShaderChunkSizeString   = L10n.Tr("Changed Shader Chunk Size Default Setting");
+            public static readonly string undoChangedDefaultShaderChunkCountString  = L10n.Tr("Changed Shader Chunk Count Default Setting");
         }
 
         class RecompileReason
         {
-            public static readonly string scriptingDefineSymbolsModified = "Scripting define symbols setting modified";
-            public static readonly string suppressCommonWarningsModified = "Suppress common warnings setting modified";
-            public static readonly string allowUnsafeCodeModified = "Allow 'unsafe' code setting modified";
-            public static readonly string apiCompatibilityLevelModified = "API Compatibility level modified";
-            public static readonly string useDeterministicCompilationModified = "Use deterministic compilation modified";
-            public static readonly string additionalCompilerArgumentsModified = "Additional compiler arguments modified";
-            public static readonly string activeBuildTargetGroupModified = "Active build target group modified";
+            public static readonly string scriptingDefineSymbolsModified        = L10n.Tr("Scripting define symbols setting modified");
+            public static readonly string suppressCommonWarningsModified        = L10n.Tr("Suppress common warnings setting modified");
+            public static readonly string allowUnsafeCodeModified               = L10n.Tr("Allow 'unsafe' code setting modified");
+            public static readonly string apiCompatibilityLevelModified         = L10n.Tr("API Compatibility level modified");
+            public static readonly string useDeterministicCompilationModified   = L10n.Tr("Use deterministic compilation modified");
+            public static readonly string additionalCompilerArgumentsModified   = L10n.Tr("Additional compiler arguments modified");
+            public static readonly string activeBuildTargetGroupModified        = L10n.Tr("Active build target group modified");
+
+            public static readonly string presetChanged = L10n.Tr("Preset changed");
         }
 
         PlayerSettingsSplashScreenEditor m_SplashScreenEditor;
@@ -920,6 +922,11 @@ namespace UnityEditor
 
             if (hasPresetWindowClosed)
             {
+                // We recompile after the window is closed just to make sure all the values are set/shown correctly.
+                // There might be a smarter idea where you detect the values that have changed and only do it if it's required,
+                // but the way the Preset window applies those changes as well as the way IMGUI works makes it difficult to track.
+                SetReason(RecompileReason.presetChanged);
+
                 OnPresetSelectorClosed();
             }
             else if (HasReasonToCompile())
@@ -2219,7 +2226,7 @@ namespace UnityEditor
                 }
 
                 // Tickbox for OpenGL-only option to toggle Profiler GPU Recorders.
-                if (platform.namedBuildTarget == NamedBuildTarget.Standalone || platform.namedBuildTarget == NamedBuildTarget.Android)
+                if (platform.namedBuildTarget == NamedBuildTarget.Standalone || platform.namedBuildTarget == NamedBuildTarget.Android || platform.namedBuildTarget == NamedBuildTarget.EmbeddedLinux || platform.namedBuildTarget == NamedBuildTarget.QNX)
                 {
                     PlayerSettings.enableOpenGLProfilerGPURecorders = EditorGUILayout.Toggle(SettingsContent.enableOpenGLProfilerGPURecorders, PlayerSettings.enableOpenGLProfilerGPURecorders);
 

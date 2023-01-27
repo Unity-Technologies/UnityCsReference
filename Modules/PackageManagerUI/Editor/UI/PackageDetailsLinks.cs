@@ -156,19 +156,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ViewDocClick()
         {
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            ViewUrl(UpmPackageDocs.GetDocumentationUrl(packageInfo), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo), L10n.Tr("documentation"), "viewDocs");
+            ViewUrl(UpmPackageDocs.GetDocumentationUrl(packageInfo, m_Version.isUnityPackage), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo), L10n.Tr("documentation"), "viewDocs");
         }
 
         private void ViewChangelogClick()
         {
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Package, m_Application);
+            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo, m_Version.isUnityPackage), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Package, m_Application);
         }
 
         private void ViewLicensesClick()
         {
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetLicensesUrl(packageInfo), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo), L10n.Tr("license documentation"), "viewLicense", m_Version, m_Package, m_Application);
+            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetLicensesUrl(packageInfo, m_Version.isUnityPackage), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo), L10n.Tr("license documentation"), "viewLicense", m_Version, m_Package, m_Application);
         }
 
         private void ViewUseCasesClick()

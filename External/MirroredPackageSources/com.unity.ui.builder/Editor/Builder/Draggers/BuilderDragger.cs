@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -47,6 +48,8 @@ namespace Unity.UI.Builder
         public VisualElement builderHierarchyRoot { get; set; }
         public VisualElement builderStylesheetRoot { get; set; }
 
+        public bool active => m_Active;
+
         protected BuilderPaneWindow paneWindow { get { return m_PaneWindow; } }
         protected BuilderSelection selection { get { return m_Selection; } }
         protected VisualElement documentRootElement => m_Canvas;
@@ -56,6 +59,8 @@ namespace Unity.UI.Builder
 
         List<ManipulatorActivationFilter> activators { get; set; }
         ManipulatorActivationFilter m_CurrentActivator;
+
+        public event Action onEndDrag;
 
         public BuilderDragger(
             BuilderPaneWindow paneWindow,
@@ -391,7 +396,7 @@ namespace Unity.UI.Builder
 
                     if (pickedElement == null)
                         return;
-                        
+
                     // Mirror final drag destination in the viewport using the placement indicator.
                     m_PlacementIndicator?.Activate(pickedElement, index);
 
@@ -418,6 +423,7 @@ namespace Unity.UI.Builder
         void EndDragInner()
         {
             EndDrag();
+            onEndDrag?.Invoke();
 
             m_LastRowHoverElement?.RemoveFromClassList(s_TreeItemHoverHoverClassName);
             m_LastRowHoverElement?.Query(className: BuilderConstants.ExplorerItemReorderZoneClassName).ForEach(e => e.RemoveFromClassList(s_TreeItemHoverWithDragBetweenElementsSupportClassName));

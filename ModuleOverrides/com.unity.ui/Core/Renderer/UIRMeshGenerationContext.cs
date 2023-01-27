@@ -373,7 +373,8 @@ namespace UnityEngine.UIElements
                 // Comparing aspects ratio is error-prone because the screenRect may end up being scaled by the
                 // transform and the corners will end up being pixel aligned, possibly resulting in blurriness.
 
-                float srcAspect = (texture.width * uv.width) / (texture.height * uv.height);
+                // UUM-17136: uv width/height can be negative (e.g. when the UVs are flipped)
+                float srcAspect = Mathf.Abs((texture.width * uv.width) / (texture.height * uv.height));
                 float destAspect = rect.width / rect.height;
 
                 switch (scaleMode)
@@ -416,15 +417,15 @@ namespace UnityEngine.UIElements
                 uvOut = uv;
             }
 
-            private static void AdjustSpriteUVsForScaleMode(Rect rect, Rect uv, Rect geomRect, Texture texture, Sprite sprite, ScaleMode scaleMode, out Rect rectOut, out Rect uvOut)
+            private static void AdjustSpriteUVsForScaleMode(Rect containerRect, Rect srcRect, Rect spriteGeomRect, Sprite sprite, ScaleMode scaleMode, out Rect rectOut, out Rect uvOut)
             {
                 // Adjust the sprite rect size and then determine where the sprite geometry should be inside it.
 
                 float srcAspect = sprite.rect.width / sprite.rect.height;
-                float destAspect = rect.width / rect.height;
+                float destAspect = containerRect.width / containerRect.height;
 
                 // Normalize the geom rect for easy scaling
-                var geomRectNorm = geomRect;
+                var geomRectNorm = spriteGeomRect;
                 geomRectNorm.position -= (Vector2)sprite.bounds.min;
                 geomRectNorm.position /= sprite.bounds.size;
                 geomRectNorm.size /= sprite.bounds.size;
@@ -438,9 +439,9 @@ namespace UnityEngine.UIElements
                 {
                     case ScaleMode.StretchToFill:
                     {
-                        var scale = rect.size;
-                        rect.position = geomRectNorm.position * scale;
-                        rect.size = geomRectNorm.size * scale;
+                        var scale = containerRect.size;
+                        containerRect.position = geomRectNorm.position * scale;
+                        containerRect.size = geomRectNorm.size * scale;
                     }
                     break;
 
@@ -452,16 +453,16 @@ namespace UnityEngine.UIElements
                         // - Compute the intersection of the geometry rect with the destination rect
                         // - Re-evaluate the UVs from that intersection
 
-                        var stretchedRect = rect;
+                        var stretchedRect = containerRect;
                         if (destAspect > srcAspect)
                         {
                             stretchedRect.height = stretchedRect.width / srcAspect;
-                            stretchedRect.position = new Vector2(stretchedRect.position.x, -(stretchedRect.height - rect.height) / 2.0f);
+                            stretchedRect.position = new Vector2(stretchedRect.position.x, -(stretchedRect.height - containerRect.height) / 2.0f);
                         }
                         else
                         {
                             stretchedRect.width = stretchedRect.height * srcAspect;
-                            stretchedRect.position = new Vector2(-(stretchedRect.width - rect.width) / 2.0f, stretchedRect.position.y);
+                            stretchedRect.position = new Vector2(-(stretchedRect.width - containerRect.width) / 2.0f, stretchedRect.position.y);
                         }
 
                         var scale = stretchedRect.size;
@@ -469,7 +470,7 @@ namespace UnityEngine.UIElements
                         stretchedRect.size = geomRectNorm.size * scale;
 
                         // Intersect the stretched rect with the destination rect to compute the new UVs
-                        var newRect = RectIntersection(rect, stretchedRect);
+                        var newRect = RectIntersection(containerRect, stretchedRect);
                         if (newRect.width < UIRUtility.k_Epsilon || newRect.height < UIRUtility.k_Epsilon)
                             newRect = Rect.zero;
                         else
@@ -484,11 +485,11 @@ namespace UnityEngine.UIElements
                             scalePos.y = 1.0f - uvScale.size.y - scalePos.y;
                             uvScale.position = scalePos;
 
-                            uv.position += uvScale.position * uv.size;
-                            uv.size *= uvScale.size;
+                            srcRect.position += uvScale.position * srcRect.size;
+                            srcRect.size *= uvScale.size;
                         }
 
-                        rect = newRect;
+                        containerRect = newRect;
                     }
                     break;
 
@@ -497,16 +498,16 @@ namespace UnityEngine.UIElements
                         if (destAspect > srcAspect)
                         {
                             float stretch = srcAspect / destAspect;
-                            rect = new Rect(rect.xMin + rect.width * (1.0f - stretch) * .5f, rect.yMin, stretch * rect.width, rect.height);
+                            containerRect = new Rect(containerRect.xMin + containerRect.width * (1.0f - stretch) * .5f, containerRect.yMin, stretch * containerRect.width, containerRect.height);
                         }
                         else
                         {
                             float stretch = destAspect / srcAspect;
-                            rect = new Rect(rect.xMin, rect.yMin + rect.height * (1.0f - stretch) * .5f, rect.width, stretch * rect.height);
+                            containerRect = new Rect(containerRect.xMin, containerRect.yMin + containerRect.height * (1.0f - stretch) * .5f, containerRect.width, stretch * containerRect.height);
                         }
 
-                        rect.position += geomRectNorm.position * rect.size;
-                        rect.size *= geomRectNorm.size;
+                        containerRect.position += geomRectNorm.position * containerRect.size;
+                        containerRect.size *= geomRectNorm.size;
                     }
                     break;
 
@@ -515,8 +516,8 @@ namespace UnityEngine.UIElements
                 }
 
 
-                rectOut = rect;
-                uvOut = uv;
+                rectOut = containerRect;
+                uvOut = srcRect;
             }
 
             internal static Rect RectIntersection(Rect a, Rect b)
@@ -610,7 +611,7 @@ namespace UnityEngine.UIElements
                 return rp;
             }
 
-            public static RectangleParams MakeSprite(Rect rect, Sprite sprite, ScaleMode scaleMode, ContextType panelContext, bool hasRadius, ref Vector4 slices, bool useForRepeat = false)
+            public static RectangleParams MakeSprite(Rect containerRect, Rect subRect, Sprite sprite, ScaleMode scaleMode, ContextType panelContext, bool hasRadius, ref Vector4 slices, bool useForRepeat = false)
             {
                 if (sprite == null || sprite.bounds.size.x < UIRUtility.k_Epsilon || sprite.bounds.size.y < UIRUtility.k_Epsilon)
                     return new RectangleParams();
@@ -625,39 +626,54 @@ namespace UnityEngine.UIElements
                     ? UIElementsUtility.editorPlayModeTintColor
                     : Color.white;
 
-                var geomRect = ComputeGeomRect(sprite);
-                var uv = ComputeUVRect(sprite);
+                var spriteGeomRect = ComputeGeomRect(sprite); // Min/Max Positions in the sprite
+                var spriteUVRect = ComputeUVRect(sprite); // Min/Max UVs in the sprite
 
                 // Use a textured quad (ignoring tight-mesh) if dealing with slicing or with
                 // scale-and-crop scale mode. This avoids expensive CPU-side transformation and
                 // polygon clipping.
                 var border = sprite.border;
                 bool hasSlices = (border != Vector4.zero) || (slices != Vector4.zero);
-                bool useTexturedQuad = (scaleMode == ScaleMode.ScaleAndCrop) || hasSlices || hasRadius || useForRepeat;
+                bool hasSubRect = subRect != new Rect(0, 0, 1, 1); // In the future, we could implement flips with geometry flip
+                bool useTexturedQuad = (scaleMode == ScaleMode.ScaleAndCrop) || hasSlices || hasRadius || useForRepeat || hasSubRect;
 
+                // The sprite UVs are adjusted according to the rotation. But When we use a texture quad, we generate
+                // the UVs ourselves, so we need to apply the rotation to our rect.
                 if (useTexturedQuad && sprite.packed && sprite.packingRotation != SpritePackingRotation.None)
-                    uv = ApplyPackingRotation(uv, sprite.packingRotation);
+                    spriteUVRect = ApplyPackingRotation(spriteUVRect, sprite.packingRotation);
 
-                AdjustSpriteUVsForScaleMode(rect, uv, geomRect, sprite.texture, sprite, scaleMode, out rect, out uv);
+                Rect srcRect;
+                if (hasSubRect)
+                {
+                    // Remap the subRect within the sprite rect
+                    srcRect = subRect;
+                    srcRect.position *= spriteUVRect.size;
+                    srcRect.position += spriteUVRect.position;
+                    srcRect.size *= spriteUVRect.size;
+                }
+                else
+                    srcRect = spriteUVRect;
+
+                AdjustSpriteUVsForScaleMode(containerRect, srcRect, spriteGeomRect, sprite, scaleMode, out Rect adjustedDstRect, out Rect adjustedSrcRect);
 
                 // Compute normalized subRect
-                var subRect = geomRect;
-                subRect.size /= (Vector2)sprite.bounds.size;
-                subRect.position -= (Vector2)sprite.bounds.min;
-                subRect.position /= (Vector2)sprite.bounds.size;
-                subRect.position = new Vector2(subRect.position.x, 1.0f - (subRect.position.y + subRect.height)); // Y-down for UIR
+                var normalizedRect = spriteGeomRect;
+                normalizedRect.size /= (Vector2)sprite.bounds.size;
+                normalizedRect.position -= (Vector2)sprite.bounds.min;
+                normalizedRect.position /= (Vector2)sprite.bounds.size;
+                normalizedRect.position = new Vector2(normalizedRect.position.x, 1.0f - (normalizedRect.position.y + normalizedRect.height)); // Y-down for UIR
 
                 var rp = new RectangleParams
                 {
-                    rect = rect,
-                    uv = uv,
-                    subRect = subRect,
+                    rect = adjustedDstRect,
+                    uv = adjustedSrcRect,
+                    subRect = normalizedRect,
                     color = Color.white,
-                    texture = useTexturedQuad ? sprite.texture : (Texture2D)null,
-                    sprite = useTexturedQuad ? (Sprite)null : sprite,
+                    texture = useTexturedQuad ? sprite.texture : null,
+                    sprite = useTexturedQuad ? null : sprite,
                     contentSize = sprite.rect.size,
                     textureSize = new Vector2(sprite.texture.width, sprite.texture.height),
-                    spriteGeomRect = geomRect,
+                    spriteGeomRect = spriteGeomRect,
                     scaleMode = scaleMode,
                     playmodeTintColor = playmodeTintColor,
                     meshFlags = sprite.packed ? MeshGenerationContext.MeshFlags.SkipDynamicAtlas : MeshGenerationContext.MeshFlags.None

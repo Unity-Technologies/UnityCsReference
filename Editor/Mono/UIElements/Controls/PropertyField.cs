@@ -19,6 +19,7 @@ namespace UnityEditor.UIElements
         private static readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
         internal static readonly string foldoutTitleBoundLabelProperty = "unity-foldout-bound-title";
         internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
+        static readonly string listViewNamePrefix = "unity-list-";
 
         /// <summary>
         /// Instantiates a <see cref="PropertyField"/> using the data read from a UXML file.
@@ -298,7 +299,7 @@ namespace UnityEditor.UIElements
         {
              var decorators = handler.decoratorDrawers;
 
-             if (decorators == null || decorators.Count == 0)
+             if (decorators == null || decorators.Count == 0 || m_DrawNestingLevel > 0)
              {
                  if (m_DecoratorDrawersContainer != null)
                  {
@@ -359,6 +360,12 @@ namespace UnityEditor.UIElements
                     if (!serializedProperty.isValid)
                         return;
 
+                    if (m_InspectorElement is InspectorElement inspectorElement)
+                    {
+                        //set the current PropertyHandlerCache to the current editor
+                        ScriptAttributeUtility.propertyHandlerCache = inspectorElement.editor.propertyHandlerCache;
+                    }
+
                     EditorGUI.BeginChangeCheck();
                     serializedProperty.serializedObject.Update();
 
@@ -390,6 +397,9 @@ namespace UnityEditor.UIElements
                     var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
                     using (var nestingContext = handler.ApplyNestingContext(m_DrawNestingLevel))
                     {
+                        // Decorator drawers are already handled on the uitk side
+                        handler.skipDecoratorDrawers = true;
+
                         if (label == null)
                         {
                             EditorGUILayout.PropertyField(serializedProperty, true);
@@ -573,10 +583,13 @@ namespace UnityEditor.UIElements
         private VisualElement CreateFoldout(SerializedProperty property, object originalField = null)
         {
             property = property.Copy();
-            var foldout = originalField != null && originalField is Foldout ? originalField as Foldout : new Foldout();
-            bool hasCustomLabel = !string.IsNullOrEmpty(label);
+            if (originalField is not Foldout foldout)
+            {
+                foldout = new Foldout();
+            }
+
+            var hasCustomLabel = !string.IsNullOrEmpty(label);
             foldout.text = hasCustomLabel ? label : property.localizedDisplayName;
-            foldout.value = property.isExpanded;
             foldout.bindingPath = property.propertyPath;
             foldout.name = "unity-foldout-" + property.propertyPath;
 
@@ -647,23 +660,27 @@ namespace UnityEditor.UIElements
 
         VisualElement ConfigureListView(ListView listView, SerializedProperty property, Func<ListView> factory)
         {
-            listView ??= factory();
+            if (listView == null)
+            {
+                listView = factory();
+                listView.showBorder = true;
+                listView.showAddRemoveFooter = true;
+                listView.showBoundCollectionSize = true;
+                listView.showFoldoutHeader = true;
+                listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+                listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
+            }
+
             var propertyCopy = property.Copy();
-            listView.reorderMode = ListViewReorderMode.Animated;
-            listView.reorderable = PropertyHandler.IsArrayReorderable(property);
-            listView.showBorder = true;
-            listView.showAddRemoveFooter = true;
-            listView.showBoundCollectionSize = true;
-            listView.showFoldoutHeader = true;
+            var isReorderable = PropertyHandler.IsArrayReorderable(property);
+            var listViewName = $"{listViewNamePrefix}{property.propertyPath}";
+            listView.reorderable = isReorderable;
+            listView.reorderMode = isReorderable ? ListViewReorderMode.Animated : ListViewReorderMode.Simple;
             listView.headerTitle = string.IsNullOrEmpty(label) ? propertyCopy.localizedDisplayName : label;
-            listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
             listView.userData = propertyCopy;
-            listView.showAlternatingRowBackgrounds = AlternatingRowBackground.None;
             listView.bindingPath = property.propertyPath;
-            listView.viewDataKey = property.propertyPath;
-            listView.name = "unity-list-" + property.propertyPath;
-            listView.headerFoldout.viewDataKey = property.propertyPath;
-            listView.Bind(property.serializedObject);
+            listView.viewDataKey = listViewName;
+            listView.name = listViewName;
             return listView;
         }
 

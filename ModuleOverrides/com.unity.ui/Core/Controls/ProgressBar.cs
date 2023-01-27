@@ -44,7 +44,7 @@ namespace UnityEngine.UIElements
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value", defaultValue = 0 };
             UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "high-value", defaultValue = 100 };
             UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value", defaultValue = 0 };
-            UxmlStringAttributeDescription m_Title = new UxmlStringAttributeDescription() { name = "title" };
+            UxmlStringAttributeDescription m_Title = new UxmlStringAttributeDescription() { name = "title", defaultValue = string.Empty };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -53,11 +53,7 @@ namespace UnityEngine.UIElements
                 bar.lowValue = m_LowValue.GetValueFromBag(bag, cc);
                 bar.highValue = m_HighValue.GetValueFromBag(bag, cc);
                 bar.value = m_Value.GetValueFromBag(bag, cc);
-                var title = m_Title.GetValueFromBag(bag, cc);
-                if (!string.IsNullOrEmpty(title))
-                {
-                    bar.title = title;
-                }
+                bar.title = m_Title.GetValueFromBag(bag, cc);
             }
         }
 
