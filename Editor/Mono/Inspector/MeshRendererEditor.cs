@@ -61,7 +61,11 @@ namespace UnityEditor
                 displayMaterialWarning = mf != null && mf.sharedMesh != null && m_Materials.arraySize > mf.sharedMesh.subMeshCount;
             }
 
-            using (new EditorGUI.DisabledScope(((MeshRenderer)serializedObject.targetObject).GetComponent<Tree>() != null))
+            // Disable Materials menu for the legacy Tree objects, see Fogbugz case: 1283092
+            Tree treeComponent = ((MeshRenderer)serializedObject.targetObject).GetComponent<Tree>();
+            bool hasTreeComponent = treeComponent != null;
+            bool isSpeedTree = hasTreeComponent && treeComponent.data == null; // SpeedTrees always have the Tree component, but have null 'data' property
+            using (new EditorGUI.DisabledScope(hasTreeComponent && !isSpeedTree))
             {
                 DrawMaterials();
             }

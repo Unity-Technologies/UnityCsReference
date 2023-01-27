@@ -9,6 +9,7 @@ using System.Text;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.Profiling;
+using UnityEngine.Profiling;
 using UnityEngine;
 
 namespace UnityEditorInternal.Profiling
@@ -54,7 +55,7 @@ namespace UnityEditorInternal.Profiling
         {
             public int id; // FrameDataView item id
             public int sampleIndex; // Merged sample index
-            public int instanceId;
+            public int instanceId; // 0 if from a different Editor/Player session than the current one
             public float[] columnValues;
             public string[] columnStrings;
         }
@@ -198,6 +199,9 @@ namespace UnityEditorInternal.Profiling
                     return;
 
                 var selectedInstanceId = m_ObjectsData[id].instanceId;
+                // 0 is an invalid instance ID
+                if (selectedInstanceId == 0)
+                    return;
                 var obj = EditorUtility.InstanceIDToObject(selectedInstanceId);
                 if (obj is Component)
                     obj = ((Component)obj).gameObject;
@@ -424,6 +428,8 @@ namespace UnityEditorInternal.Profiling
                 m_FrameDataView.GetItemMergedSamplesColumnDataAsFloats(selectedId, columns[i].profilerColumn, objectsValueDatas[i]);
             }
 
+            bool dataIsFromCurrentEditorSession = ProfilerDriver.FrameDataBelongsToCurrentEditorSession(m_FrameDataView);
+
             // Store it per sample
             var objectsData = new List<ObjectInformation>();
             for (var i = 0; i < samplesCount; i++)
@@ -432,7 +438,9 @@ namespace UnityEditorInternal.Profiling
                 objData.id = selectedId;
                 objData.sampleIndex = i;
 
-                objData.instanceId = (i < instanceIDs.Count) ? instanceIDs[i] : 0;
+                // Do not set the instance ID if this data is not coming from this session.
+                // This field is only used for pinging the related object and instanceId does not carry over between editor sessions.
+                objData.instanceId = (dataIsFromCurrentEditorSession && i < instanceIDs.Count) ? instanceIDs[i] : 0;
                 for (var j = 0; j < columnsCount; j++)
                 {
                     objData.columnStrings[j] = (i < objectsDatas[j].Count) ? objectsDatas[j][i] : string.Empty;

@@ -3403,7 +3403,7 @@ namespace UnityEditor
             {
                 title = titleRemoveUnusedOverrides;
                 message += "\n\n" + msgDetailsWrittenToTheLog;
-                if (EditorUtility.DisplayDialog(title, message, L10n.Tr("Yes"), L10n.Tr("No")))
+                if (EditorUtility.DisplayDialog(title, message, L10n.Tr("Remove"), L10n.Tr("Cancel")))
                     return true;
             }
             else

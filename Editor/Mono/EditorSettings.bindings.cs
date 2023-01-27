@@ -69,6 +69,7 @@ namespace UnityEditor
         None = 0,
         DisableDomainReload = 1 << 0,
         DisableSceneReload = 1 << 1,
+        [Obsolete("Option has no effect and is deprecated.")]
         DisableSceneBackupUnlessDirty = 1 << 2
     }
 

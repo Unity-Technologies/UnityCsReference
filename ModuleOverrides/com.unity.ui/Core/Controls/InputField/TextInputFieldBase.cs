@@ -802,7 +802,9 @@ namespace UnityEngine.UIElements
                 if (e.oldRect.size == e.newRect.size)
                     return;
 
-                UpdateScrollOffset();
+                var widthChanged = Math.Abs(e.oldRect.size.x - e.newRect.size.x) > float.Epsilon;
+
+                UpdateScrollOffset(isBackspace: false, widthChanged);
             }
 
             internal void OnInputCustomStyleResolved(CustomStyleResolvedEvent e)
@@ -829,10 +831,15 @@ namespace UnityEngine.UIElements
                 return !isReadOnly && enabledInHierarchy;
             }
 
+            internal void UpdateScrollOffset(bool isBackspace = false)
+            {
+                UpdateScrollOffset(isBackspace, widthChanged: false);
+            }
+
             // scrollOffset is used in automated tests
             internal Vector2 scrollOffset = Vector2.zero;
             bool m_ScrollViewWasClamped;
-            internal void UpdateScrollOffset(bool isBackspace = false)
+            internal void UpdateScrollOffset(bool isBackspace, bool widthChanged)
             {
                 var selection = textSelection;
                 if (selection.cursorIndex < 0)
@@ -840,7 +847,7 @@ namespace UnityEngine.UIElements
 
                 if (scrollView != null)
                 {
-                    scrollOffset = GetScrollOffset(scrollView.scrollOffset.x, scrollView.scrollOffset.y, scrollView.contentViewport.layout.width, isBackspace);
+                    scrollOffset = GetScrollOffset(scrollView.scrollOffset.x, scrollView.scrollOffset.y, scrollView.contentViewport.layout.width, isBackspace, widthChanged);
                     scrollView.scrollOffset = scrollOffset;
 
                     m_ScrollViewWasClamped = scrollOffset.x > scrollView.scrollOffset.x || scrollOffset.y > scrollView.scrollOffset.y;
@@ -849,7 +856,7 @@ namespace UnityEngine.UIElements
                 {
                     var t = textElement.transform.position;
 
-                    scrollOffset = GetScrollOffset(scrollOffset.x, scrollOffset.y, contentRect.width, isBackspace);
+                    scrollOffset = GetScrollOffset(scrollOffset.x, scrollOffset.y, contentRect.width, isBackspace, widthChanged);
 
                     t.y = -Mathf.Min(scrollOffset.y, Math.Abs(textElement.contentRect.height - contentRect.height));
                     t.x = -scrollOffset.x;
@@ -860,7 +867,7 @@ namespace UnityEngine.UIElements
             }
 
             Vector2 lastCursorPos = Vector2.zero;
-            Vector2 GetScrollOffset(float xOffset, float yOffset, float contentViewportWidth, bool isBackspace = false)
+            Vector2 GetScrollOffset(float xOffset, float yOffset, float contentViewportWidth, bool isBackspace, bool widthChanged)
             {
                 var cursorPos = textSelection.cursorPosition;
                 var cursorWidth = textSelection.cursorWidth;
@@ -877,14 +884,21 @@ namespace UnityEngine.UIElements
                 // {
                 //     newXOffset = xOffset + cursorPos.x - lastCursorPos.x;
                 // }
-                if (Math.Abs(lastCursorPos.x - cursorPos.x) > epsilon || m_ScrollViewWasClamped)
+
+                if (Math.Abs(lastCursorPos.x - cursorPos.x) > epsilon || m_ScrollViewWasClamped || widthChanged)
                 {
-                    // Update scrollOffset when cursor moves right.
-                    if (cursorPos.x > xOffset + contentViewportWidth - cursorWidth)
-                        newXOffset = cursorPos.x + cursorWidth - contentViewportWidth;
+                    // Update scrollOffset when cursor moves right or when the offset is not needed anymore.
+                    if (cursorPos.x > xOffset + contentViewportWidth - cursorWidth
+                        || xOffset > 0 && widthChanged)
+                    {
+                        var roundedValue = Mathf.Ceil(cursorPos.x + cursorWidth - contentViewportWidth);
+                        newXOffset = Mathf.Max(roundedValue, 0);
+                    }
                     // Update scrollOffset when cursor moves left.
                     else if (cursorPos.x < xOffset + leftScrollOffsetPadding)
+                    {
                         newXOffset = Mathf.Max(cursorPos.x - leftScrollOffsetPadding, 0);
+                    }
                 }
 
                 if (textEdition.multiline && (Math.Abs(lastCursorPos.y - cursorPos.y) > epsilon || m_ScrollViewWasClamped))
@@ -899,8 +913,10 @@ namespace UnityEngine.UIElements
 
                 lastCursorPos = cursorPos;
 
-                if (xOffset != newXOffset || yOffset != newYOffset)
+                if (Math.Abs(xOffset - newXOffset) > epsilon || Math.Abs(yOffset - newYOffset) > epsilon)
+                {
                     return new Vector2(newXOffset, newYOffset);
+                }
 
                 return scrollView != null ? scrollView.scrollOffset : scrollOffset;
             }
