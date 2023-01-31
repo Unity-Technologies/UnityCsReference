@@ -396,6 +396,9 @@ namespace UnityEditor.Search.Providers
 
         private IEnumerable<SearchProposition> FetchQueryBuilderPropositions(SearchContext context)
         {
+            foreach (var p in QueryAndOrBlock.BuiltInQueryBuilderPropositions())
+                yield return p;
+
             foreach (var t in QueryListBlockAttribute.GetPropositions(typeof(QueryComponentBlock)))
                 yield return t;
 

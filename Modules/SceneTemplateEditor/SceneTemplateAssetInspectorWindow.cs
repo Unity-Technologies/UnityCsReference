@@ -36,7 +36,6 @@ namespace UnityEditor.SceneTemplate
         private static readonly string k_SnapshotTargetPopupName = "snapshot";
         private static readonly string k_CreatePipelineTooltip = L10n.Tr("Create a new Scene Template Pipeline.");
         private static readonly string k_CreatePipelineButtonLabel = L10n.Tr("Create New Scene Template Pipeline");
-        private static readonly string k_PipelineHelpUrl = "https://docs.unity3d.com/2020.2/Documentation/Manual/scene-templates.html";
         private List<SerializedProperty> m_DependenciesProperty = new List<SerializedProperty>();
 
         private Texture2D m_HelpIcon;
@@ -91,6 +90,7 @@ namespace UnityEditor.SceneTemplate
             root.style.flexDirection = FlexDirection.Column;
 
             var detailElement = new VisualElement();
+            detailElement.style.marginRight = 6f;
 
             // Template scene
             var templateSceneProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateScenePropertyName);
@@ -146,31 +146,24 @@ namespace UnityEditor.SceneTemplate
             });
             detailElement.Add(description);
 
+            // Pin in new scene dialog
             var templateAddToDefaultsProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateAddToDefaultsPropertyName);
-            var defaultTemplateField = new VisualElement();
-            defaultTemplateField.style.flexDirection = FlexDirection.Row;
-            var addToDefaultsPropertyField = new PropertyField(templateAddToDefaultsProperty, " ");
+            var addToDefaultsPropertyField = new PropertyField(templateAddToDefaultsProperty, L10n.Tr("Pin in New Scene Dialog"));
+            addToDefaultsPropertyField.tooltip = L10n.Tr("Pin in New Scene Dialog. Ensuring this template is shown before unpinned template in the list.");
             addToDefaultsPropertyField.RegisterCallback<ChangeEvent<bool>>(e => TriggerSceneTemplateModified());
-            addToDefaultsPropertyField.style.flexShrink = 0;
-            defaultTemplateField.Add(addToDefaultsPropertyField);
-            var label = new Label(L10n.Tr("Pin in New Scene Dialog"));
-            label.tooltip = L10n.Tr("Pin in New Scene Dialog. Ensuring this template is shown before unpinned template in the list.");
-            label.style.unityTextAlign = TextAnchor.MiddleLeft;
-            label.style.overflow = Overflow.Hidden;
-            label.style.textOverflow = TextOverflow.Ellipsis;
-            label.style.flexShrink = 1;
-            defaultTemplateField.Add(label);
-            detailElement.Add(defaultTemplateField);
+            detailElement.Add(addToDefaultsPropertyField);
             root.Add(CreateFoldoutInspector(detailElement, L10n.Tr("Details"), "SceneTemplateInspectorDetailsFoldout"));
 
             // Template thumbnail
             var templateThumbnailProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateThumbnailPropertyName);
             var templateThumbnailBadgeProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateThumbnailBadgePropertyName);
             var thumbnailField = MakeThumbnailField(templateThumbnailProperty, templateThumbnailBadgeProperty);
+            thumbnailField.style.marginRight = 6f;
             root.Add(CreateFoldoutInspector(thumbnailField, L10n.Tr("Thumbnail"), "SceneTemplateInspectorThumbnailFoldout"));
 
             // SceneTemplatePipeline
             var sceneTemplatePipeline = new VisualElement();
+            sceneTemplatePipeline.style.marginRight = 6f;
             var pipelineProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplatePipelineName);
             var pipelineField = new PropertyField(pipelineProperty, L10n.Tr("Scene Template Pipeline"));
             pipelineField.tooltip = k_SceneTemplateInfo;
@@ -189,7 +182,9 @@ namespace UnityEditor.SceneTemplate
             createPipelineButton.AddToClassList(Styles.classUnityBaseFieldInput);
             buttonRow.Add(createPipelineButton);
             sceneTemplatePipeline.Add(buttonRow);
-            root.Add(CreateFoldoutInspectorWithHelp(sceneTemplatePipeline, L10n.Tr("Scene Template Pipeline"), "SceneTemplatePipelineFoldout", k_PipelineHelpUrl));
+            var version = UnityEditorInternal.InternalEditorUtility.GetUnityVersion();
+            var url = $"https://docs.unity3d.com/{version.Major}.{version.Minor}/Documentation/Manual/scene-templates-customizing-scene-instantiation.html";
+            root.Add(CreateFoldoutInspectorWithHelp(sceneTemplatePipeline, L10n.Tr("Scene Template Pipeline"), "SceneTemplatePipelineFoldout", url));
 
             // Dependencies
             root.Add(CreateFoldoutInspector(BuildDependencyRows(), L10n.Tr("Dependencies"), "SceneTemplateDependenciesFoldout"));
