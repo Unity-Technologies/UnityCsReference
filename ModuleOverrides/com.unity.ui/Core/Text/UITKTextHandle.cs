@@ -311,12 +311,9 @@ namespace UnityEngine.UIElements
         {
             var style = m_TextElement.computedStyle;
 
+            tgs.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
             if (tgs.textSettings == null)
-            {
-                tgs.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
-                if (tgs.textSettings == null)
-                    return;
-            }
+                return;
 
             tgs.fontAsset = TextUtilities.GetFontAsset(m_TextElement);
             if (tgs.fontAsset == null)

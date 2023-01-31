@@ -180,6 +180,11 @@ namespace UnityEditor.Search
             RefreshSearch();
             if (moveCursor != TextCursorPlacement.None)
                 SetTextEditorState(searchText, te => m_SearchField.MoveCursor(moveCursor, cursorInsertPosition));
+
+            if (viewState.queryBuilderEnabled && queryBuilder != null && queryBuilder.BuildQuery() != searchText)
+            {
+                RefreshBuilder();
+            }
         }
 
         private void SetTextEditorState(string searchText, Action<TextEditor> handler, bool selectAll = false)
@@ -1043,6 +1048,7 @@ namespace UnityEditor.Search
         private void ToggleShowTabs()
         {
             viewState.hideTabs = !viewState.hideTabs;
+            SearchSettings.hideTabs = viewState.hideTabs;
             SelectGroup(null);
             Refresh();
         }
@@ -2217,8 +2223,8 @@ namespace UnityEditor.Search
 
         protected virtual void AddSaveQueryMenuItems(GenericMenu saveQueryMenu)
         {
-            saveQueryMenu.AddItem(new GUIContent("Save User"), false, SaveUserSearchQuery);
-            saveQueryMenu.AddItem(new GUIContent("Save Project..."), false, SaveProjectSearchQuery);
+            saveQueryMenu.AddItem(new GUIContent("Save User"), false, () => SaveUserSearchQuery());
+            saveQueryMenu.AddItem(new GUIContent("Save Project..."), false, () => SaveProjectSearchQuery());
             if (!string.IsNullOrEmpty(context.searchText))
             {
                 saveQueryMenu.AddSeparator("");
@@ -2238,7 +2244,11 @@ namespace UnityEditor.Search
         internal SearchViewState SaveViewState(string name)
         {
             var viewState = m_ResultView.SaveViewState(name);
+            var tableConfig = viewState.tableConfig;
             viewState.Assign(m_ViewState);
+            // Note: in 2022 viewState.tableConfig might be null while the table view holds a newly created version (this is fixed in 2023)
+            // Reassign the tableConfig from result view:
+            viewState.tableConfig = tableConfig;
             m_ViewState.group = m_FilteredItems.currentGroup;
             return viewState;
         }
@@ -2261,31 +2271,35 @@ namespace UnityEditor.Search
             }
         }
 
-        internal void SaveUserSearchQuery()
+        internal SearchQuery SaveUserSearchQuery()
         {
-            var query = SearchQuery.AddUserQuery(viewState);
+            // Note: Use SaveViewState to provide a new query with proper tableConfig
+            var consolidatedQuery = SaveViewState("UserQuery");
+            var query = SearchQuery.AddUserQuery(consolidatedQuery);
             AddNewQuery(query);
+            return query;
         }
 
-        internal void SaveProjectSearchQuery()
+        internal SearchQueryAsset SaveProjectSearchQuery(string searchQueryPath = null)
         {
             var initialFolder = SearchSettings.GetFullQueryFolderPath();
             var searchQueryFileName = SearchQueryAsset.GetQueryName(context.searchQuery);
-            var searchQueryPath = EditorUtility.SaveFilePanel("Save search query...", initialFolder, searchQueryFileName, "asset");
+            if (searchQueryPath == null)
+                searchQueryPath = EditorUtility.SaveFilePanel("Save search query...", initialFolder, searchQueryFileName, "asset");
             if (string.IsNullOrEmpty(searchQueryPath))
-                return;
+                return null;
 
             searchQueryPath = Utils.CleanPath(searchQueryPath);
             if (!System.IO.Directory.Exists(Path.GetDirectoryName(searchQueryPath)) || !Utils.IsPathUnderProject(searchQueryPath))
-                return;
+                return null;
 
             searchQueryPath = Utils.GetPathUnderProject(searchQueryPath);
             SearchSettings.queryFolder = Utils.CleanPath(Path.GetDirectoryName(searchQueryPath));
 
-            SaveSearchQueryFromContext(searchQueryPath, true);
+            return SaveSearchQueryFromContext(searchQueryPath, true);
         }
 
-        private void SaveSearchQueryFromContext(string searchQueryPath, bool newQuery)
+        private SearchQueryAsset SaveSearchQueryFromContext(string searchQueryPath, bool newQuery)
         {
             try
             {
@@ -2293,7 +2307,7 @@ namespace UnityEditor.Search
                 if (!searchQuery)
                 {
                     Debug.LogError($"Failed to save search query at {searchQueryPath}");
-                    return;
+                    return null;
                 }
 
                 var folder = Utils.CleanPath(Path.GetDirectoryName(searchQueryPath));
@@ -2307,11 +2321,14 @@ namespace UnityEditor.Search
                 }
                 else
                     SaveItemCountToPropertyDatabase(true);
+
+                return searchQuery;
             }
             catch
             {
                 Debug.LogError($"Failed to save search query at {searchQueryPath}");
             }
+            return null;
         }
 
         private void AddNewQuery(ISearchQuery newQuery)

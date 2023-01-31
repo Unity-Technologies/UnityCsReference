@@ -149,11 +149,15 @@ namespace UnityEditor.SceneTemplate
 
             newSceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(newSceneOutputPath);
 
-            var refPathMap = new Dictionary<string, string>();
+            Dictionary<string, string> refPathMap = null;
             var idMap = new Dictionary<int, int>();
             if (hasAnyCloneableDependencies)
             {
-                var clonedAssets = CopyCloneableDependencies(sceneTemplate, newSceneOutputPath, ref refPathMap);
+                if (!CopyCloneableDependencies(sceneTemplate, newSceneOutputPath, out refPathMap, out var clonedAssets))
+                {
+                    AssetDatabase.DeleteAsset(newSceneOutputPath);
+                    return null;
+                }
                 idMap.Add(sceneTemplate.templateScene.GetInstanceID(), newSceneAsset.GetInstanceID());
                 ReferenceUtils.RemapAssetReferences(refPathMap, idMap);
 
@@ -413,43 +417,70 @@ namespace UnityEditor.SceneTemplate
             }
         }
 
-        private static List<Object> CopyCloneableDependencies(SceneTemplateAsset sceneTemplate, string newSceneOutputPath, ref Dictionary<string, string> refPathMap)
+        private static bool CopyCloneableDependencies(SceneTemplateAsset sceneTemplate, string newSceneOutputPath, out Dictionary<string, string> refPathMap, out List<Object> clonedAssets)
         {
-            var clonedAssets = new List<Object>();
+            clonedAssets = new List<Object>();
+            refPathMap = new Dictionary<string, string>();
             var outputSceneFileName = Path.GetFileNameWithoutExtension(newSceneOutputPath);
             var outputSceneDirectory = Path.GetDirectoryName(newSceneOutputPath);
             var dependencyFolder = Path.Combine(outputSceneDirectory, outputSceneFileName);
+            var needsCleanup = false;
+            var createdDirectory = false;
             if (!Directory.Exists(dependencyFolder))
             {
                 Directory.CreateDirectory(dependencyFolder);
+                createdDirectory = true;
             }
 
             try
             {
                 AssetDatabase.StartAssetEditing();
-                foreach (var dependency in sceneTemplate.dependencies)
+
+                var dependencyPaths = sceneTemplate.dependencies
+                    .Where(d => d.instantiationMode == TemplateInstantiationMode.Clone)
+                    .Select(d => (dependency: d, dependencyPath: AssetDatabase.GetAssetPath(d.dependency))).ToArray();
+
+                var nullPath = dependencyPaths.FirstOrDefault(d => string.IsNullOrEmpty(d.dependencyPath));
+                if (nullPath.dependency != null)
                 {
-                    if (dependency.instantiationMode != TemplateInstantiationMode.Clone)
-                        continue;
+                    Debug.LogError("Cannot find dependency path for: " + nullPath.dependency);
+                    if (createdDirectory)
+                        Directory.Delete(dependencyFolder);
+                    return false;
+                }
 
-                    var dependencyPath = AssetDatabase.GetAssetPath(dependency.dependency);
-                    if (String.IsNullOrEmpty(dependencyPath))
-                    {
-                        Debug.LogError("Cannot find dependency path for: " + dependency.dependency, dependency.dependency);
-                        continue;
-                    }
-
-                    var clonedDepName = Path.GetFileName(dependencyPath);
+                var clonedPaths = dependencyPaths.Select(d =>
+                {
+                    var clonedDepName = Path.GetFileName(d.dependencyPath);
                     var clonedDepPath = Path.Combine(dependencyFolder, clonedDepName).Replace("\\", "/");
-                    // FYI: CopyAsset already does Import and Refresh
-                    AssetDatabase.CopyAsset(dependencyPath, clonedDepPath);
-                    refPathMap.Add(dependencyPath, clonedDepPath);
+                    return (d.dependencyPath, clonedDepPath);
+                }).ToArray();
+
+                refPathMap = clonedPaths.ToDictionary(d => d.dependencyPath, d => d.clonedDepPath);
+
+                foreach(var refValue in refPathMap)
+                {
+                    if (!AssetDatabase.CopyAsset(refValue.Key, refValue.Value))
+                    {
+                        Debug.LogError($"Failed to copy dependencies: {refValue.Key} over {refValue.Value}");
+                        needsCleanup = true;
+                    }
                 }
             }
             finally
             {
                 AssetDatabase.StopAssetEditing();
                 AssetDatabase.Refresh();
+            }
+
+            if (needsCleanup)
+            {
+                var failedPaths = new List<string>();
+                if (!AssetDatabase.DeleteAssets(refPathMap.Values.Where(path => File.Exists(path)).ToArray(), failedPaths))
+                    Debug.LogError("Failed to clean copied dependencies: \n" + string.Join('\n', failedPaths));
+                if (createdDirectory)
+                    Directory.Delete(dependencyFolder);
+                return false;
             }
 
             foreach (var clonedDepPath in refPathMap.Values)
@@ -463,7 +494,7 @@ namespace UnityEditor.SceneTemplate
                 clonedAssets.Add(clonedDependency);
             }
 
-            return clonedAssets;
+            return true;
         }
 
         static void RegisterInMemoryTempFolder()

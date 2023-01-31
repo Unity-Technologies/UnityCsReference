@@ -100,6 +100,7 @@ namespace UnityEditor
 
         protected override void OnDisable()
         {
+            m_Root?.RemoveFromHierarchy();
             base.OnDisable();
             EditorApplication.modifierKeysChanged -= Repaint;
         }
