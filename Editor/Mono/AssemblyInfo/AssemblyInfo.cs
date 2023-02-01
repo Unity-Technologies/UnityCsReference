@@ -50,7 +50,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.WindowsStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.OSXStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Lumin.Extensions")]
-[assembly: InternalsVisibleTo("UnityEditor.Stadia.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.GameCoreScarlett.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.GameCoreXboxOne.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.GameCoreCommon.Extensions")]

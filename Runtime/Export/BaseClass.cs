@@ -123,6 +123,7 @@ namespace UnityEngine
         [System.Obsolete("Lumin is no longer supported in Unity 2022.2")]
         Lumin = 33,
         // BJM
+        [System.Obsolete("Stadia is no longer supported in Unity 2023.1")]
         Stadia = 34,
         // Cloud Rendering
         [System.Obsolete("CloudRendering is deprecated, please use LinuxHeadlessSimulation (UnityUpgradable) -> LinuxHeadlessSimulation", false)]

@@ -358,6 +358,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("LinuxStandalone32", BuildTarget.StandaloneLinux),
                 new CustomScriptAssemblyPlatform("LinuxStandaloneUniversal", BuildTarget.StandaloneLinuxUniversal),
                 new CustomScriptAssemblyPlatform("Lumin", BuildTarget.Lumin),
+                new CustomScriptAssemblyPlatform("Stadia", BuildTarget.Stadia),
             };
 #pragma warning restore 0618
         }

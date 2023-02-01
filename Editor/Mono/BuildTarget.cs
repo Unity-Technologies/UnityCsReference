@@ -121,6 +121,7 @@ namespace UnityEditor
         [System.Obsolete("Lumin has been removed in 2022.2")]
         Lumin = 39,
 
+        [System.Obsolete("Stadia has been removed in 2023.1")]
         Stadia = 40,
 
         [System.Obsolete("CloudRendering is deprecated, please use LinuxHeadlessSimulation (UnityUpgradable) -> LinuxHeadlessSimulation", false)]
