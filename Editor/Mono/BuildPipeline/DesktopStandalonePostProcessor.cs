@@ -69,16 +69,26 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
         var namedBuildTarget = NamedBuildTarget.FromActiveSettings(target);
         var isServer = namedBuildTarget == NamedBuildTarget.Server;
 
-        if ((!isServer && !m_HasMonoPlayers) || (isServer && !m_HasServerMonoPlayers))
+        if (!isServer && !m_HasMonoPlayers)
         {
             if (PlayerSettings.GetScriptingBackend(namedBuildTarget) != ScriptingImplementation.IL2CPP)
                 return "Currently selected scripting backend (Mono) is not installed.";
         }
+        if (isServer && !m_HasServerMonoPlayers)
+        {
+            if (PlayerSettings.GetScriptingBackend(namedBuildTarget) != ScriptingImplementation.IL2CPP)
+                return $"Dedicated Server support for {GetPlatformNameForBuildProgram(default)} is not installed.";
+        }
 
-        if ((!isServer && !m_HasIl2CppPlayers) || (isServer && !m_HasServerIl2CppPlayers))
+        if (!isServer && !m_HasIl2CppPlayers)
         {
             if (PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP)
                 return "Currently selected scripting backend (IL2CPP) is not installed.";
+        }
+        if (isServer && !m_HasServerIl2CppPlayers)
+        {
+            if (PlayerSettings.GetScriptingBackend(namedBuildTarget) == ScriptingImplementation.IL2CPP)
+                return $"Dedicated Server support for {GetPlatformNameForBuildProgram(default)} is not installed.";
         }
 
         return base.PrepareForBuild(options, target);

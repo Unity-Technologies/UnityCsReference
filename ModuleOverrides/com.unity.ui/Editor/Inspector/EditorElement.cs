@@ -345,11 +345,16 @@ namespace UnityEditor.UIElements
                 editor.isInspectorDirty = false;
             }
 
-            bool excludedClass = InspectorWindowUtils.IsExcludedClass(target);
-            if (excludedClass)
-                EditorGUILayout.HelpBox(
-                    "The module which implements this component type has been force excluded in player settings. This object will be removed in play mode and from any builds you make.",
-                    MessageType.Warning);
+            // Case 1359247:
+            // Object might have been unloaded. Calling into native code down here will crash the editor.
+            if (editor.target != null)
+            {
+                bool excludedClass = InspectorWindowUtils.IsExcludedClass(target);
+                if (excludedClass)
+                    EditorGUILayout.HelpBox(
+                        "The module which implements this component type has been force excluded in player settings. This object will be removed in play mode and from any builds you make.",
+                        MessageType.Warning);
+            }
 
             if (IsElementVisible(m_InspectorElement))
             {

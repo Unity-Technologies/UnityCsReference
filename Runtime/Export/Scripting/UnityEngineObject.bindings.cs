@@ -42,6 +42,20 @@ namespace UnityEngine
         HideAndDontSave = 1 + 4 + 8 + 16 + 32
     }
 
+    // Must match Scripting::FindObjectsSortMode
+    public enum FindObjectsSortMode
+    {
+        None = 0,
+        InstanceID = 1
+    }
+
+    // Must match Scripting::FindObjectsInactive
+    public enum FindObjectsInactive
+    {
+        Exclude = 0,
+        Include = 1
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode(GenerateProxy = true)]
     [NativeHeader("Runtime/Export/Scripting/UnityEngineObject.bindings.h")]
@@ -286,10 +300,21 @@ namespace UnityEngine
             return FindObjectsOfType(type, false);
         }
 
-        // Returns a list of all loaded objects of Type /type/.
+        // Returns a list of all loaded objects of Type /type/. Results are sorted by InstanceID
         [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
         [FreeFunction("UnityEngineObjectBindings::FindObjectsOfType")]
         public extern static Object[] FindObjectsOfType(Type type, bool includeInactive);
+
+        // Returns a list of all active loaded objects of Type /type/.
+        public static Object[] FindObjectsByType(Type type, FindObjectsSortMode sortMode)
+        {
+            return FindObjectsByType(type, FindObjectsInactive.Exclude, sortMode);
+        }
+
+        // Returns a list of all loaded objects of Type /type/.
+        [TypeInferenceRule(TypeInferenceRules.ArrayOfTypeReferencedByFirstArgument)]
+        [FreeFunction("UnityEngineObjectBindings::FindObjectsByType")]
+        public extern static Object[] FindObjectsByType(Type type, FindObjectsInactive findObjectsInactive, FindObjectsSortMode sortMode);
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
         [FreeFunction("GetSceneManager().DontDestroyOnLoad", ThrowsException = true)]
@@ -316,7 +341,7 @@ namespace UnityEngine
         }
 
         //*undocumented* DEPRECATED
-        [Obsolete("warning use Object.FindObjectsOfType instead.")]
+        [Obsolete("warning use Object.FindObjectsByType instead.")]
         public static Object[] FindSceneObjectsOfType(Type type)
         {
             return FindObjectsOfType(type);
@@ -332,10 +357,24 @@ namespace UnityEngine
             return Resources.ConvertObjects<T>(FindObjectsOfType(typeof(T), false));
         }
 
+        // Returns a list of all loaded objects of Type /type/
+        public static T[] FindObjectsByType<T>(FindObjectsSortMode sortMode) where T : Object
+        {
+            return Resources.ConvertObjects<T>(FindObjectsByType(typeof(T), FindObjectsInactive.Exclude, sortMode));
+        }
+
+        // Returns a list of all loaded objects of Type /type/. Results are sorted by InstanceID
         public static T[] FindObjectsOfType<T>(bool includeInactive) where T : Object
         {
             return Resources.ConvertObjects<T>(FindObjectsOfType(typeof(T), includeInactive));
         }
+
+        // Returns a list of all loaded objects of Type /type/
+        public static T[] FindObjectsByType<T>(FindObjectsInactive findObjectsInactive, FindObjectsSortMode sortMode) where T : Object
+        {
+            return Resources.ConvertObjects<T>(FindObjectsByType(typeof(T), findObjectsInactive, sortMode));
+        }
+
 
         public static T FindObjectOfType<T>() where T : Object
         {
@@ -345,6 +384,26 @@ namespace UnityEngine
         public static T FindObjectOfType<T>(bool includeInactive) where T : Object
         {
             return (T)FindObjectOfType(typeof(T), includeInactive);
+        }
+
+        public static T FindFirstObjectByType<T>() where T : Object
+        {
+            return (T)FindFirstObjectByType(typeof(T), FindObjectsInactive.Exclude);
+        }
+
+        public static T FindAnyObjectByType<T>() where T : Object
+        {
+            return (T)FindAnyObjectByType(typeof(T), FindObjectsInactive.Exclude);
+        }
+
+        public static T FindFirstObjectByType<T>(FindObjectsInactive findObjectsInactive) where T : Object
+        {
+            return (T)FindFirstObjectByType(typeof(T), findObjectsInactive);
+        }
+
+        public static T FindAnyObjectByType<T>(FindObjectsInactive findObjectsInactive) where T : Object
+        {
+            return (T)FindAnyObjectByType(typeof(T), findObjectsInactive);
         }
 
         [System.Obsolete("Please use Resources.FindObjectsOfTypeAll instead")]
@@ -370,6 +429,18 @@ namespace UnityEngine
                 return null;
         }
 
+        public static Object FindFirstObjectByType(System.Type type)
+        {
+            Object[] objects = FindObjectsByType(type, FindObjectsInactive.Exclude, FindObjectsSortMode.InstanceID);
+            return (objects.Length > 0) ? objects[0] : null;
+        }
+
+        public static Object FindAnyObjectByType(System.Type type)
+        {
+            Object[] objects = FindObjectsByType(type, FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            return (objects.Length > 0) ? objects[0] : null;
+        }
+
         // Returns the first active loaded object of Type /type/.
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedByFirstArgument)]
         public static Object FindObjectOfType(System.Type type, bool includeInactive)
@@ -379,6 +450,18 @@ namespace UnityEngine
                 return objects[0];
             else
                 return null;
+        }
+
+        public static Object FindFirstObjectByType(System.Type type, FindObjectsInactive findObjectsInactive)
+        {
+            Object[] objects = FindObjectsByType(type, findObjectsInactive, FindObjectsSortMode.InstanceID);
+            return (objects.Length > 0) ? objects[0] : null;
+        }
+
+        public static Object FindAnyObjectByType(System.Type type, FindObjectsInactive findObjectsInactive)
+        {
+            Object[] objects = FindObjectsByType(type, findObjectsInactive, FindObjectsSortMode.None);
+            return (objects.Length > 0) ? objects[0] : null;
         }
 
         // Returns the name of the game object.
