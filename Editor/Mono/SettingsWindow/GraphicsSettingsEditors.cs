@@ -296,6 +296,8 @@ namespace UnityEditor
 
                 public static readonly GUIContent shaderPreloadSave = EditorGUIUtility.TrTextContent("Save to asset...", "Save currently tracked shaders into a Shader Variant Manifest asset.");
                 public static readonly GUIContent shaderPreloadClear = EditorGUIUtility.TrTextContent("Clear", "Clear currently tracked shader variant information.");
+
+                public static readonly GUIContent cullingSettings = EditorGUIUtility.TrTextContent("Culling Settings");
             }
         }
     }

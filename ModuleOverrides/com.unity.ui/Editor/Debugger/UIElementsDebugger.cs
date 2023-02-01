@@ -166,6 +166,9 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         private DebuggerContext m_DebuggerContext;
 
+        // Used in tests.
+        internal DebuggerContext debuggerContext => m_DebuggerContext;
+
         [MenuItem(k_WindowPath, false, 3010, false)]
         private static void OpenUIElementsDebugger()
         {

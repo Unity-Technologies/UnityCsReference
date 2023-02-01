@@ -137,8 +137,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] Unable to find valid {0} for this {1}."), docType, m_Package.GetDescriptor()));
         }
 
-        private void OpenWebUrl(string onlineUrl, string analyticsEvent, Action errorCallback)
+        private void OpenWebUrl(string onlineUrl, string analyticsEvent, Action errorCallback, bool isUnityPackage)
         {
+            if (!isUnityPackage)
+            {
+                m_Application.OpenURL(onlineUrl);
+                return;
+            }
+
             var request = UnityWebRequest.Head(onlineUrl);
             try
             {
@@ -161,7 +167,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void ViewUrl(string[] onlineUrls, string offlineDocPath, string docType, string analyticsEvent)
+        private void ViewUrl(string[] onlineUrls, string offlineDocPath, string docType, string analyticsEvent, bool isUnityPackage)
         {
             if (m_Application.isInternetReachable)
             {
@@ -174,8 +180,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 OpenWebUrl(onlineUrls[0], analyticsEvent, () =>
                 {
                     var urls = new List<string>(onlineUrls).Skip(1).ToArray();
-                    ViewUrl(urls, offlineDocPath, docType, analyticsEvent);
-                });
+                    ViewUrl(urls, offlineDocPath, docType, analyticsEvent, isUnityPackage);
+                }, isUnityPackage);
             }
             else
             {
@@ -183,14 +189,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void ViewUrl(string onlineUrl, string offlineDocPath, string docType, string analyticsEvent)
+        private void ViewUrl(string onlineUrl, string offlineDocPath, string docType, string analyticsEvent, bool isUnityPackage)
         {
             if (!string.IsNullOrEmpty(onlineUrl) && m_Application.isInternetReachable)
             {
                 OpenWebUrl(onlineUrl, analyticsEvent, () =>
                 {
                     HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent);
-                });
+                }, isUnityPackage);
                 return;
             }
             HandleInvalidOrUnreachableOnlineUrl(onlineUrl, offlineDocPath, docType, analyticsEvent);
@@ -198,25 +204,29 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewDocClick()
         {
+            var isUnityPackage = (m_Version as UpmPackageVersion)?.isUnityPackage ?? true;
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            ViewUrl(UpmPackageDocs.GetDocumentationUrl(packageInfo), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo), L10n.Tr("documentation"), "viewDocs");
+            ViewUrl(UpmPackageDocs.GetDocumentationUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo), L10n.Tr("documentation"), "viewDocs", isUnityPackage);
         }
 
         private void ViewChangelogClick()
         {
+            var isUnityPackage = (m_Version as UpmPackageVersion)?.isUnityPackage ?? true;
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog");
+            ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", isUnityPackage);
         }
 
         private void ViewLicensesClick()
         {
+            var isUnityPackage = (m_Version as UpmPackageVersion)?.isUnityPackage ?? true;
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            ViewUrl(UpmPackageDocs.GetLicensesUrl(packageInfo), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo), L10n.Tr("license documentation"), "viewLicense");
+            ViewUrl(UpmPackageDocs.GetLicensesUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo), L10n.Tr("license documentation"), "viewLicense", isUnityPackage);
         }
 
         private void ViewQuickStartClick()
         {
-            ViewUrl(GetQuickStartUrl(m_Version), string.Empty, L10n.Tr("quick start documentation"), "viewQuickstart");
+            // quickstart is for Feature Sets, so we pass true for isUnityPackage
+            ViewUrl(GetQuickStartUrl(m_Version), string.Empty, L10n.Tr("quick start documentation"), "viewQuickstart", true);
         }
 
         public string GetQuickStartUrl(IPackageVersion version)

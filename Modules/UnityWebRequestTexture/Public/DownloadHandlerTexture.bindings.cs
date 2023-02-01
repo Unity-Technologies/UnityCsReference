@@ -66,8 +66,16 @@ namespace UnityEngine.Networking
             }
             else if (mTexture == null)
             {
-                mTexture = InternalGetTextureNative();
-                mHasTexture = true;
+                try
+                {
+                    mTexture = InternalGetTextureNative();
+                    mHasTexture = true;
+                }
+                finally
+                {
+                    // need to release the texture lock even if for whatever reason scripting object failed to create
+                    ClearNativeTexture();
+                }
             }
 
             return mTexture;
@@ -75,6 +83,8 @@ namespace UnityEngine.Networking
 
         [NativeThrows]
         private extern Texture2D InternalGetTextureNative();
+
+        private extern void ClearNativeTexture();
 
         public static Texture2D GetContent(UnityWebRequest www)
         {

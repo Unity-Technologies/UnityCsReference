@@ -32,6 +32,10 @@ namespace UnityEditor
             public static readonly GUIContent cameraSettings = EditorGUIUtility.TrTextContent("Camera Settings");
             public static readonly GUIContent renderPipeSettings = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline Settings", "This defines the default render pipeline, which Unity uses when there is no override for a given quality level.");
             public static readonly GUIContent renderPipeLabel = EditorGUIUtility.TrTextContent("Scriptable Render Pipeline");
+            public static readonly GUIContent cullingSettings = EditorGUIUtility.TrTextContent("Culling Settings");
+            public static readonly GUIContent cameraRelativeSettings = EditorGUIUtility.TrTextContent("Camera-Relative Culling");
+            public static readonly GUIContent cameraRelativeLightCulling = EditorGUIUtility.TrTextContent("Lights", "When enabled, Unity uses the camera position as the reference point for culling lights instead of the world space origin.");
+            public static readonly GUIContent cameraRelativeShadowCulling = EditorGUIUtility.TrTextContent("Shadows", "When enabled, Unity uses the camera position as the reference point for culling shadows instead of the world space origin.");
         }
 
         Editor m_TierSettingsEditor;
@@ -44,6 +48,8 @@ namespace UnityEditor
         SerializedProperty m_TransparencySortAxis;
         SerializedProperty m_ScriptableRenderLoop;
         SerializedProperty m_LogWhenShaderIsCompiled;
+        SerializedProperty m_CameraRelativeLightCulling;
+        SerializedProperty m_CameraRelativeShadowCulling;
 
         Object graphicsSettings
         {
@@ -87,6 +93,8 @@ namespace UnityEditor
             m_ScriptableRenderLoop = serializedObject.FindProperty("m_CustomRenderPipeline");
             m_LogWhenShaderIsCompiled = serializedObject.FindProperty("m_LogWhenShaderIsCompiled");
             tierSettingsAnimator = new AnimatedValues.AnimBool(showTierSettingsUI, Repaint);
+            m_CameraRelativeLightCulling = serializedObject.FindProperty("m_CameraRelativeLightCulling");
+            m_CameraRelativeShadowCulling = serializedObject.FindProperty("m_CameraRelativeShadowCulling");
         }
 
         private void HandleEditorWindowButton()
@@ -183,6 +191,16 @@ namespace UnityEditor
             GUILayout.Label(Styles.shaderPreloadSettings, EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(m_LogWhenShaderIsCompiled, Styles.logWhenShaderIsCompiled);
             shaderPreloadEditor.OnInspectorGUI();
+
+            EditorGUILayout.Space();
+            GUILayout.Label(Styles.cullingSettings, EditorStyles.boldLabel);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.LabelField(Styles.cameraRelativeSettings, EditorStyles.label);
+            EditorGUI.indentLevel++;
+            EditorGUILayout.PropertyField(m_CameraRelativeLightCulling, Styles.cameraRelativeLightCulling);
+            EditorGUILayout.PropertyField(m_CameraRelativeShadowCulling, Styles.cameraRelativeShadowCulling);
+            EditorGUI.indentLevel--;
+            EditorGUI.indentLevel--;
 
             serializedObject.ApplyModifiedProperties();
         }

@@ -103,5 +103,8 @@ namespace UnityEngine.Rendering
         [NativeName("GetSettingsForRenderPipeline")] extern static Object GetSettingsForRenderPipeline(string renderpipelineName);
 
         #endregion
+
+        extern public static bool cameraRelativeLightCulling { get; set; }
+        extern public static bool cameraRelativeShadowCulling { get; set; }
     }
 }

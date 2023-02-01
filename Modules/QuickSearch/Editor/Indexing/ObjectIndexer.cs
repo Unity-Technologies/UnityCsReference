@@ -193,8 +193,19 @@ namespace UnityEditor.Search
         public void IndexPropertyComponents(int documentIndex, string name, string value)
         {
             int scoreModifier = 0;
+            double number = 0;
             foreach (var c in GetEntryComponents(value, documentIndex))
-                AddProperty(name, c, settings.baseScore + scoreModifier++, documentIndex, saveKeyword: false, exact: false);
+            {
+                var score = settings.baseScore + scoreModifier++;
+                if (Utils.TryParse(c, out number))
+                {
+                    AddNumber(name, number, score, documentIndex);
+                }
+                else
+                {
+                    AddProperty(name, c, score, documentIndex, saveKeyword: false, exact: false);
+                }
+            }
             AddProperty(name, value.ToLowerInvariant(), settings.baseScore - 5, documentIndex, saveKeyword: false, exact: true);
         }
 

@@ -645,10 +645,10 @@ namespace UnityEditor.SceneManagement
             {
                 return result;
             }
-
+            var modifierKey = Application.platform == RuntimePlatform.OSXEditor ? "Option" : "Alt";
             string path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(EditorUtility.InstanceIDToObject(instanceID) as GameObject);
             string filename = System.IO.Path.GetFileNameWithoutExtension(path);
-            result = new GUIContent("", null, "Open Prefab Asset '" + filename + "'" + "\nPress modifier key [Alt] to open in isolation.");
+            result = new GUIContent("", null, $"Open Prefab Asset in context.\nPress the {modifierKey} modifier key to open in isolation.");
             m_PrefabButtonContents[instanceID] = result;
             return result;
         }

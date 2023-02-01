@@ -53,6 +53,8 @@ namespace UnityEditor
             static long GetStableHash(UnityEngine.Object obj, ulong assetHash)
             {
                 var fileIdHint = Unsupported.GetFileIDHint(obj);
+                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(obj, out var _, out long fileId))
+                    fileIdHint = (ulong)fileId;
                 return (long)(fileIdHint * 1181783497276652981UL + assetHash);
             }
 
