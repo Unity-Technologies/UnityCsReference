@@ -12,7 +12,7 @@ using System.Linq;
 
 namespace UnityEditor.TerrainTools
 {
-    [Overlay(typeof(SceneView), "Brush Attributes")]
+    [Overlay(typeof(SceneView), "Brush Attributes", defaultDockPosition = DockPosition.Top, defaultDockZone = DockZone.TopToolbar)]
     [Icon("TerrainOverlays/BrushSettingIcons/BrushAttributes.png")]
     internal class BrushAttributes : ToolbarOverlay, ITransientOverlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
