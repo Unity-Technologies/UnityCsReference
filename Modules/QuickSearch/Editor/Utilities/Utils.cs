@@ -481,11 +481,6 @@ namespace UnityEditor.Search
             return Json.Deserialize(json);
         }
 
-        internal static int GetNumCharactersThatFitWithinWidth(GUIStyle style, string text, float width)
-        {
-            return style.GetNumCharactersThatFitWithinWidth(text, width);
-        }
-
         internal static string GetNextWord(string src, ref int index)
         {
             // Skip potential white space BEFORE the actual word we are extracting

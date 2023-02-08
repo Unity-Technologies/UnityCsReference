@@ -61,11 +61,15 @@ namespace UnityEditor
         const double k_CheckUnresponsiveFrequencyInSecond = 0.5;
         const float k_ShowProgressThreshold = 0.5f;
         private double m_LastUpdate;
+        private bool m_IsQuitting;
 
         private bool showBakeMode
         {
             get
             {
+                if (m_IsQuitting)
+                    return false;
+
                 var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
                 return settings.bakedGI || settings.realtimeGI;
             }
@@ -93,6 +97,8 @@ namespace UnityEditor
             Progress.added += RefreshProgressBar;
             Progress.removed += RefreshProgressBar;
             Progress.updated += RefreshProgressBar;
+
+            EditorApplication.editorApplicationQuit += OnQuit;
         }
 
         protected override void OnDisable()
@@ -100,6 +106,7 @@ namespace UnityEditor
             Progress.added -= RefreshProgressBar;
             Progress.removed -= RefreshProgressBar;
             Progress.updated -= RefreshProgressBar;
+            EditorApplication.editorApplicationQuit -= OnQuit;
             EditorApplication.delayCall -= DelayRepaint;
             base.OnDisable();
         }
@@ -474,6 +481,8 @@ namespace UnityEditor
 
             return Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
         }
+        private void OnQuit()
+            => m_IsQuitting = true;
 
         [RequiredByNativeCode]
         public static void StatusChanged()

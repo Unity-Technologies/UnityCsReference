@@ -411,7 +411,7 @@ namespace UnityEngine
         // Get the pixel position of a given string index.
         public Vector2 GetCursorPixelPosition(Rect position, GUIContent content, int cursorStringIndex)
         {
-            var handle = IMGUITextHandle.GetTextHandle(this, padding.Remove(position), content.textWithWhitespace, Color.white, true);
+            var handle = IMGUITextHandle.GetTextHandle(this, padding.Remove(position), content.textWithWhitespace, Color.white);
             var cursorPos = handle.GetCursorPositionFromStringIndexUsingLineHeight(cursorStringIndex);
             cursorPos = new Vector2(Mathf.Max(0.0f, cursorPos.x), cursorPos.y);
             var rectOffset = Internal_GetTextRectOffset(position, content, new Vector2(handle.preferredSize.x, handle.preferredSize.y > 0 ? handle.preferredSize.y : lineHeight));
@@ -427,13 +427,13 @@ namespace UnityEngine
         // Get the cursor position (indexing into contents.text) when the user clicked at cursorPixelPosition
         public int GetCursorStringIndex(Rect position, GUIContent content, Vector2 cursorPixelPosition)
         {
-            return IMGUITextHandle.GetTextHandle(this, position, content.textWithWhitespace, Color.white, true).GetCursorIndexFromPosition(cursorPixelPosition);
+            return IMGUITextHandle.GetTextHandle(this, position, content.textWithWhitespace, Color.white).GetCursorIndexFromPosition(cursorPixelPosition);
         }
 
         // Returns number of characters that can fit within width, returns -1 if fails due to missing font
         internal int GetNumCharactersThatFitWithinWidth(string text, float width)
         {
-            return IMGUITextHandle.GetTextHandle(this, new Rect(0, 0, width, 1), text, Color.white, true).GetNumCharactersThatFitWithinWidth(width);
+            return IMGUITextHandle.GetTextHandle(this, new Rect(0, 0, width, 1), text, Color.white).GetNumCharactersThatFitWithinWidth(width);
         }
 
         // Calculate the size of a some content if it is rendered with this style.
@@ -466,7 +466,7 @@ namespace UnityEngine
 
         internal Vector2 GetPreferredSize(string content, Rect rect)
         {
-            return IMGUITextHandle.GetTextHandle(this, padding.Remove(rect), content, Color.white, true).GetPreferredSize();
+            return IMGUITextHandle.GetTextHandle(this, padding.Remove(rect), content, Color.white).GetPreferredSize();
         }
 
         public bool isHeightDependantOnWidth => fixedHeight == 0 && (wordWrap && imagePosition != ImagePosition.ImageOnly);
@@ -523,8 +523,7 @@ namespace UnityEngine
         Overflow = 0,
         // Text gets clipped to be inside the element.
         Clip = 1,
-
         // Text gets truncated with dots to show it is too long
-        //  Truncate = 2
+        Ellipsis = 2,
     }
 }

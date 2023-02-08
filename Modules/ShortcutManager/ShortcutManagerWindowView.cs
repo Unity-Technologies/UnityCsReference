@@ -1441,6 +1441,8 @@ namespace UnityEditor.ShortcutManagement
             input.RegisterCallback<FocusEvent>((evt) => {
                 StartNewCombination();
                 evt.StopPropagation();
+                evt.propagation |= EventBase.EventPropagation.Cancellable;
+                evt.PreventDefault();
                 textSelection.MoveTextEnd();
             }, TrickleDown.TrickleDown);
             input.RegisterCallback<BlurEvent>((evt) =>

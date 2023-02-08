@@ -94,20 +94,6 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        private bool m_CachedGeometryHashCodeIsIntialized = false;
-        private int m_CachedGeometryHashCode;
-        public int cachedGeomertyHashCode
-        {
-            get
-            {
-                if (!m_CachedGeometryHashCodeIsIntialized)
-                {
-                    m_CachedGeometryHashCode = GetGeomertyHashCode();
-                    m_CachedGeometryHashCodeIsIntialized = true;
-                }
-                return m_CachedGeometryHashCode;
-            }
-        }
 
 	public bool Equals(TextGenerationSettings other)
         {
@@ -205,54 +191,6 @@ namespace UnityEngine.TextCore.Text
             hashCode.Add((int)inputSource);
             hashCode.Add(isPlaceholder);
             return hashCode.ToHashCode();
-        }
-
-        public int GetGeomertyHashCode()
-        {
-            unchecked
-            {
-                var hashCode = (text != null ? text.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ screenRect.GetHashCode();
-                hashCode = (hashCode * 397) ^ margins.GetHashCode();
-                hashCode = (hashCode * 397) ^ scale.GetHashCode();
-                hashCode = (hashCode * 397) ^ (fontAsset != null ? fontAsset.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (spriteAsset != null ? spriteAsset.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (int)fontStyle;
-                hashCode = (hashCode * 397) ^ (int)textAlignment;
-                hashCode = (hashCode * 397) ^ (int)overflowMode;
-                hashCode = (hashCode * 397) ^ wordWrap.GetHashCode();
-                hashCode = (hashCode * 397) ^ wordWrappingRatio.GetHashCode();
-                hashCode = (hashCode * 397) ^ fontSize.GetHashCode();
-                hashCode = (hashCode * 397) ^ autoSize.GetHashCode();
-                hashCode = (hashCode * 397) ^ fontSizeMin.GetHashCode();
-                hashCode = (hashCode * 397) ^ fontSizeMax.GetHashCode();
-                hashCode = (hashCode * 397) ^ enableKerning.GetHashCode();
-                hashCode = (hashCode * 397) ^ richText.GetHashCode();
-                hashCode = (hashCode * 397) ^ isRightToLeft.GetHashCode();
-                hashCode = (hashCode * 397) ^ extraPadding.GetHashCode();
-                hashCode = (hashCode * 397) ^ parseControlCharacters.GetHashCode();
-                hashCode = (hashCode * 397) ^ characterSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ wordSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ lineSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ paragraphSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ lineSpacingMax.GetHashCode();
-                hashCode = (hashCode * 397) ^ maxVisibleCharacters;
-                hashCode = (hashCode * 397) ^ maxVisibleWords;
-                hashCode = (hashCode * 397) ^ maxVisibleLines;
-                hashCode = (hashCode * 397) ^ firstVisibleCharacter;
-                hashCode = (hashCode * 397) ^ useMaxVisibleDescender.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)fontWeight;
-                hashCode = (hashCode * 397) ^ pageToDisplay;
-                hashCode = (hashCode * 397) ^ (int)horizontalMapping;
-                hashCode = (hashCode * 397) ^ (int)verticalMapping;
-                hashCode = (hashCode * 397) ^ uvLineOffset.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)geometrySortingOrder;
-                hashCode = (hashCode * 397) ^ inverseYAxis.GetHashCode();
-                hashCode = (hashCode * 397) ^ charWidthMaxAdj.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)textWrappingMode;
-                hashCode = (hashCode * 397) ^ isOrthographic.GetHashCode();
-                return hashCode;
-            }
         }
 
         public static bool operator ==(TextGenerationSettings left, TextGenerationSettings right)
@@ -4394,7 +4332,7 @@ namespace UnityEngine.TextCore.Text
                                 m_HtmlColor = Color.red;
                                 m_ColorStack.Add(m_HtmlColor);
                                 return true;
-                            case -992792864: // <color=lightblue>
+                            case (int)MarkupTag.LIGHTBLUE: // <color=lightblue>
                                 m_HtmlColor = new Color32(173, 216, 230, 255);
                                 m_ColorStack.Add(m_HtmlColor);
                                 return true;
@@ -4402,7 +4340,7 @@ namespace UnityEngine.TextCore.Text
                                 m_HtmlColor = Color.blue;
                                 m_ColorStack.Add(m_HtmlColor);
                                 return true;
-                            case 3680713: // <color=grey>
+                            case (int)MarkupTag.GREY: // <color=grey>
                                 m_HtmlColor = new Color32(128, 128, 128, 255);
                                 m_ColorStack.Add(m_HtmlColor);
                                 return true;

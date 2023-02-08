@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -17,6 +18,7 @@ namespace UnityEngine.UIElements
         Dictionary<int, TreeItem> m_TreeItems = new Dictionary<int, TreeItem>();
         List<int> m_RootIndices = new List<int>();
         List<TreeViewItemWrapper> m_ItemWrappers = new List<TreeViewItemWrapper>();
+        HashSet<int> m_TreeItemIdsWithItemWrappers = new HashSet<int>();
         List<TreeViewItemWrapper> m_WrapperInsertionList = new List<TreeViewItemWrapper>();
 
         /// <summary>
@@ -214,12 +216,15 @@ namespace UnityEngine.UIElements
         /// <returns>The index of the item in the expanded items source. Returns -1 if the item is not visible.</returns>
         public override int GetIndexForId(int id)
         {
-            for (var index = 0; index < m_ItemWrappers.Count; index++)
+            if (m_TreeItemIdsWithItemWrappers.Contains(id))
             {
-                var wrapper = m_ItemWrappers[index];
-                if (wrapper.id == id)
+                for (var index = 0; index < m_ItemWrappers.Count; index++)
                 {
-                    return index;
+                    var wrapper = m_ItemWrappers[index];
+                    if (wrapper.id == id)
+                    {
+                        return index;
+                    }
                 }
             }
 
@@ -320,6 +325,7 @@ namespace UnityEngine.UIElements
             return IsExpanded(m_ItemWrappers[index].id);
         }
 
+        static readonly ProfilerMarker K_ExpandItemByIndex = new ProfilerMarker(ProfilerCategory.Scripts, "BaseTreeViewController.ExpandItemByIndex");
         /// <summary>
         /// Expands the item with the specified index, making his children visible. Allows to expand the whole hierarchy under that item.
         /// </summary>
@@ -328,6 +334,7 @@ namespace UnityEngine.UIElements
         /// <param name="refresh">Whether to refresh items or not. Set to false when doing multiple operations on the tree, to only do one RefreshItems once all operations are done.</param>
         public void ExpandItemByIndex(int index, bool expandAllChildren, bool refresh = true)
         {
+            using var marker = K_ExpandItemByIndex.Auto();
             if (!HasChildrenByIndex(index))
                 return;
 
@@ -337,12 +344,11 @@ namespace UnityEngine.UIElements
                 var childrenIdsList = new List<int>();
                 foreach (var childId in childrenIds)
                 {
-                    if (m_ItemWrappers.All(x => x.id != childId))
+                    if (!m_TreeItemIdsWithItemWrappers.Contains(childId))
                         childrenIdsList.Add(childId);
                 }
 
-                CreateWrappers(childrenIdsList, GetIndentationDepth(index) + 1,
-                    ref m_WrapperInsertionList);
+                CreateWrappers(childrenIdsList, GetIndentationDepth(index) + 1, ref m_WrapperInsertionList);
                 m_ItemWrappers.InsertRange(index + 1, m_WrapperInsertionList);
                 if (!baseTreeView.expandedItemIds.Contains(m_ItemWrappers[index].id))
                     baseTreeView.expandedItemIds.Add(m_ItemWrappers[index].id);
@@ -416,9 +422,13 @@ namespace UnityEngine.UIElements
                 recursiveChildCount++;
                 currentIndex++;
             }
+            var end = index + 1 + recursiveChildCount;
+            for (int i = index + 1; i < end; i++)
+            {
+                m_TreeItemIdsWithItemWrappers.Remove(m_ItemWrappers[i].id);
+            }
 
             m_ItemWrappers.RemoveRange(index + 1, recursiveChildCount);
-
             baseTreeView.RefreshItems();
         }
 
@@ -431,12 +441,17 @@ namespace UnityEngine.UIElements
         {
             // Try to find it in the currently visible list.
             for (var i = 0; i < m_ItemWrappers.Count; ++i)
+            {
                 if (m_ItemWrappers[i].id == id)
+                {
                     if (IsExpandedByIndex(i))
                     {
                         CollapseItemByIndex(i, collapseAllChildren);
                         return;
                     }
+                    break;
+                }
+            }
 
             if (!baseTreeView.expandedItemIds.Contains(id))
                 return;
@@ -473,6 +488,7 @@ namespace UnityEngine.UIElements
         internal void RegenerateWrappers()
         {
             m_ItemWrappers.Clear();
+            m_TreeItemIdsWithItemWrappers.Clear();
 
             var rootItemIds = GetRootItemIds();
             if (rootItemIds == null)
@@ -481,10 +497,12 @@ namespace UnityEngine.UIElements
             CreateWrappers(rootItemIds, 0, ref m_ItemWrappers);
             SetItemsSourceWithoutNotify(m_ItemWrappers);
         }
-
+        
+        static readonly ProfilerMarker k_CreateWrappers = new ProfilerMarker("BaseTreeViewController.CreateWrappers");
         void CreateWrappers(IEnumerable<int> treeViewItemIds, int depth, ref List<TreeViewItemWrapper> wrappers)
         {
-            if (treeViewItemIds == null || wrappers == null)
+            using var marker = k_CreateWrappers.Auto();
+            if (treeViewItemIds == null || wrappers == null || m_TreeItemIdsWithItemWrappers == null)
                 return;
 
             foreach (var id in treeViewItemIds)
@@ -494,6 +512,7 @@ namespace UnityEngine.UIElements
 
                 var wrapper = new TreeViewItemWrapper(treeItem, depth);
                 wrappers.Add(wrapper);
+                m_TreeItemIdsWithItemWrappers.Add(id); 
 
                 if (baseTreeView?.expandedItemIds == null)
                     continue;

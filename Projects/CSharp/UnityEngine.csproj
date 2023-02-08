@@ -1370,11 +1370,11 @@
     <Compile Include="..\..\Modules\Accessibility\VisionUtility.cs">
       <Link>Modules\Accessibility\VisionUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidApp.bindings.cs">
+      <Link>Modules\AndroidJNI\AndroidApp.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AndroidJNI\AndroidAssetPacks.bindings.cs">
       <Link>Modules\AndroidJNI\AndroidAssetPacks.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\AndroidJNI\AndroidCommon.cs">
-      <Link>Modules\AndroidJNI\AndroidCommon.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AndroidJNI\AndroidDevice.bindings.cs">
       <Link>Modules\AndroidJNI\AndroidDevice.bindings.cs</Link>

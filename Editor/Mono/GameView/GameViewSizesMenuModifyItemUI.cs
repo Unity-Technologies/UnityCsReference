@@ -99,9 +99,11 @@ namespace UnityEditor
             {
                 if (string.IsNullOrEmpty(displayText))
                     displayText = "Result";
-                else
-                    displayText = GetCroppedText(displayText, cropWidth, EditorStyles.label);
-                GUILayout.Label(GUIContent.Temp(displayText), EditorStyles.label);
+
+                var clipping = EditorStyles.label.clipping;
+                EditorStyles.label.clipping = TextClipping.Ellipsis;
+                GUILayout.Label(GUIContent.Temp(displayText), EditorStyles.label, GUILayout.MaxWidth(cropWidth));
+                EditorStyles.label.clipping = clipping;
             }
             GUILayout.FlexibleSpace();
             GUILayout.Space(margin);
@@ -132,21 +134,6 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
 
             GUILayout.Space(Styles.windowBottomPadding);
-        }
-
-        string GetCroppedText(string fullText, float cropWidth, GUIStyle style)
-        {
-            // Check if we need to crop
-            int characterCountVisible = style.GetNumCharactersThatFitWithinWidth(fullText, cropWidth);
-            if (characterCountVisible == -1)
-            {
-                return fullText;
-            }
-
-            if (characterCountVisible > 1 && characterCountVisible != fullText.Length)
-                return fullText.Substring(0, characterCountVisible - 1) + ("\u2026"); // 'horizontal ellipsis' (U+2026) is: ...
-            else
-                return fullText;
         }
     }
 }

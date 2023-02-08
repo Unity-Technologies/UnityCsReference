@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine.UIElements;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ namespace Unity.UI.Builder
         VisualElement m_ReorderZoneAbove;
         VisualElement m_ReorderZoneBelow;
         TextField m_RenameTextField;
+        internal List<Label> elidableLabels = new();
 
         public override VisualElement contentContainer => m_Container == null ? this : m_Container;
 
@@ -50,7 +52,7 @@ namespace Unity.UI.Builder
         {
             if (m_RenameTextField == null)
                 return false;
-            
+
             return !m_RenameTextField.ClassListContains(BuilderConstants.HiddenStyleClassName);
         }
 

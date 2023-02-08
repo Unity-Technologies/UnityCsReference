@@ -1613,6 +1613,7 @@ namespace UnityEditor
         {
             SaveWindowLayout w = GetWindowDontShow<SaveWindowLayout>();
             w.minSize = w.maxSize = new Vector2(k_Width, k_Height);
+            w.m_Pos = new Rect(0, 0,k_Width, k_Height);
             w.ShowAuxWindow();
             return w;
         }
