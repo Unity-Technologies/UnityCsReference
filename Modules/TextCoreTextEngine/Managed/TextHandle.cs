@@ -88,8 +88,6 @@ namespace UnityEngine.TextCore.Text
             return true;
         }
 
-        internal float lastTimeUsed;
-
         public Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
             if (textGenerationSettings == null)

@@ -257,6 +257,9 @@ namespace UnityEngine
         [FreeFunction(Name = "TrailRendererScripting::GetPositions", HasExplicitThis = true)]
         extern public int GetPositions([NotNull][Out] Vector3[] positions);
 
+        [FreeFunction(Name = "TrailRendererScripting::GetVisiblePositions", HasExplicitThis = true)]
+        extern public int GetVisiblePositions([NotNull][Out] Vector3[] positions);
+
         [FreeFunction(Name = "TrailRendererScripting::SetPositions", HasExplicitThis = true)]
         extern public void SetPositions([NotNull] Vector3[] positions);
 
@@ -272,6 +275,9 @@ namespace UnityEngine
         public int GetPositions([Out] NativeArray<Vector3> positions) { unsafe { return GetPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
         public int GetPositions([Out] NativeSlice<Vector3> positions) { unsafe { return GetPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
 
+        public int GetVisiblePositions([Out] NativeArray<Vector3> positions) { unsafe { return GetVisiblePositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
+        public int GetVisiblePositions([Out] NativeSlice<Vector3> positions) { unsafe { return GetVisiblePositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
+
         public void AddPositions([Out] NativeArray<Vector3> positions) { unsafe { AddPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
         public void AddPositions([Out] NativeSlice<Vector3> positions) { unsafe { AddPositionsWithNativeContainer((IntPtr)positions.GetUnsafePtr(), positions.Length); } }
 
@@ -280,6 +286,9 @@ namespace UnityEngine
 
         [FreeFunction(Name = "TrailRendererScripting::GetPositionsWithNativeContainer", HasExplicitThis = true)]
         extern private int GetPositionsWithNativeContainer(IntPtr positions, int length);
+
+        [FreeFunction(Name = "TrailRendererScripting::GetVisiblePositionsWithNativeContainer", HasExplicitThis = true)]
+        extern private int GetVisiblePositionsWithNativeContainer(IntPtr positions, int length);
 
         [FreeFunction(Name = "TrailRendererScripting::AddPositionsWithNativeContainer", HasExplicitThis = true)]
         extern private void AddPositionsWithNativeContainer(IntPtr positions, int length);

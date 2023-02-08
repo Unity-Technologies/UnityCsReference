@@ -256,7 +256,7 @@ namespace UnityEditor
                 {
                     foreach (var mat in mr.sharedMaterials)
                     {
-                        if (mat.shader != defaultShader)
+                        if (mat?.shader != defaultShader)
                             return true;
                     }
                 }
@@ -265,7 +265,7 @@ namespace UnityEditor
                 {
                     foreach (var br in prefabs[i].transform.GetComponentsInChildren<BillboardRenderer>())
                     {
-                        if (br.billboard.material.shader != defaultBillboardShader)
+                        if (br.billboard.material?.shader != defaultBillboardShader)
                             return true;
                     }
                 }

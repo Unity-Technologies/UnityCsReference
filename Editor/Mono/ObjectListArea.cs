@@ -103,8 +103,6 @@ namespace UnityEditor
         public bool foldersFirst { get; set; }
         int m_KeyboardControlID;
 
-        Dictionary<AssetReference, string> m_AssetReferenceToCroppedNameMap = new Dictionary<AssetReference, string>(new AssetReference.GuidThenInstanceIDEqualityComparer());
-        int m_WidthUsedForCroppingName;
         bool m_AllowRenameOnMouseUp = true;
 
 
@@ -211,9 +209,6 @@ namespace UnityEditor
                 m_AllowThumbnails = true;
 
             Repaint();
-
-            // Clear instanceID to cropped name cache on init
-            ClearCroppedLabelCache();
 
             // Prepare data
             SetupData(true);
@@ -1280,43 +1275,6 @@ namespace UnityEditor
             }
         }
 
-        void ClearCroppedLabelCache()
-        {
-            m_AssetReferenceToCroppedNameMap.Clear();
-        }
-
-        protected string GetCroppedLabelText(AssetReference assetReference, string fullText, float cropWidth)
-        {
-            // Clear when width changes
-            if (m_WidthUsedForCroppingName != (int)cropWidth)
-                ClearCroppedLabelCache();
-
-            string croppedText;
-            if (!m_AssetReferenceToCroppedNameMap.TryGetValue(assetReference, out croppedText))
-            {
-                // Ensure to clean up once in a while
-                if (m_AssetReferenceToCroppedNameMap.Count > GetMaxNumVisibleItems() * 2 + 30)
-                    ClearCroppedLabelCache();
-
-                // Check if we need to crop
-                int characterCountVisible = Styles.resultsGridLabel.GetNumCharactersThatFitWithinWidth(fullText, cropWidth);
-                if (characterCountVisible == -1)
-                {
-                    Repaint();
-                    return fullText; // failed: do not cache result
-                }
-
-                if (characterCountVisible > 1 && characterCountVisible != fullText.Length)
-                    croppedText = fullText.Substring(0, characterCountVisible - 1) + ("\u2026"); // 'horizontal ellipsis' (U+2026) is: ...
-                else
-                    croppedText = fullText;
-
-                m_AssetReferenceToCroppedNameMap[assetReference] = croppedText;
-                m_WidthUsedForCroppingName = (int)cropWidth;
-            }
-            return croppedText;
-        }
-
         public bool IsShowing(int instanceID)
         {
             return m_LocalAssets.IndexOf(instanceID) >= 0;
@@ -1386,7 +1344,8 @@ namespace UnityEditor
 
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;
                 var assetReference = new AssetReference() { instanceID = instanceID };
-                GUIContent cont = new GUIContent(m_LocalAssets.ListMode ? name : GetCroppedLabelText(assetReference, name, m_WidthUsedForCroppingName));
+                var textClipping = m_LocalAssets.ListMode ? TextClipping.Overflow : TextClipping.Ellipsis;
+                GUIContent cont = new GUIContent(name);
                 string label = cont.text;
 
                 if (m_LocalAssets.ListMode)
@@ -1410,6 +1369,8 @@ namespace UnityEditor
                 else
                 {
                     m_Ping.m_PingStyle = Styles.miniPing;
+                    var oldClipping = m_Ping.m_PingStyle.clipping;
+                    m_Ping.m_PingStyle.clipping = textClipping;
                     Vector2 pingLabelSize = m_Ping.m_PingStyle.CalcSize(cont);
                     m_Ping.m_ContentRect.width = pingLabelSize.x;
                     m_Ping.m_ContentRect.height = pingLabelSize.y;
@@ -1421,6 +1382,7 @@ namespace UnityEditor
                         Styles.resultsGridLabel.Draw(r, label, false, false, false, false);
                         Styles.resultsGridLabel.alignment = orgAnchor;
                     };
+                    m_Ping.m_PingStyle.clipping = oldClipping;
                 }
                 Vector2 pos = CalculatePingPosition();
                 m_Ping.m_ContentRect.x = pos.x;

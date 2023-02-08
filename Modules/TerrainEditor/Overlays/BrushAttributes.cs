@@ -20,16 +20,14 @@ namespace UnityEditor.TerrainTools
         {
             get
             {
-                if (packageIsInstalled) return false; // no core brushAttributes when package is installed
                 var currTool = TerrainInspector.GetActiveTerrainTool() as ITerrainPaintToolWithOverlays;
-                if (currTool == null)
-                    return false;
-                return currTool.HasBrushAttributes && BrushesOverlay.IsSelectedObjectTerrain();
+                if (currTool == null) return false;
+                bool directlyInheritsOverlays = currTool.GetType().BaseType.GetGenericTypeDefinition() == typeof(TerrainPaintToolWithOverlays<>).GetGenericTypeDefinition();
+                return currTool.HasBrushAttributes && BrushesOverlay.IsSelectedObjectTerrain() && directlyInheritsOverlays;
             }
         }
 
         internal static BrushAttributes s_Instance;
-        private bool packageIsInstalled;
 
         BrushAttributes() : base(
 
@@ -37,7 +35,6 @@ namespace UnityEditor.TerrainTools
             BrushSize.k_Id)
         {
             s_Instance = this;
-            packageIsInstalled = TerrainToolsPackageInstalled();
 
             // only rebuild if the next tool is/isn't PaintDetailsTool
             ToolManager.activeToolChanged += RebuildAttributesOverlays;
@@ -49,14 +46,6 @@ namespace UnityEditor.TerrainTools
             base.OnWillBeDestroyed();
             ToolManager.activeToolChanged -= RebuildAttributesOverlays;
             ToolManager.activeContextChanged -= RebuildAttributesOverlays;
-        }
-
-        private bool TerrainToolsPackageInstalled()
-        {
-            // check if package is installed
-            var upm = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages();
-            var terrainPackageInfo = upm.Where(pi => pi.name == "com.unity.terrain-tools");
-            return terrainPackageInfo.Any(); // if q returns any then yes a package is installed
         }
 
         // this function serves to prevent calling RebuildContent() more than necessary
@@ -79,7 +68,6 @@ namespace UnityEditor.TerrainTools
 
             // set last == curr
             lastPaintTool = currTool;
-
         }
 
         // call this function for horizontal and vertical toolbar create

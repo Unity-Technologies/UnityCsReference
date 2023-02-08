@@ -943,11 +943,13 @@ namespace UnityEditor
                                 if (isDropTarget)
                                     Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
 
-                                labeltext = m_Owner.GetCroppedLabelText(assetReference, labeltext, orgPosition.width);
+                                var oldClipping = Styles.resultsGridLabel.clipping;
+                                Styles.resultsGridLabel.clipping = TextClipping.Ellipsis;
                                 var labelNewRect = Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), orgPosition.size);
                                 labelRect.x = orgPosition.x + (orgPosition.width - labelNewRect.x) / 2.0f;
-                                labelRect.width = labelNewRect.x;
+                                labelRect.width = labelNewRect.x + Styles.resultsGridLabel.padding.horizontal;
                                 Styles.resultsGridLabel.Draw(labelRect, labeltext, false, false, selected, m_Owner.HasFocus());
+                                Styles.resultsGridLabel.clipping = oldClipping;
                             }
                         }
 

@@ -44,6 +44,9 @@ namespace UnityEditor
         // Will generate per-triangle uv (3 uv pairs for each triangle) with provided settings
         public static Vector2[] GeneratePerTriangleUV(Mesh src, UnwrapParam settings)
         {
+            if (src == null)
+                throw new ArgumentNullException("src");
+
             return GeneratePerTriangleUVImpl(src, settings);
         }
 

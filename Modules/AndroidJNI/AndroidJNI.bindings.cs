@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Android;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Unity.Collections;
@@ -106,7 +107,7 @@ namespace UnityEngine
             var handle = GCHandle.Alloc(proxy);
             try
             {
-                return _AndroidJNIHelper.CreateJavaProxy(GCHandle.ToIntPtr(handle), proxy);
+                return _AndroidJNIHelper.CreateJavaProxy(AndroidApp.UnityPlayerRaw, GCHandle.ToIntPtr(handle), proxy);
             }
             catch
             {

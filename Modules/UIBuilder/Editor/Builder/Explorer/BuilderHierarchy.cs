@@ -10,8 +10,6 @@ namespace Unity.UI.Builder
 {
     internal class BuilderHierarchy : BuilderExplorer, IBuilderSelectionNotifier
     {
-        [SerializeField] BuilderElementInfoVisibilityState m_ElementInfoVisibilityState;
-
         public BuilderHierarchy(
             BuilderPaneWindow paneWindow,
             BuilderViewport viewport,
@@ -70,21 +68,6 @@ namespace Unity.UI.Builder
                 .HasFlag(BuilderElementInfoVisibilityState.StyleSheets)
                 ? DropdownMenuAction.Status.Checked
                 : DropdownMenuAction.Status.Normal);
-        }
-
-        void ChangeVisibilityState(BuilderElementInfoVisibilityState state)
-        {
-            m_ElementInfoVisibilityState ^= state;
-            m_ElementHierarchyView.elementInfoVisibilityState = m_ElementInfoVisibilityState;
-            SaveViewData();
-            UpdateHierarchyAndSelection(m_ElementHierarchyView.hasUnsavedChanges);
-        }
-
-        internal override void OnViewDataReady()
-        {
-            base.OnViewDataReady();
-            OverwriteFromViewData(this, viewDataKey);
-            m_ElementHierarchyView.elementInfoVisibilityState = m_ElementInfoVisibilityState;
         }
     }
 }
