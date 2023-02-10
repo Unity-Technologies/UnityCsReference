@@ -74,6 +74,7 @@ namespace UnityEditorInternal.Profiling
             m_TimelineGUI.viewTypeChanged += CPUOrGPUViewTypeChanged;
             m_TimelineGUI.selectionChanged -= SetSelectionWithoutIntegrityChecksOnSelectionChangeInDetailedView;
             m_TimelineGUI.selectionChanged += SetSelectionWithoutIntegrityChecksOnSelectionChangeInDetailedView;
+            TryRestoringSelection();
             UpdateSelectionHighlightLabel();
         }
 

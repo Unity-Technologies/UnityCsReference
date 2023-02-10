@@ -91,6 +91,7 @@ namespace UnityEditor
             s_Initialized = true;
         }
 
+        [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewport : IShortcutToolContext
         {
             public bool active => IsActive;
@@ -106,12 +107,14 @@ namespace UnityEditor
             }
         }
 
+        [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewport2D : IShortcutToolContext
         {
             public bool active => SceneViewViewport.IsActive
                 && ((SceneView.lastActiveSceneView?.in2DMode ?? false) || (SceneView.lastActiveSceneView?.isRotationLocked ?? false));
         }
 
+        [ReserveModifiers(ShortcutModifiers.Shift)]
         class SceneViewViewport3D : IShortcutToolContext
         {
             public bool active => SceneViewViewport.IsActive

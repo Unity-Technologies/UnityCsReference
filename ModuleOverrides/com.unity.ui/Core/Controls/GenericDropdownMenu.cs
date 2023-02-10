@@ -129,9 +129,6 @@ namespace UnityEngine.UIElements
             if (evt.originPanel == null)
                 return;
 
-            m_MenuContainer.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            m_MenuContainer.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-
             contentContainer.RemoveManipulator(m_NavigationManipulator);
             m_MenuContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             m_MenuContainer.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
