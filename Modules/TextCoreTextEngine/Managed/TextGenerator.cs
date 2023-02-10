@@ -3246,6 +3246,7 @@ namespace UnityEngine.TextCore.Text
             state.lastVisibleCharIndex = m_LastVisibleCharacterOfLine;
 
             state.fontStyle = m_FontStyleInternal;
+            state.italicAngle = m_ItalicAngle;
 
             state.fontScaleMultiplier = m_FontScaleMultiplier;
             state.currentFontSize = m_CurrentFontSize;
