@@ -77,5 +77,8 @@ namespace UnityEngine.Rendering
 
         [NativeName("SetCustomShaderScript")] extern static public void     SetCustomShader(BuiltinShaderType type, Shader shader);
         [NativeName("GetCustomShaderScript")] extern static public Shader   GetCustomShader(BuiltinShaderType type);
+
+        extern public static bool cameraRelativeLightCulling { get; set; }
+        extern public static bool cameraRelativeShadowCulling { get; set; }
     }
 }

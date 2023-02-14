@@ -1650,12 +1650,52 @@ namespace UnityEditor
             }
         }
 
+        private static bool ValidateMenuMoveToFrontOrBack(Transform[] transforms, bool isFront)
+        {
+            if (transforms.Length == 0)
+            {
+                return false;
+            }
+
+            int alreadyInPlaceCounter = 0;
+            foreach (Transform transform in transforms)
+            {
+                if (transform == null || transform.parent == null || PrefabUtility.IsPartOfNonAssetPrefabInstance(transform.parent))
+                {
+                    return false;
+                }
+
+                int alreadyInPlaceSiblingIndex = isFront ? 0 : transform.parent.childCount - 1;
+                if (transform.GetSiblingIndex() == alreadyInPlaceSiblingIndex)
+                {
+                    alreadyInPlaceCounter += 1;
+                }
+            }
+
+            return alreadyInPlaceCounter < transforms.Length;
+        }
+
+        private static void RegisterMenuMoveChildrenUndo(Transform[] transforms, string message)
+        {
+            var parents = new HashSet<Transform>();
+            foreach (Transform t in transforms)
+            {
+                if (!parents.Contains(t.parent))
+                {
+                    Undo.RegisterChildrenOrderUndo(t.parent, message);
+                    parents.Add(t.parent);
+                }
+            }
+        }
+
         [MenuItem("GameObject/Set as first sibling %=")]
         internal static void MenuMoveToFront()
         {
-            foreach (Transform t in Selection.transforms)
+            var selectedTransforms = Selection.transforms;
+
+            RegisterMenuMoveChildrenUndo(selectedTransforms, "Set as first sibling");
+            foreach (Transform t in selectedTransforms)
             {
-                Undo.SetTransformParent(t, t.parent, "Set as first sibling");
                 t.SetAsFirstSibling();
             }
         }
@@ -1663,20 +1703,17 @@ namespace UnityEditor
         [MenuItem("GameObject/Set as first sibling %=", true)]
         internal static bool ValidateMenuMoveToFront()
         {
-            if (Selection.activeTransform != null)
-            {
-                Transform parent = Selection.activeTransform.parent;
-                return (parent != null && parent.GetChild(0) != Selection.activeTransform);
-            }
-            return false;
+            return ValidateMenuMoveToFrontOrBack(Selection.transforms, true);
         }
 
         [MenuItem("GameObject/Set as last sibling %-")]
         internal static void MenuMoveToBack()
         {
-            foreach (Transform t in Selection.transforms)
+            var selectedTransforms = Selection.transforms;
+
+            RegisterMenuMoveChildrenUndo(selectedTransforms, "Set as last sibling");
+            foreach (Transform t in selectedTransforms)
             {
-                Undo.SetTransformParent(t, t.parent, "Set as last sibling");
                 t.SetAsLastSibling();
             }
         }
@@ -1684,12 +1721,7 @@ namespace UnityEditor
         [MenuItem("GameObject/Set as last sibling %-", true)]
         internal static bool ValidateMenuMoveToBack()
         {
-            if (Selection.activeTransform != null)
-            {
-                Transform parent = Selection.activeTransform.parent;
-                return (parent != null && parent.GetChild(parent.childCount - 1) != Selection.activeTransform);
-            }
-            return false;
+            return ValidateMenuMoveToFrontOrBack(Selection.transforms, false);
         }
 
         [MenuItem("GameObject/Move To View %&f")]

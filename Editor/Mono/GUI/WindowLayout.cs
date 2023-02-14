@@ -1306,56 +1306,62 @@ namespace UnityEditor
                 UnityObject.DestroyImmediate(killme, true);
         }
 
+        static bool EnsureDirectoryCreated(string path)
+        {
+            var parentFolderPath = Path.GetDirectoryName(path);
+            if (string.IsNullOrEmpty(parentFolderPath))
+                return false;
+
+            if (!Directory.Exists(parentFolderPath))
+                Directory.CreateDirectory(parentFolderPath);
+            return true;
+        }
+
         public static void SaveWindowLayout(string path)
         {
+            if (!EnsureDirectoryCreated(path))
+                return;
+
             Console.WriteLine($"[LAYOUT] About to save layout {path}");
             TooltipView.Close();
 
-            ArrayList all = new ArrayList();
             UnityObject[] windows = Resources.FindObjectsOfTypeAll(typeof(EditorWindow));
             UnityObject[] containers = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
             UnityObject[] views = Resources.FindObjectsOfTypeAll(typeof(View));
-            UnityObject[] toolbars = Resources.FindObjectsOfTypeAll(typeof(EditorToolbar));
 
+            var all = new List<UnityObject>();
+            var ignoredViews = new List<ScriptableObject>();
             foreach (ContainerWindow w in containers)
             {
                 // skip ContainerWindows that are "dont save me"
-                if (w.m_DontSaveToLayout)
-                    continue;
-                all.Add(w);
+                if (!w || w.m_DontSaveToLayout)
+                    ignoredViews.Add(w);
+                else
+                    all.Add(w);
             }
 
             foreach (View w in views)
             {
                 // skip Views that belong to "dont save me" container
-                if (w.window != null && w.window.m_DontSaveToLayout)
-                    continue;
-                all.Add(w);
+                if (!w || !w.window || ignoredViews.Contains(w.window))
+                    ignoredViews.Add(w);
+                else
+                    all.Add(w);
             }
 
             foreach (EditorWindow w in windows)
             {
                 // skip EditorWindows that belong to "dont save me" container
-                if (w.m_Parent != null && w.m_Parent.window != null && w.m_Parent.window.m_DontSaveToLayout)
+                if (!w || !w.m_Parent || ignoredViews.Contains(w.m_Parent))
+                {
+                    if (w)
+                        Debug.LogWarning($"Cannot save invalid window {w.titleContent.text} {w} to layout.");
                     continue;
+                }
                 all.Add(w);
             }
 
-            foreach (EditorToolbar toolbar in toolbars)
-            {
-                if (toolbar.m_DontSaveToLayout)
-                    continue;
-                all.Add(toolbar);
-            }
-
-            var parentLayoutFolder = Path.GetDirectoryName(path);
-
-            if (!String.IsNullOrEmpty(parentLayoutFolder))
-            {
-                if (!Directory.Exists(parentLayoutFolder))
-                    Directory.CreateDirectory(parentLayoutFolder);
-                InternalEditorUtility.SaveToSerializedFileAndForget(all.ToArray(typeof(UnityObject)) as UnityObject[], path, true);
-            }
+            InternalEditorUtility.SaveToSerializedFileAndForget(all.Where(o => o).ToArray(), path, true);
         }
 
         // ReSharper disable once MemberCanBePrivate.Global - used by SaveLayoutTests.cs

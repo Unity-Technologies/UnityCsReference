@@ -104,6 +104,10 @@ namespace UnityEngine.UIElements
             if (Mathf.Abs(m_Start.x - evt.position.x) > k_DistanceToActivation ||
                 Mathf.Abs(m_Start.y - evt.position.y) > k_DistanceToActivation)
             {
+                // Drag can only be started by mouse events or else it will throw an error, so we leave early.
+                if (Event.current.type != EventType.MouseDown && Event.current.type != EventType.MouseDrag)
+                return;
+
                 var args = StartDrag(evt.position);
                 DragAndDropUtility.dragAndDrop.StartDrag(args);
                 m_CanStartDrag = false;

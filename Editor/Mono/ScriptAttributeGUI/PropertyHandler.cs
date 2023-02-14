@@ -29,7 +29,8 @@ namespace UnityEditor
         {
             Undo.undoRedoPerformed += () =>
             {
-                EditorApplication.delayCall += InspectorWindow.RefreshInspectors;
+                ReorderableList.InvalidateExistingListCaches();
+                InspectorWindow.RepaintAllInspectors();
             };
         }
 

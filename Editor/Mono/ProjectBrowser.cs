@@ -216,7 +216,7 @@ namespace UnityEditor
         [NonSerialized]
         private string m_lastSearchFilter;
         [NonSerialized]
-        private double m_NextSearch = double.MaxValue;
+        private Action m_NextSearchOffDelegate;
 
         ProjectBrowser()
         {
@@ -1470,18 +1470,6 @@ namespace UnityEditor
         {
             if (m_ListArea != null)
                 m_ListArea.OnInspectorUpdate();
-
-
-            // if it's time for a search we do it
-            if (EditorApplication.timeSinceStartup > m_NextSearch)
-            {
-                //Perform the Search
-                m_NextSearch = double.MaxValue;
-                m_SearchFilter.SearchFieldStringToFilter(m_SearchFieldText);
-                SyncFilterGUI();
-                TopBarSearchSettingsChanged();
-                Repaint();
-            }
         }
 
         void OnDestroy()
@@ -2291,7 +2279,7 @@ namespace UnityEditor
                     m_FocusSearchField = false;
             }
 
-            // On arrow down/up swicth to control selection in list area
+                // On arrow down/up switch to control selection in list area
             Event evt = Event.current;
             if (evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.DownArrow || evt.keyCode == KeyCode.UpArrow))
             {
@@ -2312,8 +2300,17 @@ namespace UnityEditor
                 // Update filter with string
                 m_SearchFieldText = m_lastSearchFilter;
 
-                m_NextSearch = EditorApplication.timeSinceStartup + SearchableEditorWindow.k_SearchTimerDelaySecs;
+                m_NextSearchOffDelegate?.Invoke();
+                m_NextSearchOffDelegate = EditorApplication.CallDelayed(UpdateSearchDelayed, SearchUtils.debounceThresholdMs / 1000f);
             }
+        }
+
+        void UpdateSearchDelayed()
+        {
+            m_SearchFilter.SearchFieldStringToFilter(m_SearchFieldText);
+            SyncFilterGUI();
+            TopBarSearchSettingsChanged();
+            Repaint();
         }
 
         void TopBarSearchSettingsChanged()

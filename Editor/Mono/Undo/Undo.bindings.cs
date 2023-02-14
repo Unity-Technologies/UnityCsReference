@@ -114,6 +114,9 @@ namespace UnityEditor
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         public static extern void RegisterImporterUndo(string path, string name);
 
+        [FreeFunction("RegisterChildrenOrderUndo")]
+        public static extern void RegisterChildrenOrderUndo([NotNull] Object objectToUndo, string name);
+
         [FreeFunction("RegisterFullObjectHierarchyUndo")]
         public static extern void RegisterFullObjectHierarchyUndo([NotNull] Object objectToUndo, string name);
 

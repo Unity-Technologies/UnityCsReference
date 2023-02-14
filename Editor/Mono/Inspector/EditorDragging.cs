@@ -98,13 +98,6 @@ namespace UnityEditor
             }
 
             DragAndDrop.visualMode = DragAndDropService.Drop(DragAndDropService.kInspectorDropDstId, editor.targets, Event.current.type == EventType.DragPerform);
-
-            if (Event.current.type == EventType.DragPerform)
-            {
-                DragAndDrop.AcceptDrag();
-                m_TargetIndex = -1;
-                GUIUtility.ExitGUI();
-            }
         }
 
         void HandleEditorDragging(Editor[] editors, int editorIndex, Rect targetRect, float markerY, bool bottomTarget)
