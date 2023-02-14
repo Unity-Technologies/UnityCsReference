@@ -49,11 +49,14 @@ namespace UnityEditorInternal.Profiling
             public int id; // FrameDataView item id
             public int sampleIndex; // Merged sample index
             public int instanceId;
+            public float[] columnValues;
             public string[] columnStrings;
         }
 
         class ObjectsTreeView : TreeView
         {
+            ProfilerFrameDataMultiColumnHeader m_MultiColumnHeader;
+
             List<ObjectInformation> m_ObjectsData;
             static readonly IList<int> k_DefaultSelection = new int[] { 0 };
 
@@ -62,6 +65,8 @@ namespace UnityEditorInternal.Profiling
             public ObjectsTreeView(TreeViewState treeViewState, ProfilerFrameDataMultiColumnHeader multicolumnHeader)
                 : base(treeViewState, multicolumnHeader)
             {
+                m_MultiColumnHeader = multicolumnHeader;
+
                 showBorder = true;
                 showAlternatingRowBackgrounds = true;
                 multicolumnHeader.sortingChanged += OnSortingChanged;
@@ -155,9 +160,26 @@ namespace UnityEditorInternal.Profiling
 
                 if (m_ObjectsData != null)
                 {
+                    var columns = m_MultiColumnHeader.columns;
+                    if (header.sortedColumnIndex >= columns.Length)
+                        return;
+
                     var orderMultiplier = header.IsSortedAscending(header.sortedColumnIndex) ? 1 : -1;
-                    Comparison<ObjectInformation> comparison = (objData1, objData2) =>
-                        objData1.columnStrings[header.sortedColumnIndex].CompareTo(objData2.columnStrings[header.sortedColumnIndex]) * orderMultiplier;
+                    Comparison<ObjectInformation> comparison;
+                    switch(columns[header.sortedColumnIndex].profilerColumn)
+                    {
+                        case HierarchyFrameDataView.columnTotalTime:
+                        case HierarchyFrameDataView.columnTotalPercent:
+                        case HierarchyFrameDataView.columnTotalGpuTime:
+                        case HierarchyFrameDataView.columnTotalGpuPercent:
+                        case HierarchyFrameDataView.columnGcMemory:
+                        case HierarchyFrameDataView.columnDrawCalls:
+                            comparison = (objData1, objData2) => objData1.columnValues[header.sortedColumnIndex].CompareTo(objData2.columnValues[header.sortedColumnIndex]) * orderMultiplier;
+                            break;
+                        default:
+                            comparison = (objData1, objData2) => objData1.columnStrings[header.sortedColumnIndex].CompareTo(objData2.columnStrings[header.sortedColumnIndex]) * orderMultiplier;
+                            break;
+                    }
                     m_ObjectsData.Sort(comparison);
                 }
 
@@ -400,30 +422,38 @@ namespace UnityEditorInternal.Profiling
             m_TreeView.SetSelection(new List<int>());
 
             var samplesCount = m_FrameDataView.GetItemMergedSamplesCount(selectedId);
-            var columnsCount = m_MultiColumnHeader.columns.Length;
-
-            var objectsData = new List<ObjectInformation>();
-            var objectsDatas = new List<string>[columnsCount];
 
             // Collect all the data
             var instanceIDs = new List<int>(samplesCount);
             m_FrameDataView.GetItemMergedSamplesInstanceID(selectedId, instanceIDs);
+
+            var columns = m_MultiColumnHeader.columns;
+            var columnsCount = columns.Length;
+            var objectsDatas = new List<string>[columnsCount];
+            var objectsValueDatas = new List<float>[columnsCount];
             for (var i = 0; i < columnsCount; i++)
             {
                 objectsDatas[i] = new List<string>(samplesCount);
-                m_FrameDataView.GetItemMergedSamplesColumnData(selectedId, m_MultiColumnHeader.columns[i].profilerColumn, objectsDatas[i]);
+                m_FrameDataView.GetItemMergedSamplesColumnData(selectedId, columns[i].profilerColumn, objectsDatas[i]);
+
+                objectsValueDatas[i] = new List<float>(samplesCount);
+                m_FrameDataView.GetItemMergedSamplesColumnDataAsFloats(selectedId, columns[i].profilerColumn, objectsValueDatas[i]);
             }
 
             // Store it per sample
+            var objectsData = new List<ObjectInformation>();
             for (var i = 0; i < samplesCount; i++)
             {
-                var objData = new ObjectInformation() { columnStrings = new string[columnsCount] };
+                var objData = new ObjectInformation() { columnStrings = new string[columnsCount], columnValues = new float[columnsCount] };
                 objData.id = selectedId;
                 objData.sampleIndex = i;
 
                 objData.instanceId = (i < instanceIDs.Count) ? instanceIDs[i] : 0;
                 for (var j = 0; j < columnsCount; j++)
+                {
                     objData.columnStrings[j] = (i < objectsDatas[j].Count) ? objectsDatas[j][i] : string.Empty;
+                    objData.columnValues[j] = (i < objectsValueDatas[j].Count) ? objectsValueDatas[j][i] : 0.0f;
+                }
 
                 objectsData.Add(objData);
             }

@@ -3,11 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 
 namespace UnityEditor
 {
-    internal static class SearchUtils
+    static class SearchUtils
     {
         internal static bool MatchSearch(string searchContext, string content)
         {
@@ -105,6 +104,24 @@ namespace UnityEditor
                 bp--;
             }
             return (bp < 0 && a.Length >= b.Length) || (ap < 0 && b.Length >= a.Length);
+        }
+
+        static int? s_DebounceThresholdMs;
+        const string k_DebounceThresholdKeyName = "Search.DebounceThresholdMs";
+        public static int debounceThresholdMs
+        {
+            get
+            {
+                if (!s_DebounceThresholdMs.HasValue)
+                    s_DebounceThresholdMs = EditorPrefs.GetInt(k_DebounceThresholdKeyName, 250);
+                return s_DebounceThresholdMs.Value;
+            }
+
+            set
+            {
+                s_DebounceThresholdMs = Math.Min(Math.Max(0, value), 1000);
+                EditorPrefs.SetInt(k_DebounceThresholdKeyName, s_DebounceThresholdMs.Value);
+            }
         }
     }
 }

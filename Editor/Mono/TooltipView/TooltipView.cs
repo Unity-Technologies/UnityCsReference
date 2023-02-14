@@ -125,7 +125,7 @@ namespace UnityEditor
 
         public static void Close()
         {
-            if (s_guiView != null)
+            if (s_guiView != null && s_guiView.window != null)
                 s_guiView.window.Close();
         }
 

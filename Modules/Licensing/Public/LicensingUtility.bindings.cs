@@ -12,7 +12,11 @@ namespace UnityEditor.Experimental.Licensing
     {
         [NativeMethod("HasEntitlement")]
         public extern static bool HasEntitlement(string entitlement);
+
         [NativeMethod("HasEntitlements")]
         public extern static string[] HasEntitlements(string[] entitlements);
+
+        [NativeMethod("IsOnPremiseLicensingEnabled")]
+        internal extern static bool IsOnPremiseLicensingEnabled();
     }
 }

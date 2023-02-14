@@ -48,7 +48,7 @@ namespace UnityEditor.PackageManager.UI
 
             scopedRegistriesInfoBox.Q<Button>().clickable.clicked += () =>
             {
-                m_ApplicationProxy.OpenURL($"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/upm-scoped.html");
+                m_ApplicationProxy.OpenURL($"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/upm-scoped.html#security");
             };
             applyRegistriesButton.clickable.clicked += ApplyChanges;
             revertRegistriesButton.clickable.clicked += RevertChanges;
