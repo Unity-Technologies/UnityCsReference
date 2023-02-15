@@ -18,6 +18,7 @@ namespace Unity.UI.Builder
             TypeName = 1 << 0,
             ClassList = 1 << 1,
             StyleSheets = 1 << 2,
+            FullSelectorText = 1 << 3,
 
             All = ~0
         }
@@ -30,6 +31,7 @@ namespace Unity.UI.Builder
         protected ElementHierarchyView m_ElementHierarchyView;
         protected BuilderSelection m_Selection;
         bool m_SelectionMadeExternally;
+        [SerializeField] protected BuilderElementInfoVisibilityState m_ElementInfoVisibilityState;
 
         BuilderClassDragger m_ClassDragger;
         BuilderExplorerDragger m_ExplorerDragger;
@@ -97,6 +99,21 @@ namespace Unity.UI.Builder
             m_ShouldRebuildHierarchyOnStyleChange = true;
         }
 
+        internal void ChangeVisibilityState(BuilderElementInfoVisibilityState state)
+        {
+            m_ElementInfoVisibilityState ^= state;
+            m_ElementHierarchyView.elementInfoVisibilityState = m_ElementInfoVisibilityState;
+            SaveViewData();
+            UpdateHierarchyAndSelection(m_ElementHierarchyView.hasUnsavedChanges);
+        }
+
+        internal override void OnViewDataReady()
+        {
+            base.OnViewDataReady();
+            OverwriteFromViewData(this, viewDataKey);
+            m_ElementHierarchyView.elementInfoVisibilityState = m_ElementInfoVisibilityState;
+        }
+
         public void ClearHighlightOverlay()
         {
             m_ElementHierarchyView.ClearHighlightOverlay();
@@ -162,9 +179,9 @@ namespace Unity.UI.Builder
         public virtual void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
             if (element == null ||
-                (changeType & (BuilderHierarchyChangeType.ChildrenAdded | 
+                (changeType & (BuilderHierarchyChangeType.ChildrenAdded |
                                BuilderHierarchyChangeType.ChildrenRemoved |
-                               BuilderHierarchyChangeType.Attributes | 
+                               BuilderHierarchyChangeType.Attributes |
                                BuilderHierarchyChangeType.ClassList)) != 0)
             {
                 UpdateHierarchyAndSelection(m_Selection.hasUnsavedChanges);

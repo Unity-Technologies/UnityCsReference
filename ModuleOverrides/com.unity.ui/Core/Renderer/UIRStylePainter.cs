@@ -598,7 +598,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 return;
 
             var style = currentElement.computedStyle;
-            if (style.backgroundColor != Color.clear)
+            if (style.backgroundColor.a > UIRUtility.k_Epsilon)
             {
                 // Draw solid color background
                 var rectParams = new MeshGenerationContextUtils.RectangleParams

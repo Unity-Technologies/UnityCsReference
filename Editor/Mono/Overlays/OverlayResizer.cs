@@ -13,6 +13,7 @@ namespace UnityEditor.Overlays
     {
         const float k_CornerSize = 8;
         const float k_SideSize = 6;
+        const float k_MinDistanceFromEdge = 10;
 
         [Flags]
         enum Direction
@@ -210,6 +211,7 @@ namespace UnityEditor.Overlays
 
             overlay.containerChanged += OnOverlayContainerChanged;
             overlay.layoutChanged += OnOverlayLayoutChanged;
+            m_Overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnOverlayGeometryChanged);
             UpdateResizerVisibility();
         }
 
@@ -219,6 +221,11 @@ namespace UnityEditor.Overlays
         }
 
         void OnOverlayContainerChanged(OverlayContainer container)
+        {
+            UpdateResizerVisibility();
+        }
+
+        void OnOverlayGeometryChanged(GeometryChangedEvent evt)
         {
             UpdateResizerVisibility();
         }
@@ -272,6 +279,26 @@ namespace UnityEditor.Overlays
                     if (resizer.HasDirection(Direction.Top) || resizer.HasDirection(Direction.Bottom))
                         hide |= Mathf.Approximately(m_Overlay.minSize.y, m_Overlay.maxSize.y);
                 }
+
+                if (m_Overlay.canvas != null)
+                {
+                    var canvas = m_Overlay.canvas.rootVisualElement;
+                    var canvasRect = canvas.rect;
+                    var overlayRect = canvas.WorldToLocal(m_Overlay.rootVisualElement.worldBound);
+
+                    if (resizer.HasDirection(Direction.Left))
+                        hide |= overlayRect.xMin <= k_MinDistanceFromEdge;
+
+                    if (resizer.HasDirection(Direction.Right))
+                        hide |= overlayRect.xMax >= canvasRect.xMax - k_MinDistanceFromEdge;
+
+                    if (resizer.HasDirection(Direction.Top))
+                        hide |= overlayRect.yMin <= k_MinDistanceFromEdge;
+
+                    if (resizer.HasDirection(Direction.Bottom))
+                        hide |= overlayRect.yMax >= canvasRect.yMax - k_MinDistanceFromEdge;
+                }
+                
 
                 resizer.style.display = hide ? DisplayStyle.None : DisplayStyle.Flex;
             }

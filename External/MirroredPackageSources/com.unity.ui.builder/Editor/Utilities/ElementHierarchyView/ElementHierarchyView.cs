@@ -21,6 +21,7 @@ namespace Unity.UI.Builder
     internal class ElementHierarchyView : VisualElement
     {
         public const string k_PillName = "unity-builder-tree-class-pill";
+        const string k_TreeItemPillClass = "unity-debugger-tree-item-pill";
 
         public bool hierarchyHasChanged { get; set; }
         public bool hasUnsavedChanges { get; set; }
@@ -65,6 +66,7 @@ namespace Unity.UI.Builder
         bool m_AllowMouseUpRenaming;
         IVisualElementScheduledItem m_RenamingScheduledItem;
         ManipulatorActivationFilter m_RenamingManipulatorFilter;
+        List<Label> m_LabelsToResize = new();
 
         public VisualElement container
         {
@@ -106,6 +108,14 @@ namespace Unity.UI.Builder
                     m_PaneWindow.primarySelection.ClearSelection(null);
             });
 
+            RegisterCallback<GeometryChangedEvent>(e =>
+            {
+                foreach (var label in m_LabelsToResize)
+                {
+                    UpdateResizableLabelWidthInSelector(label);
+                }
+            });
+
             m_TreeViewHoverOverlay = highlightOverlayPainter;
 
             m_Container = new VisualElement();
@@ -121,8 +131,9 @@ namespace Unity.UI.Builder
 
             // Create TreeView.
             m_TreeRootItems = new List<TreeViewItem>();
-            m_TreeView = new TreeView(20, MakeItem, FillItem);
+            m_TreeView = new TreeView(20, MakeItem, BindItem);
             m_TreeView.SetRootItems(m_TreeRootItems);
+            m_TreeView.unbindItem += UnbindItem;
             m_TreeViewController = m_TreeView.viewController as DefaultTreeViewController<VisualElement>;
 
             m_TreeView.selectionType = SelectionType.Multiple;
@@ -174,6 +185,18 @@ namespace Unity.UI.Builder
             }, TrickleDown.TrickleDown);
         }
 
+        private void UnbindItem(VisualElement element, int index)
+        {
+            var explorerItem = element as BuilderExplorerItem;
+
+            foreach (var label in explorerItem.elidableLabels)
+            {
+                m_LabelsToResize.Remove(label);
+            }
+
+            explorerItem.elidableLabels.Clear();
+        }
+
         private void OnExplorerEndDrag()
         {
             m_AllowMouseUpRenaming = false;
@@ -221,7 +244,7 @@ namespace Unity.UI.Builder
                 m_TreeView.CopyExpandedStates(templateTreeItem.id, unpackedElementTreeItem.id);
         }
 
-        void FillItem(VisualElement element, int index)
+        void BindItem(VisualElement element, int index)
         {
             var item = m_TreeViewController.GetTreeViewItemDataForIndex(index);
             var explorerItem = element as BuilderExplorerItem;
@@ -232,6 +255,7 @@ namespace Unity.UI.Builder
             row.RemoveFromClassList(BuilderConstants.ExplorerHeaderRowClassName);
             row.RemoveFromClassList(BuilderConstants.ExplorerItemHiddenClassName);
             row.RemoveFromClassList(BuilderConstants.ExplorerActiveStyleSheetClassName);
+            row.tooltip = string.Empty;
 
             // Get target element (in the document).
             var documentElement = item.data;
@@ -301,6 +325,7 @@ namespace Unity.UI.Builder
 
                 var selectorLabelCont = new VisualElement();
                 selectorLabelCont.AddToClassList(BuilderConstants.ExplorerItemSelectorLabelContClassName);
+
                 labelCont.Add(selectorLabelCont);
 
                 // Register right-click events for context menu actions.
@@ -311,25 +336,20 @@ namespace Unity.UI.Builder
 
                 foreach (var partStr in selectorParts)
                 {
+                    Label label;
+                    VisualElement pill = null;
+
                     if (partStr.StartsWith(BuilderConstants.UssSelectorClassNameSymbol))
                     {
                         m_ClassPillTemplate.CloneTree(selectorLabelCont);
-                        var pill = selectorLabelCont.contentContainer.ElementAt(selectorLabelCont.childCount - 1);
-                        var pillLabel = pill.Q<Label>("class-name-label");
+                        pill = selectorLabelCont.contentContainer.ElementAt(selectorLabelCont.childCount - 1);
+                        label = pill.Q<Label>("class-name-label");
                         pill.name = k_PillName;
-                        pill.AddToClassList("unity-debugger-tree-item-pill");
+                        pill.AddToClassList(k_TreeItemPillClass);
                         pill.SetProperty(BuilderConstants.ExplorerStyleClassPillClassNameVEPropertyName, partStr);
                         pill.userData = documentElement;
 
-                        // Add ellipsis if the class name is too long.
-                        var partStrShortened = BuilderNameUtilities.CapStringLengthAndAddEllipsis(partStr, BuilderConstants.ClassNameInPillMaxLength);
-
-                        if (partStrShortened != partStr)
-                        {
-                            pillLabel.tooltip = partStr;
-                        }
-
-                        pillLabel.text = partStrShortened;
+                        label.text = partStr;
 
                         // We want class dragger first because it has priority on the pill label when drag starts.
                         m_ClassDragger.RegisterCallbacksOnTarget(pill);
@@ -337,31 +357,62 @@ namespace Unity.UI.Builder
                     }
                     else if (partStr.StartsWith(BuilderConstants.UssSelectorNameSymbol))
                     {
-                        var selectorPartLabel = new Label(partStr);
-                        selectorPartLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
-                        selectorPartLabel.AddToClassList(BuilderConstants.ElementNameClassName);
-                        selectorLabelCont.Add(selectorPartLabel);
+                        label = new Label(partStr);
+                        label.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
+                        label.AddToClassList(BuilderConstants.ElementNameClassName);
+                        selectorLabelCont.Add(label);
                     }
                     else if (partStr.StartsWith(BuilderConstants.UssSelectorPseudoStateSymbol))
                     {
-                        var selectorPartLabel = new Label(partStr);
-                        selectorPartLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
-                        selectorPartLabel.AddToClassList(BuilderConstants.ElementPseudoStateClassName);
-                        selectorLabelCont.Add(selectorPartLabel);
+                        label = new Label(partStr);
+                        label.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
+                        label.AddToClassList(BuilderConstants.ElementPseudoStateClassName);
+                        selectorLabelCont.Add(label);
                     }
                     else if (partStr == BuilderConstants.SingleSpace)
                     {
-                        var selectorPartLabel = new Label(BuilderConstants.TripleSpace);
-                        selectorPartLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
-                        selectorPartLabel.AddToClassList(BuilderConstants.ElementTypeClassName);
-                        selectorLabelCont.Add(selectorPartLabel);
+                        label = new Label(BuilderConstants.TripleSpace);
+                        label.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
+                        label.AddToClassList(BuilderConstants.ElementTypeClassName);
+                        selectorLabelCont.Add(label);
                     }
                     else
                     {
-                        var selectorPartLabel = new Label(partStr);
-                        selectorPartLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
-                        selectorPartLabel.AddToClassList(BuilderConstants.ElementTypeClassName);
-                        selectorLabelCont.Add(selectorPartLabel);
+                        label = new Label(partStr);
+                        label.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
+                        label.AddToClassList(BuilderConstants.ElementTypeClassName);
+                        selectorLabelCont.Add(label);
+                    }
+
+                    var shouldElideText = !elementInfoVisibilityState.HasFlag(BuilderExplorer.BuilderElementInfoVisibilityState
+                        .FullSelectorText);
+
+                    label.AddToClassList(BuilderConstants.SelectorLabelClassName);
+
+                    if (shouldElideText)
+                    {
+                        explorerItem.elidableLabels.Add(label);
+
+                        if (selectorParts.Count == 1)
+                        {
+                            m_LabelsToResize.Add(label);
+                        }
+                        else
+                        {
+                            // Label has a max-width
+                            label.AddToClassList(BuilderConstants.SelectorLabelMultiplePartsClassName);
+                        }
+
+                        label.RegisterCallback<GeometryChangedEvent>(e =>
+                        {
+                            if (selectorParts.Count == 1)
+                            {
+                                UpdateResizableLabelWidthInSelector(label);
+                            }
+
+                            var fullSelectorText = BuilderSharedStyles.GetSelectorString(documentElement);
+                            UpdateTooltips(label, pill, explorerItem, fullSelectorText, partStr);
+                        });
                     }
                 }
 
@@ -519,6 +570,38 @@ namespace Unity.UI.Builder
 
             // Register right-click events for context menu actions.
             m_ContextMenuManipulator.RegisterCallbacksOnTarget(explorerItem);
+        }
+
+        private void UpdateTooltips(Label label, VisualElement pill, BuilderExplorerItem explorerItem,
+            string fullSelectorText, string selectorPart)
+        {
+            var tooltipElement = pill ?? label;
+            var row = explorerItem.GetFirstAncestorWithClass(BaseTreeView.itemUssClassName);
+
+            tooltipElement.tooltip = label.isElided ? selectorPart : string.Empty;
+
+            if (label.isElided)
+            {
+                row.tooltip = fullSelectorText;
+            }
+            else
+            {
+                row.tooltip = explorerItem.elidableLabels.Any(x => x.isElided) ? fullSelectorText : string.Empty;
+            }
+        }
+
+        private void UpdateResizableLabelWidthInSelector(Label label)
+        {
+            var padding = label.resolvedStyle.paddingRight;
+
+            if (label.parent.ClassListContains(k_TreeItemPillClass))
+            {
+                padding += label.parent.resolvedStyle.paddingRight;
+            }
+
+            var size = resolvedStyle.width - label.worldBound.position.x - padding;
+
+            label.style.maxWidth = Mathf.Max(BuilderConstants.ClassNameInPillMinWidth, size);
         }
 
         void HighlightItemInTargetWindow(VisualElement documentElement)

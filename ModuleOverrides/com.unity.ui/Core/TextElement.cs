@@ -199,7 +199,7 @@ namespace UnityEngine.UIElements
 
             UpdateTooltip();
 
-            if(selection.HasSelection())
+            if(selection.HasSelection() && selectingManipulator.HasFocus())
                 DrawHighlighting(mgc);
             else if(!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
                 DrawCaret(mgc);

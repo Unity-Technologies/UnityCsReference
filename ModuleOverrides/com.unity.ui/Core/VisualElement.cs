@@ -1359,6 +1359,8 @@ namespace UnityEngine.UIElements
                             HandleEventAtTargetAndDefaultPhase(e);
                         }
                     }
+
+                    panel.dispatcher.m_ClickDetector.Cleanup(this);
                 }
 
                 UnregisterRunningAnimations();

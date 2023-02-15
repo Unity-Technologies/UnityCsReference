@@ -245,22 +245,30 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 case KeyCode.A when evt.actionKey:
                     SelectAll();
+                    evt.StopPropagation();
                     break;
                 case KeyCode.PageUp:
                     if (!selectedIndices.Any()) return;
                     index = Mathf.Max(0, selectedIndices.Max() - (virtualizationController.visibleItemCount - 1));
                     HandleSelectionAndScroll(index, evt.shiftKey);
+                    evt.StopPropagation();
                     break;
                 case KeyCode.PageDown:
                     if (!selectedIndices.Any()) return;
                     index = Mathf.Min(viewController.itemsSource.Count - 1,
                         selectedIndices.Max() + (virtualizationController.visibleItemCount - 1));
                     HandleSelectionAndScroll(index, evt.shiftKey);
+                    evt.StopPropagation();
+                    break;
+                // On mac moving up and down will trigger the sound of an incorrect key being pressed
+                // This should be fixed in UUM-26264 by the UIToolkit team
+                case KeyCode.DownArrow:
+                case KeyCode.UpArrow:
+                    evt.StopPropagation();
                     break;
             }
 
             Focus();
-            evt.StopPropagation();
         }
 
         public void OnNavigationMoveShortcut(NavigationMoveEvent evt)
