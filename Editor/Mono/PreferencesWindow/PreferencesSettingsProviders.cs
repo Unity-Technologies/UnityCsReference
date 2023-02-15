@@ -130,6 +130,7 @@ namespace UnityEditor
             public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
             public static readonly GUIContent enableConstrainProportionsScalingForNewObjects = EditorGUIUtility.TrTextContent("Create Objects with Constrained Proportions scale on", "If enabled, scale in the transform component will be set to constrain proportions for new GameObjects by default");
             public static readonly GUIContent useInspectorExpandedStateContent = EditorGUIUtility.TrTextContent("Auto-hide gizmos", "Automatically hide gizmos of Components collapsed in the Inspector");
+            public static readonly GUIContent ignoreAlwaysRefreshWhenNotFocused = EditorGUIUtility.TrTextContent("Refresh the Scene view only when the Editor is in focus.", "If enabled, ignore the \"Always Refresh\" flag on the Scene view when the Editor is not the foregrounded application.");
         }
 
         class LanguageProperties
@@ -805,6 +806,7 @@ namespace UnityEditor
             m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(SceneViewProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
             m_EnableConstrainProportionsScalingForNewObjects = EditorGUILayout.Toggle(SceneViewProperties.enableConstrainProportionsScalingForNewObjects, m_EnableConstrainProportionsScalingForNewObjects);
             AnnotationUtility.useInspectorExpandedState = EditorGUILayout.Toggle(SceneViewProperties.useInspectorExpandedStateContent, AnnotationUtility.useInspectorExpandedState);
+            SceneView.s_PreferenceIgnoreAlwaysRefreshWhenNotFocused.value = EditorGUILayout.Toggle(SceneViewProperties.ignoreAlwaysRefreshWhenNotFocused, SceneView.s_PreferenceIgnoreAlwaysRefreshWhenNotFocused);
 
             GUILayout.Label("Handles", EditorStyles.boldLabel);
             Handles.s_LineThickness.value = EditorGUILayout.IntSlider(SceneViewProperties.handlesLineThickness, (int)Handles.s_LineThickness.value, 1, 5);

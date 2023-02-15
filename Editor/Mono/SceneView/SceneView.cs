@@ -151,6 +151,7 @@ namespace UnityEditor
         public static Color selectedOutlineColor => kSceneViewSelectedOutline.Color;
         public bool isUsingSceneFiltering => UseSceneFiltering();
 
+        internal static SavedBool s_PreferenceIgnoreAlwaysRefreshWhenNotFocused = new SavedBool("SceneView.ignoreAlwaysRefreshWhenNotFocused", false);
         internal static SavedBool s_PreferenceEnableFilteringWhileSearching = new SavedBool("SceneView.enableFilteringWhileSearching", true);
         internal static SavedBool s_PreferenceEnableFilteringWhileLodGroupEditing = new SavedBool("SceneView.enableFilteringWhileLodGroupEditing", true);
 
@@ -651,6 +652,9 @@ namespace UnityEditor
 
         [NonSerialized]
         Camera m_Camera;
+
+        [NonSerialized]
+        bool m_EditorApplicationHasFocus = true;
 
         VisualElement m_CameraViewVisualElement;
 
@@ -3105,16 +3109,28 @@ namespace UnityEditor
         void OnBecameVisible()
         {
             EditorApplication.update += UpdateAnimatedMaterials;
+            EditorApplication.focusChanged += OnEditorApplicationFocusChanged;
         }
 
         void OnBecameInvisible()
         {
             EditorApplication.update -= UpdateAnimatedMaterials;
+            EditorApplication.focusChanged -= OnEditorApplicationFocusChanged;
+        }
+
+        void OnEditorApplicationFocusChanged(bool hasFocus)
+        {
+            m_EditorApplicationHasFocus = hasFocus;
         }
 
         void UpdateAnimatedMaterials()
         {
             var repaint = false;
+
+            // Ensure that we in fact do want to paint when not in focus.
+            if (!m_EditorApplicationHasFocus && s_PreferenceIgnoreAlwaysRefreshWhenNotFocused.value)
+                return;
+
             if (m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
                 repaint = sceneViewState.alwaysRefreshEnabled;
             repaint |= LODUtility.IsLODAnimating(m_Camera);

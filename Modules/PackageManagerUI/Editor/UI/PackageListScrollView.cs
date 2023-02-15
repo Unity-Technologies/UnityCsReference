@@ -392,12 +392,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!UIUtils.IsElementVisible(this))
                 return;
 
-            if (evt.keyCode == KeyCode.A && evt.actionKey)
+            switch (evt.keyCode)
             {
-                SelectAllVisible();
+                case KeyCode.A when evt.actionKey:
+                    SelectAllVisible();
+                    evt.StopPropagation();
+                    break;
+                // On mac moving up and down will trigger the sound of an incorrect key being pressed
+                // This should be fixed in UUM-26264 by the UIToolkit team
+                case KeyCode.DownArrow:
+                case KeyCode.UpArrow:
+                    evt.StopPropagation();
+                    break;
             }
-
-            evt.StopPropagation();
         }
 
         public void OnNavigationMoveShortcut(NavigationMoveEvent evt)
