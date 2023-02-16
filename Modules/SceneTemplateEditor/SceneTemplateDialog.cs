@@ -189,14 +189,12 @@ namespace UnityEditor.SceneTemplate
                         var sceneTemplatesContainer = new VisualElement();
                         sceneTemplatesContainer.AddToClassList(Styles.classTemplatesContainer);
                         sceneTemplatesContainer.AddToClassList(Styles.sceneTemplateDialogBorder);
-                        // mainContainer.Add(sceneTemplatesContainer);
                         CreateAllSceneTemplateListsUI(sceneTemplatesContainer);
 
                         // Create a container for the template description (right side)
                         var descriptionContainer = new VisualElement();
                         descriptionContainer.AddToClassList(Styles.classDescriptionContainer);
                         descriptionContainer.AddToClassList(Styles.classBorder);
-                        // mainContainer.Add(descriptionContainer);
                         CreateTemplateDescriptionUI(descriptionContainer);
 
                         if (EditorPrefs.HasKey(GetKeyName(nameof(m_Splitter))))
@@ -319,6 +317,9 @@ namespace UnityEditor.SceneTemplate
             m_GridView.SetPinned(m_SceneTemplateInfos.Where(template => template.isPinned).Select(template => template.GetHashCode()));
             m_GridView.SetSelection(m_LastSelectedTemplate.GetHashCode());
 
+            if (m_GridView.filterString != null && !m_GridView.filterString.Equals(string.Empty))
+                m_GridView.filterString = m_GridView.filterString;
+
             m_GridView.onPinnedChanged += OnPinnedChanged;
             m_GridView.onSelectionChanged += OnTemplateListViewSelectionChanged;
         }
@@ -400,12 +401,18 @@ namespace UnityEditor.SceneTemplate
             rootContainer.RegisterCallback<GeometryChangedEvent>(evt => m_PreviewArea?.UpdatePreviewAreaSize());
 
             // Text container
+            var scrollViewContainer = new ScrollView { style = { flexGrow = 1 } };
+            rootContainer.Add(scrollViewContainer);
+
+            // Title
             var sceneTitleLabel = new Label();
+            scrollViewContainer.Add(sceneTitleLabel);
             sceneTitleLabel.name = k_SceneTemplateTitleLabelName;
             sceneTitleLabel.AddToClassList(Styles.classWrappingText);
-            rootContainer.Add(sceneTitleLabel);
 
+            // Asset path
             var assetPathSection = new VisualElement();
+            scrollViewContainer.Add(assetPathSection);
             assetPathSection.name = k_SceneTemplatePathSection;
             {
                 var scenePathLabel = new Label();
@@ -450,9 +457,10 @@ namespace UnityEditor.SceneTemplate
                 }
                 assetPathSection.Add(editLocateRow);
             }
-            rootContainer.Add(assetPathSection);
 
+            // Description
             var descriptionSection = new VisualElement();
+            scrollViewContainer.Add(descriptionSection);
             descriptionSection.name = k_SceneTemplateDescriptionSection;
             {
                 var descriptionLabel = new Label();
@@ -465,7 +473,8 @@ namespace UnityEditor.SceneTemplate
                 sceneDescriptionLabel.name = k_SceneTemplateDescriptionName;
                 descriptionSection.Add(sceneDescriptionLabel);
             }
-            rootContainer.Add(descriptionSection);
+
+            rootContainer.Add(scrollViewContainer);
         }
 
         private void UpdateTemplateDescriptionUI(SceneTemplateInfo newSceneTemplateInfo)

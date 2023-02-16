@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using Unity.Profiling;
 
@@ -70,12 +70,13 @@ static class LayoutDelegates
 
         if (measureFunction == null)
         {
+            Debug.Assert(false, "Measure called on a null method");
             result = default;
             return;
         }
 
         using (s_InvokeMeasureFunctionMarker.Auto())
-            measureFunction(ref node, width, widthMode, height, heightMode, out result);
+            measureFunction(node.GetOwner(), ref node, width, widthMode, height, heightMode, out result);
     }
 
     [AOT.MonoPInvokeCallback(typeof(InvokeBaselineFunctionDelegate))]

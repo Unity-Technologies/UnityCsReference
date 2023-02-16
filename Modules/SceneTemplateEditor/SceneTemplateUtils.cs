@@ -204,7 +204,7 @@ namespace UnityEditor.SceneTemplate
                     var assetName = Path.GetFileNameWithoutExtension(templateData.Item1);
 
                     var isReadOnly = false;
-                    if (templateData.Item1.StartsWith("Packages/") && AssetDatabase.GetAssetFolderInfo(templateData.Item1, out var isRootFolder, out var isImmutable))
+                    if (templateData.Item1.StartsWith("Packages/") && AssetDatabase.TryGetAssetFolderInfo(templateData.Item1, out var isRootFolder, out var isImmutable))
                     {
                         isReadOnly = isImmutable;
                     }

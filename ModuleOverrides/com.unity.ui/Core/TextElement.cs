@@ -151,7 +151,6 @@ namespace UnityEngine.UIElements
             (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
         }
 
-        [SerializeField, DontCreateProperty]
         private string m_Text = String.Empty;
 
         /// <summary>
@@ -257,7 +256,7 @@ namespace UnityEngine.UIElements
 
             UpdateTooltip();
 
-            if(selection.HasSelection())
+            if(selection.HasSelection() && selectingManipulator.HasFocus())
                 DrawHighlighting(mgc);
             else if(!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
                 DrawCaret(mgc);
@@ -470,7 +469,8 @@ namespace UnityEngine.UIElements
                     SaveViewData();
             }
 
-            if (!edition.isReadOnly && editingManipulator?.editingUtilities.text != newValue)
+            // Always sync the manipulator if it exists even if the element is read-only or disabled. See issue UUM-8802
+            if (editingManipulator != null)
                 editingManipulator.editingUtilities.text = newValue;
         }
     }

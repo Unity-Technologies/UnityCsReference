@@ -337,7 +337,7 @@ namespace UnityEditor.Search
 
             // Transfer all options from options to context.options
             context.options |= options;
-            
+
             int fetchProviderCount = 0;
             var allItems = new List<SearchItem>(3);
 
@@ -789,7 +789,7 @@ namespace UnityEditor.Search
             if (options.HasNone(IndexingOptions.Temporary))
             {
                 indexName = System.IO.Path.GetFileNameWithoutExtension(indexPath);
-                if (!AssetDatabase.GetAssetFolderInfo(indexPath, out var rootFolder, out var immutable) || immutable)
+                if (!AssetDatabase.TryGetAssetFolderInfo(indexPath, out var rootFolder, out var immutable) || immutable)
                     indexPath = AssetDatabase.GenerateUniqueAssetPath($"Assets/{indexName}.index");
             }
             else

@@ -52,7 +52,6 @@ namespace UnityEngine
                 if (m_CursorIndex != value)
                 {
                     m_CursorIndex = value;
-                    revealCursor = true;
                     OnCursorIndexChange?.Invoke();
                 }
             }
@@ -65,7 +64,6 @@ namespace UnityEngine
                 if (m_CursorIndex != value)
                 {
                     SetCursorIndexWithoutNotify(value);
-                    revealCursor = true;
                     OnCursorIndexChange?.Invoke();
                 }
             }

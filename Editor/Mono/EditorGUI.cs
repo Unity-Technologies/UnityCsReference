@@ -208,7 +208,8 @@ namespace UnityEditor
 
         internal static SavedBool s_ShowRepaintDots = new SavedBool("ShowRepaintDots", true);
 
-        internal static readonly Regex s_HyperlinkRegex = new Regex(@"(?<=\b=')[^']*");
+        internal static readonly Regex s_ATagRegex = new Regex(@"(?<=\b="")[^""]*");
+        internal static readonly Regex s_LinkTagRegex = new Regex(@"(?<=\b=')[^']*");
 
         static class Styles
         {
@@ -1461,7 +1462,9 @@ namespace UnityEditor
             if (!editor.HasClickedOnLink(mousePosition, out string link))
                 return false;
 
-            MatchCollection matches = s_HyperlinkRegex.Matches(link);
+            MatchCollection matches = s_ATagRegex.Matches(link);
+            if (matches.Count == 0)
+                matches = s_LinkTagRegex.Matches(link);
 
             int endPreviousAttributeIndex = 0;
             // for each attribute we need to find the attribute name

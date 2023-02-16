@@ -130,7 +130,7 @@ namespace UnityEditor
         // rootFolder is true if the path is a registered root folder
         // immutable is true when the root of the path was registered with the immutable flag (e.g. shared package)
         // asset folders marked immutable are not modified by the asset database
-        extern internal static bool GetAssetFolderInfo(string path, out bool rootFolder, out bool immutable);
+        extern public static bool TryGetAssetFolderInfo(string path, out bool rootFolder, out bool immutable);
 
         public static bool Contains(Object obj) { return Contains(obj.GetInstanceID()); }
         extern public static bool Contains(int instanceID);
@@ -725,7 +725,7 @@ namespace UnityEditor
                     continue;
 
                 bool rootFolder, readOnly;
-                bool validPath = GetAssetFolderInfo(path, out rootFolder, out readOnly);
+                bool validPath = TryGetAssetFolderInfo(path, out rootFolder, out readOnly);
                 if (validPath && (rootFolder || readOnly))
                     continue;
 

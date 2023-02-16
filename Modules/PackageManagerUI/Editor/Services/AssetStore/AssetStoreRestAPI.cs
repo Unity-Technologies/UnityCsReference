@@ -50,7 +50,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             "Essentials",
             "Templates",
             "Tools",
-            "VFX"
+            "VFX",
+            "Web3"
         };
 
         private string m_Host;

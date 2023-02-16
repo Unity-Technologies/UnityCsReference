@@ -621,11 +621,11 @@ namespace UnityEditor
                 }
             }
         }
-        
+
         internal static PropertyValueOriginInfo GetPropertyValueOriginInfo(SerializedProperty property)
-        {            
+        {
             if (property == null)
-                return new PropertyValueOriginInfo("The property is null");            
+                return new PropertyValueOriginInfo("The property is null");
 
             if (property.prefabOverride)
                 return new PropertyValueOriginInfo("The property value is overriden in the currently open object");
@@ -2040,7 +2040,7 @@ namespace UnityEditor
             // We allow relative paths outside the Assets folder so we do not throw if isValidAssetFolder is false
             bool isRootFolder = false;
             bool isImmutableFolder = false;
-            bool isValidAssetFolder = AssetDatabase.GetAssetFolderInfo(directory, out isRootFolder, out isImmutableFolder);
+            bool isValidAssetFolder = AssetDatabase.TryGetAssetFolderInfo(directory, out isRootFolder, out isImmutableFolder);
 
             if (isValidAssetFolder && isImmutableFolder)
                 throw new ArgumentException("Saving Prefab to immutable folder is not allowed: '" + path + "'");

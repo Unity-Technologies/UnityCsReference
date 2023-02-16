@@ -1393,6 +1393,8 @@ namespace UnityEngine.UIElements
                             EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(e, elementPanel, this);
                         }
                     }
+
+                    panel.dispatcher.m_ClickDetector.Cleanup(this);
                 }
 
                 UnregisterRunningAnimations();
@@ -1862,12 +1864,14 @@ namespace UnityEngine.UIElements
 
         private void AssignMeasureFunction()
         {
-            LayoutManager.SharedManager.SetMeasureFunction(layoutNode.Handle, Measure);
+            layoutNode.SetOwner(this);
+            layoutNode.Measure = Measure;
         }
 
         private void RemoveMeasureFunction()
         {
-            layoutNode.SetMeasureFunction(null);
+            layoutNode.Measure = null;
+            layoutNode.SetOwner(null);
         }
 
         /// <undoc/>
@@ -1877,11 +1881,12 @@ namespace UnityEngine.UIElements
             return new Vector2(float.NaN, float.NaN);
         }
 
-        internal void Measure(ref LayoutNode node, float width, LayoutMeasureMode widthMode, float height, LayoutMeasureMode heightMode, out LayoutSize result)
+        internal static void Measure(VisualElement ve, ref LayoutNode node, float width, LayoutMeasureMode widthMode, float height, LayoutMeasureMode heightMode, out LayoutSize result)
         {
-            Debug.Assert(node.Equals(layoutNode), "LayoutNode instance mismatch");
-            Vector2 size = DoMeasure(width, (MeasureMode)widthMode, height, (MeasureMode)heightMode);
-            float ppp = scaledPixelsPerPoint;
+            result = default;
+            Debug.Assert(node.Equals(ve.layoutNode), "LayoutNode instance mismatch");
+            Vector2 size = ve.DoMeasure(width, (MeasureMode)widthMode, height, (MeasureMode)heightMode);
+            float ppp = ve.scaledPixelsPerPoint;
             result = new LayoutSize(AlignmentUtils.RoundToPixelGrid(size.x, ppp), AlignmentUtils.RoundToPixelGrid(size.y, ppp));
         }
 

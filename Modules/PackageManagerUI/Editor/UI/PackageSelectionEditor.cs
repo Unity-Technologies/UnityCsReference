@@ -133,7 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var immutable = true;
                 m_ShouldBeEnabled = true;
-                if (!m_Version.isInstalled || m_AssetDatabase.GetAssetFolderInfo("Packages/" + m_Package.name, out var rootFolder, out immutable))
+                if (!m_Version.isInstalled || m_AssetDatabase.TryGetAssetFolderInfo("Packages/" + m_Package.name, out var rootFolder, out immutable))
                     m_ShouldBeEnabled = !immutable;
             }
 
