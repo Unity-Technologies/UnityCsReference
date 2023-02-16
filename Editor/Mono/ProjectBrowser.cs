@@ -3005,7 +3005,7 @@ namespace UnityEditor
                 {
                     var path = AssetDatabase.GetAssetPath(instanceID);
                     bool isRootFolder, isImmutable;
-                    if (string.IsNullOrEmpty(path) || !AssetDatabase.GetAssetFolderInfo(path, out isRootFolder, out isImmutable) || isRootFolder || isImmutable)
+                    if (string.IsNullOrEmpty(path) || !AssetDatabase.TryGetAssetFolderInfo(path, out isRootFolder, out isImmutable) || isRootFolder || isImmutable)
                     {
                         return false;
                     }

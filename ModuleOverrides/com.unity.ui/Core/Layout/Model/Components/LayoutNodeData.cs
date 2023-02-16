@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 
 namespace UnityEngine.UIElements.Layout;
 
@@ -15,6 +15,7 @@ struct LayoutNodeData
     public bool HasNewLayout;
     public int ManagedMeasureFunctionIndex;
     public int ManagedBaselineFunctionIndex;
+    public int ManagedOwnerIndex;
     public int LineIndex;
 
     public LayoutHandle Config;

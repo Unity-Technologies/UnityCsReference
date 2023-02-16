@@ -207,6 +207,7 @@ namespace UnityEngine
             settings.color = textColor;
 
             settings.inverseYAxis = true;
+            settings.isIMGUI = true;
             settings.shouldConvertToLinearSpace = false;
         }
 

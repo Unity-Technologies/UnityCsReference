@@ -84,6 +84,40 @@ namespace UnityEditor.ShaderKeywordFilter
     [RequiredByNativeCode]
     internal static class ShaderKeywordFilterUtil
     {
+        internal struct CachedFilterData
+        {
+            public Hash128 dependencyHash;
+            public SettingsNode settingsNode;
+        };
+
+        // In memory cache for filter data per renderpipeline asset.
+        // This is to avoid redundant attribute search for each shader/pass/stage.
+        internal static Dictionary<string, CachedFilterData> PerAssetFilterDataCache = new Dictionary<string, CachedFilterData>();
+
+        internal static SettingsNode GetFilterDataCached(string nodeName, UnityEngine.Object containerObject)
+        {
+            string assetPath = AssetDatabase.GetAssetPath(containerObject);
+            Hash128 dependencyHash = AssetDatabase.GetAssetDependencyHash(assetPath);
+
+            CachedFilterData cachedData;
+            if (PerAssetFilterDataCache.TryGetValue(assetPath, out cachedData))
+            {
+                // Cached data is valid only if dependency hash hasn't changed
+                if (cachedData.dependencyHash == dependencyHash)
+                    return cachedData.settingsNode;
+            }
+
+            // No valid data found in the cache so we need to do the full processing
+            // and then enter the result into the cache.
+            var visited = new HashSet<object>();
+            cachedData.dependencyHash = dependencyHash;
+            cachedData.settingsNode = SettingsNode.GatherFilterData(nodeName, containerObject, visited);
+
+            PerAssetFilterDataCache[assetPath] = cachedData;
+
+            return cachedData.settingsNode;
+        }
+
         // For the current build target with given constraint state, gets the list of active filter rule sets.
         [RequiredByNativeCode]
         internal static SettingsVariant[] GetKeywordFilterVariants(string buildTargetGroupName, ConstraintState constraintState)
@@ -98,8 +132,7 @@ namespace UnityEditor.ShaderKeywordFilter
                 if (rpAsset == null)
                     continue;
 
-                var visited = new HashSet<object>();
-                var node = SettingsNode.GatherFilterData(rpAsset.name, rpAsset, visited);
+                var node = GetFilterDataCached(rpAsset.name, rpAsset);
                 if (node != null)
                     root.Children.Add(node);
             }

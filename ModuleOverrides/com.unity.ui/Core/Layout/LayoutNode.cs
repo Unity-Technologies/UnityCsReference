@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Assertions;
@@ -83,11 +83,16 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     }
 
     /// <summary>
-    /// Sets the custom measure function for this node.
+    /// Sets the owner of this node.
     /// </summary>
-    public void SetMeasureFunction(LayoutMeasureFunction func)
+    public void SetOwner(VisualElement func)
     {
-        m_Access.SetMeasureFunction(m_Handle, func);
+        m_Access.SetOwner(m_Handle, func);
+    }
+
+    public VisualElement GetOwner()
+    {
+       return m_Access.GetOwner(m_Handle);
     }
 
     /// <summary>
@@ -263,6 +268,7 @@ partial struct LayoutNode : IEquatable<LayoutNode>
 
         Measure = null;
         Baseline = null;
+        SetOwner(null);
 
         Layout = LayoutComputedData.Default;
         Style = LayoutStyleData.Default;

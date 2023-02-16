@@ -204,6 +204,10 @@ namespace UnityEngine
                 if (link.linkId != null && link.linkIdLength > 0)
                 {
                     href = new string(link.linkId);
+                    if (!href.StartsWith("href"))
+                        return false;
+                    // Removes href="..."
+                    href = href.Substring(6, href.Length - 7);
                     if (Uri.IsWellFormedUriString(href, UriKind.Absolute))
                     {
                         return true;

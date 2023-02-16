@@ -75,6 +75,7 @@ namespace UnityEngine.TextCore.Text
         public float uvLineOffset;
         public VertexSortingOrder geometrySortingOrder = VertexSortingOrder.Normal;
         public bool inverseYAxis;
+        public bool isIMGUI;
 
         public float charWidthMaxAdj;
         internal TextInputSource inputSource = TextInputSource.TextString;
@@ -124,7 +125,7 @@ namespace UnityEngine.TextCore.Text
                 verticalMapping == other.verticalMapping && uvLineOffset.Equals(other.uvLineOffset) &&
                 geometrySortingOrder == other.geometrySortingOrder && inverseYAxis == other.inverseYAxis &&
                 charWidthMaxAdj.Equals(other.charWidthMaxAdj) && inputSource == other.inputSource &&
-                isOrthographic.Equals(other.isOrthographic) && isPlaceholder.Equals(other.isPlaceholder);
+                isOrthographic.Equals(other.isOrthographic) && isPlaceholder.Equals(other.isPlaceholder) && isIMGUI.Equals(other.isIMGUI);
         }
 
         public override bool Equals(object obj)
@@ -190,6 +191,7 @@ namespace UnityEngine.TextCore.Text
             hashCode.Add(charWidthMaxAdj);
             hashCode.Add((int)inputSource);
             hashCode.Add(isPlaceholder);
+            hashCode.Add(isIMGUI);
             return hashCode.ToHashCode();
         }
 
@@ -3528,7 +3530,7 @@ namespace UnityEngine.TextCore.Text
                         else if (tagValueType == TagValueType.StringValue)
                         {
                             // Compute HashCode value for the named tag.
-                            if (unicode != '"')
+                            if (generationSettings.isIMGUI || unicode != '"')
                             {
                                 m_XmlAttribute[attributeIndex].valueHashCode = (m_XmlAttribute[attributeIndex].valueHashCode << 5) + m_XmlAttribute[attributeIndex].valueHashCode ^ TextGeneratorUtilities.ToUpperFast((char)unicode);
                                 m_XmlAttribute[attributeIndex].valueLength += 1;
@@ -3578,7 +3580,6 @@ namespace UnityEngine.TextCore.Text
 
                 if (attributeFlag == 2 && unicode == ' ')
                     attributeFlag = 0;
-
             }
 
             if (!isValidHtmlTag)
@@ -4153,7 +4154,21 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.A:
                         if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
                         {
-                            if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF)
+                            // For IMGUI, we want to treat the a tag as we do with the link tag
+                            if (generationSettings.isIMGUI)
+                            {
+                                int index = textInfo.linkCount;
+
+                                if (index + 1 > textInfo.linkInfo.Length)
+                                    TextInfo.Resize(ref textInfo.linkInfo, index + 1);
+
+                                textInfo.linkInfo[index].hashCode = (int)MarkupTag.HREF;
+                                textInfo.linkInfo[index].linkTextfirstCharacterIndex = m_CharacterCount;
+
+                                textInfo.linkInfo[index].linkIdFirstCharacterIndex = 3;
+                                textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, m_XmlAttribute[1].valueLength + m_XmlAttribute[1].valueStartIndex - 2);
+                            }
+                            else if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF)
                             {
                                 // Make sure linkInfo array is of appropriate size.
                                 int index = textInfo.linkCount;

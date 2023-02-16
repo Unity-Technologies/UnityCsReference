@@ -390,7 +390,7 @@ namespace UnityEditor
         {
             // read-only asset locations (e.g. shared packages) are considered not editable
             bool rootFolder, readOnly;
-            bool validPath = AssetDatabase.GetAssetFolderInfo(assetPath, out rootFolder, out readOnly);
+            bool validPath = AssetDatabase.TryGetAssetFolderInfo(assetPath, out rootFolder, out readOnly);
             if (validPath && readOnly)
                 return Editability.Never;
 

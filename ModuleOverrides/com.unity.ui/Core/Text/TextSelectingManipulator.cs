@@ -87,6 +87,11 @@ namespace UnityEngine.UIElements
             return m_SelectingUtilities.hasSelection;
         }
 
+        internal bool HasFocus()
+        {
+            return m_TextElement.hasFocus;
+        }
+
         internal void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             switch (evt)
@@ -160,7 +165,15 @@ namespace UnityEngine.UIElements
                     m_ConsecutiveMouseDownCount = 1;
 
                 if (m_ConsecutiveMouseDownCount == 2 && m_TextElement.selection.doubleClickSelectsWord)
+                {
+                    // We need to assign the correct cursor and select index to the current cursor position
+                    // prior to selecting the current word. Because selectAllOnMouseUp is true, it'll always
+                    // use a cursorIndex of 0.
+                    if (cursorIndex == 0 && cursorIndex != selectIndex)
+                        m_SelectingUtilities.MoveCursorToPosition_Internal(pointerPosition, evt.shiftKey);
+
                     m_SelectingUtilities.SelectCurrentWord();
+                }
                 else if (m_ConsecutiveMouseDownCount == 3 && m_TextElement.selection.tripleClickSelectsLine)
                     m_SelectingUtilities.SelectCurrentParagraph();
                 else

@@ -1942,7 +1942,7 @@ namespace UnityEditor.SceneManagement
         void CachePrefabFolderInfo()
         {
             bool isRootFolder;
-            m_IsPrefabInValidAssetFolder = AssetDatabase.GetAssetFolderInfo(m_PrefabAssetPath, out isRootFolder, out m_IsPrefabInImmutableFolder);
+            m_IsPrefabInValidAssetFolder = AssetDatabase.TryGetAssetFolderInfo(m_PrefabAssetPath, out isRootFolder, out m_IsPrefabInImmutableFolder);
         }
 
         bool IsPrefabInImmutableFolder()

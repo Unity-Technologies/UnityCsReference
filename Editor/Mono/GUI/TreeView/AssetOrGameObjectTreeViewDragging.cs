@@ -30,7 +30,7 @@ namespace UnityEditor
             foreach (var draggedItemID in draggedItemIDs)
             {
                 var path = AssetDatabase.GetAssetPath(draggedItemID);
-                if (AssetDatabase.IsValidFolder(path) && !AssetDatabase.GetAssetFolderInfo(path, out _, out _))
+                if (AssetDatabase.IsValidFolder(path) && !AssetDatabase.TryGetAssetFolderInfo(path, out _, out _))
                     return false;
 
             }

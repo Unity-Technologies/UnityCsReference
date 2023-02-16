@@ -21,6 +21,7 @@ namespace UnityEditor.SceneTemplate
     [Serializable]
     [ExcludeFromPreset]
     [AssetFileNameExtension("scenetemplate")]
+    [HelpURL("https://docs.unity3d.com/Manual/scene-templates.html")]
     public class SceneTemplateAsset : ScriptableObject
     {
         internal const string extension = "scenetemplate";
@@ -82,7 +83,8 @@ namespace UnityEditor.SceneTemplate
             var sceneCloneableDependenciesFolder = Path.Combine(sceneFolder, sceneName).Replace("\\", "/");
 
             var depList = new List<Object>();
-            ReferenceUtils.GetSceneDependencies(scenePath, depList);
+            var editorOnlyDependencies = new HashSet<string>();
+            ReferenceUtils.GetSceneDependencies(scenePath, depList, editorOnlyDependencies);
 
             var newDependenciesAdded = false;
 
@@ -103,6 +105,10 @@ namespace UnityEditor.SceneTemplate
                     if (assetFolder == sceneCloneableDependenciesFolder)
                     {
                         instantiationMode = TemplateInstantiationMode.Clone;
+                    }
+                    else if (editorOnlyDependencies.Contains(dependencyPath))
+                    {
+                        instantiationMode = TemplateInstantiationMode.Reference;
                     }
                 }
 

@@ -21,6 +21,7 @@ namespace UnityEngine.Rendering
         internal UInt32 index;
         internal UInt32 frame;
         internal UInt32 type;
+        internal UInt32 contextID;
 
         extern public bool isValid { get; }
 
@@ -32,6 +33,7 @@ namespace UnityEngine.Rendering
             index = indx;
             frame = 0;
             type = 0;
+            contextID = 0;
         }
     }
 
