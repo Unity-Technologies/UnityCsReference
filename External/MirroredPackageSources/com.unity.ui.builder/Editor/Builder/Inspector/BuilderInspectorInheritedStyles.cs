@@ -11,6 +11,14 @@ namespace Unity.UI.Builder
 {
     internal class BuilderInspectorInheritedStyles : IBuilderInspectorSection
     {
+        public static readonly string classListContainerName = "class-list-container";
+        public static readonly string addClassButtonName = "add-class-button";
+        public static readonly string addClassFieldName = "add-class-field";
+        public static readonly string inspectorInheritedStylesFoldoutName = "inspector-inherited-styles-foldout";
+
+        // Used in tests
+        public static readonly string classListFoldoutName = "class-list-foldout";
+
         BuilderInspector m_Inspector;
         BuilderSelection m_Selection;
         BuilderPaneWindow m_PaneWindow;
@@ -24,7 +32,8 @@ namespace Unity.UI.Builder
         Button m_AddClassButton;
         Button m_CreateClassButton;
         VisualTreeAsset m_ClassPillTemplate;
-        
+        StringBuilder m_TooltipBuilder = new();
+
         VisualElement currentVisualElement => m_Inspector.currentVisualElement;
 
         public VisualElement root => m_InheritedStylesSection;
@@ -36,15 +45,15 @@ namespace Unity.UI.Builder
             m_PaneWindow = inspector.paneWindow;
             m_MatchingSelectors = matchingSelectors;
 
-            m_InheritedStylesSection = m_Inspector.Q<PersistedFoldout>("inspector-inherited-styles-foldout");
-            m_ClassListContainer = m_Inspector.Q("class-list-container");
+            m_InheritedStylesSection = m_Inspector.Q<PersistedFoldout>(inspectorInheritedStylesFoldoutName);
+            m_ClassListContainer = m_Inspector.Q(classListContainerName);
             m_MatchingSelectorsFoldout = m_Inspector.Q<PersistedFoldout>("matching-selectors-container");
 
-            m_AddClassField = m_Inspector.Q<TextField>("add-class-field");
+            m_AddClassField = m_Inspector.Q<TextField>(addClassFieldName);
             m_AddClassField.isDelayed = true;
             m_AddClassField.RegisterCallback<KeyUpEvent>(OnAddClassFieldChange);
 
-            m_AddClassButton = m_Inspector.Q<Button>("add-class-button");
+            m_AddClassButton = m_Inspector.Q<Button>(addClassButtonName);
             m_CreateClassButton = m_Inspector.Q<Button>("create-class-button");
 
             m_ClassPillTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
@@ -91,13 +100,13 @@ namespace Unity.UI.Builder
         {
             if (string.IsNullOrEmpty(className))
                 return false;
-            
+
             if (className.Contains(" "))
             {
                 Builder.ShowWarning(BuilderConstants.AddStyleClassValidationSpaces);
                 return false;
             }
-            
+
             if (!BuilderNameUtilities.attributeRegex.IsMatch(className))
             {
                 Builder.ShowWarning(BuilderConstants.ClassNameValidationSpacialCharacters);
@@ -291,9 +300,9 @@ namespace Unity.UI.Builder
                 pillDeleteButton.userData = className;
                 pill.userData = className;
 
-                // Add ellipsis if the class name is too long.
-                var classNameShortened = BuilderNameUtilities.CapStringLengthAndAddEllipsis(className, BuilderConstants.ClassNameInPillMaxLength);
-                pillLabel.text = BuilderConstants.UssSelectorClassNameSymbol + classNameShortened;
+                var pillText = BuilderConstants.UssSelectorClassNameSymbol + className;
+                pillLabel.text = pillText;
+                pillLabel.AddToClassList(BuilderConstants.SelectorLabelClassName);
 
                 if (IsClassInUXMLDoc(className))
                 {
@@ -310,15 +319,30 @@ namespace Unity.UI.Builder
                 pill.SetProperty(BuilderConstants.InspectorClassPillLinkedSelectorElementVEPropertyName, selector);
                 var clickable = CreateClassPillClickableManipulator();
                 pill.AddManipulator(clickable);
+
+                m_TooltipBuilder.Clear();
+                m_TooltipBuilder.Append(pillText);
+
+                if (!disabledPills)
+                {
+                    m_TooltipBuilder.Append("\n\n");
+                }
+
                 if (selector == null)
                 {
                     pill.AddToClassList(BuilderConstants.InspectorClassPillNotInDocumentClassName);
-                    pill.tooltip = disabledPills ? string.Empty : BuilderConstants.InspectorClassPillDoubleClickToCreate;
+
+                    if (!disabledPills)
+                    {
+                        m_TooltipBuilder.Append(L10n.Tr(BuilderConstants.InspectorClassPillDoubleClickToCreate));
+                    }
                 }
-                else
+                else if (!disabledPills)
                 {
-                    pill.tooltip = disabledPills ? string.Empty : BuilderConstants.InspectorClassPillDoubleClickToSelect;
+                    m_TooltipBuilder.Append(L10n.Tr(BuilderConstants.InspectorClassPillDoubleClickToSelect));
                 }
+
+                pill.tooltip = m_TooltipBuilder.ToString();
             }
         }
 

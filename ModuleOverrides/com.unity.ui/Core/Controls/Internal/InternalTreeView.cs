@@ -15,11 +15,12 @@ namespace UnityEngine.UIElements
     internal class InternalTreeView : VisualElement
     {
         private static readonly string s_ListViewName = "unity-tree-view__list-view";
-        private static readonly string s_ItemName = "unity-tree-view__item";
         private static readonly string s_ItemToggleName = "unity-tree-view__item-toggle";
         private static readonly string s_ItemIndentsContainerName = "unity-tree-view__item-indents";
         private static readonly string s_ItemIndentName = "unity-tree-view__item-indent";
         private static readonly string s_ItemContentContainerName = "unity-tree-view__item-content";
+
+        public static readonly string itemUssClassName = "unity-tree-view__item";
 
         public new class UxmlFactory : UxmlFactory<InternalTreeView, UxmlTraits> {}
 
@@ -556,13 +557,13 @@ namespace UnityEngine.UIElements
         {
             var itemContainer = new VisualElement()
             {
-                name = s_ItemName,
+                name = itemUssClassName,
                 style =
                 {
                     flexDirection = FlexDirection.Row
                 }
             };
-            itemContainer.AddToClassList(s_ItemName);
+            itemContainer.AddToClassList(itemUssClassName);
             itemContainer.RegisterCallback<MouseUpEvent>(OnItemMouseUp);
 
             var indents = new VisualElement()
@@ -603,7 +604,7 @@ namespace UnityEngine.UIElements
             if (unbindItem == null)
                 return;
 
-            var item = m_ItemWrappers[index].item;
+            var item = m_ItemWrappers.Count > index ? m_ItemWrappers[index].item : null;
             var userContentContainer = element.Q(s_ItemContentContainerName).ElementAt(0);
             unbindItem(userContentContainer, item);
         }

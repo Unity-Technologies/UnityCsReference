@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine.UIElements;
 using UnityEngine;
 
@@ -8,6 +9,7 @@ namespace Unity.UI.Builder
         VisualElement m_Container;
         VisualElement m_ReorderZoneAbove;
         VisualElement m_ReorderZoneBelow;
+        internal List<Label> elidableLabels = new();
 
         public override VisualElement contentContainer => m_Container == null ? this : m_Container;
 

@@ -150,6 +150,23 @@ namespace Unity.UI.Builder
             classDragger.builderStylesheetRoot = container;
             styleSheetsDragger.builderStylesheetRoot = container;
         }
+                
+        protected override void InitEllipsisMenu()
+        {
+            base.InitEllipsisMenu();
+
+            if (pane == null)
+            {
+                return;
+            }
+
+            pane.AppendActionToEllipsisMenu(L10n.Tr("Full selector text"),
+                a => ChangeVisibilityState(BuilderElementInfoVisibilityState.FullSelectorText),
+            a => m_ElementHierarchyView.elementInfoVisibilityState
+                .HasFlag(BuilderElementInfoVisibilityState.FullSelectorText)
+                ? DropdownMenuAction.Status.Checked
+                : DropdownMenuAction.Status.Normal);
+        }
 
         protected override bool IsSelectedItemValid(VisualElement element)
         {

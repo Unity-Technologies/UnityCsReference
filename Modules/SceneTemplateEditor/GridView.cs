@@ -32,19 +32,22 @@ namespace UnityEditor.SceneTemplate
             private int m_Id;
             private string m_Label;
             private Texture2D m_Icon;
+            private Texture2D m_Badge;
             private object m_UserData;
 
-            public Item(int id, string label, Texture2D icon = null, object userData = null, int priority = -1)
+            public Item(int id, string label, Texture2D icon = null, Texture2D badge = null, object userData = null, int priority = -1)
             {
                 m_Id = id;
                 m_Label = label;
                 m_Icon = icon;
+                m_Badge = badge;
                 m_UserData = userData;
                 this.priority = priority;
             }
 
             public int id => m_Id;
             public Texture2D icon => m_Icon;
+            public Texture2D badge => m_Badge;
             public string label => m_Label;
             public object userData => m_UserData;
             public int priority { get; internal set; }
@@ -128,13 +131,19 @@ namespace UnityEditor.SceneTemplate
             }
         }
 
+        public bool thumbnailVisible => sizeLevel >= showThumbnailTileSizeThreshold;
+
         public float minTileSize { get; private set; }
 
         public float maxTileSize { get; private set; }
 
+        public float showThumbnailTileSizeThreshold { get; }
+
         public float listItemHeight { get; private set; }
 
         public float aspectRatio { get; private set; }
+
+        public Texture2D defaultThumbnail { get; }
 
         public IEnumerable<Item> items => m_Items;
         public IEnumerable<Item> pinnedItems => m_PinnedItems;
@@ -146,13 +155,15 @@ namespace UnityEditor.SceneTemplate
         public event Action<Item, bool> onPinnedChanged;
         public event Action<IEnumerable<Item>> onItemsActivated;
 
-        public GridView(IEnumerable<Item> items, string title, float listItemHeight, float minTileSize, float maxTileSize, float aspectRatio = 1f)
+        public GridView(IEnumerable<Item> items, string title, float listItemHeight, float minTileSize, float maxTileSize, float showThumbnailTileSizeThreshold, Texture2D defaultThumbnail, float aspectRatio)
         {
             AddToClassList(Styles.gridView);
             this.aspectRatio = aspectRatio;
             this.listItemHeight = listItemHeight;
             this.minTileSize = minTileSize;
             this.maxTileSize = maxTileSize;
+            this.showThumbnailTileSizeThreshold = showThumbnailTileSizeThreshold;
+            this.defaultThumbnail = defaultThumbnail;
             m_Header = new VisualElement();
             m_Header.AddToClassList(Styles.gridViewHeader);
             {
@@ -549,6 +560,14 @@ namespace UnityEditor.SceneTemplate
             pinBtn.AddToClassList(Styles.gridViewItemPin);
             icon.Add(pinBtn);
 
+            if (item.badge != null)
+            {
+                var badge = new VisualElement();
+                badge.AddToClassList(Styles.gridViewItemBadge);
+                badge.style.backgroundImage = item.badge;
+                icon.Add(badge);
+            }
+
             var label = new Label(item.label);
             label.AddToClassList(Styles.gridViewItemLabel);
             element.Add(label);
@@ -616,11 +635,19 @@ namespace UnityEditor.SceneTemplate
 
         private void LayoutItems()
         {
+            // Because I can't figure out how to get the resolved style values coming from uss on the first pass.
+            const float badgeMaxHeight = 32;
+
             var allItemElements = m_ItemsContainer.Children();
             foreach (var element in allItemElements)
             {
+                var item = element.userData as Item;
+                if (item == null)
+                    continue;
+
                 var pin = element.Q(null, Styles.gridViewItemPin);
                 var icon = element.Q(null, Styles.gridViewItemIcon);
+                var badge = element.Q(null, Styles.gridViewItemBadge);
 
                 if (isListView)
                 {
@@ -637,6 +664,29 @@ namespace UnityEditor.SceneTemplate
                     icon.style.width = StyleKeyword.Auto;
                     pin.RemoveFromHierarchy();
                     icon.Add(pin);
+                }
+
+                if (thumbnailVisible)
+                {
+                    if (badge != null)
+                    {
+                        badge.visible = true;
+                        badge.style.height = Mathf.Min(badgeMaxHeight, element.style.height.value.value * 0.3f);
+
+                        var badgeWidth = badge.style.backgroundImage.value.texture.width;
+                        var badgeHeight = badge.style.backgroundImage.value.texture.height;
+                        var ratio = (float)badgeWidth / badgeHeight;
+                        badge.style.width = badge.style.height.value.value * ratio;
+                    }
+
+                    icon.style.backgroundImage = item.icon ? item.icon : defaultThumbnail;
+                }
+                else
+                {
+                    if (badge != null)
+                        badge.visible = false;
+
+                    icon.style.backgroundImage = item.badge ? item.badge : defaultThumbnail;
                 }
             }
         }

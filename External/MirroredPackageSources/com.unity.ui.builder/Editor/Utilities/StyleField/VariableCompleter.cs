@@ -99,7 +99,9 @@ namespace Unity.UI.Builder
             {
                 return new[] { StyleValueType.Color };
             }
-            else if (BuilderInspectorStyleFields.IsComputedStyleFont(val, handler.styleName))
+            else if (BuilderInspectorStyleFields.IsComputedStyleFont(val, handler.styleName)
+                     || BuilderInspectorStyleFields.IsComputedStyleFontAsset(val, handler.styleName)
+                     )
             {
                 return new[] { StyleValueType.AssetReference, StyleValueType.ResourcePath };
             }

@@ -123,15 +123,19 @@ namespace UnityEditor.SceneTemplate
             }
         }
 
+        const string k_ListInternalView = "dependency-list-internal-view";
         const string k_ListView = "dependency-list-view";
         const string k_HeaderItem = "dependency-list-view-header";
         const string k_SearchFieldItem = "dependency-list-view-search-field";
         const string k_DependencyRowElementName = "scene-template-asset-inspector-dependency-row";
-        const string k_BaseDependenciesLabel = "Dependencies";
-        const string k_BaseTypeLabel = "Type";
+        static readonly string k_BaseDependenciesLabel = L10n.Tr("Dependencies");
+        static readonly string k_BaseTypeLabel = L10n.Tr("Type");
 
         public ListView listView { get; }
         public VisualElement header { get; }
+
+        bool m_SearchFieldReady;
+        internal bool viewReady => m_SearchFieldReady;
 
         Toggle m_CloneHeaderToggle;
 
@@ -157,20 +161,32 @@ namespace UnityEditor.SceneTemplate
             var listViewContainer = new VisualElement();
             listViewContainer.AddToClassList(k_ListView);
             listViewContainer.style.flexGrow = 1;
+            listViewContainer.style.maxHeight = (Mathf.Min(m_OriginalItems.Count, 30) + 2) * m_ItemSize;
 
             listView = new ListView(m_FilteredItems, itemHeight, MakeItem, BindItem);
+            listView.name = k_ListInternalView;
             listView.showAlternatingRowBackgrounds = AlternatingRowBackground.ContentOnly;
             listView.style.flexGrow = 1;
             listView.RegisterCallback<KeyUpEvent>(OnKeyUpEvent);
             listView.selectionType = SelectionType.Multiple;
             listView.onItemsChosen += OnDoubleClick;
+            listView.style.minHeight = 0;
+            listView.style.maxHeight = (Mathf.Min(m_OriginalItems.Count, 30) + 1) * m_ItemSize;
 
             var searchField = new ToolbarSearchField();
+            searchField.name = "dependency-listview-toolbar-searchfield";
             searchField.RegisterValueChangedCallback(evt =>
             {
                 m_CurrentSearchString = evt.newValue;
                 FilterItems(evt.newValue);
             });
+            var textField = searchField.Q<TextField>();
+            if (textField != null)
+            {
+                textField.maxLength = 1024;
+                m_SearchFieldReady = true;
+            }
+
             searchField.AddToClassList(k_SearchFieldItem);
             Add(searchField);
 
@@ -195,19 +211,19 @@ namespace UnityEditor.SceneTemplate
             {
                 UpdateSortingMode(DependencySortMode.Name);
             });
-            dependenciesLabelField.tooltip = "Scene dependencies";
+            dependenciesLabelField.tooltip = L10n.Tr("Scene dependencies");
             changeAllRowElement.Add(dependenciesLabelField);
 
             var typeLabelField = new SortableHeaderElement(k_BaseTypeLabel, "scene-template-asset-inspector-dependency-header-type-column");
-            typeLabelField.tooltip = "Dependency type";
+            typeLabelField.tooltip = L10n.Tr("Dependency type");
             typeLabelField.RegisterCallback<ClickEvent>(evt =>
             {
                 UpdateSortingMode(DependencySortMode.Type);
             });
             changeAllRowElement.Add(typeLabelField);
 
-            var cloneLabel = new Label("Clone");
-            cloneLabel.tooltip = "Is the dependency cloned on scene template instantiation or is it referenced?";
+            var cloneLabel = new Label(L10n.Tr("Clone"));
+            cloneLabel.tooltip = L10n.Tr("Is the dependency cloned on scene template instantiation or is it referenced?");
             cloneLabel.AddToClassList("dependency-list-view-header-item-label-common");
             changeAllRowElement.Add(cloneLabel);
             m_CloneHeaderToggle = new Toggle();
@@ -224,7 +240,6 @@ namespace UnityEditor.SceneTemplate
             });
             m_CloneHeaderToggle.AddToClassList("scene-template-asset-inspector-dependency-header-clone-column");
             changeAllRowElement.Add(m_CloneHeaderToggle);
-
             return changeAllRowElement;
         }
 
@@ -260,10 +275,7 @@ namespace UnityEditor.SceneTemplate
                 instantiationModeProperty.enumValueIndex = (int)newInstantiationType;
 
                 // Sync Selection if the dependency is part of it:
-                if (listView.selectedIndices.Contains(modelIndex))
-                    SyncListSelectionToValue(newInstantiationType);
-                m_SerializedObject.ApplyModifiedProperties();
-
+                SyncListSelectionToValue(newInstantiationType);
                 UpdateGlobalCloneToggle();
             });
         }
@@ -309,16 +321,9 @@ namespace UnityEditor.SceneTemplate
 
         void SyncListSelectionToValue(TemplateInstantiationMode mode)
         {
-            if (listView.selectedIndex != -1)
+            foreach(var item in GetSelectedItems())
             {
-                var listContent = listView.Q<VisualElement>("unity-content-container");
-                foreach (var row in listContent.Children())
-                {
-                    if (row.ClassListContains("unity-list-view__item--selected"))
-                    {
-                        SetDependencyInstantiationMode(row, mode);
-                    }
-                }
+                SetDependencyInstantiationMode(item, mode);
             }
             m_SerializedObject.ApplyModifiedProperties();
         }
@@ -340,22 +345,24 @@ namespace UnityEditor.SceneTemplate
             }
         }
 
-        IEnumerable<SerializedProperty> GetSelectedDependencies()
+        IEnumerable<VisualElement> GetSelectedItems()
         {
-            var selectedItems = new List<SerializedProperty>();
-            if (listView.selectedIndex != -1)
+            if (listView.selectedIndex == -1)
+                yield break;
+
+            var listContent = listView.Q<VisualElement>("unity-content-container");
+            foreach (var row in listContent.Children())
             {
-                var listContent = listView.Q<VisualElement>("unity-content-container");
-                foreach (var row in listContent.Children())
+                if (row.ClassListContains("unity-collection-view__item--selected"))
                 {
-                    var prop = (SerializedProperty)row.userData;
-                    if (row.ClassListContains("unity-list-view__item--selected"))
-                    {
-                        selectedItems.Add(prop);
-                    }
+                    yield return row;
                 }
             }
-            return selectedItems;
+        }
+
+        IEnumerable<SerializedProperty> GetSelectedDependencies()
+        {
+            return GetSelectedItems().Select(item => (SerializedProperty)item.userData);
         }
 
         static void OnDoubleClick(IEnumerable<object> objs)

@@ -271,7 +271,7 @@ namespace UnityEditor.SceneTemplate
 
         static void OnSceneSaved(Scene scene)
         {
-            var infos = SceneTemplateDialog.GetSceneTemplateInfos();
+            var infos = SceneTemplateUtils.GetSceneTemplateInfos();
             foreach (var sceneTemplateInfo in infos)
             {
                 if (sceneTemplateInfo.IsInMemoryScene || sceneTemplateInfo.isReadonly || sceneTemplateInfo.sceneTemplate == null)

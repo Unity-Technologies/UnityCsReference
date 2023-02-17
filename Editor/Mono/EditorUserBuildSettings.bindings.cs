@@ -355,9 +355,6 @@ namespace UnityEditor
         [NativeMethod("GetActiveSubTargetFor")]
         internal static extern int GetActiveSubtargetFor(BuildTarget target);
 
-        [NativeMethod("SetActiveSubTargetFor")]
-        internal static extern void SetActiveSubtargetFor(BuildTarget target, int subtarget);
-
         // Embedded Linux Architecture
         public static extern EmbeddedLinuxArchitecture selectedEmbeddedLinuxArchitecture
         {
@@ -665,9 +662,14 @@ namespace UnityEditor
         internal static extern BuildTargetGroup activeBuildTargetGroup { get; }
 
         [NativeMethod("SwitchActiveBuildTargetSync")]
-        public static extern bool SwitchActiveBuildTarget(BuildTargetGroup targetGroup, BuildTarget target);
+        internal static extern bool SwitchActiveBuildTargetAndSubtarget(BuildTargetGroup targetGroup, BuildTarget target, int subtarget);
+        public static bool SwitchActiveBuildTarget(BuildTargetGroup targetGroup, BuildTarget target)
+            => SwitchActiveBuildTargetAndSubtarget(targetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target));
+
         [NativeMethod("SwitchActiveBuildTargetAsync")]
-        public static extern bool SwitchActiveBuildTargetAsync(BuildTargetGroup targetGroup, BuildTarget target);
+        internal static extern bool SwitchActiveBuildTargetAndSubtargetAsync(BuildTargetGroup targetGroup, BuildTarget target, int subtarget);
+        public static bool SwitchActiveBuildTargetAsync(BuildTargetGroup targetGroup, BuildTarget target)
+            => SwitchActiveBuildTargetAndSubtargetAsync(targetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target));
 
         public static bool SwitchActiveBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget target) =>
             BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget).SetActive(target);
@@ -676,7 +678,9 @@ namespace UnityEditor
         // validating if support for it is installed. However it does not do things like script recompile
         // or domain reload -- generally only useful for asset import testing.
         [NativeMethod("SwitchActiveBuildTargetSyncNoCheck")]
-        internal static extern bool SwitchActiveBuildTargetNoCheck(BuildTargetGroup targetGroup, BuildTarget target);
+        internal static extern bool SwitchActiveBuildTargetAndSubtargetNoCheck(BuildTargetGroup targetGroup, BuildTarget target, int subtarget);
+        internal static bool SwitchActiveBuildTargetNoCheck(BuildTargetGroup targetGroup, BuildTarget target)
+            => SwitchActiveBuildTargetAndSubtargetNoCheck(targetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target));
 
         // DEFINE directives for the compiler.
         public static extern string[] activeScriptCompilationDefines
