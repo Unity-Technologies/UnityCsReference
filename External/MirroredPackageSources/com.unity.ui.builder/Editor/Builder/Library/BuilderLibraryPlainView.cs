@@ -250,6 +250,13 @@ namespace Unity.UI.Builder
 
         void OnContextualMenuPopulateEvent(ContextualMenuPopulateEvent evt)
         {
+            if (m_Dragger.active)
+            {
+                evt.PreventDefault();
+                evt.StopImmediatePropagation();
+                return;
+            }
+            
             var libraryItem = GetLibraryTreeItem((VisualElement) evt.target);
 
             evt.menu.AppendAction(

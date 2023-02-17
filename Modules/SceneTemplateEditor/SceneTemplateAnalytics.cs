@@ -143,7 +143,7 @@ namespace UnityEditor.SceneTemplate
                 this.templateCreationType = Enum.GetName(typeof(TemplateCreationType), templateCreationType);
                 sceneName = AssetDatabase.GetAssetPath(template.templateScene);
                 hasCloneableDependencies = FillAnalyticDepInfos(template, dependencyInfos);
-                numberOfTemplatesInProject = SceneTemplateUtils.GetSceneTemplatePaths().Count();
+                numberOfTemplatesInProject = SceneTemplateUtils.GetSceneTemplates().Count();
             }
         }
 

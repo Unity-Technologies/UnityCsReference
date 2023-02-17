@@ -1742,10 +1742,20 @@ namespace UnityEditor
         }
 
         internal bool unsafeMode {get; set; }
-        internal extern bool isValid
+        internal bool isValid
         {
-            [NativeMethod("IsValid")]
-            get;
+            get
+            {
+                // SerializedProperty should only be accessed while the SerializedObject that created them is still alive
+                // Without this check IsValidInternal will crash in that case
+                if (m_NativePropertyPtr == IntPtr.Zero || m_SerializedObject == null || m_SerializedObject.m_NativeObjectPtr == IntPtr.Zero)
+                    return false;
+
+                return IsValidInternal();
+            }
         }
+
+        [NativeName("IsValid")]
+        extern private bool IsValidInternal();
     }
 }

@@ -495,8 +495,9 @@ namespace UnityEngine.UIElements
 
 
             // Case 1215962: round up as yoga could decide to round down and text would start wrapping
-            float roundedWidth = AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint);
-            float roundedHeight = AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint);
+            float roundedWidth = AlignmentUtils.CeilToPixelGrid(measuredWidth, pixelsPerPoint, 0.0f);
+            float roundedHeight = AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint, 0.0f);
+
             var roundedValues = new Vector2(roundedWidth, roundedHeight);
 
             textHandle.MeasuredSizes = new Vector2(measuredWidth, measuredHeight);

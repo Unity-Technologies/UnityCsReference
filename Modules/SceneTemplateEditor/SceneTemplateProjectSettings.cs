@@ -7,13 +7,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using JetBrains.Annotations;
+using UnityEditor.Search;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.SceneTemplate
 {
     [Serializable]
-    internal class PinState
+    class PinState
     {
         public string templateId;
         public bool isEnabled;
@@ -21,9 +22,9 @@ namespace UnityEditor.SceneTemplate
 
     [Serializable]
     [DebuggerDisplay("{type} - {defaultInstantiationMode}")]
-    internal class DependencyTypeInfo
+    class DependencyTypeInfo
     {
-        public DependencyTypeInfo(System.Type type)
+        public DependencyTypeInfo(Type type)
         {
             this.type = type.FullName;
             supportsModification = true;
@@ -79,7 +80,7 @@ namespace UnityEditor.SceneTemplate
         public TemplateInstantiationMode defaultInstantiationMode;
         public bool supportsModification;
 
-        private GUIContent m_Content;
+        GUIContent m_Content;
         public GUIContent content
         {
             get
@@ -95,21 +96,19 @@ namespace UnityEditor.SceneTemplate
     }
 
     [Serializable]
-    internal class SceneTemplateProjectSettings
+    class SceneTemplateProjectSettings
     {
-        private static SceneTemplateProjectSettings m_Instance;
-        private static System.Type m_TypeToAdd;
-        private static string m_TypeToAddLabel;
-        private static System.Type[] m_AllTypes;
-        private static string[] m_AllTypesLabels;
-        private static float m_MaxLabelWidth;
-        private const float kMaxLabelWidth = 450f;
+        static SceneTemplateProjectSettings m_Instance;
+        static List<SearchProposition> m_AllTypesPropositions;
+        static float m_MaxLabelWidth;
+        const float kMaxLabelWidth = 450f;
 
-        private static class Styles
+        static class Styles
         {
             public static Vector2 typeSelectorWindowSize = new Vector2(350, 200);
-            public static GUIContent browseTypeContent = new GUIContent("Browse...");
+            public static GUIContent addTypeContent = L10n.TextContent("Add type...");
             public static float buttonWidth = 65;
+            public static float addTypeButtonWidth = 70;
             public static float verticalSpace = 10;
             public static float labelWidth = 300;
         }
@@ -170,7 +169,7 @@ namespace UnityEditor.SceneTemplate
             Save(k_Path, this);
         }
 
-        public DependencyTypeInfo GetDependencyInfo(System.Type type)
+        public DependencyTypeInfo GetDependencyInfo(Type type)
         {
             var typeId = type.FullName;
             if (typeId == null)
@@ -227,15 +226,15 @@ namespace UnityEditor.SceneTemplate
 
         internal static void Reset()
         {
-            if (System.IO.File.Exists(SceneTemplateProjectSettings.k_Path))
+            if (System.IO.File.Exists(k_Path))
             {
-                System.IO.File.Delete(SceneTemplateProjectSettings.k_Path);
+                System.IO.File.Delete(k_Path);
             }
 
             m_Instance = null;
         }
 
-        private static void InitDefaultDependencyTypeInfos()
+        static void InitDefaultDependencyTypeInfos()
         {
             defaultDependencyTypeInfos = new List<DependencyTypeInfo>();
 
@@ -332,7 +331,7 @@ namespace UnityEditor.SceneTemplate
             Sort(defaultDependencyTypeInfos);
         }
 
-        private static void Sort(List<DependencyTypeInfo> typeInfos)
+        static void Sort(List<DependencyTypeInfo> typeInfos)
         {
             typeInfos.Sort((a, b) =>
             {
@@ -342,7 +341,7 @@ namespace UnityEditor.SceneTemplate
             });
         }
 
-        private void SetupDependencyTypeInfos()
+        void SetupDependencyTypeInfos()
         {
             var needSaving = false;
             if (defaultDependencyTypeInfo == null)
@@ -375,28 +374,36 @@ namespace UnityEditor.SceneTemplate
         }
 
         [UsedImplicitly, SettingsProvider]
-        private static SettingsProvider CreateSettings()
+        static SettingsProvider CreateSettings()
         {
             return new SettingsProvider(k_SettingsKey, SettingsScope.Project)
             {
-                keywords = new[] { "unity", "editor", "scene", "clone", "template" },
+                keywords = L10n.Tr(new[] { "unity", "editor", "scene", "clone", "template" }),
                 activateHandler = (text, rootElement) =>
                 {
-                    if (m_AllTypes == null)
+                    if (m_AllTypesPropositions == null)
                     {
-                        m_AllTypes = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>().ToArray();
-                        m_AllTypesLabels = m_AllTypes.Select(t => DependencyTypeInfo.ToShortFullName(t.FullName)).ToArray();
+                        var allTypes = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>();
+                        m_AllTypesPropositions = BuildPropositionsFromTypes(allTypes).ToList();
                     }
-
-                    m_TypeToAddLabel = "";
-                    m_TypeToAdd = null;
                 },
-                label = "Scene Template",
+                label = L10n.Tr("Scene Template"),
                 guiHandler = OnGUIHandler
             };
         }
 
-        private static void OnGUIHandler(string obj)
+        static IEnumerable<SearchProposition> BuildPropositionsFromTypes(IEnumerable<Type> types)
+        {
+            foreach (var t in types)
+            {
+                yield return new SearchProposition(
+                    label: DependencyTypeInfo.ToShortFullName(t.FullName),
+                    type: t,
+                    icon: Search.SearchUtils.GetTypeIcon(t));
+            }
+        }
+
+        static void OnGUIHandler(string obj)
         {
             if (m_MaxLabelWidth == 0)
             {
@@ -412,14 +419,14 @@ namespace UnityEditor.SceneTemplate
 
                 if (Unsupported.IsDeveloperMode())
                 {
-                    if (GUILayout.Button("Clear Scene Template Preferences"))
+                    if (GUILayout.Button(L10n.Tr("Clear Scene Template Preferences")))
                     {
                         ClearPreferences();
                     }
                 }
 
                 EditorGUI.BeginChangeCheck();
-                settings.newSceneOverride = (NewSceneOverride)EditorGUILayout.EnumPopup(new GUIContent("New Scene Menu"), settings.newSceneOverride, GUILayout.Width(m_MaxLabelWidth + 150), GUILayout.ExpandWidth(false));
+                settings.newSceneOverride = (NewSceneOverride)EditorGUILayout.EnumPopup(L10n.TextContent("New Scene Menu"), settings.newSceneOverride, GUILayout.Width(m_MaxLabelWidth + 150), GUILayout.ExpandWidth(false));
                 if (EditorGUI.EndChangeCheck())
                 {
                     Save();
@@ -429,8 +436,8 @@ namespace UnityEditor.SceneTemplate
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    GUILayout.Label("Default types", EditorStyles.boldLabel, GUILayout.Width(m_MaxLabelWidth - 15));
-                    GUILayout.Label("Clone", EditorStyles.boldLabel);
+                    GUILayout.Label(L10n.Tr("Default types"), EditorStyles.boldLabel, GUILayout.Width(m_MaxLabelWidth - 15));
+                    GUILayout.Label(L10n.Tr("Clone"), EditorStyles.boldLabel);
                 }
 
                 foreach (var depInfo in settings.dependencyTypeInfos)
@@ -447,7 +454,7 @@ namespace UnityEditor.SceneTemplate
                             Save();
                         }
 
-                        if (GUILayout.Button("Remove", GUILayout.Width(Styles.buttonWidth)))
+                        if (GUILayout.Button(L10n.Tr("Remove"), GUILayout.Width(Styles.buttonWidth)))
                         {
                             settings.dependencyTypeInfos.Remove(depInfo);
                             Save();
@@ -459,7 +466,7 @@ namespace UnityEditor.SceneTemplate
                 GUILayout.Space(Styles.verticalSpace);
 
                 EditorGUI.BeginChangeCheck();
-                var clone = EditorGUILayout.Toggle(new GUIContent("All Other Types"), settings.defaultDependencyTypeInfo.defaultInstantiationMode == TemplateInstantiationMode.Clone);
+                var clone = EditorGUILayout.Toggle(L10n.TextContent("All Other Types"), settings.defaultDependencyTypeInfo.defaultInstantiationMode == TemplateInstantiationMode.Clone);
                 if (EditorGUI.EndChangeCheck())
                 {
                     settings.defaultDependencyTypeInfo.defaultInstantiationMode = clone ? TemplateInstantiationMode.Clone : TemplateInstantiationMode.Reference;
@@ -472,61 +479,27 @@ namespace UnityEditor.SceneTemplate
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    GUILayout.Label("Add Type", EditorStyles.boldLabel, GUILayout.Width(Styles.buttonWidth));
-                    EditorGUI.BeginChangeCheck();
-                    m_TypeToAddLabel = GUILayout.TextField(m_TypeToAddLabel);
-                    if (EditorGUI.EndChangeCheck())
+                    var listDropDownBtnRect = EditorGUILayout.GetControlRect(false, GUILayout.Width(Styles.addTypeButtonWidth));
+                    if (EditorGUI.DropdownButton(listDropDownBtnRect, Styles.addTypeContent, FocusType.Passive, GUI.skin.button))
                     {
-                        // User has overridden the type.
-                        m_TypeToAdd = null;
+                        var alreadyAddedTypeIds = settings.dependencyTypeInfos.Select(d => d.type);
+                        var typeIdsSet = new HashSet<string>(alreadyAddedTypeIds);
+                        var availablePropositions = m_AllTypesPropositions.Where(p => !typeIdsSet.Contains(p.type.FullName)).ToList();
+                        ListSelectionWindow.Open(listDropDownBtnRect, availablePropositions, selectedIndex =>
+                        {
+                            if (selectedIndex != -1)
+                            {
+                                var type = availablePropositions[selectedIndex].type;
+                                AddNewType(type);
+                            }
+                        });
                     }
-
-                    var listDropDownBtnRect = EditorGUILayout.GetControlRect(false, GUILayout.Width(Styles.buttonWidth));
-                    ListSelectionWindow.SelectionButton(listDropDownBtnRect, Styles.typeSelectorWindowSize, Styles.browseTypeContent, GUI.skin.button, m_AllTypesLabels, selectedIndex =>
-                    {
-                        if (selectedIndex != -1)
-                        {
-                            m_TypeToAddLabel = m_AllTypesLabels[selectedIndex];
-                            m_TypeToAdd = m_AllTypes[selectedIndex];
-                        }
-                    });
-
-                    using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(m_TypeToAddLabel)))
-                        if (GUILayout.Button("Add", GUILayout.Width(Styles.buttonWidth)))
-                        {
-                            var typeId = m_TypeToAdd != null ? m_TypeToAdd.FullName : m_TypeToAddLabel;
-                            if (settings.dependencyTypeInfos.Find(d => d.type == typeId) == null)
-                            {
-                                var newDepInfo = new DependencyTypeInfo(typeId, m_TypeToAddLabel)
-                                {
-                                    defaultInstantiationMode = TemplateInstantiationMode.Clone,
-                                    userAdded = true
-                                };
-
-                                var depInfoWidth = EditorStyles.label.CalcSize(newDepInfo.content).x;
-                                if (depInfoWidth > m_MaxLabelWidth)
-                                {
-                                    m_MaxLabelWidth = Mathf.Min(kMaxLabelWidth, depInfoWidth);
-                                }
-
-                                settings.dependencyTypeInfos.Add(newDepInfo);
-                                Sort(settings.dependencyTypeInfos);
-                                Save();
-                                m_TypeToAddLabel = "";
-                                m_TypeToAdd = null;
-                                GUIUtility.ExitGUI();
-                            }
-                            else
-                            {
-                                Debug.LogWarning($"Already a dependency information for type: {typeId}");
-                            }
-                        }
                 }
 
                 GUILayout.Space(Styles.verticalSpace);
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("Reset Defaults"))
+                    if (GUILayout.Button(L10n.Tr("Reset Defaults")))
                     {
                         ResetDefaults();
                     }
@@ -537,7 +510,7 @@ namespace UnityEditor.SceneTemplate
             }
         }
 
-        private static void ClearPreferences()
+        static void ClearPreferences()
         {
             EditorPrefs.DeleteKey("SceneTemplateInspectorDetailsFoldout");
             EditorPrefs.DeleteKey("SceneTemplateInspectorThumbnailFoldout");
@@ -548,12 +521,46 @@ namespace UnityEditor.SceneTemplate
             EditorPrefs.DeleteKey(SceneTemplateDialog.GetKeyName("m_LastSelectedTemplate"));
         }
 
-        private static void ResetDefaults()
+        internal static void ResetDefaults()
         {
             var settings = Get();
             settings.dependencyTypeInfos = new List<DependencyTypeInfo>();
             settings.SetupDependencyTypeInfos();
             Save();
+        }
+
+        internal static bool CanAddType(Type type)
+        {
+            var settings = Get();
+            var typeId = type.FullName;
+            return settings.dependencyTypeInfos.Find(d => d.type == typeId) == null;
+        }
+
+        internal static bool AddNewType(Type type)
+        {
+            if (!CanAddType(type))
+                return false;
+
+            var typeId = type.FullName;
+            var label = DependencyTypeInfo.ToShortFullName(type.FullName);
+            var settings = Get();
+            var newDepInfo = new DependencyTypeInfo(typeId, label)
+            {
+                defaultInstantiationMode = TemplateInstantiationMode.Clone,
+                userAdded = true
+            };
+
+            var depInfoWidth = EditorStyles.label.CalcSize(newDepInfo.content).x;
+            if (depInfoWidth > m_MaxLabelWidth)
+            {
+                m_MaxLabelWidth = Mathf.Min(kMaxLabelWidth, depInfoWidth);
+            }
+
+            settings.dependencyTypeInfos.Add(newDepInfo);
+            Sort(settings.dependencyTypeInfos);
+            Save();
+
+            return true;
         }
     }
 }

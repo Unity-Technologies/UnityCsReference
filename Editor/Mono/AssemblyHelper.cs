@@ -302,11 +302,13 @@ namespace UnityEditor
                             nameSpaces.Add(type.Namespace);
 
                             var originalNamespace = string.Empty;
-                            var attribute = type.CustomAttributes.SingleOrDefault(a => a.AttributeType.FullName == typeof(UnityEngine.Scripting.APIUpdating.MovedFromAttribute).FullName);
+                            var attribute = type.CustomAttributes?.FirstOrDefault(a => a.AttributeType.FullName == typeof(UnityEngine.Scripting.APIUpdating.MovedFromAttribute).FullName);
 
                             if (attribute != null)
                             {
-                                originalNamespace = (string)attribute.ConstructorArguments[0].Value;
+                                // first string argument is originalNamespace (but there can be a boolean before)
+                                var arg = attribute.ConstructorArguments.FirstOrDefault(a => a.Type == module.TypeSystem.String);
+                                originalNamespace = (arg.Value as string) ?? string.Empty;
                             }
 
                             originalNamespaces.Add(originalNamespace);

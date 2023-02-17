@@ -57,6 +57,8 @@ namespace Unity.UI.Builder
         List<ManipulatorActivationFilter> activators { get; set; }
         ManipulatorActivationFilter m_CurrentActivator;
 
+        public bool active => m_Active;
+        
         public BuilderDragger(
             BuilderPaneWindow paneWindow,
             VisualElement root, BuilderSelection selection,

@@ -21,7 +21,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class GenericDropdownMenu : IGenericMenu
     {
-        class MenuItem
+        internal class MenuItem
         {
             public string name;
             public VisualElement element;
@@ -59,6 +59,9 @@ namespace UnityEngine.UIElements
         public static readonly string separatorUssClassName = ussClassName + "__separator";
 
         List<MenuItem> m_Items = new List<MenuItem>();
+        // Used in tests
+        internal List<MenuItem> items => m_Items;
+
         VisualElement m_MenuContainer;
         VisualElement m_OuterContainer;
         ScrollView m_ScrollView;
@@ -118,9 +121,6 @@ namespace UnityEngine.UIElements
         {
             if (evt.originPanel == null)
                 return;
-
-            m_MenuContainer.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            m_MenuContainer.UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             contentContainer.RemoveManipulator(m_NavigationManipulator);
             m_MenuContainer.UnregisterCallback<PointerDownEvent>(OnPointerDown);

@@ -25,24 +25,27 @@ namespace UnityEditor.SceneTemplate
         private const string k_DependencyListView = "scene-template-asset-inspector-list-view";
         private const string k_NoLabelRowName = "scene-template-asset-inspector-no-label-row";
 
-        const string k_SceneTemplateInfo = @"Scene Template Pipeline must be a Mono Script whose main class derives from ISceneTemplatePipeline or SceneTemplatePipelineAdapter. The main class and the script must have the same name.";
+        static readonly string k_SceneTemplateInfo = L10n.Tr("Scene Template Pipeline must be a Mono Script whose main class derives from ISceneTemplatePipeline or SceneTemplatePipelineAdapter. The main class and the script must have the same name.");
 
         private const int k_ItemSize = 16;
 
         private SceneTemplatePreviewArea m_PreviewArea;
 
-        private const string k_SnapshotTooltip = "Take a snapshot based on the selected target then assign it as thumbnail.";
-        private const string k_SnapshotButtonLabel = "Take Snapshot";
-        private const string k_SnapshotTargetPopupName = "snapshot";
-        private const string k_CreatePipelineTooltip = "Create a new Scene Template Pipeline.";
-        private const string k_CreatePipelineButtonLabel = "Create New Scene Template Pipeline";
-        private const string k_PipelineHelpUrl = "https://docs.unity3d.com/2020.2/Documentation/Manual/scene-templates.html";
+        private static readonly string k_SnapshotTooltip = L10n.Tr("Take a snapshot based on the selected target then assign it as thumbnail.");
+        private static readonly string k_SnapshotButtonLabel = L10n.Tr("Take Snapshot");
+        private static readonly string k_SnapshotTargetPopupName = "snapshot";
+        private static readonly string k_CreatePipelineTooltip = L10n.Tr("Create a new Scene Template Pipeline.");
+        private static readonly string k_CreatePipelineButtonLabel = L10n.Tr("Create New Scene Template Pipeline");
         private List<SerializedProperty> m_DependenciesProperty = new List<SerializedProperty>();
 
         private Texture2D m_HelpIcon;
 
         private DependencyListView m_DependencyListView;
-        VisualElement Root { get; set; }
+        internal VisualElement Root { get; set; }
+
+        bool m_TitleTextFieldReady;
+        bool m_DescriptionTextFieldReady;
+        internal bool ViewReady => m_TitleTextFieldReady && m_DescriptionTextFieldReady && (m_DependencyListView?.viewReady ?? false);
 
         private class SnapshotTargetInfo
         {
@@ -87,11 +90,12 @@ namespace UnityEditor.SceneTemplate
             root.style.flexDirection = FlexDirection.Column;
 
             var detailElement = new VisualElement();
+            detailElement.style.marginRight = 6f;
 
             // Template scene
             var templateSceneProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateScenePropertyName);
-            var templatePropertyField = new PropertyField(templateSceneProperty, "Template Scene");
-            templatePropertyField.tooltip = "Scene to instantiate.";
+            var templatePropertyField = new PropertyField(templateSceneProperty, L10n.Tr("Template Scene"));
+            templatePropertyField.tooltip = L10n.Tr("Scene to instantiate.");
             templatePropertyField.RegisterCallback<ChangeEvent<Object>>(e =>
             {
                 RebuildDependencies(root);
@@ -101,15 +105,28 @@ namespace UnityEditor.SceneTemplate
 
             // Scene title
             var templateTitleProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateTitlePropertyName);
-            var titlePropertyField = new PropertyField(templateTitleProperty, "Title");
-            titlePropertyField.tooltip = "Scene template display name. Shown in New Scene Dialog.";
+            var titlePropertyField = new PropertyField(templateTitleProperty, L10n.Tr("Title"));
+            titlePropertyField.tooltip = L10n.Tr("Scene template display name. Shown in New Scene Dialog.");
             titlePropertyField.RegisterCallback<ChangeEvent<string>>(e => TriggerSceneTemplateModified());
+            titlePropertyField.RegisterCallback<SerializedPropertyBindEvent>(e =>
+            {
+                EditorApplication.delayCall += () =>
+                {
+                    if (!titlePropertyField.Children().Any())
+                        return;
+                    if (titlePropertyField.Children().First() is TextField titlePropertyFieldTextField)
+                    {
+                        titlePropertyFieldTextField.maxLength = 1024;
+                        m_TitleTextFieldReady = true;
+                    }
+                };
+            });
             detailElement.Add(titlePropertyField);
 
             // Scene description
             var templateDescriptionProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateDescriptionPropertyName);
-            var description = new PropertyField(templateDescriptionProperty, "Description");
-            description.tooltip = "Scene template description. Shown in New Scene Dialog.";
+            var description = new PropertyField(templateDescriptionProperty, L10n.Tr("Description"));
+            description.tooltip = L10n.Tr("Scene template description. Shown in New Scene Dialog.");
             description.RegisterCallback<ChangeEvent<string>>(e => TriggerSceneTemplateModified());
             description.RegisterCallback<SerializedPropertyBindEvent>(e =>
             {
@@ -122,38 +139,34 @@ namespace UnityEditor.SceneTemplate
                     {
                         descriptionTextField.AddToClassList(Styles.classWrappingText);
                         descriptionTextField.multiline = true;
+                        descriptionTextField.maxLength = 1024;
+                        m_DescriptionTextFieldReady = true;
                     }
                 };
             });
             detailElement.Add(description);
 
+            // Pin in new scene dialog
             var templateAddToDefaultsProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateAddToDefaultsPropertyName);
-            var defaultTemplateField = new VisualElement();
-            defaultTemplateField.style.flexDirection = FlexDirection.Row;
-            var addToDefaultsPropertyField = new PropertyField(templateAddToDefaultsProperty, " ");
+            var addToDefaultsPropertyField = new PropertyField(templateAddToDefaultsProperty, L10n.Tr("Pin in New Scene Dialog"));
+            addToDefaultsPropertyField.tooltip = L10n.Tr("Pin in New Scene Dialog. Ensuring this template is shown before unpinned template in the list.");
             addToDefaultsPropertyField.RegisterCallback<ChangeEvent<bool>>(e => TriggerSceneTemplateModified());
-            addToDefaultsPropertyField.style.flexShrink = 0;
-            defaultTemplateField.Add(addToDefaultsPropertyField);
-            var label = new Label("Pin in New Scene Dialog");
-            label.tooltip = "Pin in New Scene Dialog. Ensuring this template is shown before unpinned template in the list.";
-            label.style.unityTextAlign = TextAnchor.MiddleLeft;
-            label.style.overflow = Overflow.Hidden;
-            label.style.textOverflow = TextOverflow.Ellipsis;
-            label.style.flexShrink = 1;
-            defaultTemplateField.Add(label);
-            detailElement.Add(defaultTemplateField);
-            root.Add(CreateFoldoutInspector(detailElement, "Details", "SceneTemplateInspectorDetailsFoldout"));
+            detailElement.Add(addToDefaultsPropertyField);
+            root.Add(CreateFoldoutInspector(detailElement, L10n.Tr("Details"), "SceneTemplateInspectorDetailsFoldout"));
 
             // Template thumbnail
             var templateThumbnailProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateThumbnailPropertyName);
-            var thumbnailField = MakeThumbnailField(templateThumbnailProperty, "Texture");
-            root.Add(CreateFoldoutInspector(thumbnailField, "Thumbnail", "SceneTemplateInspectorThumbnailFoldout"));
+            var templateThumbnailBadgeProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplateThumbnailBadgePropertyName);
+            var thumbnailField = MakeThumbnailField(templateThumbnailProperty, templateThumbnailBadgeProperty);
+            thumbnailField.style.marginRight = 6f;
+            root.Add(CreateFoldoutInspector(thumbnailField, L10n.Tr("Thumbnail"), "SceneTemplateInspectorThumbnailFoldout"));
 
             // SceneTemplatePipeline
             var sceneTemplatePipeline = new VisualElement();
+            sceneTemplatePipeline.style.marginRight = 6f;
             var pipelineProperty = serializedObject.FindProperty(SceneTemplateUtils.TemplatePipelineName);
-            var pipelineField = new PropertyField(pipelineProperty, "Scene Template Pipeline");
-            pipelineField.tooltip = "Scene Template Pipeline must be a Mono Script whose main class derives from ISceneTemplatePipeline or SceneTemplatePipelineAdapter. The main class and the script must have the same name.";
+            var pipelineField = new PropertyField(pipelineProperty, L10n.Tr("Scene Template Pipeline"));
+            pipelineField.tooltip = k_SceneTemplateInfo;
             pipelineField.RegisterCallback<ChangeEvent<Object>>(e =>
             {
                 if (e.newValue != null && !SceneTemplateAsset.IsValidPipeline(e.newValue as MonoScript))
@@ -164,16 +177,23 @@ namespace UnityEditor.SceneTemplate
                 }
             });
             sceneTemplatePipeline.Add(pipelineField);
-            var buttonRow = CreateEmptyLabelRow("Scene Template Pipeline", Styles.classUnityPropertyFieldLabel); // Use a hidden label instead of an empty element for proper alignment
+            var buttonRow = CreateEmptyLabelRow(L10n.Tr("Scene Template Pipeline"), Styles.classUnityPropertyFieldLabel); // Use a hidden label instead of an empty element for proper alignment
             var createPipelineButton = new Button(OnCreateSceneTemplatePipeline) { text = k_CreatePipelineButtonLabel, tooltip = k_CreatePipelineTooltip };
             createPipelineButton.AddToClassList(Styles.classUnityBaseFieldInput);
             buttonRow.Add(createPipelineButton);
             sceneTemplatePipeline.Add(buttonRow);
-            root.Add(CreateFoldoutInspectorWithHelp(sceneTemplatePipeline, "Scene Template Pipeline", "SceneTemplatePipelineFoldout", k_PipelineHelpUrl));
+            var version = UnityEditorInternal.InternalEditorUtility.GetUnityVersion();
+            var url = $"https://docs.unity3d.com/{version.Major}.{version.Minor}/Documentation/Manual/scene-templates-customizing-scene-instantiation.html";
+            root.Add(CreateFoldoutInspectorWithHelp(sceneTemplatePipeline, L10n.Tr("Scene Template Pipeline"), "SceneTemplatePipelineFoldout", url));
 
             // Dependencies
-            root.Add(CreateFoldoutInspector(BuildDependencyRows(), "Dependencies", "SceneTemplateDependenciesFoldout"));
+            root.Add(CreateFoldoutInspector(BuildDependencyRows(), L10n.Tr("Dependencies"), "SceneTemplateDependenciesFoldout"));
             return root;
+        }
+
+        protected override bool ShouldHideOpenButton()
+        {
+            return true;
         }
 
         void OnCreateSceneTemplatePipeline()
@@ -291,21 +311,30 @@ namespace UnityEditor.SceneTemplate
             serializedObject.Update();
         }
 
-        private VisualElement MakeThumbnailField(SerializedProperty thumbnailProperty, string label)
+        private VisualElement MakeThumbnailField(SerializedProperty thumbnailProperty, SerializedProperty thumbnailBadgeProperty)
         {
             var propertyElement = new VisualElement();
-            var thumbnailObjectField = new PropertyField(thumbnailProperty, label);
-            thumbnailObjectField.tooltip = "Scene template thumbnail. Shown in New Scene Dialog.";
+            var thumbnailBadgeObjectField = new PropertyField(thumbnailBadgeProperty, L10n.Tr("Badge"));
+            thumbnailBadgeObjectField.tooltip = L10n.Tr("Scene template badge. Shown in New Scene Dialog.");
+            propertyElement.Add(thumbnailBadgeObjectField);
+
+            thumbnailBadgeObjectField.RegisterCallback<ChangeEvent<Object>>(e =>
+            {
+                TriggerSceneTemplateModified();
+            });
+
+            var thumbnailObjectField = new PropertyField(thumbnailProperty, L10n.Tr("Preview"));
+            thumbnailObjectField.tooltip = L10n.Tr("Scene template thumbnail. Shown in New Scene Dialog.");
             propertyElement.Add(thumbnailObjectField);
 
-            m_PreviewArea = new SceneTemplatePreviewArea(k_ThumbnailAreaName, thumbnailProperty.objectReferenceValue as Texture2D, "No preview available");
+            m_PreviewArea = new SceneTemplatePreviewArea(k_ThumbnailAreaName, thumbnailProperty.objectReferenceValue as Texture2D, null, "No preview available");
             var previewAreaElement = m_PreviewArea.Element;
             previewAreaElement.AddToClassList(Styles.classUnityBaseField);
             propertyElement.Add(previewAreaElement);
 
             thumbnailObjectField.RegisterCallback<ChangeEvent<Object>>(e =>
             {
-                m_PreviewArea.UpdatePreview(e.newValue as Texture2D);
+                m_PreviewArea.UpdatePreview(e.newValue as Texture2D, null);
                 TriggerSceneTemplateModified();
             });
 
@@ -313,17 +342,17 @@ namespace UnityEditor.SceneTemplate
             var snapshotHeaderRowElement = new VisualElement();
             snapshotHeaderRowElement.AddToClassList(Styles.classUnityBaseField);
             propertyElement.Add(snapshotHeaderRowElement);
-            var snapshotHeaderLabel = new Label("Snapshot");
-            snapshotHeaderLabel.tooltip = "Generate a Scene template thumbnail from a snapshot in Scene or Game view.";
+            var snapshotHeaderLabel = new Label(L10n.Tr("Snapshot"));
+            snapshotHeaderLabel.tooltip = L10n.Tr("Generate a Scene template thumbnail from a snapshot in Scene or Game view.");
             snapshotHeaderLabel.AddToClassList(Styles.classUnityLabel);
             snapshotHeaderRowElement.Add(snapshotHeaderLabel);
 
             // Snapshot button with dropdown
             var cameraNames = Camera.allCameras.Select(c => new SnapshotTargetInfo { Name = c.name, OnSnapshotAction = TakeSnapshotFromCamera }).ToList();
             cameraNames.Add(new SnapshotTargetInfo()); // Separator
-            cameraNames.Add(new SnapshotTargetInfo { Name = "Game View", OnSnapshotAction = (info, callback) => TakeSnapshotFromGameView(callback) });
-            var snapshotTargetPopup = new PopupField<SnapshotTargetInfo>("View", cameraNames, Camera.allCameras.Length == 0 ? 1 : 0);
-            snapshotTargetPopup.tooltip = "View or Camera to use as the source of the snapshot.";
+            cameraNames.Add(new SnapshotTargetInfo { Name = L10n.Tr("Game View"), OnSnapshotAction = (info, callback) => TakeSnapshotFromGameView(callback) });
+            var snapshotTargetPopup = new PopupField<SnapshotTargetInfo>(L10n.Tr("View"), cameraNames, Camera.allCameras.Length == 0 ? 1 : 0);
+            snapshotTargetPopup.tooltip = L10n.Tr("View or Camera to use as the source of the snapshot.");
             snapshotTargetPopup.formatListItemCallback = info => info.Name;
             snapshotTargetPopup.formatSelectedValueCallback = info => info.Name;
             snapshotTargetPopup.name = k_SnapshotTargetPopupName;

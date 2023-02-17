@@ -60,7 +60,7 @@ namespace UnityEngine.Android
         private static AndroidJavaObject m_UnityPermissions;
         private static AndroidJavaObject m_Activity;
 
-        private static AndroidJavaObject GetActivity()
+        internal static AndroidJavaObject GetActivity()
         {
             if (m_Activity != null)
                 return m_Activity;

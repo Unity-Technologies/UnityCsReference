@@ -152,36 +152,39 @@ namespace UnityEditor.UIElements
             evt.StopPropagation();
         }
 
-        private void Reset(SerializedPropertyBindEvent evt)
+        private void Reset(SerializedProperty newProperty)
         {
-            if (m_SerializedProperty != null)
+            bool newPropertyTypeIsDifferent = !(m_SerializedProperty != null && m_SerializedProperty.isValid && newProperty.propertyType == m_SerializedProperty.propertyType);
+
+            m_SerializedProperty = newProperty;
+
+            // if we already have a serialized property, determine if the property field can be reused without reset
+            // this is only supported for non propertydrawer types
+            if (m_ChildField != null && !newPropertyTypeIsDifferent)
             {
-                // if we already have a serialized property, determine if the property field can be reused without reset
-                // this is only supported for non propertydrawer types
-                if (m_ChildField != null && m_SerializedProperty.propertyType == evt.bindProperty.propertyType)
+                var newField = CreateOrUpdateFieldFromProperty(newProperty, m_ChildField);
+                // there was an issue where we weren't able to swap the bindings on the original field
+                if (newField != m_ChildField)
                 {
-                    var newField = CreateOrUpdateFieldFromProperty(evt.bindProperty, m_ChildField);
-                    // there was an issue where we weren't able to swap the bindings on the original field
-                    if (newField != m_ChildField)
+                    m_ChildField.Unbind();
+                    var childIndex = IndexOf(m_ChildField);
+                    if (childIndex >= 0)
                     {
-                        m_ChildField.Unbind();
-                        var childIndex = IndexOf(m_ChildField);
-                        if (childIndex >= 0)
-                        {
-                            m_ChildField.RemoveFromHierarchy();
-                            m_ChildField = newField;
-                            hierarchy.Insert(childIndex, m_ChildField);
-                        }
+                        m_ChildField.RemoveFromHierarchy();
+                        m_ChildField = newField;
+                        hierarchy.Insert(childIndex, m_ChildField);
                     }
-                    return;
                 }
+
+                return;
             }
 
-            Clear();
+            m_ChildField?.Unbind();
             m_ChildField = null;
-            var bindProperty = evt.bindProperty;
-            m_SerializedProperty = bindProperty;
-            if (bindProperty == null)
+
+            Clear();
+
+            if (m_SerializedProperty == null || !m_SerializedProperty.isValid)
                 return;
 
             ComputeNestingLevel();
@@ -207,7 +210,7 @@ namespace UnityEditor.UIElements
                 }
                 else
                 {
-                    customPropertyGUI = CreateOrUpdateFieldFromProperty(bindProperty);
+                    customPropertyGUI = CreateOrUpdateFieldFromProperty(m_SerializedProperty);
                     m_ChildField = customPropertyGUI;
                 }
             }
@@ -217,6 +220,11 @@ namespace UnityEditor.UIElements
                 PropagateNestingLevel(customPropertyGUI);
                 hierarchy.Add(customPropertyGUI);
             }
+        }
+
+        private void Reset(SerializedPropertyBindEvent evt)
+        {
+            Reset(evt.bindProperty);
         }
 
         private VisualElement CreatePropertyIMGUIContainer()
@@ -386,22 +394,19 @@ namespace UnityEditor.UIElements
                 if (propCount < m_ChildrenProperties.Count)
                 {
                     field = m_ChildrenProperties[propCount];
-                    if (field.bindingPath != propPath)
-                    {
-                        field.bindingPath = property.propertyPath;
-                        field.Bind(property.serializedObject);
-                    }
+                    field.bindingPath = propPath;
                 }
                 else
                 {
                     field = new PropertyField(property);
                     field.m_ParentPropertyField = this;
                     m_ChildrenProperties.Add(field);
-
-                    if (bindNewFields)
-                        field.Bind(property.serializedObject);
+                    field.bindingPath = propPath;
                 }
                 field.name = "unity-property-field-" + property.propertyPath;
+
+                if (bindNewFields)
+                    field.Bind(property.serializedObject);
 
                 // Not yet knowing what type of field we are dealing with, we defer the showMixedValue value setting
                 // to be automatically done via the next Reset call
@@ -446,12 +451,26 @@ namespace UnityEditor.UIElements
             return foldout;
         }
 
-        private VisualElement ConfigureField<TField, TValue>(TField field, SerializedProperty property, Func<TField> factory)
+        void OnFieldValueChanged(EventBase evt)
+        {
+            if (evt.target == m_ChildField && m_SerializedProperty.isValid)
+            {
+                if (m_SerializedProperty.propertyType == SerializedPropertyType.ArraySize && evt is ChangeEvent<int> changeEvent)
+                {
+                    UpdateArrayFoldout(changeEvent, this, m_ParentPropertyField);
+                }
+
+                DispatchPropertyChangedEvent();
+            }
+        }
+
+        private TField ConfigureField<TField, TValue>(TField field, SerializedProperty property, Func<TField> factory)
             where TField : BaseField<TValue>
         {
             if (field == null)
             {
                 field = factory();
+                field.RegisterValueChangedCallback((evt) => OnFieldValueChanged(evt));
             }
             var fieldLabel = label ?? property.localizedDisplayName;
             field.bindingPath = property.propertyPath;
@@ -462,14 +481,6 @@ namespace UnityEditor.UIElements
             field.labelElement.AddToClassList(labelUssClassName);
             field.visualInput.AddToClassList(inputUssClassName);
             field.AddToClassList(BaseField<TValue>.alignedFieldUssClassName);
-
-            field.RegisterValueChangedCallback((evt) =>
-            {
-                if (evt.target == field)
-                {
-                    DispatchPropertyChangedEvent();
-                }
-            });
 
             return field;
         }
@@ -508,8 +519,20 @@ namespace UnityEditor.UIElements
             {
                 case SerializedPropertyType.Integer:
                     if (property.type == "long")
-                        return ConfigureField<LongField, long>(originalField as LongField, property, () => new LongField());
-                    return ConfigureField<IntegerField, int>(originalField as IntegerField, property, () => new IntegerField());
+                        return ConfigureField<LongField, long>(originalField as LongField, property,
+                            () => new LongField());
+                {
+                    var intField = ConfigureField<IntegerField, int>(originalField as IntegerField, property,
+                        () => new IntegerField()) as IntegerField;
+
+                    if (intField != null)
+                    {
+                        // If the field was recycled from an ArraySize property
+                        intField.isDelayed = false;
+                    }
+
+                    return intField;
+                }
 
                 case SerializedPropertyType.Boolean:
                     return ConfigureField<Toggle, bool>(originalField as Toggle, property, () => new Toggle());
@@ -520,16 +543,19 @@ namespace UnityEditor.UIElements
                     return ConfigureField<FloatField, float>(originalField as FloatField, property, () => new FloatField());
 
                 case SerializedPropertyType.String:
-                    return ConfigureField<TextField, string>(originalField as TextField, property, () => new TextField());
+                {
+                    var strField = ConfigureField<TextField, string>(originalField as TextField, property,
+                        () => new TextField()) as TextField;
+                    strField.maxLength = -1; //Can happen when used from Character
+                    return strField;
+                }
 
                 case SerializedPropertyType.Color:
                     return ConfigureField<ColorField, Color>(originalField as ColorField, property, () => new ColorField());
 
                 case SerializedPropertyType.ObjectReference:
                 {
-                    ObjectField field = originalField as ObjectField;
-                    if (field == null)
-                        field = new ObjectField();
+                    var field = ConfigureField<ObjectField, UnityEngine.Object>(originalField as ObjectField, property, () => new ObjectField());
 
                     Type requiredType = null;
 
@@ -543,7 +569,7 @@ namespace UnityEditor.UIElements
                         requiredType = typeof(UnityEngine.Object);
 
                     field.objectType = requiredType;
-                    return ConfigureField<ObjectField, UnityEngine.Object>(field, property, () => new ObjectField());
+                    return field;
                 }
                 case SerializedPropertyType.LayerMask:
                     return ConfigureField<LayerMaskField, int>(originalField as LayerMaskField, property, () => new LayerMaskField());
@@ -651,6 +677,8 @@ namespace UnityEditor.UIElements
                 case SerializedPropertyType.BoundsInt:
                     return ConfigureField<BoundsIntField, BoundsInt>(originalField as BoundsIntField, property, () => new BoundsIntField());
 
+                case SerializedPropertyType.Hash128:
+                    return ConfigureField<Hash128Field, Hash128>(originalField as Hash128Field, property, () => new Hash128Field());
 
                 case SerializedPropertyType.Generic:
                     return property.isArray
