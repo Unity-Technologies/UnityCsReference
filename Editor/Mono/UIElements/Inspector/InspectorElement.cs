@@ -613,7 +613,7 @@ namespace UnityEditor.UIElements
                 }
 
                 EditorGUIUtility.ResetGUIState();
-                using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
+                using (new EditorGUI.DisabledScope(!editor.IsEnabled() || !enabledInHierarchy))
                 {
                     var genericEditor = editor as GenericInspector;
                     if (genericEditor != null)

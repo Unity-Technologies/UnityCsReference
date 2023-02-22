@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
+using UnityEditor.Utils;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -195,9 +196,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnDownloadFinalized(AssetStoreDownloadOperation operation)
         {
             onDownloadFinalized?.Invoke(operation);
-
             if (operation.state == DownloadState.Completed &&
-                !string.IsNullOrEmpty(operation.packageOldPath) && operation.packageNewPath != operation.packageOldPath)
+                !string.IsNullOrEmpty(operation.packageOldPath) && operation.packageNewPath.NormalizePath() != operation.packageOldPath.NormalizePath())
             {
                 m_IOProxy.DeleteFile(operation.packageOldPath);
             }

@@ -531,47 +531,67 @@ namespace UnityEditor
         internal static void Summary()
         {
             bool autoGenerate = Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
-            // Show the number of lightmaps. These are the lightmaps that will be baked, is being baked or was baked last:
+
+            // Show the number of lightmaps:
             {
-                long totalMemorySize = 0;
                 int lightmapCount = 0;
-                Dictionary<Vector2, int> sizes = new Dictionary<Vector2, int>();
-                bool shadowmaskMode = false;
-                foreach (LightmapData ld in LightmapSettings.lightmaps)
+                long totalMemorySize = 0;
+                StringBuilder sizesString = new();
+                var sizes = new Dictionary<LightmapSize, int>();
+                if (!autoGenerate && Lightmapping.isRunning) // These are the lightmaps that will be baked or is being baked.
                 {
-                    if (ld.lightmapColor == null)
-                        continue;
-                    lightmapCount++;
+                    RunningBakeInfo info = Lightmapping.GetRunningBakeInfo();
+                    lightmapCount = info.lightmapSizes.Length;
+                    var probesCount = info.probePositions;
+                    string lightmapsPlural = lightmapCount != 1 ? "s" : string.Empty;
+                    string probesPlural = probesCount != 1 ? "s" : string.Empty;
+                    string probesString = probesCount != 0 ? $"{probesCount} probe{probesPlural} and " : string.Empty;
+                    sizesString.Append($"Baking {probesString}{lightmapCount} lightmap{lightmapsPlural}");
 
-                    Vector2 texSize = new Vector2(ld.lightmapColor.width, ld.lightmapColor.height);
-                    if (sizes.ContainsKey(texSize))
-                        sizes[texSize]++;
-                    else
-                        sizes.Add(texSize, 1);
-
-                    totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapColor);
-                    if (ld.lightmapDir)
-                    {
-                        totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapDir);
-                    }
-                    if (ld.shadowMask)
-                    {
-                        totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.shadowMask);
-                        shadowmaskMode = true;
-                    }
+                    foreach (var ld in info.lightmapSizes)
+                        if (sizes.ContainsKey(ld))
+                            sizes[ld]++;
+                        else
+                            sizes.Add(ld, 1);
                 }
-                StringBuilder sizesString = new StringBuilder();
-                sizesString.Append(lightmapCount);
-                sizesString.Append(" Lightmap");
-                if (lightmapCount != 1) sizesString.Append("s");
-                if (shadowmaskMode)
+                else // These are the lightmaps that were baked last.
                 {
-                    sizesString.Append(" with Shadowmask");
+                    bool shadowmaskMode = false;
+                    foreach (LightmapData ld in LightmapSettings.lightmaps)
+                    {
+                        if (ld.lightmapColor == null)
+                            continue;
+                        lightmapCount++;
+
+                        LightmapSize ls = new() { width = ld.lightmapColor.width, height = ld.lightmapColor.height};
+                        if (sizes.ContainsKey(ls))
+                            sizes[ls]++;
+                        else
+                            sizes.Add(ls, 1);
+
+                        totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapColor);
+                        if (ld.lightmapDir)
+                            totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapDir);
+
+                        if (ld.shadowMask)
+                        {
+                            totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.shadowMask);
+                            shadowmaskMode = true;
+                        }
+                    }
+
+                    sizesString.Append(lightmapCount);
+                    sizesString.Append(" lightmap");
                     if (lightmapCount != 1) sizesString.Append("s");
+                    if (shadowmaskMode)
+                    {
+                        sizesString.Append(" with Shadowmask");
+                        if (lightmapCount != 1) sizesString.Append("s");
+                    }
                 }
 
                 bool first = true;
-                foreach (var s in sizes)
+                foreach (KeyValuePair<LightmapSize, int> s in sizes)
                 {
                     sizesString.Append(first ? ": " : ", ");
                     first = false;
@@ -580,11 +600,13 @@ namespace UnityEditor
                         sizesString.Append(s.Value);
                         sizesString.Append("x");
                     }
-                    sizesString.Append(s.Key.x.ToString(CultureInfo.InvariantCulture.NumberFormat));
+
+                    sizesString.Append(s.Key.width.ToString(CultureInfo.InvariantCulture.NumberFormat));
                     sizesString.Append("x");
-                    sizesString.Append(s.Key.y.ToString(CultureInfo.InvariantCulture.NumberFormat));
+                    sizesString.Append(s.Key.height.ToString(CultureInfo.InvariantCulture.NumberFormat));
                     sizesString.Append("px");
                 }
+
                 sizesString.Append(" ");
 
                 GUILayout.BeginHorizontal();
@@ -593,10 +615,13 @@ namespace UnityEditor
                 GUILayout.Label(sizesString.ToString(), Styles.labelStyle);
                 GUILayout.EndVertical();
 
-                GUILayout.BeginVertical();
-                GUILayout.Label(EditorUtility.FormatBytes(totalMemorySize), Styles.labelStyle);
-                GUILayout.Label((lightmapCount == 0 ? "No Lightmaps" : ""), Styles.labelStyle);
-                GUILayout.EndVertical();
+                if (totalMemorySize != 0)
+                {
+                    GUILayout.BeginVertical();
+                    GUILayout.Label(EditorUtility.FormatBytes(totalMemorySize), Styles.labelStyle);
+                    GUILayout.Label((lightmapCount == 0 ? "No Lightmaps" : ""), Styles.labelStyle);
+                    GUILayout.EndVertical();
+                }
 
                 GUILayout.EndHorizontal();
             }
@@ -694,8 +719,9 @@ namespace UnityEditor
                     int timeM = time / 60;
                     time -= 60 * timeM;
                     int timeS = time;
+                    int decimalPart = (int)(bakeTime % 1 * 100);
 
-                    GUILayout.Label("Total Bake Time: " + timeH.ToString("0") + ":" + timeM.ToString("00") + ":" + timeS.ToString("00"), Styles.labelStyle);
+                    GUILayout.Label($"Total Bake Time: {timeH:00}:{timeM:00}:{timeS:00}.{decimalPart:00}", Styles.labelStyle);
                 }
             }
             GUILayout.EndVertical();

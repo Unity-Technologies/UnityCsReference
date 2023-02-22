@@ -241,7 +241,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshAssetStoreCachePathConfig(CachePathConfig config)
         {
             m_CurrentAssetStoreConfig = config;
-            assetsCachePath.text = currentAssetStoreNormalizedPath.EscapeBackslashes();
+            assetsCachePath.text = currentAssetStoreNormalizedPath;
             UIUtils.SetElementDisplay(assetsCacheErrorBox, false);
 
             if (m_CurrentAssetStoreConfig.source == ConfigSource.Environment)
@@ -306,7 +306,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshCurrentPackagesConfig(CacheRootConfig config)
         {
             m_CurrentPackagesConfig = config;
-            packagesCachePath.text = currentPackagesNormalizedPath.EscapeBackslashes();
+            packagesCachePath.text = currentPackagesNormalizedPath;
             packagesCacheDropdown.SetEnabled(true);
             UIUtils.SetElementDisplay(packagesCacheErrorBox, false);
         }

@@ -71,6 +71,22 @@ namespace UnityEditor
 
     [UsedByNativeCode]
     [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
+    internal struct LightmapSize
+    {
+        [NativeName("m_Width")]  public int width;
+        [NativeName("m_Height")] public int height;
+    }
+
+    [UsedByNativeCode]
+    [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
+    internal struct RunningBakeInfo
+    {
+        [NativeName("m_LightmapSizes")]  public LightmapSize[] lightmapSizes;
+        [NativeName("m_ProbePositions")] public UInt64 probePositions;
+    }
+
+    [UsedByNativeCode]
+    [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
     internal struct LightmapMemory
     {
         [NativeName("m_LightmapDataSizeCPU")]   public float lightmapDataSizeCPU;
@@ -232,6 +248,9 @@ namespace UnityEditor
 
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern LightmapConvergence GetLightmapConvergence(int lightmapIndex);
+
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern RunningBakeInfo GetRunningBakeInfo();
 
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern LightProbesConvergence GetLightProbesConvergence();
