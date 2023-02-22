@@ -6067,7 +6067,7 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.Repaint:
-                    textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0])), hovered, pressed, foldout, hasFocus);
+                    textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0], targetObjs.Length > 1)), hovered, pressed, foldout, hasFocus);
                     if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
                     {
                         EditorStyles.optionsButtonStyle.Draw(settingsRect, GUIContent.none, id, foldout, settingsRect.Contains(Event.current.mousePosition));

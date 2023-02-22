@@ -136,7 +136,6 @@ namespace UnityEditor.Search
             if (menu.GetItemCount() > 0)
             {
                 menu.ShowAsContext();
-                evt.Use();
             }
         }
 

@@ -129,7 +129,7 @@ namespace UnityEditor.UIElements
         {
             PopulateCache(editors);
             m_EditorTarget = editor.targets[0];
-            var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
+            var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget, editor.targets.Length > 1);
 
             m_Header = BuildHeaderElement(editorTitle);
             m_Footer = BuildFooterElement(editorTitle);

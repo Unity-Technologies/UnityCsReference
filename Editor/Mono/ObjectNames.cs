@@ -49,7 +49,7 @@ namespace UnityEditor
             }
         }
 
-        private static string GetObjectTypeName([NotNull] Object o)
+        private static string GetObjectTypeName([NotNull] Object o, bool multiObjectEditing = false)
         {
             if (o is GameObject)
                 return o.name;
@@ -72,6 +72,9 @@ namespace UnityEditor
                 var meshfilter = o as MeshFilter;
                 if (meshfilter)
                 {
+                    if (multiObjectEditing)
+                        return "MeshFilter";
+
                     var mesh = meshfilter.sharedMesh;
                     return (mesh ? mesh.name : L10n.Tr("[none]")) + " (MeshFilter)";
                 }
@@ -102,8 +105,7 @@ namespace UnityEditor
             return o.name + " (" + o.GetType().Name + ")";
         }
 
-        // Inspector title for an object.
-        public static string GetInspectorTitle(Object obj)
+        public static string GetInspectorTitle(Object obj, bool multiObjectEditing)
         {
             if (obj == null && (object)obj != null && (obj is MonoBehaviour || obj is ScriptableObject))
                 return L10n.Tr(" (Script)");
@@ -113,12 +115,18 @@ namespace UnityEditor
 
             string title;
             if (!InspectorTitles.TryGet(obj.GetType(), out title))
-                title = NicifyVariableName(GetObjectTypeName(obj));
+                title = NicifyVariableName(GetObjectTypeName(obj, multiObjectEditing));
 
             if (Attribute.IsDefined(obj.GetType(), typeof(ObsoleteAttribute)))
                 title += L10n.Tr(" (Deprecated)");
 
             return title;
+        }
+
+        // Inspector title for an object.
+        public static string GetInspectorTitle(Object obj)
+        {
+            return GetInspectorTitle(obj, false);
         }
 
         // Like GetClassName but handles folders, scenes, GUISkins, and other default assets as separate types.

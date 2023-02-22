@@ -1046,6 +1046,7 @@ namespace UnityEditor
             if (m_DeveloperModeDirty)
             {
                 ApplyChangesToPrefs();
+                EditorApplication.UpdateMainWindowTitle();
             }
         }
 

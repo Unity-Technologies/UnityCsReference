@@ -339,7 +339,7 @@ namespace UnityEditor
 
         private static void HandleMouseUp(SceneView view, int id, int button, int clickCount)
         {
-            if (GUIUtility.hotControl == id && (shortcutKey == KeyCode.None || shortcutKey == (Event.current.keyCode == KeyCode.None ? KeyCode.Mouse0 + Event.current.button : Event.current.keyCode)))
+            if (Event.current != null && GUIUtility.hotControl == id && (shortcutKey == KeyCode.None || shortcutKey == (Event.current.keyCode == KeyCode.None ? KeyCode.Mouse0 + Event.current.button : Event.current.keyCode)))
             {
                 // Move pivot to clicked point.
                 if (Tools.s_LockedViewTool == ViewTool.Pan && !s_Drag)

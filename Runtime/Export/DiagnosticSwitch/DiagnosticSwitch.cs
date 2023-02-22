@@ -26,8 +26,9 @@ namespace UnityEngine
         [Flags]
         internal enum Flags
         {
-            None                        = 0,
-            CanChangeAfterEngineStart   = (1 << 0)
+            None = 0,
+            CanChangeAfterEngineStart = (1 << 0),
+            PropagateToAssetImportWorkerProcess = (1 << 1),
         }
 
         public extern string name { get; }

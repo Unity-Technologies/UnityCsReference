@@ -252,6 +252,9 @@ namespace UnityEditor.Overlays
         [SerializeField]
         List<ContainerData> m_ContainerData = new List<ContainerData>();
 
+        [SerializeField]
+        bool m_OverlaysVisible = true;
+
         VisualElement m_RootVisualElement;
         internal EditorWindow containerWindow { get; set; }
 
@@ -291,6 +294,8 @@ namespace UnityEditor.Overlays
 
         internal void SetOverlaysEnabled(bool visible)
         {
+            m_OverlaysVisible = visible;
+
             if (visible == overlaysEnabled)
                 return;
 
@@ -364,6 +369,9 @@ namespace UnityEditor.Overlays
             ve.RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
 
             m_WindowRoot = ve.Q("overlay-window-root");
+
+            SetOverlaysEnabled(m_OverlaysVisible);
+
             return ve;
         }
 
