@@ -98,6 +98,20 @@ namespace UnityEditor
             }
 
             DragAndDrop.visualMode = DragAndDrop.DropOnInspectorWindow(editor.targets, Event.current.type == EventType.DragPerform);
+
+            if (Event.current.type == EventType.DragPerform)
+            {
+                // Determine if any object references are component, which would mean we are reordering components in the inspector
+                var anyComponent = DragAndDrop.objectReferences != null && DragAndDrop.objectReferences.Any(o => o is Component);
+
+                // None of the object references are component, cancel further processing to avoid adding component twice
+                if (!anyComponent)
+                {
+                    DragAndDrop.AcceptDrag();
+                    m_TargetIndex = -1;
+                    GUIUtility.ExitGUI();
+                }
+            }
         }
 
         void HandleEditorDragging(Editor[] editors, int editorIndex, Rect targetRect, float markerY, bool bottomTarget)
