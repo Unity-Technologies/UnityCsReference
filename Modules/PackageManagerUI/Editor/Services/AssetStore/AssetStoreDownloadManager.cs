@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Utils;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -178,7 +179,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             if (downloadOperation.state == DownloadState.Completed &&
-                !string.IsNullOrEmpty(downloadOperation.packageOldPath) && downloadOperation.packageNewPath != downloadOperation.packageOldPath)
+                !string.IsNullOrEmpty(downloadOperation.packageOldPath) && downloadOperation.packageNewPath.NormalizePath() != downloadOperation.packageOldPath.NormalizePath())
             {
                 m_IOProxy.DeleteFile(downloadOperation.packageOldPath);
             }
