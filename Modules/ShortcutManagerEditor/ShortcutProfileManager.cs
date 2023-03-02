@@ -296,7 +296,10 @@ namespace UnityEditor.ShortcutManagement
                 throw new InvalidOperationException("No active profile");
 
             if (!m_BindingValidator.IsCombinationValid(combinationSequence, out string invalidBindingMessage))
-                throw new ArgumentException(invalidBindingMessage, nameof(combinationSequence));
+            {
+                Debug.LogError(invalidBindingMessage);
+                return;
+            }
 
             var shortcutEntry = m_Entries.FirstOrDefault(e => e.identifier.Equals(identifier));
             var oldBinding = new ShortcutBinding(shortcutEntry.combinations);
