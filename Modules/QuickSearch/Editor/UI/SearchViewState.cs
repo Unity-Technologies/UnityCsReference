@@ -38,7 +38,7 @@ namespace UnityEditor.Search
         internal string sessionId;
         internal string sessionName;
         internal bool excludeClearItem;
-        internal SearchTable tableConfig;
+        [SerializeField] internal SearchTable tableConfig;
         internal bool ignoreSaveSearches;
         internal bool hideAllGroup;
         internal GUIContent windowTitle;
@@ -182,6 +182,7 @@ namespace UnityEditor.Search
             sessionName = state.sessionName;
             excludeClearItem = state.excludeClearItem;
             ignoreSaveSearches = state.ignoreSaveSearches;
+            tableConfig = state?.tableConfig?.Clone();
 
             title = state.title;
             itemSize = state.itemSize;

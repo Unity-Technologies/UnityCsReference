@@ -260,7 +260,7 @@ namespace UnityEditor.Search
         public SearchQuery ToSearchQuery()
         {
             var viewState = GetViewState();
-            return new SearchQuery(viewState, viewState.tableConfig);
+            return new SearchQuery(viewState);
         }
 
         [OnOpenAsset]

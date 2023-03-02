@@ -334,9 +334,9 @@ namespace UnityEditor
                 bool childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
 
                 // Loop through all child properties
-                var tc = EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip);
                 if (childrenAreExpanded)
                 {
+                    var tc = EditorGUIUtility.TempContent(property.localizedDisplayName, tooltip);
                     SerializedProperty endProperty = property.GetEndProperty();
                     while (property.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(property, endProperty))
                     {

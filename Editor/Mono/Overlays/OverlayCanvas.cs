@@ -4,9 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+
 using System.Linq;
+
 using UnityEngine;
 using UnityEngine.Profiling;
+
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
@@ -27,6 +30,7 @@ namespace UnityEditor.Overlays
         public int index = k_InvalidIndex;
         public Layout layout = Layout.Panel;
 
+
         public SaveData()
         {
         }
@@ -44,7 +48,9 @@ namespace UnityEditor.Overlays
             id = other.id;
             index = other.index;
             layout = other.layout;
+
         }
+
     }
 
     //Dock position within container
@@ -63,6 +69,7 @@ namespace UnityEditor.Overlays
         BottomRight,
     }
 
+
     [Serializable]
     class OverlayCanvas : ISerializationCallbackReceiver
     {
@@ -72,6 +79,7 @@ namespace UnityEditor.Overlays
         internal const string k_StyleCommon = "StyleSheets/Overlays/OverlayCommon.uss";
         internal const string k_StyleLight = "StyleSheets/Overlays/OverlayLight.uss";
         internal const string k_StyleDark = "StyleSheets/Overlays/OverlayDark.uss";
+
 
         const string k_FloatingContainer = "overlay-container--floating";
         const string k_ToolbarZone = "overlay-toolbar-zone";
@@ -94,7 +102,9 @@ namespace UnityEditor.Overlays
             layout = Layout.Panel
         };
 
+
         OverlayMenu m_Menu;
+
 
         [SerializeField]
         string m_LastAppliedPresetName = "Default";
@@ -106,9 +116,13 @@ namespace UnityEditor.Overlays
         [SerializeField]
         List<SaveData> m_SaveData = new List<SaveData>();
 
+        [SerializeField]
+        bool m_OverlaysVisible = true;
+
         VisualElement m_RootVisualElement;
         internal EditorWindow containerWindow { get; set; }
         internal VisualElement floatingContainer { get; set; }
+
         Overlay m_HoveredOverlay;
 
         OverlayMenu menu => m_Menu ??= new OverlayMenu(this);
@@ -128,6 +142,7 @@ namespace UnityEditor.Overlays
         VisualElement m_OriginGhost;
         public OverlayDestinationMarker destinationMarker { get; private set; }
 
+
         public IEnumerable<Overlay> overlays => m_Overlays.AsReadOnly();
 
         VisualElement m_WindowRoot;
@@ -136,10 +151,13 @@ namespace UnityEditor.Overlays
         public Action afterOverlaysInitialized;
         public event Action<bool> overlaysEnabledChanged;
 
+
         public bool overlaysEnabled => containers.All(x => x.style.display != DisplayStyle.None);
 
         public void SetOverlaysEnabled(bool visible)
         {
+            m_OverlaysVisible = visible;
+
             if (visible == overlaysEnabled)
                 return;
 
@@ -195,7 +213,9 @@ namespace UnityEditor.Overlays
             ve.name = ussClassName;
             ve.style.flexGrow = 1;
 
+
             containers = ve.Query<OverlayContainer>().ToList();
+
             foreach (var container in containers)
             {
                 container.RegisterCallback<MouseEnterEvent>(OnMouseEnterOverlayContainer);
@@ -206,6 +226,7 @@ namespace UnityEditor.Overlays
                     else
                         defaultContainer = container;
                 }
+
             }
 
             floatingContainer = ve.Q(k_FloatingContainer);
@@ -228,6 +249,9 @@ namespace UnityEditor.Overlays
             ve.RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
 
             m_WindowRoot = ve.Q("overlay-window-root");
+
+            SetOverlaysEnabled(m_OverlaysVisible);
+
             return ve;
         }
 
@@ -274,6 +298,7 @@ namespace UnityEditor.Overlays
         {
             return ClampRectToBounds(rootVisualElement.localBound, rect);
         }
+
 
         internal static Rect ClampRectToBounds(Rect boundary, Rect rectToClamp)
         {
@@ -355,6 +380,7 @@ namespace UnityEditor.Overlays
         }
 
         public void Initialize(EditorWindow window)
+
         {
             Profiler.BeginSample("OverlayCanvas.Initialize");
             containerWindow = window;
@@ -400,6 +426,7 @@ namespace UnityEditor.Overlays
             m_OriginGhost.style.width = overlay.rootVisualElement.layout.width;
             m_OriginGhost.style.height = overlay.rootVisualElement.layout.height;
             overlay.container?.Insert(overlay.container.IndexOf(overlay.rootVisualElement), m_OriginGhost);
+
         }
 
         internal void UpdateGhostHover(bool hovered)
@@ -448,12 +475,14 @@ namespace UnityEditor.Overlays
 
             if (containers == null) return;
 
+
             foreach (var container in containers)
             {
                 if (container != null)
                 {
                     SaveContainer(container.topOverlays);
                     SaveContainer(container.bottomOverlays);
+
                 }
             }
         }
@@ -463,6 +492,7 @@ namespace UnityEditor.Overlays
         internal void CopySaveData(out SaveData[] saveData)
         {
             OnBeforeSerialize(); //Force a save of the current data
+
             saveData = m_SaveData.ToArray();
             // Copy save data
             for (int i = 0; i < saveData.Length; ++i)
@@ -490,16 +520,19 @@ namespace UnityEditor.Overlays
             RestoreOverlays();
         }
 
+
         internal void Rebuild()
         {
             OnBeforeSerialize();
             RestoreOverlays();
         }
 
+
         // AddOverlay just registers the Overlay with Canvas. It does not init save data or add to a valid container.
         void AddOverlay(Overlay overlay)
         {
             if (m_Overlays.Find(o => o.id == overlay.id) != null)
+
             {
                 Debug.LogError($"An overlay with id ({overlay.id}) was already registered to window " +
                     $"({containerWindow.titleContent.text})");
@@ -508,6 +541,7 @@ namespace UnityEditor.Overlays
 
             overlay.canvas = this;
             m_Overlays.Add(overlay);
+
             m_OverlaysByVE[overlay.rootVisualElement] = overlay;
             overlay.rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnterOverlay);
             overlay.rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeaveOverlay);
@@ -543,6 +577,7 @@ namespace UnityEditor.Overlays
         SaveData FindSaveData(Overlay overlay)
         {
             return m_SaveData.FirstOrDefault(x => x.id == overlay.id) ?? k_DefaultSaveData;
+
         }
 
         void RestoreOverlay(Overlay overlay, SaveData data = null)
@@ -574,7 +609,9 @@ namespace UnityEditor.Overlays
                 floatingContainer.Add(overlay.rootVisualElement);
 
             overlay.SetDisplayedNoCallback(data.displayed);
+
             overlay.RebuildContent();
+
             overlay.UpdateAbsolutePosition();
         }
 
@@ -584,8 +621,11 @@ namespace UnityEditor.Overlays
                 return;
 
             // Clear existing Overlays
+
             foreach (var overlay in overlays)
+
                 overlay.container?.RemoveOverlay(overlay);
+
 
             // Three steps to reinitialize a canvas:
             // 1. Find and associate all Overlays with SaveData (using default SaveData if necessary)
@@ -601,5 +641,6 @@ namespace UnityEditor.Overlays
 
             afterOverlaysInitialized?.Invoke();
         }
+
     }
 }

@@ -121,7 +121,7 @@ namespace UnityEngine.UIElements
             public IPanel m_Panel;
         }
 
-        private ClickDetector m_ClickDetector = new ClickDetector();
+        internal ClickDetector m_ClickDetector = new ClickDetector();
 
         List<IEventDispatchingStrategy> m_DispatchingStrategies;
         static readonly ObjectPool<Queue<EventRecord>> k_EventQueuePool = new ObjectPool<Queue<EventRecord>>();

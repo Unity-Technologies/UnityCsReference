@@ -23,10 +23,13 @@ namespace UnityEditorInternal
         internal ReorderableList m_ReorderableList;
         float m_HeaderHeight;
         bool m_Reorderable = false;
-        bool m_IsNotInPrefabContextModeWithOverrides = false;
+        bool m_ListIsPatchedInPrefabModeInContext = false;
+        bool m_DisableListElements = false;
 
         SerializedProperty m_OriginalProperty;
         SerializedProperty m_ArraySize;
+        string m_PropertyPath = string.Empty;
+        string m_PropertyPathArraySize = string.Empty;
 
         internal static Rect s_ToolTipRect;
 
@@ -40,14 +43,23 @@ namespace UnityEditorInternal
             set
             {
                 m_OriginalProperty = value;
-                if (!m_OriginalProperty.isValid) return;
+                if (!m_OriginalProperty.isValid)
+                {
+                    m_ArraySize = null;
+                    m_PropertyPath = string.Empty;
+                    m_PropertyPathArraySize = string.Empty;
+                    return;
+                }
                 m_ArraySize = m_OriginalProperty.FindPropertyRelative("Array.size");
+                m_PropertyPath = m_OriginalProperty.propertyPath;
+                m_PropertyPathArraySize = m_OriginalProperty + ".Array.size";
 
                 if (m_ReorderableList != null)
                 {
                     bool versionChanged = !SerializedProperty.VersionEquals(m_ReorderableList.serializedProperty, m_OriginalProperty);
 
                     m_ReorderableList.serializedProperty = m_OriginalProperty;
+                    UpdatePrefabPatchState(m_OriginalProperty.serializedObject.targetObject);
 
                     if (versionChanged || m_ArraySize != null && m_LastArraySize != m_ArraySize.intValue)
                     {
@@ -69,18 +81,16 @@ namespace UnityEditorInternal
 
         public ReorderableListWrapper(SerializedProperty property, GUIContent label, bool reorderable = true)
         {
-            Property = property;
-            m_HeaderHeight = Constants.kDefaultFoldoutHeaderHeight;
-            Init(reorderable);
+            Init(reorderable, property);
         }
 
-        void Init(bool reorderable)
+        void Init(bool reorderable, SerializedProperty property)
         {
             m_Reorderable = reorderable;
-            SerializedProperty childProperty = Property.Copy();
+            SerializedProperty childProperty = property.Copy();
             childProperty.Next(true);
 
-            m_ReorderableList = new ReorderableList(Property.serializedObject, Property.Copy(), m_Reorderable, false, true, true);
+            m_ReorderableList = new ReorderableList(property.serializedObject, property.Copy(), m_Reorderable, false, true, true);
             m_ReorderableList.headerHeight = ReorderableList.Defaults.minHeaderHeight;
             m_ReorderableList.m_IsEditable = true;
             m_ReorderableList.multiSelect = true;
@@ -89,13 +99,16 @@ namespace UnityEditorInternal
 
             m_ReorderableList.onCanAddCallback += (list) =>
             {
-                return m_IsNotInPrefabContextModeWithOverrides;
+                return !m_ListIsPatchedInPrefabModeInContext;
             };
 
             m_ReorderableList.onCanRemoveCallback += (list) =>
             {
-                return m_IsNotInPrefabContextModeWithOverrides;
+                return !m_ListIsPatchedInPrefabModeInContext;
             };
+
+            Property = property;
+            m_HeaderHeight = Constants.kDefaultFoldoutHeaderHeight;
         }
 
         internal void InvalidateCache() => m_ReorderableList.InvalidateCache();
@@ -105,13 +118,28 @@ namespace UnityEditorInternal
             return m_HeaderHeight + (Property.isExpanded && m_ReorderableList != null ? Constants.kHeaderPadding + m_ReorderableList.GetHeight() : 0.0f);
         }
 
+        void UpdatePrefabPatchState(Object serializedObjectTarget)
+        {
+            m_DisableListElements = false;
+            m_ListIsPatchedInPrefabModeInContext = false;
+
+            var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (prefabStage != null)
+            {
+                m_ListIsPatchedInPrefabModeInContext = prefabStage.HasPatchedPropertyModificationsFor(serializedObjectTarget, m_PropertyPath);
+                if (m_ListIsPatchedInPrefabModeInContext)
+                {
+                    m_DisableListElements = prefabStage.HasPatchedPropertyModificationsFor(serializedObjectTarget, m_PropertyPathArraySize);
+                }
+            }
+
+            if (m_ReorderableList != null)
+                m_ReorderableList.draggable = m_Reorderable && !m_ListIsPatchedInPrefabModeInContext;
+        }
+
         public void Draw(GUIContent label, Rect r, Rect visibleArea, string tooltip, bool includeChildren)
         {
             r.xMin += EditorGUI.indent;
-            var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-            m_IsNotInPrefabContextModeWithOverrides = prefabStage == null || prefabStage.mode != PrefabStage.Mode.InContext || !PrefabStage.s_PatchAllOverriddenProperties
-                || Selection.objects.All(obj => PrefabUtility.IsPartOfAnyPrefab(obj) && !AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(obj)).Equals(AssetDatabase.AssetPathToGUID(prefabStage.assetPath)));
-            m_ReorderableList.draggable = m_Reorderable && m_IsNotInPrefabContextModeWithOverrides;
 
             Rect headerRect = new Rect(r.x, r.y, r.width, m_HeaderHeight);
             Rect sizeRect = new Rect(headerRect.xMax - Constants.kArraySizeWidth - EditorGUI.indent * EditorGUI.indentLevel, headerRect.y,
@@ -156,7 +184,11 @@ namespace UnityEditorInternal
                 m_ReorderableList.InvalidateCacheRecursive();
             }
 
+            if (m_DisableListElements)
+                GUI.enabled = false;
+
             DrawChildren(r, headerRect, sizeRect, visibleArea, prevType);
+            GUI.enabled = prevEnabled;
         }
 
         void DrawChildren(Rect listRect, Rect headerRect, Rect sizeRect, Rect visibleRect, EventType previousEvent)

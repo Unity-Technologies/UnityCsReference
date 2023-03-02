@@ -60,13 +60,6 @@ namespace UnityEditor
                 RequiredWithNetworkServiceAccountAvailable = 2
             }
 
-            public enum TouchScreenUsage
-            {
-                Supported = 0,
-                Required = 1,
-                None = 2
-            }
-
             public enum LogoHandling
             {
                 Auto = 0,
@@ -418,9 +411,6 @@ namespace UnityEditor
             [NativeProperty("switchStartupUserAccount", TargetType.Field)]
             extern public static StartupUserAccount startupUserAccount { get; set; }
 
-            [NativeProperty("switchTouchScreenUsage", TargetType.Field)]
-            extern public static TouchScreenUsage touchScreenUsage { get; set; }
-
             [NativeProperty("switchSupportedLanguagesMask", TargetType.Field)]
             extern public static int supportedLanguages { get; set; }
 
@@ -531,6 +521,9 @@ namespace UnityEditor
 
             [NativeProperty("switchSupportedNpadCount", TargetType.Field)]
             extern public static int supportedNpadCount { get; set; }
+
+            [NativeProperty("switchEnableTouchScreen", TargetType.Field)]
+            extern public static bool enableTouchScreen { get; set; }
 
             // SocketConfigEnabled
             [NativeProperty("switchSocketConfigEnabled", TargetType.Field)]

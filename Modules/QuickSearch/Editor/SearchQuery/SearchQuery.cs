@@ -168,10 +168,10 @@ namespace UnityEditor.Search
             viewState = new SearchViewState();
         }
 
-        public SearchQuery(SearchViewState state, SearchTable table)
+        public SearchQuery(SearchViewState state)
             : this()
         {
-            Set(state, table);
+            Set(state);
             name = description = Utils.Simplify(state.context.searchText);
         }
 
@@ -180,13 +180,11 @@ namespace UnityEditor.Search
             return name;
         }
 
-        public void Set(SearchViewState state, SearchTable table)
+        public void Set(SearchViewState state)
         {
             if (viewState == null)
                 viewState = new SearchViewState();
             viewState.Assign(state);
-            if (table != null)
-                viewState.tableConfig = table.Clone();
         }
 
         public IEnumerable<string> GetProviderIds()
@@ -225,14 +223,14 @@ namespace UnityEditor.Search
             return !string.IsNullOrEmpty(query.filePath) && query.filePath.StartsWith(userSearchSettingsFolder);
         }
 
-        public static SearchQuery AddUserQuery(SearchViewState state, SearchTable table = null)
+        public static SearchQuery AddUserQuery(SearchViewState state)
         {
-            return AddSearchQuery(userSearchSettingsFolder, state, table);
+            return AddSearchQuery(userSearchSettingsFolder, state);
         }
 
-        public static SearchQuery AddSearchQuery(string folder, SearchViewState state, SearchTable table = null)
+        public static SearchQuery AddSearchQuery(string folder, SearchViewState state)
         {
-            var query = new SearchQuery(state, table);
+            var query = new SearchQuery(state);
             query.filePath = Path.Combine(folder, $"{query.guid}.query");
             s_SearchQueries.Add(query);
             SaveSearchQuery(query);
