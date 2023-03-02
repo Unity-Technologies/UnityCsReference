@@ -7,7 +7,7 @@ using UnityEngine.UIElements.Layout;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Defaines how the position values are interpreted by the layout engine.
+    /// Defines how the position values are interpreted by the layout engine.
     /// </summary>
     public enum Position
     {
@@ -16,18 +16,18 @@ namespace UnityEngine.UIElements
         /// </summary>
         Relative = LayoutPositionType.Relative,
         /// <summary>
-        /// The element is positioned in relation to its parent box and does not contribute to the layout anymore.
+        /// The element is positioned in relation to its parent box and doesn't contribute to the layout anymore.
         /// </summary>
         Absolute = LayoutPositionType.Absolute,
     }
 
     /// <summary>
-    /// Defines what should happend if content overflows an element bounds.
+    /// Defines what should happened if content overflows an element bounds.
     /// </summary>
     public enum Overflow
     {
         /// <summary>
-        /// The overflow is not clipped. It renders outside the element's box. Default Value.
+        /// The overflow isn't clipped. It renders outside the element's box. Default Value.
         /// </summary>
         Visible = LayoutOverflow.Visible,
         /// <summary>
@@ -101,7 +101,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Defines the alignement behavior along an axis.
+    /// Defines the alignment behavior along an axis.
     /// </summary>
     public enum Align
     {
@@ -199,7 +199,7 @@ namespace UnityEngine.UIElements
     public enum TransformOriginOffset
     {
         /// <summary>
-        /// The origin of the transform operation is is set to the left of the element.
+        /// The origin of the transform operation is set to the left of the element.
         /// </summary>
         Left = 1,
 
@@ -266,19 +266,19 @@ namespace UnityEngine.UIElements
         /// </summary>
         Flex = LayoutDisplay.Flex,
         /// <summary>
-        /// The element is not visible and absent from the layout.
+        /// The element isn't visible and absent from the layout.
         /// </summary>
         None = LayoutDisplay.None
     }
 
     /// <summary>
-    /// Defines the position of the background
+    /// Defines the position of the background.
     /// </summary>
     public enum BackgroundPositionKeyword
     {
         /// <summary>
         /// Vertical alignment is centered and/or Horizontal alignment is centered.
-        /// This is the default value to make sure it is backward compatible
+        /// This is the default value to make sure it's backward compatible
         /// with unity-background-scale-mode default value.
         /// </summary>
         Center = 0,
@@ -305,7 +305,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Defines the position of an element
+    /// Defines the position of an element.
     /// </summary>
     internal enum PositionProperty
     {
@@ -331,71 +331,71 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Defines how the background is repeated
+    /// Defines how the background is repeated.
     /// </summary>
     public enum Repeat
     {
         /// <summary>
-        /// The background-image is not repeated. The image will only be shown once
+        /// The background-image isn't repeated. The image is only shown once.
         /// This is the default to keep background compatibility with
-        /// unity-background-scale-mode
+        /// unity-background-scale-mode.
         /// </summary>
         NoRepeat = 0,
 
         /// <summary>
         /// The background-image is repeated as much as possible without clipping.
         /// The first and last image is pinned to either side of the element,
-        /// and whitespace is distributed evenly between the images
+        /// and whitespace is distributed evenly between the images.
         /// </summary>
         Space = 1,
 
         /// <summary>
-        /// The background-image is repeated and squished or stretched to fill the space (no gaps)
+        /// The background-image is repeated and squished or stretched to fill the space (no gaps).
         /// </summary>
         Round = 2,
 
         /// <summary>
         /// The background image is repeated both vertically and horizontally.
-        /// The last image will be clipped if it does not fit.
+        /// The last image will be clipped if it doesn't fit.
         /// </summary>
         Repeat = 3,
     }
 
     /// <summary>
-    /// Defines how the background is repeated (one-value only)
+    /// Defines how the background is repeated (one-value only).
     /// </summary>
     internal enum RepeatXY
     {
         /// <summary>
-        /// The background image is repeated only horizontally
+        /// The background image is repeated horizontally.
         /// </summary>
         RepeatX = 0,
 
         /// <summary>
-        /// The background image is repeated only vertically
+        /// The background image is repeated vertically.
         /// </summary>
         RepeatY = 1,
     }
 
     /// <summary>
-    /// Defines the size of the background
+    /// Defines the size of the background.
     /// </summary>
     public enum BackgroundSizeType
     {
         /// <summary>
         /// Determines if the size of the background image comes from the
-        /// <see cref="BackgroundSize.x"/> and <see cref="BackgroundSize.y"/> length values
+        /// <see cref="BackgroundSize.x"/> and <see cref="BackgroundSize.y"/> length values.
         /// </summary>
         Length = 0,
 
         /// <summary>
         /// Resize the background image to cover the entire container,
-        /// even if it has to stretch the image or cut a little bit off one of the edges
+        /// even if it has to stretch the image or cut a little bit off one of the edges.
         /// </summary>
         Cover = 1,
 
         /// <summary>
-        /// Resize the background image to make sure the image is fully visible
+        /// Resize the background image to make sure the image is fully visible.
         /// </summary>
         Contain = 2,
     }

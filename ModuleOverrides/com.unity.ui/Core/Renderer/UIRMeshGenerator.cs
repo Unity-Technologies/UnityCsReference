@@ -1392,6 +1392,13 @@ namespace UnityEngine.UIElements.UIR
 
             AdjustSpriteWinding(spriteVertices, spriteIndices, indices);
 
+            var colorPage = rectParams.colorPage;
+            var pageAndID = colorPage.pageAndID;
+
+            var flags = new Color32(0, 0, 0, colorPage.isValid ? (byte)1 : (byte)0);
+            var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
+            var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
+
             for (int i = 0; i < vertexCount; ++i)
             {
                 var v = spriteVertices[i];
@@ -1405,7 +1412,10 @@ namespace UnityEngine.UIElements.UIR
                 {
                     position = new Vector3(v.x, v.y, Vertex.nearZ),
                     tint = rectParams.color,
-                    uv = spriteUV[i]
+                    uv = spriteUV[i],
+                    flags = flags,
+                    opacityColorPages = page,
+                    ids = ids
                 };
             }
 

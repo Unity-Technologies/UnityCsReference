@@ -67,6 +67,10 @@ namespace UnityEditor
             set;
         }
 
+        [StaticAccessor("GetVersionControlSettings()", StaticAccessorType.Dot)]
+        [ExcludeFromDocs]
+        public static extern bool trackPackagesOutsideProject { get; set; }
+
         [StaticAccessor("GetEditorUserSettings()", StaticAccessorType.Dot)]
         private static extern string GetConfigValue(string name);
 
