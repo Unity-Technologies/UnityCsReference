@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -20,24 +21,30 @@ namespace UnityEditor.Search
 
     interface IPropertyDatabaseStore : IPropertyLockable
     {
-        bool Store(in PropertyDatabaseRecord record);
-        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue data);
-        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue data);
-        bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records);
+        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecord data, bool loadInvalid);
+        bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records, bool loadInvalid);
         void Invalidate(ulong documentKey);
         void Invalidate(in PropertyDatabaseRecordKey recordKey);
         void Invalidate(uint documentKeyHiWord);
         void InvalidateMask(ulong documentKeyMask);
         void InvalidateMask(uint documentKeyHiWordMask);
-        IEnumerable<IPropertyDatabaseRecord> EnumerateAll();
+        IEnumerable<IPropertyDatabaseRecord> EnumerateAll(bool enumerateInvalid);
         void Clear();
         IPropertyDatabaseStoreView GetView();
+    }
+
+    interface IPropertyDatabaseSerializableStore : IPropertyDatabaseStore
+    {
+        bool Store(in PropertyDatabaseRecord record);
+        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecord data, bool loadInvalid);
+        IEnumerable<PropertyDatabaseRecord> EnumerateAllSerializableRecords(bool enumerateInvalid);
+        IPropertyDatabaseSerializableStoreView GetSerializableStoreView();
     }
 
     interface IPropertyDatabaseVolatileStore : IPropertyDatabaseStore
     {
         bool Store(in PropertyDatabaseRecordKey recordKey, object value);
-        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object data);
+        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object data, bool loadInvalid);
     }
 
     interface IPropertyDatabaseStoreView : IDisposable, IPropertyLockable
@@ -45,27 +52,34 @@ namespace UnityEditor.Search
         long length { get; }
         long byteSize { get; }
 
-        PropertyDatabaseRecord this[long index] { get; }
+        IPropertyDatabaseRecord this[long index] { get; }
 
-        bool Store(in PropertyDatabaseRecord record, bool sync);
-        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue data);
-        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue data);
-        bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records);
+        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecord data, bool loadInvalid);
+        bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records, bool loadInvalid);
         void Invalidate(ulong documentKey, bool sync);
         void Invalidate(in PropertyDatabaseRecordKey recordKey, bool sync);
         void Invalidate(uint documentKeyHiWord, bool sync);
         void InvalidateMask(ulong documentKeyMask, bool sync);
         void InvalidateMask(uint documentKeyHiWordMask, bool sync);
-        IEnumerable<IPropertyDatabaseRecord> EnumerateAll();
+        IEnumerable<IPropertyDatabaseRecord> EnumerateAll(bool enumerateInvalid);
         void Clear();
         void Sync();
         bool Find(in PropertyDatabaseRecordKey recordKey, out long index);
     }
 
+    interface IPropertyDatabaseSerializableStoreView : IPropertyDatabaseStoreView
+    {
+        new PropertyDatabaseRecord this[long index] { get; }
+
+        bool Store(in PropertyDatabaseRecord record, bool sync);
+        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecord data, bool loadInvalid);
+        IEnumerable<PropertyDatabaseRecord> EnumerateAllSerializableRecords(bool enumerateInvalid);
+    }
+
     interface IPropertyDatabaseVolatileStoreView : IPropertyDatabaseStoreView
     {
         bool Store(in PropertyDatabaseRecordKey recordKey, object value, bool sync);
-        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object data);
+        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object data, bool loadInvalid);
     }
 
     readonly struct PropertyDatabaseDocumentKeyRange : IBinarySearchRange<PropertyDatabaseRecordKey>
@@ -112,6 +126,11 @@ namespace UnityEditor.Search
         {
             return (ulong)hiWord << 32;
         }
+
+        public static uint ToHiWord(ulong documentKey)
+        {
+            return (uint)((documentKey & k_HighMask) >> 32);
+        }
     }
 
     readonly struct PropertyDatabaseDocumentKeyMaskRange : IBinarySearchRange<PropertyDatabaseRecordKey>
@@ -137,6 +156,16 @@ namespace UnityEditor.Search
         {
             // Always return true, since we want to go to the end of records
             return true;
+        }
+
+        public static bool KeyMatchesMask(PropertyDatabaseRecordKey key, ulong mask)
+        {
+            return DocumentKeyMatchesMask(key.documentKey, mask);
+        }
+
+        public static bool DocumentKeyMatchesMask(ulong documentKey, ulong mask)
+        {
+            return (documentKey & mask) != 0;
         }
     }
 
@@ -276,28 +305,16 @@ namespace UnityEditor.Search
     {
         ReaderWriterLockSlim m_Lock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
-        public bool Store(in PropertyDatabaseRecord record)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecord data, bool loadInvalid = false)
         {
             using (var view = GetView())
-                return view.Store(record, true);
+                return view.TryLoad(recordKey, out data, loadInvalid);
         }
 
-        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue data)
+        public bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records, bool loadInvalid = false)
         {
             using (var view = GetView())
-                return view.TryLoad(recordKey, out data);
-        }
-
-        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue data)
-        {
-            using (var view = GetView())
-                return view.TryLoad(recordKey, out data);
-        }
-
-        public bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records)
-        {
-            using (var view = GetView())
-                return view.TryLoad(documentKey, out records);
+                return view.TryLoad(documentKey, out records, loadInvalid);
         }
 
         public void Invalidate(ulong documentKey)
@@ -330,10 +347,10 @@ namespace UnityEditor.Search
                 view.InvalidateMask(documentKeyHiWordMask, true);
         }
 
-        public IEnumerable<IPropertyDatabaseRecord> EnumerateAll()
+        public IEnumerable<IPropertyDatabaseRecord> EnumerateAll(bool enumerateInvalid = false)
         {
             using (var view = GetView())
-                return view.EnumerateAll();
+                return view.EnumerateAll(enumerateInvalid);
         }
 
         public void Clear()
@@ -360,48 +377,144 @@ namespace UnityEditor.Search
         }
     }
 
-    abstract class BasePropertyDatabaseMemoryStore<T> : BasePropertyDatabaseStore
-        where T : struct
+    abstract class BasePropertyDatabaseSerializableStore : BasePropertyDatabaseStore, IPropertyDatabaseSerializableStore
     {
-        protected List<T> m_Store;
-
-        public List<T> data => m_Store;
-
-        public BasePropertyDatabaseMemoryStore()
+        public bool Store(in PropertyDatabaseRecord record)
         {
-            m_Store = new List<T>();
+            using (var view = GetSerializableStoreView())
+                return view.Store(record, true);
         }
 
-        public BasePropertyDatabaseMemoryStore(List<T> initialStore)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecord data, bool loadInvalid = false)
         {
-            m_Store = initialStore;
+            using (var view = GetSerializableStoreView())
+                return view.TryLoad(recordKey, out data, loadInvalid);
+        }
+
+        public IEnumerable<PropertyDatabaseRecord> EnumerateAllSerializableRecords(bool enumerateInvalid = false)
+        {
+            using (var view = GetSerializableStoreView())
+                return view.EnumerateAllSerializableRecords(enumerateInvalid);
+        }
+
+        public abstract IPropertyDatabaseSerializableStoreView GetSerializableStoreView();
+    }
+
+    class MemoryDataStore<T> : IList<T>
+    {
+        List<T> m_Data;
+
+        public int Count => m_Data.Count;
+        public bool IsReadOnly => false;
+
+        public T this[int index]
+        {
+            get => m_Data[index];
+            set => m_Data[index] = value;
+        }
+
+        public MemoryDataStore()
+        {
+            m_Data = new List<T>();
+        }
+
+        public MemoryDataStore(IEnumerable<T> initialData)
+        {
+            m_Data = initialData.ToList();
+        }
+
+        public void Add(T item)
+        {
+            m_Data.Add(item);
+        }
+
+        public void Clear()
+        {
+            m_Data.Clear();
+        }
+
+        public void Resize(int capacity)
+        {
+            m_Data.Capacity = capacity;
+        }
+
+        public bool Contains(T item)
+        {
+            return m_Data.Contains(item);
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            m_Data.CopyTo(array, arrayIndex);
+        }
+
+        public bool Remove(T item)
+        {
+            return m_Data.Remove(item);
+        }
+
+        public void Assign(List<T> newData)
+        {
+            m_Data = newData;
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return m_Data.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        public int IndexOf(T item)
+        {
+            return m_Data.IndexOf(item);
+        }
+
+        public void Insert(int index, T item)
+        {
+            m_Data.Insert(index, item);
+        }
+
+        public void RemoveAt(int index)
+        {
+            m_Data.RemoveAt(index);
         }
     }
 
-    class PropertyDatabaseMemoryStore : BasePropertyDatabaseMemoryStore<PropertyDatabaseRecord>
+    class PropertyDatabaseMemoryStore : BasePropertyDatabaseSerializableStore, IPropertyDatabaseSerializableStore
     {
+        protected MemoryDataStore<PropertyDatabaseRecord> m_Store;
+
         public PropertyDatabaseMemoryStore()
-        {}
+        {
+            m_Store = new MemoryDataStore<PropertyDatabaseRecord>();
+        }
 
-        public PropertyDatabaseMemoryStore(List<PropertyDatabaseRecord> initialStore)
-            : base(initialStore)
-        {}
+        public PropertyDatabaseMemoryStore(IEnumerable<PropertyDatabaseRecord> initialStore)
+        {
+            m_Store = new MemoryDataStore<PropertyDatabaseRecord>(initialStore);
+        }
 
-        public override IPropertyDatabaseStoreView GetView()
+        public override IPropertyDatabaseStoreView GetView() => GetSerializableStoreView();
+
+        public override IPropertyDatabaseSerializableStoreView GetSerializableStoreView()
         {
             return new PropertyDatabaseMemoryStoreView(m_Store, this);
         }
     }
 
-    struct PropertyDatabaseMemoryStoreView : IPropertyDatabaseStoreView, IBinarySearchRangeData<PropertyDatabaseRecordKey>
+    struct PropertyDatabaseMemoryStoreView : IPropertyDatabaseSerializableStoreView, IBinarySearchRangeData<PropertyDatabaseRecordKey>
     {
         bool m_Disposed;
-        List<PropertyDatabaseRecord> m_StoreData;
+        MemoryDataStore<PropertyDatabaseRecord> m_MemoryDataStore;
         PropertyDatabaseMemoryStore m_Store;
 
-        public PropertyDatabaseMemoryStoreView(List<PropertyDatabaseRecord> storeData, PropertyDatabaseMemoryStore store)
+        public PropertyDatabaseMemoryStoreView(MemoryDataStore<PropertyDatabaseRecord> memoryDataStore, PropertyDatabaseMemoryStore store)
         {
-            m_StoreData = storeData;
+            m_MemoryDataStore = memoryDataStore;
             m_Store = store;
             m_Disposed = false;
         }
@@ -411,7 +524,7 @@ namespace UnityEditor.Search
             if (m_Disposed)
                 return;
             m_Store = null;
-            m_StoreData = null;
+            m_MemoryDataStore = null;
             m_Disposed = true;
         }
 
@@ -425,40 +538,36 @@ namespace UnityEditor.Search
                 using (LockWrite())
                 {
                     if (insert)
-                        m_StoreData.Insert((int)index, record);
+                        m_MemoryDataStore.Insert((int)index, record);
                     else
-                        m_StoreData[(int)index] = record;
+                        m_MemoryDataStore[(int)index] = record;
                     return true;
                 }
             }
         }
 
-        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecord data, bool loadInvalid = false)
         {
-            data = PropertyDatabaseRecordValue.invalid;
+            data = PropertyDatabaseRecord.invalid;
             using (LockRead())
             {
                 var foundRecord = Find(recordKey, out var index);
                 if (!foundRecord)
                     return false;
 
-                var record = m_StoreData[(int)index];
-                if (!record.IsValid())
-                    return false;
-
-                data = record.recordValue;
-                return true;
+                data = m_MemoryDataStore[(int)index];
+                return data.IsValid() || loadInvalid;
             }
         }
 
-        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecord data, bool loadInvalid = false)
         {
-            var success = TryLoad(recordKey, out PropertyDatabaseRecordValue record);
+            var success = TryLoad(recordKey, out PropertyDatabaseRecord record, loadInvalid);
             data = record;
             return success;
         }
 
-        public bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records)
+        public bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records, bool loadInvalid = false)
         {
             records = null;
             using (LockRead())
@@ -467,12 +576,11 @@ namespace UnityEditor.Search
                 if (binarySearchRange == BinarySearchRange.invalid)
                     return false;
 
-
                 var result = new List<IPropertyDatabaseRecord>();
                 for (var i = binarySearchRange.startOffset; i < binarySearchRange.endOffset; ++i)
                 {
-                    var record = m_StoreData[(int)i];
-                    if (record.IsValid())
+                    var record = m_MemoryDataStore[(int)i];
+                    if (record.IsValid() || loadInvalid)
                         result.Add(record);
                 }
 
@@ -527,9 +635,9 @@ namespace UnityEditor.Search
 
                 using (LockWrite())
                 {
-                    var record = m_StoreData[(int)index];
+                    var record = m_MemoryDataStore[(int)index];
                     var newRecord = new PropertyDatabaseRecord(record.recordKey, record.recordValue, false);
-                    m_StoreData[(int)index] = newRecord;
+                    m_MemoryDataStore[(int)index] = newRecord;
                 }
             }
         }
@@ -564,57 +672,118 @@ namespace UnityEditor.Search
             InvalidateMask(documentKeyMask, sync);
         }
 
-        public IEnumerable<IPropertyDatabaseRecord> EnumerateAll()
+        public IEnumerable<IPropertyDatabaseRecord> EnumerateAll(bool enumerateInvalid = false)
+        {
+            return EnumerateAllSerializableRecords(enumerateInvalid).Cast<IPropertyDatabaseRecord>();
+        }
+
+        public IEnumerable<PropertyDatabaseRecord> EnumerateAllSerializableRecords(bool enumerateInvalid = false)
         {
             using (LockRead())
             {
-                return m_StoreData.Where(p => p.IsValid()).Cast<IPropertyDatabaseRecord>().ToList();
+                return m_MemoryDataStore.Where(p => p.IsValid() || enumerateInvalid).ToList();
             }
         }
 
-        public long length => m_StoreData.Count;
+        public long length => m_MemoryDataStore.Count;
         public long byteSize => length * PropertyDatabaseRecord.size;
 
-        public PropertyDatabaseRecordKey this[long index] => m_StoreData[(int)index].recordKey;
+        public PropertyDatabaseRecordKey this[long index] => m_MemoryDataStore[(int)index].recordKey;
 
-        PropertyDatabaseRecord IPropertyDatabaseStoreView.this[long index] => m_StoreData[(int)index];
+        IPropertyDatabaseRecord IPropertyDatabaseStoreView.this[long index] => m_MemoryDataStore[(int)index];
+        PropertyDatabaseRecord IPropertyDatabaseSerializableStoreView.this[long index] => m_MemoryDataStore[(int)index];
 
-        public void MergeWith(IPropertyDatabaseStore store)
+        public void MergeWith(IPropertyDatabaseSerializableStore store, bool overrideWithInvalid)
         {
-            using (var otherView = store.GetView())
-                MergeWith(otherView);
+            using (var otherView = store.GetSerializableStoreView())
+                MergeWith(otherView, overrideWithInvalid);
         }
 
-        public void MergeWith(IPropertyDatabaseStoreView view)
+        public void MergeWith(IPropertyDatabaseSerializableStoreView view, bool overrideWithInvalid)
         {
             using (LockWrite())
             using (view.LockRead())
             {
-                for (var i = 0; i < view.length; ++i)
-                {
-                    var record = view[i];
-                    if (record.IsValid())
-                        Store(record, true);
-                }
+                MergeWith(view.EnumerateAllSerializableRecords(overrideWithInvalid), overrideWithInvalid);
             }
         }
 
-        public void MergeWith(IEnumerable<PropertyDatabaseRecord> records)
+        public void MergeWith(IEnumerable<PropertyDatabaseRecord> records, bool overrideWithInvalid)
         {
+            var newRecordsList = records.ToList();
+            var newRecordsCount = newRecordsList.Count;
+
             using (LockWrite())
             {
-                foreach (var record in records)
+                if (m_MemoryDataStore.Count == 0)
                 {
-                    if (record.IsValid())
-                        Store(record, true);
+                    m_MemoryDataStore.Resize(newRecordsCount);
+                    foreach (var record in newRecordsList)
+                    {
+                        if (record.IsValid() || overrideWithInvalid)
+                            m_MemoryDataStore.Add(record); // Assume already in order
+                    }
+                }
+                else
+                {
+                    var existingRecordsCount = m_MemoryDataStore.Count;
+
+                    var newData = new List<PropertyDatabaseRecord>(existingRecordsCount + newRecordsCount);
+
+                    var existingRecordsIndex = 0;
+                    var newRecordsIndex = 0;
+                    while (existingRecordsIndex < existingRecordsCount && newRecordsIndex < newRecordsCount)
+                    {
+                        var existingRecord = m_MemoryDataStore[existingRecordsIndex];
+                        var newRecord = newRecordsList[newRecordsIndex];
+
+                        var compare = existingRecord.CompareTo(newRecord);
+                        if (compare < 0)
+                        {
+                            newData.Add(existingRecord);
+                            ++existingRecordsIndex;
+                        }
+                        else if (compare > 0)
+                        {
+                            if (newRecord.IsValid() || overrideWithInvalid)
+                                newData.Add(newRecord);
+                            ++newRecordsIndex;
+                        }
+                        else
+                        {
+                            if (newRecord.IsValid() || overrideWithInvalid)
+                                newData.Add(newRecord);
+                            else
+                                newData.Add(existingRecord);
+                            ++existingRecordsIndex;
+                            ++newRecordsIndex;
+                        }
+                    }
+
+                    // Either the existing records or the new records have not finished merging. Try them both
+                    while (existingRecordsIndex < existingRecordsCount)
+                    {
+                        newData.Add(m_MemoryDataStore[existingRecordsIndex]);
+                        ++existingRecordsIndex;
+                    }
+
+                    while (newRecordsIndex < newRecordsCount)
+                    {
+                        var newRecord = newRecordsList[newRecordsIndex];
+                        if (newRecord.IsValid() || overrideWithInvalid)
+                            newData.Add(newRecord);
+                        ++newRecordsIndex;
+                    }
+
+                    m_MemoryDataStore.Assign(newData);
                 }
             }
         }
 
         public void Clear()
         {
-            using (m_Store.LockWrite())
-                m_StoreData.Clear();
+            using (LockWrite())
+                m_MemoryDataStore.Clear();
         }
 
         public void SaveToFile(string filePath)
@@ -628,7 +797,7 @@ namespace UnityEditor.Search
                 {
                     var bw = new BinaryWriter(fs);
                     bw.Write(PropertyDatabase.version);
-                    foreach (var databaseRecord in m_StoreData)
+                    foreach (var databaseRecord in m_MemoryDataStore)
                     {
                         databaseRecord.ToBinary(bw);
                     }
@@ -643,9 +812,9 @@ namespace UnityEditor.Search
             {
                 for (var i = binarySearchRange.startOffset; i < binarySearchRange.endOffset; ++i)
                 {
-                    var record = m_StoreData[(int)i];
+                    var record = m_MemoryDataStore[(int)i];
                     var newRecord = new PropertyDatabaseRecord(record.recordKey, record.recordValue, false);
-                    m_StoreData[(int)i] = newRecord;
+                    m_MemoryDataStore[(int)i] = newRecord;
                 }
             }
         }
@@ -656,38 +825,44 @@ namespace UnityEditor.Search
             {
                 for (var i = binarySearchRange.startOffset; i < binarySearchRange.endOffset; ++i)
                 {
-                    var record = m_StoreData[(int)i];
-                    if ((record.key.documentKey & documentKeyMask) != 0)
+                    var record = m_MemoryDataStore[(int)i];
+                    if (PropertyDatabaseDocumentKeyMaskRange.KeyMatchesMask(record.key, documentKeyMask))
                     {
                         var newRecord = new PropertyDatabaseRecord(record.recordKey, record.recordValue, false);
-                        m_StoreData[(int)i] = newRecord;
+                        m_MemoryDataStore[(int)i] = newRecord;
                     }
                 }
             }
         }
     }
 
-    class PropertyDatabaseFileStore : BasePropertyDatabaseStore
+    class PropertyDatabaseFileStore : BasePropertyDatabaseSerializableStore
     {
         public string filePath { get; }
 
         event Action<string> m_FileStoreChanged;
         event Action m_FileStoreAboutToChange;
 
+        HashSet<ulong> m_InvalidatedDocumentKeys;
+        HashSet<uint> m_InvalidatedDocumentKeyHiWords;
+        HashSet<ulong> m_InvalidatedDocumentKeyMasks;
+
         public PropertyDatabaseFileStore(string filePath)
         {
             this.filePath = filePath;
+            m_InvalidatedDocumentKeys = new HashSet<ulong>();
+            m_InvalidatedDocumentKeyHiWords = new HashSet<uint>();
+            m_InvalidatedDocumentKeyMasks = new HashSet<ulong>();
         }
 
         public override IPropertyDatabaseStoreView GetView()
         {
-            return new PropertyDatabaseFileStoreView(filePath, this);
+            return GetSerializableStoreView();
         }
 
-        public PropertyDatabaseMemoryStore ToMemoryStore()
+        public override IPropertyDatabaseSerializableStoreView GetSerializableStoreView()
         {
-            using (var view = new PropertyDatabaseFileStoreView(filePath, this))
-                return view.ToMemoryStore();
+            return new PropertyDatabaseFileStoreView(filePath, this, m_InvalidatedDocumentKeys, m_InvalidatedDocumentKeyHiWords, m_InvalidatedDocumentKeyMasks);
         }
 
         public void SwapFile(string filePathToSwap)
@@ -705,6 +880,16 @@ namespace UnityEditor.Search
                     // Make sure the views reopen if there is an exception
                     NotifyFileStoreChanged();
                 }
+            }
+        }
+
+        public void ClearInvalidatedDocuments()
+        {
+            using (LockWrite())
+            {
+                m_InvalidatedDocumentKeys.Clear();
+                m_InvalidatedDocumentKeyHiWords.Clear();
+                m_InvalidatedDocumentKeyMasks.Clear();
             }
         }
 
@@ -747,15 +932,20 @@ namespace UnityEditor.Search
 
     // This needs to be a class, since it registers a itself for changes and the event modifies the filestream.
     // With a struct only the copy would get modified.
-    class PropertyDatabaseFileStoreView : IPropertyDatabaseStoreView, IBinarySearchRangeData<PropertyDatabaseRecordKey>
+    class PropertyDatabaseFileStoreView : IPropertyDatabaseSerializableStoreView, IBinarySearchRangeData<PropertyDatabaseRecordKey>
     {
         bool m_Disposed;
         FileStream m_Fs;
         BinaryReader m_Br;
         BinaryWriter m_Bw;
         PropertyDatabaseFileStore m_Store;
+        bool m_NeedsSync;
 
-        public PropertyDatabaseFileStoreView(string filePath, PropertyDatabaseFileStore store)
+        HashSet<ulong> m_InvalidatedDocumentKeys;
+        HashSet<uint> m_InvalidatedDocumentKeyHiWords;
+        HashSet<ulong> m_InvalidatedDocumentKeyMasks;
+
+        public PropertyDatabaseFileStoreView(string filePath, PropertyDatabaseFileStore store, HashSet<ulong> invalidatedDocumentKeys, HashSet<uint> invalidatedDocumentKeyHiWords, HashSet<ulong> invalidatedDocumentKeyMasks)
         {
             length = 0;
             m_Disposed = false;
@@ -763,6 +953,9 @@ namespace UnityEditor.Search
             m_Br = null;
             m_Bw = null;
             m_Store = store;
+            m_InvalidatedDocumentKeys = invalidatedDocumentKeys;
+            m_InvalidatedDocumentKeyHiWords = invalidatedDocumentKeyHiWords;
+            m_InvalidatedDocumentKeyMasks = invalidatedDocumentKeyMasks;
             // All fields must be assigned before calling any functions.
             store.RegisterFileStoreChangedHandler(HandleFileStoreChanged);
             store.RegisterFileStoreAboutToChangeHandler(HandleFileStoreAboutToChange);
@@ -809,39 +1002,33 @@ namespace UnityEditor.Search
             throw new NotSupportedException();
         }
 
-        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecord data, bool loadInvalid = false)
         {
-            data = PropertyDatabaseRecordValue.invalid;
+            data = PropertyDatabaseRecord.invalid;
             using (LockRead())
             {
                 var foundRecord = Find(recordKey, out var index);
                 if (!foundRecord)
                     return false;
 
-                var record = GetRecord(index);
-                if (!record.IsValid())
-                    return false;
-
-                data = record.recordValue;
-                return true;
+                data = GetRecord(index);
+                return data.IsValid() || loadInvalid;
             }
         }
 
-        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecord data, bool loadInvalid = false)
         {
-            var success = TryLoad(recordKey, out PropertyDatabaseRecordValue record);
+            var success = TryLoad(recordKey, out PropertyDatabaseRecord record, loadInvalid);
             data = record;
             return success;
         }
 
-        public bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records)
+        public bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records, bool loadInvalid = false)
         {
             records = null;
             using (LockRead())
             {
-                if (m_Fs == null)
-                    return false;
-                var binarySearchRange = PropertyDatabaseRecordFinder.FindRange(this, documentKey);
+                var binarySearchRange = FindRange(documentKey);
                 if (binarySearchRange == BinarySearchRange.invalid)
                     return false;
 
@@ -849,7 +1036,7 @@ namespace UnityEditor.Search
                 for (var i = binarySearchRange.startOffset; i < binarySearchRange.endOffset; ++i)
                 {
                     var record = GetRecord(i);
-                    if (record.IsValid())
+                    if (record.IsValid() || loadInvalid)
                         result.Add(record);
                 }
 
@@ -862,9 +1049,7 @@ namespace UnityEditor.Search
         {
             using (LockUpgradeableRead())
             {
-                if (m_Fs == null)
-                    return;
-                var binarySearchRange = PropertyDatabaseRecordFinder.FindRange(this, documentKey);
+                var binarySearchRange = FindRange(documentKey);
                 if (binarySearchRange == BinarySearchRange.invalid)
                     return;
 
@@ -872,12 +1057,18 @@ namespace UnityEditor.Search
             }
         }
 
+        public void InvalidateInMemory(ulong documentKey, bool sync)
+        {
+            using (LockWrite())
+            {
+                m_InvalidatedDocumentKeys.Add(documentKey);
+            }
+        }
+
         public void Invalidate(in PropertyDatabaseRecordKey recordKey, bool sync)
         {
             using (LockUpgradeableRead())
             {
-                if (m_Fs == null)
-                    return;
                 var foundRecord = Find(recordKey, out var index);
                 if (!foundRecord)
                     return;
@@ -891,13 +1082,25 @@ namespace UnityEditor.Search
             }
         }
 
+        public void InvalidateInMemory(PropertyDatabaseMemoryStoreView memoryView, in PropertyDatabaseRecordKey recordKey, bool sync)
+        {
+            using (LockRead())
+            {
+                var foundRecord = Find(recordKey, out var index);
+                if (!foundRecord)
+                    return;
+
+                var record = GetRecord(index);
+                var newRecord = new PropertyDatabaseRecord(record.recordKey, record.recordValue, false);
+                memoryView.Store(newRecord, sync);
+            }
+        }
+
         public void Invalidate(uint documentKeyHiWord, bool sync)
         {
             using (LockUpgradeableRead())
             {
-                if (m_Fs == null)
-                    return;
-                var binarySearchRange = PropertyDatabaseRecordFinder.FindHiWordRange(this, documentKeyHiWord);
+                var binarySearchRange = FindRange(documentKeyHiWord);
                 if (binarySearchRange == BinarySearchRange.invalid)
                     return;
 
@@ -905,17 +1108,31 @@ namespace UnityEditor.Search
             }
         }
 
+        public void InvalidateInMemory(uint documentKeyHiWord, bool sync)
+        {
+            using (LockWrite())
+            {
+                m_InvalidatedDocumentKeyHiWords.Add(documentKeyHiWord);
+            }
+        }
+
         public void InvalidateMask(ulong documentKeyMask, bool sync)
         {
             using (LockUpgradeableRead())
             {
-                if (m_Fs == null)
-                    return;
-                var binarySearchRange = PropertyDatabaseRecordFinder.FindMaskRange(this, documentKeyMask);
+                var binarySearchRange = FindMaskRange(documentKeyMask);
                 if (binarySearchRange == BinarySearchRange.invalid)
                     return;
 
                 InvalidateMaskRange(binarySearchRange, documentKeyMask, sync);
+            }
+        }
+
+        public void InvalidateMaskInMemory(ulong documentKeyMask, bool sync)
+        {
+            using (LockRead())
+            {
+                m_InvalidatedDocumentKeyMasks.Add(documentKeyMask);
             }
         }
 
@@ -925,22 +1142,30 @@ namespace UnityEditor.Search
             InvalidateMask(documentKeyMask, sync);
         }
 
-        public IEnumerable<IPropertyDatabaseRecord> EnumerateAll()
+        public void InvalidateMaskInMemory(uint documentKeyHiWordMask, bool sync)
+        {
+            var documentKeyMask = PropertyDatabaseDocumentKeyHiWordRange.GetULongFromHiWord(documentKeyHiWordMask);
+            InvalidateMaskInMemory(documentKeyMask, sync);
+        }
+
+        public IEnumerable<IPropertyDatabaseRecord> EnumerateAll(bool enumerateInvalid = false)
+        {
+            return EnumerateAllSerializableRecords(enumerateInvalid).Cast<IPropertyDatabaseRecord>();
+        }
+
+        public IEnumerable<PropertyDatabaseRecord> EnumerateAllSerializableRecords(bool enumerateInvalid = false)
         {
             using (LockRead())
             {
                 if (m_Fs == null)
-                    return Enumerable.Empty<IPropertyDatabaseRecord>();
+                    yield break;
 
-                var allRecords = new List<IPropertyDatabaseRecord>((int)length);
                 for (var i = 0; i < length; ++i)
                 {
                     var record = GetRecord(i);
-                    if (record.IsValid())
-                        allRecords.Add(record);
+                    if (record.IsValid() || enumerateInvalid)
+                        yield return record;
                 }
-
-                return allRecords;
             }
         }
 
@@ -954,12 +1179,16 @@ namespace UnityEditor.Search
                 m_Fs.Seek(0, SeekOrigin.Begin);
                 m_Bw.Write(PropertyDatabase.version);
                 m_Fs.Flush(true);
+                m_Store.ClearInvalidatedDocuments();
                 m_Store.NotifyFileStoreChanged();
             }
         }
 
         public void Sync()
         {
+            if (!m_NeedsSync)
+                return;
+            m_NeedsSync = false;
             using (LockWrite())
             {
                 if (m_Fs == null)
@@ -970,6 +1199,9 @@ namespace UnityEditor.Search
 
         public bool Find(in PropertyDatabaseRecordKey recordKey, out long index)
         {
+            index = -1;
+            if (m_Fs == null)
+                return false;
             using (LockRead())
                 return PropertyDatabaseRecordFinder.Find(this, recordKey, out index);
         }
@@ -989,32 +1221,13 @@ namespace UnityEditor.Search
             return m_Store.LockWrite();
         }
 
-        public PropertyDatabaseMemoryStore ToMemoryStore()
-        {
-            using (LockRead())
-            {
-                if (length == 0)
-                    return new PropertyDatabaseMemoryStore();
-
-                var localStore = new List<PropertyDatabaseRecord>((int)length);
-
-                for (var i = 0; i < length; ++i)
-                {
-                    m_Fs.Seek(GetFileOffset(i), SeekOrigin.Begin);
-                    var record = PropertyDatabaseRecord.FromBinary(m_Br);
-                    localStore.Add(record);
-                }
-
-                return new PropertyDatabaseMemoryStore(localStore);
-            }
-        }
-
         public long length { get; private set; }
         public long byteSize => length * PropertyDatabaseRecord.size + sizeof(int);
 
         public PropertyDatabaseRecordKey this[long index] => GetRecordKey(index);
 
-        PropertyDatabaseRecord IPropertyDatabaseStoreView.this[long index] => GetRecord(index);
+        IPropertyDatabaseRecord IPropertyDatabaseStoreView.this[long index] => GetRecord(index);
+        PropertyDatabaseRecord IPropertyDatabaseSerializableStoreView.this[long index] => GetRecord(index);
 
         void OpenFileStream(string path)
         {
@@ -1052,7 +1265,8 @@ namespace UnityEditor.Search
 
             var fileOffset = GetFileOffset((int)index);
             m_Fs.Seek(fileOffset, SeekOrigin.Begin);
-            return PropertyDatabaseRecord.FromBinary(m_Br);
+            var record = PropertyDatabaseRecord.FromBinary(m_Br);
+            return IsRecordKeyValid(record.recordKey) ? record : new PropertyDatabaseRecord(record.recordKey, record.recordValue, false);
         }
 
         PropertyDatabaseRecordKey GetRecordKey(long index)
@@ -1067,7 +1281,20 @@ namespace UnityEditor.Search
             return PropertyDatabaseRecordKey.FromBinary(m_Br);
         }
 
-        void WriteRecord(in PropertyDatabaseRecord record, long index, bool flush = true)
+        bool IsRecordKeyValid(PropertyDatabaseRecordKey recordKey)
+        {
+            var documentKey = recordKey.documentKey;
+            if (m_InvalidatedDocumentKeys.Contains(documentKey))
+                return false;
+            var documentKeyHiWord = PropertyDatabaseDocumentKeyHiWordRange.ToHiWord(documentKey);
+            if (m_InvalidatedDocumentKeyHiWords.Contains(documentKeyHiWord))
+                return false;
+            if (m_InvalidatedDocumentKeyMasks.Any(mask => PropertyDatabaseDocumentKeyMaskRange.DocumentKeyMatchesMask(documentKey, mask)))
+                return false;
+            return true;
+        }
+
+        void WriteRecord(in PropertyDatabaseRecord record, long index, bool sync = true)
         {
             if (m_Fs == null)
                 return;
@@ -1077,9 +1304,10 @@ namespace UnityEditor.Search
             var fileOffset = GetFileOffset((int)index);
             m_Bw.Seek(fileOffset, SeekOrigin.Begin);
             record.ToBinary(m_Bw);
+            m_NeedsSync = true;
 
-            if (flush)
-                m_Fs.Flush(true);
+            if (sync)
+                Sync();
         }
 
         int GetFileOffset(int recordIndex)
@@ -1109,7 +1337,7 @@ namespace UnityEditor.Search
                 for (var i = binarySearchRange.startOffset; i < binarySearchRange.endOffset; ++i)
                 {
                     var record = GetRecord(i);
-                    if ((record.key.documentKey & documentKeyMask) != 0)
+                    if (PropertyDatabaseDocumentKeyMaskRange.KeyMatchesMask(record.key, documentKeyMask))
                     {
                         var newRecord = new PropertyDatabaseRecord(record.recordKey, record.recordValue, false);
                         WriteRecord(newRecord, i, false);
@@ -1118,6 +1346,49 @@ namespace UnityEditor.Search
                 if (sync)
                     Sync();
             }
+        }
+
+        public IEnumerable<PropertyDatabaseRecord> EnumerateRange(BinarySearchRange range)
+        {
+            using (LockRead())
+            {
+                for (var i = range.startOffset; i < range.endOffset; ++i)
+                    yield return GetRecord(i);
+            }
+        }
+
+        public IEnumerable<PropertyDatabaseRecord> EnumerateMaskRange(BinarySearchRange range, ulong documentKeyMask)
+        {
+            using (LockRead())
+            {
+                for (var i = range.startOffset; i < range.endOffset; ++i)
+                {
+                    var record = GetRecord(i);
+                    if (PropertyDatabaseDocumentKeyMaskRange.KeyMatchesMask(record.key, documentKeyMask))
+                        yield return record;
+                }
+            }
+        }
+
+        public BinarySearchRange FindRange(ulong documentKey)
+        {
+            return m_Fs == null ? BinarySearchRange.invalid : PropertyDatabaseRecordFinder.FindRange(this, documentKey);
+        }
+
+        public BinarySearchRange FindRange(uint documentKeyHiWord)
+        {
+            return m_Fs == null ? BinarySearchRange.invalid : PropertyDatabaseRecordFinder.FindHiWordRange(this, documentKeyHiWord);
+        }
+
+        public BinarySearchRange FindMaskRange(ulong documentKeyMask)
+        {
+            return m_Fs == null ? BinarySearchRange.invalid : PropertyDatabaseRecordFinder.FindMaskRange(this, documentKeyMask);
+        }
+
+        public BinarySearchRange FindMaskRange(uint documentKeyHiWordMask)
+        {
+            var documentKeyMask = PropertyDatabaseDocumentKeyHiWordRange.GetULongFromHiWord(documentKeyHiWordMask);
+            return FindMaskRange(documentKeyMask);
         }
     }
 
@@ -1146,6 +1417,8 @@ namespace UnityEditor.Search
 
         public static int size => PropertyDatabaseRecordKey.size + sizeof(bool) + PropertyDatabaseVolatileRecordValue.size;
 
+        public static PropertyDatabaseVolatileRecord invalid => new();
+
         public PropertyDatabaseVolatileRecord(in PropertyDatabaseRecordKey key, object value)
         {
             this.recordKey = key;
@@ -1161,8 +1434,20 @@ namespace UnityEditor.Search
         }
     }
 
-    class PropertyDatabaseVolatileMemoryStore : BasePropertyDatabaseMemoryStore<PropertyDatabaseVolatileRecord>, IPropertyDatabaseVolatileStore
+    class PropertyDatabaseVolatileMemoryStore : BasePropertyDatabaseStore, IPropertyDatabaseVolatileStore
     {
+        protected MemoryDataStore<PropertyDatabaseVolatileRecord> m_Store;
+
+        public PropertyDatabaseVolatileMemoryStore()
+        {
+            m_Store = new MemoryDataStore<PropertyDatabaseVolatileRecord>();
+        }
+
+        public PropertyDatabaseVolatileMemoryStore(IEnumerable<PropertyDatabaseVolatileRecord> initialStore)
+        {
+            m_Store = new MemoryDataStore<PropertyDatabaseVolatileRecord>(initialStore);
+        }
+
         public override IPropertyDatabaseStoreView GetView()
         {
             return new PropertyDatabaseVolatileMemoryStoreView(this, m_Store);
@@ -1174,10 +1459,10 @@ namespace UnityEditor.Search
                 return view.Store(recordKey, value, true);
         }
 
-        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object data, bool loadInvalid = false)
         {
             using (var view = (PropertyDatabaseVolatileMemoryStoreView)GetView())
-                return view.TryLoad(recordKey, out data);
+                return view.TryLoad(recordKey, out data, loadInvalid);
         }
     }
 
@@ -1185,12 +1470,12 @@ namespace UnityEditor.Search
     {
         bool m_Disposed;
         PropertyDatabaseVolatileMemoryStore m_VolatileStore;
-        List<PropertyDatabaseVolatileRecord> m_StoreData;
+        MemoryDataStore<PropertyDatabaseVolatileRecord> m_MemoryDataStore;
 
-        public PropertyDatabaseVolatileMemoryStoreView(PropertyDatabaseVolatileMemoryStore volatileStore, List<PropertyDatabaseVolatileRecord> storeData)
+        public PropertyDatabaseVolatileMemoryStoreView(PropertyDatabaseVolatileMemoryStore volatileStore, MemoryDataStore<PropertyDatabaseVolatileRecord> memoryDataStore)
         {
             m_VolatileStore = volatileStore;
-            m_StoreData = storeData;
+            m_MemoryDataStore = memoryDataStore;
             m_Disposed = false;
         }
 
@@ -1200,7 +1485,7 @@ namespace UnityEditor.Search
                 return;
 
             m_VolatileStore = null;
-            m_StoreData = null;
+            m_MemoryDataStore = null;
             m_Disposed = true;
         }
 
@@ -1219,32 +1504,32 @@ namespace UnityEditor.Search
             return m_VolatileStore.LockWrite();
         }
 
-        public long length => m_StoreData.Count;
+        public long length => m_MemoryDataStore.Count;
 
         public long byteSize => length * PropertyDatabaseVolatileRecord.size;
 
-        PropertyDatabaseRecordKey IBinarySearchRangeData<PropertyDatabaseRecordKey>.this[long index] => m_StoreData[(int)index].key;
+        PropertyDatabaseRecordKey IBinarySearchRangeData<PropertyDatabaseRecordKey>.this[long index] => m_MemoryDataStore[(int)index].key;
 
-        public PropertyDatabaseRecord this[long index] => throw new NotSupportedException();
+        public IPropertyDatabaseRecord this[long index] => throw new NotSupportedException();
 
         public bool Store(in PropertyDatabaseRecord record, bool sync)
         {
             throw new NotSupportedException();
         }
 
-        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecordValue data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseRecord data, bool loadInvalid = false)
         {
             throw new NotSupportedException();
         }
 
-        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecordValue data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out IPropertyDatabaseRecord data, bool loadInvalid = false)
         {
-            var success = TryLoad(recordKey, out PropertyDatabaseVolatileRecordValue record);
+            var success = TryLoad(recordKey, out PropertyDatabaseVolatileRecord record, loadInvalid);
             data = record;
             return success;
         }
 
-        public bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records)
+        public bool TryLoad(ulong documentKey, out IEnumerable<IPropertyDatabaseRecord> records, bool loadInvalid = false)
         {
             records = null;
             using (LockRead())
@@ -1256,8 +1541,8 @@ namespace UnityEditor.Search
                 var result = new List<IPropertyDatabaseRecord>();
                 for (var i = binarySearchRange.startOffset; i < binarySearchRange.endOffset; ++i)
                 {
-                    var record = m_StoreData[(int)i];
-                    if (record.valid)
+                    var record = m_MemoryDataStore[(int)i];
+                    if (record.validRecord || loadInvalid)
                         result.Add(record);
                 }
 
@@ -1288,9 +1573,9 @@ namespace UnityEditor.Search
 
                 using (LockWrite())
                 {
-                    var record = m_StoreData[(int)index];
+                    var record = m_MemoryDataStore[(int)index];
                     var newRecord = new PropertyDatabaseVolatileRecord(record.key, record.recordValue.value, false);
-                    m_StoreData[(int)index] = newRecord;
+                    m_MemoryDataStore[(int)index] = newRecord;
                 }
             }
         }
@@ -1325,18 +1610,18 @@ namespace UnityEditor.Search
             InvalidateMask(documentKeyMask, sync);
         }
 
-        public IEnumerable<IPropertyDatabaseRecord> EnumerateAll()
+        public IEnumerable<IPropertyDatabaseRecord> EnumerateAll(bool enumerateInvalid = false)
         {
             using (LockRead())
             {
-                return m_StoreData.Where(p => p.valid).Cast<IPropertyDatabaseRecord>().ToList();
+                return m_MemoryDataStore.Where(p => p.valid || enumerateInvalid).Cast<IPropertyDatabaseRecord>().ToList();
             }
         }
 
         public void Clear()
         {
             using (LockWrite())
-                m_StoreData.Clear();
+                m_MemoryDataStore.Clear();
         }
 
         public void Sync()
@@ -1359,36 +1644,32 @@ namespace UnityEditor.Search
                 using (LockWrite())
                 {
                     if (insert)
-                        m_StoreData.Insert((int)index, newRecord);
+                        m_MemoryDataStore.Insert((int)index, newRecord);
                     else
-                        m_StoreData[(int)index] = newRecord;
+                        m_MemoryDataStore[(int)index] = newRecord;
                     return true;
                 }
             }
         }
 
-        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object data)
+        public bool TryLoad(in PropertyDatabaseRecordKey recordKey, out object data, bool loadInvalid = false)
         {
-            var success = TryLoad(recordKey, out PropertyDatabaseVolatileRecordValue record);
-            data = record.value;
+            var success = TryLoad(recordKey, out PropertyDatabaseVolatileRecord record, loadInvalid);
+            data = record.recordValue.value;
             return success;
         }
 
-        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseVolatileRecordValue data)
+        bool TryLoad(in PropertyDatabaseRecordKey recordKey, out PropertyDatabaseVolatileRecord data, bool loadInvalid = false)
         {
-            data = new PropertyDatabaseVolatileRecordValue();
+            data = PropertyDatabaseVolatileRecord.invalid;
             using (LockRead())
             {
                 var foundRecord = Find(recordKey, out var index);
                 if (!foundRecord)
                     return false;
 
-                var record = m_StoreData[(int)index];
-                if (!record.valid)
-                    return false;
-
-                data = record.recordValue;
-                return true;
+                data = m_MemoryDataStore[(int)index];
+                return data.valid || loadInvalid;
             }
         }
 
@@ -1398,9 +1679,9 @@ namespace UnityEditor.Search
             {
                 for (var i = binarySearchRange.startOffset; i < binarySearchRange.endOffset; ++i)
                 {
-                    var record = m_StoreData[(int)i];
+                    var record = m_MemoryDataStore[(int)i];
                     var newRecord = new PropertyDatabaseVolatileRecord(record.key, record.recordValue.value, false);
-                    m_StoreData[(int)i] = newRecord;
+                    m_MemoryDataStore[(int)i] = newRecord;
                 }
             }
         }
@@ -1411,11 +1692,11 @@ namespace UnityEditor.Search
             {
                 for (var i = binarySearchRange.startOffset; i < binarySearchRange.endOffset; ++i)
                 {
-                    var record = m_StoreData[(int)i];
-                    if ((record.key.documentKey & documentKeyMask) != 0)
+                    var record = m_MemoryDataStore[(int)i];
+                    if (PropertyDatabaseDocumentKeyMaskRange.KeyMatchesMask(record.key, documentKeyMask))
                     {
                         var newRecord = new PropertyDatabaseVolatileRecord(record.key, record.recordValue.value, false);
-                        m_StoreData[(int)i] = newRecord;
+                        m_MemoryDataStore[(int)i] = newRecord;
                     }
                 }
             }

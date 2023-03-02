@@ -334,14 +334,15 @@ namespace UnityEditor.IMGUI.Controls
                 }
 
                 // Do these if we're not in search mode
-                if (!hasSearch)
+                if (!hasSearch &&
+                    (string.IsNullOrEmpty(GUI.GetNameOfFocusedControl()) || GUI.GetNameOfFocusedControl() == AdvancedDropdownGUI.k_SearchFieldName))
                 {
                     if (evt.keyCode == KeyCode.LeftArrow || evt.keyCode == KeyCode.Backspace)
                     {
                         GoToParent();
                         evt.Use();
                     }
-                    if (evt.keyCode == KeyCode.RightArrow)
+                    else if (evt.keyCode == KeyCode.RightArrow)
                     {
                         var idx = m_State.GetSelectedIndex(m_CurrentlyRenderedTree);
                         if (idx > -1 && m_CurrentlyRenderedTree.children.ElementAt(idx).children.Any())
@@ -350,7 +351,7 @@ namespace UnityEditor.IMGUI.Controls
                         }
                         evt.Use();
                     }
-                    if (evt.keyCode == KeyCode.Escape)
+                    else if (evt.keyCode == KeyCode.Escape)
                     {
                         Close();
                         evt.Use();
@@ -488,6 +489,7 @@ namespace UnityEditor.IMGUI.Controls
 
         protected void GoToParent()
         {
+            GUI.FocusControl("");
             if (m_ViewsStack.Count == 0)
                 return;
             m_LastTime = DateTime.Now.Ticks;
@@ -501,6 +503,7 @@ namespace UnityEditor.IMGUI.Controls
 
         private void GoToChild()
         {
+            GUI.FocusControl("");
             m_ViewsStack.Push(m_CurrentlyRenderedTree);
             m_LastTime = DateTime.Now.Ticks;
             if (m_NewAnimTarget < 0)

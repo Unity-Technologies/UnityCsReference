@@ -757,14 +757,20 @@ namespace UnityEditor.Search
             {
                 if (m_PropertyDatabase.disposed)
                     return m_PropertyDatabase.disposedView.TryLoad(recordKey, out data);
-                if (m_MemoryStoreView.TryLoad(recordKey, out data))
-                    return true;
-                if (!m_FileStoreView.TryLoad(recordKey, out data))
+                data = PropertyDatabaseRecordValue.invalid;
+                if (m_MemoryStoreView.TryLoad(recordKey, out PropertyDatabaseRecord memoryRecord, true))
+                {
+                    // If data is invalid, it was deliberately made invalid, so it should be invalid in the
+                    // filestore too.
+                    data = memoryRecord.recordValue;
+                    return memoryRecord.IsValid();
+                }
+                if (!m_FileStoreView.TryLoad(recordKey, out PropertyDatabaseRecord fileRecord))
                     return false;
 
                 // Cache loaded value into memory store.
-                var record = CreateRecord(recordKey, data);
-                m_MemoryStoreView.Store(record, !m_DelayedSync);
+                data = fileRecord.recordValue;
+                m_MemoryStoreView.Store(fileRecord, !m_DelayedSync);
                 return true;
             }
         }
@@ -774,8 +780,11 @@ namespace UnityEditor.Search
             {
                 if (m_PropertyDatabase.disposed)
                     return m_PropertyDatabase.disposedView.TryLoad(recordKey, out data);
-                if (m_VolatileMemoryStoreView.TryLoad(recordKey, out data))
+                if (m_VolatileMemoryStoreView.TryLoad(recordKey, out IPropertyDatabaseRecord volatileRecord))
+                {
+                    data = volatileRecord.value;
                     return true;
+                }
 
                 var success = TryLoad(recordKey, out PropertyDatabaseRecordValue recordValue);
                 data = recordValue;
@@ -847,7 +856,7 @@ namespace UnityEditor.Search
                 }
                 m_VolatileMemoryStoreView.Invalidate(documentKey, !m_DelayedSync);
                 m_MemoryStoreView.Invalidate(documentKey, !m_DelayedSync);
-                m_FileStoreView.Invalidate(documentKey, !m_DelayedSync);
+                m_FileStoreView.InvalidateInMemory(documentKey, !m_DelayedSync);
                 m_PropertyDatabase.StoresChanged();
             }
         }
@@ -862,7 +871,7 @@ namespace UnityEditor.Search
                 }
                 m_VolatileMemoryStoreView.Invalidate(recordKey, !m_DelayedSync);
                 m_MemoryStoreView.Invalidate(recordKey, !m_DelayedSync);
-                m_FileStoreView.Invalidate(recordKey, !m_DelayedSync);
+                m_FileStoreView.InvalidateInMemory(m_MemoryStoreView, recordKey, !m_DelayedSync);
                 m_PropertyDatabase.StoresChanged();
             }
         }
@@ -877,7 +886,7 @@ namespace UnityEditor.Search
                 }
                 m_VolatileMemoryStoreView.Invalidate(documentKeyHiWord, !m_DelayedSync);
                 m_MemoryStoreView.Invalidate(documentKeyHiWord, !m_DelayedSync);
-                m_FileStoreView.Invalidate(documentKeyHiWord, !m_DelayedSync);
+                m_FileStoreView.InvalidateInMemory(documentKeyHiWord, !m_DelayedSync);
                 m_PropertyDatabase.StoresChanged();
             }
         }
@@ -892,7 +901,7 @@ namespace UnityEditor.Search
                 }
                 m_VolatileMemoryStoreView.InvalidateMask(documentKeyMask, !m_DelayedSync);
                 m_MemoryStoreView.InvalidateMask(documentKeyMask, !m_DelayedSync);
-                m_FileStoreView.InvalidateMask(documentKeyMask, !m_DelayedSync);
+                m_FileStoreView.InvalidateMaskInMemory(documentKeyMask, !m_DelayedSync);
                 m_PropertyDatabase.StoresChanged();
             }
         }
@@ -907,7 +916,7 @@ namespace UnityEditor.Search
                 }
                 m_VolatileMemoryStoreView.InvalidateMask(documentKeyHiWordMask, !m_DelayedSync);
                 m_MemoryStoreView.InvalidateMask(documentKeyHiWordMask, !m_DelayedSync);
-                m_FileStoreView.InvalidateMask(documentKeyHiWordMask, !m_DelayedSync);
+                m_FileStoreView.InvalidateMaskInMemory(documentKeyHiWordMask, !m_DelayedSync);
                 m_PropertyDatabase.StoresChanged();
             }
         }
@@ -1098,15 +1107,16 @@ namespace UnityEditor.Search
             using (new RaceConditionDetector(m_PropertyDatabase))
             {
                 // Merge both stores
-                newMemoryStoreView.MergeWith(m_FileStoreView);
-                newMemoryStoreView.MergeWith(m_MemoryStoreView);
+                newMemoryStoreView.MergeWith(m_FileStoreView, false);
+                newMemoryStoreView.MergeWith(m_MemoryStoreView, false);
 
                 // Write new memory store to file.
                 var tempFilePath = GetTempFilePath(m_FileStore.filePath);
                 newMemoryStoreView.SaveToFile(tempFilePath);
 
-                // Swap file store with new one
+                // Swap file store with new one, and clear the invalidated documents (since the invalid records were not saved)
                 m_FileStore.SwapFile(tempFilePath);
+                m_FileStore.ClearInvalidatedDocuments();
 
                 // Clear the memory store after file was swapped. If you do it before, you risk
                 // entering a state where another thread could try to read between the moment the clear is done

@@ -34,6 +34,8 @@ namespace UnityEditor.IMGUI.Controls
             Debug.Assert(Event.current.type == EventType.Repaint && Styles.itemStyle != null);
         }
 
+        public static string k_SearchFieldName = "ComponentSearch";
+
         //This should ideally match line height
         private Vector2 s_IconSize = new Vector2(13, 13);
         private AdvancedDropdownDataSource m_DataSource;
@@ -152,7 +154,7 @@ namespace UnityEditor.IMGUI.Controls
 
             using (new EditorGUI.DisabledScope(isSearchFieldDisabled))
             {
-                GUI.SetNextControlName("ComponentSearch");
+                GUI.SetNextControlName(k_SearchFieldName);
 
                 var newSearch = DrawSearchFieldControl(searchString);
 
