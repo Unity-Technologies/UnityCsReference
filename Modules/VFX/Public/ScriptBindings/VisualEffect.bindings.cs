@@ -245,7 +245,7 @@ namespace UnityEngine.VFX
         extern public bool HasAnySystemAwake();
 
         [FreeFunction(Name = "VisualEffectBindings::GetComputedBounds", HasExplicitThis = true)] extern internal Bounds GetComputedBounds(int nameID);
-        [FreeFunction(Name = "VisualEffectBindings::GetCurrentPadding", HasExplicitThis = true)] extern internal Vector3 GetCurrentPadding(int nameID);
+        [FreeFunction(Name = "VisualEffectBindings::GetCurrentBoundsPadding", HasExplicitThis = true)] extern internal Vector3 GetCurrentBoundsPadding(int nameID);
 
         public void GetSpawnSystemInfo(int nameID, VFXSpawnerState spawnState)
         {
@@ -561,9 +561,9 @@ namespace UnityEngine.VFX
             return GetComputedBounds(Shader.PropertyToID(name));
         }
 
-        internal Vector3 GetCurrentPadding(string name)
+        internal Vector3 GetCurrentBoundsPadding(string name)
         {
-            return GetCurrentPadding(Shader.PropertyToID(name));
+            return GetCurrentBoundsPadding(Shader.PropertyToID(name));
         }
 
         extern public int aliveParticleCount { get; }

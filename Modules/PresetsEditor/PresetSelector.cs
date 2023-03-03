@@ -223,7 +223,7 @@ namespace UnityEditor.Presets
 
             return AssetDatabase.FindAssets("t:Preset")
                 .Select(a => AssetDatabase.LoadAssetAtPath<Preset>(AssetDatabase.GUIDToAssetPath(a)))
-                .Where(preset => preset.GetPresetType() == presetType && preset != inspectedPreset);
+                .Where(preset => preset != null && preset.GetPresetType() == presetType && preset != inspectedPreset);
         }
 
         void InitListArea()

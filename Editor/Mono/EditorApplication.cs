@@ -344,7 +344,7 @@ namespace UnityEditor
 
             var desc = new ApplicationTitleDescriptor(
                 isTemporaryProject ? PlayerSettings.productName : Path.GetFileName(Path.GetDirectoryName(Application.dataPath)),
-                InternalEditorUtility.GetUnityDisplayVersion(),
+                (Unsupported.IsSourceBuild() || Unsupported.IsDeveloperMode()) ? InternalEditorUtility.GetUnityDisplayVersion() : InternalEditorUtility.GetUnityVersionDigits(),
                 activeSceneName,
                 BuildPipeline.GetBuildTargetGroupDisplayName(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
                 Coverage.enabled

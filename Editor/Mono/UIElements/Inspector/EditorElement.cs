@@ -91,6 +91,8 @@ namespace UnityEditor.UIElements
             m_IsCulled = isCulled;
             pickingMode = PickingMode.Ignore;
 
+            name = GetNameFromEditor(editor);
+
             if (isCulled)
             {
                 InitCulled();
@@ -130,6 +132,13 @@ namespace UnityEditor.UIElements
 
             Add(m_Header);
             Add(m_Footer);
+
+            // For GameObjects we want to ensure the first component's title bar is flush with the header,
+            // so we apply a small offset to the margin. (UUM-16138)
+            if (m_EditorTarget is GameObject)
+            {
+                AddToClassList("game-object-inspector");
+            }
 
             if (InspectorElement.disabledThrottling)
                 CreateInspectorElement();
@@ -200,6 +209,7 @@ namespace UnityEditor.UIElements
 
             PopulateCache();
             Object editorTarget = editor.targets[0];
+            name = GetNameFromEditor(editor);
             string editorTitle = ObjectNames.GetInspectorTitle(editorTarget);
 
             // If the target change we need to invalidate IMGUI container cached measurements
@@ -216,7 +226,6 @@ namespace UnityEditor.UIElements
             m_Header.onGUIHandler = HeaderOnGUI;
             m_Footer.onGUIHandler = FooterOnGUI;
 
-            name = editorTitle;
             m_Header.name = editorTitle + "Header";
             m_Footer.name = editorTitle + "Footer";
 
@@ -252,6 +261,13 @@ namespace UnityEditor.UIElements
                 UpdateInspectorVisibility();
                 SetElementVisible(m_InspectorElement, m_WasVisible);
             }
+        }
+
+        string GetNameFromEditor(Editor editor)
+        {
+            return editor == null ?
+                    "Nothing Selected" :
+                    $"{editor.GetType().Name}_{editor.targets[0].GetType().Name}_{editor.targets[0].GetInstanceID()}";
         }
 
         void UpdateInspectorVisibility()
@@ -482,17 +498,6 @@ namespace UnityEditor.UIElements
 
             if (currentEditor == null)
                 return GUILayoutUtility.GetLastRect();
-
-            // ensure first component's title bar is flush with the header
-            if (EditorNeedsVerticalOffset(editors, target))
-            {
-                // TODO: Check if we can fix this in the GameObjectInspector instead
-                GUILayout.Space(
-                    -3f // move back up so line overlaps
-                    - EditorStyles.inspectorBig.margin.bottom -
-                    EditorStyles.inspectorTitlebar.margin.top // move back up margins
-                );
-            }
 
             using (new EditorGUI.DisabledScope(!currentEditor.IsEnabled()))
             {

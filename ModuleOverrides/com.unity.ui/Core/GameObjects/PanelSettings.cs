@@ -353,11 +353,10 @@ namespace UnityEngine.UIElements
         private int m_TargetDisplay = 0;
 
         /// <summary>
-        /// When the Scene uses more than one panel, this value determines where this panel appears in the sorting
-        /// order relative to other panels.
+        /// Set the display intended for the panel. 
         /// </summary>
         /// <remarks>
-        /// Unity renders panels with a higher sorting order value on top of panels with a lower value.
+        /// This setting is relevant only when no render texture is applied, as the renderTexture takes precedence.
         /// </remarks>
         public int targetDisplay
         {
@@ -419,6 +418,7 @@ namespace UnityEngine.UIElements
 
         internal static Action<BaseRuntimePanel> CreateRuntimePanelDebug;
         internal static Func<ThemeStyleSheet> GetOrCreateDefaultTheme;
+        internal static Func<int, Vector2> GetGameViewResolution;
         internal static Action<PanelSettings> SetPanelSettingsAssetDirty;
 
         internal static void SetupLiveReloadPanelTrackers(bool isLiveReloadOn)
@@ -715,13 +715,12 @@ namespace UnityEngine.UIElements
                 return new Rect(0, 0, m_TargetTexture.width, m_TargetTexture.height); // TODO: Support sub-rects
             }
 
-            // Overlay.
-            if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
-            {
-                return new Rect(0, 0, Display.displays[targetDisplay].renderingWidth, Display.displays[targetDisplay].renderingHeight);
-            }
+            //The device simulatior is a special game view on display 0, and the screen values are properly populated
+            if( m_TargetDisplay == 0)
+                return new Rect(0,0, Screen.width, Screen.height); 
 
-            return new Rect(0, 0, Screen.width, Screen.height);
+            // In the Unity Editor, Display.displays is not supported; displays.Length always has a value of 1, regardless of how many displays you have connected.
+            return new(Vector2.zero, GetGameViewResolution(m_TargetDisplay));
         }
 
         internal void AttachAndInsertUIDocumentToVisualTree(UIDocument uiDocument)

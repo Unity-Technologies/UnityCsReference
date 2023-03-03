@@ -21,6 +21,16 @@ namespace UnityEditor.UIElements
 
             PanelSettings.CreateRuntimePanelDebug = UIElementsEditorRuntimeUtility.CreateRuntimePanelDebug;
             PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetOrCreateDefaultTheme;
+            PanelSettings.GetGameViewResolution = (int display) =>
+                {
+                    foreach (var playModeView in PlayModeView.GetAllPlayModeViewWindows())
+                    {
+                        if (playModeView.targetDisplay == display)
+                            return playModeView.targetSize;
+                    }
+                    return new(Display.main.renderingWidth, Display.main.renderingHeight);
+                };
+
             DropdownUtility.MakeDropdownFunc = CreateGenericOSMenu;
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
         }

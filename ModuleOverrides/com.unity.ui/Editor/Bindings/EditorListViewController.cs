@@ -75,6 +75,8 @@ namespace UnityEditor.UIElements.Bindings
         {
             indices.Sort();
 
+            RaiseItemsRemoved(indices);
+
             for (var i = indices.Count - 1; i >= 0; i--)
             {
                 var index = indices[i];
@@ -88,8 +90,6 @@ namespace UnityEditor.UIElements.Bindings
                 serializedObjectList.RemoveAt(index);
             }
 
-            RaiseItemsRemoved(indices);
-
             serializedObjectList.ApplyChanges();
             RaiseOnSizeChanged();
         }
@@ -102,18 +102,14 @@ namespace UnityEditor.UIElements.Bindings
                 index--;
             }
 
-            serializedObjectList.RemoveAt(index);
-            serializedObjectList.ApplyChanges();
-            var indices = ListPool<int>.Get();
-            try
+            using (ListPool<int>.Get(out var indices))
             {
                 indices.Add(index);
                 RaiseItemsRemoved(indices);
             }
-            finally
-            {
-                ListPool<int>.Release(indices);
-            }
+
+            serializedObjectList.RemoveAt(index);
+            serializedObjectList.ApplyChanges();
 
             RaiseOnSizeChanged();
         }

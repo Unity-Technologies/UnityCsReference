@@ -850,7 +850,7 @@ namespace UnityEditor.Search
 
         public bool IsValid()
         {
-            return valid == 1;
+            return validRecord;
         }
 
         public void ToBinary(BinaryWriter bw)

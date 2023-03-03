@@ -471,6 +471,9 @@ namespace UnityEditor
 
         internal override Object GetInspectedObject()
         {
+            if (tracker.hasComponentsWhichCannotBeMultiEdited && !tracker.isLocked)
+                return Selection.activeObject;
+
             Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
             if (editor == null)
                 return null;
@@ -479,6 +482,9 @@ namespace UnityEditor
 
         internal Object[] GetInspectedObjects()
         {
+            if (tracker.hasComponentsWhichCannotBeMultiEdited && !tracker.isLocked)
+                return Selection.objects;
+
             Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
             if (editor == null)
                 return null;

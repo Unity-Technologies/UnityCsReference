@@ -283,7 +283,13 @@ namespace UnityEngine.UIElements
                 {
                     horizontalScroller.value = value.x;
                     verticalScroller.value = value.y;
-                    UpdateContentViewTransform();
+
+                    if (panel != null)
+                    {
+                        UpdateScrollers(needsHorizontal, needsVertical);
+                        UpdateContentViewTransform();
+                    }
+
                 }
             }
         }

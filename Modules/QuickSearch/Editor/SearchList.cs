@@ -814,6 +814,7 @@ namespace UnityEditor.Search
         {
             m_UnorderedItems = new ConcurrentBag<SearchItem>();
             searchContext.sessionStarted += SearchContextOnsessionStarted;
+            m_SearchStarted = searchContext.searchInProgress;
         }
 
         protected override void Dispose(bool disposing)
