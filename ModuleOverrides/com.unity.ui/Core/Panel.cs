@@ -1162,10 +1162,21 @@ namespace UnityEngine.UIElements
 
         internal int targetDisplay { get; set;}
 
-        internal int screenRenderingWidth => targetDisplay > 0 && targetDisplay < Display.displays.Length
-        ? Display.displays[targetDisplay].renderingWidth : Screen.width;
-        internal int screenRenderingHeight => targetDisplay > 0 && targetDisplay < Display.displays.Length
-        ? Display.displays[targetDisplay].renderingHeight : Screen.height;
+        internal int screenRenderingWidth => getScreenRenderingWidth(targetDisplay);
+        internal int screenRenderingHeight => getScreenRenderingHeight(targetDisplay);
+
+        // Expose common static method for getting the display/window resolution for calculation in the PanelSetting.
+        // Does not consider the gameView, so useless in the editor unless called directly after the render of a camera
+        internal static int getScreenRenderingHeight(int display)
+        {
+            return display >= 0 && display < Display.displays.Length ? Display.displays[display].renderingHeight : Screen.height;
+        }
+
+        internal static int getScreenRenderingWidth(int display)
+        {
+            return display >= 0 && display < Display.displays.Length ? Display.displays[display].renderingWidth : Screen.width;
+        }
+
 
         public override void Repaint(Event e)
         {

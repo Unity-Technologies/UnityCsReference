@@ -240,6 +240,8 @@ namespace UnityEditor
                 list.serializedProperty.GetArrayElementAtIndex(list.index).FindPropertyRelative("name").stringValue = "New Layer";
                 list.serializedProperty.serializedObject.ApplyModifiedProperties();
             }
+
+            SortingLayer.onLayerAdded(SortingLayer.layers[list.index]);
         }
 
         public void ReorderSortLayerList(ReorderableList list)
@@ -250,6 +252,8 @@ namespace UnityEditor
 
         private void RemoveFromSortLayerList(ReorderableList list)
         {
+            SortingLayer.onLayerRemoved(SortingLayer.layers[list.index]);
+
             ReorderableList.defaultBehaviours.DoRemoveButton(list);
             serializedObject.ApplyModifiedProperties();
             serializedObject.Update();

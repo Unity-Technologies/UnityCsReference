@@ -34,19 +34,26 @@ namespace UnityEditor
         public static extern void RevealInFinder(string path);
 
         [FreeFunction("DisplayDialog")]
-        static extern bool DoDisplayDialog(string title, string message, string ok, [DefaultValue("\"\"")] string cancel);
+        static extern bool DisplayDialogImpl(string title, string message, string ok, string cancel);
 
         public static bool DisplayDialog(string title, string message, string ok, [DefaultValue("\"\"")] string cancel)
         {
+            // i am not sure how picky should we be about the params
+            // for example, for the buttons we have code that ignores empty strings,
+            //   to allow having "ok"-only dialogs (information panels, so to say)
+            // same with title+message: it sounds like we should allow skipping one of those
+            // hence we make sure that at least one button is present, and some message
+            // we can go more picky if we want in the future
+            if(string.IsNullOrEmpty(ok) && string.IsNullOrEmpty(cancel))
+                throw new ArgumentException("Both 'ok' and 'cancel' strings are null or empty");
+            if(string.IsNullOrEmpty(title) && string.IsNullOrEmpty(message))
+                throw new ArgumentException("Both 'title' and 'message' strings are null or empty");
+
             using (new DisabledGuiViewInputScope(GUIView.current, true))
             {
-                return DoDisplayDialog(title, message, ok, cancel);
+                return DisplayDialogImpl(title, message, ok, cancel);
             }
         }
-
-        [FreeFunction("GetDialogResponse")]
-        internal static extern bool GetDialogResponse(InteractionContext interactionContext, string title, string message, string ok, [DefaultValue("\"\"")] string cancel);
-
         [ExcludeFromDocs]
         public static bool DisplayDialog(string title, string message, string ok)
         {
@@ -54,9 +61,22 @@ namespace UnityEditor
         }
 
         [FreeFunction("DisplayDialogComplex")]
-        public static extern int DisplayDialogComplex(string title, string message, string ok, string cancel, string alt);
-        [FreeFunction("GetDialogResponseComplex")]
-        internal static extern int GetDialogResponseComplex(InteractionContext interactionContext, string title, string message, string ok, string cancel, string alt);
+        static extern int DisplayDialogComplexImpl(string title, string message, string ok, string cancel, string alt);
+
+        public static int DisplayDialogComplex(string title, string message, string ok, string cancel, string alt)
+        {
+            // see the comment above in DisplayDialog
+            // our implementation allows setting some strings empty (the button will be skipped then)
+            // but we should totally ensure some buttons are set
+
+            if(string.IsNullOrEmpty(ok) && string.IsNullOrEmpty(cancel) && string.IsNullOrEmpty(alt))
+                throw new ArgumentException("All three 'ok', 'cancel' and 'alt' strings are null or empty");
+            if(string.IsNullOrEmpty(title) && string.IsNullOrEmpty(message))
+                throw new ArgumentException("Both 'title' and 'message' strings are null or empty");
+
+            return DisplayDialogComplexImpl(title, message, ok, cancel, alt);
+        }
+
 
 
         [FreeFunction("RunOpenFolderPanel")]

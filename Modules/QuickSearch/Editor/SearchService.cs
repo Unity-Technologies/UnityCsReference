@@ -387,6 +387,10 @@ namespace UnityEditor.Search
         {
             if (iterator != null && context.options.HasAny(SearchFlags.Synchronous))
             {
+                var session = context.sessions.GetProviderSession(provider);
+                session.Reset(context.sessions.currentSessionContext, iterator, k_MaxFetchTimeMs, k_MaxSessionTimeMs);
+                session.Start();
+
                 using (var stackedEnumerator = new SearchEnumerator<SearchItem>(iterator))
                 {
                     while (stackedEnumerator.MoveNext())
@@ -395,6 +399,8 @@ namespace UnityEditor.Search
                             allItems.Add(stackedEnumerator.Current);
                     }
                 }
+
+                session.Stop();
             }
             else
             {

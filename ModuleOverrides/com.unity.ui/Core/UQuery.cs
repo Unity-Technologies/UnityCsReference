@@ -523,7 +523,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Initializes a QueryBuilder.
         /// </summary>
-        /// <param name="visualElement">The root element on which to condfuct the search query.</param>
+        /// <param name="visualElement">The root element on which to conduct the search query.</param>
         public UQueryBuilder(VisualElement visualElement)
             : this()
         {

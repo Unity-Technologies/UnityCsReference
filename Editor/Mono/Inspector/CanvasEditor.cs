@@ -311,7 +311,11 @@ namespace UnityEditor
                 if (m_RenderMode.intValue == 0) // Overlay canvas
                 {
                     if (((newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Normal) | (newShaderChannelValue & (int)AdditionalCanvasShaderChannels.Tangent)) != 0)
-                        EditorGUILayout.HelpBox("Shader channels Normal and Tangent are most often used with lighting, which an Overlay canvas does not support. Its likely these channels are not needed.", MessageType.Warning);
+                    {
+                        var helpMessage = "Shader channels Normal and Tangent are most often used with lighting, which an Overlay canvas does not support. Its likely these channels are not needed.";
+                        rect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(helpMessage, EditorGUIUtility.GetHelpIcon(MessageType.Warning)), EditorStyles.helpBox);
+                        EditorGUI.HelpBox(rect, helpMessage, MessageType.Warning);
+                    }
                 }
             }
             else

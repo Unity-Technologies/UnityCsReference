@@ -77,5 +77,11 @@ namespace UnityEditor.Mono.Utils
 
         public Program AppStartDetached(string provider, string applicationId, string environment, params string[] arguments) =>
             CreateProgram(new[] {"app-start-detached", "--environment", environment, provider, applicationId, "--"}.Concat(arguments));
+
+        public Program DetectEnvironment(string provider) =>
+            CreateProgram(new[] {"env-detect", provider });
+
+        public Program EnvironmentProperties(string provider, string environment) =>
+            CreateProgram(new[] {"env-props", "--environment", environment, provider });
     }
 }

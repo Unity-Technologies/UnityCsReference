@@ -657,7 +657,7 @@ namespace UnityEditor.SceneManagement
             }
         }
 
-        bool HasPatchedPropertyModificationsFor(UnityEngine.Object obj, string partialPropertyName)
+        internal bool HasPatchedPropertyModificationsFor(UnityEngine.Object obj, string partialPropertyName)
         {
             if (m_PatchedProperties == null)
                 return false;

@@ -203,6 +203,13 @@ namespace UnityEditor.UIElements.Bindings
             UpdateElementRecursively(element, prop, UpdateLivePropertyStyleFromProperty);
         }
 
+        static bool ComponentIsPrefabOverride(Component comp)
+        {
+            return comp != null &&
+                PrefabUtility.GetCorrespondingConnectedObjectFromSource(comp.gameObject) != null &&
+                PrefabUtility.GetCorrespondingObjectFromSource(comp) == null;
+        }
+
         private static void UpdatePrefabStateStyleFromProperty(VisualElement element, SerializedProperty prop)
         {
             bool handlePrefabState = false;
@@ -212,9 +219,9 @@ namespace UnityEditor.UIElements.Bindings
                 // This can throw if the serialized object changes type under our feet
                 handlePrefabState = prop.serializedObject.targetObjects.Length == 1 &&
                     prop.isInstantiatedPrefab &&
-                    prop.prefabOverride;
+                    (prop.prefabOverride || ComponentIsPrefabOverride(prop.serializedObject.targetObject as Component));
             }
-            catch (Exception)
+            catch
             {
                 return;
             }
@@ -306,9 +313,10 @@ namespace UnityEditor.UIElements.Bindings
             // bars touch (and it looks like one long bar). They normally wouldn't
             // because most fields have a small margin.
             var bottomOffset = element.resolvedStyle.marginBottom;
+            var topOffset = element.resolvedStyle.marginTop;
 
-            bar.style.top = top;
-            bar.style.height = elementHeight + bottomOffset;
+            bar.style.top = top - topOffset;
+            bar.style.height = elementHeight + bottomOffset + topOffset;
             bar.style.left = 0.0f;
         }
 
@@ -327,6 +335,17 @@ namespace UnityEditor.UIElements.Bindings
 
             if (barContainer == null)
                 return;
+            
+            // If the userData parent has been removed then we should remove all bars as the component has been removed.
+            for (var i = 0; i < barContainer.childCount; i++)
+            {
+                var element = barContainer[i].userData as VisualElement;
+                if (FindPrefabOverrideOrLivePropertyBarCompatibleParent(element) == null)
+                {
+                    barContainer.RemoveFromHierarchy();
+                    return;
+                }
+            }
 
             for (var i = 0; i < barContainer.childCount; i++)
                 UpdatePrefabOverrideOrLivePropertyBarStyle(barContainer[i]);

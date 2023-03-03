@@ -7,9 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor.EditorTools;
-using UnityEditor.Toolbars;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
 {
@@ -73,9 +71,7 @@ namespace UnityEditor.Overlays
 
             for (int i = 0, c = overlays.Length; i < c; i++)
             {
-                if (overlays[i].editorWindowType != null
-                    && (overlays[i].editorWindowType.IsAssignableFrom(type)
-                        || type.IsAssignableFrom(overlays[i].editorWindowType)))
+                if (overlays[i].editorWindowType != null && overlays[i].editorWindowType.IsAssignableFrom(type))
                     res.Add(overlays[i].overlay);
             }
 

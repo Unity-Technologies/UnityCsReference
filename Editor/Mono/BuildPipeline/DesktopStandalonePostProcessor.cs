@@ -77,17 +77,23 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
         switch (PlayerSettings.GetScriptingBackend(namedBuildTarget))
         {
             case ScriptingImplementation.Mono2x:
-                if ((!isServer && !m_HasMonoPlayers) || (isServer && !m_HasServerMonoPlayers))
+                if (!isServer && !m_HasMonoPlayers)
                     return "Currently selected scripting backend (Mono) is not installed.";
+                if (isServer && !m_HasServerMonoPlayers)
+                    return $"Dedicated Server support for {GetPlatformNameForBuildProgram(default)} is not installed.";
                 break;
             case ScriptingImplementation.IL2CPP:
-                if ((!isServer && !m_HasIl2CppPlayers) || (isServer && !m_HasServerIl2CppPlayers))
+                if (!isServer && !m_HasIl2CppPlayers)
                     return "Currently selected scripting backend (IL2CPP) is not installed.";
+                if (isServer && !m_HasServerIl2CppPlayers)
+                    return $"Dedicated Server support for {GetPlatformNameForBuildProgram(default)} is not installed.";
                 break;
             #pragma warning disable 618
             case ScriptingImplementation.CoreCLR:
-                if ((!isServer && !m_HasCoreCLRPlayers) || (isServer && !m_HasServerCoreCLRPlayers))
+                if (!isServer && !m_HasCoreCLRPlayers)
                     return "Currently selected scripting backend (CoreCLR) is not installed.";
+                if (isServer && !m_HasServerCoreCLRPlayers)
+                    return $"Dedicated Server support for {GetPlatformNameForBuildProgram(default)} is not installed.";
                 break;
             default:
                 return $"Unknown scripting backend: {PlayerSettings.GetScriptingBackend(namedBuildTarget)}";

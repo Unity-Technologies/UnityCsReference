@@ -201,6 +201,7 @@ namespace UnityEditor.Search
         BinaryWriter m_Bw;
         PropertyStringTableHeader m_Header;
         PropertyStringTable m_StringTable;
+        bool m_NeedsSync;
 
         public int version
         {
@@ -513,6 +514,7 @@ namespace UnityEditor.Search
 
                 WriteHeader(false);
 
+                m_NeedsSync = true;
                 if (!m_DelayedSync)
                     Sync();
             }
@@ -537,6 +539,8 @@ namespace UnityEditor.Search
                 m_Fs.Seek(0, SeekOrigin.Begin);
                 WriteHeader(false);
                 m_Fs.SetLength(newFileSize);
+
+                m_NeedsSync = true;
                 Sync();
             }
         }
@@ -605,6 +609,7 @@ namespace UnityEditor.Search
                 m_Fs.Seek(0, SeekOrigin.Begin);
                 m_Header.ToBinary(m_Bw);
 
+                m_NeedsSync = true;
                 if (notify && !m_DelayedSync)
                     Sync();
             }
@@ -630,6 +635,7 @@ namespace UnityEditor.Search
             {
                 m_Fs.Seek(GetSymbolsOffset() + symbolIndex * PropertyStringTable.symbolByteSize, SeekOrigin.Begin);
                 WriteInt32(symbol);
+                m_NeedsSync = true;
             }
         }
 
@@ -647,6 +653,7 @@ namespace UnityEditor.Search
 
                 // Notify other views that the
                 WriteHeader(false);
+                m_NeedsSync = true;
                 if (!m_DelayedSync)
                     Sync();
             }
@@ -679,6 +686,9 @@ namespace UnityEditor.Search
 
         public void Sync()
         {
+            if (!m_NeedsSync)
+                return;
+            m_NeedsSync = false;
             using (LockWrite())
             {
                 FlushFile();
