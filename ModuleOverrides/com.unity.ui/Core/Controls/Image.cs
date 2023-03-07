@@ -370,7 +370,13 @@ namespace UnityEngine.UIElements
             }
 
             if (!m_TintColorIsInline && customStyle.TryGetValue(s_TintColorProperty, out tintValue))
-                m_TintColor = tintValue;
+            {
+                if (m_TintColor != tintValue)
+                {
+                    m_TintColor = tintValue;
+                    IncrementVersion(VersionChangeType.Repaint);
+                }
+            }
         }
 
         private void SetScaleMode(ScaleMode mode)

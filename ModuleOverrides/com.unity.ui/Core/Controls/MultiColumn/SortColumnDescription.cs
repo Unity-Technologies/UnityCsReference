@@ -81,7 +81,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The index of the column.
+        /// The index of the column to be used to find the column only if the <see cref="SortColumnDescription.columnName">columnName</see> isn't set.
         /// </summary>
         public int columnIndex
         {

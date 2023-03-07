@@ -17,6 +17,8 @@ namespace UnityEngine.UIElements
     {
         internal static readonly DataBindingProperty indexProperty = nameof(index);
 
+        internal static List<char> s_Modifiers = new List<char>() { '&', '%', '^', '#', '_' };
+
         /// <summary>
         /// Callback that provides a string representation used to display the selected value.
         /// </summary>
@@ -43,7 +45,20 @@ namespace UnityEngine.UIElements
         {
             if (m_FormatSelectedValueCallback != null)
                 return m_FormatSelectedValueCallback(value);
-            return (value != null) ? value.ToString() : string.Empty;
+
+            Func<string, string> defaultFormatSelectedValue = (value) => {
+                string displayValue = value.TrimEnd();
+                int pos = displayValue.LastIndexOf(' ');
+                if (pos != -1 && displayValue.Length > pos + 1 && s_Modifiers.Contains(displayValue[pos + 1]))
+                    displayValue = displayValue.Substring(0, pos).TrimEnd();
+
+                return displayValue;
+            };
+
+            if (value != null)
+                return defaultFormatSelectedValue(value.ToString());
+
+            return string.Empty;
         }
 
         internal override string GetListItemToDisplay(T value)

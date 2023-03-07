@@ -552,8 +552,6 @@ namespace UnityEditor
             get { return settings.targetEye.intValue; }
         }
 
-        Overlay m_PreviewOverlay;
-
         static List<XRDisplaySubsystemDescriptor> displayDescriptors = new List<XRDisplaySubsystemDescriptor>();
 
         static void OnReloadSubsystemsComplete()
@@ -578,7 +576,7 @@ namespace UnityEditor
             SubsystemManager.afterReloadSubsystems += OnReloadSubsystemsComplete;
 
             if(!SceneViewCameraOverlay.forceDisable)
-                SceneView.AddOverlayToActiveView(m_PreviewOverlay = CreatePreviewOverlay(c));
+                CreatePreviewOverlay(c);
         }
 
         public void OnDestroy()
@@ -589,7 +587,7 @@ namespace UnityEditor
 
         public void OnDisable()
         {
-            SceneView.RemoveOverlayFromActiveView(m_PreviewOverlay);
+            SceneViewCameraOverlay.DisableCameraOverlay((Camera)target);
             m_ShowBGColorOptions.valueChanged.RemoveListener(Repaint);
             m_ShowOrthoOptions.valueChanged.RemoveListener(Repaint);
             m_ShowTargetEyeOption.valueChanged.RemoveListener(Repaint);
@@ -774,7 +772,7 @@ namespace UnityEditor
         {
         }
 
-        public virtual Overlay CreatePreviewOverlay(Camera cam) => new SceneViewCameraOverlay(cam);
+        public virtual Overlay CreatePreviewOverlay(Camera cam) => SceneViewCameraOverlay.GetOrCreateCameraOverlay(cam);
 
         [RequiredByNativeCode]
         internal static float GetGameViewAspectRatio()

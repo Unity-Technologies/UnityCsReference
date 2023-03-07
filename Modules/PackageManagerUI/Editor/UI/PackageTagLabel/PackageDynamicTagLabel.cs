@@ -36,6 +36,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                     text = L10n.Tr("Custom");
                     tooltip = string.Empty;
                     break;
+                case PackageTag.Local:
+                    text = L10n.Tr("Local");
+                    tooltip = string.Empty;
+                    break;
+                case PackageTag.Git:
+                    text = L10n.Tr("Git");
+                    tooltip = string.Empty;
+                    break;
                 case PackageTag.Deprecated:
                     text = L10n.Tr("D");
                     tooltip = L10n.Tr("Deprecated");
@@ -70,6 +78,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UpdateTag(PackageTag.None);
             else if (version.HasTag(PackageTag.Custom))
                 UpdateTag(PackageTag.Custom);
+            else if (version.HasTag(PackageTag.Local))
+                UpdateTag(PackageTag.Local);
+            else if (version.HasTag(PackageTag.Git))
+                UpdateTag(PackageTag.Git);
             else if (version.HasTag(PackageTag.Deprecated))
                 // We don't want to see the Deprecated tag in the packageItem, but we also want to hide any other tags
                 UpdateTag(m_IsVersionItem ? PackageTag.Deprecated : PackageTag.None);

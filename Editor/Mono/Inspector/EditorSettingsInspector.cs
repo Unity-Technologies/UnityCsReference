@@ -560,8 +560,11 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_UseLegacyProbeSampleCount, Content.useLegacyProbeSampleCount);
             if (EditorGUI.EndChangeCheck())
             {
+
                 if (m_IsGlobalSettings)
+#pragma warning disable 618
                     EditorSettings.useLegacyProbeSampleCount = m_UseLegacyProbeSampleCount.boolValue;
+#pragma warning restore 618
 
                 EditorApplication.RequestRepaintAllViews();
             }

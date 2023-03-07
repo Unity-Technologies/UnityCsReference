@@ -162,7 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageInfo == null || version.HasTag(PackageTag.Feature))
                 return (LinkState.NotVisible, "");
 
-            if (UpmPackageDocs.GetDocumentationUrl(packageInfo, version.isUnityPackage).Any() ||
+            if (UpmPackageDocs.GetDocumentationUrl(packageInfo, version.HasTag(PackageTag.Unity)).Any() ||
                 !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo)) ||
                 version.HasTag(PackageTag.BuiltIn))
                 return (LinkState.Enabled, "");
@@ -179,7 +179,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageInfo == null || version.HasTag(PackageTag.Feature | PackageTag.BuiltIn))
                 return (LinkState.NotVisible, "");
 
-            if (!string.IsNullOrEmpty(UpmPackageDocs.GetChangelogUrl(packageInfo, version.isUnityPackage)) ||
+            if (!string.IsNullOrEmpty(UpmPackageDocs.GetChangelogUrl(packageInfo, version.HasTag(PackageTag.Unity))) ||
                 !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo)))
                 return (LinkState.Enabled, "");
 
@@ -195,7 +195,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageInfo == null || version.HasTag(PackageTag.Feature | PackageTag.BuiltIn))
                 return (LinkState.NotVisible, "");
 
-            if (!string.IsNullOrEmpty(UpmPackageDocs.GetLicensesUrl(packageInfo, version.isUnityPackage)) ||
+            if (!string.IsNullOrEmpty(UpmPackageDocs.GetLicensesUrl(packageInfo, version.HasTag(PackageTag.Unity))) ||
                 !string.IsNullOrEmpty(UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo)))
                 return (LinkState.Enabled, "");
 
@@ -229,21 +229,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void ViewDocClick()
         {
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            var isUnityPackage = m_Version?.isUnityPackage == true;
+            var isUnityPackage = m_Version?.HasTag(PackageTag.Unity) == true;
             ViewUrl(UpmPackageDocs.GetDocumentationUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo), L10n.Tr("documentation"), "viewDocs");
         }
 
         private void ViewChangelogClick()
         {
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            var isUnityPackage = m_Version?.isUnityPackage == true;
+            var isUnityPackage = m_Version?.HasTag(PackageTag.Unity) == true;
             UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Package, m_Application);
         }
 
         private void ViewLicensesClick()
         {
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            var isUnityPackage = m_Version?.isUnityPackage == true;
+            var isUnityPackage = m_Version?.HasTag(PackageTag.Unity) == true;
             UpmPackageDocs.ViewUrl(UpmPackageDocs.GetLicensesUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo), L10n.Tr("license documentation"), "viewLicense", m_Version, m_Package, m_Application);
         }
 

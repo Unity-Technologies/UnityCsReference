@@ -3909,15 +3909,8 @@ namespace UnityEditor
             }
         }
 
-        internal static int DoPopup(Rect position, int controlID, int selected, GUIContent[] popupValues, GUIStyle style)
+        internal static GUIContent GetPopupButtonContent(int selected, GUIContent[] popupValues)
         {
-            return DoPopup(position, controlID, selected, popupValues, null, style);
-        }
-
-        internal static int DoPopup(Rect position, int controlID, int selected, GUIContent[] popupValues, Func<int, bool> checkEnabled, GUIStyle style)
-        {
-            selected = PopupCallbackInfo.GetSelectedValueForControl(controlID, selected);
-
             GUIContent buttonContent;
             if (showMixedValue)
             {
@@ -3930,7 +3923,20 @@ namespace UnityEditor
             else
             {
                 buttonContent = popupValues[selected];
+                buttonContent.text = EditorUtility.ParseMenuName(popupValues[selected].text);
             }
+
+            return buttonContent;
+        }
+
+        internal static int DoPopup(Rect position, int controlID, int selected, GUIContent[] popupValues, GUIStyle style)
+        {
+            return DoPopup(position, controlID, selected, popupValues, null, style);
+        }
+
+        internal static int DoPopup(Rect position, int controlID, int selected, GUIContent[] popupValues, Func<int, bool> checkEnabled, GUIStyle style)
+        {
+            selected = PopupCallbackInfo.GetSelectedValueForControl(controlID, selected);
 
             Event evt = Event.current;
             switch (evt.type)
@@ -3944,7 +3950,7 @@ namespace UnityEditor
                     }
 
                     BeginHandleMixedValueContentColor();
-                    style.Draw(position, buttonContent, controlID, false, position.Contains(Event.current.mousePosition));
+                    style.Draw(position, GetPopupButtonContent(selected, popupValues), controlID, false, position.Contains(Event.current.mousePosition));
                     EndHandleMixedValueContentColor();
 
                     style.font = originalFont;

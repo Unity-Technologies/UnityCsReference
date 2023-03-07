@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Displays its contents inside a scrollable frame.
+    /// Displays its contents inside a scrollable frame. For more information, see [[wiki:UIE-uxml-element-ScrollView|ScrollView]]. 
     /// </summary>
     public class ScrollView : VisualElement
     {
@@ -306,7 +306,13 @@ namespace UnityEngine.UIElements
                 {
                     horizontalScroller.value = value.x;
                     verticalScroller.value = value.y;
-                    UpdateContentViewTransform();
+
+                    if (panel != null)
+                    {
+                        UpdateScrollers(needsHorizontal, needsVertical);
+                        UpdateContentViewTransform();
+                    }
+
                     NotifyPropertyChanged(scrollOffsetProperty);
                 }
             }

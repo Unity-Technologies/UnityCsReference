@@ -118,7 +118,7 @@ namespace UnityEngine.UIElements
 
         public override void OnScroll(Vector2 scrollOffset)
         {
-            var offset = scrollOffset.y;
+            var offset = Mathf.Max(0, scrollOffset.y);
             var pixelAlignedItemHeight = resolvedItemHeight;
             var firstVisibleItemIndex = (int)(offset / pixelAlignedItemHeight);
 

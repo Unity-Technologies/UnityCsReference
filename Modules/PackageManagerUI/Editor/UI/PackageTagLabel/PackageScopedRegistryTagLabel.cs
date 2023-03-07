@@ -15,7 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private bool IsVisible(IPackageVersion version)
         {
-            return (version as UpmPackageVersion)?.isUnityPackage == false && !string.IsNullOrEmpty(version.version?.Prerelease);
+            return (version as UpmPackageVersion)?.HasTag(PackageTag.Unity) == false && !string.IsNullOrEmpty(version.version?.Prerelease);
         }
 
         public override void Refresh(IPackageVersion version)

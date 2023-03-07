@@ -148,6 +148,10 @@ namespace UnityEngine.UIElements
                             return;
 
                         m_Foldout = new Foldout() {name = foldoutHeaderUssClassName, text = m_HeaderTitle};
+
+                        var foldoutToggle = m_Foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
+                        foldoutToggle.m_Clickable.acceptClicksIfDisabled = true;
+
                         m_Foldout.AddToClassList(foldoutHeaderUssClassName);
                         m_Foldout.tabIndex = 1;
                         hierarchy.Add(m_Foldout);
