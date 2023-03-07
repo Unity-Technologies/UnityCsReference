@@ -176,7 +176,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageVersions.All(v => v.package.versions.installed != null || (v.package.progress == PackageProgress.Installing && v.package.versions.primary.HasTag(PackageTag.Placeholder))))
                 return GetPage(PackageFilterTab.InProject);
 
-            if (packageVersions.All(v => v.HasTag(PackageTag.Unity)))
+            if (packageVersions.All(v => v.availableRegistry == RegistryType.UnityRegistry))
                 return GetPage(PackageFilterTab.UnityRegistry);
 
             if (packageVersions.All(v => v.HasTag(PackageTag.LegacyFormat)))

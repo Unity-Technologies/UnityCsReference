@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageAssetStoreTagLabel()
         {
             name = "tagAssetStore";
-            text = L10n.Tr("asset store");
+            text = L10n.Tr("Asset Store");
         }
 
         public override void Refresh(IPackageVersion version)

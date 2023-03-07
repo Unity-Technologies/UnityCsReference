@@ -136,21 +136,15 @@ namespace UnityEditor.TerrainTools
             var slider = m_Slider.Q("unity-tracker");
             slider.ClearClassList();
             slider.AddToClassList("condensed-slider__slider-tracker");
-            m_Slider.RegisterCallback<GeometryChangedEvent>(e =>
-            {
-                if (direction == SliderDirection.Horizontal)
-                    slider.style.height = e.newRect.height;
-                else
-                    slider.style.width = e.newRect.width;
-            });
+
             m_Slider.Q("unity-dragger").style.display = DisplayStyle.None;
             m_Slider.Q("unity-dragger-border").style.display = DisplayStyle.None;
 
             var content = new VisualElement();
+            content.name = "content";
             content.AddToClassList("condensed-slider__content--"+directionClassSuffix);
             content.pickingMode = PickingMode.Ignore;
             m_Slider.Add(content);
-            m_Slider.RegisterCallback<GeometryChangedEvent>(e => content.style.width = e.newRect.width);
             var imageField = new VisualElement();
             imageField.AddToClassList("condensed-slider__image");
             imageField.AddToClassList("condensed-slider__image--"+directionClassSuffix);
@@ -166,12 +160,13 @@ namespace UnityEditor.TerrainTools
             m_LabelField.pickingMode = PickingMode.Ignore;
             content.Add(m_LabelField);
 
-
             var contentTextField = new VisualElement();
+            contentTextField.name = "contentTextField";
             contentTextField.AddToClassList("condensed-slider__content-textfield--"+directionClassSuffix);
             contentTextField.pickingMode = PickingMode.Ignore;
             m_Slider.Add(contentTextField);
             var textField = new FloatField();
+            textField.name = "textField";
             textField.AddToClassList("condensed-slider__label");
             textField.AddToClassList("condensed-slider__textfield--"+directionClassSuffix);
             textField.style.display = DisplayStyle.None;
@@ -183,59 +178,130 @@ namespace UnityEditor.TerrainTools
                     textField.style.marginTop = 34;
             }
 
-            textField.RegisterValueChangedCallback(e => UpdateValue(e.newValue, false));
             contentTextField.Add(textField);
 
-            m_Slider.RegisterValueChangedCallback(e =>
-            {
-                SetValueWithoutNotify(e.newValue);
-            });
-            // open the textfield when right clicking on the slider
-            m_Slider.RegisterCallback<MouseDownEvent>(e =>
-            {
-                if (e.button == (int)MouseButton.RightMouse)
-                {
-                    e.StopPropagation();
-                    e.PreventDefault();
+            RegisterCallback<AttachToPanelEvent>(RegisterCallbacks);
+            RegisterCallback<DetachFromPanelEvent>(UnregisterCallbacks);
+        }
 
+        private void RegisterCallbacks(AttachToPanelEvent e)
+        {
+            var textField = m_Slider.Q("textField") as FloatField;
+            var contentTextField = m_Slider.Q("contentTextField"); ;
+            m_Slider.RegisterCallback<GeometryChangedEvent>(OnSliderRectChange);
+            m_Slider.RegisterCallback<GeometryChangedEvent>(OnSliderWidthChange);
+            textField.RegisterValueChangedCallback(TextFieldValueChange);
+            m_Slider.RegisterValueChangedCallback(SliderSetValue);
+            m_Slider.RegisterCallback<MouseDownEvent>(SliderMouseDownEvent);
+            m_Slider.RegisterCallback<MouseUpEvent>(SliderMouseUpEvent);
+            contentTextField.RegisterCallback<MouseDownEvent>(TextFieldMouseDownEvent);
+            textField.RegisterCallback<KeyDownEvent>(TextFieldKeyDownEvent);
+        }
+
+        private void UnregisterCallbacks(DetachFromPanelEvent e)
+        {
+            var textField = m_Slider.Q("textField") as FloatField;
+            var contentTextField = m_Slider.Q("contentTextField");
+            m_Slider.UnregisterCallback<GeometryChangedEvent>(OnSliderRectChange);
+            m_Slider.UnregisterCallback<GeometryChangedEvent>(OnSliderWidthChange);
+            textField.UnregisterValueChangedCallback(TextFieldValueChange);
+            m_Slider.UnregisterValueChangedCallback(SliderSetValue);
+            m_Slider.UnregisterCallback<MouseDownEvent>(SliderMouseDownEvent);
+            m_Slider.UnregisterCallback<MouseUpEvent>(SliderMouseUpEvent);
+            contentTextField.UnregisterCallback<MouseDownEvent>(TextFieldMouseDownEvent);
+            textField.UnregisterCallback<KeyDownEvent>(TextFieldKeyDownEvent);
+        }
+
+        private void OnSliderRectChange(GeometryChangedEvent e)
+        {
+            var slider = m_Slider.Q("unity-tracker");
+            if (direction == SliderDirection.Horizontal)
+                slider.style.height = e.newRect.height;
+            else
+                slider.style.width = e.newRect.width;
+        }
+
+        private void OnSliderWidthChange(GeometryChangedEvent e)
+        {
+            var content = m_Slider.Q("content");
+            content.style.width = e.newRect.width;
+        }
+
+        private void TextFieldValueChange(ChangeEvent<float> e)
+        {
+            UpdateValue(e.newValue, false);
+        }
+
+        private void SliderSetValue(ChangeEvent<float> e)
+        {
+            SetValueWithoutNotify(e.newValue);
+        }
+
+        private void SliderMouseDownEvent(MouseDownEvent e)
+        {
+            if (e.button == (int)MouseButton.RightMouse)
+            {
+                e.StopPropagation();
+                e.PreventDefault();
+
+                var textField = m_Slider.Q("textField") as FloatField;
+                var contentTextField = m_Slider.Q("contentTextField");
+
+                if (textField != null)
+                {
                     textField.value = m_Slider.value;
                     textField.style.display = DisplayStyle.Flex;
-                    m_LabelField.style.display = DisplayStyle.None;
-                    contentTextField.pickingMode = PickingMode.Position;
                 }
-            });
-            // Stop propagating the mouse up to avoid context menus
-            m_Slider.RegisterCallback<MouseUpEvent>(e =>
+
+                m_LabelField.style.display = DisplayStyle.None;
+                contentTextField.pickingMode = PickingMode.Position;
+            }
+        }
+
+        private void SliderMouseUpEvent(MouseUpEvent e)
+        {
+            if (e.button == (int)MouseButton.RightMouse)
             {
-                if (e.button == (int)MouseButton.RightMouse)
-                {
-                    e.StopPropagation();
-                    e.PreventDefault();
-                }
-            });
-            // Any click inside the hidden element closes the textfield
-            contentTextField.RegisterCallback<MouseDownEvent>(e =>
+                e.StopPropagation();
+                e.PreventDefault();
+            }
+        }
+
+        private void TextFieldMouseDownEvent(MouseDownEvent e)
+        {
+            var textField = m_Slider.Q("textField") as FloatField;
+            var contentTextField = m_Slider.Q("contentTextField");
+
+            contentTextField.pickingMode = PickingMode.Ignore;
+            if (textField != null)
             {
-                contentTextField.pickingMode = PickingMode.Ignore;
                 if (textField.style.display == DisplayStyle.Flex)
                 {
                     textField.style.display = DisplayStyle.None;
                     m_LabelField.style.display = DisplayStyle.Flex;
                 }
-            });
-            // closes the textfield on escape or return
-            textField.RegisterCallback<KeyDownEvent>(e =>
+            }
+
+        }
+
+        private void TextFieldKeyDownEvent(KeyDownEvent e)
+        {
+            var textField = m_Slider.Q("textField") as FloatField;
+            var contentTextField = m_Slider.Q("contentTextField");
+
+            if (e.keyCode == KeyCode.Escape || e.keyCode == KeyCode.Return)
             {
-                if (e.keyCode == KeyCode.Escape || e.keyCode == KeyCode.Return)
+                contentTextField.pickingMode = PickingMode.Ignore;
+
+                if (textField != null)
                 {
-                    contentTextField.pickingMode = PickingMode.Ignore;
                     if (textField.style.display == DisplayStyle.Flex)
                     {
                         textField.style.display = DisplayStyle.None;
                         m_LabelField.style.display = DisplayStyle.Flex;
                     }
                 }
-            });
+            }
         }
 
         public void UpdateDirection(SliderDirection newDirection, float min, float max)
@@ -244,9 +310,7 @@ namespace UnityEditor.TerrainTools
             direction = newDirection;
             Clear();
             ClearClassList();
-
             CreateSlider(min, max, newDirection);
-
         }
 
     }

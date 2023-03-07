@@ -538,7 +538,6 @@ namespace UnityEditor.LightBaking
             extern public void SetLightmapResolution(Resolution resolution);
             extern public void SetEnvironment(Vector4 color);
 
-            extern public void SetBackend(Backend backend);
             public extern ProbeRequest[] GetProbeRequests();
             public extern void SetLightProbeRequests(ProbeRequest[] requests);
             public extern LightmapRequest[] GetLightmapRequests();
@@ -549,9 +548,52 @@ namespace UnityEditor.LightBaking
                 SetProbePositions(positions.AsSpan());
             }
             public extern void SetProbePositions(ReadOnlySpan<Vector3> positions);
-            
+
             public extern Vector3[] GetProbePositions();
         }
-        extern static public Result Bake(BakeInput input);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public class DeviceSettings : IDisposable
+        {
+            static extern IntPtr Internal_Create();
+            [NativeMethod(IsThreadSafe = true)]
+
+            public extern bool Initialize(Backend backend);
+            static extern void Internal_Destroy(IntPtr ptr);
+
+            internal IntPtr m_Ptr;
+            internal bool m_OwnsPtr;
+
+            public DeviceSettings()
+            {
+                m_Ptr = Internal_Create();
+                m_OwnsPtr = true;
+            }
+            public DeviceSettings(IntPtr ptr)
+            {
+                m_Ptr = ptr;
+                m_OwnsPtr = false;
+            }
+            ~DeviceSettings()
+            {
+                Destroy();
+            }
+
+            public void Dispose()
+            {
+                Destroy();
+                GC.SuppressFinalize(this);
+            }
+
+            void Destroy()
+            {
+                if (m_OwnsPtr && m_Ptr != IntPtr.Zero)
+                {
+                    Internal_Destroy(m_Ptr);
+                    m_Ptr = IntPtr.Zero;
+                }
+            }
+        }
+        extern static public Result Bake(BakeInput input, DeviceSettings deviceSettings);
     }
 }

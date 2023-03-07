@@ -162,9 +162,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     packagesToRemove.Add(packageName);
                 else
                 {
-                    var isUnityPackage = m_UpmClient.IsUnityPackage(searchInfo ?? installedInfo);
+                    var availableRegistry = m_UpmClient.GetAvailableRegistryType(searchInfo ?? installedInfo);
                     var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
-                    var versionList = new UpmVersionList(searchInfo, installedInfo, isUnityPackage, extraVersions);
+                    var versionList = new UpmVersionList(searchInfo, installedInfo, availableRegistry, extraVersions);
                     versionList = VersionsFilter.GetFilteredVersionList(versionList, seeAllVersions, showPreRelease);
                     versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(packageName));
                     if (!versionList.Any())
@@ -325,8 +325,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                         productIdAndNamesToSearch.Add((productId: productId, packageName: packageName));
 
                     var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
-                    var isUnityPackage = m_UpmClient.IsUnityPackage(productSearchInfo ?? installedPackageInfo);
-                    var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, isUnityPackage, extraVersions);
+                    var availableRegistry = m_UpmClient.GetAvailableRegistryType(productSearchInfo ?? installedPackageInfo);
+                    var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, availableRegistry, extraVersions);
                     versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(productId.ToString()));
                     package = CreatePackage(packageName, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
                     if (productInfoFetchError != null)

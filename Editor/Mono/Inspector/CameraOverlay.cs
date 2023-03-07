@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEditor.Overlays;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -28,9 +29,10 @@ namespace UnityEditor
         Camera previewCamera => m_PreviewCamera;
 
         RenderTexture m_PreviewTexture;
-        int m_QualitySettingsAntiAliasing = -1;
 
-        public SceneViewCameraOverlay(Camera camera)
+        static Dictionary<Camera, (SceneViewCameraOverlay overlay, int count)> s_CameraOverlays = new Dictionary<Camera, (SceneViewCameraOverlay, int)>();
+
+        SceneViewCameraOverlay(Camera camera)
         {
             minSize = new Vector2(40, 40);
             maxSize = new Vector2(4000, 4000);
@@ -39,6 +41,8 @@ namespace UnityEditor
             displayName = selectedCamera == null || string.IsNullOrEmpty(selectedCamera.name)
                 ? "Camera Preview"
                 : selectedCamera.name;
+
+            s_CameraOverlays.Add(camera, (this ,1));
         }
 
         public override void OnCreated()
@@ -55,6 +59,37 @@ namespace UnityEditor
             UnityObject.DestroyImmediate(m_PreviewCamera.gameObject, true);
         }
 
+        public static SceneViewCameraOverlay GetOrCreateCameraOverlay(Camera camera)
+        {
+            if (s_CameraOverlays.ContainsKey(camera))
+            {
+                var value = s_CameraOverlays[camera];
+                value.count += 1;
+                s_CameraOverlays[camera] = value;
+                return value.overlay;
+            }
+
+            var overlay = new SceneViewCameraOverlay(camera);
+            SceneView.AddOverlayToActiveView(overlay);
+            return overlay;
+        }
+
+        public static void DisableCameraOverlay(Camera cam)
+        {
+            if (s_CameraOverlays.ContainsKey(cam))
+            {
+                var value = s_CameraOverlays[cam];
+                value.count -= 1;
+                if (value.count == 0)
+                {
+                    s_CameraOverlays.Remove(cam);
+                    SceneView.RemoveOverlayFromActiveView(value.overlay);
+                }
+                else
+                    s_CameraOverlays[cam] = value;
+            }
+        }
+
         RenderTexture GetPreviewTextureWithSizeAndAA(int width, int height)
         {
             int antiAliasing = Mathf.Max(1, QualitySettings.antiAliasing);
@@ -64,7 +99,6 @@ namespace UnityEditor
                     m_PreviewTexture.Release();
 
                 m_PreviewTexture = new RenderTexture(width, height, 24, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
-                m_QualitySettingsAntiAliasing = QualitySettings.antiAliasing;
                 m_PreviewTexture.antiAliasing = antiAliasing;
             }
             return m_PreviewTexture;

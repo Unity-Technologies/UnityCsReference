@@ -307,7 +307,12 @@ namespace UnityEngine
             {
                 animationEventsBlittable[i].Dispose();
             }
+
+            FreeEventsInternal(animationEventBlittableArray);
         }
+
+        [FreeFunction(Name = "AnimationClipBindings::FreeEventsInternal")]
+        extern static private void FreeEventsInternal(IntPtr value);
 
         [ThreadStatic]
         static GCHandlePool s_handlePool;

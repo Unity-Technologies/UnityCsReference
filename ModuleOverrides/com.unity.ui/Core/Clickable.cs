@@ -96,7 +96,7 @@ namespace UnityEngine.UIElements
         {
             if ((clicked != null || clickedWithEventInfo != null) && IsRepeatable())
             {
-                if (ContainsPointer(m_ActivePointerId))
+                if (ContainsPointer(m_ActivePointerId) && (target.enabledInHierarchy || acceptClicksIfDisabled))
                 {
                     Invoke(null);
                     target.pseudoStates |= PseudoStates.Active;
@@ -310,7 +310,7 @@ namespace UnityEngine.UIElements
             if (IsRepeatable())
             {
                 // Repeatable button clicks are performed on the MouseDown and at timer events
-                if (ContainsPointer(pointerId))
+                if (ContainsPointer(pointerId) && (target.enabledInHierarchy || acceptClicksIfDisabled))
                 {
                     Invoke(evt);
                 }
@@ -370,7 +370,7 @@ namespace UnityEngine.UIElements
             else
             {
                 // Non repeatable button clicks are performed on the MouseUp
-                if (ContainsPointer(pointerId) && target.enabledInHierarchy)
+                if (ContainsPointer(pointerId) && (target.enabledInHierarchy || acceptClicksIfDisabled))
                 {
                     Invoke(evt);
                 }

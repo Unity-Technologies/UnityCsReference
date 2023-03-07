@@ -41,7 +41,7 @@ namespace Unity.UI.Builder
         ThemeStyleSheetManager m_ThemeManager;
         ThemeStyleSheet m_LastCustomTheme;
 
-        string m_LastSavePath = "Assets";
+        string m_LastSavePath = "Assets/";
 
         public BuilderDocument document
         {

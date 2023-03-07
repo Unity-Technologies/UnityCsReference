@@ -55,9 +55,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string[] m_SerializedRegistryUrlsKeys;
 
         [SerializeField]
-        private bool[] m_SerializedRegistryUrlsValues;
+        private RegistryType[] m_SerializedRegistryUrlsValues;
 
-        internal Dictionary<string, bool> m_RegistryUrls = new Dictionary<string, bool>();
+        internal Dictionary<string, RegistryType> m_RegistryUrls = new Dictionary<string, RegistryType>();
 
         [NonSerialized]
         private UpmCache m_UpmCache;
@@ -99,7 +99,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnBeforeSerialize()
         {
             m_SerializedRegistryUrlsKeys = m_RegistryUrls?.Keys.ToArray() ?? new string[0];
-            m_SerializedRegistryUrlsValues = m_RegistryUrls?.Values.ToArray() ?? new bool[0];
+            m_SerializedRegistryUrlsValues = m_RegistryUrls?.Values.ToArray() ?? new RegistryType[0];
 
             m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations?.Values.Where(i => i.isInProgress).ToArray() ?? new UpmSearchOperation[0];
         }
@@ -513,25 +513,30 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ClientProxy.Resolve();
         }
 
+        public virtual RegistryType GetAvailableRegistryType(PackageInfo packageInfo)
+        {
+            // Special handling for packages that's built in/bundled with unity, we always consider them from the Unity registry
+            if (packageInfo?.source == PackageSource.BuiltIn)
+                return RegistryType.UnityRegistry;
+
+            if (string.IsNullOrEmpty(packageInfo?.registry?.url))
+                return RegistryType.None;
+
+            if (packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
+                return RegistryType.AssetStore;
+
+            if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var result))
+                return result;
+
+            result = packageInfo.registry.isDefault && IsUnityUrl(packageInfo.registry.url) ? RegistryType.UnityRegistry : RegistryType.MyRegistries;
+            m_RegistryUrls[packageInfo.registry.url] = result;
+            return result;
+        }
+
         public virtual bool IsUnityPackage(PackageInfo packageInfo)
         {
-            if (packageInfo?.source == PackageSource.BuiltIn)
-                return true;
-
-            if (packageInfo == null
-                || packageInfo.source != PackageSource.Registry
-                || packageInfo.registry?.isDefault != true
-                || string.IsNullOrEmpty(packageInfo.registry?.url)
-                || !packageInfo.versions.all.Any()
-                || packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
-                return false;
-
-            if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var isUnityRegistry))
-                return isUnityRegistry;
-
-            isUnityRegistry = IsUnityUrl(packageInfo.registry.url);
-            m_RegistryUrls[packageInfo.registry.url] = isUnityRegistry;
-            return isUnityRegistry;
+            return packageInfo is { source: PackageSource.BuiltIn or PackageSource.Registry } &&
+                   GetAvailableRegistryType(packageInfo) == RegistryType.UnityRegistry;
         }
 
         public static bool IsUnityUrl(string url)

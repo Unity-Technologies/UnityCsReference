@@ -31,8 +31,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         PackageProgress progress { get; }
 
-        bool isDiscoverable { get; }
-
         // package level errors (for upm this refers to operation errors that are separate from the package info)
         IEnumerable<UIError> errors { get; }
 

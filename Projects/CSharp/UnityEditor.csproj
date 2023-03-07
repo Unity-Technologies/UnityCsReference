@@ -6419,6 +6419,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RegistryType.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\RegistryType.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettings.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettings.cs</Link>
     </Compile>

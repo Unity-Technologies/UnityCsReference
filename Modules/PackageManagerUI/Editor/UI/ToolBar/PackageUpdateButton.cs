@@ -148,7 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             yield return new ButtonDisableCondition(() =>
             {
                 var targetVersion = version?.package.versions.GetUpdateTarget(version);
-                return version != null && targetVersion.HasTag(PackageTag.Deprecated) && !targetVersion.HasTag(PackageTag.ScopedRegistry);
+                return targetVersion != null && targetVersion.HasTag(PackageTag.Deprecated) && targetVersion.availableRegistry != RegistryType.MyRegistries;
             }, L10n.Tr("This version is deprecated."));
 
             yield return new ButtonDisableCondition(() => version?.package.hasEntitlementsError ?? false,

@@ -79,7 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void VersionHistoryItemChangeLogClicked()
         {
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            var isUnityPackage = m_Version?.isUnityPackage == true;
+            var isUnityPackage = m_Version?.HasTag(PackageTag.Unity) == true;
             UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Version.package, m_ApplicationProxy);
         }
 
@@ -120,16 +120,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (m_Version.isInstalled)
                     stateText = L10n.Tr(m_Version.isDirectDependency ? "Installed" : "Installed as dependency");
-                else if (m_Version == recommended && multipleVersionsVisible && m_Version.isUnityPackage)
+                else if (m_Version == recommended && multipleVersionsVisible && m_Version.HasTag(PackageTag.Unity))
                     stateText = L10n.Tr("Recommended");
-                else if (!m_Version.isUnityPackage && multipleVersionsVisible && isLatestVersion)
+                else if (!m_Version.HasTag(PackageTag.Unity) && multipleVersionsVisible && isLatestVersion)
                     stateText = L10n.Tr("Latest");
             }
             else if (versionInManifest == m_Version.versionString)
                 stateText = L10n.Tr("Requested");
-            else if (m_Version == recommended && m_Version.isUnityPackage)
+            else if (m_Version == recommended && m_Version.HasTag(PackageTag.Unity))
                 stateText = L10n.Tr("Recommended");
-            else if ((primary.isInstalled || !m_Version.isUnityPackage) && isLatestVersion)
+            else if ((primary.isInstalled || !m_Version.HasTag(PackageTag.Unity)) && isLatestVersion)
                 stateText = L10n.Tr("Latest");
 
             versionHistoryItemState.text = stateText;

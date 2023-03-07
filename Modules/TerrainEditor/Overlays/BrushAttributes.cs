@@ -183,11 +183,14 @@ namespace UnityEditor.TerrainTools
             };
             UpdateOverlayDirection(true);
 
-            ToolManager.activeToolChanged += UpdateValues;
-            ToolManager.activeContextChanged += UpdateValues;
-            TerrainInspector.BrushStrengthChanged += UpdateValues;
-            BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
-            BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            RegisterCallback<AttachToPanelEvent>(e =>
+            {
+                ToolManager.activeToolChanged += UpdateValues;
+                ToolManager.activeContextChanged += UpdateValues;
+                TerrainInspector.BrushStrengthChanged += UpdateValues;
+                BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
+                BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            });
 
             RegisterCallback<DetachFromPanelEvent>(e =>
             {
@@ -287,11 +290,14 @@ namespace UnityEditor.TerrainTools
         {
             UpdateOverlayDirection(true);
 
-            ToolManager.activeToolChanged += UpdateValues;
-            ToolManager.activeContextChanged += UpdateValues;
-            TerrainInspector.BrushSizeChanged += UpdateValues;
-            BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
-            BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            RegisterCallback<AttachToPanelEvent>(e =>
+            {
+                ToolManager.activeToolChanged += UpdateValues;
+                ToolManager.activeContextChanged += UpdateValues;
+                TerrainInspector.BrushSizeChanged += UpdateValues;
+                BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
+                BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            });
 
             RegisterCallback<DetachFromPanelEvent>(e =>
             {
@@ -377,11 +383,14 @@ namespace UnityEditor.TerrainTools
             };
             UpdateOverlayDirection(true);
 
-            ToolManager.activeToolChanged += UpdateValues;
-            ToolManager.activeContextChanged += UpdateValues;
-            PaintDetailsTool.BrushTargetStrengthChanged += UpdateValues;
-            BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
-            BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            RegisterCallback<AttachToPanelEvent>(e =>
+            {
+                ToolManager.activeToolChanged += UpdateValues;
+                ToolManager.activeContextChanged += UpdateValues;
+                PaintDetailsTool.BrushTargetStrengthChanged += UpdateValues;
+                BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
+                BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            });
 
             RegisterCallback<DetachFromPanelEvent>(e =>
             {

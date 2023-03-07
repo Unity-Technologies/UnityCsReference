@@ -150,15 +150,10 @@ namespace UnityEngine.UIElements
         /// <param name="index">The item index.</param>
         public virtual void RemoveItem(int index)
         {
-            var indices = ListPool<int>.Get();
-            try
+            using (ListPool<int>.Get(out var indices))
             {
                 indices.Add(index);
                 RemoveItems(indices);
-            }
-            finally
-            {
-                ListPool<int>.Release(indices);
             }
         }
 

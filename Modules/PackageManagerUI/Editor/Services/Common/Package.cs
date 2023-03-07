@@ -26,7 +26,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private bool m_IsDiscoverable;
-        public bool isDiscoverable => m_IsDiscoverable;
 
         public string displayName => !string.IsNullOrEmpty(m_Product?.displayName) ? m_Product?.displayName : versions.FirstOrDefault()?.displayName ?? string.Empty;
         public PackageState state
@@ -108,9 +107,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     yield return versionError;
         }
 
-        public bool hasEntitlements => versions.Any(version => version.HasTag(PackageTag.Unity) && version.hasEntitlements);
+        public bool hasEntitlements => versions.Any(v => v.HasTag(PackageTag.Unity) && v.hasEntitlements);
 
-        public bool hasEntitlementsError => m_Errors.Any(error => error.errorCode == UIErrorCode.UpmError_Forbidden) || versions.Any(version => version.hasEntitlementsError);
+        public bool hasEntitlementsError => m_Errors.Any(e => e.errorCode == UIErrorCode.UpmError_Forbidden) || versions.Any(v => v.hasEntitlementsError);
 
         private IVersionList m_VersionList;
         public IVersionList versions => m_VersionList;
@@ -171,17 +170,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool IsInTab(PackageFilterTab tab)
         {
-            var version = versions.primary;
             switch (tab)
             {
                 case PackageFilterTab.BuiltIn:
-                    return version.HasTag(PackageTag.BuiltIn);
+                    return versions.All(v => v.HasTag(PackageTag.BuiltIn));
                 case PackageFilterTab.UnityRegistry:
-                    return !version.HasTag(PackageTag.BuiltIn) && version.HasTag(PackageTag.UpmFormat) && version.HasTag(PackageTag.Unity) && (isDiscoverable || (versions.installed?.isDirectDependency ?? false));
+                    return versions.Any(v => v.availableRegistry == RegistryType.UnityRegistry) && !versions.All(v => v.HasTag(PackageTag.BuiltIn)) && (m_IsDiscoverable || versions.installed?.isDirectDependency == true);
                 case PackageFilterTab.MyRegistries:
-                    return version.HasTag(PackageTag.UpmFormat) && version.HasTag(PackageTag.ScopedRegistry | PackageTag.MainNotUnity) && (isDiscoverable || (versions.installed?.isDirectDependency ?? false));
+                    return versions.Any(v => v.availableRegistry == RegistryType.MyRegistries) && (m_IsDiscoverable || versions.installed?.isDirectDependency == true);
                 case PackageFilterTab.InProject:
-                    return !version.HasTag(PackageTag.BuiltIn) && (progress == PackageProgress.Installing || versions.installed != null);
+                    return !versions.All(v => v.HasTag(PackageTag.BuiltIn)) && (progress == PackageProgress.Installing || versions.installed != null);
                 case PackageFilterTab.AssetStore:
                     return product != null;
                 default:

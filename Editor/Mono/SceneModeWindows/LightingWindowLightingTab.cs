@@ -59,7 +59,7 @@ namespace UnityEditor
             {
                 EditorGUIUtility.TrTextContent("Highest Performance"),
                 EditorGUIUtility.TrTextContent("High Performance"),
-                EditorGUIUtility.TrTextContent("Balanced"),
+                EditorGUIUtility.TrTextContent("Automatic"),
                 EditorGUIUtility.TrTextContent("Low Memory Usage"),
                 EditorGUIUtility.TrTextContent("Lowest Memory Usage"),
             };

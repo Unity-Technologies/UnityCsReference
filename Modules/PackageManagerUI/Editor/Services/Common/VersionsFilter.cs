@@ -9,15 +9,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal static class VersionsFilter
     {
-        public static UpmVersionList GetFilteredVersionList(UpmVersionList versonList, bool seeAllVersions, bool showPreRelease)
+        public static UpmVersionList GetFilteredVersionList(UpmVersionList versionList, bool seeAllVersions, bool showPreRelease)
         {
             // Only filter on Lifecycle tags if is a Unity package and the `seeAllVersions` option is not checked
-            if (seeAllVersions || !versonList.Any(v => v.isUnityPackage))
-                return versonList;
+            if (seeAllVersions || versionList.Any(v => v.availableRegistry != RegistryType.UnityRegistry))
+                return versionList;
 
             var packageTagsToExclude = PackageTag.PreRelease | PackageTag.Experimental;
 
-            var installedVersion = versonList.installed;
+            var installedVersion = versionList.installed;
             if (showPreRelease || installedVersion?.HasTag(PackageTag.PreRelease | PackageTag.Experimental) == true)
                 packageTagsToExclude &= ~PackageTag.PreRelease;
 
@@ -27,7 +27,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var numVersionsFilteredOut = 0;
             var filteredVersions = new List<UpmPackageVersion>();
-            foreach (var version in versonList.Cast<UpmPackageVersion>())
+            foreach (var version in versionList.Cast<UpmPackageVersion>())
             {
                 if (version.isInstalled || !version.HasTag(packageTagsToExclude))
                     filteredVersions.Add(version);
@@ -35,22 +35,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                     ++numVersionsFilteredOut;
             }
             if (numVersionsFilteredOut <= 0)
-                return versonList;
-            return new UpmVersionList(filteredVersions, versonList.lifecycleVersionString, versonList.lifecycleNextVersion);
+                return versionList;
+            return new UpmVersionList(filteredVersions, versionList.lifecycleVersionString, versionList.lifecycleNextVersion);
         }
 
-        public static UpmVersionList UnloadVersionsIfNeeded(UpmVersionList versonList, bool loadAllVersions)
+        public static UpmVersionList UnloadVersionsIfNeeded(UpmVersionList versionList, bool loadAllVersions)
         {
             if (loadAllVersions)
-                return versonList;
-            var numTotalVersions = versonList.Count();
+                return versionList;
+            var numTotalVersions = versionList.Count();
             if (numTotalVersions == 0)
-                return versonList;
-            var keyVersions = versonList.key.Cast<UpmPackageVersion>().ToArray();
+                return versionList;
+            var keyVersions = versionList.key.Cast<UpmPackageVersion>().ToArray();
             var numVersionsToUnload = numTotalVersions - keyVersions.Length;
             if (numVersionsToUnload <= 0)
-                return versonList;
-            return new UpmVersionList(keyVersions, versonList.lifecycleVersionString, versonList.lifecycleNextVersion, numVersionsToUnload);
+                return versionList;
+            return new UpmVersionList(keyVersions, versionList.lifecycleVersionString, versionList.lifecycleNextVersion, numVersionsToUnload);
         }
     }
 }

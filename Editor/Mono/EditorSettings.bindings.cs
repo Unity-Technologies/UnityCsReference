@@ -239,6 +239,7 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         internal static extern void SetEtcTextureCompressorDefaultBehavior();
 
+        [Obsolete("EditorSettings.useLegacyProbeSampleCount is deprecated. The legacy method of selecting probe sample counts will be removed in a future release.", false)]
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool useLegacyProbeSampleCount { get; set; }
 

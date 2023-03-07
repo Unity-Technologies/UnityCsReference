@@ -535,7 +535,9 @@ namespace UnityEditor
                                 maxDirectSamples = (int)Mathf.ClosestPowerOfTwo(Math.Max(maxDirectSamples, m_PVRDirectSampleCount.intValue));
                                 maxIndirectSamples = (int)Mathf.ClosestPowerOfTwo(Math.Max(maxIndirectSamples, m_PVRSampleCount.intValue));
 
+#pragma warning disable 618
                                 using (new EditorGUI.DisabledScope(EditorSettings.useLegacyProbeSampleCount))
+#pragma warning restore 618
                                 {
                                     EditorGUILayout.PropertyField(m_LightProbeSampleCountMultiplier, Styles.probeSampleCountMultiplier);
                                 }

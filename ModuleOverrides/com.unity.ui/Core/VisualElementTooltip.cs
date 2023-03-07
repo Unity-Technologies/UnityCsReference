@@ -20,7 +20,7 @@ namespace UnityEngine.UIElements
         internal static readonly PropertyName tooltipPropertyKey = new PropertyName("--unity-tooltip");
 
         /// <summary>
-        /// Text to display inside an information box after the user hovers the element for a small amount of time.
+        /// Text to display inside an information box after the user hovers the element for a small amount of time. This is only supported in the Editor UI.
         /// </summary>
         [CreateProperty]
         public string tooltip
