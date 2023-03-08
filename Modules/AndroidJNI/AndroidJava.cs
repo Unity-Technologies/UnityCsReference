@@ -867,7 +867,7 @@ namespace UnityEngine
         private static readonly IntPtr s_ReflectionHelperGetMethodID         = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getMethodID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Method;");
         private static readonly IntPtr s_ReflectionHelperGetFieldID          = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Field;");
         private static readonly IntPtr s_ReflectionHelperGetFieldSignature   = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldSignature", "(Ljava/lang/reflect/Field;)Ljava/lang/String;");
-        private static readonly IntPtr s_ReflectionHelperNewProxyInstance    = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "newProxyInstance", "(JLjava/lang/Class;)Ljava/lang/Object;");
+        private static readonly IntPtr s_ReflectionHelperNewProxyInstance    = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "newProxyInstance", "(Lcom/unity3d/player/UnityPlayer;JLjava/lang/Class;)Ljava/lang/Object;");
         private static readonly IntPtr s_ReflectionHelperSetNativeExceptionOnProxy = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "setNativeExceptionOnProxy", "(Ljava/lang/Object;JZ)V");
         private static readonly IntPtr s_FieldGetDeclaringClass              = GetMethodID("java/lang/reflect/Field", "getDeclaringClass", "()Ljava/lang/Class;");
 
@@ -934,11 +934,12 @@ namespace UnityEngine
             return AndroidJNISafe.CallStaticStringMethod(s_ReflectionHelperClass, s_ReflectionHelperGetFieldSignature, jniArgs);
         }
 
-        public static IntPtr NewProxyInstance(IntPtr delegateHandle, IntPtr interfaze)
+        public static IntPtr NewProxyInstance(IntPtr player, IntPtr delegateHandle, IntPtr interfaze)
         {
-            jvalue[] jniArgs = new jvalue[2];
-            jniArgs[0].j = delegateHandle.ToInt64();
-            jniArgs[1].l = interfaze;
+            jvalue[] jniArgs = new jvalue[3];
+            jniArgs[0].l = player;
+            jniArgs[1].j = delegateHandle.ToInt64();
+            jniArgs[2].l = interfaze;
             return AndroidJNISafe.CallStaticObjectMethod(s_ReflectionHelperClass, s_ReflectionHelperNewProxyInstance, jniArgs);
         }
 
@@ -955,9 +956,9 @@ namespace UnityEngine
     [UsedByNativeCode]
     sealed class _AndroidJNIHelper
     {
-        public static IntPtr CreateJavaProxy(IntPtr delegateHandle, AndroidJavaProxy proxy)
+        public static IntPtr CreateJavaProxy(IntPtr player, IntPtr delegateHandle, AndroidJavaProxy proxy)
         {
-            return AndroidReflection.NewProxyInstance(delegateHandle, proxy.javaInterface.GetRawClass());
+            return AndroidReflection.NewProxyInstance(player, delegateHandle, proxy.javaInterface.GetRawClass());
         }
 
         public static IntPtr CreateJavaRunnable(AndroidJavaRunnable jrunnable)

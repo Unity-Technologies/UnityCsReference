@@ -982,7 +982,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public Color GetPixel(CubemapFace face, int x, int y)
         {
-            return GetPixel(face, 0, x, y);
+            return GetPixel(face, x, y, 0);
         }
 
         public Color GetPixel(CubemapFace face, int x, int y, [uei.DefaultValue("0")] int mip)

@@ -1225,6 +1225,12 @@ namespace UnityEngine
             set;
         }
 
+        extern public bool writeDefaultValuesOnDisable
+        {
+            get;
+            set;
+        }
+
         [Obsolete("GetVector is deprecated.")]
         public Vector3 GetVector(string name)                     { return Vector3.zero; }
         [Obsolete("GetVector is deprecated.")]

@@ -88,10 +88,6 @@ namespace UnityEditor.Connect
             {
                 AnalyticsSettings.SetEnabledServiceWindow(enable);
                 EditorAnalytics.SendEventServiceInfo(new AnalyticsServiceState() { analytics = enable });
-                if (!enable && PurchasingService.instance.IsServiceEnabled() && PurchasingProjectSettings.requiresLegacyAnalytics)
-                {
-                    PurchasingService.instance.EnableService(false, shouldUpdateApiFlag);
-                }
             }
 
             base.InternalEnableService(enable, shouldUpdateApiFlag);

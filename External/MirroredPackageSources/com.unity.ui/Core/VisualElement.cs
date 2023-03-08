@@ -1109,6 +1109,8 @@ namespace UnityEngine.UIElements
                         e.target = this;
                         elementPanel.SendEvent(e, DispatchMode.Immediate);
                     }
+
+                    panel.dispatcher.m_ClickDetector.Cleanup(this);
                 }
 
                 UnregisterRunningAnimations();

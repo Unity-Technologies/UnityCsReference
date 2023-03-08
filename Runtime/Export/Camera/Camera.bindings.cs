@@ -220,7 +220,11 @@ namespace UnityEngine
         public enum StereoscopicEye { Left, Right }
         public enum MonoOrStereoscopicEye { Left, Right, Mono }
 
-        extern public bool  stereoEnabled     { get; }
+        extern public bool stereoEnabled
+        {
+            [NativeMethod("GetStereoEnabledForBuiltInOrSRP")]
+            get;
+        }
         extern public float stereoSeparation  { get; set; }
         extern public float stereoConvergence { get; set; }
         extern public bool  areVRStereoViewMatricesWithinSingleCullTolerance {[NativeName("AreVRStereoViewMatricesWithinSingleCullTolerance")] get; }
