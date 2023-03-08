@@ -54,7 +54,6 @@ namespace UnityEditor.Connect
         const string k_WelcomeToIapBlock = "WelcomeToIapBlock";
         const int k_UnityAnalyticsSupportMajorVersion = 4;
         const int k_UnityAnalyticsSupportMinorVersion = 2;
-        public static bool requiresLegacyAnalytics = true;
 
         Toggle m_MainServiceToggle;
         VisualElement m_GoToDashboard;
@@ -261,24 +260,6 @@ namespace UnityEditor.Connect
             Enabled,
         }
 
-        static void VerifyAnalyticsRequired(PurchasingProjectSettings provider, string packageVersion)
-        {
-            VisualElement welcomeToIapBlock = provider.rootVisualElement.Q(k_WelcomeToIapBlock);
-            if (CheckMinimumVersion(packageVersion, k_UnityAnalyticsSupportMajorVersion, k_UnityAnalyticsSupportMinorVersion))
-            {
-                requiresLegacyAnalytics = false;
-                var analyticsNotice = welcomeToIapBlock.Q(className: "note-tag");
-                if (analyticsNotice != null)
-                {
-                    welcomeToIapBlock.Remove(analyticsNotice);
-                }
-            }
-            else
-            {
-                requiresLegacyAnalytics = true;
-            }
-        }
-
         static bool CheckMinimumVersion(string packageVersion, int majorVersion, int minorVersion)
         {
             string[] versionSplits = packageVersion.Split(new[] {'.'});
@@ -362,11 +343,6 @@ namespace UnityEditor.Connect
                 provider.HandlePermissionRestrictedControls();
 
                 UpdatePackageInformation();
-            }
-
-            protected override void PackageInformationUpdated()
-            {
-                VerifyAnalyticsRequired(provider, currentPackageVersion);
             }
 
             SimpleStateMachine<ServiceEvent>.State HandleEnabling(ServiceEvent raisedEvent)
@@ -656,8 +632,6 @@ namespace UnityEditor.Connect
                         m_LookForAssetStoreImport = true;
                     }
                 }
-
-                VerifyAnalyticsRequired(provider, currentPackageVersion);
 
                 VerifyImportTag();
                 ToggleMigrateModeVisibility(m_MigrationMessage, m_EligibleForMigration);
