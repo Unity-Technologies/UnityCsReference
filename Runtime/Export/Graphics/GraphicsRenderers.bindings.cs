@@ -97,6 +97,8 @@ namespace UnityEngine
         extern internal int    sortingGroupID    { get; set; }
         extern internal int    sortingGroupOrder { get; set; }
 
+        internal extern byte stagePriority { get; set; }
+
         [NativeProperty("IsDynamicOccludee")] extern public bool allowOcclusionWhenDynamic { get; set; }
 
 

@@ -5515,6 +5515,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RegistryType.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\RegistryType.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettings.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\ProjectSettings\PackageManagerProjectSettings.cs</Link>
     </Compile>
@@ -6550,6 +6553,15 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerOutOfProcess\ProfilerRoleProvider.cs">
       <Link>Modules\ProfilerEditor\ProfilerOutOfProcess\ProfilerRoleProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Analytics\EditorAnalyticsService.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Analytics\EditorAnalyticsService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Analytics\IAnalyticsService.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Analytics\IAnalyticsService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Analytics\ProfilerWindowAnalytics.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Analytics\ProfilerWindowAnalytics.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Chart.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Chart.cs</Link>
     </Compile>
@@ -6762,9 +6774,6 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerWindow.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerWindow.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerWindowAnalytics.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerWindowAnalytics.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\BackgroundPattern.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\BackgroundPattern.cs</Link>

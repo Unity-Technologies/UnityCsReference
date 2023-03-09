@@ -72,14 +72,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool HasTag(PackageTag tag);
 
+        RegistryType availableRegistry { get; }
+
         // A version is fully fetched when the information isn't derived from another version (therefore may be inaccurate)
         bool isFullyFetched { get; }
 
         bool isAvailableOnDisk { get; }
 
         bool isDirectDependency { get; }
-
-        bool isUnityPackage { get; }
 
         string localPath { get; }
 
@@ -94,9 +94,5 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool IsDifferentVersionThanRequested { get; }
 
         bool IsRequestedButOverriddenVersion { get; }
-
-        bool isRegistryPackage { get; }
-
-        bool isFromScopedRegistry { get; }
     }
 }

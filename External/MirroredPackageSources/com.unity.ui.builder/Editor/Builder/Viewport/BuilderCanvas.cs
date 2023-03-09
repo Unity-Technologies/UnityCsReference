@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -27,8 +26,6 @@ namespace Unity.UI.Builder
         VisualElement m_DefaultBackgroundElement;
         VisualElement m_CustomBackgroundElement;
         VisualElement m_CheckerboardBackgroundElement;
-
-        Dictionary<string, VisualElement> m_HandleElements;
 
         public new class UxmlFactory : UxmlFactory<BuilderCanvas, UxmlTraits> {}
 
@@ -246,27 +243,15 @@ namespace Unity.UI.Builder
             titleLabel = this.Q<Label>("title");
             editorExtensionsLabel = this.Q<Label>("tag");
 
-            m_HandleElements = new Dictionary<string, VisualElement>();
+            this.Q("left-handle").AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragLeft));
+            this.Q("bottom-handle").AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottom));
+            this.Q("right-handle").AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragRight));
+            this.Q("top-handle").AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTop));
 
-            m_HandleElements.Add("left-handle", this.Q("left-handle"));
-            m_HandleElements.Add("bottom-handle", this.Q("bottom-handle"));
-            m_HandleElements.Add("right-handle", this.Q("right-handle"));
-            m_HandleElements.Add("top-handle", this.Q("top-handle"));
-
-            m_HandleElements.Add("bottom-left-handle", this.Q("bottom-left-handle"));
-            m_HandleElements.Add("bottom-right-handle", this.Q("bottom-right-handle"));
-            m_HandleElements.Add("top-left-handle", this.Q("top-left-handle"));
-            m_HandleElements.Add("top-right-handle", this.Q("top-right-handle"));
-
-            m_HandleElements["left-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragLeft));
-            m_HandleElements["bottom-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottom));
-            m_HandleElements["right-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragRight));
-            m_HandleElements["top-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTop));
-
-            m_HandleElements["bottom-left-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottomLeft));
-            m_HandleElements["bottom-right-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottomRight));
-            m_HandleElements["top-left-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTopLeft));
-            m_HandleElements["top-right-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTopRight));
+            this.Q("bottom-left-handle").AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottomLeft));
+            this.Q("bottom-right-handle").AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottomRight));
+            this.Q("top-left-handle").AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTopLeft));
+            this.Q("top-right-handle").AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTopRight));
 
             m_DragHoverCoverLayer = this.Q("drag-hover-cover-layer");
 

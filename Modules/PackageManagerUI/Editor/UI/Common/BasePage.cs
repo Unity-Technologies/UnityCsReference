@@ -227,7 +227,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package.Is(PackageType.AssetStore))
                 return PageManager.k_AssetStorePackageGroupName;
 
-            if (package.Is(PackageType.Unity))
+            if (package.versions.Any(v => v.HasTag(PackageTag.Unity)))
                 return tab == PackageFilterTab.UnityRegistry ? string.Empty : PageManager.k_UnityPackageGroupName;
 
             return string.IsNullOrEmpty(package.versions.primary?.author) ?

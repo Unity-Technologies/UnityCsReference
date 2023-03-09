@@ -542,8 +542,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                             productIdAndNamesToSearch.Add((productId: productId, packageName: packageName));
 
                         var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
-                        var isUnityPackage = m_UpmClient.IsUnityPackage(productSearchInfo ?? installedPackageInfo);
-                        var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, isUnityPackage, extraVersions);
+                        var availableRegistry = m_UpmClient.GetAvailableRegistryType(productSearchInfo ?? installedPackageInfo);
+                        var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, availableRegistry, extraVersions);
                         versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(productId.ToString()));
                         package = new AssetStorePackage(packageName, productId, purchaseInfo, productInfo, versionList);
                         if (productInfoFetchError != null)

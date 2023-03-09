@@ -149,8 +149,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             SemVersionParser.TryParse(m_LifecycleNextVersionString, out m_LifecycleNextVersion);
         }
 
-        private bool isUnityPackage => m_Versions.All(v => v.isUnityPackage);
-
         public IPackageVersion latest => m_Versions.LastOrDefault();
 
         public IPackageVersion recommended
@@ -162,12 +160,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (installed != null && installed.HasTag(PackageTag.VersionLocked))
                     return installed;
 
-                if (!isUnityPackage)
+                if (m_Versions.Any(v => v.availableRegistry != RegistryType.UnityRegistry))
                     return latest;
 
-                // for Unity packages, we should only recommend versions that have been tested with
-                //  the Editor; this means they have to be either version or nextVersion in the manifest
-                // version will take precedence over nextVersion
+                // for Unity packages, we should only recommend versions that have been tested with the Editor;
+                // this means they have to be either the lifecycle version or nextVersion in the manifest
+                // lifecycle version will take precedence over nextVersion
                 var resolvedLifecycleVersion = this.resolvedLifecycleVersion;
                 var resolvedLifecycleNextVersion = this.resolvedLifecycleNextVersion;
 
@@ -242,31 +240,31 @@ namespace UnityEditor.PackageManager.UI.Internal
             return sortedVersions.Count - 1;
         }
 
-        public UpmVersionList(PackageInfo searchInfo, PackageInfo installedInfo, bool isUnityPackage, Dictionary<string, PackageInfo> extraVersions = null)
+        public UpmVersionList(PackageInfo searchInfo, PackageInfo installedInfo, RegistryType availableRegistry, Dictionary<string, PackageInfo> extraVersions = null)
         {
             // We prioritize searchInfo over installedInfo, because searchInfo is fetched from the server
             // while installedInfo sometimes only contain local data
             var mainInfo = searchInfo ?? installedInfo;
             if (mainInfo != null)
             {
-                var mainVersion = new UpmPackageVersion(mainInfo, mainInfo == installedInfo, isUnityPackage);
+                var mainVersion = new UpmPackageVersion(mainInfo, mainInfo == installedInfo, availableRegistry);
                 m_Versions = mainInfo.versions.compatible.Select(v =>
                 {
                     SemVersion? version;
                     SemVersionParser.TryParse(v, out version);
-                    return new UpmPackageVersion(mainInfo, false, version, mainVersion.displayName, isUnityPackage);
+                    return new UpmPackageVersion(mainInfo, false, version, mainVersion.displayName, availableRegistry);
                 }).ToList();
                 AddToSortedVersions(m_Versions, mainVersion);
 
                 if (mainInfo != installedInfo && installedInfo != null)
-                    AddInstalledVersion(new UpmPackageVersion(installedInfo, true, isUnityPackage));
+                    AddInstalledVersion(new UpmPackageVersion(installedInfo, true, availableRegistry));
             }
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
             var recommendedVersion = mainInfo?.unityLifecycle?.recommendedVersion;
             if (string.IsNullOrEmpty(recommendedVersion))
                 recommendedVersion = mainInfo?.unityLifecycle?.version;
             SetLifecycleVersions(recommendedVersion, mainInfo?.unityLifecycle?.nextVersion);
-            UpdateExtraPackageInfos(extraVersions, isUnityPackage);
+            UpdateExtraPackageInfos(extraVersions, availableRegistry);
             m_NumUnloadedVersions = 0;
         }
 
@@ -278,13 +276,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_NumUnloadedVersions = numUnloadedVersions;
         }
 
-        private void UpdateExtraPackageInfos(Dictionary<string, PackageInfo> extraVersions, bool isUnityPackage)
+        private void UpdateExtraPackageInfos(Dictionary<string, PackageInfo> extraVersions, RegistryType availableRegistry)
         {
             if (extraVersions?.Any() != true)
                 return;
             foreach (var version in m_Versions.Where(v => !v.isFullyFetched))
                 if (extraVersions.TryGetValue(version.version.ToString(), out var packageInfo))
-                    version.UpdatePackageInfo(packageInfo, isUnityPackage);
+                    version.UpdatePackageInfo(packageInfo, availableRegistry);
         }
 
         private void SetLifecycleVersions(string unityLifecycleInfoVersion, string unityLifecycleInfoNextVersion)

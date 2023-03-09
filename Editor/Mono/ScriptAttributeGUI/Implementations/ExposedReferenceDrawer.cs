@@ -194,10 +194,10 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
             }
             else
             {
-                var guid = UnityEditor.GUID.Generate();
-                var str = guid.ToString();
+                var str = UnityEditor.GUID.Generate().ToString();
                 m_Item.exposedPropertyNameString = str;
                 m_Item.exposedPropertyName.stringValue = str;
+                m_Item.propertyMode = ExposedPropertyMode.NamedGUID;
 
                 Undo.RecordObject(m_Item.exposedPropertyTable as UnityEngine.Object, kSetExposedPropertyMsg);
                 m_Item.exposedPropertyTable.SetReferenceValue(m_Item.exposedPropertyNameString, newValue);

@@ -67,6 +67,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             return (m_Tag & tag) != 0;
         }
 
+        public virtual RegistryType availableRegistry => RegistryType.None;
+
         // Currently we don't consider Upm Packages with EntitlementLicensingModel.AssetStore as having entitlements
         // and it is only used right now to check if a package is from Asset Store. This is also to be consistent with
         // other Asset Store packages (as in, if Upm Packages on Asset Store are considered with entitlements, then every
@@ -94,7 +96,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract string localPath { get; }
         public abstract string versionString { get; }
         public abstract string versionId { get; }
-        public virtual bool isUnityPackage => false;
 
         public bool IsDifferentVersionThanRequested
             => !string.IsNullOrEmpty(versionInManifest) && !HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&

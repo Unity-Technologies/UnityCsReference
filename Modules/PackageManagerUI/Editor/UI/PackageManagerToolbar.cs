@@ -118,10 +118,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 // We can skip the whole database scan to save some time if non of the packages changed are related to scoped registry
                 // Note that we also check `preUpdate` to catch the cases where packages are move from ScopedRegistry to UnityRegistry
-                if (!args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).Any(p => p.Is(PackageType.ScopedRegistry)))
+                if (args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).All(p => p.versions.primary.availableRegistry != RegistryType.MyRegistries))
                     return;
 
-                if (!m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.ScopedRegistry)))
+                if (m_PackageDatabase.allPackages.All(p => p.versions.primary.availableRegistry != RegistryType.MyRegistries))
                     SetFilter(PackageFilterTab.UnityRegistry);
             }
 

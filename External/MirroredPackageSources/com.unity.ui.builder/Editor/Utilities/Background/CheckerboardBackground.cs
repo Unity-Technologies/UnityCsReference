@@ -29,8 +29,21 @@ namespace Unity.UI.Builder
         {
             pickingMode = PickingMode.Ignore;
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             style.position = Position.Absolute;
             generateVisualContent += OnGenerateVisualContent;
+        }
+
+        ~CheckerboardBackground()
+        {
+            DestroyTexture();
+        }
+
+        void DestroyTexture()
+        {
+            if (m_Texture != null)
+                Object.DestroyImmediate(m_Texture);
+            m_Texture = null;
         }
 
         void OnGenerateVisualContent(MeshGenerationContext context)
@@ -101,8 +114,7 @@ namespace Unity.UI.Builder
 
         void GenerateResources()
         {
-            if(m_Texture != null)
-                Object.DestroyImmediate(m_Texture);
+            DestroyTexture();
 
             m_Texture = new Texture2D(k_TextureSize, k_TextureSize)
             {
@@ -126,6 +138,11 @@ namespace Unity.UI.Builder
             style.height = veSize * k_NumberOfQuadsInRow;
 
             m_Texture.Apply(false, true);
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent e)
+        {
+            DestroyTexture();
         }
     }
 }
