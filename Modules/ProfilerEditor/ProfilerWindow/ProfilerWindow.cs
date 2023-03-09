@@ -7,8 +7,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Unity.Profiling.Editor;
 using UnityEditor.Accessibility;
+using UnityEditor.MPE;
 using UnityEditor.Networking.PlayerConnection;
 using UnityEditor.Profiling;
+using UnityEditor.Profiling.Analytics;
 using UnityEditor.Profiling.ModuleEditor;
 using UnityEditor.StyleSheets;
 using UnityEditorInternal;
@@ -19,7 +21,6 @@ using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
-using UnityEditor.MPE;
 
 namespace UnityEditor
 {
@@ -135,6 +136,9 @@ namespace UnityEditor
         int m_LastFrameFromTick = FrameDataView.invalidOrCurrentFrameIndex;
 
         bool m_CurrentFrameEnabled = false;
+
+        [NonSerialized]
+        bool m_LastGPUModuleActiveState = false;
 
         const int k_MainThreadIndex = 0;
 
@@ -552,7 +556,7 @@ namespace UnityEditor
             ProfilerDriver.profilerCaptureSaved += ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerCaptureLoaded += ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerConnected += ProfilerWindowAnalytics.SendConnectionEvent;
-            ProfilerDriver.profilingStateChange += ProfilerWindowAnalytics.ProfilingStateChange;
+            ProfilerDriver.profilerCaptureStarted += ProfilerWindowAnalytics.StartCapture;
         }
 
         void UnsubscribeFromGlobalEvents()
@@ -566,7 +570,7 @@ namespace UnityEditor
             ProfilerDriver.profilerCaptureSaved -= ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerCaptureLoaded -= ProfilerWindowAnalytics.SendSaveLoadEvent;
             ProfilerDriver.profilerConnected -= ProfilerWindowAnalytics.SendConnectionEvent;
-            ProfilerDriver.profilingStateChange -= ProfilerWindowAnalytics.ProfilingStateChange;
+            ProfilerDriver.profilerCaptureStarted -= ProfilerWindowAnalytics.StartCapture;
         }
 
         void OnSettingsChanged()
@@ -727,7 +731,6 @@ namespace UnityEditor
 
         void OnDestroy()
         {
-            ProfilerWindowAnalytics.OnProfilerWindowDestroy();
             // We're being temporary "hidden" on maximize, do nothing
             if (WindowLayout.GetMaximizedWindow() != null)
                 return;
@@ -735,6 +738,9 @@ namespace UnityEditor
             // When window is destroyed, we disable profiling
             if (Profiler.supported)
                 ProfilerDriver.enabled = false;
+
+            // Report window and session shutdown
+            ProfilerWindowAnalytics.OnProfilerWindowDestroy();
         }
 
         void OnFocus()
@@ -1065,10 +1071,16 @@ namespace UnityEditor
         {
             ProfilerDriver.enabled = profilerEnabled;
             m_Recording = profilerEnabled;
+
             SessionState.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
             if (ProfilerUserSettings.rememberLastRecordState)
                 EditorPrefs.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
+
+            if (profilerEnabled)
+                ProfilerWindowAnalytics.StartCapture();
+
             recordingStateChanged?.Invoke(m_Recording);
+
             Repaint();
         }
 
@@ -1305,11 +1317,11 @@ namespace UnityEditor
 
         void DoLegacyGUI_ToolbarAndCharts()
         {
-            if (Event.current.isMouse)
-                ProfilerWindowAnalytics.RecordProfilerSessionMouseEvent();
-
-            if (Event.current.isKey)
-                ProfilerWindowAnalytics.RecordProfilerSessionKeyboardEvent();
+            EventType eventType = Event.current.type;
+            if (eventType == EventType.MouseDown)
+                ProfilerWindowAnalytics.RecordMouseDownUsabilityEvent();
+            else if (eventType == EventType.KeyDown)
+                ProfilerWindowAnalytics.RecordKeyDownUsabilityEvent();
 
             CheckForPlatformModuleChange(); // TODO Move this to an update loop or a callback.
 
@@ -1425,6 +1437,16 @@ namespace UnityEditor
             // If we have no module selected, try to select the first one.
             if (m_SelectedModuleIndex == k_NoModuleSelected)
                 SelectFirstActiveModule();
+
+            // If GPU module state changed, force update CPU module
+            var gpuModule = this.GetProfilerModuleByType<GPUProfilerModule>();
+            if (gpuModule.active != m_LastGPUModuleActiveState)
+            {
+                m_LastGPUModuleActiveState = gpuModule.active;
+
+                var cpuModule = this.GetProfilerModuleByType<CPUProfilerModule>();
+                cpuModule.Update();
+            }
         }
 
         void ProfilerModulesDropdownWindow.IResponder.OnConfigureModules()
@@ -1750,6 +1772,9 @@ namespace UnityEditor
                 {
                     moduleToSelect.active = true;
                 }
+
+                // Send module selection analytics event
+                ProfilerWindowAnalytics.SwitchActiveView(moduleToSelect.DisplayName);
 
                 try
                 {

@@ -15,19 +15,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         Custom              = 1 << 0,
         Local               = 1 << 1,
         Git                 = 1 << 2,
-        Bundled             = 1 << 3,
-        BuiltIn             = 1 << 4,
-        Feature             = 1 << 5,
-        Placeholder         = 1 << 6,
-        SpecialInstall      = 1 << 7,
-        VersionLocked       = 1 << 8,
+        BuiltIn             = 1 << 3,
+        Feature             = 1 << 4,
+        Placeholder         = 1 << 5,
+        SpecialInstall      = 1 << 6,
+        VersionLocked       = 1 << 7,
 
         LegacyFormat        = 1 << 10,   // legacy .unitypackage format
         UpmFormat           = 1 << 11,
 
         Unity               = 1 << 15,
-        ScopedRegistry      = 1 << 16,
-        MainNotUnity        = 1 << 17,
 
         Disabled            = 1 << 20,
         Published           = 1 << 21,

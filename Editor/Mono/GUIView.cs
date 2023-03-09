@@ -51,7 +51,12 @@ namespace UnityEditor
 
             try
             {
-                Internal_Init(m_DepthBufferBits, m_AntiAliasing);
+                bool isPlayModeView = false;
+
+                if (this is HostView h)
+                    isPlayModeView = h.actualView is PlayModeView;
+
+                Internal_Init(m_DepthBufferBits, m_AntiAliasing, isPlayModeView);
             }
             catch
             {

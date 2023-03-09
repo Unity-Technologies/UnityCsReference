@@ -47,7 +47,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             return m_GraphElementsDatabases ??= new List<ItemLibraryDatabaseBase>
             {
-                InitialGraphElementDatabase(graphModel).Build_Internal()
+                InitialGraphElementDatabase(graphModel).Build()
             };
         }
 
@@ -59,8 +59,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual GraphElementItemDatabase InitialGraphElementDatabase(GraphModel graphModel)
         {
             return new GraphElementItemDatabase(Stencil, graphModel)
-                .AddNodesWithLibraryItemAttribute()
-                .AddStickyNote();
+                .AddNodesWithLibraryItemAttribute();
         }
 
         /// <inheritdoc />
@@ -100,7 +99,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             return m_GraphVariablesDatabases ??= new List<ItemLibraryDatabaseBase>
             {
-                InitialGraphVariablesDatabase(graphModel).Build_Internal()
+                InitialGraphVariablesDatabase(graphModel).Build()
             };
         }
 

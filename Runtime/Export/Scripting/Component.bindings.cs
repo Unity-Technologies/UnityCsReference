@@ -197,6 +197,11 @@ namespace UnityEngine
             return gameObject.CompareTag(tag);
         }
 
+        public bool CompareTag(TagHandle tag)
+        {
+            return gameObject.CompareTag(tag);
+        }
+
         [FreeFunction(HasExplicitThis = true)]
         internal extern Component GetCoupledComponent();
 

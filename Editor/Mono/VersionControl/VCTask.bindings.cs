@@ -40,6 +40,11 @@ namespace UnityEditor.VersionControl
         // The bindings generator will set the instance pointer in this field
         IntPtr m_Self;
 
+        private Task(IntPtr self)
+        {
+            m_Self = self;
+        }
+
         public extern void Wait();
 
         public extern void SetCompletionAction(CompletionAction action);
@@ -80,6 +85,12 @@ namespace UnityEditor.VersionControl
         {
             [NativeName("GetMonoMessages")]
             get;
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Task task) => task.m_Self;
+            public static Task ConvertToManaged(IntPtr ptr) => new Task(ptr);
         }
     }
 }

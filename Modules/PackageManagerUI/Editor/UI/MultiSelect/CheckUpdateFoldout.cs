@@ -7,13 +7,13 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class CheckUpdateFoldout : MultiSelectFoldout
     {
         private AssetStoreCache m_AssetStoreCache;
-        private AssetStoreCallQueue m_AssetStoreCallQueue;
+        private BackgroundFetchHandler m_BackgroundFetchHandler;
 
-        public CheckUpdateFoldout(PageManager pageManager, AssetStoreCache assetStoreCache, AssetStoreCallQueue assetStoreCallQueue)
+        public CheckUpdateFoldout(PageManager pageManager, AssetStoreCache assetStoreCache, BackgroundFetchHandler backgroundFetchHandler)
             : base(new PackageDeselectButton(pageManager, "deselectCheckUpdate"))
         {
             m_AssetStoreCache = assetStoreCache;
-            m_AssetStoreCallQueue = assetStoreCallQueue;
+            m_BackgroundFetchHandler = backgroundFetchHandler;
 
             headerTextTemplate = L10n.Tr("Checking update for {0}...");
         }
@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (m_AssetStoreCache.GetLocalInfo(product.id) != null && m_AssetStoreCache.GetUpdateInfo(product.id) == null)
             {
-                m_AssetStoreCallQueue.InsertToCheckUpdateQueue(product.id);
+                m_BackgroundFetchHandler.PushToCheckUpdateStack(product.id);
                 return base.AddPackageVersion(version);
             }
             return false;

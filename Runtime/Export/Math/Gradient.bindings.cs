@@ -60,6 +60,7 @@ namespace UnityEngine
     public class Gradient : IEquatable<Gradient>
     {
         internal IntPtr m_Ptr;
+        private bool m_RequiresNativeCleanup;
 
         [FreeFunction(Name = "Gradient_Bindings::Init", IsThreadSafe = true)]
         extern static private IntPtr Init();
@@ -74,11 +75,19 @@ namespace UnityEngine
         public Gradient()
         {
             m_Ptr = Init();
+            m_RequiresNativeCleanup = true;
+        }
+
+        internal Gradient(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+            m_RequiresNativeCleanup = false;
         }
 
         ~Gradient()
         {
-            Cleanup();
+            if (m_RequiresNativeCleanup)
+                Cleanup();
         }
 
         // Calculate color at a given time
@@ -150,5 +159,12 @@ namespace UnityEngine
         {
             return m_Ptr.GetHashCode();
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Gradient graident) => graident.m_Ptr;
+            public static Gradient ConvertToManaged(IntPtr ptr) => new Gradient(ptr);
+        }
+
     }
 } // end of UnityEngine

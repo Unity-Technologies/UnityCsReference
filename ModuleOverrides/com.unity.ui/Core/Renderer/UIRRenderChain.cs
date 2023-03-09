@@ -43,6 +43,9 @@ namespace UnityEngine.UIElements.UIR
         {
             e.firstChild = null;
             e.nextSibling = null;
+            e.texture = null;
+            e.material = null;
+            e.gradientsOwner = null;
         };
 
         public EntryPool(int maxCapacity = 1000)

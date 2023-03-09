@@ -15,5 +15,9 @@ namespace UnityEngine.XR
     [UsedByNativeCode]
     public class XRMeshSubsystemDescriptor : IntegratedSubsystemDescriptor<XRMeshSubsystem>
     {
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(XRMeshSubsystemDescriptor descriptor) => descriptor.m_Ptr;
+        }
     }
 }

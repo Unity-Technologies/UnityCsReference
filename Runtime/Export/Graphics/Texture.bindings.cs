@@ -343,9 +343,11 @@ namespace UnityEngine
         extern private void SetBlockOfPixels32(int x, int y, int blockWidth, int blockHeight, Color32[] colors, int miplevel);
 
         [FreeFunction("Texture2DScripting::GetRawTextureData", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         extern public byte[] GetRawTextureData();
 
         [FreeFunction("Texture2DScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        [return: Unmarshalled]
         extern public Color[] GetPixels(int x, int y, int blockWidth, int blockHeight, [uei.DefaultValue("0")] int miplevel);
 
         [uei.ExcludeFromDocs]
@@ -355,6 +357,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("Texture2DScripting::GetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         extern public Color32[] GetPixels32([uei.DefaultValue("0")] int miplevel);
 
         [uei.ExcludeFromDocs]
@@ -364,6 +367,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("Texture2DScripting::PackTextures", HasExplicitThis = true)]
+        [return:Unmarshalled]
         extern public Rect[] PackTextures(Texture2D[] textures, int padding, int maximumAtlasSize, bool makeNoLongerReadable);
 
         public Rect[] PackTextures(Texture2D[] textures, int padding, int maximumAtlasSize)
@@ -410,6 +414,7 @@ namespace UnityEngine
         public void SmoothEdges() { SmoothEdges(1); }
 
         [FreeFunction(Name = "CubemapScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         extern public Color[] GetPixels(CubemapFace face, int miplevel);
 
         public Color[] GetPixels(CubemapFace face)
@@ -507,6 +512,7 @@ namespace UnityEngine
         extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
 
         [FreeFunction(Name = "Texture3DScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         extern public Color[] GetPixels(int miplevel);
 
         public Color[] GetPixels()
@@ -515,6 +521,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "Texture3DScripting::GetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         extern public Color32[] GetPixels32(int miplevel);
 
         public Color32[] GetPixels32()
@@ -570,6 +577,7 @@ namespace UnityEngine
         extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
 
         [FreeFunction(Name = "Texture2DArrayScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         extern public Color[] GetPixels(int arrayElement, int miplevel);
 
         public Color[] GetPixels(int arrayElement)
@@ -584,6 +592,7 @@ namespace UnityEngine
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "Texture2DArrayScripting::GetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         extern public Color32[] GetPixels32(int arrayElement, int miplevel);
 
         public Color32[] GetPixels32(int arrayElement)
@@ -632,6 +641,7 @@ namespace UnityEngine
         extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
 
         [FreeFunction(Name = "CubemapArrayScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         extern public Color[] GetPixels(CubemapFace face, int arrayElement, int miplevel);
 
         public Color[] GetPixels(CubemapFace face, int arrayElement)
@@ -640,6 +650,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "CubemapArrayScripting::GetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         extern public Color32[] GetPixels32(CubemapFace face, int arrayElement, int miplevel);
 
         public Color32[] GetPixels32(CubemapFace face, int arrayElement)

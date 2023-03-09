@@ -146,6 +146,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("WebCamTextureBindings::Internal_GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         public extern Color[] GetPixels(int x, int y, int blockWidth, int blockHeight);
 
         [UnityEngine.Internal.ExcludeFromDocs]
@@ -155,6 +156,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("WebCamTextureBindings::Internal_GetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        [return:Unmarshalled]
         public extern Color32[] GetPixels32([UnityEngine.Internal.DefaultValue("null"), Unmarshalled] Color32[] colors);
 
         // Arbitrary focus point (relative x/y values in 0..1 range), null for automatic/continious focusing (default)

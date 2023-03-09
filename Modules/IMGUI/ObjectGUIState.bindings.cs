@@ -42,5 +42,10 @@ namespace UnityEngine
 
         [NativeMethod(IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(ObjectGUIState objectGUIState) => objectGUIState.m_Ptr;
+        }
     }
 }

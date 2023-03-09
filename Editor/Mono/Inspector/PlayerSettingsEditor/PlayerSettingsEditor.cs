@@ -83,6 +83,7 @@ namespace UnityEditor
             public static readonly GUIContent loggingTitle = EditorGUIUtility.TrTextContent("Stack Trace*");
             public static readonly GUIContent legacyTitle = EditorGUIUtility.TrTextContent("Legacy");
             public static readonly GUIContent publishingSettingsTitle = EditorGUIUtility.TrTextContent("Publishing Settings");
+            public static readonly GUIContent captureLogsTitle = EditorGUIUtility.TrTextContent("Capture Logs");
 
             public static readonly GUIContent shaderSectionTitle = EditorGUIUtility.TrTextContent("Shader Settings");
             public static readonly GUIContent shaderVariantLoadingTitle = EditorGUIUtility.TrTextContent("Shader Variant Loading Settings");
@@ -255,6 +256,8 @@ namespace UnityEditor
             public static readonly GUIContent allowHDRDisplay = EditorGUIUtility.TrTextContent("Allow HDR Display Output*", "Checks if the display supports HDR and if it does, switches to HDR output at the start of the application.");
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
 
+            public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing (e.g., by com.unity.logging");
+
             public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
             public static readonly string undoChangedGraphicsAPIString              = L10n.Tr("Changed Graphics API Settings");
             public static readonly string undoChangedScriptingDefineString          = L10n.Tr("Changed Scripting Define Settings");
@@ -409,6 +412,7 @@ namespace UnityEditor
         SerializedProperty m_MacRetinaSupport;
 
         SerializedProperty m_UsePlayerLog;
+        SerializedProperty m_CaptureStartupLogs;
         SerializedProperty m_KeepLoadedShadersAlive;
         SerializedProperty m_PreloadedAssets;
         SerializedProperty m_BakeCollisionMeshes;
@@ -508,8 +512,8 @@ namespace UnityEditor
         private HashSet<string> m_Reasons = new HashSet<string>();
 
         // Section animation state
-        const int kNumberGUISections = 6;
-        AnimBool[] m_SectionAnimators = new AnimBool[kNumberGUISections];
+        const int kNumberGUISections = 7;
+        List<AnimBool> m_SectionAnimators = new List<AnimBool>(kNumberGUISections);
         readonly AnimBool m_ShowDefaultIsNativeResolution = new AnimBool();
         readonly AnimBool m_ShowResolution = new AnimBool();
         private static Texture2D s_WarningIcon;
@@ -526,6 +530,7 @@ namespace UnityEditor
                 Debug.LogError("Failed to find:" + name);
             return property;
         }
+
         private static List<PlayerSettingsEditor> s_activeEditors = new List<PlayerSettingsEditor>();
         void OnEnable()
         {
@@ -628,6 +633,7 @@ namespace UnityEditor
             m_MacRetinaSupport              = FindPropertyAssert("macRetinaSupport");
             m_CaptureSingleScreen           = FindPropertyAssert("captureSingleScreen");
             m_UsePlayerLog                  = FindPropertyAssert("usePlayerLog");
+            m_CaptureStartupLogs            = FindPropertyAssert("captureStartupLogs");
 
             m_KeepLoadedShadersAlive           = FindPropertyAssert("keepLoadedShadersAlive");
             m_PreloadedAssets                  = FindPropertyAssert("preloadedAssets");
@@ -673,8 +679,8 @@ namespace UnityEditor
                     m_SettingsExtensions[i].OnEnable(this);
             }
 
-            for (int i = 0; i < m_SectionAnimators.Length; i++)
-                m_SectionAnimators[i] = new AnimBool(m_SelectedSection.value == i);
+            for (int i = 0; i < kNumberGUISections; i++)
+                m_SectionAnimators.Add(new AnimBool(m_SelectedSection.value == i));
             SetValueChangeListeners(Repaint);
 
             splashScreenEditor.OnEnable();
@@ -764,7 +770,7 @@ namespace UnityEditor
 
         public void SetValueChangeListeners(UnityAction action)
         {
-            for (int i = 0; i < m_SectionAnimators.Length; i++)
+            for (int i = 0; i < m_SectionAnimators.Count; i++)
             {
                 m_SectionAnimators[i].valueChanged.RemoveAllListeners();
                 m_SectionAnimators[i].valueChanged.AddListener(action);
@@ -922,8 +928,7 @@ namespace UnityEditor
             OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
             PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
 
-            if (sectionIndex != kNumberGUISections)
-                Debug.LogError("Mismatched number of GUI sections.");
+            DedicatedServerSectionsGUI(platform, m_SettingsExtensions[selectedPlatformValue], ref sectionIndex);
 
             EditorGUILayout.EndPlatformGrouping();
 
@@ -967,6 +972,8 @@ namespace UnityEditor
 
         public bool BeginSettingsBox(int nr, GUIContent header)
         {
+            if (nr >= m_SectionAnimators.Count)
+                m_SectionAnimators.Add(new AnimBool());
             bool enabled = GUI.enabled;
             GUI.enabled = true; // we don't want to disable the expand behavior
             EditorGUILayout.BeginVertical(Styles.categoryBox);
@@ -1132,6 +1139,7 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_CaptureSingleScreen);
 
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
+
                         EditorGUILayout.PropertyField(m_ResizableWindow);
 
                         EditorGUILayout.PropertyField(m_VisibleInBackground, SettingsContent.visibleInBackground);
@@ -1752,9 +1760,23 @@ namespace UnityEditor
                 OtherSectionOptimizationGUI(platform);
                 OtherSectionLoggingGUI();
                 OtherSectionLegacyGUI(platform);
+                if (platform.namedBuildTarget == NamedBuildTarget.Standalone || platform.namedBuildTarget == NamedBuildTarget.Server)
+                {
+                    OtherSectionCaptureLogsGUI(platform.namedBuildTarget);
+                }
                 ShowSharedNote();
             }
             EndSettingsBox();
+        }
+
+        public void DedicatedServerSectionsGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension, ref int sectionIndex)
+        {
+            if (platform.namedBuildTarget != NamedBuildTarget.Server ||
+                settingsExtension == null ||
+                !settingsExtension.HasDedicatedServerSections())
+                return;
+
+            settingsExtension.DedicatedServerSectionsGUI(ref sectionIndex);
         }
 
         private void OtherSectionShaderSettingsGUI(BuildPlatform platform)
@@ -2934,6 +2956,16 @@ namespace UnityEditor
             m_AdditionalCompilerArguments.SetMapValue(buildTarget.TargetName, arguments);
         }
 
+        bool GetCaptureStartupLogsForTarget(NamedBuildTarget buildTarget)
+        {
+            if (m_CaptureStartupLogs.TryGetMapEntry(buildTarget.TargetName, out var entry))
+            {
+                if (entry != null)
+                    return entry.FindPropertyRelative("second").boolValue;
+            }
+            return buildTarget == NamedBuildTarget.Server ? true : false;
+        }
+
         private void OtherSectionScriptCompilationGUI(BuildPlatform platform)
         {
             // Configuration
@@ -3355,6 +3387,18 @@ namespace UnityEditor
             GUILayout.Label(SettingsContent.legacyTitle, EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(m_LegacyClampBlendShapeWeights, SettingsContent.legacyClampBlendShapeWeights);
+
+            EditorGUILayout.Space();
+        }
+
+        private void OtherSectionCaptureLogsGUI(NamedBuildTarget namedBuildTarget)
+        {
+            GUILayout.Label(SettingsContent.captureLogsTitle, EditorStyles.boldLabel);
+
+            bool val = GetCaptureStartupLogsForTarget(namedBuildTarget);
+            bool newVal = EditorGUILayout.Toggle(SettingsContent.captureStartupLogs, val);
+            if (val != newVal)    
+                m_CaptureStartupLogs.SetMapValue(namedBuildTarget.TargetName, newVal);
 
             EditorGUILayout.Space();
         }

@@ -101,6 +101,10 @@ namespace UnityEngine.TextCore.Text
 
             // Add reference to Sprite Asset using the asset hashcode.
             m_FontMaterialReferenceLookup.Add(hashCode, spriteAsset.material);
+
+            // Compatibility check
+            if (spriteAsset.hashCode == 0)
+                spriteAsset.hashCode = hashCode;
         }
 
         /// <summary>

@@ -117,5 +117,10 @@ namespace UnityEditor.Build.Player
             byte[] data = (byte[])info.GetValue("typedb", typeof(byte[]));
             DeserializeFromBinary(data);
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(TypeDB typedb) => typedb.m_Ptr;
+        }
     }
 }

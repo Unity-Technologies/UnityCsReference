@@ -72,8 +72,8 @@ namespace Unity.Profiling.LowLevel.Unsafe
             return GetDescriptionInternal(handle);
         }
 
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public static extern void GetAvailable(List<ProfilerRecorderHandle> outRecorderHandleList);
+        [NativeMethod(IsThreadSafe = true)]
+        public static extern void GetAvailable([NotNull] List<ProfilerRecorderHandle> outRecorderHandleList);
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern ProfilerRecorderHandle GetByName(ProfilerCategory category, string name);

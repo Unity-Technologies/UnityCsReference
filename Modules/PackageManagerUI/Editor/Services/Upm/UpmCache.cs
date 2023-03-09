@@ -12,18 +12,18 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class UpmCache : ISerializationCallbackReceiver
     {
-        private Dictionary<string, PackageInfo> m_SearchPackageInfos = new Dictionary<string, PackageInfo>();
-        private Dictionary<string, PackageInfo> m_InstalledPackageInfos = new Dictionary<string, PackageInfo>();
-        private Dictionary<string, PackageInfo> m_ProductSearchPackageInfos = new Dictionary<string, PackageInfo>();
+        private Dictionary<string, PackageInfo> m_SearchPackageInfos = new();
+        private Dictionary<string, PackageInfo> m_InstalledPackageInfos = new();
+        private Dictionary<string, PackageInfo> m_ProductSearchPackageInfos = new();
 
-        private Dictionary<string, Dictionary<string, PackageInfo>> m_ExtraPackageInfo = new Dictionary<string, Dictionary<string, PackageInfo>>();
+        private Dictionary<string, Dictionary<string, PackageInfo>> m_ExtraPackageInfo = new();
 
-        private readonly Dictionary<string, Dictionary<string, object>> m_ParsedUpmReserved = new Dictionary<string, Dictionary<string, object>>();
+        private readonly Dictionary<string, Dictionary<string, object>> m_ParsedUpmReserved = new();
 
-        private HashSet<string> m_LoadAllVersions = new HashSet<string>();
+        private HashSet<string> m_LoadAllVersions = new();
 
         [SerializeField]
-        private long m_SearchPackageInfosTimestamp = 0;
+        private long m_SearchPackageInfosTimestamp;
 
         // arrays created to help serialize dictionaries
         [SerializeField]
@@ -146,6 +146,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public virtual Dictionary<string, PackageInfo> GetExtraPackageInfos(string packageName) => m_ExtraPackageInfo.Get(packageName);
+
+        public virtual PackageInfo GetExtraPackageInfo(string packageId)
+        {
+            var packageIdSplit = packageId?.Split(new[] { '@' }, 2);
+            if (packageIdSplit?.Length == 2)
+                return GetExtraPackageInfos(packageIdSplit[0])?.Get(packageIdSplit[1]);
+            return null;
+        }
 
         public virtual void RemoveInstalledPackageInfo(string packageName)
         {

@@ -204,7 +204,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var window = library.Show(EditorWindow.focusedWindow, position);
             window.StatusBarText = k_DefaultValueStatusText;
-            window.itemChosen += item => callback(((EnumValuesAdapter_Internal.EnumValueItem)item).value, 0);
+            window.itemChosen += item => callback(((EnumValuesAdapter_Internal.EnumValueItem)item)?.value, 0);
             return window;
         }
 
@@ -235,7 +235,6 @@ namespace Unity.GraphToolsFoundation.Editor
         internal static ItemLibraryWindow ShowTypes_Internal(Preferences preferences, IEnumerable<ItemLibraryDatabaseBase> databases, Vector2 position, Action<TypeHandle, int> callback)
         {
             var librarySize = preferences.GetItemLibrarySize(Usage.Types);
-            position += EditorWindow.focusedWindow.position.position;
             var rect = new Rect(position, librarySize.Size);
 
             var library = new ItemLibraryLibrary_Internal(databases, k_TypeAdapter, context: Usage.Types);

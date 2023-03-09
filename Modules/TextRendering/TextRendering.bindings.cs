@@ -445,5 +445,10 @@ namespace UnityEngine
         [NativeThrows] private extern void GetVerticesInternal(object vertices);
         [NativeThrows] private extern void GetCharactersInternal(object characters);
         [NativeThrows] private extern void GetLinesInternal(object lines);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(TextGenerator textGenerator) => textGenerator.m_Ptr;
+        }
     }
 }

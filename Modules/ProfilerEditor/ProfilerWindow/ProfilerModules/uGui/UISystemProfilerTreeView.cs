@@ -54,7 +54,7 @@ namespace UnityEditor
             UISystemProfilerInfo[] UISystemData = property.GetUISystemProfilerInfo();
             int[] allBatchesInstanceIDs = property.GetUISystemBatchInstanceIDs();
 
-            if (UISystemData != null)
+            if (UISystemData != null && UISystemData.Length > 0)
             {
                 Dictionary<int, TreeViewItem> map = new Dictionary<int, TreeViewItem>();
                 int batchIndex = 0;

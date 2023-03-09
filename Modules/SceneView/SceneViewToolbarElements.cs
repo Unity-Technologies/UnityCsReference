@@ -12,32 +12,6 @@ using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
 
 namespace UnityEditor.Toolbars
 {
-    static class SceneViewToolbarElements
-    {
-        const string k_StyleSheet = "StyleSheets/SceneViewToolbarElements/SceneViewToolbarElements.uss";
-        const string k_StyleLight = "StyleSheets/SceneViewToolbarElements/SceneViewToolbarElementsLight.uss";
-        const string k_StyleDark = "StyleSheets/SceneViewToolbarElements/SceneViewToolbarElementsDark.uss";
-
-        static StyleSheet s_Style;
-        static StyleSheet s_Skin;
-        internal static  void AddStyleSheets(VisualElement ve)
-        {
-            if (s_Skin == null)
-            {
-                if (EditorGUIUtility.isProSkin)
-                    s_Skin = EditorGUIUtility.Load(k_StyleDark) as StyleSheet;
-                else
-                    s_Skin = EditorGUIUtility.Load(k_StyleLight) as StyleSheet;
-            }
-            if (s_Style == null)
-            {
-                s_Style = EditorGUIUtility.Load(k_StyleSheet) as StyleSheet;
-            }
-            ve.styleSheets.Add(s_Style);
-            ve.styleSheets.Add(s_Skin);
-        }
-    }
-
     [EditorToolbarElement("SceneView/Camera Mode", typeof(SceneView))]
     sealed class CameraModeElement : EditorToolbarDropdown, IAccessContainerWindow
     {
@@ -62,7 +36,7 @@ namespace UnityEditor.Toolbars
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             AddToClassList(s_UssClassName_Debug);
             currentUssClassName = s_UssClassName_Debug;
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -118,7 +92,7 @@ namespace UnityEditor.Toolbars
             this.RegisterValueChangedCallback(evt => sceneView.in2DMode = evt.newValue);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -152,7 +126,7 @@ namespace UnityEditor.Toolbars
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             this.RegisterValueChangedCallback(evt => sceneView.sceneLighting = evt.newValue);
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -186,7 +160,7 @@ namespace UnityEditor.Toolbars
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             this.RegisterValueChangedCallback(evt => sceneView.audioPlay = evt.newValue);
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -233,7 +207,7 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -267,7 +241,7 @@ namespace UnityEditor.Toolbars
             this.RegisterValueChangedCallback(evt => sceneView.sceneVisActive = evt.newValue);
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -304,7 +278,7 @@ namespace UnityEditor.Toolbars
             });
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnDropdownClicked()
@@ -362,7 +336,7 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void UpdateState()
@@ -408,7 +382,7 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void UpdateState()
@@ -453,7 +427,7 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -498,7 +472,7 @@ namespace UnityEditor.Toolbars
             });
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
@@ -518,36 +492,6 @@ namespace UnityEditor.Toolbars
         }
     }
 
-    [EditorToolbarElement("SceneView/Snap Increment", typeof(SceneView))]
-    sealed class SnapIncrementSettingsElement : EditorToolbarDropdown
-    {
-        public SnapIncrementSettingsElement()
-        {
-            name = "SnapIncrement";
-            tooltip = "Snap Increment";
-            icon = EditorGUIUtility.FindTexture("Snap/SnapIncrement");
-
-            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            SceneViewToolbarElements.AddStyleSheets(this);
-        }
-
-        void OnAttachedToPanel(AttachToPanelEvent evt)
-        {
-            clicked += OnDropdownClicked;
-        }
-
-        void OnDropdownClicked()
-        {
-            OverlayPopupWindow.Show<SnapIncrementSettingsWindow>(this, new Vector2(300, 88));
-        }
-
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
-        {
-            clicked -= OnDropdownClicked;
-        }
-    }
-
     [EditorToolbarElement("SceneView/Search", typeof(SceneView))]
     sealed class SceneViewSearchElement : VisualElement, IAccessContainerWindow
     {
@@ -557,7 +501,7 @@ namespace UnityEditor.Toolbars
         {
             name = "Search";
             tooltip = "Search the Hierarchy / Scene View";
-            SceneViewToolbarElements.AddStyleSheets(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
             Add(new IMGUIContainer { onGUIHandler = OnGUI });
         }
 

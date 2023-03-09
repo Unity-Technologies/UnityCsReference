@@ -897,6 +897,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalBuffer", HasExplicitThis = true)]
         extern private void SetGlobalGraphicsBufferInternal(int nameID, GraphicsBuffer value);
 
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetGlobalRayTracingAccelerationStructure", HasExplicitThis = true)]
+        extern private void SetGlobalRayTracingAccelerationStructureInternal(RayTracingAccelerationStructure accelerationStructure, int nameID);
+
         [FreeFunction("RenderingCommandBuffer_Bindings::SetShadowSamplingMode_Impl", HasExplicitThis = true)]
         extern private void SetShadowSamplingMode_Impl(ref UnityEngine.Rendering.RenderTargetIdentifier shadowmap, ShadowSamplingMode mode);
 
@@ -1399,7 +1402,7 @@ namespace UnityEngine.Rendering
         }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetupCameraProperties", HasExplicitThis = true)]
-        extern void SetupCameraProperties_Internal([NotNull("NullExceptionObject")] Camera camera);
+        extern void SetupCameraProperties_Internal([NotNull] Camera camera);
         public void SetupCameraProperties(Camera camera)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
@@ -1412,6 +1415,12 @@ namespace UnityEngine.Rendering
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
             InvokeOnRenderObjectCallbacks_Internal();
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static CommandBuffer ConvertToManaged(IntPtr ptr) => new CommandBuffer(ptr);
+            public static IntPtr ConvertToNative(CommandBuffer commandBuffer) => commandBuffer.m_Ptr;
         }
     }
 }

@@ -33,6 +33,8 @@ namespace UnityEditorInternal.Profiling
         static readonly string k_GpuProfilingNotSupportedWithVulkan = L10n.Tr("GPU Profiling is currently not supported when using Vulkan.");
         static readonly string k_GpuProfilingNotSupportedWithMetal = L10n.Tr("GPU Profiling is currently not supported when using Metal.");
         static readonly string k_GpuProfilingNotSupportedWithOpenGLGPURecorders = L10n.Tr("GPU Profiling is currently not supported in OpenGL when PlayerSettings.\nenableOpenGLProfilerGPURecorders is enabled. (<a playersettingslink=\"Project/Player\" playersettingssearchstring=\"OpenGL: Profiler GPU Recorders\">Click here to edit</a>)");
+        static readonly string k_PerformanceWarningMessage = L10n.Tr("Collecting GPU Profiler data disables graphics jobs, causes overhead and reduces the accuracy of the CPU Module. Close this module if you don't need this data.\n\n" +
+            "HDRP and URP Renderers are currently not supported: the profiler won't show most GPU markers if these renderers are enabled.");
 
         static readonly Dictionary<GpuProfilingStatisticsAvailabilityStates, string> s_StatisticsAvailabilityStateReason
             = new Dictionary<GpuProfilingStatisticsAvailabilityStates, string>()
@@ -59,6 +61,11 @@ namespace UnityEditorInternal.Profiling
 
         private protected override int defaultOrderIndex => k_DefaultOrderIndex;
         private protected override string legacyPreferenceKey => "ProfilerChartGPU";
+
+        public GPUProfilerModule()
+        {
+            WarningMsg = k_PerformanceWarningMessage;
+        }
 
         internal override ProfilerViewType ViewType
         {
@@ -139,6 +146,9 @@ namespace UnityEditorInternal.Profiling
         {
             var chart = base.InstantiateChart(defaultChartScale, chartMaximumScaleInterpolationValue);
             chart.statisticsAvailabilityMessage = GetStatisticsAvailabilityStateReason;
+
+            var performanceWarningMsg = new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"), k_PerformanceWarningMessage);
+            chart.WarningMsg = performanceWarningMsg;
             return chart;
         }
 

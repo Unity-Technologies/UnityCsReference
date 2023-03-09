@@ -32,8 +32,14 @@ namespace UnityEngine.iOS
             GC.SuppressFinalize(this);
         }
 
-        internal OnDemandResourcesRequest() {}
+        private OnDemandResourcesRequest(IntPtr ptr) : base(ptr) {}
         ~OnDemandResourcesRequest()         { Dispose(); }
+
+        new internal static class BindingsMarshaller
+        {
+            public static OnDemandResourcesRequest ConvertToManaged(IntPtr ptr) => new OnDemandResourcesRequest(ptr);
+            public static IntPtr ConvertToNative(OnDemandResourcesRequest request) => request.m_Ptr;
+        }
     }
 
     [NativeHeader("Runtime/Export/iOS/OnDemandResources.h")]

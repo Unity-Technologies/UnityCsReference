@@ -55,6 +55,11 @@ namespace UnityEditor.RestService
             get;
         }
         public extern string GetParam(string paramName);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Request request) => request.m_nativeRequestPtr;
+        }
     }
 
     [NativeHeader("Modules/RestService/Public/Response.h")]
@@ -114,6 +119,11 @@ namespace UnityEditor.RestService
 
         [NativeMethod(IsThreadSafe = true)]
         extern public void Submit();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Response response) => response.m_nativeResponseProxyPtr;
+        }
     }
 
     [NativeHeader("Modules/RestService/Public/Transport/HttpTransport.h")]

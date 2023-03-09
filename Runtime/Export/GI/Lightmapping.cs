@@ -579,7 +579,7 @@ namespace UnityEngine
                 rect.color = directColor;
                 rect.indirectColor = indirectColor;
 
-                rect.range          = l.range;
+                rect.range          = l.dilatedRange;
                 rect.width          = l.areaSize.x;
                 rect.height         = l.areaSize.y;
                 rect.falloff        = FalloffType.Legacy;
@@ -601,7 +601,7 @@ namespace UnityEngine
                 disc.color = directColor;
                 disc.indirectColor = indirectColor;
 
-                disc.range          = l.range;
+                disc.range          = l.dilatedRange;
                 disc.radius         = l.areaSize.x;
                 disc.falloff        = FalloffType.Legacy;
             }

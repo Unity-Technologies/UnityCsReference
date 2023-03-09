@@ -49,6 +49,11 @@ namespace UnityEditor.VersionControl
             [NativeMethod("IsPassword")]
             get;
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(ConfigField configField) => configField.m_Self;
+        }
     }
 
     [NativeHeader("Editor/Src/VersionControl/VCPlugin.h")]
@@ -58,6 +63,11 @@ namespace UnityEditor.VersionControl
     {
         // The bindings generator will set the instance pointer in this field
         IntPtr m_Self;
+
+        private Plugin(IntPtr self)
+        {
+            m_Self = self;
+        }
 
         internal Plugin() {}
 
@@ -92,5 +102,11 @@ namespace UnityEditor.VersionControl
 
         [FreeFunction("VersionControlBindings::Plugin::GetConfigFields")]
         static extern ConfigField[] GetConfigFields(IntPtr plugin);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Plugin plugin) => plugin.m_Self;
+            public static Plugin ConvertToManaged(IntPtr ptr) => new Plugin(ptr);
+        }
     }
 }

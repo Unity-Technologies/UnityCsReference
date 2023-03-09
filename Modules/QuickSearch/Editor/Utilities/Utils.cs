@@ -481,11 +481,6 @@ namespace UnityEditor.Search
             return Json.Deserialize(json);
         }
 
-        internal static int GetNumCharactersThatFitWithinWidth(GUIStyle style, string text, float width)
-        {
-            return style.GetNumCharactersThatFitWithinWidth(text, width);
-        }
-
         internal static string GetNextWord(string src, ref int index)
         {
             // Skip potential white space BEFORE the actual word we are extracting
@@ -721,7 +716,7 @@ namespace UnityEditor.Search
                 return sr.sprite.texture;
 
 
-            
+
             if (!options.HasAny(FetchPreviewOptions.Large))
             {
                 var preview = AssetPreview.GetAssetPreview(obj.GetInstanceID(), GetClientId(ctx));
@@ -852,7 +847,7 @@ namespace UnityEditor.Search
 
         internal static void OpenPackageManager(string packageName)
         {
-            PackageManager.UI.PackageManagerWindow.SelectPackageAndFilterStatic(packageName, PackageManager.UI.Internal.PackageFilterTab.AssetStore);
+            PackageManager.UI.PackageManagerWindow.SelectPackageAndPageStatic(packageName, PackageManager.UI.Internal.MyAssetsPage.k_Id);
         }
 
         internal static char FastToLower(char c)

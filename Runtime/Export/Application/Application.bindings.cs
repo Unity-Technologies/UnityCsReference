@@ -115,7 +115,7 @@ namespace UnityEngine
         }
 
         [FreeFunction]
-        public extern static bool IsPlaying([NotNull("NullExceptionObject")] UnityEngine.Object obj);
+        public extern static bool IsPlaying([NotNull] UnityEngine.Object obj);
 
         public extern static bool isFocused
         {

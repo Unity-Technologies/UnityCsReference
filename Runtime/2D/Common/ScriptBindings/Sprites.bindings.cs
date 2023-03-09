@@ -180,18 +180,21 @@ namespace UnityEngine
         public extern Vector2[] vertices
         {
             [FreeFunction("SpriteAccessLegacy::GetSpriteVertices", HasExplicitThis = true)]
+            [return:Unmarshalled]
             get;
         }
 
         public extern UInt16[] triangles
         {
             [FreeFunction("SpriteAccessLegacy::GetSpriteIndices", HasExplicitThis = true)]
+            [return:Unmarshalled]
             get;
         }
 
         public extern Vector2[] uv
         {
             [FreeFunction("SpriteAccessLegacy::GetSpriteUVs", HasExplicitThis = true)]
+            [return:Unmarshalled]
             get;
         }
 
@@ -200,9 +203,9 @@ namespace UnityEngine
         public extern uint GetScriptableObjectsCount();
         [FreeFunction("SpritesBindings::GetScriptableObjects", ThrowsException = true, HasExplicitThis = true)]
         public extern uint GetScriptableObjects([NotNull] ScriptableObject[] scriptableObjects);
-        public extern bool AddScriptableObject([NotNull("NullExceptionObject")]ScriptableObject obj);
+        public extern bool AddScriptableObject([NotNull]ScriptableObject obj);
         public extern bool RemoveScriptableObjectAt(uint i);
-        public extern bool SetScriptableObjectAt([NotNull("NullExceptionObject")]ScriptableObject obj, uint i);
+        public extern bool SetScriptableObjectAt([NotNull]ScriptableObject obj, uint i);
 
         public int GetPhysicsShapePointCount(int shapeIdx)
         {

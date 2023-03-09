@@ -197,6 +197,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var cpt = 0;
             var groupPaths = new List<GroupPath_Internal>();
             var groupPath = new List<String>();
+            var groupsToCopy = new List<GroupModel>();
 
             foreach (var group in groups)
             {
@@ -215,6 +216,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 groupPaths.Add(new GroupPath_Internal() { m_OriginalGUID = group.Guid, m_Path = groupPath.ToArray(), m_Expanded = bbState?.GetGroupExpanded(group) ?? true });
                 groupIndices[group] = cpt++;
+
+                groupsToCopy.Add(group);
             }
 
             var declarations = new List<VariableDeclaration_Internal>(variableDeclarationsToCopy.Count);
@@ -248,6 +251,35 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             declarations.AddRange(inGroupDeclarations);
+
+            foreach (var o in originalNodes)
+            {
+                (o as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
+            }
+            foreach (var o in wiresToCopy)
+            {
+                (o as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
+            }
+            foreach (var o in declarations)
+            {
+                (o.m_Model as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
+            }
+            foreach (var o in implicitVariableDeclarations)
+            {
+                o.OnBeforeCopy();
+            }
+            foreach (var o in groupsToCopy)
+            {
+                (o as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
+            }
+            foreach (var o in stickyNotesToCopy)
+            {
+                (o as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
+            }
+            foreach (var o in placematsToCopy)
+            {
+                (o as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
+            }
 
             var copyPasteData = new CopyPasteData
             {
@@ -353,6 +385,8 @@ namespace Unity.GraphToolsFoundation.Editor
                     bbUpdater?.SetGroupModelExpanded(newGroup, groupPath.m_Expanded);
                     createdGroups.Add(newGroup);
                     selectionStateUpdater.SelectElement(newGroup, true);
+
+                    (newGroup as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                 }
             }
 
@@ -366,7 +400,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     if (!graphModel.Stencil.CanPasteVariable(source.m_Model, graphModel))
                         break;
-                    duplicatedModels.Add(graphModel.DuplicateGraphVariableDeclaration(source.m_Model));
+                    var newDeclaration = graphModel.DuplicateGraphVariableDeclaration(source.m_Model);
+                    duplicatedModels.Add(newDeclaration);
                     if (source.m_GroupIndex >= 0) // if we have a valid groupIndex, it means we are in a duplicated group
                     {
                         createdGroups[source.m_GroupIndex].InsertItem(duplicatedModels.Last(), source.m_IndexInGroup);
@@ -381,6 +416,8 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
 
                     declarationMapping[source.m_Model.Guid.ToString()] = duplicatedModels.Last();
+
+                    (newDeclaration as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                 }
 
                 var duplicatedParents = new HashSet<GroupModel>(duplicatedModels.Select(t => t.ParentGroup));
@@ -409,8 +446,11 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         if (graphModel.Stencil.CanPasteVariable(source, graphModel))
                         {
-                            duplicatedModels.Add(graphModel.DuplicateGraphVariableDeclaration(source, true));
+                            var newDeclaration = graphModel.DuplicateGraphVariableDeclaration(source, true);
+                            duplicatedModels.Add(newDeclaration);
                             declarationMapping[source.Guid.ToString()] = duplicatedModels.Last();
+
+                            (newDeclaration as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                         }
                     }
                     else
@@ -450,15 +490,30 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         portalNodeModel.DeclarationModel = newDeclaration;
                     }
-                    else if (!portalNodeModel.CanHaveAnotherPortalWithSameDirectionAndDeclaration() ||
-                             (portalNodeModel is ISingleInputPortNodeModel &&
-                                 copyPasteData.m_Nodes.Any(t=> t is ISingleOutputPortNodeModel and WirePortalModel exit &&
-                                     ReferenceEquals(exit.DeclarationModel, portalNodeModel.DeclarationModel))))
+
+                    // If the node can not have another portal with the same direction and declaration ( is a data input ) and there is already
+                    // one portal node with the same direction and the same Declaration.
+                    else if (!portalNodeModel.CanHaveAnotherPortalWithSameDirectionAndDeclaration() &&
+                             graphModel.NodeModels.Any(t=> t is WirePortalModel tWirePortalModel &&
+                                 tWirePortalModel != pastedNode &&
+                                 tWirePortalModel.DeclarationModel.Guid == portalNodeModel.DeclarationModel.Guid &&
+                                 tWirePortalModel is ISingleOutputPortNodeModel == portalNodeModel is ISingleOutputPortNodeModel)
+
+                             // Or if there is in the pasted node, a node with the opposite direction that share the same declaration
+                             ||
+                             (
+                                 copyPasteData.m_Nodes.Any(t=> t is WirePortalModel tWirePortalModel &&
+                                     tWirePortalModel.DeclarationModel.Guid == portalNodeModel.DeclarationModel.Guid &&
+                                     tWirePortalModel is ISingleOutputPortNodeModel != portalNodeModel is ISingleOutputPortNodeModel)
+                             )
+                            )
                     {
                         var declaration = graphModel.DuplicatePortal(portalNodeModel.DeclarationModel);
 
                         portalDeclarations[portalNodeModel.DeclarationModel.Guid] = declaration;
                         portalNodeModel.DeclarationModel = declaration;
+
+                        (declaration as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                     }
                     else
                     {
@@ -473,6 +528,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 selectionStateUpdater?.SelectElements(new[] { pastedNode }, true);
                 RecurseAddMapping(elementMapping, originalModel, pastedNode);
+
+                (pastedNode as ICopyPasteCallbackReceiver)?.OnAfterPaste();
             }
 
             foreach (var portal in portalModels)
@@ -493,6 +550,8 @@ namespace Unity.GraphToolsFoundation.Editor
                         var declarationModel = portal.DeclarationModel;
                         portal.DeclarationModel = graphModel.DuplicatePortal(portal.DeclarationModel);
                         portalDeclarations[declarationModel.Guid] = portal.DeclarationModel;
+
+                        (portal.DeclarationModel as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                     }
                 }
             }
@@ -509,6 +568,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     elementMapping.Add(wire.Guid.ToString(), copiedWire);
                     selectionStateUpdater?.SelectElements(new[] { copiedWire }, true);
+
+                    (copiedWire as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                 }
             }
 
@@ -522,6 +583,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 pastedStickyNote.TextSize = stickyNote.TextSize;
                 selectionStateUpdater?.SelectElements(new[] { pastedStickyNote }, true);
                 elementMapping.Add(stickyNote.Guid.ToString(), pastedStickyNote);
+
+                (pastedStickyNote as ICopyPasteCallbackReceiver)?.OnAfterPaste();
             }
 
             // Keep placemats relative order
@@ -534,6 +597,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 pastedPlacemat.Title = newTitle;
                 selectionStateUpdater?.SelectElements(new[] { pastedPlacemat }, true);
                 elementMapping.Add(placemat.Guid.ToString(), pastedPlacemat);
+
+                (pastedPlacemat as ICopyPasteCallbackReceiver)?.OnAfterPaste();
             }
 
             graphModelStateUpdater?.MarkUpdated(changeScope.ChangeDescription);

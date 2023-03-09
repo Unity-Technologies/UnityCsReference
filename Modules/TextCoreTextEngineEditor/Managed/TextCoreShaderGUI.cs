@@ -135,6 +135,7 @@ namespace UnityEditor.TextCore.Text
         protected MaterialEditor m_Editor;
 
         protected Material m_Material;
+        private int m_ShaderID;
 
         protected MaterialProperty[] m_Properties;
 
@@ -397,9 +398,18 @@ namespace UnityEditor.TextCore.Text
 
             EditorGUIUtility.labelWidth = 10f;
             rect.width = rect.width * 0.5f - 2f;
-            DoFloat(rect, names[0], "X");
-            rect.x += rect.width + 4f;
-            DoFloat(rect, names[1], "Y");
+
+            if (names.Length == 1)
+            {
+                DoFloat2(rect, names[0]);
+            }
+            else
+            {
+                DoFloat(rect, names[0], "X");
+                rect.x += rect.width + 4f;
+                DoFloat(rect, names[1], "Y");
+            }
+
             EditorGUIUtility.labelWidth = labelWidth;
             EditorGUI.indentLevel = indentLevel;
         }
@@ -450,17 +460,121 @@ namespace UnityEditor.TextCore.Text
             }
         }
 
+        void DoFloat2(Rect rect, string name)
+        {
+            MaterialProperty property = BeginProperty(name);
+
+            float x = EditorGUI.FloatField(rect, "X", property.vectorValue.x);
+            rect.x += rect.width + 4f;
+            float y = EditorGUI.FloatField(rect, "Y", property.vectorValue.y);
+
+            if (EndProperty())
+            {
+                property.vectorValue = new Vector2(x, y);
+            }
+        }
+
+        protected void DoOffset(string name, string label)
+        {
+            MaterialProperty property = BeginProperty(name);
+            s_TempLabel.text = label;
+            Vector2 value = EditorGUI.Vector2Field(EditorGUILayout.GetControlRect(), s_TempLabel, property.vectorValue);
+            if (EndProperty())
+            {
+                property.vectorValue = value;
+            }
+        }
+
         protected void DoSlider(string name, string label)
         {
             MaterialProperty property = BeginProperty(name);
             Vector2 range = property.rangeLimits;
             s_TempLabel.text = label;
-            float value = EditorGUI.Slider(
-                EditorGUILayout.GetControlRect(), s_TempLabel, property.floatValue, range.x, range.y
-            );
+            float value = EditorGUI.Slider(EditorGUILayout.GetControlRect(), s_TempLabel, property.floatValue, range.x, range.y);
             if (EndProperty())
             {
                 property.floatValue = value;
+            }
+        }
+
+        protected void DoSlider(string name, Vector2 range, string label)
+        {
+            MaterialProperty property = BeginProperty(name);
+            s_TempLabel.text = label;
+            float value = EditorGUI.Slider(EditorGUILayout.GetControlRect(), s_TempLabel, property.floatValue, range.x, range.y);
+            if (EndProperty())
+            {
+                property.floatValue = value;
+            }
+        }
+
+        protected void DoSlider(string name, string propertyField, string label)
+        {
+            MaterialProperty property = BeginProperty(name);
+            Vector2 range = property.rangeLimits;
+            s_TempLabel.text = label;
+
+            Vector4 value = property.vectorValue;
+
+            switch (propertyField)
+            {
+                case "X":
+                    value.x = EditorGUI.Slider(EditorGUILayout.GetControlRect(), s_TempLabel, value.x, range.x, range.y);
+                    break;
+                case "Y":
+                    value.y = EditorGUI.Slider(EditorGUILayout.GetControlRect(), s_TempLabel, value.y, range.x, range.y);
+                    break;
+                case "Z":
+                    value.z = EditorGUI.Slider(EditorGUILayout.GetControlRect(), s_TempLabel, value.z, range.x, range.y);
+                    break;
+                case "W":
+                    value.w = EditorGUI.Slider(EditorGUILayout.GetControlRect(), s_TempLabel, value.w, range.x, range.y);
+                    break;
+            }
+
+            if (EndProperty())
+            {
+                property.vectorValue = value;
+            }
+        }
+
+        protected void DoSlider(string name, string propertyField, Vector2 range, string label)
+        {
+            MaterialProperty property = BeginProperty(name);
+            s_TempLabel.text = label;
+
+            Vector4 value = property.vectorValue;
+
+            switch (propertyField)
+            {
+                case "X":
+                    value.x = EditorGUI.Slider(EditorGUILayout.GetControlRect(), s_TempLabel, value.x, range.x, range.y);
+                    break;
+                case "Y":
+                    value.y = EditorGUI.Slider(EditorGUILayout.GetControlRect(), s_TempLabel, value.y, range.x, range.y);
+                    break;
+                case "Z":
+                    value.z = EditorGUI.Slider(EditorGUILayout.GetControlRect(), s_TempLabel, value.z, range.x, range.y);
+                    break;
+                case "W":
+                    value.w = EditorGUI.Slider(EditorGUILayout.GetControlRect(), s_TempLabel, value.w, range.x, range.y);
+                    break;
+            }
+
+            if (EndProperty())
+            {
+                property.vectorValue = value;
+            }
+        }
+
+        protected void DoVector2(string name, string label)
+        {
+            MaterialProperty property = BeginProperty(name);
+            s_TempLabel.text = label;
+            Vector4 value = EditorGUILayout.Vector3Field(s_TempLabel, property.vectorValue);
+            if (EndProperty())
+            {
+                property.vectorValue = value;
             }
         }
 
@@ -501,9 +615,23 @@ namespace UnityEditor.TextCore.Text
             }
         }
 
-        // Drag and Drop Functionality
+        bool IsNewShader()
+        {
+            if (m_Material == null)
+                return false;
+
+            int currentShaderID = m_Material.shader.GetInstanceID();
+
+            if (m_ShaderID == currentShaderID)
+                return false;
+
+            m_ShaderID = currentShaderID;
+
+            return true;
+        }
 
         /*
+
         void DoDragAndDropBegin()
         {
             m_DragAndDropMinY = GUILayoutUtility.GetRect(0f, 0f, GUILayout.ExpandWidth(true)).y;

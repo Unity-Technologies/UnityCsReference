@@ -119,6 +119,7 @@ namespace UnityEngine
         [FreeFunction("ShaderScripting::SetGlobalBuffer")]  extern private static void SetGlobalGraphicsBufferImpl(int name, GraphicsBuffer value);
         [FreeFunction("ShaderScripting::SetGlobalConstantBuffer")] extern private static void SetGlobalConstantBufferImpl(int name, ComputeBuffer value, int offset, int size);
         [FreeFunction("ShaderScripting::SetGlobalConstantBuffer")] extern private static void SetGlobalConstantGraphicsBufferImpl(int name, GraphicsBuffer value, int offset, int size);
+        [FreeFunction("ShaderScripting::SetGlobalRayTracingAccelerationStructure")] extern private static void SetGlobalRayTracingAccelerationStructureImpl(int name, RayTracingAccelerationStructure accelerationStructure);
 
         [FreeFunction("ShaderScripting::GetGlobalInt")]     extern private static int       GetGlobalIntImpl(int name);
         [FreeFunction("ShaderScripting::GetGlobalFloat")]   extern private static float     GetGlobalFloatImpl(int name);

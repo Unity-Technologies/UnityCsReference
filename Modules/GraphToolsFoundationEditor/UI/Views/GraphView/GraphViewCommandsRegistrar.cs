@@ -76,6 +76,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 ConvertWiresToPortalsCommand.DefaultCommandHandler, m_GraphTool.UndoStateComponent, m_GraphViewState, m_GraphModelState, m_SelectionState);
 
             RegisterCommandHandler<ChangeNodeStateCommand>(ChangeNodeStateCommand.DefaultCommandHandler);
+            RegisterCommandHandler<ChangeNodeModeCommand>(ChangeNodeModeCommand.DefaultCommandHandler);
             RegisterCommandHandler<CollapseNodeCommand>(CollapseNodeCommand.DefaultCommandHandler);
             RegisterCommandHandler<UpdateConstantValueCommand>(UpdateConstantValueCommand.DefaultCommandHandler);
             RegisterCommandHandler<UpdateConstantsValueCommand>(UpdateConstantsValueCommand.DefaultCommandHandler);

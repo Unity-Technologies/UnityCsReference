@@ -24,17 +24,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool dependencies_visible;
         public bool preview_visible;
 
-        public static string GetFilterNameWithSubPage(PackageManagerPrefs packageManagerPrefs, PageManager pageManager)
-        {
-            var filterName = packageManagerPrefs.currentFilterTab.ToString();
-            var page = pageManager.GetPage();
-            var subPage = page.subPages.Skip(1).Any() ? page.currentSubPage : null;
-            // Add the name of the sub page into the filter name for now
-            if (!string.IsNullOrEmpty(subPage?.name))
-                filterName += "/" + subPage.name;
-            return filterName;
-        }
-
         public static void SendEvent(string action, string packageId = null, IEnumerable<string> packageIds = null)
         {
             var servicesContainer = ServicesContainer.instance;
@@ -47,16 +36,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                 packageId = Regex.Replace(packageId, "(?<package>[^@]+)@(?<protocol>[^:]+):.+", "${package}@${protocol}");
 
             var packageManagerPrefs = servicesContainer.Resolve<PackageManagerPrefs>();
+            var pageManager = servicesContainer.Resolve<PageManager>();
+            var activePage = pageManager.activePage;
             var settingsProxy = servicesContainer.Resolve<PackageManagerProjectSettingsProxy>();
-            var filterName = GetFilterNameWithSubPage(packageManagerPrefs, servicesContainer.Resolve<PageManager>());
 
             var parameters = new PackageManagerWindowAnalytics
             {
                 action = action,
                 package_id = packageId ?? string.Empty,
                 package_ids = packageIds?.ToArray() ?? new string[0],
-                search_text = packageManagerPrefs.searchText,
-                filter_name = filterName,
+                search_text = activePage.searchText,
+                filter_name = activePage.id,
                 details_tab = packageManagerPrefs.selectedPackageDetailsTabIdentifier ?? string.Empty,
                 window_docked = EditorWindow.GetWindowDontShow<PackageManagerWindow>()?.docked ?? false,
                 // packages installed as dependency are always visible

@@ -5,12 +5,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine
 {
     internal class IMGUITextHandle : TextHandle
     {
+        internal LinkedListNode<TextHandleTuple> tuple;
+
         const float sFallbackFontSize = 13;
         const float sTimeToFlush = 1.0f;
         const string kDefaultFontName = "LegacyRuntime.ttf";
@@ -21,54 +24,79 @@ namespace UnityEngine
 
         private static IMGUITextHandle s_TextHandle = new IMGUITextHandle();
 
-        private static List<IMGUITextHandle> textHandles = new List<IMGUITextHandle>();
+        private static Dictionary<int, IMGUITextHandle> textHandles = new Dictionary<int, IMGUITextHandle>();
+        private static LinkedList<TextHandleTuple> textHandlesTuple = new LinkedList<TextHandleTuple>();
+        private static float lastCleanupTime;
+
+        internal class TextHandleTuple
+        {
+            public TextHandleTuple(float lastTimeUsed, int hashCode)
+            {
+                this.hashCode = hashCode;
+                this.lastTimeUsed = lastTimeUsed;
+            }
+
+            public float lastTimeUsed;
+            public int hashCode;
+        }
 
         internal static void EmptyCache()
         {
             GUIStyle.Internal_CleanupAllTextGenerator();
             textHandles.Clear();
+            textHandlesTuple.Clear();
         }
 
-        internal static IMGUITextHandle GetTextHandle(GUIStyle style, Rect position, string content, Color32 textColor, bool isOnlyForGeometry = false)
+        internal static IMGUITextHandle GetTextHandle(GUIStyle style, Rect position, string content, Color32 textColor)
         {
             var settings = new TextCore.Text.TextGenerationSettings();
             ConvertGUIStyleToGenerationSettings(settings, style, textColor, content, position);
-            return GetTextHandle(settings, isOnlyForGeometry);
+            return GetTextHandle(settings);
         }
 
-        private static IMGUITextHandle GetTextHandle(TextCore.Text.TextGenerationSettings settings, bool isOnlyForGeometry)
+        private static void ClearUnusedTextHandles()
         {
             var currentTime = Time.realtimeSinceStartup;
-            bool isCached = false;
-            IMGUITextHandle textHandleCached = null;
-            int hash = isOnlyForGeometry ? settings.cachedGeomertyHashCode : settings.cachedHashCode;
-
-            for (int i = textHandles.Count - 1; i >= 0; i--)
+            while (textHandlesTuple.Count > 0)
             {
-                var textHandle = textHandles[i];
-                var hash2 = isOnlyForGeometry ? textHandle.textGenerationSettings.cachedGeomertyHashCode : textHandle.textGenerationSettings.cachedHashCode;
-                if (hash == hash2)
+                var tuple = textHandlesTuple.First();
+                if (currentTime - tuple.lastTimeUsed > sTimeToFlush)
                 {
-                    textHandleCached = textHandle;
-                    textHandle.lastTimeUsed = currentTime;
-                    isCached = true;
+                    GUIStyle.Internal_DestroyTextGenerator(tuple.hashCode);
+                    textHandles.Remove(tuple.hashCode);
+                    textHandlesTuple.RemoveFirst();
                 }
+                else
+                    break;
+            }
+        }
 
-                if (currentTime - textHandle.lastTimeUsed > sTimeToFlush)
-                {
-                    GUIStyle.Internal_DestroyTextGenerator(textHandle.textGenerationSettings.cachedHashCode);
-                    textHandles.RemoveAt(i);
-                }
+        private static IMGUITextHandle GetTextHandle(TextCore.Text.TextGenerationSettings settings)
+        {
+            var currentTime = Time.realtimeSinceStartup;
+            if (currentTime - lastCleanupTime > sTimeToFlush)
+            {
+                ClearUnusedTextHandles();
+                lastCleanupTime = currentTime;
             }
 
-            if (isCached)
+            int hash = settings.cachedHashCode;
+
+            if (textHandles.TryGetValue(hash, out IMGUITextHandle textHandleCached))
+            {
+                textHandlesTuple.Remove(textHandleCached.tuple);
+                textHandlesTuple.AddLast(textHandleCached.tuple);
                 return textHandleCached;
+            }
 
             var handle = new IMGUITextHandle();
-            handle.lastTimeUsed = currentTime;
-            textHandles.Add(handle);
+            var tuple = new TextHandleTuple(currentTime, hash);
+            var listNode = new LinkedListNode<TextHandleTuple>(tuple);
+            handle.tuple = listNode;
+            textHandles[hash] = handle;
             handle.Update(settings);
             handle.UpdatePreferredSize(settings);
+            textHandlesTuple.AddLast(listNode);
             return handle;
         }
 
@@ -78,7 +106,6 @@ namespace UnityEngine
             ConvertGUIStyleToGenerationSettings(settings, style, Color.white, "", Rect.zero);
             return GetLineHeightDefault(settings);
         }
-
 
         internal TextInfo GetTextInfo(ref int id)
         {
@@ -161,6 +188,7 @@ namespace UnityEngine
 
             settings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.fontStyle);
             settings.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(tempAlignment);
+            settings.overflowMode = LegacyClippingToNewOverflow(style.clipping);
             settings.wordWrap = rect.width > 0 ? style.wordWrap : false;
             settings.wordWrappingRatio = 0.4f;
             settings.richText = style.richText;
@@ -173,14 +201,29 @@ namespace UnityEngine
             else
                 settings.fontSize = sFallbackFontSize;
 
-            settings.overflowMode = TextOverflowMode.Overflow;
             settings.characterSpacing = 0;
             settings.wordSpacing = 0;
             settings.paragraphSpacing = 0;
             settings.color = textColor;
 
             settings.inverseYAxis = true;
+            settings.isIMGUI = true;
             settings.shouldConvertToLinearSpace = false;
+            settings.fontFeatures = m_ActiveFontFeatures;
+        }
+
+        static TextOverflowMode LegacyClippingToNewOverflow(TextClipping clipping)
+        {
+            switch (clipping)
+            {
+                case TextClipping.Clip:
+                    return TextOverflowMode.Masking;
+                case TextClipping.Ellipsis:
+                    return TextOverflowMode.Ellipsis;
+                case TextClipping.Overflow:
+                default:
+                    return TextOverflowMode.Overflow;
+            }
         }
     }
 }

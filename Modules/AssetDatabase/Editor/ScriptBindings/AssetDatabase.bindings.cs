@@ -101,6 +101,16 @@ namespace UnityEditor
     {
         internal Object m_Result;
         public UnityEngine.Object LoadedObject { get { return m_Result; } }
+
+        public AssetDatabaseLoadOperation() { }
+
+        private AssetDatabaseLoadOperation(IntPtr ptr) : base(ptr)
+        { }
+
+        new internal static class BindingsMarshaller
+        {
+            public static AssetDatabaseLoadOperation ConvertToManaged(IntPtr ptr) => new AssetDatabaseLoadOperation(ptr);
+        }
     }
 
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
@@ -130,7 +140,7 @@ namespace UnityEditor
         // rootFolder is true if the path is a registered root folder
         // immutable is true when the root of the path was registered with the immutable flag (e.g. shared package)
         // asset folders marked immutable are not modified by the asset database
-        extern internal static bool GetAssetFolderInfo(string path, out bool rootFolder, out bool immutable);
+        extern public static bool TryGetAssetFolderInfo(string path, out bool rootFolder, out bool immutable);
 
         public static bool Contains(Object obj) { return Contains(obj.GetInstanceID()); }
         extern public static bool Contains(int instanceID);
@@ -163,6 +173,15 @@ namespace UnityEditor
         }
 
         extern public static bool IsNativeAsset(int instanceID);
+
+        [NativeThrows]
+        extern public static int GetScriptableObjectsWithMissingScriptCount(string assetPath);
+
+        [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess,
+            PreventExecutionSeverity.PreventExecution_ManagedException,
+            "AssetDatabase.RemoveScriptableObjectsWithMissingScript() was called as part of running an import in a worker process.")]
+        [NativeThrows]
+        extern public static int RemoveScriptableObjectsWithMissingScript(string assetPath);
 
         [FreeFunction()]
         extern public static string GetCurrentCacheServerIp();
@@ -725,7 +744,7 @@ namespace UnityEditor
                     continue;
 
                 bool rootFolder, readOnly;
-                bool validPath = GetAssetFolderInfo(path, out rootFolder, out readOnly);
+                bool validPath = TryGetAssetFolderInfo(path, out rootFolder, out readOnly);
                 if (validPath && (rootFolder || readOnly))
                     continue;
 

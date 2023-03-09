@@ -22,6 +22,7 @@ namespace UnityEditor.Sprites
         extern public static Vector2[] GetSpriteUVs([NotNull] Sprite sprite, bool getAtlasData);
 
         [System.Obsolete("Use Sprite.triangles API instead. This data is the same for packed and unpacked sprites.")]
+        [return:Unmarshalled]
         static public ushort[] GetSpriteIndices(Sprite sprite, bool getAtlasData) { return sprite.triangles; }
 
         internal static void GenerateOutline(Texture2D texture, Rect rect, float detail, byte alphaTolerance, bool holeDetection, out Vector2[][] paths)

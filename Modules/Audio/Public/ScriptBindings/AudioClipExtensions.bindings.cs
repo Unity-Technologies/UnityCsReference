@@ -13,7 +13,7 @@ namespace UnityEngine.Experimental.Audio
     internal static class AudioClipExtensionsInternal
     {
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        public static extern uint Internal_CreateAudioClipSampleProvider([NotNull("NullExceptionObject")] this AudioClip audioClip, ulong start, long end, bool loop, bool allowDrop, bool loopPointIsStart = false);
+        public static extern uint Internal_CreateAudioClipSampleProvider([NotNull] this AudioClip audioClip, ulong start, long end, bool loop, bool allowDrop, bool loopPointIsStart = false);
     }
 }
 

@@ -12,8 +12,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageListScrollView : ScrollView, IPackageListView
     {
-        private const string k_UnityPackageGroupDisplayName = "Unity Technologies";
-
         protected new class UxmlFactory : UxmlFactory<PackageListScrollView, UxmlTraits> { }
 
         /// <summary>
@@ -95,7 +93,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ISelectableItem GetFirstSelectedItem()
         {
-            m_PackageDatabase.GetPackageAndVersion(m_PageManager.GetPage().GetSelection().firstSelection, out var package, out var version);
+            m_PackageDatabase.GetPackageAndVersion(m_PageManager.activePage.GetSelection().firstSelection, out var package, out var version);
             var selectedVersion = version ?? package?.versions.primary;
             return GetPackageItem(selectedVersion?.package.uniqueId);
         }
@@ -142,7 +140,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 item.SetPackage(package);
 
                 // Check if group has changed
-                var groupName = m_PageManager.GetPage().GetGroupName(package);
+                var page = m_PageManager.activePage;
+                var groupName = page.GetGroupName(package);
                 if (item.packageGroup.name != groupName)
                 {
                     var oldGroup = GetOrCreateGroup(item.packageGroup.name);
@@ -155,7 +154,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (!oldGroup.packageItems.Any())
                         m_ItemsList.Remove(oldGroup);
 
-                    ReorderGroups();
+                    ReorderGroups(page.visualStates.orderedGroups);
                 }
 
                 item.UpdateVisualState(state);
@@ -168,17 +167,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        internal static string GetGroupDisplayName(string groupName)
-        {
-            if (groupName == PageManager.k_UnityPackageGroupName)
-                return k_UnityPackageGroupDisplayName;
-
-            if (groupName == PageManager.k_OtherPackageGroupName)
-                return L10n.Tr(groupName);
-
-            return groupName;
-        }
-
         private PackageGroup GetOrCreateGroup(string groupName)
         {
             var group = packageGroups.FirstOrDefault(g => string.Compare(g.name, groupName, StringComparison.InvariantCultureIgnoreCase) == 0);
@@ -186,8 +174,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return group;
 
             var hidden = string.IsNullOrEmpty(groupName);
-            var expanded = m_PageManager.GetPage().IsGroupExpanded(groupName);
-            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_PackageDatabase, groupName, GetGroupDisplayName(groupName), expanded, hidden);
+            var expanded = m_PageManager.activePage.IsGroupExpanded(groupName);
+            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_PackageDatabase, groupName, expanded, hidden);
             if (!hidden)
             {
                 group.onGroupToggle += value =>
@@ -219,21 +207,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var state in visualStates)
                 GetPackageItem(state.packageUniqueId)?.UpdateVisualState(state);
 
-            ReorderGroups();
+            var page = m_PageManager.activePage;
+            ReorderGroups(page.visualStates.orderedGroups);
             foreach (var group in packageGroups)
                 group.RefreshHeaderVisibility();
 
-            if (m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid())
+            if (page.UpdateSelectionIfCurrentSelectionIsInvalid())
                 ScrollToSelection();
         }
 
-        private void ReorderGroups()
+        private void ReorderGroups(IList<string> orderedGroups)
         {
-            var subPage = m_PageManager.GetPage().currentSubPage;
-            if (subPage?.compareGroup != null)
-                m_ItemsList.Sort((left, right) => subPage.compareGroup.Invoke(left.name, right.name));
-            else
-                m_ItemsList.Sort((left, right) => string.Compare(left.name, right.name, StringComparison.OrdinalIgnoreCase));
+            if (orderedGroups.Count <= 1)
+                return;
+            m_ItemsList.Sort((x, y) => orderedGroups.IndexOf(x.name).CompareTo(orderedGroups.IndexOf(y.name)));
         }
 
         public void OnListRebuild(IPage page)
@@ -244,11 +231,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var visualState in page.visualStates)
                 AddOrUpdatePackageItem(visualState);
 
-            ReorderGroups();
+            ReorderGroups(page.visualStates.orderedGroups);
             foreach (var group in packageGroups)
                 group.RefreshHeaderVisibility();
 
-            m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid();
+            m_PageManager.activePage.UpdateSelectionIfCurrentSelectionIsInvalid();
             ScrollToSelection();
         }
 
@@ -291,26 +278,25 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (itemsRemoved || itemsAdded)
             {
-                ReorderGroups();
+                ReorderGroups(page.visualStates.orderedGroups);
                 foreach (var group in packageGroups)
                     group.RefreshHeaderVisibility();
 
-                if (m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid())
+                if (m_PageManager.activePage.UpdateSelectionIfCurrentSelectionIsInvalid())
                     ScrollToSelection();
             }
             else
             {
-                ReorderGroups();
+                ReorderGroups(page.visualStates.orderedGroups);
             }
         }
 
         private PackageItem GetPackageItemFromMouseEvent(MouseDownEvent evt)
         {
-            var target = evt.leafTarget as VisualElement;
+            var target = evt.leafTarget;
             while (target != null && target != this)
             {
-                var packageItem = target as PackageItem;
-                if (packageItem != null)
+                if (target is PackageItem packageItem)
                     return packageItem;
                 target = target.parent;
             }
@@ -336,11 +322,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                         continue;
 
                     var matchFirstPackage = packageUniqueId == firstPackageUniqueId;
-                    var matchSecondPackakge = packageUniqueId == secondPackageUniqueId;
-                    if (matchFirstPackage || matchSecondPackakge || inBetweenTwoPackages)
+                    var matchSecondPackage = packageUniqueId == secondPackageUniqueId;
+                    if (matchFirstPackage || matchSecondPackage || inBetweenTwoPackages)
                         newSelections.Add(new PackageAndVersionIdPair(packageUniqueId));
 
-                    if (matchFirstPackage || matchSecondPackakge)
+                    if (matchFirstPackage || matchSecondPackage)
                     {
                         inBetweenTwoPackages = !inBetweenTwoPackages;
                         if (!inBetweenTwoPackages)
@@ -354,13 +340,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     }
                 }
             }
-            m_PageManager.GetPage().SetNewSelection(newSelections, true);
+            m_PageManager.activePage.SetNewSelection(newSelections, true);
         }
 
         private void SelectAllVisible()
         {
             var validItems = packageItems.Where(p => !string.IsNullOrEmpty(p.package?.uniqueId) && UIUtils.IsElementVisible(p));
-            m_PageManager.GetPage().SetNewSelection(validItems.Select(item => new PackageAndVersionIdPair(item.package.uniqueId)), true);
+            m_PageManager.activePage.SetNewSelection(validItems.Select(item => new PackageAndVersionIdPair(item.package.uniqueId)), true);
         }
 
         private void OnMouseDown(MouseDownEvent evt)
@@ -374,7 +360,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (evt.shiftKey)
             {
-                var firstItem = m_PageManager.GetPage().GetSelection().firstSelection?.packageUniqueId;
+                var firstItem = m_PageManager.activePage.GetSelection().firstSelection?.packageUniqueId;
                 SelectAllBetween(firstItem, packageItem.package.uniqueId);
                 return;
             }
@@ -392,7 +378,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (evt.direction == NavigationMoveEvent.Direction.Up || evt.direction == NavigationMoveEvent.Direction.Down)
             {
-                var selection = m_PageManager.GetPage().GetSelection();
+                var selection = m_PageManager.activePage.GetSelection();
                 var firstItem = selection.firstSelection?.packageUniqueId;
                 var lastItem = selection.lastSelection?.packageUniqueId;
 
@@ -408,12 +394,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!UIUtils.IsElementVisible(this))
                 return;
 
-            if (evt.keyCode == KeyCode.A && evt.actionKey)
+            switch (evt.keyCode)
             {
-                SelectAllVisible();
+                case KeyCode.A when evt.actionKey:
+                    SelectAllVisible();
+                    evt.StopPropagation();
+                    break;
+                // On mac moving up and down will trigger the sound of an incorrect key being pressed
+                // This should be fixed in UUM-26264 by the UIToolkit team
+                case KeyCode.DownArrow:
+                case KeyCode.UpArrow:
+                    evt.StopPropagation();
+                    break;
             }
-
-            evt.StopPropagation();
         }
 
         public void OnNavigationMoveShortcut(NavigationMoveEvent evt)
@@ -444,7 +437,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var nextElement = FindNextVisibleSelectableItem(reverseOrder);
             if (nextElement != null)
             {
-                m_PageManager.GetPage().SetNewSelection(nextElement.package, nextElement.targetVersion);
+                m_PageManager.activePage.SetNewSelection(nextElement.package, nextElement.targetVersion);
                 ScrollIfNeeded(nextElement.element);
                 return true;
             }
@@ -454,7 +447,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ISelectableItem FindNextVisibleSelectableItem(bool reverseOrder)
         {
             // We use the `lastSelection` here as that is the one the user interacted last and it feels more natural that way when navigating with keyboard
-            var lastSelection = m_PageManager.GetPage().GetSelection().lastSelection;
+            var lastSelection = m_PageManager.activePage.GetSelection().lastSelection;
             var packageItem = GetPackageItem(lastSelection?.packageUniqueId);
             if (packageItem == null)
                 return null;
@@ -462,40 +455,40 @@ namespace UnityEditor.PackageManager.UI.Internal
             return FindNextVisiblePackageItem(packageItem, reverseOrder);
         }
 
-        public void OnFilterTabChanged(PackageFilterTab filterTab)
+        public void OnActivePageChanged(IPage page)
         {
-            // Check if groups have changed only for InProject tab
-            if (filterTab == PackageFilterTab.InProject && m_PageRefreshHandler.IsInitialFetchingDone(PackageFilterTab.InProject))
+            // Check if groups have changed only for InProject page
+            if (page.id != InProjectPage.k_Id || !m_PageRefreshHandler.IsInitialFetchingDone(page))
+                return;
+
+            var needGroupsReordering = false;
+            var currentPackageItems = packageItems.ToList();
+            foreach (var packageItem in currentPackageItems)
             {
-                var needGroupsReordering = false;
-                var currentPackageItems = packageItems.ToList();
-                foreach (var packageItem in currentPackageItems)
+                // Check if group has changed
+                var package = packageItem.package;
+                var groupName = page.GetGroupName(package);
+                if (packageItem.packageGroup.name != groupName)
                 {
-                    // Check if group has changed
-                    var package = packageItem.package;
-                    var groupName = m_PageManager.GetPage().GetGroupName(package);
-                    if (packageItem.packageGroup.name != groupName)
-                    {
-                        var oldGroup = GetOrCreateGroup(packageItem.packageGroup.name);
-                        var newGroup = GetOrCreateGroup(groupName);
+                    var oldGroup = GetOrCreateGroup(packageItem.packageGroup.name);
+                    var newGroup = GetOrCreateGroup(groupName);
 
-                        var state = m_PageManager.GetPage().visualStates.Get(package?.uniqueId);
-                        if (state != null)
-                            state.groupName = groupName;
+                    var state = page.visualStates.Get(package?.uniqueId);
+                    if (state != null)
+                        state.groupName = groupName;
 
-                        // Move PackageItem from old group to new group
-                        oldGroup.RemovePackageItem(packageItem);
-                        newGroup.AddPackageItem(packageItem);
-                        needGroupsReordering = true;
+                    // Move PackageItem from old group to new group
+                    oldGroup.RemovePackageItem(packageItem);
+                    newGroup.AddPackageItem(packageItem);
+                    needGroupsReordering = true;
 
-                        if (!oldGroup.packageItems.Any())
-                            m_ItemsList.Remove(oldGroup);
-                    }
+                    if (!oldGroup.packageItems.Any())
+                        m_ItemsList.Remove(oldGroup);
                 }
-
-                if (needGroupsReordering)
-                    ReorderGroups();
             }
+
+            if (needGroupsReordering)
+                ReorderGroups(page.visualStates.orderedGroups);
         }
 
         private static PackageItem FindNextVisiblePackageItem(PackageItem packageItem, bool reverseOrder)

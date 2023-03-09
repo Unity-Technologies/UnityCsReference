@@ -74,9 +74,7 @@ namespace UnityEditor
     [StructLayout(LayoutKind.Sequential)]
     public sealed class HierarchyProperty : IHierarchyProperty
     {
-    #pragma warning disable 169
         IntPtr m_Ptr;
-    #pragma warning restore 169
 
         public HierarchyProperty(HierarchyType hierarchyType)
             : this(hierarchyType, "Assets", true)
@@ -256,5 +254,10 @@ namespace UnityEditor
 
         [FreeFunction("HierarchyPropertyBindings::SetFilteredVisibility", HasExplicitThis = true)]
         internal extern void SetFilteredVisibility(bool visible);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(HierarchyProperty prop) => prop.m_Ptr;
+        }
     }
 }

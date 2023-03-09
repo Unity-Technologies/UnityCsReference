@@ -10,7 +10,7 @@ namespace UnityEditor
 {
     static class GridSettings
     {
-        const float k_GridSizeMin = .0001f;
+        const float k_GridSizeMin = 0f;
         const float k_GridSizeMax = 1024f;
         const int k_DefaultMultiplier = 0;
 
@@ -27,6 +27,8 @@ namespace UnityEditor
         }
 
         internal static event Action<Vector3> sizeChanged = delegate {};
+
+        internal static bool linked => Mathf.Approximately(size.x, size.y) && Mathf.Approximately(size.x, size.z);
 
         public static Vector3 size
         {
@@ -46,7 +48,11 @@ namespace UnityEditor
         internal static int sizeMultiplier
         {
             get { return s_GridMultiplier.value; }
-            set { s_GridMultiplier.value = value; }
+            set
+            {
+                s_GridMultiplier.value = value;
+                sizeChanged?.Invoke(size);
+            }
         }
 
         internal static void ResetSizeMultiplier()

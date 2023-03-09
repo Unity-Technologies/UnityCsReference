@@ -72,5 +72,10 @@ namespace UnityEngine.AI
 
         // Status of the path. (RO)
         public extern NavMeshPathStatus status { get; }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(NavMeshPath navMeshPath) => navMeshPath.m_Ptr;
+        }
     }
 }

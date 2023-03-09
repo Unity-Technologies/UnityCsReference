@@ -106,5 +106,10 @@ namespace UnityEditorInternal.Profiling.Memory.Experimental
                 handle.Free();
             }
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(MemorySnapshotFileWriter writer) => writer.m_Ptr;
+        }
     }
 }

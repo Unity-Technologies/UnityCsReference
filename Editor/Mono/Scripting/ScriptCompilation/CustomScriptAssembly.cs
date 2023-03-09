@@ -285,7 +285,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
 
                 bool rootFolder, immutable;
-                bool imported = AssetDatabase.GetAssetFolderInfo(PathPrefix, out rootFolder, out immutable);
+                bool imported = AssetDatabase.TryGetAssetFolderInfo(PathPrefix, out rootFolder, out immutable);
 
                 // Do not emit warnings for immutable (package) folders,
                 // as the user cannot do anything to fix them.
@@ -358,6 +358,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("LinuxStandalone32", BuildTarget.StandaloneLinux),
                 new CustomScriptAssemblyPlatform("LinuxStandaloneUniversal", BuildTarget.StandaloneLinuxUniversal),
                 new CustomScriptAssemblyPlatform("Lumin", BuildTarget.Lumin),
+                new CustomScriptAssemblyPlatform("Stadia", BuildTarget.Stadia),
             };
 #pragma warning restore 0618
         }

@@ -910,7 +910,7 @@ namespace UnityEditor
         private extern string[] GetExtraExposedTransformPaths();
 
         [FreeFunction("ModelImporterBindings::SetExtraExposedTransformPaths")]
-        private extern static void INTERNAL_set_extraExposedTransformPaths([Writable, NotNull("NullExceptionObject")] ModelImporter self, string[] value);
+        private extern static void INTERNAL_set_extraExposedTransformPaths([NotNull] ModelImporter self, string[] value);
 
         public string[] extraUserProperties
         {
@@ -921,7 +921,7 @@ namespace UnityEditor
         private extern string[] GetExtraUserProperties();
 
         [FreeFunction("ModelImporterBindings::SetExtraUserProperties")]
-        private extern static void INTERNAL_set_extraUserProperties([Writable, NotNull("NullExceptionObject")] ModelImporter self, string[] value);
+        private extern static void INTERNAL_set_extraUserProperties([NotNull] ModelImporter self, string[] value);
 
         public extern ModelImporterAnimationCompression animationCompression
         {
@@ -1029,7 +1029,7 @@ namespace UnityEditor
         [FreeFunction("ModelImporterBindings::GetClipAnimations")]
         private extern static ModelImporterClipAnimation[] GetClipAnimations(ModelImporter self);
         [FreeFunction("ModelImporterBindings::SetClipAnimations", ThrowsException = true)]
-        private extern static void SetClipAnimations([Writable, NotNull("NullExceptionObject")] ModelImporter self, ModelImporterClipAnimation[] value);
+        private extern static void SetClipAnimations([NotNull] ModelImporter self, ModelImporterClipAnimation[] value);
 
         public ModelImporterClipAnimation[] defaultClipAnimations
         {

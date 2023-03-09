@@ -13,6 +13,7 @@ using UnityEngine.Bindings;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
+using System.Collections.Generic;
 
 #pragma warning disable 169
 
@@ -89,17 +90,12 @@ namespace UnityEngine
 
         [NativeThrows] public static extern void ParameterStructCoreStringVector(StructCoreStringVector param);
 
-        [NativeThrows] public static extern void ParameterOutString(out string param);
-        [NativeThrows] public static extern void ParameterRefString(ref string param);
-
         public static extern string ReturnCoreString();
-
+        public static extern string ReturnCoreStringRef();
         public static extern string ReturnConstCharPtr();
 
         public static extern string[] ReturnCoreStringVector();
-
         public static extern string[] ReturnCoreStringDynamicArray();
-
         public static extern string[] ReturnNullStringDynamicArray();
 
         public static extern StructCoreString ReturnStructCoreString();
@@ -108,6 +104,13 @@ namespace UnityEngine
         public static extern string FalseConditional();
 
         public static extern StructCoreStringVector ReturnStructCoreStringVector();
+
+        [NativeThrows] public static extern void ParameterOutString(out string param);
+        [NativeThrows] public static extern void ParameterOutStringInNull(out string param);
+        [NativeThrows] public static extern void ParameterOutStringNotSet(out string param);
+        [NativeThrows] public static extern void ParameterRefString(ref string param);
+        [NativeThrows] public static extern void ParameterRefStringInNull(ref string param);
+        [NativeThrows] public static extern void ParameterRefStringNotSet(ref string param);
     }
 
     // --------------------------------------------------------------------
@@ -199,6 +202,11 @@ namespace UnityEngine
     {
         public IntPtr m_Ptr;
 
+        internal MyIntPtrObject(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+        }
+
         public MyIntPtrObject()
         {
             m_Ptr = Internal_Create();
@@ -226,6 +234,12 @@ namespace UnityEngine
         private static extern IntPtr Internal_Create();
 
         private static extern void Internal_Destroy(IntPtr ptr);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(MyIntPtrObject obj) => obj.m_Ptr;
+            public static MyIntPtrObject ConvertToManaged(IntPtr ptr) => new MyIntPtrObject(ptr);
+        }
     }
 
     [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
@@ -241,6 +255,8 @@ namespace UnityEngine
         public static extern MyIntPtrObject[] ReturnIntPtrObjectDynamicArray();
 
         [NativeThrows] public static extern void ParameterStructIntPtrObjectDynamicArray(StructIntPtrObjectDynamicArray param);
+
+        public static extern MyIntPtrObject ReturnIntPtrObject(int value);
     }
 
     // --------------------------------------------------------------------
@@ -271,22 +287,9 @@ namespace UnityEngine
             set;
         }
 
-        [NativeWritableSelf]
-        public extern int WritableSelfFunction(int a);
-
         public extern static MarshallingTestObject Create();
 
         extern private static void Internal_CreateMarshallingTestObject([Writable] MarshallingTestObject notSelf);
-    }
-
-    [MarshalUnityObjectAs(typeof(MonoBehaviour))]
-    internal class MonoBehaviourDerived1 : MonoBehaviour
-    {
-    }
-
-    [MarshalUnityObjectAs(typeof(MonoBehaviour))]
-    internal class MonoBehaviourDerived2 : MonoBehaviour
-    {
     }
 
     [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
@@ -332,10 +335,6 @@ namespace UnityEngine
 
         [NativeThrows] public static extern void ParameterStructUnityObjectPPtr(StructUnityObjectPPtr param);
 
-        public static extern void ParameterMonoBehaviourDerived1(MonoBehaviourDerived1 param);
-
-        public static extern void ParameterMonoBehaviourDerived2(MonoBehaviourDerived2 param);
-
         [NativeThrows] public static extern void ParameterStructUnityObjectDynamicArray(StructUnityObjectDynamicArray param);
 
         [NativeThrows] public static extern void ParameterUnityObjectDynamicArray(MarshallingTestObject[] param);
@@ -343,6 +342,7 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterUnityObjectPPtrDynamicArray(MarshallingTestObject[] param);
 
         public static extern MarshallingTestObject ReturnUnityObject();
+        public static extern MarshallingTestObject ReturnInUnityObject(MarshallingTestObject obj);
 
         public static extern MarshallingTestObject ReturnUnityObjectFakeNull();
 
@@ -853,9 +853,9 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterIntArrayReadOnly(int[] param);
         [NativeThrows] public static extern void ParameterIntArrayWritable(int[] param);
         [NativeThrows] public static extern void ParameterIntArrayEmpty(int[] param, int[] param2);
-        public static extern void ParameterIntArrayNullExceptioins([NotNull] int[] param, [NotNull("NullReferenceException")] int[] param2);
+        public static extern void ParameterIntArrayNullExceptions([NotNull] int[] param);
         [NativeThrows] public static extern void ParameterIntMultidimensionalArray(int[,] param);
-        public static extern void ParameterIntMultidimensionalArrayNullExceptions([NotNull] int[,] param, [NotNull("NullReferenceException")] int[,] param2);
+        public static extern void ParameterIntMultidimensionalArrayNullExceptions([NotNull] int[,] param);
         [NativeThrows] public static extern void ParameterCharArrayReadOnly(char[] param);
         [NativeThrows] public static extern void ParameterBlittableCornerCaseStructArrayReadOnly(BlittableCornerCases[] param);
         [NativeThrows] public static extern void ParameterIntArrayOutAttr([Out] int[] param);
@@ -879,6 +879,27 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterCharReadOnlySpan(ReadOnlySpan<char> param);
         [NativeThrows] public static extern void ParameterEnumReadOnlySpan(ReadOnlySpan<SomeEnum> param);
         [NativeThrows] public static extern void ParameterBlittableCornerCaseStructReadOnlySpan(ReadOnlySpan<BlittableCornerCases> param);
+    }
+
+    // --------------------------------------------------------------------
+    // System.Collections.Generic.List tests
+    [NativeType("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    internal class ValueTypeListOfTTests
+    {
+        [NativeThrows] public static extern void ParameterListOfIntRead(List <int> param);
+        [NativeThrows] public static extern void ParameterListOfIntReadChangeVaules(List <int> param);
+        [NativeThrows] public static extern void ParameterListOfIntAddNoGrow(List <int> param);
+        [NativeThrows] public static extern void ParameterListOfIntAddAndGrow(List <int> param);
+        [NativeThrows] public static extern void ParameterListOfIntPassNullThrow([NotNull] List <int> param);
+        [NativeThrows] public static extern void ParameterListOfIntPassNullNoThrow(List<int> param);
+        [NativeThrows] public static extern void ParameterListOfIntNativeAllocateSmaller(List<int> param);
+        [NativeThrows] public static extern void ParameterListOfIntNativeAttachOtherMemoryBlock(List<int> param);
+        [NativeThrows] public static extern void ParameterListOfIntNativeCallsClear(List<int> param);
+        [NativeThrows] public static extern void ParameterListOfBoolReadWrite(List<bool> param);
+        [NativeThrows] public static extern void ParameterListOfCharReadWrite(List<char> param);
+        [NativeThrows] public static extern void ParameterListOfEnumReadWrite(List<SomeEnum> param);
+        [NativeThrows] public static extern void ParameterListOfCornerCaseStructReadWrite(List<BlittableCornerCases> param);
+        
     }
 
     internal static class MarshallingTests

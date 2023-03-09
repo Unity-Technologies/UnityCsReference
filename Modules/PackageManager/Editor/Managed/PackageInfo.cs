@@ -71,11 +71,6 @@ namespace UnityEditor.PackageManager
         private string m_Description = "";
 
         [SerializeField]
-        [NativeName("status")]
-        [Obsolete("PackageInfo.status is deprecated and will be removed in a later version.", false)]
-        private PackageStatus m_Status = PackageStatus.Unknown;
-
-        [SerializeField]
         [NativeName("errors")]
         private Error[] m_Errors = new Error[0];
 
@@ -180,8 +175,6 @@ namespace UnityEditor.PackageManager
         public string category { get { return m_Category;  } }
         public string type { get { return m_Type; } }
         public string description { get { return m_Description;  } }
-        [Obsolete("PackageInfo.status is deprecated and will be removed in a later version.", false)]
-        public PackageStatus status { get { return m_Status;  } }
         public Error[] errors { get { return m_Errors;  } }
         public VersionsInfo versions { get { return m_Versions; } }
         public DependencyInfo[] dependencies { get { return m_Dependencies; } }
@@ -200,7 +193,7 @@ namespace UnityEditor.PackageManager
         internal string projectDependenciesEntry { get { return m_ProjectDependenciesEntry; } }
         internal string upmReserved { get { return m_UpmReserved; } }
         public RegistryInfo registry { get { return m_Registry; } }
-        internal SignatureInfo signature { get { return m_Signature ; } }
+        internal SignatureInfo signature { get { return m_Signature; } }
         public bool isDeprecated { get { return m_IsDeprecated; } }
         public string deprecationMessage { get { return m_DeprecationMessage; } }
         internal AssetStoreInfo assetStore { get { return m_Entitlements.licensingModel == EntitlementLicensingModel.AssetStore ? m_AssetStore : null; } }

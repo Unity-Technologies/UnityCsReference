@@ -113,6 +113,11 @@ namespace UnityEditor
     {
         IntPtr m_NativePropertyPtr;
 
+        private SerializedProperty(IntPtr nativePropertyPtr)
+        {
+            m_NativePropertyPtr  = nativePropertyPtr;
+        }
+
         // This is so the garbage collector won't clean up SerializedObject behind the scenes.
         internal SerializedObject m_SerializedObject;
         internal string m_CachedLocalizedDisplayName = "";
@@ -434,7 +439,7 @@ namespace UnityEditor
         private bool IsBoxedValueNullable()
         {
             return propertyType == SerializedPropertyType.ManagedReference || propertyType == SerializedPropertyType.ObjectReference
-                || propertyType == SerializedPropertyType.ExposedReference;
+                || propertyType == SerializedPropertyType.ExposedReference || propertyType == SerializedPropertyType.String;
         }
 
         extern private bool EndOfData();
@@ -2036,5 +2041,11 @@ namespace UnityEditor
 
         [NativeMethod("GetContentHash")]
         extern private uint GetContentHashInternal();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(SerializedProperty prop) => prop.m_NativePropertyPtr;
+            public static SerializedProperty ConvertToManaged(IntPtr ptr) => new SerializedProperty(ptr);
+        }
     }
 }

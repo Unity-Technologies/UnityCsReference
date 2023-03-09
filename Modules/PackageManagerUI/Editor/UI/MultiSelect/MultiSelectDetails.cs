@@ -21,7 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreClientV2 m_AssetStoreClient;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
-        private AssetStoreCallQueue m_AssetStoreCallQueue;
+        private BackgroundFetchHandler m_BackgroundFetchHandler;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -34,7 +34,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient = container.Resolve<AssetStoreClientV2>();
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
-            m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
+            m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
         }
 
         private UnlockFoldout m_UnlockFoldout;
@@ -95,7 +95,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_NoActionFoldout = new NoActionsFoldout(m_PageManager);
 
-            m_CheckUpdateFoldout = new CheckUpdateFoldout(m_PageManager, m_AssetStoreCache, m_AssetStoreCallQueue);
+            m_CheckUpdateFoldout = new CheckUpdateFoldout(m_PageManager, m_AssetStoreCache, m_BackgroundFetchHandler);
 
             m_StandaloneFoldouts = new MultiSelectFoldout[] { m_UnlockFoldout, m_NoActionFoldout, m_CheckUpdateFoldout };
 
@@ -149,7 +149,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUpdateChecked(IEnumerable<long> productIds)
         {
-            var selection = m_PageManager.GetPage().GetSelection();
+            var selection = m_PageManager.activePage.GetSelection();
             if (productIds.Any(id => selection.Contains(id.ToString())))
                 Refresh(selection);
         }
@@ -162,7 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             title.text = string.Format(L10n.Tr("{0} {1} selected"), selections.Count, selections.Count > 1 ? L10n.Tr("items") : L10n.Tr("item"));
 
             // We get the versions from the visual states instead of directly from the selection to keep the ordering of packages
-            var versions = m_PageManager.GetPage().visualStates.Select(visualState =>
+            var versions = m_PageManager.activePage.visualStates.Select(visualState =>
             {
                 if (selections.TryGetValue(visualState.packageUniqueId, out var pair))
                 {
@@ -175,8 +175,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var foldoutElement in allFoldoutElements)
                 foldoutElement.ClearVersions();
 
-            // We want to populate only a subset of all foldouts based on the current tab.
-            var foldoutGroups = m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.AssetStore ? m_AssetStoreFoldoutGroups : m_UpmFoldoutGroups;
+            // We want to populate only a subset of all foldouts based on the current page.
+            var foldoutGroups = m_PageManager.activePage.id == MyAssetsPage.k_Id ? m_AssetStoreFoldoutGroups : m_UpmFoldoutGroups;
 
             foreach (var version in versions)
             {
@@ -203,12 +203,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void Refresh()
         {
-            Refresh(m_PageManager.GetPage().GetSelection());
+            Refresh(m_PageManager.activePage.GetSelection());
         }
 
         private void OnDeselectLockedSelectionsClicked()
         {
-            m_PageManager.GetPage().RemoveSelection(m_UnlockFoldout.versions.Select(s => new PackageAndVersionIdPair(s.package.uniqueId, s.uniqueId)));
+            m_PageManager.activePage.RemoveSelection(m_UnlockFoldout.versions.Select(s => new PackageAndVersionIdPair(s.package.uniqueId, s.uniqueId)));
             PackageManagerWindowAnalytics.SendEvent("deselectLocked", packageIds: m_UnlockFoldout.versions.Select(v => v.package.uniqueId));
         }
 

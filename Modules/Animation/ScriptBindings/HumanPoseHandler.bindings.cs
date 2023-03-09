@@ -172,5 +172,10 @@ namespace UnityEngine
 
             SetInternalAvatarPose(avatarPose.GetUnsafeReadOnlyPtr(), avatarPose.Length);
         }
+        
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(HumanPoseHandler humanPoseHandler) => humanPoseHandler.m_Ptr;
+        }
     }
 }

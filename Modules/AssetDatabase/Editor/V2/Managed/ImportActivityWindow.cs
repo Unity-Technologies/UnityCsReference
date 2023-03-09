@@ -1740,7 +1740,9 @@ namespace UnityEditor
             m_DependenciesList.Clear();
             m_ProducedFilesList.Clear();
             m_DependenciesList.AddRange(selectedArtifactInfo.dependencies.Select(pair => (pair.Key, pair.Value))); //TODO: Make helper functions
-            m_ProducedFilesList.AddRange(selectedArtifactInfo.producedFiles);
+            var producedFiles = selectedArtifactInfo.producedFiles;
+            if (producedFiles != null)
+                m_ProducedFilesList.AddRange(producedFiles);
 
             CalculateMaxHeightFromItemCount(m_DependenciesList.Count, m_DependenciesListViewContainer);
             CalculateMaxHeightFromItemCount(m_ProducedFilesList.Count, m_ProducedFilesListViewContainer);
@@ -1906,9 +1908,21 @@ namespace UnityEditor
             }
 
             m_ItemContainers.duration.content.text = importDuration;
-
-            m_ItemContainers.producedArtifacts.header.text = $"Produced Files/Artifacts ({artifactInfo.producedFiles.Length})";
-            m_ItemContainers.producedArtifacts.content.text = GetTotalProducedArtifactsSize(artifactInfo.producedFiles);
+            var producedFiles = artifactInfo.producedFiles;
+            string headerText;
+            string contentText;
+            if (producedFiles != null)
+            {
+                headerText = $"Produced Files/Artifacts ({producedFiles.Length})";
+                contentText = GetTotalProducedArtifactsSize(producedFiles);
+            }
+            else
+            {
+                headerText = $"Produced Files/Artifacts (n/a)";
+                contentText = "<n/a>";
+            }
+            m_ItemContainers.producedArtifacts.header.text = headerText;
+            m_ItemContainers.producedArtifacts.content.text = contentText;
             m_ItemContainers.dependencies.text = $"Dependencies ({artifactInfo.dependencies.Count})";
         }
 

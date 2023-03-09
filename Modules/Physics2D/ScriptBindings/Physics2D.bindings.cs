@@ -774,15 +774,15 @@ namespace UnityEngine
 
         // Ignore collisions between specific colliders.
         [ExcludeFromDocs]
-        public static void IgnoreCollision([Writable] Collider2D collider1, [Writable] Collider2D collider2) { IgnoreCollision(collider1, collider2, true); }
+        public static void IgnoreCollision(Collider2D collider1, Collider2D collider2) { IgnoreCollision(collider1, collider2, true); }
         [StaticAccessor("PhysicsScene2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("IgnoreCollision_Binding")]
-        extern public static void IgnoreCollision([NotNull][Writable] Collider2D collider1, [NotNull][Writable] Collider2D collider2, [DefaultValue("true")] bool ignore);
+        extern public static void IgnoreCollision([NotNull] Collider2D collider1, [NotNull] Collider2D collider2, [DefaultValue("true")] bool ignore);
 
         // Get whether collisions between specific colliders are ignored or not.
         [StaticAccessor("PhysicsScene2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetIgnoreCollision_Binding")]
-        extern public static bool GetIgnoreCollision([NotNull][Writable] Collider2D collider1, [NotNull][Writable] Collider2D collider2);
+        extern public static bool GetIgnoreCollision([NotNull] Collider2D collider1, [NotNull] Collider2D collider2);
 
         // Ignore collisions between specific layers.
         [ExcludeFromDocs]
@@ -854,34 +854,32 @@ namespace UnityEngine
 
         // Get whether specific colliders are currently touching or not.
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        extern public static bool IsTouching([NotNull][Writable] Collider2D collider1, [NotNull][Writable] Collider2D collider2);
+        extern public static bool IsTouching([NotNull] Collider2D collider1, [NotNull] Collider2D collider2);
 
         // Get whether specific colliders are currently touching or not (using the contact filter).
-        public static bool IsTouching([Writable] Collider2D collider1, [Writable] Collider2D collider2, ContactFilter2D contactFilter) { return IsTouching_TwoCollidersWithFilter(collider1, collider2, contactFilter); }
+        public static bool IsTouching(Collider2D collider1, Collider2D collider2, ContactFilter2D contactFilter) { return IsTouching_TwoCollidersWithFilter(collider1, collider2, contactFilter); }
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("IsTouching")]
-        extern private static bool IsTouching_TwoCollidersWithFilter([NotNull][Writable] Collider2D collider1, [NotNull][Writable] Collider2D collider2, ContactFilter2D contactFilter);
+        extern private static bool IsTouching_TwoCollidersWithFilter([NotNull] Collider2D collider1, [NotNull] Collider2D collider2, ContactFilter2D contactFilter);
 
         // Get whether the specific collider is touching anything (using the contact filter).
-        public static bool IsTouching([Writable] Collider2D collider, ContactFilter2D contactFilter) { return IsTouching_SingleColliderWithFilter(collider, contactFilter); }
+        public static bool IsTouching(Collider2D collider, ContactFilter2D contactFilter) { return IsTouching_SingleColliderWithFilter(collider, contactFilter); }
         [NativeMethod("IsTouching")]
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        extern private static bool IsTouching_SingleColliderWithFilter([NotNull][Writable] Collider2D collider, ContactFilter2D contactFilter);
+        extern private static bool IsTouching_SingleColliderWithFilter([NotNull] Collider2D collider, ContactFilter2D contactFilter);
 
         // Get whether the specific collider is touching the specific layer(s).
         [ExcludeFromDocs]
-        public static bool IsTouchingLayers([Writable] Collider2D collider) { return IsTouchingLayers(collider, Physics2D.AllLayers); }
+        public static bool IsTouchingLayers(Collider2D collider) { return IsTouchingLayers(collider, Physics2D.AllLayers); }
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
-        extern public static bool IsTouchingLayers([NotNull][Writable] Collider2D collider, [DefaultValue("Physics2D.AllLayers")] int layerMask);
+        extern public static bool IsTouchingLayers([NotNull] Collider2D collider, [DefaultValue("Physics2D.AllLayers")] int layerMask);
 
         #endregion
 
         #region Distance
 
         // Get the shortest distance and the respective points between two colliders.
-        public static ColliderDistance2D Distance(
-            [Writable] Collider2D colliderA,
-            [Writable] Collider2D colliderB)
+        public static ColliderDistance2D Distance(Collider2D colliderA, Collider2D colliderB)
         {
             if (colliderA == colliderB)
                 throw new ArgumentException("Cannot calculate the distance between the same collider.");
@@ -891,8 +889,8 @@ namespace UnityEngine
 
         // Get the shortest distance and the respective points between two colliders at specific poses.
         public static ColliderDistance2D Distance(
-            [Writable] Collider2D colliderA, Vector2 positionA, float angleA,
-            [Writable] Collider2D colliderB, Vector2 positionB, float angleB)
+            Collider2D colliderA, Vector2 positionA, float angleA,
+            Collider2D colliderB, Vector2 positionB, float angleB)
         {
             if (colliderA == colliderB)
                 throw new ArgumentException("Cannot calculate the distance between the same collider.");
@@ -907,13 +905,13 @@ namespace UnityEngine
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("Distance")]
-        extern private static ColliderDistance2D Distance_Internal([NotNull][Writable] Collider2D colliderA, [NotNull][Writable] Collider2D colliderB);
+        extern private static ColliderDistance2D Distance_Internal([NotNull] Collider2D colliderA, [NotNull] Collider2D colliderB);
 
         [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
         [NativeMethod("DistanceFrom")]
         extern private static ColliderDistance2D DistanceFrom_Internal(
-            [NotNull][Writable] Collider2D colliderA, Vector2 positionA, float angleA,
-            [NotNull][Writable] Collider2D colliderB, Vector2 positionB, float angleB);
+            [NotNull] Collider2D colliderA, Vector2 positionA, float angleA,
+            [NotNull] Collider2D colliderB, Vector2 positionB, float angleB);
 
         // Get the closest point to position on the specified collider.
         public static Vector2 ClosestPoint(Vector2 position, Collider2D collider)
@@ -2821,7 +2819,7 @@ namespace UnityEngine
         }
 
         public bool isFiltering { get { return !useTriggers || useLayerMask || useDepth || useNormalAngle; } }
-        public bool IsFilteringTrigger([Writable] Collider2D collider) { return !useTriggers && collider.isTrigger; }
+        public bool IsFilteringTrigger(Collider2D collider) { return !useTriggers && collider.isTrigger; }
         public bool IsFilteringLayerMask(GameObject obj) { return useLayerMask && ((layerMask & (1 << obj.layer)) == 0); }
 
         public bool IsFilteringDepth(GameObject obj)
@@ -3534,12 +3532,12 @@ namespace UnityEngine
         extern public Matrix4x4 localToWorldMatrix { get; }
 
         // Get whether any attached collider(s) are currently touching a specific collider or not.
-        extern public bool IsTouching([NotNull][Writable] Collider2D collider);
+        extern public bool IsTouching([NotNull] Collider2D collider);
 
         // Get whether any attached collider(s) are currently touching a specific collider or not allowed by the contact filter.
-        public bool IsTouching([Writable] Collider2D collider, ContactFilter2D contactFilter) { return IsTouching_OtherColliderWithFilter_Internal(collider, contactFilter); }
+        public bool IsTouching(Collider2D collider, ContactFilter2D contactFilter) { return IsTouching_OtherColliderWithFilter_Internal(collider, contactFilter); }
         [NativeMethod("IsTouching")]
-        extern private bool IsTouching_OtherColliderWithFilter_Internal([NotNull][Writable] Collider2D collider, ContactFilter2D contactFilter);
+        extern private bool IsTouching_OtherColliderWithFilter_Internal([NotNull] Collider2D collider, ContactFilter2D contactFilter);
 
         // Get whether any attached collider(s) are currently touching anything defined by the contact filter.
         public bool IsTouching(ContactFilter2D contactFilter) { return IsTouching_AnyColliderWithFilter_Internal(contactFilter); }
@@ -3562,7 +3560,7 @@ namespace UnityEngine
         extern public bool OverlapPoint(Vector2 point);
 
         // Get the shortest distance and the respective points between all colliders on this rigidbody and another collider.
-        public ColliderDistance2D Distance([Writable] Collider2D collider)
+        public ColliderDistance2D Distance(Collider2D collider)
         {
             if (collider == null)
                 throw new ArgumentNullException("Collider cannot be null.");
@@ -3576,7 +3574,7 @@ namespace UnityEngine
         // Get the shortest distance and the respective points between two colliders at specific poses.
         public ColliderDistance2D Distance(
             Vector2 thisPosition, float thisAngle,
-            [Writable] Collider2D collider, Vector2 position, float angle)
+            Collider2D collider, Vector2 position, float angle)
         {
             if (!collider.attachedRigidbody)
                 throw new InvalidOperationException("Cannot perform a Collider Distance at a specific position and angle if the Collider is not attached to a Rigidbody2D.");
@@ -3587,12 +3585,12 @@ namespace UnityEngine
         }
 
         [NativeMethod("Distance")]
-        extern private ColliderDistance2D Distance_Internal([NotNull][Writable] Collider2D collider);
+        extern private ColliderDistance2D Distance_Internal([NotNull] Collider2D collider);
 
         [NativeMethod("DistanceFrom")]
         extern private ColliderDistance2D DistanceFrom_Internal(
             Vector2 thisPosition, float thisAngle,
-            [NotNull][Writable] Collider2D collider, Vector2 position, float angle);
+            [NotNull] Collider2D collider, Vector2 position, float angle);
 
         // Get the closest point to position on this rigidbody.
         public Vector2 ClosestPoint(Vector2 position)
@@ -3957,12 +3955,12 @@ namespace UnityEngine
         extern public float bounciness { get; }
 
         // Get whether this collider is currently touching a specific collider or not.
-        extern public bool IsTouching([NotNull][Writable] Collider2D collider);
+        extern public bool IsTouching([NotNull] Collider2D collider);
 
         // Get whether this collider is currently touching a specific collider or not defined by the contact filter.
-        public bool IsTouching([Writable] Collider2D collider, ContactFilter2D contactFilter) { return IsTouching_OtherColliderWithFilter(collider, contactFilter); }
+        public bool IsTouching(Collider2D collider, ContactFilter2D contactFilter) { return IsTouching_OtherColliderWithFilter(collider, contactFilter); }
         [NativeMethod("IsTouching")]
-        extern private bool IsTouching_OtherColliderWithFilter([NotNull][Writable] Collider2D collider, ContactFilter2D contactFilter);
+        extern private bool IsTouching_OtherColliderWithFilter([NotNull] Collider2D collider, ContactFilter2D contactFilter);
 
         // Get whether this collider is currently touching anything defined by the contact filter.
         public bool IsTouching(ContactFilter2D contactFilter) { return IsTouching_AnyColliderWithFilter(contactFilter); }
@@ -4157,7 +4155,7 @@ namespace UnityEngine
         extern private int RaycastList_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [NotNull] List<RaycastHit2D> results);
 
         // Get the shortest distance and the respective points between this collider and another.
-        public ColliderDistance2D Distance([Writable] Collider2D collider)
+        public ColliderDistance2D Distance(Collider2D collider)
         {
             return Physics2D.Distance(this, collider);
         }
@@ -4165,7 +4163,7 @@ namespace UnityEngine
         // Get the shortest distance and the respective points between two colliders at specific poses.
         public ColliderDistance2D Distance(
             Vector2 thisPosition, float thisAngle,
-            [Writable] Collider2D collider, Vector2 position, float angle)
+            Collider2D collider, Vector2 position, float angle)
         {
             return Physics2D.Distance(
                 this, thisPosition, thisAngle,

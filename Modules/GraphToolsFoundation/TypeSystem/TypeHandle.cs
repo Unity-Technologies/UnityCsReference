@@ -146,6 +146,11 @@ namespace Unity.GraphToolsFoundation
         public static TypeHandle Vector4 { get; } = TypeHandleHelpers.GenerateTypeHandle(typeof(Vector4));
 
         /// <summary>
+        /// The UnityEngine.Color type.
+        /// </summary>
+        public static TypeHandle Color { get; } = TypeHandleHelpers.GenerateTypeHandle(typeof(Color));
+
+        /// <summary>
         /// The UnityEngine.Quaternion type.
         /// </summary>
         public static TypeHandle Quaternion { get; } = TypeHandleHelpers.GenerateTypeHandle(typeof(Quaternion));

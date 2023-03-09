@@ -99,5 +99,10 @@ namespace UnityEditor.Build.Content
             byte[] data = (byte[])info.GetValue("tags", typeof(byte[]));
             DeserializeFromBinary(data);
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(BuildUsageTagSet buildUsageTagSet) => buildUsageTagSet.m_Ptr;
+        }
     }
 }

@@ -216,9 +216,9 @@ namespace Unity.ItemLibrary.Editor
             {
                 var type = nodeModel.GetType();
                 var portEntryName = string.IsNullOrEmpty(portToAdd.DisplayTitle) ? $"Port {portWithEmptyTitleCount++}" : portToAdd.DisplayTitle;
-                var portItem = new GraphNodeModelLibraryItem(new NodeItemLibraryData(type, portToAdd), nodeItem.CreateElement)
+                var portItem = new GraphNodeModelLibraryItem(portEntryName, new NodeItemLibraryData(type, portToAdd), nodeItem.CreateElement)
                 {
-                    FullName = selectedItem.FullName + "/" + portEntryName,
+                    CategoryPath = selectedItem.FullName,
                     Help = selectedItem.Help,
                     StyleName = selectedItem.StyleName
                 };
@@ -368,11 +368,11 @@ namespace Unity.ItemLibrary.Editor
             var noQuery = string.IsNullOrEmpty(query);
 
             m_SearchPlaceholderLabel.EnableInClassList(k_SearchPlaceholderLabelHiddenClassName, !string.IsNullOrEmpty(query));
-            var results = m_Library.Search(query).ToList();
+            var results = m_Library.Search(query);
 
             m_SuggestedCompletion = string.Empty;
 
-            if (results.Any() && !noQuery)
+            if (results.Count > 0 && !noQuery)
             {
                 m_SuggestedCompletion = GetAutoCompletionSuggestion(query, results);
             }

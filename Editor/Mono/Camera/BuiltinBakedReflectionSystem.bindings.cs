@@ -131,7 +131,12 @@ namespace UnityEditor.Experimental.Rendering
         extern void Internal_Tick(SceneStateHash dependencies);
         extern void Internal_SynchronizeReflectionProbes();
         extern void Internal_Clear();
-        extern void Internal_SetPtr(BuiltinBakedReflectionSystem ptr);
+        extern void Internal_SetPtr([Unmarshalled] BuiltinBakedReflectionSystem ptr);
         extern bool Internal_BakeAllReflectionProbes();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(BuiltinBakedReflectionSystem system) => system.m_Ptr;
+        }
     }
 }

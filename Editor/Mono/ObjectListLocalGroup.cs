@@ -115,6 +115,7 @@ namespace UnityEditor
                 m_AssetPreviewIgnoreList.Add(typeof(TextAsset));
                 m_AssetPreviewIgnoreList.Add(typeof(Shader));
                 m_AssetPreviewIgnoreList.Add(typeof(LightingSettings));
+                m_AssetPreviewIgnoreList.Add(typeof(LightmapParameters));
 
                 m_AssetExtensionsPreviewIgnoreList.Add(".index");
                 m_AssetExtensionsPreviewIgnoreList.Add(".vfx");
@@ -814,10 +815,17 @@ namespace UnityEditor
                             icon = filterItem != null ? filterItem.icon : null;
                             if (icon == null)
                             {
-                                if (assetReference.instanceID != 0)
-                                    icon = AssetPreview.GetAssetPreview(assetReference.instanceID, m_Owner.GetAssetPreviewManagerID());
-                                else if (!string.IsNullOrEmpty(assetReference.guid))
-                                    icon = AssetPreview.GetAssetPreviewFromGUID(assetReference.guid, m_Owner.GetAssetPreviewManagerID());
+                                if (ShouldGetAssetPreview(assetReference.instanceID))
+                                {
+                                    if (assetReference.instanceID != 0)
+                                        icon = AssetPreview.GetAssetPreview(assetReference.instanceID, m_Owner.GetAssetPreviewManagerID());
+                                    else if (!string.IsNullOrEmpty(assetReference.guid))
+                                        icon = AssetPreview.GetAssetPreviewFromGUID(assetReference.guid, m_Owner.GetAssetPreviewManagerID());
+                                }
+                                else if (assetReference.instanceID != 0)
+                                {
+                                    icon = AssetPreview.GetMiniTypeThumbnail(EditorUtility.InstanceIDToObject(assetReference.instanceID));
+                                }
                             }
                         }
 
@@ -873,6 +881,12 @@ namespace UnityEditor
                                 // When folder browsing sub assets are shown on a background slate and do not need rounded corner overlay
                                 if (isFolderBrowsing && !filterItem.isMainRepresentation)
                                     drawDropShadow = false;
+                            }
+
+                            // If the icon is still hasn't been found, fall back to the default one
+                            if (m_Content.image == null && assetReference.instanceID != 0)
+                            {
+                                m_Content.image = AssetPreview.GetMiniTypeThumbnail(EditorUtility.InstanceIDToObject(assetReference.instanceID));
                             }
                         }
 
@@ -943,11 +957,13 @@ namespace UnityEditor
                                 if (isDropTarget)
                                     Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
 
-                                labeltext = m_Owner.GetCroppedLabelText(assetReference, labeltext, orgPosition.width);
+                                var oldClipping = Styles.resultsGridLabel.clipping;
+                                Styles.resultsGridLabel.clipping = TextClipping.Ellipsis;
                                 var labelNewRect = Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), orgPosition.size);
                                 labelRect.x = orgPosition.x + (orgPosition.width - labelNewRect.x) / 2.0f;
-                                labelRect.width = labelNewRect.x;
+                                labelRect.width = labelNewRect.x + Styles.resultsGridLabel.padding.horizontal;
                                 Styles.resultsGridLabel.Draw(labelRect, labeltext, false, false, selected, m_Owner.HasFocus());
+                                Styles.resultsGridLabel.clipping = oldClipping;
                             }
                         }
 

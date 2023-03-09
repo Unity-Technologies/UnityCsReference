@@ -135,7 +135,6 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 var pos = new Vector2(m_TypeSelectorButton.layout.xMin, m_TypeSelectorButton.layout.yMax);
                 pos = m_TypeSelectorButton.parent.LocalToWorld(pos);
-                // PF: FIX weird Item Library position computation
                 pos.y += 21;
 
                 ItemLibraryService.ShowVariableTypes(

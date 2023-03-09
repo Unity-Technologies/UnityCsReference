@@ -394,6 +394,7 @@ namespace UnityEditor
                 blittableEvent.Dispose();
             return animationEvents;
         }
+        [return:Unmarshalled]
         extern internal static AnimationEventBlittable[] GetAnimationEventsInternal([NotNull] AnimationClip clip);
         public static void SetAnimationEvents(AnimationClip clip, AnimationEvent[] events)
         {

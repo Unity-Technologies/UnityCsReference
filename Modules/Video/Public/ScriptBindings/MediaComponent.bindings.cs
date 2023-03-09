@@ -50,9 +50,12 @@ namespace UnityEngineInternal.Video
     [NativeHeader("Modules/Video/Public/Base/MediaComponent.h")]
     internal class VideoPlayback
     {
-#pragma warning disable 0649  // Field m_Ptr is never assigned to, and will always have its default value
         internal IntPtr m_Ptr;
-#pragma warning restore 0649
+
+        private VideoPlayback(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+        }
 
         extern public void StartPlayback();
         extern public void PausePlayback();
@@ -121,6 +124,12 @@ namespace UnityEngineInternal.Video
         }
 
         extern static internal bool PlatformSupportsH265();
+
+        internal static class BindingsMarshaller
+        {
+            public static VideoPlayback ConvertToManaged(IntPtr ptr) => new VideoPlayback(ptr);
+            public static IntPtr ConvertToNative(VideoPlayback videoPlayback) => videoPlayback.m_Ptr;
+        }
     }
 }
 

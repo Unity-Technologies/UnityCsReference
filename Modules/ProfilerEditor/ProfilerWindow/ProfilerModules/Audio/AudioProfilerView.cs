@@ -822,7 +822,7 @@ namespace UnityEditorInternal
             var nodes = new List<AudioProfilerDSPNode>();
             var wires = new List<AudioProfilerDSPWire>();
             var dspInfo = property.GetAudioProfilerDSPInfo();
-            if (dspInfo == null)
+            if (dspInfo == null || dspInfo.Length == 0)
                 return;
 
             if (m_FontStyle == null)

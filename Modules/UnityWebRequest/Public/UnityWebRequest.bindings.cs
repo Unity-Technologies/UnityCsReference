@@ -19,7 +19,16 @@ namespace UnityEngine.Networking
     [NativeHeader("UnityWebRequestScriptingClasses.h")]
     public class UnityWebRequestAsyncOperation : AsyncOperation
     {
+        public UnityWebRequestAsyncOperation() { }
+
+        private UnityWebRequestAsyncOperation(IntPtr ptr) : base(ptr) {}
+
         public UnityWebRequest webRequest { get; internal set; }
+
+        new internal static class BindingsMarshaller
+        {
+            public static UnityWebRequestAsyncOperation ConvertToManaged(IntPtr ptr) => new UnityWebRequestAsyncOperation(ptr);
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -637,6 +646,10 @@ namespace UnityEngine.Networking
                 if (ret != UnityWebRequestError.OK)
                     throw new InvalidOperationException(UnityWebRequest.GetWebErrorString(ret));
             }
+        }
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(UnityWebRequest unityWebRequest) => unityWebRequest.m_Ptr;
         }
     }
 }

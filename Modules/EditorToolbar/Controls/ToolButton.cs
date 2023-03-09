@@ -247,7 +247,12 @@ namespace UnityEditor.Toolbars
                 m_ToolVariantDropdown = null;
             }
             else
-                ToolManager.SetActiveTool(currentVariant);
+            {
+                if (value && m_TargetTool == Tool.Custom)
+                    ToolManager.RestorePreviousTool();
+                else    
+                    ToolManager.SetActiveTool(currentVariant);
+            }
 
             this.ReleaseMouse();
             evt.StopPropagation();

@@ -46,6 +46,8 @@ namespace UnityEditor
         double m_DynamicHintAutoExtendTime;
         bool DynamicHintAutoExtendTimeReached { get { return EditorApplication.timeSinceStartup >= m_DynamicHintAutoExtendTime; } }
 
+        private static double s_AutoCloseAfterTime;
+
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -222,9 +224,21 @@ namespace UnityEditor
                 s_guiView.SetWindow(newWindow);
             }
 
+            CancelAutoClose();
+
             if (s_guiView.m_tooltip.text == tooltip && rect == s_guiView.m_hoverRect) { return; }
 
             s_guiView.Setup(tooltip, rect, hostView);
+        }
+
+        public static void AutoCloseAfterDelay(float delayInSeconds)
+        {
+            s_AutoCloseAfterTime = EditorApplication.timeSinceStartup + delayInSeconds;
+        }
+
+        public static void CancelAutoClose()
+        {
+            s_AutoCloseAfterTime = double.PositiveInfinity;
         }
 
         public static void Close()
@@ -274,6 +288,7 @@ namespace UnityEditor
 
         void Update()
         {
+            if (s_CloseState == CloseState.Idle && EditorApplication.timeSinceStartup > s_AutoCloseAfterTime) Close();
             ValidateCloseRequest(Event.current, true);
             if (s_CloseState != CloseState.CloseApproved) { return; }
             ForceClose();

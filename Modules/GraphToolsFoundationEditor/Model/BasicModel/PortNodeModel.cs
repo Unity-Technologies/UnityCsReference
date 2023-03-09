@@ -24,7 +24,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
         // PF: Add PortsById and PortsByDisplayOrder?
 
-        // PF: these should probably be removed.
         /// <summary>
         /// Called when any port on this node model gets connected.
         /// </summary>
@@ -47,8 +46,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public abstract PortModel GetPortFitToConnectTo(PortModel portModel);
 
         /// <summary>
-        /// Remove a missing port that no longer has any connection.
+        /// Remove a missing port that is no longer used.
         /// </summary>
+        /// <param name="portModel">The model of the port we want to connect to this node.</param>
         /// <returns>True if the missing port was removed, False otherwise.</returns>
         public abstract bool RemoveUnusedMissingPort(PortModel portModel);
 

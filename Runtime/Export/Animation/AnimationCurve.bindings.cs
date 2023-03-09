@@ -146,6 +146,7 @@ namespace UnityEngine
     public class AnimationCurve : IEquatable<AnimationCurve>
     {
         internal IntPtr m_Ptr;
+        private bool m_RequiresNativeCleanup;
 
         [FreeFunction("AnimationCurveBindings::Internal_Destroy", IsThreadSafe = true)]
         extern static private void Internal_Destroy(IntPtr ptr);
@@ -158,7 +159,8 @@ namespace UnityEngine
 
         ~AnimationCurve()
         {
-            Internal_Destroy(m_Ptr);
+            if (m_RequiresNativeCleanup)
+                Internal_Destroy(m_Ptr);
         }
 
         // Evaluate the curve at /time/.
@@ -269,11 +271,25 @@ namespace UnityEngine
         }
 
         // Creates an animation curve from arbitrary number of keyframes.
-        public AnimationCurve(params Keyframe[] keys) { m_Ptr = Internal_Create(keys); }
+        public AnimationCurve(params Keyframe[] keys)
+        {
+            m_Ptr = Internal_Create(keys);
+            m_RequiresNativeCleanup = true;
+        }
 
         // Creates an empty animation curve
         [RequiredByNativeCode]
-        public AnimationCurve()  { m_Ptr = Internal_Create(null); }
+        public AnimationCurve()
+        {
+            m_Ptr = Internal_Create(null);
+            m_RequiresNativeCleanup = true;
+        }
+
+        internal AnimationCurve(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+            m_RequiresNativeCleanup = false;
+        }
 
         public override bool Equals(object o)
         {
@@ -317,6 +333,12 @@ namespace UnityEngine
         public override int GetHashCode()
         {
             return m_Ptr.GetHashCode();
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static AnimationCurve ConvertToManaged(IntPtr ptr) => new AnimationCurve(ptr);
+            public static IntPtr ConvertToNative(AnimationCurve animationCurve) => animationCurve.m_Ptr;
         }
     }
 

@@ -11,9 +11,12 @@ namespace UnityEngine.Rendering
 {
     public partial class CommandBuffer
     {
- #pragma warning disable 414
         internal IntPtr m_Ptr;
- #pragma warning restore 414
+
+        private CommandBuffer(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+        }
 
         // --------------------------------------------------------------------
         // IDisposable implementation, with Release() for explicit cleanup.
@@ -1103,6 +1106,16 @@ namespace UnityEngine.Rendering
         public void SetGlobalConstantBuffer(GraphicsBuffer buffer, string name, int offset, int size)
         {
             SetGlobalConstantGraphicsBufferInternal(buffer, Shader.PropertyToID(name), offset, size);
+        }
+
+        public void SetGlobalRayTracingAccelerationStructure(string name, RayTracingAccelerationStructure accelerationStructure)
+        {
+            SetGlobalRayTracingAccelerationStructureInternal(accelerationStructure, Shader.PropertyToID(name));
+        }
+
+        public void SetGlobalRayTracingAccelerationStructure(int nameID, RayTracingAccelerationStructure accelerationStructure)
+        {
+            SetGlobalRayTracingAccelerationStructureInternal(accelerationStructure, nameID);
         }
 
         public void SetShadowSamplingMode(UnityEngine.Rendering.RenderTargetIdentifier shadowmap, ShadowSamplingMode mode)

@@ -66,7 +66,7 @@ namespace UnityEngine.VFX
 
         extern internal static uint batchEmptyLifetime { get; set; }
 
-        extern internal static void ResyncMaterials([NotNull("NullExceptionObject")] VisualEffectAsset asset);
+        extern internal static void ResyncMaterials([NotNull] VisualEffectAsset asset);
         extern internal static bool renderInSceneView { get; set; }
         internal static bool activateVFX { get; set; }
 
@@ -77,10 +77,10 @@ namespace UnityEngine.VFX
             CleanupEmptyBatches(true);
         }
 
-        extern public static VFXBatchedEffectInfo GetBatchedEffectInfo([NotNull("NullExceptionObject")] VisualEffectAsset vfx);
+        extern public static VFXBatchedEffectInfo GetBatchedEffectInfo([NotNull] VisualEffectAsset vfx);
 
         [FreeFunction(Name = "VFXManagerBindings::GetBatchedEffectInfos", HasExplicitThis = false)]
-        extern public static void GetBatchedEffectInfos([NotNull("NullExceptionObject")] List<VFXBatchedEffectInfo> infos);
+        extern public static void GetBatchedEffectInfos([NotNull] List<VFXBatchedEffectInfo> infos);
 
         extern internal static VFXBatchInfo GetBatchInfo(VisualEffectAsset vfx, uint batchIndex);
 
@@ -98,7 +98,7 @@ namespace UnityEngine.VFX
             PrepareCamera(cam, kDefaultCameraXRSettings);
         }
 
-        extern public static void PrepareCamera([NotNull("NullExceptionObject")] Camera cam, VFXCameraXRSettings camXRSettings);
+        extern public static void PrepareCamera([NotNull] Camera cam, VFXCameraXRSettings camXRSettings);
 
         [Obsolete("Use ProcessCameraCommand with CullingResults to allow culling of VFX per camera")]
         public static void ProcessCameraCommand(Camera cam, CommandBuffer cmd)
@@ -117,9 +117,9 @@ namespace UnityEngine.VFX
             Internal_ProcessCameraCommand(cam, cmd, camXRSettings, results.ptr);
         }
 
-        extern private static void Internal_ProcessCameraCommand([NotNull("NullExceptionObject")] Camera cam, CommandBuffer cmd, VFXCameraXRSettings camXRSettings, IntPtr cullResults);
-        extern public static VFXCameraBufferTypes IsCameraBufferNeeded([NotNull("NullExceptionObject")] Camera cam);
-        extern public static void SetCameraBuffer([NotNull("NullExceptionObject")] Camera cam, VFXCameraBufferTypes type, Texture buffer, int x, int y, int width, int height);
+        extern private static void Internal_ProcessCameraCommand([NotNull] Camera cam, CommandBuffer cmd, VFXCameraXRSettings camXRSettings, IntPtr cullResults);
+        extern public static VFXCameraBufferTypes IsCameraBufferNeeded([NotNull] Camera cam);
+        extern public static void SetCameraBuffer([NotNull] Camera cam, VFXCameraBufferTypes type, Texture buffer, int x, int y, int width, int height);
 
         extern public static void SetRayTracingEnabled(bool enabled);
         extern public static void RequestRtasAabbConstruction();

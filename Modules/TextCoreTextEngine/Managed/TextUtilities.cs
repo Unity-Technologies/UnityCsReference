@@ -128,6 +128,38 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
+        /// Returns the case insensitive hashcode for the given string.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <returns></returns>
+        public static int GetHashCode(string s)
+        {
+            if (string.IsNullOrEmpty(s))
+                return 0;
+
+            int hashCode = 0;
+
+            for (int i = 0; i < s.Length; i++)
+                hashCode = ((hashCode << 5) + hashCode) ^ ToUpperFast(s[i]);
+
+            return hashCode;
+        }
+
+        /// <summary>
+        /// Function which returns a simple hashcode from a string.
+        /// </summary>
+        /// <returns></returns>
+        public static int GetSimpleHashCode(string s)
+        {
+            int hashCode = 0;
+
+            for (int i = 0; i < s.Length; i++)
+                hashCode = ((hashCode << 5) + hashCode) ^ s[i];
+
+            return hashCode;
+        }
+
+        /// <summary>
         /// Function which returns a simple hashcode from a string converted to lowercase.
         /// </summary>
         /// <returns></returns>

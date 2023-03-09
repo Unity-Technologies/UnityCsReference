@@ -18,5 +18,10 @@ namespace UnityEngine.Subsystems
         public extern bool disableBackbufferMSAA { get; }
         public extern bool stereoscopicBackbuffer { get; }
         public extern bool usePBufferEGL { get; }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(ExampleSubsystemDescriptor exampleSubsystemDescriptor) => exampleSubsystemDescriptor.m_Ptr;
+        }
     }
 }

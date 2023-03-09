@@ -243,6 +243,10 @@ namespace UnityEditor.Collaboration
 
         [NativeMethod(HasExplicitThis = true, ThrowsException = true)]
         public extern SoftLock[] GetSoftLocks(string assetGuid);
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Collab collab) => collab.m_nativeCollab;
+        }
     }
 
     // keep in sync with CollabSettingType in C++

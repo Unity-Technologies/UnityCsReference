@@ -244,6 +244,9 @@ namespace UnityEditor.TextCore.Text
             // Set version number
             m_SpriteAsset.version = "1.1.0";
 
+            // Compute the hash code for the sprite asset.
+            m_SpriteAsset.hashCode = TextUtilities.GetSimpleHashCode(m_SpriteAsset.name);
+
             // Add new default material for sprite asset.
             AddDefaultMaterial(m_SpriteAsset);
         }
@@ -260,6 +263,7 @@ namespace UnityEditor.TextCore.Text
 
             spriteAsset.material = material;
             material.hideFlags = HideFlags.HideInHierarchy;
+            material.name = spriteAsset.name + " Material";
             AssetDatabase.AddObjectToAsset(material, spriteAsset);
         }
 

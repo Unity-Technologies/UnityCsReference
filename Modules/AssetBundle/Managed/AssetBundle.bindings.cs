@@ -35,7 +35,6 @@ namespace UnityEngine
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadFromManagedStreamAsyncOperation.h")]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadAssetOperation.h")]
     [NativeHeader("Runtime/Scripting/ScriptingExportUtility.h")]
-    [NativeHeader("Runtime/Scripting/ScriptingObjectWithIntPtrField.h")]
     [NativeHeader("Runtime/Scripting/ScriptingUtility.h")]
     [NativeHeader("AssetBundleScriptingClasses.h")]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleSaveAndLoadHelper.h")]
@@ -53,7 +52,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("LoadMainObjectFromAssetBundle", true)]
-        internal static extern Object returnMainAsset([NotNull("NullExceptionObject")] AssetBundle bundle);
+        internal static extern Object returnMainAsset([NotNull] AssetBundle bundle);
 
         [FreeFunction("UnloadAllAssetBundles")]
         public extern static void UnloadAllAssetBundles(bool unloadAllObjects);

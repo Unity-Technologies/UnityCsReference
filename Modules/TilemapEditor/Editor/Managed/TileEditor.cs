@@ -9,7 +9,7 @@ namespace UnityEditor
 {
     [CustomEditor(typeof(Tile))]
     [CanEditMultipleObjects]
-    internal class TileEditor : Editor
+    public class TileEditor : TileBaseEditor
     {
         private const float k_PreviewWidth = 32;
         private const float k_PreviewHeight = 32;
@@ -40,7 +40,7 @@ namespace UnityEditor
             public static readonly GUIContent scaleLabel = EditorGUIUtility.TrTextContent("Scale");
         }
 
-        public void OnEnable()
+        internal void OnEnable()
         {
             m_Color = serializedObject.FindProperty("m_Color");
             m_ColliderType = serializedObject.FindProperty("m_ColliderType");
@@ -87,7 +87,7 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
-        public static void DoTilePreview(Sprite sprite, Color color, Matrix4x4 transform)
+        internal static void DoTilePreview(Sprite sprite, Color color, Matrix4x4 transform)
         {
             if (sprite == null)
                 return;
@@ -104,7 +104,7 @@ namespace UnityEditor
             EditorGUI.DrawTextureTransparent(previewRect, texture, ScaleMode.StretchToFill);
         }
 
-        public static Matrix4x4 TransformMatrixOnGUI(Matrix4x4 matrix)
+        internal static Matrix4x4 TransformMatrixOnGUI(Matrix4x4 matrix)
         {
             Matrix4x4 val = matrix;
             if (matrix.ValidTRS())

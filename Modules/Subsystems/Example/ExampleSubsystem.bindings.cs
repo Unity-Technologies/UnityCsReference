@@ -16,5 +16,10 @@ namespace UnityEngine.Subsystems
     {
         public extern void PrintExample();
         public extern bool GetBool();
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(ExampleSubsystem exampleSubsystem) => exampleSubsystem.m_Ptr;
+        }
     }
 }

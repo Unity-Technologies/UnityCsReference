@@ -6,5 +6,8 @@ namespace UnityEngine.Rendering
 {
     public abstract class RenderPipelineGlobalSettings : ScriptableObject
     {
+        public virtual void Initialize(RenderPipelineGlobalSettings source = null)
+        {
+        }
     }
 }

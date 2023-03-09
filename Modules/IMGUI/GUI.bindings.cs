@@ -43,8 +43,8 @@ namespace UnityEngine
         private static extern string Internal_GetTooltip();
         private static extern void Internal_SetTooltip(string value);
         private static extern string Internal_GetMouseTooltip();
-        private static extern Rect Internal_DoModalWindow(int id, int instanceID, Rect clientRect, WindowFunction func, GUIContent content, GUIStyle style, System.Object skin);
-        private static extern Rect Internal_DoWindow(int id, int instanceID, Rect clientRect, WindowFunction func, GUIContent title, GUIStyle style, System.Object skin, bool forceRectOnLayout);
+        private static extern Rect Internal_DoModalWindow(int id, int instanceID, Rect clientRect, WindowFunction func, GUIContent content, [Unmarshalled] GUIStyle style, System.Object skin);
+        private static extern Rect Internal_DoWindow(int id, int instanceID, Rect clientRect, WindowFunction func, GUIContent title, [Unmarshalled] GUIStyle style, System.Object skin, bool forceRectOnLayout);
 
         public static extern void DragWindow(Rect position);
         public static extern void BringWindowToFront(int windowID);

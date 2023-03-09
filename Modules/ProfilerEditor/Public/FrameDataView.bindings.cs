@@ -399,5 +399,9 @@ namespace UnityEditor.Profiling
         [NativeMethod(IsThreadSafe = true)]
         public extern bool GetGfxResourceInfo(ulong gfxResourceId, out GfxResourceInfo info);
 
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(FrameDataView frameDataView) => frameDataView.m_Ptr;
+        }
     }
 }

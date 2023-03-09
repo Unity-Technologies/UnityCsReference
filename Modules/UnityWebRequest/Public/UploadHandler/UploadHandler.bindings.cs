@@ -80,6 +80,11 @@ namespace UnityEngine.Networking
 
         [NativeMethod("GetProgress")]
         private extern float InternalGetProgress();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(UploadHandler uploadHandler) => uploadHandler.m_Ptr;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -88,7 +93,7 @@ namespace UnityEngine.Networking
     {
         NativeArray<byte> m_Payload;
 
-        private static extern unsafe IntPtr Create(UploadHandlerRaw self, byte* data, int dataLength);
+        private static extern unsafe IntPtr Create([Unmarshalled] UploadHandlerRaw self, byte* data, int dataLength);
 
         public UploadHandlerRaw(byte[] data)
             : this((data == null || data.Length == 0) ? new NativeArray<byte>() : new NativeArray<byte>(data, Allocator.Persistent), true)
@@ -140,6 +145,10 @@ namespace UnityEngine.Networking
             base.Dispose();
         }
 
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(UploadHandlerRaw uploadHandler) => uploadHandler.m_Ptr;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -147,11 +156,15 @@ namespace UnityEngine.Networking
     public sealed class UploadHandlerFile : UploadHandler
     {
         [NativeThrows]
-        private static extern IntPtr Create(UploadHandlerFile self, string filePath);
+        private static extern IntPtr Create([Unmarshalled] UploadHandlerFile self, string filePath);
 
         public UploadHandlerFile(string filePath)
         {
             m_Ptr = Create(this, filePath);
+        }
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(UploadHandlerFile uploadHandler) => uploadHandler.m_Ptr;
         }
     }
 }

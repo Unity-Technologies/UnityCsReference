@@ -332,5 +332,10 @@ namespace UnityEngine.XR
         }
 
         extern IntPtr GetUpdatedMeshTransforms();
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(XRMeshSubsystem subsystem) => subsystem.m_Ptr;
+        }
     }
 }

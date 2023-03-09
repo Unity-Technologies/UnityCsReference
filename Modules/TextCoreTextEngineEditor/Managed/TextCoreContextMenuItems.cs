@@ -241,11 +241,22 @@ namespace UnityEditor.TextCore.Text
             TextShaderUtilities.GetShaderPropertyIDs(); // Make sure we have valid Property IDs
             if (mat.HasProperty(TextShaderUtilities.ID_GradientScale))
             {
+                bool isSRPShader = mat.HasProperty(TextShaderUtilities.ID_IsoPerimeter);
+
                 // Copy unique properties of the SDF Material
                 var texture = mat.GetTexture(TextShaderUtilities.ID_MainTex);
                 var gradientScale = mat.GetFloat(TextShaderUtilities.ID_GradientScale);
-                var texWidth = mat.GetFloat(TextShaderUtilities.ID_TextureWidth);
-                var texHeight = mat.GetFloat(TextShaderUtilities.ID_TextureHeight);
+                float texWidth = 0, texHeight = 0;
+                float normalWeight = 0, boldWeight = 0;
+
+                if (!isSRPShader)
+                {
+                    texWidth = mat.GetFloat(TextShaderUtilities.ID_TextureWidth);
+                    texHeight = mat.GetFloat(TextShaderUtilities.ID_TextureHeight);
+                    normalWeight = mat.GetFloat(TextShaderUtilities.ID_WeightNormal);
+                    boldWeight = mat.GetFloat(TextShaderUtilities.ID_WeightBold);
+                }
+
 
                 var stencilId = 0.0f;
                 var stencilComp = 0.0f;
@@ -256,9 +267,6 @@ namespace UnityEditor.TextCore.Text
                     stencilComp = mat.GetFloat(TextShaderUtilities.ID_StencilComp);
                 }
 
-                var normalWeight = mat.GetFloat(TextShaderUtilities.ID_WeightNormal);
-                var boldWeight = mat.GetFloat(TextShaderUtilities.ID_WeightBold);
-
                 // Reset the material
                 Unsupported.SmartReset(mat);
 
@@ -268,17 +276,20 @@ namespace UnityEditor.TextCore.Text
                 // Copy unique material properties back to the material.
                 mat.SetTexture(TextShaderUtilities.ID_MainTex, texture);
                 mat.SetFloat(TextShaderUtilities.ID_GradientScale, gradientScale);
-                mat.SetFloat(TextShaderUtilities.ID_TextureWidth, texWidth);
-                mat.SetFloat(TextShaderUtilities.ID_TextureHeight, texHeight);
+
+                if (!isSRPShader)
+                {
+                    mat.SetFloat(TextShaderUtilities.ID_TextureWidth, texWidth);
+                    mat.SetFloat(TextShaderUtilities.ID_TextureHeight, texHeight);
+                    mat.SetFloat(TextShaderUtilities.ID_WeightNormal, normalWeight);
+                    mat.SetFloat(TextShaderUtilities.ID_WeightBold, boldWeight);
+                }
 
                 if (mat.HasProperty(TextShaderUtilities.ID_StencilID))
                 {
                     mat.SetFloat(TextShaderUtilities.ID_StencilID, stencilId);
                     mat.SetFloat(TextShaderUtilities.ID_StencilComp, stencilComp);
                 }
-
-                mat.SetFloat(TextShaderUtilities.ID_WeightNormal, normalWeight);
-                mat.SetFloat(TextShaderUtilities.ID_WeightBold, boldWeight);
             }
             else
             {
@@ -334,24 +345,6 @@ namespace UnityEditor.TextCore.Text
             TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
         }
 
-        /// <summary>
-        /// Create Font Asset
-        /// </summary>
-        /// <param name="command"></param>
-        [MenuItem("CONTEXT/TrueTypeFontImporter/Create Font Asset...", false, 200)]
-        static void CreateFontAsset(MenuCommand command)
-        {
-            TrueTypeFontImporter importer = command.context as TrueTypeFontImporter;
-
-            if (importer != null)
-            {
-                Font sourceFontFile = AssetDatabase.LoadAssetAtPath<Font>(importer.assetPath);
-
-                if (sourceFontFile)
-                    FontAssetCreatorWindow.ShowFontAtlasCreatorWindow(sourceFontFile);
-            }
-        }
-
         // Context Menus for TMPro Font Assets
         //This function is used for debugging and fixing potentially broken font atlas links.
         [MenuItem("CONTEXT/FontAsset/Extract Atlas", false, 2100)]
@@ -381,6 +374,74 @@ namespace UnityEditor.TextCore.Text
 
             AssetDatabase.Refresh();
             DestroyImmediate(tex);
+        }
+        /// <summary>
+        /// Clear Character and Glyph data (only).
+        /// </summary>
+        /// <param name="command"></param>
+        [MenuItem("CONTEXT/FontAsset/Clear Dynamic Data", true, 2100)]
+        static bool ClearFontCharacterDataValidate(MenuCommand command)
+        {
+            return AssetDatabase.IsOpenForEdit(command.context);
+        }
+
+        [MenuItem("CONTEXT/FontAsset/Clear Dynamic Data", false, 2100)]
+        static void ClearFontCharacterData(MenuCommand command)
+        {
+            FontAsset fontAsset = command.context as FontAsset;
+
+            if (fontAsset == null)
+                return;
+
+            if (Selection.activeObject != fontAsset)
+                Selection.activeObject = fontAsset;
+
+            fontAsset.ClearCharacterAndGlyphTablesInternal();
+
+            TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
+        }
+
+        /// <summary>
+        /// Import all font features
+        /// </summary>
+        /// <param name="command"></param>
+        [MenuItem("CONTEXT/FontAsset/Import Font Features", true, 2110)]
+        static bool ReimportFontFeaturesValidate(MenuCommand command)
+        {
+            return AssetDatabase.IsOpenForEdit(command.context);
+        }
+
+        [MenuItem("CONTEXT/FontAsset/Import Font Features", false, 2110)]
+        static void ReimportFontFeatures(MenuCommand command)
+        {
+            FontAsset fontAsset = command.context as FontAsset;
+
+            if (fontAsset == null)
+                return;
+
+            if (Selection.activeObject != fontAsset)
+                Selection.activeObject = fontAsset;
+
+            fontAsset.ImportFontFeatures();
+
+            TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
+        }
+        /// <summary>
+        ///
+        /// </summary>
+        /// <param name="command"></param>
+        [MenuItem("CONTEXT/TrueTypeFontImporter/Create Font Asset...", false, 200)]
+        static void CreateFontAsset(MenuCommand command)
+        {
+            TrueTypeFontImporter importer = command.context as TrueTypeFontImporter;
+
+            if (importer != null)
+            {
+                Font sourceFontFile = AssetDatabase.LoadAssetAtPath<Font>(importer.assetPath);
+
+                if (sourceFontFile)
+                    FontAssetCreatorWindow.ShowFontAtlasCreatorWindow(sourceFontFile);
+            }
         }
     }
 }

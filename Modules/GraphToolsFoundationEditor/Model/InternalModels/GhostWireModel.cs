@@ -65,6 +65,23 @@ namespace Unity.GraphToolsFoundation.Editor
             ToPort = toPortModel;
         }
 
+        /// <inheritdoc />
+        public override void SetPort(WireSide side, PortModel value)
+        {
+            if (side == WireSide.From)
+            {
+                if (value == FromPort)
+                    return;
+                FromPort = value;
+            }
+            else
+            {
+                if (value == ToPort)
+                    return;
+                ToPort = value;
+            }
+        }
+
         /// <summary>
         /// Creates missing ports in the case where the original ports are missing.
         /// </summary>

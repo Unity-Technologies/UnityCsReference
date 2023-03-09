@@ -146,7 +146,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal const int k_PropertyNameMaxChars = 30;
             internal const int k_TextureFormatMaxChars = 19;
 
-            internal const int k_ShaderLabelWidth = 172;
+            internal const int k_ShaderLabelWidth = 155;
             internal const int k_ShaderObjectFieldWidth = 450;
 
             internal const float k_MeshBottomToolbarHeight = 21f;
@@ -183,6 +183,17 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal static readonly GUIStyle s_MonoLabelStyle = new GUIStyle(EditorStyles.label)
             {
                 alignment = TextAnchor.UpperLeft
+            };
+            internal static readonly GUIStyle s_MonoLabelStylePadding = new GUIStyle(EditorStyles.label)
+            {
+                alignment = TextAnchor.UpperLeft,
+                padding = new RectOffset(25, 0, 0, 0),
+            };
+
+            internal static readonly GUIStyle s_MonoLabelBoldPaddingStyle = new GUIStyle(EditorStyles.label)
+            {
+                alignment = TextAnchor.UpperLeft,
+                padding = new RectOffset(25, 0, 0, 0),
             };
 
             internal static readonly GUIStyle s_MonoLabelNoWrapStyle = new GUIStyle(EditorStyles.label)
@@ -225,6 +236,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal const string k_WarningMultiThreadedMsg = "The Frame Debugger requires multi-threaded renderer. If this error persists, try starting the Editor with -force-gfx-mt command line argument.";
             internal const string k_WarningLinuxOpenGLMsg = k_WarningMultiThreadedMsg + " On Linux, the editor does not support a multi-threaded renderer when using OpenGL.";
             internal const string k_DescriptionString = "Frame Debugger lets you step through draw calls and see how exactly frame is rendered. Click Enable!";
+            internal const string k_TabbedWithPlaymodeErrorString = "Frame Debugger can not be docked with the Game Window when trying to debug the editor.";
             internal static readonly GUIContent s_RenderTargetText = EditorGUIUtility.TrTextContent("RenderTarget");
             internal static readonly GUIContent s_CopyEventText = EditorGUIUtility.TrTextContent("Copy Event Info");
             internal static readonly GUIContent s_CopyPropertyText = EditorGUIUtility.TrTextContent("Copy Property");
@@ -249,7 +261,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal static readonly GUIContent s_BatchCauseText = EditorGUIUtility.TrTextContent("Batch cause");
             internal static readonly GUIContent s_PassLightModeText = EditorGUIUtility.TrTextContent("Pass\nLightMode");
             internal static readonly GUIContent s_ArrayPopupButtonText = EditorGUIUtility.TrTextContent("...");
-            internal static readonly GUIContent s_FoldoutOutputOrMeshText = EditorGUIUtility.TrTextContent("Output / Mesh");
+            internal static readonly GUIContent s_FoldoutOutputText = EditorGUIUtility.TrTextContent("Output");
+            internal static readonly GUIContent s_FoldoutMeshText = EditorGUIUtility.TrTextContent("Meshes");
+            internal static readonly GUIContent s_FoldoutMeshNotSupportedText = EditorGUIUtility.TrTextContent("Meshes - Not supported");
             internal static readonly GUIContent s_FoldoutEventDetailsText = EditorGUIUtility.TrTextContent("Details");
             internal static readonly GUIContent s_FoldoutTexturesText = EditorGUIUtility.TrTextContent("Textures");
             internal static readonly GUIContent s_FoldoutKeywordsText = EditorGUIUtility.TrTextContent("Keywords");
@@ -274,9 +288,12 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             Font monospacedFont = EditorGUIUtility.Load("Fonts/RobotoMono/RobotoMono-Regular.ttf") as Font;
             Font monospacedBoldFont = EditorGUIUtility.Load("Fonts/RobotoMono/RobotoMono-Bold.ttf") as Font;
             EventDetails.s_MonoLabelStyle.font = monospacedFont;
-            EventDetails.s_MonoLabelBoldStyle.font = monospacedBoldFont;
+            EventDetails.s_MonoLabelStylePadding.font = monospacedFont;
             EventDetails.s_MonoLabelNoWrapStyle.font = monospacedFont;
             EventDetails.s_ArrayFoldoutStyle.font = monospacedFont;
+
+            EventDetails.s_MonoLabelBoldStyle.font = monospacedBoldFont;
+            EventDetails.s_MonoLabelBoldPaddingStyle.font = monospacedBoldFont;
         }
 
         private static Texture2D MakeTex(int width, int height, Color col)

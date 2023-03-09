@@ -63,9 +63,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Graphics/GraphicsBuffer.bindings.h")]
     public sealed class GraphicsBuffer : IDisposable
     {
-#pragma warning disable 414
         internal IntPtr m_Ptr;
-#pragma warning restore 414
 
         AtomicSafetyHandle m_Safety;
 
@@ -156,6 +154,12 @@ namespace UnityEngine
 
         [FreeFunction("GraphicsBuffer_Bindings::DestroyBuffer")]
         static extern void DestroyBuffer(GraphicsBuffer buf);
+
+        // Create a Graphics Buffer from native object pointer
+        private GraphicsBuffer(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+        }
 
         // Create a Graphics Buffer.
         public GraphicsBuffer(Target target, int count, int stride)
@@ -491,6 +495,12 @@ namespace UnityEngine
                 return;
 
             UnsafeUtility.LeakErase(m_Ptr, LeakCategory.Persistent);
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static GraphicsBuffer ConvertToManaged(IntPtr ptr) => new GraphicsBuffer(ptr);
+            public static IntPtr ConvertToNative(GraphicsBuffer graphicsBuffer) => graphicsBuffer.m_Ptr;
         }
     }
 }

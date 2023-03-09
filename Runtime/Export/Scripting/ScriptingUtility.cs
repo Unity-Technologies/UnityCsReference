@@ -4,6 +4,11 @@
 
 using UnityEngine.Scripting;
 
+using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Unity.Collections.LowLevel.Unsafe;
+
 namespace UnityEngine
 {
     internal class ScriptingUtility
@@ -24,6 +29,12 @@ namespace UnityEngine
         {
             var testClass = new TestClass { value = 42 };
             return testClass.value == 42;
+        }
+
+
+        [RequiredByNativeCode]
+        static unsafe void SetupCallbacks(IntPtr p)
+        {
         }
     }
 }

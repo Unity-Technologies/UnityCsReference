@@ -16,7 +16,7 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_DisplayNameHandle;
         internal FoundryHandle m_ReferenceNameHandle;
         internal FoundryHandle m_StageDescriptionListHandle;
-        internal FoundryHandle m_CommandDescriptorListHandle;
+        internal FoundryHandle m_RenderStateDescriptorListHandle;
         internal FoundryHandle m_PragmaDescriptorListHandle;
         internal FoundryHandle m_TagDescriptorListHandle;
         internal FoundryHandle m_PackageRequirementListHandle;
@@ -62,13 +62,13 @@ namespace UnityEditor.ShaderFoundry
 
         public IEnumerable<StageDescription> StageDescriptions => templatePass.m_StageDescriptionListHandle.AsListEnumerable<StageDescription>(container, (container, handle) => (new StageDescription(container, handle))).Where((s) => (s.IsValid));
 
-        public IEnumerable<CommandDescriptor> CommandDescriptors
+        public IEnumerable<RenderStateDescriptor> RenderStateDescriptors
         {
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(templatePass.m_CommandDescriptorListHandle);
-                return list.Select(localContainer, (handle) => (new CommandDescriptor(localContainer, handle)));
+                var list = new FixedHandleListInternal(templatePass.m_RenderStateDescriptorListHandle);
+                return list.Select(localContainer, (handle) => (new RenderStateDescriptor(localContainer, handle)));
             }
         }
 
@@ -147,7 +147,7 @@ namespace UnityEditor.ShaderFoundry
         {
             ShaderContainer container;
             List<StageDescription> stageDescriptions;
-            List<CommandDescriptor> commandDescriptors;
+            List<RenderStateDescriptor> renderStateDescriptors;
             List<PragmaDescriptor> pragmaDescriptors;
             List<TagDescriptor> tagDescriptors = new List<TagDescriptor>();
             List<PackageRequirement> packageRequirements;
@@ -165,11 +165,11 @@ namespace UnityEditor.ShaderFoundry
                     stageDescriptions.Add(StageDescription.Invalid);
             }
 
-            public void AddCommandDescriptor(CommandDescriptor commandDescriptor)
+            public void AddRenderStateDescriptor(RenderStateDescriptor renderStateDescriptor)
             {
-                if (commandDescriptors == null)
-                    commandDescriptors = new List<CommandDescriptor>();
-                commandDescriptors.Add(commandDescriptor);
+                if (renderStateDescriptors == null)
+                    renderStateDescriptors = new List<RenderStateDescriptor>();
+                renderStateDescriptors.Add(renderStateDescriptor);
             }
 
             public void AddPragmaDescriptor(PragmaDescriptor pragmaDescriptor)
@@ -213,7 +213,7 @@ namespace UnityEditor.ShaderFoundry
                 };
 
                 templatePassInternal.m_StageDescriptionListHandle = FixedHandleListInternal.Build(container, stageDescriptions, (s) => (s.handle));
-                templatePassInternal.m_CommandDescriptorListHandle = FixedHandleListInternal.Build(container, commandDescriptors, (o) => (o.handle));
+                templatePassInternal.m_RenderStateDescriptorListHandle = FixedHandleListInternal.Build(container, renderStateDescriptors, (o) => (o.handle));
                 templatePassInternal.m_PragmaDescriptorListHandle = FixedHandleListInternal.Build(container, pragmaDescriptors, (o) => (o.handle));
                 templatePassInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
                 templatePassInternal.m_PackageRequirementListHandle = FixedHandleListInternal.Build(container, packageRequirements, (p) => (p.handle));

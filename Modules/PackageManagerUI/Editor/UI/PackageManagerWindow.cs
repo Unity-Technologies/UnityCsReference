@@ -42,18 +42,18 @@ namespace UnityEditor.PackageManager.UI
         }
 
         /// <summary>
-        /// Open Package Manager Window and select specified filter.
-        /// The string used to identify the filter can be any of the following:
+        /// Open Package Manager Window and select specified page.
+        /// The string used to identify the page can be any of the following:
         /// <list type="bullet">
-        /// <item><description>filterTab (e.g. "InProject")</description></item>
-        /// <item><description>filterTab/subPage (e.g. "InProject/Services")</description></item>
-        /// <item><description>null (no specific filterTab to focus)</description></item>
+        /// <item><description>Basic pages including "UnityRegistry", "BuiltIn", "InProject", "MyRegistries", and "MyAssets"</description></item>
+        /// <item><description>Extension pages with id that looks like "Extension/id", where "id" is the unique string id for the extension</description></item>
+        /// <item><description>null (no specific page to focus)</description></item>
         /// </list>
         /// </summary>
-        /// <param name="filterAndSubPageToSelect">Filter tab and subpage (optional) to select. If filter tab cannot be found, last select tab will be selected, if subpage cannot be found, first subpage will be selected</param>
-        internal static void OpenFilter(string filterAndSubPageToSelect)
+        /// <param name="pageIdToSelect">Page Id to select. If page cannot be found, last selected page will be selected</param>
+        internal static void OpenPage(string pageIdToSelect)
         {
-            PackageManagerWindow.OpenPackageManagerOnFilter(filterAndSubPageToSelect);
+            PackageManagerWindow.OpenPackageManagerOnPage(pageIdToSelect);
         }
     }
 
@@ -114,7 +114,7 @@ namespace UnityEditor.PackageManager.UI
                 CheckInnerException<ResourceLoaderException>(e);
             }
 
-            if (pageRefreshHandler.IsInitialFetchingDone())
+            if (pageRefreshHandler.IsInitialFetchingDone(pageManager.activePage))
                 OnFirstRefreshOperationFinish();
             else
                 pageRefreshHandler.onRefreshOperationFinish += OnFirstRefreshOperationFinish;
@@ -194,7 +194,7 @@ namespace UnityEditor.PackageManager.UI
             // com.unity3d.kharma:upmpackage/com.unity.xxx@1.2.2      => Upm url
             if (url.StartsWith(k_UpmUrl))
             {
-                SelectPackageAndFilterStatic(string.Empty, PackageFilterTab.InProject);
+                SelectPackageAndPageStatic(pageId: InProjectPage.k_Id);
                 EditorApplication.delayCall += () => OpenAddPackageByName(url);
             }
             else
@@ -207,7 +207,7 @@ namespace UnityEditor.PackageManager.UI
                     if (endIndex > 0)
                         id = id.Substring(0, endIndex);
 
-                    SelectPackageAndFilterStatic(id, PackageFilterTab.AssetStore);
+                    SelectPackageAndPageStatic(id, MyAssetsPage.k_Id);
                 }
             }
         }
@@ -228,7 +228,7 @@ namespace UnityEditor.PackageManager.UI
         {
             var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
 
-            SelectPackageAndFilterStatic(packageToSelect);
+            SelectPackageAndPageStatic(packageToSelect);
             if (!isWindowAlreadyVisible)
             {
                 string packageId = null;
@@ -243,13 +243,13 @@ namespace UnityEditor.PackageManager.UI
             }
         }
 
-        internal static void OpenPackageManagerOnFilter(string filterAndSubPageToSelect)
+        internal static void OpenPackageManagerOnPage(string pageId)
         {
             var isWindowAlreadyVisible = Resources.FindObjectsOfTypeAll<PackageManagerWindow>()?.FirstOrDefault() != null;
 
-            SelectFilterSubPageStatic(filterAndSubPageToSelect);
+            SelectPackageAndPageStatic(pageId: pageId);
             if (!isWindowAlreadyVisible)
-                PackageManagerWindowAnalytics.SendEvent("openWindowOnFilter", filterAndSubPageToSelect);
+                PackageManagerWindowAnalytics.SendEvent("openWindowOnFilter", pageId);
         }
 
         [UsedByNativeCode("PackageManagerUI_OnPackageManagerResolve")]
@@ -299,19 +299,11 @@ namespace UnityEditor.PackageManager.UI
             pageRefreshHandler.Refresh(RefreshOptions.UpmListOffline);
         }
 
-        internal static void SelectFilterSubPageStatic(string filterTabOrSubPage = "")
+        internal static void SelectPackageAndPageStatic(string packageToSelect = null, string pageId = null, bool refresh = false, string searchText = "")
         {
             instance = GetWindow<PackageManagerWindow>();
             instance.minSize = new Vector2(800, 250);
-            instance.m_Root.SelectFilterSubPage(filterTabOrSubPage);
-            instance.Show();
-        }
-
-        internal static void SelectPackageAndFilterStatic(string packageToSelect, PackageFilterTab? filterTab = null, bool refresh = false, string searchText = "")
-        {
-            instance = GetWindow<PackageManagerWindow>();
-            instance.minSize = new Vector2(800, 250);
-            instance.m_Root.SelectPackageAndFilter(packageToSelect, filterTab, refresh, searchText);
+            instance.m_Root.SelectPackageAndPage(packageToSelect, pageId, refresh, searchText);
             instance.Show();
         }
 

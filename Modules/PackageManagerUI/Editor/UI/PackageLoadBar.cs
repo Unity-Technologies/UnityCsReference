@@ -33,7 +33,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
-        private PackageManagerPrefs m_PackageManagerPrefs;
         private PageManager m_PageManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private PageRefreshHandler m_PageRefreshHandler;
@@ -43,7 +42,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
-            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PageManager = container.Resolve<PageManager>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
@@ -138,9 +136,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             loadMoreLabel.SetEnabled(value && !m_LoadMoreInProgress);
         }
 
-        public void UpdateVisibility(PackageFilterTab? filterTab = null)
+        public void UpdateVisibility(string pageId = null)
         {
-            UIUtils.SetElementDisplay(this, (filterTab ?? m_PackageManagerPrefs.currentFilterTab) == PackageFilterTab.AssetStore);
+            pageId = string.IsNullOrEmpty(pageId) ? m_PageManager.activePage.id : pageId;
+            UIUtils.SetElementDisplay(this, pageId == MyAssetsPage.k_Id);
             Refresh();
         }
 
@@ -148,7 +147,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (!UIUtils.IsElementVisible(this))
                 return;
-            var visualStates = m_PageManager.GetPage()?.visualStates;
+            var visualStates = m_PageManager.activePage?.visualStates;
             Set(visualStates?.countTotal ?? 0, visualStates?.countLoaded?? 0);
             UpdateMenu();
             OnInternetReachabilityChange(m_Application.isInternetReachable);
@@ -174,7 +173,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             loadMoreLabel.SetEnabled(false);
             m_LoadMoreInProgress = true;
-            m_PageManager.GetPage().LoadMore(m_LoadMore);
+            m_PageManager.activePage.LoadMore(m_LoadMore);
             UpdateMenu();
         }
 

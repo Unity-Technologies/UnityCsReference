@@ -12,10 +12,13 @@ namespace UnityEditor.TextCore.Text
     {
         static ShaderFeature s_OutlineFeature, s_UnderlayFeature, s_BevelFeature, s_GlowFeature, s_MaskFeature;
 
-        static bool s_Face = true, s_Outline = true, s_Outline2, s_Underlay, s_Lighting, s_Glow, s_Bevel, s_Light, s_Bump, s_Env;
+        static bool s_Face = true, s_Outline = true, s_Outline2 = true, s_Outline3 = true, s_Underlay = true, s_Lighting = true, s_Glow, s_Bevel, s_Light, s_Bump, s_Env;
 
-        static string[] s_FaceUvSpeedNames = { "_FaceUVSpeedX", "_FaceUVSpeedY" },
-                        s_OutlineUvSpeedNames = { "_OutlineUVSpeedX", "_OutlineUVSpeedY" };
+        static string[]
+            s_FaceUVSpeedName = { "_FaceUVSpeed" },
+            s_FaceUvSpeedNames = { "_FaceUVSpeedX", "_FaceUVSpeedY" },
+            s_OutlineUvSpeedNames = { "_OutlineUVSpeedX", "_OutlineUVSpeedY" },
+            s_OutlineUvSpeedName = { "_OutlineUVSpeed" };
 
         static TextCoreShaderGUISDF()
         {
@@ -62,6 +65,8 @@ namespace UnityEditor.TextCore.Text
 
         protected override void DoGUI()
         {
+            bool isSRPMaterial = m_Material.HasProperty(TextShaderUtilities.ID_IsoPerimeter);
+
             s_Face = BeginPanel("Face", s_Face);
             if (s_Face)
             {
@@ -70,76 +75,68 @@ namespace UnityEditor.TextCore.Text
 
             EndPanel();
 
-            s_Outline = m_Material.HasProperty(TextShaderUtilities.ID_OutlineTex) ? BeginPanel("Outline", s_Outline) : BeginPanel("Outline", s_OutlineFeature, s_Outline);
-            if (s_Outline)
+            // Outline panels
+            if (isSRPMaterial)
             {
-                DoOutlinePanel();
+                DoOutlinePanels();
             }
-
-            EndPanel();
-
-            if (m_Material.HasProperty(TextShaderUtilities.ID_Outline2Color))
+            else
             {
-                s_Outline2 = BeginPanel("Outline 2", s_OutlineFeature, s_Outline2);
-                if (s_Outline2)
+                s_Outline = m_Material.HasProperty(TextShaderUtilities.ID_OutlineTex) ? BeginPanel("Outline", s_Outline) : BeginPanel("Outline", s_OutlineFeature, s_Outline);
+                if (s_Outline)
                 {
-                    DoOutline2Panel();
+                    DoOutlinePanel();
                 }
 
                 EndPanel();
+
+                if (m_Material.HasProperty(TextShaderUtilities.ID_Outline2Color))
+                {
+                    s_Outline2 = BeginPanel("Outline 2", s_OutlineFeature, s_Outline2);
+                    if (s_Outline2)
+                    {
+                        DoOutline2Panel();
+                    }
+
+                    EndPanel();
+                }
             }
 
+            // Underlay panel
             if (m_Material.HasProperty(TextShaderUtilities.ID_UnderlayColor))
             {
-                s_Underlay = BeginPanel("Underlay", s_UnderlayFeature, s_Underlay);
-                if (s_Underlay)
+                if (isSRPMaterial)
                 {
-                    DoUnderlayPanel();
-                }
+                    s_Underlay = BeginPanel("Underlay", s_Underlay);
+                    if (s_Underlay)
+                    {
+                        DoUnderlayPanel();
+                    }
 
-                EndPanel();
+                    EndPanel();
+                }
+                else
+                {
+                    s_Underlay = BeginPanel("Underlay", s_UnderlayFeature, s_Underlay);
+                    if (s_Underlay)
+                    {
+                        DoUnderlayPanel();
+                    }
+
+                    EndPanel();
+                }
             }
 
+            // Lighting panel
             if (m_Material.HasProperty("_SpecularColor"))
             {
-                s_Lighting = BeginPanel("Lighting", s_BevelFeature, s_Lighting);
-                if (s_Lighting)
-                {
-                    s_Bevel = BeginPanel("Bevel", s_Bevel);
-                    if (s_Bevel)
-                    {
-                        DoBevelPanel();
-                    }
-
-                    EndPanel();
-
-                    s_Light = BeginPanel("Local Lighting", s_Light);
-                    if (s_Light)
-                    {
-                        DoLocalLightingPanel();
-                    }
-
-                    EndPanel();
-
-                    s_Bump = BeginPanel("Bump Map", s_Bump);
-                    if (s_Bump)
-                    {
-                        DoBumpMapPanel();
-                    }
-
-                    EndPanel();
-
-                    s_Env = BeginPanel("Environment Map", s_Env);
-                    if (s_Env)
-                    {
-                        DoEnvMapPanel();
-                    }
-
-                    EndPanel();
-                }
-
-                EndPanel();
+                if (isSRPMaterial)
+                    DrawLightingPanelSRP();
+                else
+                    DrawLightingPanelLegacy();
             }
+
+
             else if (m_Material.HasProperty("_SpecColor"))
             {
                 s_Bevel = BeginPanel("Bevel", s_Bevel);
@@ -175,6 +172,7 @@ namespace UnityEditor.TextCore.Text
                 EndPanel();
             }
 
+
             if (m_Material.HasProperty(TextShaderUtilities.ID_GlowColor))
             {
                 s_Glow = BeginPanel("Glow", s_GlowFeature, s_Glow);
@@ -186,10 +184,88 @@ namespace UnityEditor.TextCore.Text
                 EndPanel();
             }
 
+
             s_DebugExtended = BeginPanel("Debug Settings", s_DebugExtended);
             if (s_DebugExtended)
             {
-                DoDebugPanel();
+                if (isSRPMaterial)
+                    DoDebugPanelSRP();
+                else
+                    DoDebugPanel();
+            }
+            EndPanel();
+
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
+
+            if (isSRPMaterial)
+            {
+                m_Editor.RenderQueueField();
+                m_Editor.EnableInstancingField();
+                m_Editor.DoubleSidedGIField();
+                m_Editor.EmissionEnabledProperty();
+            }
+        }
+
+        private void DrawLightingPanelSRP()
+        {
+            s_Lighting = BeginPanel("Lighting", s_Lighting);
+            if (s_Lighting)
+            {
+                s_Bevel = BeginPanel("Bevel", s_Bevel);
+                if (s_Bevel)
+                {
+                    DoBevelPanelSRP();
+                }
+                EndPanel();
+
+                s_Light = BeginPanel("Local Lighting", s_Light);
+                if (s_Light)
+                {
+                    DoLocalLightingPanel();
+                }
+                EndPanel();
+            }
+
+            EndPanel();
+        }
+
+        private void DrawLightingPanelLegacy()
+        {
+            s_Lighting = BeginPanel("Lighting", s_BevelFeature, s_Lighting);
+            if (s_Lighting)
+            {
+                s_Bevel = BeginPanel("Bevel", s_Bevel);
+                if (s_Bevel)
+                {
+                    DoBevelPanel();
+                }
+
+                EndPanel();
+
+                s_Light = BeginPanel("Local Lighting", s_Light);
+                if (s_Light)
+                {
+                    DoLocalLightingPanel();
+                }
+
+                EndPanel();
+
+                s_Bump = BeginPanel("Bump Map", s_Bump);
+                if (s_Bump)
+                {
+                    DoBumpMapPanel();
+                }
+
+                EndPanel();
+
+                s_Env = BeginPanel("Environment Map", s_Env);
+                if (s_Env)
+                {
+                    DoEnvMapPanel();
+                }
+
+                EndPanel();
             }
 
             EndPanel();
@@ -198,12 +274,18 @@ namespace UnityEditor.TextCore.Text
         void DoFacePanel()
         {
             EditorGUI.indentLevel += 1;
+
             DoColor("_FaceColor", "Color");
+
             if (m_Material.HasProperty(TextShaderUtilities.ID_FaceTex))
             {
                 if (m_Material.HasProperty("_FaceUVSpeedX"))
                 {
                     DoTexture2D("_FaceTex", "Texture", true, s_FaceUvSpeedNames);
+                }
+                else if (m_Material.HasProperty("_FaceUVSpeed"))
+                {
+                    DoTexture2D("_FaceTex", "Texture", true, s_FaceUVSpeedName);
                 }
                 else
                 {
@@ -211,11 +293,28 @@ namespace UnityEditor.TextCore.Text
                 }
             }
 
-            DoSlider("_OutlineSoftness", "Softness");
-            DoSlider("_FaceDilate", "Dilate");
-            if (m_Material.HasProperty(TextShaderUtilities.ID_Shininess))
+            if (m_Material.HasProperty("_Softness"))
             {
-                DoSlider("_FaceShininess", "Gloss");
+                DoSlider("_Softness", "X", new Vector2(0, 1), "Softness");
+            }
+
+            if (m_Material.HasProperty("_OutlineSoftness"))
+            {
+                DoSlider("_OutlineSoftness", "Softness");
+            }
+
+            if (m_Material.HasProperty(TextShaderUtilities.ID_FaceDilate))
+            {
+                DoSlider("_FaceDilate", "Dilate");
+                if (m_Material.HasProperty(TextShaderUtilities.ID_Shininess))
+                {
+                    DoSlider("_FaceShininess", "Gloss");
+                }
+            }
+
+            if (m_Material.HasProperty(TextShaderUtilities.ID_IsoPerimeter))
+            {
+                DoSlider("_IsoPerimeter", "X", new Vector2(-1, 1), "Dilate");
             }
 
             EditorGUI.indentLevel -= 1;
@@ -231,6 +330,10 @@ namespace UnityEditor.TextCore.Text
                 if (m_Material.HasProperty("_OutlineUVSpeedX"))
                 {
                     DoTexture2D("_OutlineTex", "Texture", true, s_OutlineUvSpeedNames);
+                }
+                else if (m_Material.HasProperty("_OutlineUVSpeed"))
+                {
+                    DoTexture2D("_OutlineTex", "Texture", true, s_OutlineUvSpeedName);
                 }
                 else
                 {
@@ -248,11 +351,74 @@ namespace UnityEditor.TextCore.Text
             EditorGUILayout.Space();
         }
 
+        void DoOutlinePanel(int outlineID, string propertyField, string label)
+        {
+            EditorGUI.indentLevel += 1;
+            DoColor("_OutlineColor" + outlineID, label);
+
+            if (outlineID != 3)
+                DoOffset("_OutlineOffset" + outlineID, "Offset");
+            else
+            {
+                if (m_Material.GetFloat(TextShaderUtilities.ID_OutlineMode) == 0)
+                    DoOffset("_OutlineOffset" + outlineID, "Offset");
+            }
+
+            DoSlider("_Softness", propertyField, new Vector2(0, 1), "Softness");
+            DoSlider("_IsoPerimeter", propertyField, new Vector2(-1, 1), "Dilate");
+
+            if (outlineID == 3)
+            {
+                DoToggle("_OutlineMode", "Outline Mode");
+            }
+
+            if (m_Material.HasProperty("_OutlineShininess"))
+            {
+                //DoSlider("_OutlineShininess", "Gloss");
+            }
+
+            EditorGUI.indentLevel -= 1;
+            EditorGUILayout.Space();
+        }
+
+        void DoOutlinePanelWithTexture(int outlineID, string propertyField, string label)
+        {
+            EditorGUI.indentLevel += 1;
+            DoColor("_OutlineColor" + outlineID, label);
+            if (m_Material.HasProperty(TextShaderUtilities.ID_OutlineTex))
+            {
+                if (m_Material.HasProperty("_OutlineUVSpeedX"))
+                {
+                    DoTexture2D("_OutlineTex", "Texture", true, s_OutlineUvSpeedNames);
+                }
+                else if (m_Material.HasProperty("_OutlineUVSpeed"))
+                {
+                    DoTexture2D("_OutlineTex", "Texture", true, s_OutlineUvSpeedName);
+                }
+                else
+                {
+                    DoTexture2D("_OutlineTex", "Texture", true);
+                }
+            }
+
+            DoOffset("_OutlineOffset" + outlineID, "Offset");
+            DoSlider("_Softness", propertyField, new Vector2(0, 1), "Softness");
+            DoSlider("_IsoPerimeter", propertyField, new Vector2(-1, 1), "Dilate");
+
+            if (m_Material.HasProperty("_OutlineShininess"))
+            {
+                //DoSlider("_OutlineShininess", "Gloss");
+            }
+
+            EditorGUI.indentLevel -= 1;
+            EditorGUILayout.Space();
+        }
+
         void DoOutline2Panel()
         {
             EditorGUI.indentLevel += 1;
             DoColor("_Outline2Color", "Color");
-            //if (m_Material.HasProperty(ShaderUtilities.ID_OutlineTex))
+            //if (m_Material.HasProperty(TextShaderUtilities.ID_OutlineTex))
             //{
             //    if (m_Material.HasProperty("_OutlineUVSpeedX"))
             //    {
@@ -274,15 +440,49 @@ namespace UnityEditor.TextCore.Text
             EditorGUILayout.Space();
         }
 
+        void DoOutlinePanels()
+        {
+            s_Outline = BeginPanel("Outline 1", s_Outline);
+            if (s_Outline)
+                DoOutlinePanelWithTexture(1, "Y", "Color");
+
+            EndPanel();
+
+            s_Outline2 = BeginPanel("Outline 2", s_Outline2);
+            if (s_Outline2)
+                DoOutlinePanel(2, "Z", "Color");
+
+            EndPanel();
+
+            s_Outline3 = BeginPanel("Outline 3", s_Outline3);
+            if (s_Outline3)
+                DoOutlinePanel(3, "W", "Color");
+
+            EndPanel();
+        }
+
         void DoUnderlayPanel()
         {
             EditorGUI.indentLevel += 1;
-            s_UnderlayFeature.DoPopup(m_Editor, m_Material);
-            DoColor("_UnderlayColor", "Color");
-            DoSlider("_UnderlayOffsetX", "Offset X");
-            DoSlider("_UnderlayOffsetY", "Offset Y");
-            DoSlider("_UnderlayDilate", "Dilate");
-            DoSlider("_UnderlaySoftness", "Softness");
+
+            if (m_Material.HasProperty(TextShaderUtilities.ID_IsoPerimeter))
+            {
+                DoColor("_UnderlayColor", "Color");
+                DoSlider("_UnderlayOffset", "X", new Vector2(-1, 1), "Offset X");
+                DoSlider("_UnderlayOffset", "Y", new Vector2(-1, 1), "Offset Y");
+                DoSlider("_UnderlayDilate", new Vector2(-1, 1), "Dilate");
+                DoSlider("_UnderlaySoftness", new Vector2(0, 1), "Softness");
+            }
+            else
+            {
+                s_UnderlayFeature.DoPopup(m_Editor, m_Material);
+                DoColor("_UnderlayColor", "Color");
+                DoSlider("_UnderlayOffsetX", "Offset X");
+                DoSlider("_UnderlayOffsetY", "Offset Y");
+                DoSlider("_UnderlayDilate", "Dilate");
+                DoSlider("_UnderlaySoftness", "Softness");
+            }
+
             EditorGUI.indentLevel -= 1;
             EditorGUILayout.Space();
         }
@@ -298,6 +498,19 @@ namespace UnityEditor.TextCore.Text
             EditorGUI.indentLevel += 1;
             DoPopup("_ShaderFlags", "Type", s_BevelTypeLabels);
             DoSlider("_Bevel", "Amount");
+            DoSlider("_BevelOffset", "Offset");
+            DoSlider("_BevelWidth", "Width");
+            DoSlider("_BevelRoundness", "Roundness");
+            DoSlider("_BevelClamp", "Clamp");
+            EditorGUI.indentLevel -= 1;
+            EditorGUILayout.Space();
+        }
+
+        void DoBevelPanelSRP()
+        {
+            EditorGUI.indentLevel += 1;
+            DoPopup("_BevelType", "Type", s_BevelTypeLabels);
+            DoSlider("_BevelAmount", "Amount");
             DoSlider("_BevelOffset", "Offset");
             DoSlider("_BevelWidth", "Width");
             DoSlider("_BevelRoundness", "Roundness");
@@ -441,6 +654,95 @@ namespace UnityEditor.TextCore.Text
             DoFloat("_ScaleRatioB", "Scale Ratio B");
             DoFloat("_ScaleRatioC", "Scale Ratio C");
             EditorGUI.EndDisabledGroup();
+            EditorGUI.indentLevel -= 1;
+            EditorGUILayout.Space();
+        }
+
+        void DoDebugPanelSRP()
+        {
+            EditorGUI.indentLevel += 1;
+            DoTexture2D("_MainTex", "Font Atlas");
+            DoFloat("_GradientScale", "Gradient Scale");
+            //DoFloat("_TextureWidth", "Texture Width");
+            //DoFloat("_TextureHeight", "Texture Height");
+            EditorGUILayout.Space();
+
+            /*
+            DoFloat("_ScaleX", "Scale X");
+            DoFloat("_ScaleY", "Scale Y");
+
+            if (m_Material.HasProperty(TextShaderUtilities.ID_Sharpness))
+                DoSlider("_Sharpness", "Sharpness");
+
+            DoSlider("_PerspectiveFilter", "Perspective Filter");
+            EditorGUILayout.Space();
+            DoFloat("_VertexOffsetX", "Offset X");
+            DoFloat("_VertexOffsetY", "Offset Y");
+
+            if (m_Material.HasProperty(TextShaderUtilities.ID_MaskCoord))
+            {
+                EditorGUILayout.Space();
+                s_MaskFeature.ReadState(m_Material);
+                s_MaskFeature.DoPopup(m_Editor, m_Material);
+                if (s_MaskFeature.Active)
+                {
+                    DoMaskSubgroup();
+                }
+
+                EditorGUILayout.Space();
+                DoVector("_ClipRect", "Clip Rect", s_LbrtVectorLabels);
+            }
+            else if (m_Material.HasProperty("_MaskTex"))
+            {
+                DoMaskTexSubgroup();
+            }
+            else if (m_Material.HasProperty(TextShaderUtilities.ID_MaskSoftnessX))
+            {
+                EditorGUILayout.Space();
+                DoFloat("_MaskSoftnessX", "Softness X");
+                DoFloat("_MaskSoftnessY", "Softness Y");
+                DoVector("_ClipRect", "Clip Rect", s_LbrtVectorLabels);
+            }
+
+            if (m_Material.HasProperty(TextShaderUtilities.ID_StencilID))
+            {
+                EditorGUILayout.Space();
+                DoFloat("_Stencil", "Stencil ID");
+                DoFloat("_StencilComp", "Stencil Comp");
+            }
+
+            EditorGUILayout.Space();
+
+            EditorGUI.BeginChangeCheck();
+            bool useRatios = EditorGUILayout.Toggle("Use Ratios", !m_Material.IsKeywordEnabled("RATIOS_OFF"));
+            if (EditorGUI.EndChangeCheck())
+            {
+                m_Editor.RegisterPropertyChangeUndo("Use Ratios");
+                if (useRatios)
+                {
+                    m_Material.DisableKeyword("RATIOS_OFF");
+                }
+                else
+                {
+                    m_Material.EnableKeyword("RATIOS_OFF");
+                }
+            }
+            */
+            if (m_Material.HasProperty(TextShaderUtilities.ShaderTag_CullMode))
+            {
+                EditorGUILayout.Space();
+                DoPopup("_CullMode", "Cull Mode", s_CullingTypeLabels);
+            }
+
+            EditorGUILayout.Space();
+            /*
+            EditorGUI.BeginDisabledGroup(true);
+            DoFloat("_ScaleRatioA", "Scale Ratio A");
+            DoFloat("_ScaleRatioB", "Scale Ratio B");
+            DoFloat("_ScaleRatioC", "Scale Ratio C");
+            EditorGUI.EndDisabledGroup();
+            */
+
             EditorGUI.indentLevel -= 1;
             EditorGUILayout.Space();
         }

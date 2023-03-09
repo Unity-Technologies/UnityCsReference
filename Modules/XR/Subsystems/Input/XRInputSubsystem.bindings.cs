@@ -88,5 +88,10 @@ namespace UnityEngine.XR
         internal extern void TryGetDeviceIds_AsList(List<UInt64> deviceIds);
 
         private List<UInt64> m_DeviceIdsCache;
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(XRInputSubsystem xrInputSubsystem) => xrInputSubsystem.m_Ptr;
+        }
     }
 }

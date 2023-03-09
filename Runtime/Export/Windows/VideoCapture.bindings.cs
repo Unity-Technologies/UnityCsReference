@@ -306,6 +306,11 @@ namespace UnityEngine.Windows.WebCam
         [NativeConditional("(PLATFORM_WIN || PLATFORM_WINRT) && !PLATFORM_XBOXONE")]
         [NativeMethod("VideoCaptureBindings::DisposeThreaded", HasExplicitThis = true)]
         private extern void DisposeThreaded_Internal();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(VideoCapture videoCapture) => videoCapture.m_NativePtr;
+        }
     }
 }
 

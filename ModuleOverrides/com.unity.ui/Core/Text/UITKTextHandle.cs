@@ -349,6 +349,8 @@ namespace UnityEngine.UIElements
                 tgs.color *= UIElementsUtility.editorPlayModeTintColor;
 
             tgs.inverseYAxis = true;
+            tgs.fontFeatures = m_ActiveFontFeatures;
+            tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
         }
 
         internal bool TextLibraryCanElide()

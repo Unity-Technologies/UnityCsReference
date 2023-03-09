@@ -16,7 +16,7 @@ namespace UnityEngine.Networking
     {
         private NativeArray<byte> m_NativeData;
 
-        private extern static IntPtr Create(DownloadHandlerAudioClip obj, string url, AudioType audioType);
+        private extern static IntPtr Create([Unmarshalled] DownloadHandlerAudioClip obj, string url, AudioType audioType);
 
         private void InternalCreateAudioClip(string url, AudioType audioType)
         {
@@ -59,6 +59,10 @@ namespace UnityEngine.Networking
         public static AudioClip GetContent(UnityWebRequest www)
         {
             return GetCheckedDownloader<DownloadHandlerAudioClip>(www).audioClip;
+        }
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(DownloadHandlerAudioClip handler) => handler.m_Ptr;
         }
 
     }

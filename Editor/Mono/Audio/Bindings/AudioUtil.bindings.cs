@@ -15,7 +15,7 @@ namespace UnityEditor
         extern public static bool resetAllAudioClipPlayCountsOnPlay { get; set; }
 
         [StaticAccessor("GetAudioManager()", StaticAccessorType.Dot)]
-        extern public static void PlayPreviewClip([NotNull("NullExceptionObject")] AudioClip clip, int startSample = 0, bool loop = false);
+        extern public static void PlayPreviewClip([NotNull] AudioClip clip, int startSample = 0, bool loop = false);
 
         [StaticAccessor("GetAudioManager()", StaticAccessorType.Dot)]
         extern public static void PausePreviewClip();
@@ -39,7 +39,7 @@ namespace UnityEditor
         extern public static int GetPreviewClipSamplePosition();
 
         [StaticAccessor("GetAudioManager()", StaticAccessorType.Dot)]
-        extern public static void SetPreviewClipSamplePosition([NotNull("NullExceptionObject")] AudioClip clip, int iSamplePosition);
+        extern public static void SetPreviewClipSamplePosition([NotNull] AudioClip clip, int iSamplePosition);
 
         extern public static int GetSampleCount(AudioClip clip);
         extern public static int GetChannelCount(AudioClip clip);

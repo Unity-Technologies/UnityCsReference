@@ -63,9 +63,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         public override Constant Clone()
         {
-            var copy = (Constant<EnumValueReference>)Activator.CreateInstance(GetType());
+            var copy = base.Clone();
             ((EnumConstant)copy).m_EnumType = m_EnumType;
-            copy.ObjectValue = ObjectValue;
             return copy;
         }
 

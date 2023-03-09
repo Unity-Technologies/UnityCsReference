@@ -157,6 +157,11 @@ namespace UnityEngine.Rendering
                 }
                 cmd.ProcessVTFeedback(rt, m_Ptr, slice, x, width, y, height, mip);
             }
+
+            internal static class BindingsMarshaller
+            {
+                public static IntPtr ConvertToNative(Resolver resolver) => resolver.m_Ptr;
+            }
         }
 
         [NativeHeader("Modules/VirtualTexturing/Public/VirtualTexturingSettings.h")]

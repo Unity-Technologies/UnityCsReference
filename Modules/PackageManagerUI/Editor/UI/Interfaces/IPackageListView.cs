@@ -14,7 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void OnVisualStateChange(IEnumerable<VisualState> visualStates);
         void OnListRebuild(IPage page);
         void OnListUpdate(ListUpdateArgs args);
-        void OnFilterTabChanged(PackageFilterTab filterTab);
+        void OnActivePageChanged(IPage page);
         void OnKeyDownShortcut(KeyDownEvent evt);
         void OnNavigationMoveShortcut(NavigationMoveEvent evt);
     }

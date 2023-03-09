@@ -120,7 +120,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 && !version.IsRequestedButOverriddenVersion
                 && (version.isDirectDependency || version != installed)
                 && !version.HasTag(PackageTag.Local)
-                && m_PageManager.GetPage().visualStates.Get(version.package?.uniqueId)?.isLocked != true;
+                && m_PageManager.activePage.visualStates.Get(version.package?.uniqueId)?.isLocked != true;
         }
 
         protected override string GetTooltip(IPackageVersion version, bool isInProgress)
@@ -133,7 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override string GetText(IPackageVersion version, bool isInProgress)
         {
-            if (!m_ShowVersion || m_PageManager.GetPage().GetSelection().Count > 1)
+            if (!m_ShowVersion || m_PageManager.activePage.GetSelection().Count > 1)
                 return isInProgress ? k_UpdatingToWithoutVersionButtonText : k_UpdateToWithoutVersionButtonText;
 
             return string.Format(isInProgress ? k_UpdatingToButtonTextFormat : k_UpdateToButtonTextFormat,
@@ -148,7 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             yield return new ButtonDisableCondition(() =>
             {
                 var targetVersion = version?.package.versions.GetUpdateTarget(version);
-                return version != null && targetVersion.HasTag(PackageTag.Deprecated) && !targetVersion.HasTag(PackageTag.ScopedRegistry);
+                return targetVersion != null && targetVersion.HasTag(PackageTag.Deprecated) && targetVersion.availableRegistry != RegistryType.MyRegistries;
             }, L10n.Tr("This version is deprecated."));
 
             yield return new ButtonDisableCondition(() => version?.package.hasEntitlementsError ?? false,

@@ -46,13 +46,12 @@ namespace UnityEngine
         int m_CursorIndex = 0;
         public int cursorIndex
         {
-            get => textHandle.IsPlaceholder ? 0 : EnsureValidCodePointIndex(m_CursorIndex);
+            get => textHandle.IsPlaceholder ? 0 : ClampTextIndex(m_CursorIndex);
             set
             {
                 if (m_CursorIndex != value)
                 {
                     m_CursorIndex = value;
-                    revealCursor = true;
                     OnCursorIndexChange?.Invoke();
                 }
             }
@@ -65,7 +64,6 @@ namespace UnityEngine
                 if (m_CursorIndex != value)
                 {
                     SetCursorIndexWithoutNotify(value);
-                    revealCursor = true;
                     OnCursorIndexChange?.Invoke();
                 }
             }
@@ -79,7 +77,7 @@ namespace UnityEngine
         internal int m_SelectIndex = 0;
         public int selectIndex
         {
-            get => textHandle.IsPlaceholder ? 0 : EnsureValidCodePointIndex(m_SelectIndex);
+            get => textHandle.IsPlaceholder ? 0 : ClampTextIndex(m_SelectIndex);
             set
             {
 
@@ -680,8 +678,6 @@ namespace UnityEngine
             else // snap to words/paragraphs
             {
                 int p = textHandle.GetCursorIndexFromPosition(cursorPosition);
-                p = EnsureValidCodePointIndex(p);
-                m_DblClickInitPos = EnsureValidCodePointIndex(m_DblClickInitPos);
 
                 if (dblClickSnap == DblClickSnapping.WORDS)
                 {
@@ -842,23 +838,6 @@ namespace UnityEngine
         internal Action OnSelectIndexChange;
         internal Action OnRevealCursorChange;
 
-        internal int EnsureValidCodePointIndex(int index)
-        {
-            index = ClampTextIndex(index);
-            if (!IsValidCodePointIndex(index))
-                index = NextCodePointIndex(index);
-            return index;
-        }
-
-        bool IsValidCodePointIndex(int index)
-        {
-            if (index < 0 || index > characterCount)
-                return false;
-            if (index == 0 || index == characterCount)
-                return true;
-            return !char.IsLowSurrogate(m_TextElementInfos[index].character);
-        }
-
         int ClampTextIndex(int index)
         {
             return Mathf.Clamp(index, 0, characterCount);
@@ -874,8 +853,6 @@ namespace UnityEngine
         {
             if (index > 0)
                 index--;
-            while (index > 0 && char.IsLowSurrogate(m_TextElementInfos[index].character))
-                index--;
 
             return index;
         }
@@ -883,8 +860,6 @@ namespace UnityEngine
         public int NextCodePointIndex(int index)
         {
             if (index < characterCount)
-                index++;
-            while (index < characterCount && char.IsLowSurrogate(m_TextElementInfos[index].character))
                 index++;
 
             return index;

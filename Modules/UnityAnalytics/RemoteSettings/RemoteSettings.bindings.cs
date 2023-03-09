@@ -171,7 +171,7 @@ namespace UnityEngine
             GC.SuppressFinalize(this);
         }
 
-        internal static extern IntPtr Internal_Create(RemoteConfigSettings rcs, string configKey);
+        internal static extern IntPtr Internal_Create([Unmarshalled] RemoteConfigSettings rcs, string configKey);
         [ThreadSafe]
         internal static extern void Internal_Destroy(IntPtr ptr);
 
@@ -265,6 +265,11 @@ namespace UnityEngine
         internal extern void UseSafeLock();
         internal extern void ReleaseSafeLock();
         internal extern IntPtr GetSafeTopMap();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(RemoteConfigSettings remoteConfigSettings) => remoteConfigSettings.m_Ptr;
+        }
     }
 
     internal static class RemoteConfigSettingsHelper

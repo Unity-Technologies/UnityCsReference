@@ -27,7 +27,7 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_InputVariableListHandle;
         internal FoundryHandle m_OutputVariableListHandle;
         internal FoundryHandle m_PropertyVariableListHandle;
-        internal FoundryHandle m_CommandListHandle;
+        internal FoundryHandle m_RenderStateListHandle;
         internal FoundryHandle m_DefineListHandle;
         internal FoundryHandle m_IncludeListHandle;
         internal FoundryHandle m_KeywordListHandle;
@@ -116,13 +116,13 @@ namespace UnityEditor.ShaderFoundry
 
         public IEnumerable<BlockOutput> Outputs => GetVariableEnumerable(block.m_OutputVariableListHandle);
 
-        public IEnumerable<CommandDescriptor> Commands
+        public IEnumerable<RenderStateDescriptor> RenderStates
         {
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(block.m_CommandListHandle);
-                return list.Select<CommandDescriptor>(localContainer, (handle) => (new CommandDescriptor(localContainer, handle)));
+                var list = new FixedHandleListInternal(block.m_RenderStateListHandle);
+                return list.Select<RenderStateDescriptor>(localContainer, (handle) => (new RenderStateDescriptor(localContainer, handle)));
             }
         }
 
@@ -207,7 +207,7 @@ namespace UnityEditor.ShaderFoundry
             List<ShaderFunction> referencedFunctions = new List<ShaderFunction>();
             ShaderFunction entryPointFunction = ShaderFunction.Invalid;
 
-            List<CommandDescriptor> m_Commands = new List<CommandDescriptor>();
+            List<RenderStateDescriptor> m_RenderStates = new List<RenderStateDescriptor>();
             List<DefineDescriptor> m_Defines = new List<DefineDescriptor>();
             List<IncludeDescriptor> m_Includes = new List<IncludeDescriptor>();
             List<KeywordDescriptor> m_Keywords = new List<KeywordDescriptor>();
@@ -238,9 +238,18 @@ namespace UnityEditor.ShaderFoundry
             public void AddReferencedType(ShaderType type) { referencedTypes.Add(type); }
             public void AddFunction(ShaderFunction function) { functions.Add(function); }
             public void AddReferencedFunction(ShaderFunction function) { referencedFunctions.Add(function); }
+
+            // TODO @ SHADERS: Remove once the legacy linker is removed
+            internal void SetLegacyEntryPointFunction(ShaderFunction function)
+            {
+                entryPointFunction = function;
+                HandleLegacyEntryPointFunction(function, false);
+                AddFunction(entryPointFunction);
+            }
+
             public void SetEntryPointFunction(ShaderFunction function)
             {
-                entryPointFunction = HandleLegacyEntryPointFunction(function);
+                entryPointFunction = HandleLegacyEntryPointFunction(function, true);
                 AddFunction(entryPointFunction);
             }
 
@@ -271,7 +280,7 @@ namespace UnityEditor.ShaderFoundry
                 return true;
             }
 
-            public void AddCommand(CommandDescriptor descriptor) { m_Commands.Add(descriptor); }
+            public void AddRenderState(RenderStateDescriptor descriptor) { m_RenderStates.Add(descriptor); }
             public void AddDefine(DefineDescriptor descriptor) { m_Defines.Add(descriptor); }
             public void AddInclude(IncludeDescriptor descriptor) { m_Includes.Add(descriptor); }
             public void AddKeyword(KeywordDescriptor descriptor) { m_Keywords.Add(descriptor); }
@@ -371,7 +380,7 @@ namespace UnityEditor.ShaderFoundry
                 blockInternal.m_InputVariableListHandle = FixedHandleListInternal.Build(container, inputs, (v) => (v.handle));
                 blockInternal.m_OutputVariableListHandle = FixedHandleListInternal.Build(container, outputs, (v) => (v.handle));
 
-                blockInternal.m_CommandListHandle = FixedHandleListInternal.Build(container, m_Commands, (c) => (c.handle));
+                blockInternal.m_RenderStateListHandle = FixedHandleListInternal.Build(container, m_RenderStates, (c) => (c.handle));
                 blockInternal.m_DefineListHandle = FixedHandleListInternal.Build(container, m_Defines, (d) => (d.handle));
                 blockInternal.m_IncludeListHandle = FixedHandleListInternal.Build(container, m_Includes, (i) => (i.handle));
                 blockInternal.m_KeywordListHandle = FixedHandleListInternal.Build(container, m_Keywords, (k) => (k.handle));
@@ -385,7 +394,7 @@ namespace UnityEditor.ShaderFoundry
 
             // TODO @ SHADERS: Below here is utilities for building from a legacy entry point.
             // This can be deleted once we clean up all examples, and shader graph.
-            ShaderFunction HandleLegacyEntryPointFunction(ShaderFunction function)
+            ShaderFunction HandleLegacyEntryPointFunction(ShaderFunction function, bool createFn = false)
             {
                 // Old Interface, build a wrapper
                 if (!ValidateEntryPointFunction(function))
@@ -394,13 +403,13 @@ namespace UnityEditor.ShaderFoundry
                         "A wrapper entry point has been generated from the provide entry point. " +
                         "Please update to use AddInterfaceField, BuildInterfaceType, and CreateEntryPointFunction.");
                     AddFunction(function);
-                    return BuildLegacyFromEntryPoint(function);
+                    return BuildLegacyFromEntryPoint(function, createFn);
                 }
                 else
                     return function;
             }
 
-            ShaderFunction BuildLegacyFromEntryPoint(ShaderFunction legacyEntryPointFn)
+            ShaderFunction BuildLegacyFromEntryPoint(ShaderFunction legacyEntryPointFn, bool createFn = false)
             {
                 const string selfName = "self";
                 const string inputsName = "inputs";
@@ -448,6 +457,9 @@ namespace UnityEditor.ShaderFoundry
                 foreach (var variableBuilder in variables.Values)
                     AddInterfaceField(variableBuilder.Build());
                 BuildInterfaceType();
+
+                if (!createFn)
+                    return ShaderFunction.Invalid;
 
                 // Now build the entry point function
                 var fnBuilder = CreateBuilderForEntryPointFunction("apply", selfName);

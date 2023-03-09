@@ -994,6 +994,26 @@ namespace Unity.Collections.LowLevel.Unsafe
             return newArray;
         }
 
+        /// The caller is still the owner of the data.
+        public static unsafe NativeArray<T> ConvertExistingDataToNativeArray<T>(Span<T> data, Allocator allocator) where T : unmanaged
+        {
+            CheckConvertArguments<T>(data.Length);
+            fixed (T* addr = data)
+            {
+                var newArray = new NativeArray<T>
+                {
+                    m_Buffer = addr,
+                    m_Length = data.Length,
+                    m_AllocatorLabel = allocator,
+
+                    m_MinIndex = 0,
+                    m_MaxIndex = data.Length - 1,
+                };
+
+                return newArray;
+            }
+        }
+
         public static unsafe void* GetUnsafePtr<T>(this NativeArray<T> nativeArray) where T : struct
         {
             AtomicSafetyHandle.CheckWriteAndThrow(nativeArray.m_Safety);

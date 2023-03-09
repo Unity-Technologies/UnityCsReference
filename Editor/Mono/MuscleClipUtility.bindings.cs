@@ -38,7 +38,7 @@ namespace UnityEditor
     internal class MuscleClipUtility
     {
         [FreeFunction]
-        extern internal static MuscleClipQualityInfo GetMuscleClipQualityInfo([NotNull("NullExceptionObject")] AnimationClip clip, float startTime, float stopTime);
+        extern internal static MuscleClipQualityInfo GetMuscleClipQualityInfo([NotNull] AnimationClip clip, float startTime, float stopTime);
 
         internal static void CalculateQualityCurves(AnimationClip clip, QualityCurvesTime time, Vector2[] poseCurve, Vector2[] rotationCurve, Vector2[] heightCurve, Vector2[] positionCurve)
         {
@@ -53,6 +53,6 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        extern protected static void CalculateQualityCurves([NotNull("NullExceptionObject")] AnimationClip clip, float fixedTime, float variableEndStart, float variableEndEnd, int q, [Out] Vector2[] poseCurve, [Out] Vector2[] rotationCurve, [Out] Vector2[] heightCurve, [Out] Vector2[] positionCurve);
+        extern protected static void CalculateQualityCurves([NotNull] AnimationClip clip, float fixedTime, float variableEndStart, float variableEndEnd, int q, [Out] Vector2[] poseCurve, [Out] Vector2[] rotationCurve, [Out] Vector2[] heightCurve, [Out] Vector2[] positionCurve);
     }
 }

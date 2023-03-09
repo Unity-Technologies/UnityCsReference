@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Modules;
@@ -42,6 +43,8 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
             config.Set("enableCodeCoverage", "1");
         if (!PlayerSettings.usePlayerLog)
             config.AddKey("nolog");
+        if (PlayerSettings.GetCaptureStartupLogs(NamedBuildTarget.FromActiveSettings(target)))
+            config.Set("capture-startup-logs", "1");
     }
 
     public override void LaunchPlayer(BuildLaunchPlayerArgs args)

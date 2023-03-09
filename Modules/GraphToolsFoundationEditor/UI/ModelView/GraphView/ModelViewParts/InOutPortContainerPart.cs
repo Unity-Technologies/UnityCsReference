@@ -23,13 +23,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="name">The name of the part.</param>
         /// <param name="model">The model displayed in this part.</param>
         /// <param name="ownerElement">The owner of the part.</param>
+        /// <param name="maxInputLabelWidth">Maximum input ports label width.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <returns>A new instance of <see cref="InOutPortContainerPart"/>.</returns>
-        public static InOutPortContainerPart Create(string name, Model model, ModelView ownerElement, string parentClassName)
+        public static InOutPortContainerPart Create(string name, Model model, ModelView ownerElement, float maxInputLabelWidth, string parentClassName)
         {
             if (model is PortNodeModel)
             {
-                return new InOutPortContainerPart(name, model, ownerElement, parentClassName);
+                return new InOutPortContainerPart(name, model, ownerElement, maxInputLabelWidth, parentClassName);
             }
 
             return null;
@@ -44,6 +45,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         public override VisualElement Root => m_Root;
 
+
+        public PortContainer InputPortContainer => m_InputPortContainer;
+
+
+        readonly float m_MaxInputLabelWidth;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="InOutPortContainerPart"/> class.
         /// </summary>
@@ -51,8 +58,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="model">The model displayed in this part.</param>
         /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
-        protected InOutPortContainerPart(string name, Model model, ModelView ownerElement, string parentClassName)
-            : base(name, model, ownerElement, parentClassName) {}
+        protected InOutPortContainerPart(string name, Model model, ModelView ownerElement, float maxInputLabelWidth, string parentClassName)
+            : base(name, model, ownerElement, parentClassName)
+        {
+            m_MaxInputLabelWidth = maxInputLabelWidth;
+        }
 
         /// <inheritdoc />
         protected override void BuildPartUI(VisualElement container)
@@ -63,7 +73,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_Root.AddToClassList(ussClassName);
                 m_Root.AddToClassList(m_ParentClassName.WithUssElement(PartName));
 
-                m_InputPortContainer = new PortContainer { name = inputPortsUssName };
+                m_InputPortContainer = new PortContainer(true,m_MaxInputLabelWidth) { name = inputPortsUssName };
                 m_InputPortContainer.AddToClassList(m_ParentClassName.WithUssElement(inputPortsUssName));
                 m_Root.Add(m_InputPortContainer);
 

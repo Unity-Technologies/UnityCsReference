@@ -23,9 +23,13 @@ namespace UnityEditor
 
         internal IntPtr m_NativePtr;
 
-        public InteractionContext(Flags flags)
+        public InteractionContext(Flags flags) : this (Internal_Create((int)flags))
         {
-            m_NativePtr = Internal_Create((int)flags);
+        }
+
+        private InteractionContext(IntPtr nativePtr)
+        {
+            m_NativePtr = nativePtr;
         }
 
         ~InteractionContext()
@@ -51,6 +55,12 @@ namespace UnityEditor
         private static extern void Internal_Destroy(IntPtr m_NativePtr);
 
         public static InteractionContext UserAction = new InteractionContext(Flags.DisableNone);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(InteractionContext context) => context.m_NativePtr;
+            public static InteractionContext ConvertToManaged(IntPtr ptr) => new InteractionContext(ptr);
+        }
     }
 
     internal class GlobalInteractionContext : InteractionContext, IDisposable
@@ -86,5 +96,10 @@ namespace UnityEditor
 
         [FreeFunction("ClearGlobalInteractionContext")]
         private static extern void ClearGlobalInteractionContext();
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(GlobalInteractionContext context) => context.m_NativePtr;
+        }
     }
 }

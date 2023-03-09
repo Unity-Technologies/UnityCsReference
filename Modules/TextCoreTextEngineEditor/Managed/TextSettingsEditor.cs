@@ -44,7 +44,7 @@ namespace UnityEditor.TextCore.Text
             public static readonly GUIContent parseEscapeCharactersLabel = new GUIContent("Parse Escape Sequence");
 
             public static readonly GUIContent dynamicFontSystemSettingsLabel = new GUIContent("Dynamic Font System Settings");
-            public static readonly GUIContent getFontFeaturesAtRuntime = new GUIContent("Get Font Features at Runtime", "Determines if Glyph Adjustment Data will be retrieved from font files at runtime when new characters and glyphs are added to font assets.");
+            // public static readonly GUIContent getFontFeaturesAtRuntime = new GUIContent("Get Font Features at Runtime", "Determines if Glyph Adjustment Data will be retrieved from font files at runtime when new characters and glyphs are added to font assets.");
             public static readonly GUIContent dynamicAtlasTextureGroup = new GUIContent("Dynamic Atlas Texture Group");
 
             public static readonly GUIContent missingGlyphLabel = new GUIContent("Missing Character Unicode", "The character to be displayed when the requested character is not found in any font asset or fallbacks.");
@@ -59,6 +59,7 @@ namespace UnityEditor.TextCore.Text
             public static readonly GUIContent missingSpriteCharacterUnicodeLabel = new GUIContent("Missing Sprite Unicode", "The unicode value for the sprite character to be displayed when the requested sprite character is not found in any sprite assets or fallbacks.");
             public static readonly GUIContent enableEmojiSupportLabel = new GUIContent("iOS Emoji Support", "Enables Emoji support for Touch Screen Keyboards on target devices.");
             //public static readonly GUIContent spriteRelativeScale = new GUIContent("Relative Scaling", "Determines if the sprites will be scaled relative to the primary font asset assigned to the text object or relative to the current font asset.");
+            public static readonly GUIContent emojifallbackTextAssetsListLabel = new GUIContent("Fallback Emoji Text Assets", "The Text Assets that will be searched to display characters defined as Emojis in the Unicode.");
 
             public static readonly GUIContent spriteAssetsPathLabel = new GUIContent("Path:        Resources/", "The relative path to a Resources folder where the Sprite Assets are located.\nExample \"Sprite Assets/\"");
 
@@ -85,10 +86,11 @@ namespace UnityEditor.TextCore.Text
 
         SerializedProperty m_PropSpriteAsset;
         SerializedProperty m_PropSpriteAssetPath;
-        ReorderableList m_SpriteAssetFallbackList;
         SerializedProperty m_PropMissingSpriteCharacterUnicode;
         //SerializedProperty m_PropSpriteRelativeScaling;
         SerializedProperty m_PropEnableEmojiSupport;
+
+        ReorderableList m_EmojiFallbackTextAssetList;
 
         SerializedProperty m_PropStyleSheet;
         SerializedProperty m_PropStyleSheetsResourcePath;
@@ -105,7 +107,7 @@ namespace UnityEditor.TextCore.Text
         SerializedProperty m_PropClearDynamicDataOnBuild;
 
         //SerializedProperty m_DynamicAtlasTextureManager;
-        SerializedProperty m_GetFontFeaturesAtRuntime;
+        // SerializedProperty m_GetFontFeaturesAtRuntime;
 
         SerializedProperty m_PropDisplayWarnings;
 
@@ -115,6 +117,7 @@ namespace UnityEditor.TextCore.Text
         //SerializedProperty m_PropUseModernHangulLineBreakingRules;
 
         private const string k_UndoRedo = "UndoRedoPerformed";
+        private bool m_IsFallbackGlyphCacheDirty;
 
         public void OnEnable()
         {
@@ -137,6 +140,8 @@ namespace UnityEditor.TextCore.Text
                 EditorGUI.LabelField(rect, Styles.fallbackFontAssetsListLabel);
             };
 
+            m_FontAssetFallbackList.onChangedCallback = itemList => m_IsFallbackGlyphCacheDirty = true;
+
             m_PropDefaultFontSize = serializedObject.FindProperty("m_DefaultFontSize");
             m_PropDefaultAutoSizeMinRatio = serializedObject.FindProperty("m_defaultAutoSizeMinRatio");
             m_PropDefaultAutoSizeMaxRatio = serializedObject.FindProperty("m_defaultAutoSizeMaxRatio");
@@ -147,22 +152,29 @@ namespace UnityEditor.TextCore.Text
 
             m_PropSpriteAsset = serializedObject.FindProperty("m_DefaultSpriteAsset");
 
-            m_SpriteAssetFallbackList = new ReorderableList(serializedObject, serializedObject.FindProperty("m_FallbackSpriteAssets"), true, true, true, true);
-            m_SpriteAssetFallbackList.drawElementCallback = (rect, index, isActive, isFocused) =>
+            // Emoji Fallback ReorderableList
+            m_EmojiFallbackTextAssetList = new ReorderableList(serializedObject, serializedObject.FindProperty("m_EmojiFallbackTextAssets"), true, true, true, true);
+
+            m_EmojiFallbackTextAssetList.drawHeaderCallback = rect =>
             {
-                var element = m_SpriteAssetFallbackList.serializedProperty.GetArrayElementAtIndex(index);
+                EditorGUI.LabelField(rect, "Text Asset List");
+            };
+
+            m_EmojiFallbackTextAssetList.drawElementCallback = (rect, index, isActive, isFocused) =>
+            {
+                var element = m_EmojiFallbackTextAssetList.serializedProperty.GetArrayElementAtIndex(index);
                 rect.y += 2;
                 EditorGUI.PropertyField(new Rect(rect.x, rect.y, rect.width, EditorGUIUtility.singleLineHeight), element, GUIContent.none);
             };
 
-            m_SpriteAssetFallbackList.drawHeaderCallback = rect =>
+            m_EmojiFallbackTextAssetList.onChangedCallback = itemList =>
             {
-                EditorGUI.LabelField(rect, Styles.fallbackSpriteAssetsListLabel);
+                m_IsFallbackGlyphCacheDirty = true;
             };
 
             m_PropMissingSpriteCharacterUnicode = serializedObject.FindProperty("m_MissingSpriteCharacterUnicode");
             //m_PropSpriteRelativeScaling = serializedObject.FindProperty("m_SpriteRelativeScaling");
-            m_PropEnableEmojiSupport = serializedObject.FindProperty("m_enableEmojiSupport");
+            m_PropEnableEmojiSupport = serializedObject.FindProperty("m_EnableEmojiSupport");
             m_PropSpriteAssetPath = serializedObject.FindProperty("m_DefaultSpriteAssetPath");
 
             m_PropStyleSheet = serializedObject.FindProperty("m_DefaultStyleSheet");
@@ -185,7 +197,7 @@ namespace UnityEditor.TextCore.Text
             m_PropDisplayWarnings = serializedObject.FindProperty("m_DisplayWarnings");
 
             //m_DynamicAtlasTextureManager = serializedObject.FindProperty("m_DynamicAtlasTextureGroup");
-            m_GetFontFeaturesAtRuntime = serializedObject.FindProperty("m_GetFontFeaturesAtRuntime");
+            // m_GetFontFeaturesAtRuntime = serializedObject.FindProperty("m_GetFontFeaturesAtRuntime");
 
             m_PropUnicodeLineBreakingRules = serializedObject.FindProperty("m_UnicodeLineBreakingRules");
             //m_PropLeadingCharacters = m_PropUnicodeLineBreakingRules.FindPropertyRelative("m_LeadingCharacters");
@@ -197,6 +209,7 @@ namespace UnityEditor.TextCore.Text
         {
             serializedObject.Update();
             string evt_cmd = Event.current.commandName;
+            m_IsFallbackGlyphCacheDirty = false;
 
             float labelWidth = EditorGUIUtility.labelWidth;
             float fieldWidth = EditorGUIUtility.fieldWidth;
@@ -208,7 +221,11 @@ namespace UnityEditor.TextCore.Text
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             GUILayout.Label(Styles.defaultFontAssetLabel, EditorStyles.boldLabel);
             EditorGUI.indentLevel = 1;
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_PropFontAsset, Styles.defaultFontAssetLabel);
+            if (EditorGUI.EndChangeCheck())
+                m_IsFallbackGlyphCacheDirty = true;
+
             EditorGUILayout.PropertyField(m_PropDefaultFontAssetPath, Styles.defaultFontAssetPathLabel);
             EditorGUI.indentLevel = 0;
 
@@ -223,9 +240,7 @@ namespace UnityEditor.TextCore.Text
             EditorGUI.BeginChangeCheck();
             m_FontAssetFallbackList.DoLayoutList();
             if (EditorGUI.EndChangeCheck())
-            {
-                TextResourceManager.RebuildFontAssetCache();
-            }
+                m_IsFallbackGlyphCacheDirty = true;
 
             GUILayout.Label(Styles.fallbackMaterialSettingsLabel, EditorStyles.boldLabel);
             EditorGUI.indentLevel = 1;
@@ -305,7 +320,11 @@ namespace UnityEditor.TextCore.Text
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             GUILayout.Label(Styles.defaultSpriteAssetLabel, EditorStyles.boldLabel);
             EditorGUI.indentLevel = 1;
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_PropSpriteAsset, Styles.defaultSpriteAssetLabel);
+            if (EditorGUI.EndChangeCheck())
+                m_IsFallbackGlyphCacheDirty = true;
+
             EditorGUILayout.PropertyField(m_PropMissingSpriteCharacterUnicode, Styles.missingSpriteCharacterUnicodeLabel);
             //EditorGUILayout.PropertyField(m_PropEnableEmojiSupport, Styles.enableEmojiSupportLabel);
             //EditorGUILayout.PropertyField(m_PropSpriteRelativeScaling, Styles.spriteRelativeScale);
@@ -319,8 +338,11 @@ namespace UnityEditor.TextCore.Text
 
             // SPRITE ASSET FALLBACK(s)
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            GUILayout.Label(Styles.fallbackSpriteAssetsLabel, EditorStyles.boldLabel);
-            m_SpriteAssetFallbackList.DoLayoutList();
+            GUILayout.Label(Styles.emojifallbackTextAssetsListLabel, EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            m_EmojiFallbackTextAssetList.DoLayoutList();
+            if (EditorGUI.EndChangeCheck())
+                m_IsFallbackGlyphCacheDirty = true;
 
             EditorGUILayout.Space();
             EditorGUILayout.EndVertical();
@@ -374,6 +396,9 @@ namespace UnityEditor.TextCore.Text
 
             EditorGUILayout.Space();
             EditorGUILayout.EndVertical();
+
+            if (m_IsFallbackGlyphCacheDirty || evt_cmd == k_UndoRedo)
+                TextResourceManager.RebuildFontAssetCache();
 
             if (serializedObject.ApplyModifiedProperties() || evt_cmd == k_UndoRedo)
             {

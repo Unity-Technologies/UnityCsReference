@@ -32,6 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual SemVersion? version => m_Version;
 
         public virtual string versionInManifest => null;
+        public virtual bool isInvalidSemVerInManifest => false;
 
         [SerializeField]
         protected long m_PublishedDateTicks;
@@ -46,10 +47,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual EntitlementsInfo entitlements => null;
 
         public virtual IEnumerable<Asset> importedAssets => null;
-
-        public virtual bool isRegistryPackage => false;
-
-        public virtual bool isFromScopedRegistry => false;
 
         [NonSerialized]
         private IPackage m_Package;
@@ -66,6 +63,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return (m_Tag & tag) != 0;
         }
+
+        public virtual RegistryType availableRegistry => RegistryType.None;
 
         // Currently we don't consider Upm Packages with EntitlementLicensingModel.AssetStore as having entitlements
         // and it is only used right now to check if a package is from Asset Store. This is also to be consistent with
@@ -95,7 +94,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract string localPath { get; }
         public abstract string versionString { get; }
         public abstract long versionId { get; }
-        public virtual bool isUnityPackage => false;
 
         public bool IsDifferentVersionThanRequested
             => !string.IsNullOrEmpty(versionInManifest) && !HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&

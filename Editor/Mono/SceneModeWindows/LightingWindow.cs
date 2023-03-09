@@ -10,6 +10,7 @@ using UnityEngineInternal;
 using UnityEngine.Rendering;
 using System.Text;
 using System.Globalization;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -31,13 +32,34 @@ namespace UnityEditor
             public static readonly GUIContent continuousBakeLabel = EditorGUIUtility.TrTextContent("Auto Generate", "Generate lighting data in the Scene when there are changes that affect Scene lighting, such as modifications to lights, materials, or geometry. This option is only available when there is a Lighting Settings Asset assigned in the Lighting Window.");
             public static readonly GUIContent buildLabel = EditorGUIUtility.TrTextContent("Generate Lighting", "Generates the lightmap data for the current master scene.  This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
 
+            public static readonly GUIContent progressiveGPUBakingDevice = EditorGUIUtility.TrTextContent("GPU Baking Device", "Will list all available GPU devices.");
+            public static readonly GUIContent progressiveGPUUnknownDeviceInfo = EditorGUIUtility.TrTextContent("No devices found. Please start an initial bake to make this information available.");
+            public static readonly GUIContent progressiveGPUChangeWarning = EditorGUIUtility.TrTextContent("Changing the compute device used by the Progressive GPU Lightmapper requires the editor to be relaunched. Do you want to change device and restart?");
+            public static readonly GUIContent gpuBakingProfile = EditorGUIUtility.TrTextContent("GPU Baking Profile", "The profile chosen for trading off between performance and memory usage when baking using the GPU.");
+
+            public static readonly int[] progressiveGPUUnknownDeviceValues = { 0 };
+            public static readonly GUIContent[] progressiveGPUUnknownDeviceStrings =
+            {
+                EditorGUIUtility.TrTextContent("Unknown"),
+            };
+
+            // Keep in sync with BakingProfile.h::BakingProfile
+            public static readonly int bakingProfileDefault = 2;
+            public static readonly int[] bakingProfileValues = { 0, 1, 2, 3, 4 };
+            public static readonly GUIContent[] bakingProfileStrings =
+            {
+                EditorGUIUtility.TrTextContent("Highest Performance"),
+                EditorGUIUtility.TrTextContent("High Performance"),
+                EditorGUIUtility.TrTextContent("Automatic"),
+                EditorGUIUtility.TrTextContent("Low Memory Usage"),
+                EditorGUIUtility.TrTextContent("Lowest Memory Usage"),
+            };
+
             public static string[] BakeModeStrings =
             {
                 "Bake Reflection Probes",
                 "Clear Baked Data"
             };
-
-            public static readonly float ButtonWidth = 90;
         }
 
         public interface WindowTab
@@ -63,7 +85,10 @@ namespace UnityEditor
             BakedLightmaps
         }
 
-        const string kGlobalIlluminationUnityManualPage = "file:///unity/Manual/GlobalIllumination.html";
+        const string kGlobalIlluminationUnityManualPage = "https://docs.unity3d.com/Manual/lighting-window.html";
+
+        const string m_LightmappingDeviceIndexKey = "lightmappingDeviceIndex";
+        const string m_BakingProfileKey = "lightmappingBakingProfile";
 
         int m_SelectedModeIndex = 0;
         List<Mode> m_Modes = null;
@@ -215,14 +240,15 @@ namespace UnityEditor
             if (m_Tabs.ContainsKey(selectedMode))
                 m_Tabs[selectedMode].OnGUI();
 
-            Buttons(selectedMode);
+            // Draw line to separate the bottom portion of the window from the tab being displayed
+            Rect lineRect = GUILayoutUtility.topLevel.PeekNext();
+            lineRect.height = 1;
+            EditorGUI.DrawDelimiterLine(lineRect);
+            EditorGUILayout.Space();
 
-            if (m_Tabs.ContainsKey(selectedMode))
-            {
-                GUILayout.BeginVertical(EditorStyles.helpBox);
-                m_Tabs[selectedMode].OnSummaryGUI();
-                GUILayout.EndVertical();
-            }
+            EditorGUI.indentLevel++;
+            DrawBottomBarGUI(selectedMode);
+            EditorGUI.indentLevel--;
 
             lightingSettings.ApplyModifiedProperties();
         }
@@ -440,10 +466,83 @@ namespace UnityEditor
             }
         }
 
-        void Buttons(Mode selectedMode)
+        void DrawGPUDeviceSelector()
+        {
+            // GPU lightmapper device selection.
+            if (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.ProgressiveGPU)
+            {
+                DeviceAndPlatform[] devicesAndPlatforms = Lightmapping.GetLightmappingGpuDevices();
+                if (devicesAndPlatforms.Length > 0)
+                {
+                    int[] lightmappingDeviceIndices = Enumerable.Range(0, devicesAndPlatforms.Length).ToArray();
+                    GUIContent[] lightmappingDeviceStrings = devicesAndPlatforms.Select(x => new GUIContent(x.name)).ToArray();
+
+                    int bakingDeviceAndPlatform = -1;
+                    string configDeviceAndPlatform = EditorUserSettings.GetConfigValue(m_LightmappingDeviceIndexKey);
+                    if (configDeviceAndPlatform != null)
+                    {
+                        bakingDeviceAndPlatform = Int32.Parse(configDeviceAndPlatform);
+                        bakingDeviceAndPlatform = Mathf.Clamp(bakingDeviceAndPlatform, 0, devicesAndPlatforms.Length - 1); // Removing a GPU and rebooting invalidates the saved value.
+                    }
+                    else
+                        bakingDeviceAndPlatform = Lightmapping.GetLightmapBakeGPUDeviceIndex();
+
+                    Debug.Assert(bakingDeviceAndPlatform != -1);
+
+                    EditorGUI.BeginChangeCheck();
+                    using (new EditorGUI.DisabledScope(devicesAndPlatforms.Length < 2))
+                    {
+                        bakingDeviceAndPlatform = EditorGUILayout.IntPopup(Styles.progressiveGPUBakingDevice, bakingDeviceAndPlatform, lightmappingDeviceStrings, lightmappingDeviceIndices);
+                    }
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (EditorUtility.DisplayDialog("Warning", Styles.progressiveGPUChangeWarning.text, "OK", "Cancel"))
+                        {
+                            EditorUserSettings.SetConfigValue(m_LightmappingDeviceIndexKey, bakingDeviceAndPlatform.ToString());
+                            DeviceAndPlatform selectedDeviceAndPlatform = devicesAndPlatforms[bakingDeviceAndPlatform];
+                            EditorApplication.CloseAndRelaunch(new string[] { "-OpenCL-PlatformAndDeviceIndices", selectedDeviceAndPlatform.platformId.ToString(), selectedDeviceAndPlatform.deviceId.ToString() });
+                        }
+                    }
+                }
+                else
+                {
+                    // To show when we are still fetching info, so that the UI doesn't pop around too much for no reason
+                    using (new EditorGUI.DisabledScope(true))
+                    {
+                        EditorGUILayout.IntPopup(Styles.progressiveGPUBakingDevice, 0, Styles.progressiveGPUUnknownDeviceStrings, Styles.progressiveGPUUnknownDeviceValues);
+                    }
+
+                    EditorGUILayout.HelpBox(Styles.progressiveGPUUnknownDeviceInfo.text, MessageType.Info);
+                }
+            }
+        }
+
+        void DrawBakingProfileSelector()
+        {
+            // Handle the baking profile setting
+            using (new EditorGUI.DisabledScope(Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper != LightingSettings.Lightmapper.ProgressiveGPU))
+            {
+                int bakingProfile = Styles.bakingProfileDefault;
+                string bakingProfileString = EditorUserSettings.GetConfigValue(m_BakingProfileKey);
+                if (bakingProfileString != null)
+                {
+                    if (Int32.TryParse(bakingProfileString, out int bakingProfileStoredValue))
+                    {
+                        const Int32 maxBakingProfile = 4; // Keep in sync with kMaxBakingProfile (C++).
+                        if (bakingProfileStoredValue >= 0 && bakingProfileStoredValue <= maxBakingProfile)
+                            bakingProfile = bakingProfileStoredValue;
+                    }
+                }
+                bakingProfile = EditorGUILayout.IntPopup(Styles.gpuBakingProfile, bakingProfile, Styles.bakingProfileStrings, Styles.bakingProfileValues);
+                EditorUserSettings.SetConfigValue(m_BakingProfileKey, bakingProfile.ToString());
+            }
+        }
+
+        void DrawBottomBarGUI(Mode selectedMode)
         {
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
             {
+                // Preamble with warnings.
                 if (Lightmapping.lightingDataAsset && !Lightmapping.lightingDataAsset.isValid)
                 {
                     EditorGUILayout.HelpBox(Lightmapping.lightingDataAsset.validityErrorMessage, MessageType.Warning);
@@ -455,19 +554,11 @@ namespace UnityEditor
                 if (isEntitiesPackageUsed && iterativeInLightingSettings)
                     EditorGUILayout.HelpBox("Unity ignores Auto Generate mode when the Entities package is installed. When you generate lighting in a project where you have installed the Entities package, the Unity Editor opens all loaded subscenes. This may slow down Editor performance.", MessageType.Warning);
 
-                EditorGUILayout.Space();
-                GUILayout.BeginHorizontal();
-                GUILayout.FlexibleSpace();
-
-                Rect rect = GUILayoutUtility.GetRect(Styles.continuousBakeLabel, GUIStyle.none);
-
-                EditorGUI.BeginProperty(rect, Styles.continuousBakeLabel, m_WorkflowMode);
-
                 // Auto Generate checkbox.
                 EditorGUI.BeginChangeCheck();
                 using (new EditorGUI.DisabledScope(m_LightingSettingsReadOnlyMode))
                 {
-                    iterativeInLightingSettings = GUILayout.Toggle(iterativeInLightingSettings, Styles.continuousBakeLabel);
+                    iterativeInLightingSettings = EditorGUILayout.Toggle(Styles.continuousBakeLabel, iterativeInLightingSettings);
                 }
 
                 if (EditorGUI.EndChangeCheck())
@@ -475,7 +566,14 @@ namespace UnityEditor
                     m_WorkflowMode.intValue = (int)(iterativeInLightingSettings ? Lightmapping.GIWorkflowMode.Iterative : Lightmapping.GIWorkflowMode.OnDemand);
                 }
 
-                EditorGUI.EndProperty();
+                // Bake settings.
+                DrawGPUDeviceSelector();
+                DrawBakingProfileSelector();
+
+                // Make sure to indent the rest of the panel.
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(EditorGUI.indent + 3);
+                EditorGUILayout.BeginVertical();
 
                 bool resultingIterative = iterativeInLightingSettings && !isEntitiesPackageUsed;
                 using (new EditorGUI.DisabledScope(resultingIterative))
@@ -487,7 +585,7 @@ namespace UnityEditor
                         var customTab = m_Tabs[selectedMode] as LightingWindowTab;
                         if (customTab != null)
                             customTab.OnBakeButtonGUI();
-                        else if (EditorGUI.ButtonWithDropdownList(Styles.buildLabel, Styles.BakeModeStrings, BakeDropDownCallback, GUILayout.Width(170)))
+                        else if (EditorGUI.ButtonWithDropdownList(Styles.buildLabel, Styles.BakeModeStrings, BakeDropDownCallback))
                         {
                             DoBake();
 
@@ -500,15 +598,23 @@ namespace UnityEditor
                     else
                     {
                         var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
-                        if (GUILayout.Button("Cancel", GUILayout.Width(Styles.ButtonWidth)))
+                        if (GUILayout.Button("Cancel"))
                         {
                             Lightmapping.Cancel();
                         }
                     }
                 }
 
-                GUILayout.EndHorizontal();
-                EditorGUILayout.Space();
+                // Per-tab summaries.
+                if (m_Tabs.ContainsKey(selectedMode))
+                {
+                    GUILayout.BeginVertical(EditorStyles.helpBox);
+                    m_Tabs[selectedMode].OnSummaryGUI();
+                    GUILayout.EndVertical();
+                }
+
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.EndHorizontal();
             }
         }
 
@@ -531,47 +637,67 @@ namespace UnityEditor
         internal static void Summary()
         {
             bool autoGenerate = Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
-            // Show the number of lightmaps. These are the lightmaps that will be baked, is being baked or was baked last:
+
+            // Show the number of lightmaps:
             {
-                long totalMemorySize = 0;
                 int lightmapCount = 0;
-                Dictionary<Vector2, int> sizes = new Dictionary<Vector2, int>();
-                bool shadowmaskMode = false;
-                foreach (LightmapData ld in LightmapSettings.lightmaps)
+                long totalMemorySize = 0;
+                StringBuilder sizesString = new();
+                var sizes = new Dictionary<LightmapSize, int>();
+                if (!autoGenerate && Lightmapping.isRunning) // These are the lightmaps that will be baked or is being baked.
                 {
-                    if (ld.lightmapColor == null)
-                        continue;
-                    lightmapCount++;
+                    RunningBakeInfo info = Lightmapping.GetRunningBakeInfo();
+                    lightmapCount = info.lightmapSizes.Length;
+                    var probesCount = info.probePositions;
+                    string lightmapsPlural = lightmapCount != 1 ? "s" : string.Empty;
+                    string probesPlural = probesCount != 1 ? "s" : string.Empty;
+                    string probesString = probesCount != 0 ? $"{probesCount} probe{probesPlural} and " : string.Empty;
+                    sizesString.Append($"Baking {probesString}{lightmapCount} lightmap{lightmapsPlural}");
 
-                    Vector2 texSize = new Vector2(ld.lightmapColor.width, ld.lightmapColor.height);
-                    if (sizes.ContainsKey(texSize))
-                        sizes[texSize]++;
-                    else
-                        sizes.Add(texSize, 1);
-
-                    totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapColor);
-                    if (ld.lightmapDir)
-                    {
-                        totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapDir);
-                    }
-                    if (ld.shadowMask)
-                    {
-                        totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.shadowMask);
-                        shadowmaskMode = true;
-                    }
+                    foreach (var ld in info.lightmapSizes)
+                        if (sizes.ContainsKey(ld))
+                            sizes[ld]++;
+                        else
+                            sizes.Add(ld, 1);
                 }
-                StringBuilder sizesString = new StringBuilder();
-                sizesString.Append(lightmapCount);
-                sizesString.Append(" Lightmap");
-                if (lightmapCount != 1) sizesString.Append("s");
-                if (shadowmaskMode)
+                else // These are the lightmaps that were baked last.
                 {
-                    sizesString.Append(" with Shadowmask");
+                    bool shadowmaskMode = false;
+                    foreach (LightmapData ld in LightmapSettings.lightmaps)
+                    {
+                        if (ld.lightmapColor == null)
+                            continue;
+                        lightmapCount++;
+
+                        LightmapSize ls = new() { width = ld.lightmapColor.width, height = ld.lightmapColor.height};
+                        if (sizes.ContainsKey(ls))
+                            sizes[ls]++;
+                        else
+                            sizes.Add(ls, 1);
+
+                        totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapColor);
+                        if (ld.lightmapDir)
+                            totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapDir);
+
+                        if (ld.shadowMask)
+                        {
+                            totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.shadowMask);
+                            shadowmaskMode = true;
+                        }
+                    }
+
+                    sizesString.Append(lightmapCount);
+                    sizesString.Append(" lightmap");
                     if (lightmapCount != 1) sizesString.Append("s");
+                    if (shadowmaskMode)
+                    {
+                        sizesString.Append(" with Shadowmask");
+                        if (lightmapCount != 1) sizesString.Append("s");
+                    }
                 }
 
                 bool first = true;
-                foreach (var s in sizes)
+                foreach (KeyValuePair<LightmapSize, int> s in sizes)
                 {
                     sizesString.Append(first ? ": " : ", ");
                     first = false;
@@ -580,11 +706,13 @@ namespace UnityEditor
                         sizesString.Append(s.Value);
                         sizesString.Append("x");
                     }
-                    sizesString.Append(s.Key.x.ToString(CultureInfo.InvariantCulture.NumberFormat));
+
+                    sizesString.Append(s.Key.width.ToString(CultureInfo.InvariantCulture.NumberFormat));
                     sizesString.Append("x");
-                    sizesString.Append(s.Key.y.ToString(CultureInfo.InvariantCulture.NumberFormat));
+                    sizesString.Append(s.Key.height.ToString(CultureInfo.InvariantCulture.NumberFormat));
                     sizesString.Append("px");
                 }
+
                 sizesString.Append(" ");
 
                 GUILayout.BeginHorizontal();
@@ -593,10 +721,13 @@ namespace UnityEditor
                 GUILayout.Label(sizesString.ToString(), Styles.labelStyle);
                 GUILayout.EndVertical();
 
-                GUILayout.BeginVertical();
-                GUILayout.Label(EditorUtility.FormatBytes(totalMemorySize), Styles.labelStyle);
-                GUILayout.Label((lightmapCount == 0 ? "No Lightmaps" : ""), Styles.labelStyle);
-                GUILayout.EndVertical();
+                if (totalMemorySize != 0)
+                {
+                    GUILayout.BeginVertical();
+                    GUILayout.Label(EditorUtility.FormatBytes(totalMemorySize), Styles.labelStyle);
+                    GUILayout.Label((lightmapCount == 0 ? "No Lightmaps" : ""), Styles.labelStyle);
+                    GUILayout.EndVertical();
+                }
 
                 GUILayout.EndHorizontal();
             }
@@ -694,8 +825,9 @@ namespace UnityEditor
                     int timeM = time / 60;
                     time -= 60 * timeM;
                     int timeS = time;
+                    int decimalPart = (int)(bakeTime % 1 * 100);
 
-                    GUILayout.Label("Total Bake Time: " + timeH.ToString("0") + ":" + timeM.ToString("00") + ":" + timeS.ToString("00"), Styles.labelStyle);
+                    GUILayout.Label($"Total Bake Time: {timeH:00}:{timeM:00}:{timeS:00}.{decimalPart:00}", Styles.labelStyle);
                 }
             }
             GUILayout.EndVertical();

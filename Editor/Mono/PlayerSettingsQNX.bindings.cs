@@ -29,6 +29,11 @@ namespace UnityEditor
 
             [NativeProperty("HmiLogStartupTiming")]
             public static extern bool hmiLogStartupTiming { get; set; }
+
+
+            [NativeProperty("qnxGraphicConfPath", false, TargetType.Function)]
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            public static extern string graphicConfPath { get; set; }
         }
     }
 }

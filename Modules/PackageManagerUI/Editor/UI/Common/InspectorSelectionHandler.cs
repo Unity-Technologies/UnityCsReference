@@ -13,23 +13,20 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class InspectorSelectionHandler : ISerializationCallbackReceiver
     {
         [SerializeField]
-        private int[] m_SerializedPackageSelectionInstanceIds = new int[0];
+        private int[] m_SerializedPackageSelectionInstanceIds = Array.Empty<int>();
 
         [NonSerialized]
-        private Dictionary<string, PackageSelectionObject> m_PackageSelectionObjects = new Dictionary<string, PackageSelectionObject>();
+        private Dictionary<string, PackageSelectionObject> m_PackageSelectionObjects = new();
 
         [NonSerialized]
         private SelectionProxy m_Selection;
         [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        [NonSerialized]
         private PackageDatabase m_PackageDatabase;
         [NonSerialized]
         private PageManager m_PageManager;
-        public void ResolveDependencies(SelectionProxy selection, PackageManagerPrefs packageManagerPrefs, PackageDatabase packageDatabase, PageManager pageManager)
+        public void ResolveDependencies(SelectionProxy selection, PackageDatabase packageDatabase, PageManager pageManager)
         {
             m_Selection = selection;
-            m_PackageManagerPrefs = packageManagerPrefs;
             m_PackageDatabase = packageDatabase;
             m_PageManager = pageManager;
         }
@@ -61,8 +58,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var page = m_PageManager.FindPage(selectedVersions);
-            m_PackageManagerPrefs.currentFilterTab = page.tab;
-            page.SetNewSelection(selectionIds);
+            if (page != null)
+            {
+                m_PageManager.activePage = page;
+                page.SetNewSelection(selectionIds);
+            }
         }
 
         private void OnPageSelectionChanged(PageSelectionChangeArgs args)

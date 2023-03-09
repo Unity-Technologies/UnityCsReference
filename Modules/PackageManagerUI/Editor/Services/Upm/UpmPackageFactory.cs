@@ -17,18 +17,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private UpmClient m_UpmClient;
         [NonSerialized]
+        private BackgroundFetchHandler m_BackgroundFetchHandler;
+        [NonSerialized]
         private PackageDatabase m_PackageDatabase;
         [NonSerialized]
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         public void ResolveDependencies(UniqueIdMapper uniqueIdMapper,
             UpmCache upmCache,
             UpmClient upmClient,
+            BackgroundFetchHandler backgroundFetchHandler,
             PackageDatabase packageDatabase,
             PackageManagerProjectSettingsProxy settingsProxy)
         {
             m_UniqueIdMapper = uniqueIdMapper;
             m_UpmCache = upmCache;
             m_UpmClient = upmClient;
+            m_BackgroundFetchHandler = backgroundFetchHandler;
             m_PackageDatabase = packageDatabase;
             m_SettingsProxy = settingsProxy;
         }
@@ -162,9 +166,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     packagesToRemove.Add(packageName);
                 else
                 {
-                    var isUnityPackage = m_UpmClient.IsUnityPackage(searchInfo ?? installedInfo);
+                    var availableRegistry = m_UpmClient.GetAvailableRegistryType(searchInfo ?? installedInfo);
                     var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
-                    var versionList = new UpmVersionList(searchInfo, installedInfo, isUnityPackage, extraVersions);
+                    var versionList = new UpmVersionList(searchInfo, installedInfo, availableRegistry, extraVersions);
                     versionList = VersionsFilter.GetFilteredVersionList(versionList, seeAllVersions, showPreRelease);
                     versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(packageName));
                     if (!versionList.Any())
@@ -180,7 +184,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     // since the primary version's display name is used in the package list
                     var primaryVersion = package.versions.primary;
                     if (primaryVersion?.isFullyFetched == false)
-                        m_UpmClient.ExtraFetch(primaryVersion.packageId);
+                        m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
                 }
             }
 
@@ -198,7 +202,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private AssetStoreCache m_AssetStoreCache;
         [NonSerialized]
-        private AssetStoreClientV2 m_AssetStoreClient;
+        private BackgroundFetchHandler m_BackgroundFetchHandler;
         [NonSerialized]
         private PackageDatabase m_PackageDatabase;
         [NonSerialized]
@@ -210,7 +214,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void ResolveDependencies(UniqueIdMapper uniqueIdMapper,
             UnityConnectProxy unityConnect,
             AssetStoreCache assetStoreCache,
-            AssetStoreClientV2 assetStoreClient,
+            BackgroundFetchHandler backgroundFetchHandler,
             PackageDatabase packageDatabase,
             FetchStatusTracker fetchStatusTracker,
             UpmCache upmCache,
@@ -219,7 +223,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UniqueIdMapper = uniqueIdMapper;
             m_UnityConnect = unityConnect;
             m_AssetStoreCache = assetStoreCache;
-            m_AssetStoreClient = assetStoreClient;
+            m_BackgroundFetchHandler = backgroundFetchHandler;
             m_PackageDatabase = packageDatabase;
             m_FetchStatusTracker = fetchStatusTracker;
             m_UpmCache = upmCache;
@@ -238,8 +242,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.onProductInfoChanged += OnProductInfoChanged;
 
             m_FetchStatusTracker.onFetchStatusChanged += OnFetchStatusChanged;
-
-            RestartInProgressFetches();
         }
 
         public void OnDisable()
@@ -256,41 +258,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_FetchStatusTracker.onFetchStatusChanged -= OnFetchStatusChanged;
         }
 
-        private void FetchPurchaseAndProductInfo(long productId)
-        {
-            if (productId <= 0)
-                return;
-            m_AssetStoreClient.FetchPurchaseInfoWithRetry(productId);
-            m_AssetStoreClient.FetchProductInfo(productId);
-        }
-
-        private void RestartInProgressFetches()
-        {
-            foreach (var fetchStatus in m_FetchStatusTracker.fetchStatuses)
-            {
-                var productId = fetchStatus.productId;
-                if ((fetchStatus.fetchingInProgress & FetchType.ProductInfo) != 0)
-                    FetchPurchaseAndProductInfo(productId);
-
-                if ((fetchStatus.fetchingInProgress & FetchType.ProductSearchInfo) != 0)
-                {
-                    var productInfo = m_AssetStoreCache.GetProductInfo(productId);
-                    var packageName = string.IsNullOrEmpty(productInfo?.packageName) ? m_UniqueIdMapper.GetNameByProductId(productId) : productInfo.packageName;
-                    if (string.IsNullOrEmpty(packageName))
-                        continue;
-                    m_UpmClient.SearchPackageInfoForProduct(productId, packageName);
-                }
-            }
-        }
-
         public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<long> productIds)
         {
             if (productIds?.Any() != true)
                 return;
 
             var packagesChanged = new List<IPackage>();
-            var productIdsToFetch = new List<long>();
-            var productIdAndNamesToSearch = new List<(long productId, string packageName)>();
             foreach (var productId in productIds)
             {
                 var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(productId);
@@ -317,16 +290,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var productInfoFetchError = fetchStatus?.GetFetchError(FetchType.ProductInfo);
                     if (productInfo == null && productInfoFetchError == null && !fetchStatus.IsFetchInProgress(FetchType.ProductInfo))
                     {
-                        productIdsToFetch.Add(productId);
+                        m_BackgroundFetchHandler.AddToFetchProductInfoQueue(productId);
+                        m_BackgroundFetchHandler.AddToFetchPurchaseInfoQueue(productId);
                         continue;
                     }
 
                     if (productSearchInfo == null)
-                        productIdAndNamesToSearch.Add((productId: productId, packageName: packageName));
+                        m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(packageName, productId);
 
                     var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
-                    var isUnityPackage = m_UpmClient.IsUnityPackage(productSearchInfo ?? installedPackageInfo);
-                    var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, isUnityPackage, extraVersions);
+                    var availableRegistry = m_UpmClient.GetAvailableRegistryType(productSearchInfo ?? installedPackageInfo);
+                    var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, availableRegistry, extraVersions);
                     versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(productId.ToString()));
                     package = CreatePackage(packageName, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
                     if (productInfoFetchError != null)
@@ -349,7 +323,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         SetProgress(package, PackageProgress.Refreshing);
                     }
                     else
-                        productIdAndNamesToSearch.Add((productId: productId, packageName: packageName));
+                        m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(packageName, productId);
                 }
 
                 if (package == null)
@@ -359,19 +333,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // since the primary version's display name is used in the package list
                 var primaryVersion = package.versions.primary;
                 if (primaryVersion?.isFullyFetched == false)
-                    m_UpmClient.ExtraFetch(primaryVersion.packageId);
+                    m_BackgroundFetchHandler.AddToExtraFetchPackageInfoQueue(primaryVersion.packageId);
 
                 packagesChanged.Add(package);
             }
             if (packagesChanged.Any())
                 m_PackageDatabase.UpdatePackages(packagesChanged);
-
-            // We do the fetches needed at the end this function so the callbacks triggered does not mess with the package creation process
-            foreach (var productId in productIdsToFetch)
-                FetchPurchaseAndProductInfo(productId);
-
-            foreach (var (productId, packageName) in productIdAndNamesToSearch)
-                m_UpmClient.SearchPackageInfoForProduct(productId, packageName);
         }
 
         private void OnProductInfoChanged(AssetStoreProductInfo productInfo)
@@ -412,6 +379,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (loggedIn)
                 return;
             m_UpmCache.ClearProductCache();
+
+            // We only remove packages from the Asset Store that are of UPM format. We handle the Legacy format in AssetStorePackageFactory.
+            // Also, we use `ToArray` here as m_PackageDatabase.UpdatePackages will modify the enumerable and throw an error if we don't.
+            var packagesToRemove = m_PackageDatabase.allPackages
+                .Where(p => p.product != null && p.versions.Any(v => v.HasTag(PackageTag.UpmFormat)) &&
+                            p.versions.installed == null).Select(p => p.uniqueId).ToArray();
+
+            if (packagesToRemove.Any())
+                m_PackageDatabase.UpdatePackages(toRemove: packagesToRemove);
 
             var productIds = m_UpmCache.installedPackageInfos.Select(info =>
             {

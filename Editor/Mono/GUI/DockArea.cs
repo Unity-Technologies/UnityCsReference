@@ -12,6 +12,8 @@ using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
 using UnityEngine.XR;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace UnityEditor
 {
@@ -88,6 +90,8 @@ namespace UnityEditor
         private double m_HoldScrollTimestamp;
         private Rect m_TabAreaRect = Rect.zero;
 
+        internal int pendingSelect = -1;
+        internal int pendingSelectVersion = 0;
         public int selected
         {
             get { return m_Selected; }
@@ -778,6 +782,50 @@ namespace UnityEditor
             }
         }
 
+        private void OpenTabDelayed(int tabToOpen)
+        {
+            if (tabToOpen == selected)
+            {
+                return;
+            }
+
+            if (tabToOpen == -1)
+            {
+                return;
+            }
+
+            if (Interlocked.Exchange(ref pendingSelect, tabToOpen) == tabToOpen)
+            {
+                return;
+            }
+
+            int pendingVersion = Interlocked.Increment(ref pendingSelectVersion);
+
+            var t = Task.Run(async delegate
+            {
+                await Task.Delay(250);
+                return 0;
+            });
+
+            t.Wait();
+
+            Vector2 mousePos = GUIUtility.ScreenToGUIPoint(Editor.GetCurrentMousePosition());
+            int tabUnderMouse = GetTabAtMousePos(tabStyle, mousePos);
+
+            if (tabUnderMouse != tabToOpen)
+            {
+                Interlocked.CompareExchange(ref pendingSelect, -1, tabToOpen);
+                return;
+            }
+
+            if (pendingVersion != pendingSelectVersion)
+            {
+                return;
+            }
+
+            selected = tabToOpen;
+        }
+
         private float DragTab(Rect tabAreaRect, float scrollOffset, GUIStyle tabStyle, GUIStyle firstTabStyle)
         {
             Event evt = Event.current;
@@ -1011,6 +1059,20 @@ namespace UnityEditor
 
                     break;
 
+                case EventType.DragUpdated:
+                case EventType.DragPerform:
+                    {
+                        OpenTabDelayed(GetTabAtMousePos(tabStyle, evt.mousePosition));
+
+                        break;
+                    }
+
+                case EventType.DragExited:
+                    {
+                        Interlocked.Exchange(ref pendingSelect, -1);
+                        break;
+                    }
+                
                 case EventType.Repaint:
                     xPos = tabAreaRect.xMin;
                     if (actualView)

@@ -63,7 +63,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // We need this refresh because there is a small delay between OnEnable and OnCreateGUI
             // where the UI needs to be refreshed in order to keep a normal state
-            Refresh(m_PageManager.GetPage().GetSelection());
+            Refresh(m_PageManager.activePage.GetSelection());
         }
 
         public void OnCreateGUI()
@@ -78,7 +78,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerExtensions.extensionsGUICreated = true;
 
             if (PackageManagerExtensions.Extensions.Any())
-                Refresh(m_PageManager.GetPage().GetSelection());
+                Refresh(m_PageManager.activePage.GetSelection());
         }
 
         public void OnDisable()
@@ -135,7 +135,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal void Refresh(PageSelection selections = null)
         {
-            selections = selections ?? m_PageManager.GetPage().GetSelection();
+            selections = selections ?? m_PageManager.activePage.GetSelection();
             scrollView.scrollOffset = new Vector2(0, m_PackageManagerPrefs.packageDetailVerticalScrollOffset);
 
             if (selections.Count == 1)
@@ -203,7 +203,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesChanged(PackagesChangeArgs args)
         {
-            var selection = m_PageManager.GetPage().GetSelection();
+            var selection = m_PageManager.activePage.GetSelection();
             if (args.added.Concat(args.removed).Concat(args.updated).Any(p => selection.Contains(p.uniqueId)))
                 Refresh(selection);
         }

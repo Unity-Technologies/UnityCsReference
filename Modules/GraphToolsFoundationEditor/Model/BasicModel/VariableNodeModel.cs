@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -104,7 +104,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             // update connected nodes' ports colors/types
             if (m_MainPortModel != null)
-                foreach (var connectedPortModel in m_MainPortModel.GetConnectedPorts())
+                foreach (var connectedPortModel in m_MainPortModel.GetConnectedPorts().ToList())
                     connectedPortModel.NodeModel.OnConnection(connectedPortModel, m_MainPortModel);
         }
 

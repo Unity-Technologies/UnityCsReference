@@ -18,7 +18,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("SetTransformParentUndo")]
-        extern internal static void SetTransformParent([NotNull("NullExceptionObject")] Transform transform, Transform newParent, bool worldPositionStays, string name);
+        extern internal static void SetTransformParent([NotNull] Transform transform, Transform newParent, bool worldPositionStays, string name);
 
         [FreeFunction("RecordUndoDiff")]
         extern internal static void RecordObject(Object objectToUndo, string name);

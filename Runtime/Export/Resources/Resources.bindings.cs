@@ -27,6 +27,16 @@ namespace UnityEngine
         }
 
         public Object asset { get { return GetResult(); } }
+
+        public ResourceRequest() { }
+
+        protected ResourceRequest(IntPtr ptr) : base(ptr)
+        { }
+
+        new internal static class BindingsMarshaller
+        {
+            public static ResourceRequest ConvertToManaged(IntPtr ptr) => new ResourceRequest(ptr);
+        }
     }
 
     [NativeHeader("Runtime/Export/Resources/Resources.bindings.h")]

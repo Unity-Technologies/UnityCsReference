@@ -78,6 +78,7 @@ namespace UnityEditor
 
         const int maxShowRecent = 5;
         readonly string textGizmoVisible = L10n.Tr("Show/Hide Gizmo");
+        GUIContent generalContent = EditorGUIUtility.TrTextContent("General");
         GUIContent iconToggleContent = EditorGUIUtility.TrTextContent("", "Show/Hide Icon");
         GUIContent iconSelectContent = EditorGUIUtility.TrTextContent("", "Select Icon");
         GUIContent icon3dGizmoContent = EditorGUIUtility.TrTextContent("3D Icons");
@@ -85,6 +86,10 @@ namespace UnityEditor
         GUIContent showOutlineContent = EditorGUIUtility.TrTextContent("Selection Outline");
         GUIContent showWireframeContent = EditorGUIUtility.TrTextContent("Selection Wire");
         GUIContent fadeGizmosContent = EditorGUIUtility.TrTextContent("Fade Gizmos", "Fade out and stop rendering gizmos that are small on screen");
+        GUIContent lightProbeVisualizationContent = EditorGUIUtility.TrTextContent("Light Probe Visualization");
+        GUIContent displayWeightsContent = EditorGUIUtility.TrTextContent("Display Weights");
+        GUIContent displayOcclusionContent = EditorGUIUtility.TrTextContent("Display Occlusion");
+        GUIContent highlightInvalidCellsContent = EditorGUIUtility.TrTextContent("Highlight Invalid Cells", "Highlight the invalid cells that cannot be used for probe interpolation.");
         private bool m_IsGameView;
 
         string m_SearchFilter = string.Empty;
@@ -130,7 +135,18 @@ namespace UnityEditor
 
         float GetTopSectionHeight()
         {
-            const int numberOfControls = 5;
+            const int numberOfGeneralControls = 6;
+
+            int numberOfLightProbeVisualizationControls = 0;
+            if (!UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystem)
+            {
+                if (LightProbeVisualization.lightProbeVisualizationMode == LightProbeVisualization.LightProbeVisualizationMode.None)
+                    numberOfLightProbeVisualizationControls = 3;
+                else
+                    numberOfLightProbeVisualizationControls = 5;
+            }
+
+            int numberOfControls = numberOfGeneralControls + numberOfLightProbeVisualizationControls;
             return EditorGUI.kSingleLineHeight * numberOfControls + EditorGUI.kControlVerticalSpacing * (numberOfControls - 1) + EditorStyles.inspectorBig.padding.bottom;
         }
 
@@ -307,8 +323,13 @@ namespace UnityEditor
             float labelWidth = m_Styles.listHeaderStyle.CalcSize(terrainDebugWarnings).x + GUI.skin.toggle.CalcSize(GUIContent.none).x + 1;
             float rowHeight = 18;
 
-            // 3D icons toggle & slider
+            // General section
             Rect toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
+            GUI.Label(toggleRect, generalContent, EditorStyles.boldLabel);
+            curY += rowHeight;
+
+            // 3D icons toggle & slider
+            toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
             AnnotationUtility.use3dGizmos = GUI.Toggle(toggleRect, AnnotationUtility.use3dGizmos, icon3dGizmoContent);
             using (new EditorGUI.DisabledScope(!AnnotationUtility.use3dGizmos))
             {
@@ -347,16 +368,46 @@ namespace UnityEditor
                 // Selection outline/wire
                 toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
                 AnnotationUtility.showSelectionOutline = GUI.Toggle(toggleRect, AnnotationUtility.showSelectionOutline, showOutlineContent);
+                curY += rowHeight;
 
-                toggleRect.y += rowHeight;
+                toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
                 AnnotationUtility.showSelectionWire = GUI.Toggle(toggleRect, AnnotationUtility.showSelectionWire, showWireframeContent);
+                curY += rowHeight;
 
                 // TODO: Change to Debug Errors & Debug Warnings
-                toggleRect.y += rowHeight;
+                toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
                 EditorGUI.BeginChangeCheck();
                 s_ShowTerrainDebugWarnings.value = GUI.Toggle(toggleRect, s_ShowTerrainDebugWarnings.value, terrainDebugWarnings);
                 if (EditorGUI.EndChangeCheck())
                     SceneView.RepaintAll();
+            }
+            curY += rowHeight;
+
+            // Light probe section
+            if (!UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystem)
+            {
+                curY += rowHeight;
+                toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
+                GUI.Label(toggleRect, lightProbeVisualizationContent, EditorStyles.boldLabel);
+                curY += rowHeight;
+
+                toggleRect = new Rect(margin, curY, position.width - margin * 2, rowHeight);
+                LightProbeVisualization.lightProbeVisualizationMode = (LightProbeVisualization.LightProbeVisualizationMode)EditorGUI.EnumPopup(toggleRect, LightProbeVisualization.lightProbeVisualizationMode);
+                curY += rowHeight;
+
+                if (LightProbeVisualization.lightProbeVisualizationMode != LightProbeVisualization.LightProbeVisualizationMode.None)
+                {
+                    toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
+                    LightProbeVisualization.showInterpolationWeights = GUI.Toggle(toggleRect, LightProbeVisualization.showInterpolationWeights, displayWeightsContent);
+                    curY += rowHeight;
+
+                    toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
+                    LightProbeVisualization.showOcclusions = GUI.Toggle(toggleRect, LightProbeVisualization.showOcclusions, displayOcclusionContent);
+                    curY += rowHeight;
+
+                    toggleRect = new Rect(margin, curY, labelWidth, rowHeight);
+                    LightProbeVisualization.highlightInvalidCells = GUI.Toggle(toggleRect, LightProbeVisualization.highlightInvalidCells, highlightInvalidCellsContent);
+                }
             }
         }
 

@@ -9,7 +9,6 @@ using UnityEditor;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.APIUpdater;
 using UnityEditor.Scripting.ScriptCompilation;
-using UnityEditor.Scripting.Compilers;
 using UnityEditor.Utils;
 using UnityEditor.VersionControl;
 using UnityEditor.PackageManager;

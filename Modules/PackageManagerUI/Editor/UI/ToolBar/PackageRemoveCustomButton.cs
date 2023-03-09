@@ -61,7 +61,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void DeselectVersions(IList<IPackageVersion> versions)
         {
-            m_PageManager.GetPage().RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
+            m_PageManager.activePage.RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
         }
     }
 }

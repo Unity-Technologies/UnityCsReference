@@ -11,7 +11,7 @@ using UnityEditorInternal;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A <see cref="LayerField"/> editor.
+    /// A LayerField editor.
     /// </summary>
     public class LayerField : PopupField<int>
     {

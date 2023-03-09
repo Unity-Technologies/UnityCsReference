@@ -74,9 +74,9 @@ namespace UnityEditor
             if (m_Light.objectReferenceValue)
             {
                 Light light = (Light)m_Light.objectReferenceValue;
-                if (light.type != LightType.Point && light.type != LightType.Spot)
+                if (light.type != LightType.Point && light.type != LightType.Spot && light.type != LightType.Rectangle)
                 {
-                    GUIContent warning = EditorGUIUtility.TrTextContent("Only point and spot lights are supported on particles.");
+                    GUIContent warning = EditorGUIUtility.TrTextContent("Only point, spot, and rectangle area lights are supported on particles.");
                     EditorGUILayout.HelpBox(warning.text, MessageType.Warning, true);
                 }
             }

@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected virtual void Init(Rect rect, IPage page)
         {
-            m_Filters = page.filters?.Clone() ?? new PageFilters();
+            m_Filters = page.filters.Clone();
             m_Container.Clear();
             DoDisplay(page);
             ApplyFilters();
@@ -127,7 +127,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 Event.current?.Use();
 
-                if (page.tab != PackageFilterTab.AssetStore)
+                if (page.id != MyAssetsPage.k_Id)
                     s_Window = CreateInstance<UpmFiltersWindow>();
                 else
                     s_Window = CreateInstance<AssetStoreFiltersWindow>();

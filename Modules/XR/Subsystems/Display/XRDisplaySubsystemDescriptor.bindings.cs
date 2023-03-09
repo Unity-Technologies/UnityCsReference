@@ -54,5 +54,10 @@ namespace UnityEngine.XR
         [NativeConditional("ENABLE_XR")]
         [NativeMethod("TryGetMirrorModeByIndex")]
         extern public void GetMirrorBlitModeByIndex(int index, out XRMirrorViewBlitModeDesc mode);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(XRDisplaySubsystemDescriptor descriptor) => descriptor.m_Ptr;
+        }
     }
 }

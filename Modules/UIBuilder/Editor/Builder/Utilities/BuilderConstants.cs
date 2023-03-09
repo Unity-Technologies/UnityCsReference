@@ -26,7 +26,7 @@ namespace Unity.UI.Builder
         public static readonly float CanvasInitialHeight = 450; // Making this too large might break tests.
         public static readonly float CanvasMinWidth = 100;
         public static readonly float CanvasMinHeight = 100;
-        public static readonly int ClassNameInPillMaxLength = 25;
+        public static readonly float ClassNameInPillMinWidth = 180f;
         public static readonly float TooltipPreviewYOffset = 20;
         public static readonly float ViewportInitialZoom = 1.0f;
         public static readonly Vector2 ViewportInitialContentOffset = new Vector2(20.0f, 20.0f);
@@ -208,6 +208,9 @@ namespace Unity.UI.Builder
         // Attribute fields
         public static readonly string AttributeFieldFactoryVEPropertyName = "__unity-ui-builder-attribute-field-factory";
 
+        // Dimension Style Field specific
+        public const float DimensionStyleFieldReducedDragStep = 0.1f;
+
         //
         // Explorer
         //
@@ -239,6 +242,10 @@ namespace Unity.UI.Builder
         public static readonly string ExplorerStyleSheetsPaneClassName = "unity-builder-stylesheets-pane";
         public static readonly string ExplorerActiveStyleSheetClassName = "unity-builder-stylesheets-pane--active-stylesheet";
         public static readonly string ExplorerItemBelongsToOpenDocument = "unity-builder-explorer-excluded";
+
+        // Selector labels
+        public static readonly string SelectorLabelClassName = "unity-builder-selector-label";
+        public static readonly string SelectorLabelMultiplePartsClassName = "unity-builder-selector-label-multiple-parts";
 
         // StyleSheets Pane Menu
         public static readonly string ExplorerStyleSheetsPanePlusMenuNoElementsMessage = "Need at least one element in UXML to add StyleSheets.";

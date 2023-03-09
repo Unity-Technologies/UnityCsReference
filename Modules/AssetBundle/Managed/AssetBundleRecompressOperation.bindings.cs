@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -43,6 +44,17 @@ namespace UnityEngine
         {
             [NativeMethod("GetSuccess")]
             get;
+        }
+
+        public AssetBundleRecompressOperation() { }
+
+        private AssetBundleRecompressOperation(IntPtr ptr) : base(ptr)
+        { }
+
+        new internal static class BindingsMarshaller
+        {
+            public static AssetBundleRecompressOperation ConvertToManaged(IntPtr ptr) => new AssetBundleRecompressOperation(ptr);
+            public static IntPtr ConvertToNative(AssetBundleRecompressOperation op) => op.m_Ptr;
         }
     }
 }

@@ -59,6 +59,10 @@ namespace UnityEngine
             [NativeName("GetIP")]
             get;
         }
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Ping ping) => ping.m_Ptr;
+        }
     }
 
 }

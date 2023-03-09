@@ -40,19 +40,26 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        public virtual float MaxInputLabelWidth => float.PositiveInfinity;
+
         /// <inheritdoc />
         protected override void BuildPartList()
         {
             PartList.AppendPart(VerticalPortContainerPart.Create(topPortContainerPartName, PortDirection.Input, Model, this, ussClassName));
 
             PartList.AppendPart(IconTitleProgressPart.Create(titleIconContainerPartName, Model, this, ussClassName, true));
-            PartList.AppendPart(SerializedFieldsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.NodeOptionsFilter));
-            PartList.AppendPart(InOutPortContainerPart.Create(portContainerPartName, Model, this, ussClassName));
+            PartList.AppendPart(NodeModeDropDownPart.Create(nodeModeDropDownPartName, Model, this, ussClassName));
+            PartList.AppendPart(SerializedFieldsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.NodeOptionsFilterForNode));
+            PartList.AppendPart(InOutPortContainerPart.Create(portContainerPartName, Model, this, MaxInputLabelWidth, ussClassName));
 
             PartList.AppendPart(VerticalPortContainerPart.Create(bottomPortContainerPartName, PortDirection.Output, Model, this, ussClassName));
 
             PartList.AppendPart(NodeLodCachePart.Create(nodeCachePartName, Model, this, ussClassName));
         }
+
+        // This is used to disable the one frame delay before the node appears in the tests and should no be used anywhere else.
+        // Tests become unstable if the node is not displayed immediately.
+        internal static bool s_DisableHiddenNodeAtCreation_Internal = false;
 
         /// <inheritdoc />
         protected override void PostBuildUI()
@@ -61,6 +68,19 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var collapseButton = this.SafeQ(collapseButtonPartName);
             collapseButton?.RegisterCallback<ChangeEvent<bool>>(OnCollapseChangeEvent);
+
+            if( !s_DisableHiddenNodeAtCreation_Internal )
+            {
+                //Ensure that the first computation of Input labels is dones while the node is hidden to avoid a visible jump.
+                //We first need a frame to get all the required info ( font, size, style, ... ) of the label in the resolved style to compute each label width
+                //then we find the largest input label and set the min-size of all the labels to this.
+                visible = false;
+
+                schedule.Execute(()=>
+                {
+                    visible = true;
+                }).ExecuteLater(0);
+            }
         }
 
         /// <inheritdoc />

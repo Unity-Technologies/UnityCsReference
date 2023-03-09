@@ -59,6 +59,11 @@ namespace UnityEditor.LightBaking
 
             static extern IntPtr Internal_Create();
             static extern void Internal_Destroy(IntPtr ptr);
+
+            internal static class BindingsMarshaller
+            {
+                public static IntPtr ConvertToNative(SourceMap sourceMap) => sourceMap.m_Ptr;
+            }
         }
 
         public static extern bool ExtractFromScene(string outputFolderPath, LightBaker.BakeInput input, SourceMap map);
@@ -92,7 +97,10 @@ namespace UnityEditor.LightBaking
             message += $"      instance count\t: {bakeInput.instanceCount}\n";
             for (int i = 0; i < bakeInput.instanceCount; ++i)
             {
-                message += $"         Instance [{i}] [{LookupGameObjectName(map, i)}]:\n";
+                if (map is null)
+                    message += $"         Instance [{i}]:\n";
+                else
+                    message += $"         Instance [{i}] [{LookupGameObjectName(map, i)}]:\n";
                 LightBaker.Instance instance = bakeInput.instance((uint)i);
                 message += $"            mesh type\t\t: {instance.meshType}\n";
                 if (instance.meshType == LightBaker.MeshType.MeshRenderer)

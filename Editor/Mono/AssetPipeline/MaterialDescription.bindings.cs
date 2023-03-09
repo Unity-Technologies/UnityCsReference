@@ -81,5 +81,10 @@ namespace UnityEditor.AssetImporters
 
         static extern IntPtr Internal_Create();
         static extern void Internal_Destroy(IntPtr ptr);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(MaterialDescription desc) => desc.m_Ptr;
+        }
     }
 }

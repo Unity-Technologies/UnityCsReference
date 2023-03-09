@@ -100,7 +100,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Creates a new textfield.
         /// </summary>
-        /// <param name="maxLength">The maximum number of characters this textfield can hold. If 0, there is no limit.</param>
+        /// <param name="maxLength">The maximum number of characters this textfield can hold. If -1, there is no limit.</param>
         /// <param name="multiline">Set this to true to allow multiple lines in the textfield and false if otherwise.</param>
         /// <param name="isPasswordField">Set this to true to mask the characters and false if otherwise.</param>
         /// <param name="maskChar">The character used for masking in a password field.</param>

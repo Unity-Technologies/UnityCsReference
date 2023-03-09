@@ -36,15 +36,13 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         private Vector4 m_SelectedMask = Vector4.one;
         private AnimBool[] m_FoldoutAnimators = null;
         private MeshPreview m_Preview;
-        private GUIContent[] m_OutputMeshTabsGuiContents = new[] { new GUIContent("Output"), new GUIContent("Mesh Preview") };
         private CachedEventDisplayData m_CachedEventData = null;
-        private OutputMeshTabOptions m_OutputMeshTabs = OutputMeshTabOptions.Output;
         private FrameDebuggerWindow m_FrameDebugger = null;
         private Lazy<FrameDebuggerEventData> m_CurEventData = new Lazy<FrameDebuggerEventData>(() => new FrameDebuggerEventData());
         private RenderTexture m_RenderTargetRenderTextureCopy = null;
 
         // Constants / Readonly
-        private const int k_NumberGUISections = 10;
+        private const int k_NumberGUISections = 11;
         private readonly string[] k_foldoutKeys = new string[]{
             "FrameDebuggerFoldout0",
             "FrameDebuggerFoldout1",
@@ -56,19 +54,13 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             "FrameDebuggerFoldout7",
             "FrameDebuggerFoldout8",
             "FrameDebuggerFoldout9",
+            "FrameDebuggerFoldout10",
         };
 
         // Properties
         private FrameDebuggerEvent curEvent { get; set; }
         private FrameDebuggerEventData curEventData => m_CurEventData.Value;
         private int curEventIndex => FrameDebuggerUtility.limit - 1;
-
-        // Enums
-        private enum OutputMeshTabOptions
-        {
-            Output = 0,
-            MeshPreview = 1,
-        }
 
         // Internal functions
         internal FrameDebuggerEventDetailsView(FrameDebuggerWindow frameDebugger)
@@ -89,6 +81,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         internal void OnNewFrameEventSelected()
         {
+            m_MeshIndex = 0;
             m_Preview?.Dispose();
             m_Preview = null;
         }
@@ -116,6 +109,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             if (Event.current.type == EventType.Layout)
                 Initialize(curEventIndex, descs);
 
+            if (m_CachedEventData == null)
+                return;
+
             // Make sure the window is scrollable...
             GUILayout.BeginArea(rect);
             m_ScrollViewVector = EditorGUILayout.BeginScrollView(m_ScrollViewVector);
@@ -136,14 +132,19 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             // Output & Mesh
             // We disable Output and Mesh for Compute and Ray Tracing events
-            bool shouldDrawOutputAndMesh = !m_CachedEventData.m_IsComputeEvent && !m_CachedEventData.m_IsRayTracingEvent;
+            bool shouldDrawOutput = !m_CachedEventData.m_IsComputeEvent && !m_CachedEventData.m_IsRayTracingEvent;
             Profiler.BeginSample("DrawOutputAndMesh");
-            DrawOutputAndMesh(rect, shouldDrawOutputAndMesh, isDebuggingEditor);
+            DrawOutputFoldout(rect, shouldDrawOutput, isDebuggingEditor);
             Profiler.EndSample();
 
             // Event Details
             Profiler.BeginSample("DrawDetails");
             DrawDetails(rect);
+            Profiler.EndSample();
+
+            Profiler.BeginSample("DrawMeshFoldout");
+            bool shouldDrawMesh = shouldDrawOutput && !FrameDebugger.IsRemoteEnabled();
+            DrawMeshFoldout(rect, shouldDrawMesh, isDebuggingEditor);
             Profiler.EndSample();
 
             ShaderPropertyCollection[] shaderProperties = m_CachedEventData.m_ShaderProperties;
@@ -373,11 +374,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             GUI.enabled = true;
         }
 
-        private void DrawOutputAndMesh(Rect rect, bool shouldDrawOutputAndMesh, bool isDebuggingEditor)
+        private void DrawOutputFoldout(Rect rect, bool shouldDrawOutput, bool isDebuggingEditor)
         {
-            if (BeginFoldoutBox(0, shouldDrawOutputAndMesh, FrameDebuggerStyles.EventDetails.s_FoldoutOutputOrMeshText, out float fadePercent, null))
+            if (BeginFoldoutBox(0, shouldDrawOutput, FrameDebuggerStyles.EventDetails.s_FoldoutOutputText, out float fadePercent, null))
             {
-                if (shouldDrawOutputAndMesh)
+                if (shouldDrawOutput)
                 {
                     EditorGUILayout.BeginVertical();
                     {
@@ -403,14 +404,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                             scaledRenderTargetHeight = FrameDebuggerStyles.EventDetails.k_MaxViewportHeight;
                         }
 
-                        EditorGUILayout.BeginHorizontal();
-                        m_OutputMeshTabs = (OutputMeshTabOptions)GUILayout.Toolbar((int)m_OutputMeshTabs, m_OutputMeshTabsGuiContents, FrameDebuggerStyles.EventDetails.s_OutputMeshTabStyle);
-                        EditorGUILayout.EndHorizontal();
-
-                        if (m_OutputMeshTabs == 0)
-                            DrawTargetTexture(rect, viewportWidth, viewportHeightFaded, renderTargetWidth, renderTargetHeight, scaledRenderTargetWidth, scaledRenderTargetHeight, fadePercent, isDebuggingEditor);
-                        else
-                            DrawEventMesh(viewportWidth, viewportHeightFaded, scaledRenderTargetWidth);
+                        DrawTargetTexture(rect, viewportWidth, viewportHeightFaded, renderTargetWidth, renderTargetHeight, scaledRenderTargetWidth, scaledRenderTargetHeight, fadePercent, isDebuggingEditor);
                     }
                     GUILayout.EndVertical();
                 }
@@ -497,58 +491,135 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             EditorGUILayout.EndHorizontal();
         }
 
+        private void DrawMeshFoldout(Rect rect, bool shouldDrawMesh, bool isDebuggingEditor)
+        {
+            // Not supported on remote players so we change the foldout header to show that.
+            GUIContent header;
+            bool shouldDraw;
+            if (FrameDebugger.IsRemoteEnabled())
+            {
+                shouldDraw = false;
+                header = FrameDebuggerStyles.EventDetails.s_FoldoutMeshNotSupportedText;
+            }
+            else
+            {
+                shouldDraw = shouldDrawMesh && m_CachedEventData.m_Meshes != null && m_CachedEventData.m_Meshes.Length > 0;
+                header = FrameDebuggerStyles.EventDetails.s_FoldoutMeshText;
+            }
+
+
+            if (BeginFoldoutBox(10, shouldDraw, header, out float fadePercent, null) && shouldDraw)
+            {
+                // Safety checks as things can get go wrong when switching between editor and remote...
+                m_MeshIndex = Mathf.Min(m_MeshIndex, m_CachedEventData.m_Meshes.Length - 1);
+                for (int i = 0; i < m_CachedEventData.m_Meshes.Length; i++)
+                {
+                    if (m_CachedEventData.m_Meshes[i] == null)
+                    {
+                        EndFoldoutBox();
+                        return;
+                    }
+                }
+
+                // Draw the Mesh Preview
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.BeginVertical();
+                {
+                    float viewportWidth = rect.width - 30f;
+                    float viewportHeightFaded = FrameDebuggerStyles.EventDetails.k_MaxViewportHeight * fadePercent;
+                    float renderTargetWidth = m_CachedEventData.m_RenderTargetWidth;
+                    float renderTargetHeight = m_CachedEventData.m_RenderTargetHeight;
+
+                    float scaledRenderTargetWidth = renderTargetWidth;
+                    float scaledRenderTargetHeight = renderTargetHeight;
+
+                    if (scaledRenderTargetWidth > viewportWidth)
+                    {
+                        float scale = viewportWidth / scaledRenderTargetWidth;
+                        scaledRenderTargetWidth *= scale;
+                        scaledRenderTargetHeight *= scale;
+                    }
+
+                    if (scaledRenderTargetHeight > FrameDebuggerStyles.EventDetails.k_MaxViewportHeight)
+                    {
+                        float scale = FrameDebuggerStyles.EventDetails.k_MaxViewportHeight / scaledRenderTargetHeight;
+                        scaledRenderTargetWidth *= scale;
+                        scaledRenderTargetHeight = FrameDebuggerStyles.EventDetails.k_MaxViewportHeight;
+                    }
+
+                    DrawEventMesh(viewportWidth, viewportHeightFaded, scaledRenderTargetWidth);
+                }
+                GUILayout.EndVertical();
+                EditorGUILayout.EndHorizontal();
+
+                // Draw the list of meshes to select from...
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(FrameDebuggerStyles.EventDetails.s_FoldoutMeshText, FrameDebuggerStyles.EventDetails.s_MonoLabelStyle);
+                EditorGUILayout.EndHorizontal();
+
+                bool clicked = false;
+                GUIStyle style;
+                for (int i = 0; i < m_CachedEventData.m_Meshes.Length; i++)
+                {
+                    if (m_CachedEventData.m_Meshes[i] == null)
+                        continue;
+
+                    style = (i == m_MeshIndex) ? FrameDebuggerStyles.EventDetails.s_MonoLabelBoldPaddingStyle : FrameDebuggerStyles.EventDetails.s_MonoLabelStylePadding;
+
+                    // Draw...
+                    EditorGUILayout.BeginHorizontal();
+                        // Mesh Name to select for the preview...
+                        clicked = GUILayout.Button(m_CachedEventData.m_Meshes[i].name, style);
+
+                        // Object Field to ping the object in the Project View
+                        GUI.enabled = false;
+                        EditorGUILayout.ObjectField(m_CachedEventData.m_Meshes[i], typeof(Mesh), true, GUILayout.Width(FrameDebuggerStyles.EventDetails.k_ShaderObjectFieldWidth));
+                        GUI.enabled = true;
+                    EditorGUILayout.EndHorizontal();
+
+                    // Update the mesh index if the label was clicked...
+                    if (clicked)
+                        m_MeshIndex = Mathf.Min(i, m_CachedEventData.m_Meshes.Length - 1);
+                }
+
+                if (m_Preview != null && m_CachedEventData.m_Meshes[m_MeshIndex] != null)
+                    m_Preview.mesh = m_CachedEventData.m_Meshes[m_MeshIndex];
+            }
+            EndFoldoutBox();
+        }
+
         private void DrawEventMesh(float viewportWidth, float viewportHeight, float texWidth)
         {
             if (viewportHeight - FrameDebuggerStyles.EventDetails.k_MeshBottomToolbarHeight < 1.0f)
                 return;
 
-            if (m_CachedEventData.m_Meshes == null || m_CachedEventData.m_Meshes.Length == 0)
-            {
-                DrawEventMeshBackground(viewportWidth, viewportHeight);
-                return;
-            }
-
-            int meshIndex = m_MeshIndex;
-            meshIndex = Mathf.Min(m_MeshIndex, m_CachedEventData.m_Meshes.Length - 1);
-            Mesh mesh = m_CachedEventData.m_Meshes[meshIndex];
-
-            if (mesh == null)
+            if (m_CachedEventData.m_Meshes == null || m_CachedEventData.m_Meshes.Length == 0 || m_CachedEventData.m_Meshes[m_MeshIndex] == null)
             {
                 DrawEventMeshBackground(viewportWidth, viewportHeight);
                 return;
             }
 
             if (m_Preview == null)
-                m_Preview = new MeshPreview(mesh);
-            else
-                m_Preview.mesh = mesh;
+                m_Preview = new MeshPreview(m_CachedEventData.m_Meshes[m_MeshIndex]);
+            else if (m_Preview.mesh == null)
+                m_Preview.mesh = m_CachedEventData.m_Meshes[m_MeshIndex];
 
             // We need this rect called here to push the control buttons below the Mesh...
-            Rect previewRect = GUILayoutUtility.GetRect(viewportWidth, viewportHeight - FrameDebuggerStyles.EventDetails.k_MeshBottomToolbarHeight, GUILayout.ExpandHeight(false));
+            Rect previewRect = GUILayoutUtility.GetRect(viewportWidth - 100, viewportHeight - FrameDebuggerStyles.EventDetails.k_MeshBottomToolbarHeight, GUILayout.ExpandHeight(false));
 
             // Rectangle for the buttons...
             Rect rect = EditorGUILayout.BeginHorizontal(GUIContent.none, EditorStyles.toolbar, GUILayout.Height(FrameDebuggerStyles.EventDetails.k_MeshBottomToolbarHeight));
             {
                 GUILayout.FlexibleSpace();
-
-                Rect meshNameRect = EditorGUILayout.GetControlRect(GUILayout.Width(FrameDebuggerStyles.EventDetails.k_MeshNameWidth));
-                meshNameRect.y -= 1;
-                meshNameRect.x = 10;
-
-                if (EditorGUI.DropdownButton(meshNameRect, m_CachedEventData.m_MeshNames[meshIndex], FocusType.Passive, EditorStyles.toolbarDropDown))
-                    DoMeshListPopup(meshNameRect, m_CachedEventData.m_MeshNames, meshIndex, SetMeshIndex);
-
-                if (FrameDebuggerHelper.IsCurrentEventMouseDown() && FrameDebuggerHelper.IsClickingRect(meshNameRect))
-                {
-                    EditorGUIUtility.PingObject(mesh);
-                    Event.current.Use();
-                }
-
                 m_Preview.OnPreviewSettings();
             }
             EditorGUILayout.EndHorizontal();
 
-            m_Preview?.OnPreviewGUI(previewRect, EditorStyles.helpBox);
+            var evt = Event.current;
+            if (FrameDebuggerHelper.IsHoveringRect(previewRect) || evt.type != EventType.ScrollWheel)
+            {
+                m_Preview?.OnPreviewGUI(previewRect, EditorStyles.helpBox);
+            }
         }
 
         private void DrawEventMeshBackground(float viewportWidth, float viewportHeight)
@@ -556,26 +627,6 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             EditorGUILayout.BeginHorizontal(FrameDebuggerStyles.EventDetails.s_RenderTargetMeshBackgroundStyle, GUILayout.Width(viewportWidth));
             GUILayoutUtility.GetRect(viewportWidth, viewportHeight);
             EditorGUILayout.EndHorizontal();
-        }
-
-        private void SetMeshIndex(object data)
-        {
-            int popupIndex = (int)data;
-            if (popupIndex < 0 || popupIndex >= m_CachedEventData.m_MeshNames.Length)
-                return;
-
-            m_MeshIndex = popupIndex;
-        }
-
-        private void DoMeshListPopup(Rect popupRect, GUIContent[] elements, int selectedIndex, GenericMenu.MenuFunction2 func)
-        {
-            GenericMenu menu = new GenericMenu();
-            for (int i = 0; i < elements.Length; i++)
-            {
-                var element = elements[i];
-                menu.AddItem(element, i == selectedIndex, func, i);
-            }
-            menu.DropDown(popupRect);
         }
 
         private void DrawDetails(Rect rect)

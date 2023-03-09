@@ -108,7 +108,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (version == null || version.isFullyFetched)
                 return;
-            m_UpmClient.ExtraFetch(version.packageId);
+            m_UpmClient.ExtraFetchPackageInfo(version.packageId);
         }
 
         public virtual bool Download(IPackage package)

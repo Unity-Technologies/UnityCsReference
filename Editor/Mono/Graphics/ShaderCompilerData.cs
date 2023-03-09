@@ -84,7 +84,8 @@ namespace UnityEditor.Rendering
         PS5             = 23, // PS5
         PS5NGGC         = 24,  // PS5 NGGC
         [System.Obsolete(@"GameCore  is deprecated, please use GameCoreXboxOne (UnityUpgradable) -> GameCoreXboxOne ", true)]
-        GameCore = 25 // Game Core deprecated as single platform
+        GameCore = 25, // Game Core deprecated as single platform
+        WebGPU          = 26, // WebGPU
     }
 
     public enum ShaderCompilerMessageSeverity

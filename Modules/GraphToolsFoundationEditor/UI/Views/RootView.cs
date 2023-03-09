@@ -18,8 +18,6 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string ussClassName = "ge-view";
         public static readonly string focusedViewModifierUssClassName = ussClassName.WithUssModifier("focused");
 
-        int m_StartMergeGroup;
-
         /// <summary>
         /// The graph tool.
         /// </summary>
@@ -90,7 +88,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public virtual void StartMergingUndoableCommands()
         {
-            m_StartMergeGroup = Undo.GetCurrentGroup();
+            GraphTool.UndoStateComponent.StartMergingUndoableCommands();
         }
 
         /// <summary>
@@ -98,7 +96,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public virtual void StopMergingUndoableCommands()
         {
-            Undo.CollapseUndoOperations(m_StartMergeGroup);
+            GraphTool.UndoStateComponent.StopMergingUndoableCommands();
         }
 
         public void DispatchToSelf(ICommand command, Diagnostics diagnosticsFlags = Diagnostics.None)

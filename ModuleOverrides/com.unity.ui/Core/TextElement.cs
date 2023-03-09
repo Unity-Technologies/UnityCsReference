@@ -24,6 +24,7 @@ namespace UnityEngine.UIElements
     {
         internal static readonly DataBindingProperty textProperty = nameof(text);
         internal static readonly DataBindingProperty enableRichTextProperty = nameof(enableRichText);
+        internal static readonly DataBindingProperty emojiFallbackSupportProperty = nameof(emojiFallbackSupport);
         internal static readonly DataBindingProperty parseEscapeSequencesProperty = nameof(parseEscapeSequences);
         internal static readonly DataBindingProperty isElidedProperty = nameof(isElided);
         internal static readonly DataBindingProperty displayTooltipWhenElidedProperty = nameof(displayTooltipWhenElided);
@@ -40,6 +41,7 @@ namespace UnityEngine.UIElements
         {
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
             UxmlBoolAttributeDescription m_EnableRichText = new UxmlBoolAttributeDescription { name = "enable-rich-text", defaultValue = true };
+            UxmlBoolAttributeDescription m_EmojiFallbackSupport = new UxmlBoolAttributeDescription { name = "emoji-fallback-support", defaultValue = true };
             UxmlBoolAttributeDescription m_ParseEscapeSequences = new UxmlBoolAttributeDescription { name = "parse-escape-sequences" };
             UxmlBoolAttributeDescription m_Selectable = new UxmlBoolAttributeDescription { name = "selectable" };
             UxmlBoolAttributeDescription m_SelectWordByDoubleClick = new UxmlBoolAttributeDescription { name = "select-word-by-double-click" };
@@ -67,6 +69,7 @@ namespace UnityEngine.UIElements
                 var textElement = (TextElement)ve;
                 textElement.text = m_Text.GetValueFromBag(bag, cc);
                 textElement.enableRichText = m_EnableRichText.GetValueFromBag(bag, cc);
+                textElement.emojiFallbackSupport = m_EmojiFallbackSupport.GetValueFromBag(bag, cc);
                 textElement.selectable = m_Selectable.GetValueFromBag(bag, cc);
                 textElement.parseEscapeSequences = m_ParseEscapeSequences.GetValueFromBag(bag, cc);
                 textElement.selection.doubleClickSelectsWord = m_SelectWordByDoubleClick.GetValueFromBag(bag, cc);
@@ -151,7 +154,6 @@ namespace UnityEngine.UIElements
             (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
         }
 
-        [SerializeField, DontCreateProperty]
         private string m_Text = String.Empty;
 
         /// <summary>
@@ -182,6 +184,26 @@ namespace UnityEngine.UIElements
                 m_EnableRichText = value;
                 MarkDirtyRepaint();
                 NotifyPropertyChanged(enableRichTextProperty);
+            }
+        }
+
+        bool m_EmojiFallbackSupport = true;
+
+        /// <summary>
+        /// Specifies the order in which the system should look for Emoji characters when rendering text.
+        /// If this setting is enabled, the global Emoji Fallback list will be searched first for characters defined as
+        /// Emoji in the Unicode 14.0 standard.
+        /// </summary>
+        [CreateProperty]
+        public bool emojiFallbackSupport
+        {
+            get => m_EmojiFallbackSupport;
+            set
+            {
+                if (m_EmojiFallbackSupport == value) return;
+                m_EmojiFallbackSupport = value;
+                MarkDirtyRepaint();
+                NotifyPropertyChanged(emojiFallbackSupportProperty);
             }
         }
 
@@ -257,7 +279,7 @@ namespace UnityEngine.UIElements
 
             UpdateTooltip();
 
-            if(selection.HasSelection())
+            if(selection.HasSelection() && selectingManipulator.HasFocus())
                 DrawHighlighting(mgc);
             else if(!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
                 DrawCaret(mgc);
@@ -470,7 +492,8 @@ namespace UnityEngine.UIElements
                     SaveViewData();
             }
 
-            if (!edition.isReadOnly && editingManipulator?.editingUtilities.text != newValue)
+            // Always sync the manipulator if it exists even if the element is read-only or disabled. See issue UUM-8802
+            if (editingManipulator != null)
                 editingManipulator.editingUtilities.text = newValue;
         }
     }

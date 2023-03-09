@@ -69,14 +69,17 @@ namespace UnityEngine
         Directional = 1,
         Point = 2,
 
-        //[System.Obsolete("Enum member LightType.Area has been deprecated. Use LightType.Rectangle instead (UnityUpgradable) -> Rectangle", true)]
-        // For now, we will have both Area and Rectangle in the source, but this will be removed once the SRP package is in.
+        [System.Obsolete("Enum member LightType.Area has been deprecated. Use LightType.Rectangle instead (UnityUpgradable) -> Rectangle", true)]
         Area = 3,
 
         Rectangle = 3,
-        Disc = 4
+        Disc = 4,
+        Pyramid = 5,
+        Box = 6,
+        Tube = 7
     }
 
+    [System.Obsolete("This property has been deprecated. Use LightType.Spot, LightType.Pyramid, or LightType.Box instead.")]
     public enum LightShape
     {
         Cone = 0,
@@ -1294,6 +1297,7 @@ namespace UnityEngine.Rendering
         DirectionalCascade3     = 1 << 9,
 
         Spotlight               = 1 << 10,
+        AreaLight               = 1 << 11,
         Pointlight              = PointlightPositiveX | PointlightNegativeX | PointlightPositiveY | PointlightNegativeY | PointlightPositiveZ | PointlightNegativeZ,
         Directional             = DirectionalCascade0 | DirectionalCascade1 | DirectionalCascade2 | DirectionalCascade3,
         All                     = Pointlight | Spotlight | Directional,
@@ -1405,7 +1409,8 @@ namespace UnityEngine.Rendering
         GameCoreScarlett = -1,
         GameCoreXboxSeries = 25, // GameCoreXboxSeries intentionally _NOT_ set to the same as GameCoreScarlett
         PlayStation5 = 26,
-        PlayStation5NGGC = 27
+        PlayStation5NGGC = 27,
+        WebGPU = 28
     }
 
     public enum GraphicsTier

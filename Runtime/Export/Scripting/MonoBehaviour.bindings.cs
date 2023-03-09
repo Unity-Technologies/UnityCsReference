@@ -169,25 +169,27 @@ namespace UnityEngine
         extern static void ConstructorCheck([Writable] Object self);
 
         [FreeFunction("CancelInvoke")]
-        extern static void Internal_CancelInvokeAll([NotNull("NullExceptionObject")] MonoBehaviour self);
+        extern static void Internal_CancelInvokeAll([NotNull] MonoBehaviour self);
 
         [FreeFunction("IsInvoking")]
-        extern static bool Internal_IsInvokingAll([NotNull("NullExceptionObject")] MonoBehaviour self);
+        extern static bool Internal_IsInvokingAll([NotNull] MonoBehaviour self);
 
         [FreeFunction]
-        extern static void InvokeDelayed([NotNull("NullExceptionObject")] MonoBehaviour self, string methodName, float time, float repeatRate);
+        extern static void InvokeDelayed([NotNull] MonoBehaviour self, string methodName, float time, float repeatRate);
 
         [FreeFunction]
-        extern static void CancelInvoke([NotNull("NullExceptionObject")] MonoBehaviour self, string methodName);
+        extern static void CancelInvoke([NotNull] MonoBehaviour self, string methodName);
 
         [FreeFunction]
-        extern static bool IsInvoking([NotNull("NullExceptionObject")] MonoBehaviour self, string methodName);
+        extern static bool IsInvoking([NotNull] MonoBehaviour self, string methodName);
 
         [FreeFunction]
-        extern static bool IsObjectMonoBehaviour([NotNull("NullExceptionObject")] Object obj);
+        extern static bool IsObjectMonoBehaviour([NotNull] Object obj);
 
+        [return: Unmarshalled]
         extern Coroutine StartCoroutineManaged(string methodName, object value);
 
+        [return: Unmarshalled]
         extern Coroutine StartCoroutineManaged2(IEnumerator enumerator);
 
         extern void StopCoroutineManaged(Coroutine routine);

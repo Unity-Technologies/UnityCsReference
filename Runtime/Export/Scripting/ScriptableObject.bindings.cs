@@ -65,7 +65,7 @@ namespace UnityEngine
             return res;
         }
 
-        [NativeMethod(IsThreadSafe = true)]
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         extern static void CreateScriptableObject([Writable] ScriptableObject self);
 
         [FreeFunction("Scripting::CreateScriptableObject")]
@@ -75,6 +75,6 @@ namespace UnityEngine
         extern internal static ScriptableObject CreateScriptableObjectInstanceFromType(Type type, bool applyDefaultsAndReset);
 
         [FreeFunction("Scripting::ResetAndApplyDefaultInstances")]
-        extern internal static void ResetAndApplyDefaultInstances([NotNull("NullExceptionObject")] Object obj);
+        extern internal static void ResetAndApplyDefaultInstances([NotNull] Object obj);
     }
 }

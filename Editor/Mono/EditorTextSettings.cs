@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEditor.Experimental;
+using TextAsset = UnityEngine.TextCore.Text.TextAsset;
 
 namespace UnityEditor
 {
@@ -19,6 +20,7 @@ namespace UnityEditor
     {
         private static EditorTextSettings s_DefaultTextSettings;
 
+        const string k_DefaultEmojisFallback = "UIPackageResources/FontAssets/Emojis/";
         const string k_Platform =
                             " - Linux";
 
@@ -66,8 +68,15 @@ namespace UnityEditor
 
             var globalFallbackAsset = EditorGUIUtility.Load(globalFallbackAssetPath) as FontAsset;
 
-            defaultTextSettings.fallbackFontAssets[0] = localizationAsset;
-            defaultTextSettings.fallbackFontAssets[defaultTextSettings.fallbackFontAssets.Count - 1] = globalFallbackAsset;
+            defaultTextSettings.fallbackFontAssets.Clear();
+            defaultTextSettings.fallbackFontAssets.Add(localizationAsset);
+            defaultTextSettings.fallbackFontAssets.Add(globalFallbackAsset);
+
+            var emojiFallbackPath = $"{k_DefaultEmojisFallback}Emojis{k_Platform}.asset";
+            var emojiFallback = EditorGUIUtility.Load(emojiFallbackPath) as FontAsset;
+            var emojiFallbackList = defaultTextSettings.emojiFallbackTextAssets;
+            if (emojiFallback != null && !emojiFallbackList.Contains(emojiFallback))
+                defaultTextSettings.emojiFallbackTextAssets.Add(emojiFallback);
         }
 
         internal static readonly string s_DefaultEditorTextSettingPath = "UIPackageResources/Editor Text Settings.asset";

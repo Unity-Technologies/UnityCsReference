@@ -49,7 +49,7 @@ namespace Unity.ItemLibrary.Editor
         HashSet<ItemLibraryItem> m_MultiSelectSelection;
         Dictionary<ItemLibraryItem, Toggle> m_SearchItemToVisualToggle;
         CategoryView_Internal m_FavoriteCategoryView;
-        List<ItemLibraryItem> m_Results;
+        IReadOnlyList<ItemLibraryItem> m_Results;
         readonly VisualTreeAsset m_ItemTemplate;
 
         ICategoryView_Internal m_ResultsHierarchy;
@@ -195,11 +195,11 @@ namespace Unity.ItemLibrary.Editor
             RefreshListView();
         }
 
-        internal void SetResults_Internal(IEnumerable<ItemLibraryItem> results)
+        internal void SetResults_Internal(IReadOnlyList<ItemLibraryItem> results)
         {
             var firstItemWasSelected = selectedIndex == 0;
 
-            m_Results = results.ToList();
+            m_Results = results;
 
             m_ResultsHierarchy = CategoryView_Internal.BuildViewModels(m_Results, ViewMode, m_Library.CategoryPathStyleNames);
 

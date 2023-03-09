@@ -25,6 +25,7 @@ namespace UnityEditor
             public static GUIContent automaticAdd = new GUIContent("Automatic Add",
                 "Automatically add newly created assets to version control.");
             public static GUIContent smartMerge = new GUIContent("Smart merge");
+            public static GUIContent trackPackagesOutsideProject = new GUIContent("Version Packages Outside Project", "Tracks changes to packages that reside on disk outside of the project's root folder.");
             public static GUIContent vcsConnect = new GUIContent("Connect");
             public static GUIContent vcsReconnect = new GUIContent("Reconnect");
             public static GUIContent workOffline = new GUIContent("Work Offline",
@@ -409,6 +410,9 @@ namespace UnityEditor
 
                 EditorUserSettings.semanticMergeMode = (SemanticMergeMode)EditorGUILayout.Popup(Styles.smartMerge,
                     (int)EditorUserSettings.semanticMergeMode, semanticMergePopupList);
+
+                VersionControlSettings.trackPackagesOutsideProject =
+                EditorGUILayout.Toggle(Styles.trackPackagesOutsideProject, VersionControlSettings.trackPackagesOutsideProject);
 
                 GUILayout.Space(10);
                 GUILayout.Label(Styles.overlayIcons);

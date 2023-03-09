@@ -94,6 +94,13 @@ namespace Unity.Collections.LowLevel.Unsafe
             throw new NotImplementedException("Patching this method failed");
         }
 
+        // The address of the memory where the class resides in memory
+        unsafe internal static ref T ClassAsRef<T>(void* ptr) where T : class
+        {
+            // @patched at compile time
+            throw new NotImplementedException("Patching this method failed");
+        }
+
         // The address of the memory where the struct resides in memory
         unsafe public static ref T ArrayElementAsRef<T>(void* ptr, int index) where T : struct
         {

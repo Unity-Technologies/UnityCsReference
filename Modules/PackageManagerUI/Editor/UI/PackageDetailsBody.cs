@@ -126,7 +126,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var newVisualState = args.visualStates.FirstOrDefault(state => state.packageUniqueId == m_Version?.package.uniqueId);
-            if (newVisualState?.userUnlocked == true && m_PageManager.GetPage().GetSelection()?.Count == 1)
+            if (newVisualState?.userUnlocked == true && m_PageManager.activePage.GetSelection()?.Count == 1)
                 m_TabView.RefreshTab(PackageDetailsVersionsTab.k_Id, m_Version);
         }
     }

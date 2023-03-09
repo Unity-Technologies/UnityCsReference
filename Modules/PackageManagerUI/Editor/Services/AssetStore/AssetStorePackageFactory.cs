@@ -26,6 +26,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private FetchStatusTracker m_FetchStatusTracker;
         [NonSerialized]
         private IOProxy m_IOProxy;
+        [NonSerialized]
+        private BackgroundFetchHandler m_BackgroundFetchHandler;
         public void ResolveDependencies(UniqueIdMapper uniqueIdMapper,
             UnityConnectProxy unityConnect,
             AssetStoreCache assetStoreCache,
@@ -33,7 +35,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             AssetStoreDownloadManager assetStoreDownloadManager,
             PackageDatabase packageDatabase,
             FetchStatusTracker fetchStatusTracker,
-            IOProxy ioProxy)
+            IOProxy ioProxy,
+            BackgroundFetchHandler backgroundFetchHandler)
         {
             m_UniqueIdMapper = uniqueIdMapper;
             m_UnityConnect = unityConnect;
@@ -43,6 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = packageDatabase;
             m_FetchStatusTracker = fetchStatusTracker;
             m_IOProxy = ioProxy;
+            m_BackgroundFetchHandler = backgroundFetchHandler;
         }
 
         public void OnEnable()
@@ -91,10 +95,23 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache.ClearCache();
             m_FetchStatusTracker.ClearCache();
 
-            var notInstalledAssetStorePackages = m_PackageDatabase.allPackages.Where(p => p.product != null && p.versions.installed == null);
+            // We only regenerate and remove packages from the Asset Store that are of Legacy format. We handle the UPM format in UpmPackageFactory.
+            var packagesToRemove = new List<IPackage>();
+            var packagesToRegenerate = new List<IPackage>();
+            foreach (var package in m_PackageDatabase.allPackages.Where(p => p.product != null && p.versions.Any(v => v.HasTag(PackageTag.LegacyFormat))))
+            {
+                if (package.versions.Any(v => v.importedAssets?.Any() == true))
+                    packagesToRegenerate.Add(package);
+                else
+                    packagesToRemove.Add(package);
+            }
+
             // We use `ToArray` here as m_PackageDatabase.UpdatePackages will modify the enumerable and throw an error if we don't
-            var packageToRemove = notInstalledAssetStorePackages.Select(p => p.uniqueId).ToArray();
-            m_PackageDatabase.UpdatePackages(toRemove: packageToRemove);
+            if (packagesToRemove.Any())
+                m_PackageDatabase.UpdatePackages(toRemove: packagesToRemove.Select(p => p.uniqueId).ToArray());
+
+            if (packagesToRegenerate.Any())
+                GeneratePackagesAndTriggerChangeEvent(packagesToRegenerate.Select(p => p.product.id));
         }
 
         private void AddPackageError(Package package, UIError error)
@@ -227,22 +244,27 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var packagesChanged = new List<IPackage>();
+            var packagesToRemove = new List<string>();
             foreach (var productId in productIds)
             {
                 var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(productId);
                 var productInfo = m_AssetStoreCache.GetProductInfo(productId);
-                if (purchaseInfo == null && productInfo == null)
+                var importedPackage = m_AssetStoreCache.GetImportedPackage(productId);
+                if (purchaseInfo == null && productInfo == null && importedPackage == null)
+                {
+                    packagesToRemove.Add(productId.ToString());
                     continue;
+                }
 
                 var packageName = string.IsNullOrEmpty(productInfo?.packageName) ? m_UniqueIdMapper.GetNameByProductId(productId) : productInfo.packageName;
                 // ProductInfos with package names are handled in UpmOnAssetStorePackageFactory, we don't want to worry about it here.
                 if (!string.IsNullOrEmpty(packageName))
                     continue;
 
-                if (productInfo == null)
+                var fetchStatus = m_FetchStatusTracker.GetOrCreateFetchStatus(productId);
+                var productInfoFetchError = fetchStatus.GetFetchError(FetchType.ProductInfo);
+                if (importedPackage == null && productInfo == null)
                 {
-                    var fetchStatus = m_FetchStatusTracker.GetOrCreateFetchStatus(productId);
-                    var productInfoFetchError = fetchStatus.GetFetchError(FetchType.ProductInfo);
                     var version = new PlaceholderPackageVersion(productId.ToString(), purchaseInfo.displayName, tag: PackageTag.LegacyFormat, error: productInfoFetchError?.error);
                     var placeholderPackage = CreatePackage(string.Empty, new PlaceholderVersionList(version), new Product(productId, null, null));
                     if (productInfoFetchError == null)
@@ -250,18 +272,29 @@ namespace UnityEditor.PackageManager.UI.Internal
                     packagesChanged.Add(placeholderPackage);
                     continue;
                 }
-                var isDeprecated = productInfo.state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase);
+
+                var isFetchingProductInfo = fetchStatus.IsFetchInProgress(FetchType.ProductInfo);
+                if (importedPackage != null && productInfo == null && !isFetchingProductInfo && productInfoFetchError == null)
+                {
+                    m_BackgroundFetchHandler.AddToFetchPurchaseInfoQueue(productId);
+                    m_BackgroundFetchHandler.AddToFetchProductInfoQueue(productId);
+                    m_BackgroundFetchHandler.PushToCheckUpdateStack(productId);
+                }
+
+                var isDeprecated = productInfo?.state.Equals("deprecated", StringComparison.InvariantCultureIgnoreCase) ?? false;
                 var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
                 var updateInfo = m_AssetStoreCache.GetUpdateInfo(productId);
-                var importedPackage = m_AssetStoreCache.GetImportedPackage(productId);
                 var versionList = new AssetStoreVersionList(m_IOProxy, productInfo, localInfo, updateInfo, importedPackage);
                 var package = CreatePackage(string.Empty, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated);
                 if (m_AssetStoreDownloadManager.GetDownloadOperation(productId)?.isInProgress == true)
                     SetProgress(package, PackageProgress.Downloading);
+                else if (productInfoFetchError != null)
+                    AddError(package, productInfoFetchError.error);
                 packagesChanged.Add(package);
             }
-            if (packagesChanged.Any())
-                m_PackageDatabase.UpdatePackages(packagesChanged);
+
+            if (packagesChanged.Any() || packagesToRemove.Any())
+                m_PackageDatabase.UpdatePackages(packagesChanged, packagesToRemove);
         }
     }
 }

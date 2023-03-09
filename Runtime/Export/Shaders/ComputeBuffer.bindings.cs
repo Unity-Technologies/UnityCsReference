@@ -60,7 +60,7 @@ namespace UnityEngine
         [FreeFunction("GraphicsBuffer_Bindings::InitComputeBuffer")]
         static extern IntPtr InitBuffer(int count, int stride, ComputeBufferType type, ComputeBufferMode usage);
 
-        [FreeFunction("GraphicsBuffer_Bindings::DestroyBuffer")]
+        [FreeFunction("GraphicsBuffer_Bindings::DestroyComputeBuffer")]
         static extern void DestroyBuffer(ComputeBuffer buf);
 
         public ComputeBuffer(int count, int stride) : this(count, stride, ComputeBufferType.Default, ComputeBufferMode.Immutable, 3)
@@ -331,6 +331,11 @@ namespace UnityEngine
                 return;
 
             UnsafeUtility.LeakErase(m_Ptr, LeakCategory.Persistent);
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(ComputeBuffer computeBuffer) => computeBuffer.m_Ptr;
         }
     }
 }

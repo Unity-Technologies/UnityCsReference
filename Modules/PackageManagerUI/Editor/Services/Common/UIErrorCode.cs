@@ -30,5 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         AssetStoreRestApiError,
         AssetStoreOperationError,
         AssetStorePackageError,
+
+        UserNotSignedIn = 600
     }
 }

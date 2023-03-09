@@ -19,6 +19,18 @@ namespace UnityEngine
         [StaticAccessor("AsyncOperationBindings", StaticAccessorType.DoubleColon)]
         private static extern void InternalDestroy(IntPtr ptr);
 
+        [NativeMethod(IsThreadSafe = true)]
+        [StaticAccessor("AsyncOperationBindings", StaticAccessorType.DoubleColon)]
+        private static extern void InternalSetManagedObject(IntPtr ptr, [Unmarshalled] AsyncOperation self);
+
+        public AsyncOperation() {}
+
+        protected AsyncOperation(IntPtr ptr)
+        {
+            InternalSetManagedObject(ptr, this);
+            m_Ptr = ptr; 
+        }
+
         public extern bool isDone
         {
             [NativeMethod("IsDone")]
@@ -45,6 +57,12 @@ namespace UnityEngine
             get;
             [NativeMethod("SetAllowSceneActivation")]
             set;
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static AsyncOperation ConvertToManaged(IntPtr ptr) => new AsyncOperation(ptr);
+            public static IntPtr ConvertToNative(AsyncOperation asyncOperation) => asyncOperation.m_Ptr;
         }
     }
 }

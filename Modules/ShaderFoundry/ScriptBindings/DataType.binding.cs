@@ -18,9 +18,9 @@ namespace UnityEditor.ShaderFoundry
 
         StartStaticSized,
         // Static sized types
-        ShaderAttributeParam = StartStaticSized,
+        ShaderAttributeParameter = StartStaticSized,
         ShaderAttribute,
-        CommandDescriptor,
+        RenderStateDescriptor,
         DefineDescriptor,
         IncludeDescriptor,
         KeywordDescriptor,

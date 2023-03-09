@@ -170,5 +170,15 @@ namespace UnityEngine.UIElements
             var elementUnderPointer = element.panel.Pick(position);
             return element == elementUnderPointer || element.Contains(elementUnderPointer);
         }
+
+        //Called when a visual element is removed from a panel to clear all reference to the visual element
+        internal void Cleanup(VisualElement ve)
+        {
+            foreach (var status in m_ClickStatus)
+            {
+                if (status.m_Target == ve)
+                    status.Reset();
+            }
+        }
     }
 }

@@ -68,8 +68,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             if (isEnabled && ProfilerDriver.connectedProfiler != FrameDebuggerUtility.GetRemotePlayerGUID())
             {
                 // Switch from local to remote debugger or vice versa
-                FrameDebuggerUtility.SetEnabled(false, FrameDebuggerUtility.GetRemotePlayerGUID());
-                FrameDebuggerUtility.SetEnabled(true, ProfilerDriver.connectedProfiler);
+                frameDebuggerWindow.OnConnectedProfilerChange();
             }
         }
 

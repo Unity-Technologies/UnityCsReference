@@ -60,20 +60,7 @@ namespace Unity.ItemLibrary.Editor
         /// <summary>
         /// Name of the item including its category path.
         /// </summary>
-        /// <remarks>
-        /// This will set the <see cref="CategoryPath"/> and <see cref="Name"/> properties.
-        /// e.g. <c>"Food/Fruits/Berries/Strawberry"</c>
-        /// </remarks>
-        public string FullName
-        {
-            get => CategoryPath == "" ? Name : Name == "" ? CategoryPath : CategoryPath + CategorySeparator + Name;
-            set
-            {
-                var success = ExtractPathAndNameFromFullName(value, out m_CategoryPath, out m_Name);
-                if (!success)
-                    Debug.LogWarning($"error parsing Item fullname '{value}'.Category path set to '{m_CategoryPath}' and name set to '{m_Name}'");
-            }
-        }
+        public string FullName => CategoryPath == "" ? Name : Name == "" ? CategoryPath : CategoryPath + CategorySeparator + Name;
 
         /// <summary>
         /// Gets all parents categories names for this item.
@@ -164,15 +151,23 @@ namespace Unity.ItemLibrary.Editor
             m_Name = name;
         }
 
-        static bool ExtractPathAndNameFromFullName(string fullName, out string path, out string name)
+        /// <summary>
+        /// Splits a full path into a category path and a name. Path elements should be separated by
+        /// <see cref="CategorySeparator"/>. The last element of the full path is the name. All other elements constitute the category path.
+        /// </summary>
+        /// <param name="fullName">The full name from which to extract a category path and a name.</param>
+        /// <param name="categoryPath">The extracted category path, or the empty string if no path was found.</param>
+        /// <param name="name">The extracted name.</param>
+        /// <returns>True if extraction was successful, false otherwise.</returns>
+        public static bool ExtractPathAndNameFromFullName(string fullName, out string categoryPath, out string name)
         {
-            path = "";
+            categoryPath = "";
             name = fullName;
             var nameParts = fullName.Split(CategorySeparator);
             if (nameParts.Length > 1)
             {
                 name = nameParts[nameParts.Length - 1];
-                path = fullName.Substring(0, fullName.Length - name.Length - 1);
+                categoryPath = fullName.Substring(0, fullName.Length - name.Length - 1);
                 return true;
             }
             return nameParts.Length == 1;

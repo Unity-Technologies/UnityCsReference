@@ -48,7 +48,7 @@ namespace UnityEngine.Analytics
             GC.SuppressFinalize(this);
         }
 
-        internal static extern IntPtr Internal_Create(CustomEventData ced, string name);
+        internal static extern IntPtr Internal_Create([Unmarshalled] CustomEventData ced, string name);
         [ThreadSafe]
         internal static extern void Internal_Destroy(IntPtr ptr);
 
@@ -59,5 +59,10 @@ namespace UnityEngine.Analytics
         public extern bool AddUInt64(string key, UInt64 value);
         public extern bool AddBool(string key, bool value);
         public extern bool AddDouble(string key, double value);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(CustomEventData customEventData) => customEventData.m_Ptr;
+        }
     }
 }

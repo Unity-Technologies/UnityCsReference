@@ -17,7 +17,7 @@ namespace UnityEngine
         internal IntPtr m_Ptr;
         internal ISubsystemDescriptor m_SubsystemDescriptor;
 
-        extern internal void SetHandle(IntegratedSubsystem subsystem);
+        extern internal void SetHandle([Unmarshalled] IntegratedSubsystem subsystem);
         extern public void Start();
         extern public void Stop();
         public void Destroy()
@@ -33,6 +33,11 @@ namespace UnityEngine
         internal bool valid => m_Ptr != IntPtr.Zero;
 
         extern internal bool IsRunning();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(IntegratedSubsystem integratedSubsystem) => integratedSubsystem.m_Ptr;
+        }
     }
 
     [UsedByNativeCode("Subsystem_TSubsystemDescriptor")]

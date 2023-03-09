@@ -70,5 +70,10 @@ namespace UnityEditor.VersionControl
             [NativeName("GetID")]
             get;
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(ChangeSet changeSet) => changeSet.m_Self;
+        }
     }
 }

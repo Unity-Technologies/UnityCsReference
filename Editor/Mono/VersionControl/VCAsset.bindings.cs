@@ -18,6 +18,11 @@ namespace UnityEditor.VersionControl
         // The bindings generator will set the instance pointer in this field
         IntPtr m_Self;
 
+        private Asset(IntPtr self)
+        {
+            m_Self = self;
+        }
+
         [Flags]
         public enum States
         {
@@ -129,6 +134,12 @@ namespace UnityEditor.VersionControl
         {
             [NativeName("IsInCurrentProject")]
             get;
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Asset asset) => asset.m_Self;
+            public static Asset ConvertToManaged(IntPtr ptr) => new Asset(ptr);
         }
     }
 }

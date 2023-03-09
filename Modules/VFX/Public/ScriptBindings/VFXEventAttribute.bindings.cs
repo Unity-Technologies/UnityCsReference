@@ -24,6 +24,11 @@ namespace UnityEngine.VFX
             m_VfxAsset = vfxAsset;
         }
 
+        private VFXEventAttribute(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+        }
+
         private VFXEventAttribute() : this(IntPtr.Zero, false, null)
         {
         }
@@ -237,5 +242,11 @@ namespace UnityEngine.VFX
         }
 
         extern public void CopyValuesFrom([NotNull] VFXEventAttribute eventAttibute);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(VFXEventAttribute eventAttibute) => eventAttibute.m_Ptr;
+            public static VFXEventAttribute ConvertToManaged(IntPtr ptr) => new VFXEventAttribute(ptr);
+        }
     }
 }

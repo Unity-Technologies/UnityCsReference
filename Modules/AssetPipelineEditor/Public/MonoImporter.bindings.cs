@@ -18,10 +18,10 @@ namespace UnityEditor
         public static extern MonoScript[] GetAllRuntimeMonoScripts();
 
         [FreeFunction("MonoImporterBindings::SetMonoScriptExecutionOrder")]
-        public static extern void SetExecutionOrder([NotNull("NullExceptionObject")] MonoScript script, int order);
+        public static extern void SetExecutionOrder([NotNull] MonoScript script, int order);
 
         [FreeFunction("MonoImporterBindings::GetExecutionOrder")]
-        public static extern int GetExecutionOrder([NotNull("NullExceptionObject")] MonoScript script);
+        public static extern int GetExecutionOrder([NotNull] MonoScript script);
 
         public extern MonoScript GetScript();
 

@@ -105,7 +105,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // If the user is removing a package that is part of a feature set, lock it after removing from manifest
             // Having this check condition should be more optimal once we implement caching of Feature Set Dependents for each package
             if (m_PackageDatabase.GetFeaturesThatUseThisPackage(version.package.versions.installed)?.Any() == true)
-                m_PageManager.GetPage().SetPackagesUserUnlockedState(new List<string> { version.package.uniqueId }, false);
+                m_PageManager.activePage.SetPackagesUserUnlockedState(new List<string> { version.package.uniqueId }, false);
 
             // Remove
             m_OperationDispatcher.Uninstall(version.package);
@@ -140,14 +140,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
-            var isInvalidProjectDependencyVersion = !string.IsNullOrEmpty(version.versionInManifest) &&
-                                                    (!SemVersionParser.TryParse(version.versionInManifest, out var semVersion) || semVersion?.ToString() != version.versionInManifest);
-            var isInvalidVersion = version.isInstalled &&
-                                   version.isDirectDependency &&
-                                   isInvalidProjectDependencyVersion;
             var isInstalledAsDependency = version.package.versions.installed == version
-                && (!version.isDirectDependency || version.IsDifferentVersionThanRequested);
-            yield return new ButtonDisableCondition(!isInvalidVersion && isInstalledAsDependency,
+                && (!version.isDirectDependency || version.IsDifferentVersionThanRequested) && !version.isInvalidSemVerInManifest;
+            yield return new ButtonDisableCondition(isInstalledAsDependency,
                 string.Format(L10n.Tr("You cannot remove this {0} because another installed package or feature depends on it. See dependencies for more details."), version.GetDescriptor()));
         }
 
@@ -155,7 +150,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void DeselectVersions(IList<IPackageVersion> versions)
         {
-            m_PageManager.GetPage().RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
+            m_PageManager.activePage.RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
         }
     }
 }

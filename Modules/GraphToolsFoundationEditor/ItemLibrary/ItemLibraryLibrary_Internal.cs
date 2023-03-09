@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.GraphToolsFoundation.Editor;
+using UnityEngine;
 
 namespace Unity.ItemLibrary.Editor
 {
@@ -230,8 +231,8 @@ namespace Unity.ItemLibrary.Editor
         /// Searches for items using a text query.
         /// </summary>
         /// <param name="query">The query to match items with.</param>
-        /// <returns>A possibly empty collection of items matching the query.</returns>
-        public IEnumerable<ItemLibraryItem> Search(string query)
+        /// <returns>A possibly empty list of items matching the query.</returns>
+        public IReadOnlyList<ItemLibraryItem> Search(string query)
         {
             var results = new List<ItemLibraryItem>();
             m_LastSearchDataPerItem.Clear();
@@ -293,7 +294,14 @@ namespace Unity.ItemLibrary.Editor
             {
                 m_ItemsByPath = new Dictionary<string, ItemLibraryItem>();
                 var allItems = string.IsNullOrEmpty(query) ? results : Search("");
-                m_ItemsByPath = allItems.ToDictionary(r => r.FullName, r => r);
+
+                foreach (var item in allItems)
+                {
+                    if (!m_ItemsByPath.TryAdd(item.FullName, item))
+                    {
+                        Debug.LogWarning($"Duplicate item named \"{item.FullName}\" encountered while searching the Item Library.");
+                    }
+                }
 
                 m_CachedFavorites = Preferences_Internal.GetFavorites()
                     .Select(path => m_ItemsByPath.TryGetValue(path, out var item) ? item : null)

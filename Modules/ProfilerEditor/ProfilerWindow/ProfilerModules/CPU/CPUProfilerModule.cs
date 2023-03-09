@@ -36,9 +36,12 @@ namespace UnityEditorInternal.Profiling
         {
             public static readonly GUIContent selectionHighlightLabelBaseText = EditorGUIUtility.TrTextContent("Selected: {0}", "Selected Sample Stack: {0}");
             public static readonly GUIContent selectionHighlightNonMainThreadLabelBaseText = EditorGUIUtility.TrTextContent("Selected: {0} (Thread: {1})", "Selected Sample Stack: {0} (Thread: {1})");
+            public static readonly string gpuModulePerformanceWarning = L10n.Tr("The GPU Module is currently enabled, thus disabling graphics jobs. This greatly reduces the accuracy of the CPU Module and increases the load on main and render thread.\n\n" +
+                "Close the GPU module to access accurate data about your application's CPU performance. ");
         }
 
         GUIContent selectionHighlightLabel = new GUIContent();
+        GUIContent m_GPUModuleActivePerformanceWarning;
 
         [SerializeField]
         ProfilerTimelineGUI m_TimelineGUI;
@@ -76,6 +79,8 @@ namespace UnityEditorInternal.Profiling
             m_TimelineGUI.selectionChanged += SetSelectionWithoutIntegrityChecksOnSelectionChangeInDetailedView;
             TryRestoringSelection();
             UpdateSelectionHighlightLabel();
+
+            m_GPUModuleActivePerformanceWarning = new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"), Content.gpuModulePerformanceWarning);
         }
 
         internal override void OnDisable()
@@ -92,6 +97,15 @@ namespace UnityEditorInternal.Profiling
         {
             base.Clear();
             m_TimelineGUI?.Clear();
+        }
+
+        internal override void Update()
+        {
+            base.Update();
+
+            // Update warning message based on GPU module state
+            var gpuModule = ProfilerWindow.GetProfilerModuleByType<GPUProfilerModule>();
+            m_Chart.WarningMsg = gpuModule.active ? m_GPUModuleActivePerformanceWarning : null;
         }
 
         private protected override void DrawChartOverlay(Rect chartRect)
@@ -125,19 +139,11 @@ namespace UnityEditorInternal.Profiling
         {
             if (m_TimelineGUI != null && m_ViewType == ProfilerViewType.Timeline)
             {
-                if (Event.current.isKey)
-                    ProfilerWindowAnalytics.RecordViewKeyboardEvent(ProfilerWindowAnalytics.profilerCPUModuleTimeline);
-                if (Event.current.isMouse && position.Contains(Event.current.mousePosition))
-                    ProfilerWindowAnalytics.RecordViewMouseEvent(ProfilerWindowAnalytics.profilerCPUModuleTimeline);
                 CurrentFrameIndex = (int)ProfilerWindow.selectedFrameIndex;
                 m_TimelineGUI.DoGUI(CurrentFrameIndex, position, fetchData, ref updateViewLive);
             }
             else
             {
-                if (Event.current.isKey)
-                    ProfilerWindowAnalytics.RecordViewKeyboardEvent(ProfilerWindowAnalytics.profilerCPUModuleHierarchy);
-                if (Event.current.isMouse && position.Contains(Event.current.mousePosition))
-                    ProfilerWindowAnalytics.RecordViewMouseEvent(ProfilerWindowAnalytics.profilerCPUModuleHierarchy);
                 base.DrawDetailsView(position);
             }
         }

@@ -2,30 +2,23 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 using System.Linq;
-using System;
 using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageManagerToolbar : VisualElement
     {
-        public static readonly string k_ResetPackagesMenuName = "Reset Packages to defaults";
-        public static readonly string k_ResetPackagesMenuPath = "Help/" + k_ResetPackagesMenuName;
+        public const string k_ResetPackagesMenuName = "Reset Packages to defaults";
+        public const string k_ResetPackagesMenuPath = "Help/" + k_ResetPackagesMenuName;
 
         internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
-
-        private long m_SearchTextChangeTimestamp;
-
-        private const long k_SearchEventDelayTicks = TimeSpan.TicksPerSecond / 3;
 
         private ResourceLoader m_ResourceLoader;
         internal ApplicationProxy m_Application;
         private UnityConnectProxy m_UnityConnect;
-        private PackageManagerPrefs m_PackageManagerPrefs;
         private PackageDatabase m_PackageDatabase;
         private PackageOperationDispatcher m_OperationDispatcher;
         private PageManager m_PageManager;
@@ -41,7 +34,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
             m_UnityConnect = container.Resolve<UnityConnectProxy>();
-            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_OperationDispatcher = container.Resolve<PackageOperationDispatcher>();
             m_PageManager = container.Resolve<PageManager>();
@@ -62,24 +54,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             cache = new VisualElementCache(root);
 
             SetupAddMenu();
-            SetupFilterTabsMenu();
-            SetupOrdering();
+            SetupSortingMenu();
             SetupFilters();
             SetupInProgressSpinner();
             SetupAdvancedMenu();
-
-            m_SearchTextChangeTimestamp = 0;
         }
 
         public void OnEnable()
         {
-            SetFilter(m_PackageManagerPrefs.currentFilterTab);
-            searchToolbar.SetValueWithoutNotify(m_PackageManagerPrefs.searchText);
-            searchToolbar.RegisterValueChangedCallback(OnSearchTextChanged);
+            OnActivePageChanged(m_PageManager.activePage);
 
             m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
-            m_PackageManagerPrefs.onFilterTabChanged += SetFilter;
-            m_PageManager.onFiltersChange += UpdateFiltersMenuText;
+            m_PageManager.onActivePageChanged += OnActivePageChanged;
+            m_PageManager.onFiltersChange += OnFiltersChange;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
 
@@ -88,21 +75,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnDisable()
         {
-            searchToolbar.UnregisterValueChangedCallback(OnSearchTextChanged);
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;
-            m_PackageManagerPrefs.onFilterTabChanged -= SetFilter;
-            m_PageManager.onFiltersChange -= UpdateFiltersMenuText;
+            m_PageManager.onActivePageChanged -= OnActivePageChanged;
+            m_PageManager.onFiltersChange -= OnFiltersChange;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
 
             RefreshInProgressSpinner(false);
-        }
-
-        public void FocusOnSearch()
-        {
-            searchToolbar.Focus();
-            // Line below is required to make sure focus is in textfield
-            searchToolbar.Q<TextField>()?.visualInput?.Focus();
         }
 
         private void RefreshInProgressSpinner(bool? showSpinner = null)
@@ -116,132 +95,87 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesChanged(PackagesChangeArgs args)
         {
-            UpdateOrdering(m_PageManager.GetPage());
-
-            if (m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.MyRegistries)
-            {
-                // We can skip the whole database scan to save some time if non of the packages changed are related to scoped registry
-                // Note that we also check `preUpdate` to catch the cases where packages are move from ScopedRegistry to UnityRegistry
-                if (!args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).Any(p => p.versions.primary.HasTag(PackageTag.ScopedRegistry)))
-                    return;
-
-                if (!m_PackageDatabase.allPackages.Any(p => p.versions.primary.HasTag(PackageTag.ScopedRegistry)))
-                    SetFilter(PackageFilterTab.UnityRegistry);
-            }
-
             if (args.progressUpdated.Any() || args.added.Any() || args.removed.Any())
                 RefreshInProgressSpinner();
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
-            var page = m_PageManager.GetPage();
-            EnableMenuForCapability(page.capability);
-            UpdateOrdering(page);
+            UpdateMenuEnableStatus(m_PageManager.activePage.capability);
         }
 
         private void OnInternetReachabilityChange(bool value)
         {
-            var page = m_PageManager.GetPage();
-            EnableMenuForCapability(page.capability);
+            UpdateMenuEnableStatus(m_PageManager.activePage.capability);
         }
 
-        internal void SetCurrentSearch(string text)
+        private void UpdateFilterMenuText(PageFilters filters)
         {
-            var value = text?.Trim() ?? string.Empty;
-            searchToolbar.SetValueWithoutNotify(value);
-            m_PackageManagerPrefs.searchText = value;
+            var filtersSet = new[] { filters.status.GetDisplayName() }.Concat(filters.categories).Concat(filters.labels)
+                .Where(s => !string.IsNullOrEmpty(s)).ToArray();
+            filtersMenu.text = filtersSet.Any() ? string.Format(L10n.Tr("Filters ({0})"), string.Join(", ", filtersSet)) : L10n.Tr("Filters");
         }
 
-        private void OnSearchTextChanged(ChangeEvent<string> evt)
+        private void UpdateFiltersMenu(IPage page)
         {
-            m_SearchTextChangeTimestamp = DateTime.Now.Ticks;
-
-            EditorApplication.update -= DelayedSearchEvent;
-            EditorApplication.update += DelayedSearchEvent;
+            var showFiltersMenu = page.supportedStatusFilters.Any();
+            UIUtils.SetElementDisplay(filtersMenu, showFiltersMenu);
+            UIUtils.SetElementDisplay(clearFiltersButton, showFiltersMenu);
+            if (!showFiltersMenu)
+                return;
+            UpdateFilterMenuText(page.filters);
         }
 
-        private void DelayedSearchEvent()
+        private void UpdateSortMenuText(PageSortOption sortOption)
         {
-            if (DateTime.Now.Ticks - m_SearchTextChangeTimestamp > k_SearchEventDelayTicks)
+            var displayName = sortOption.GetDisplayName();
+            sortingMenu.text = string.IsNullOrEmpty(displayName) ? L10n.Tr("Sort") : string.Format(L10n.Tr("Sort: {0}"), displayName);
+        }
+
+        private void UpdateSortingMenu(IPage page)
+        {
+            var showSortingMenu = page.supportedSortOptions.Any();
+            UIUtils.SetElementDisplay(sortingMenu, showSortingMenu);
+            if (!showSortingMenu)
+                return;
+
+            sortingMenu.menu.MenuItems().Clear();
+            foreach (var sortOption in page.supportedSortOptions)
             {
-                EditorApplication.update -= DelayedSearchEvent;
-                var value = searchToolbar.value.Trim();
-                m_PackageManagerPrefs.searchText = value;
-                if (!string.IsNullOrEmpty(value))
-                    PackageManagerWindowAnalytics.SendEvent("search");
+                sortingMenu.menu.AppendAction(sortOption.GetDisplayName(), a =>
+                {
+                    var filters = page.filters.Clone();
+                    filters.sortOption = sortOption;
+                    if (page.UpdateFilters(filters))
+                        PackageManagerFiltersAnalytics.SendEvent(filters);
+                },a => page.filters.sortOption == sortOption
+                    ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
             }
+            UpdateSortMenuText(page.filters.sortOption);
         }
 
-        private static string GetFilterDisplayName(PackageFilterTab filter)
+        private void UpdateMenuEnableStatus(PageCapability capability)
         {
-            switch (filter)
-            {
-                case PackageFilterTab.UnityRegistry:
-                    return L10n.Tr("Unity Registry");
-                case PackageFilterTab.MyRegistries:
-                    return L10n.Tr("My Registries");
-                case PackageFilterTab.InProject:
-                    return L10n.Tr("In Project");
-                case PackageFilterTab.BuiltIn:
-                    return L10n.Tr("Built-in");
-                case PackageFilterTab.AssetStore:
-                    return L10n.Tr("My Assets");
-            }
-            return string.Empty;
-        }
-
-        internal void SetFilter(PackageFilterTab filter)
-        {
-            m_PackageManagerPrefs.currentFilterTab = filter;
-            filterTabsMenu.text = string.Format(L10n.Tr("Packages: {0}"), GetFilterDisplayName(filter));
-
-            var page = m_PageManager.GetPage();
-            UpdateOrdering(page);
-
-            var supportFilters = page.capability.supportFilters;
-            UIUtils.SetElementDisplay(filtersMenu, supportFilters);
-            UIUtils.SetElementDisplay(clearFiltersButton, supportFilters);
-            UpdateFiltersMenuText(page, page.filters);
-            EnableMenuForCapability(page.capability);
-        }
-
-        private void EnableMenuForCapability(PageCapability capability)
-        {
-            var enable = !(capability.requireUserLoggedIn && !m_UnityConnect.isUserLoggedIn) &&
-                !(capability.requireNetwork && !m_Application.isInternetReachable);
-            orderingMenu.SetEnabled(enable);
+            var enable = (m_UnityConnect.isUserLoggedIn || (capability & PageCapability.RequireUserLoggedIn) == 0) &&
+                         (m_Application.isInternetReachable || (capability & PageCapability.RequireNetwork) == 0);
+            sortingMenu.SetEnabled(enable);
             filtersMenu.SetEnabled(enable);
             clearFiltersButton.SetEnabled(enable);
-            searchToolbar.SetEnabled(enable);
         }
 
-        private void UpdateFiltersMenuText(IPage page, PageFilters filters)
+        private void OnActivePageChanged(IPage page)
+        {
+            UpdateSortingMenu(page);
+            UpdateFiltersMenu(page);
+            UpdateMenuEnableStatus(page.capability);
+        }
+
+        private void OnFiltersChange(IPage page, PageFilters filters)
         {
             if (!page.isActivePage)
                 return;
-
-            var filtersSet = new List<string>();
-            if (filters?.isFilterSet ?? false)
-            {
-                if (!string.IsNullOrEmpty(filters.status))
-                    filtersSet.Add(L10n.Tr("Status"));
-                if (filters.categories?.Any() ?? false)
-                    filtersSet.Add(L10n.Tr("Category"));
-                if (filters.labels?.Any() ?? false)
-                    filtersSet.Add(L10n.Tr("Label"));
-            }
-            filtersMenu.text = filtersSet.Any() ? $"{L10n.Tr("Filters")} ({string.Join(",", filtersSet.ToArray())})" :  L10n.Tr("Filters");
-        }
-
-        private void SetFilterFromMenu(PackageFilterTab filter)
-        {
-            if (filter == m_PackageManagerPrefs.currentFilterTab)
-                return;
-
-            SetCurrentSearch(string.Empty);
-            SetFilter(filter);
-            PackageManagerWindowAnalytics.SendEvent("changeFilter");
+            UpdateFilterMenuText(filters);
+            UpdateSortMenuText(filters.sortOption);
         }
 
         private void SetupInProgressSpinner()
@@ -253,7 +187,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return;
 
                 var rect = GUIUtility.GUIToScreenRect(spinnerButtonContainer.worldBound);
-                var dropdown = new InProgressDropdown(m_ResourceLoader, m_PackageManagerPrefs, m_UpmClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_PageManager) { position = rect };
+                var dropdown = new InProgressDropdown(m_ResourceLoader, m_UpmClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_PageManager) { position = rect };
                 DropdownContainer.ShowDropdown(dropdown);
             });
         }
@@ -338,18 +272,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                     }
 
 
-                    if (!m_OperationDispatcher.isInstallOrUninstallInProgress)
-                    {
-                        m_OperationDispatcher.InstallFromPath(m_IOProxy.GetParentDirectory(path), out var tempPackageId);
-                        PackageManagerWindowAnalytics.SendEvent("addFromDisk");
+                    if (m_OperationDispatcher.isInstallOrUninstallInProgress)
+                        return;
 
-                        var package = m_PackageDatabase.GetPackage(tempPackageId);
-                        if (package != null)
-                        {
-                            m_PackageManagerPrefs.currentFilterTab = PackageFilterTab.InProject;
-                            m_PageManager.GetPage().SetNewSelection(package);
-                        }
-                    }
+                    m_OperationDispatcher.InstallFromPath(m_IOProxy.GetParentDirectory(path), out var tempPackageId);
+                    PackageManagerWindowAnalytics.SendEvent("addFromDisk");
+                    SelectPackageInProject(tempPackageId);
                 }
                 catch (System.IO.IOException e)
                 {
@@ -363,18 +291,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.action = () =>
             {
                 var path = m_Application.OpenFilePanelWithFilters(L10n.Tr("Select package on disk"), "", new[] { "Package tarball", "tgz, tar.gz" });
-                if (!string.IsNullOrEmpty(path) && !m_OperationDispatcher.isInstallOrUninstallInProgress)
-                {
-                    m_OperationDispatcher.InstallFromPath(path, out var tempPackageId);
-                    PackageManagerWindowAnalytics.SendEvent("addFromTarball");
-
-                    var package = m_PackageDatabase.GetPackage(tempPackageId);
-                    if (package != null)
-                    {
-                        m_PackageManagerPrefs.currentFilterTab = PackageFilterTab.InProject;
-                        m_PageManager.GetPage().SetNewSelection(package);
-                    }
-                }
+                if (string.IsNullOrEmpty(path) || m_OperationDispatcher.isInstallOrUninstallInProgress)
+                    return;
+                m_OperationDispatcher.InstallFromPath(path, out var tempPackageId);
+                PackageManagerWindowAnalytics.SendEvent("addFromTarball");
+                SelectPackageInProject(tempPackageId);
             };
 
             dropdownItem = addMenu.AddBuiltInDropdownItem();
@@ -390,23 +311,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                     submitButtonText = L10n.Tr("Install"),
                     onInputSubmitted = url =>
                     {
-                        if (!m_OperationDispatcher.isInstallOrUninstallInProgress)
-                        {
-                            m_OperationDispatcher.InstallFromUrl(url);
-                            PackageManagerWindowAnalytics.SendEvent("addFromGitUrl", url);
-
-                            var package = m_PackageDatabase.GetPackage(url);
-                            if (package != null)
-                            {
-                                m_PackageManagerPrefs.currentFilterTab = PackageFilterTab.InProject;
-                                m_PageManager.GetPage().SetNewSelection(package);
-                            }
-                        }
+                        if (m_OperationDispatcher.isInstallOrUninstallInProgress)
+                            return;
+                        m_OperationDispatcher.InstallFromUrl(url);
+                        PackageManagerWindowAnalytics.SendEvent("addFromGitUrl", url);
+                        SelectPackageInProject(url);
                     },
                     windowSize = new Vector2(resolvedStyle.width, 50)
                 };
-                // If a background GUI painted before, the coordinates got could be different. 
-                // Repaint the package manager to ensure the coordinates retrieved is from packmanager. 
+                // If a background GUI painted before, the coordinates got could be different.
+                // Repaint the package manager to ensure the coordinates retrieved is from packmanager.
                 PackageManagerWindow.GetWindow<PackageManagerWindow>().RepaintImmediately();
                 addMenu.ShowInputDropdown(args);
             };
@@ -416,160 +330,63 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.userData = "AddByName";
             dropdownItem.action = () =>
             {
-                // If a background GUI painted before, the coordinates got could be different. 
-                // Repaint the package manager to ensure the coordinates retrieved is from packmanager. 
+                // If a background GUI painted before, the coordinates got could be different.
+                // Repaint the package manager to ensure the coordinates retrieved is from packmanager.
                 PackageManagerWindow.GetWindow<PackageManagerWindow>().RepaintImmediately();
                 // Same as above, the worldBound of the toolbar is used rather than the addMenu
                 var rect = GUIUtility.GUIToScreenRect(worldBound);
-                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_PackageManagerPrefs, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance) { position = rect };
+                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance) { position = rect };
                 DropdownContainer.ShowDropdown(dropdown);
             };
         }
 
-        private void AddFilterTabToDropdownMenu(PackageFilterTab tab, Action<DropdownMenuAction> action = null, Func<DropdownMenuAction, DropdownMenuAction.Status> actionStatusCallback = null)
+        private void SelectPackageInProject(string packageUniqueId)
         {
-            action = action ?? (a => SetFilterFromMenu(tab));
-            actionStatusCallback = actionStatusCallback ?? (a => m_PackageManagerPrefs.currentFilterTab == tab ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
-            filterTabsMenu.menu.AppendAction(GetFilterDisplayName(tab), action, actionStatusCallback, tab);
-        }
-
-        private void SetupFilterTabsMenu()
-        {
-            filterTabsMenu.menu.MenuItems().Clear();
-            filterTabsMenu.ShowTextTooltipOnSizeChange(-16);
-
-            AddFilterTabToDropdownMenu(PackageFilterTab.UnityRegistry);
-            AddFilterTabToDropdownMenu(PackageFilterTab.MyRegistries, null, a =>
-            {
-                if (!m_PackageDatabase.allPackages.Any(p => p.IsInTab(PackageFilterTab.MyRegistries)))
-                    return DropdownMenuAction.Status.Hidden;
-                else if (m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.MyRegistries)
-                    return DropdownMenuAction.Status.Checked;
-                return DropdownMenuAction.Status.Normal;
-            });
-            AddFilterTabToDropdownMenu(PackageFilterTab.InProject);
-            filterTabsMenu.menu.AppendSeparator();
-            AddFilterTabToDropdownMenu(PackageFilterTab.AssetStore);
-            filterTabsMenu.menu.AppendSeparator();
-            AddFilterTabToDropdownMenu(PackageFilterTab.BuiltIn);
-        }
-
-        private void SetupOrdering()
-        {
-            orderingMenu.menu.MenuItems().Clear();
-            orderingMenu.ShowTextTooltipOnSizeChange(-16);
-            UIUtils.SetElementDisplay(orderingMenu, false);
-        }
-
-        private void UpdateOrdering(IPage page)
-        {
-            orderingMenu.menu.MenuItems().Clear();
-
-            var shouldDisplayOrdering = page?.capability.orderingValues?.Any() ?? false;
-            if (!shouldDisplayOrdering)
-            {
-                UIUtils.SetElementDisplay(orderingMenu, false);
+            var package = m_PackageDatabase.GetPackage(packageUniqueId);
+            if (package == null)
                 return;
-            }
 
-            UIUtils.SetElementDisplay(orderingMenu, true);
-
-            var matchCurrentFilter = false;
-            if (shouldDisplayOrdering)
-            {
-                foreach (var ordering in page.capability.orderingValues)
-                    matchCurrentFilter |= AddOrdering(page, ordering);
-            }
-
-            if (!matchCurrentFilter)
-            {
-                var filters = page.filters?.Clone();
-                var firstOrdering = page.capability?.orderingValues?.FirstOrDefault();
-                if (filters != null && firstOrdering != null)
-                {
-                    orderingMenu.text = $"Sort: {L10n.Tr(firstOrdering.displayName)}";
-                    filters.orderBy = firstOrdering.orderBy;
-                    filters.isReverseOrder = firstOrdering.order == PageCapability.Order.Descending;
-
-                    if(page.UpdateFilters(filters))
-                        PackageManagerFiltersAnalytics.SendEvent(filters);
-                }
-            }
+            m_PageManager.activePage = m_PageManager.GetPage(InProjectPage.k_Id);
+            m_PageManager.activePage.SetNewSelection(package);
         }
 
-        private bool AddOrdering(IPage page, PageCapability.Ordering ordering)
+        private void SetupSortingMenu()
         {
-            var matchCurrentFilter = false;
-            orderingMenu.menu.AppendAction($"{L10n.Tr(ordering.displayName)}", a =>
-            {
-                orderingMenu.text = $"{L10n.Tr("Sort: ")} {a.name}";
-
-                var filters = page.filters.Clone();
-                filters.orderBy = ordering.orderBy;
-                filters.isReverseOrder = ordering.order == PageCapability.Order.Descending;
-                if (page.UpdateFilters(filters))
-                    PackageManagerFiltersAnalytics.SendEvent(filters);
-
-            }, a =>
-                {
-                    return page.filters.orderBy == ordering.orderBy &&
-                    (page.filters.isReverseOrder ? ordering.order == PageCapability.Order.Descending : ordering.order != PageCapability.Order.Descending)
-                    ? DropdownMenuAction.Status.Checked
-                    : DropdownMenuAction.Status.Normal;
-                });
-
-            if (page.filters?.orderBy == ordering.orderBy &&
-                (page.filters?.isReverseOrder ?? false ? ordering.order == PageCapability.Order.Descending : ordering.order != PageCapability.Order.Descending)
-            )
-            {
-                matchCurrentFilter = true;
-                orderingMenu.text = $"Sort: {L10n.Tr(ordering.displayName)}";
-            }
-
-            return matchCurrentFilter;
+            sortingMenu.menu.MenuItems().Clear();
+            sortingMenu.ShowTextTooltipOnSizeChange(-16);
+            UIUtils.SetElementDisplay(sortingMenu, false);
         }
 
         private void SetupFilters()
         {
             filtersMenu.ShowTextTooltipOnSizeChange(-16);
-
             filtersMenu.clicked += () =>
             {
-                if (PackageManagerFiltersWindow.instance != null)
-                    PackageManagerFiltersWindow.instance.Close();
+                PackageManagerFiltersWindow.instance?.Close();
 
-                var page = m_PageManager.GetPage();
-                if (page != null && PackageManagerFiltersWindow.ShowAtPosition(GUIUtility.GUIToScreenRect(filtersMenu.worldBound), page))
+                var page = m_PageManager.activePage;
+                if (page == null || !PackageManagerFiltersWindow.ShowAtPosition(GUIUtility.GUIToScreenRect(filtersMenu.worldBound), page))
+                    return;
+
+                filtersMenu.pseudoStates |= PseudoStates.Active;
+                PackageManagerFiltersWindow.instance.OnFiltersChanged += filters =>
                 {
-                    filtersMenu.pseudoStates |= PseudoStates.Active;
-                    PackageManagerFiltersWindow.instance.OnFiltersChanged += filters =>
-                    {
-                        if (page.UpdateFilters(filters))
-                            PackageManagerFiltersAnalytics.SendEvent(filters);
-                    };
-                    PackageManagerFiltersWindow.instance.OnClose += () =>
-                    {
-                        filtersMenu.pseudoStates &= ~PseudoStates.Active;
-                    };
-                }
+                    if (page.UpdateFilters(filters))
+                        PackageManagerFiltersAnalytics.SendEvent(filters);
+                };
+                PackageManagerFiltersWindow.instance.OnClose += () => filtersMenu.pseudoStates &= ~PseudoStates.Active;
             };
 
-            clearFiltersButton.clicked += () =>
-            {
-                var page = m_PageManager.GetPage();
-                page.ClearFilters();
-            };
+            clearFiltersButton.clicked += () => m_PageManager.activePage.ClearFilters();
         }
 
-        private VisualElementCache cache { get; set; }
+        private VisualElementCache cache { get; }
 
-        internal ExtendableToolbarMenu addMenu { get { return cache.Get<ExtendableToolbarMenu>("toolbarAddMenu"); }}
-        private ToolbarMenu filterTabsMenu { get { return cache.Get<ToolbarMenu>("toolbarFilterTabsMenu"); } }
-        private ToolbarMenu orderingMenu { get { return cache.Get<ToolbarMenu>("toolbarOrderingMenu"); } }
-        private ToolbarWindowMenu filtersMenu { get { return cache.Get<ToolbarWindowMenu>("toolbarFiltersMenu"); } }
-        private ToolbarButton clearFiltersButton { get { return cache.Get<ToolbarButton>("toolbarClearFiltersButton"); } }
-        private ToolbarSearchField searchToolbar { get { return cache.Get<ToolbarSearchField>("toolbarSearch"); } }
-        internal ExtendableToolbarMenu toolbarSettingsMenu { get { return cache.Get<ExtendableToolbarMenu>("toolbarSettingsMenu"); } }
+        internal ExtendableToolbarMenu addMenu => cache.Get<ExtendableToolbarMenu>("toolbarAddMenu");
+        private ToolbarMenu sortingMenu => cache.Get<ToolbarMenu>("toolbarOrderingMenu");
+        private ToolbarWindowMenu filtersMenu => cache.Get<ToolbarWindowMenu>("toolbarFiltersMenu");
+        private ToolbarButton clearFiltersButton => cache.Get<ToolbarButton>("toolbarClearFiltersButton");
+        internal ExtendableToolbarMenu toolbarSettingsMenu => cache.Get<ExtendableToolbarMenu>("toolbarSettingsMenu");
         internal VisualElement spinnerButtonContainer => cache.Get<VisualElement>("spinnerButtonContainer");
         internal LoadingSpinner inProgressSpinner => cache.Get<LoadingSpinner>("inProgressSpinner");
     }

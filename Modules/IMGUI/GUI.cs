@@ -91,13 +91,7 @@ namespace UnityEngine
         // The tooltip of the control the mouse is currently over, or which has keyboard focus. (RO).
         public static string tooltip
         {
-            get
-            {
-                string str = Internal_GetTooltip();
-                if (str != null)
-                    return str;
-                return "";
-            }
+            get { return Internal_GetTooltip(); }
             set { Internal_SetTooltip(value); }
         }
 
@@ -607,11 +601,7 @@ namespace UnityEngine
             editor.controlID = id;
             editor.DetectFocusChange();
 
-            if (TouchScreenKeyboard.isRequiredToForceOpen)
-            {
-                HandleTextFieldEventForDesktopWithForcedKeyboard(position, id, content, multiline, maxLength, style, secureText, editor);
-            }
-            else if (TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed)
+            if (TouchScreenKeyboard.isSupported && !TouchScreenKeyboard.isInPlaceEditingAllowed)
             {
                 HandleTextFieldEventForTouchscreen(position, id, content, multiline, maxLength, style, secureText, maskChar, editor);
             }
@@ -812,62 +802,6 @@ namespace UnityEngine
                     content.text = content.text.Substring(0, maxLength);
                 evt.Use();
             }
-        }
-
-        private static void HandleTextFieldEventForDesktopWithForcedKeyboard(Rect position, int id, GUIContent content, bool multiline, int maxLength, GUIStyle style, string secureText, TextEditor editor)
-        {
-            // On certain platforms, the TouchScreenKeyboard must always be "open" in order to receive text events. The keyboard.active state signals
-            // the platform to switch between "text input" and "key input" modes; unlike other platforms only one of these modes is active at a time.
-            // Therefore, TextField must open the keyboard when it has focus and deactivate it when it loses focus.
-
-            bool openKeyboard = false;
-
-            // Due to the asynchronous behavior of the platform's APIs (race conditions) we cannot guarantee the keyboard will land in the correct state
-            // simply by responding to mouse and keyboard events. Instead we must check the keyboard state matches the UI focus state every
-            // frame and make changes when necessary.
-            if (Event.current.type == EventType.Repaint)
-            {
-                // Disable keyboard for previously active text field, if any
-                if (s_HotTextField != -1 && s_HotTextField != id)
-                {
-                    TextEditor currentEditor = (TextEditor)GUIUtility.GetStateObject(typeof(TextEditor), s_HotTextField);
-                    currentEditor.keyboardOnScreen.active = false;
-                    currentEditor.keyboardOnScreen = null;
-                }
-
-                if (editor.keyboardOnScreen != null)
-                {
-                    if (GUIUtility.keyboardControl != id || !Application.isFocused)
-                    {
-                        // Text field isn't focused; reset keyboard reference
-                        editor.keyboardOnScreen.active = false;
-                        editor.keyboardOnScreen = null;
-                    }
-                    else if (!editor.keyboardOnScreen.active)
-                    {
-                        // UI is focused and keyboard is valid, but it's inactive for some reason; need to re-open it
-                        openKeyboard = true;
-                    }
-                }
-                else if (GUIUtility.keyboardControl == id && Application.isFocused)
-                {
-                    // Text field is focused but don't have a valid Keyboard; need to open it
-                    openKeyboard = true;
-                }
-            }
-
-            if (openKeyboard)
-            {
-                editor.keyboardOnScreen = TouchScreenKeyboard.Open(
-                            secureText ?? content.text,
-                            TouchScreenKeyboardType.Default,
-                            true,
-                            multiline,
-                            (secureText != null));
-            }
-
-            // Continue processing the event normally for Desktop
-            HandleTextFieldEventForDesktop(position, id, content, multiline, maxLength, style, editor);
         }
 
         public static bool Toggle(Rect position, bool value, string text)

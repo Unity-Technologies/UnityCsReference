@@ -16,14 +16,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private AssetStoreCache m_AssetStoreCache;
-        private AssetStoreCallQueue m_AssetStoreCallQueue;
+        private BackgroundFetchHandler m_BackgroundFetchHandler;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
-            m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
+            m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
         }
 
         private Dictionary<string, PackageItem> m_PackageItemsLookup;
@@ -73,7 +73,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // SelectionChange happens before BindItems, hence we use m_PageManager.SetSelected instead of packageItem.SelectMainItem
             // as PackageItems are null sometimes when SelectionChange is triggered
-            m_PageManager.GetPage().SetNewSelection(selections);
+            m_PageManager.activePage.SetNewSelection(selections);
         }
 
         private void UnbindItem(VisualElement item, int index)
@@ -83,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if(product == null)
                 return;
 
-            m_AssetStoreCallQueue.RemoveFromFetchProductInfoQueue(product.id);
+            m_BackgroundFetchHandler.RemoveFromFetchProductInfoQueue(product.id);
             m_PackageItemsLookup.Remove(package.uniqueId);
         }
 
@@ -106,10 +106,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             if (package.versions.primary.HasTag(PackageTag.Placeholder))
-                m_AssetStoreCallQueue.AddToFetchProductInfoQueue(product.id);
+                m_BackgroundFetchHandler.AddToFetchProductInfoQueue(product.id);
 
             if (m_AssetStoreCache.GetLocalInfo(product.id) != null && m_AssetStoreCache.GetUpdateInfo(product.id) == null)
-                m_AssetStoreCallQueue.InsertToCheckUpdateQueue(product.id);
+                m_BackgroundFetchHandler.PushToCheckUpdateStack(product.id);
         }
 
         private VisualElement MakeItem()
@@ -154,8 +154,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (visualStates == null)
                 return;
 
-            page ??= m_PageManager.GetPage();
-            if (page.tab != PackageFilterTab.AssetStore)
+            page ??= m_PageManager.activePage;
+            if (page.id != MyAssetsPage.k_Id)
                 return;
 
             selection ??= page.GetSelection();
@@ -180,7 +180,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             // For now we want to just scroll to any of the selections, this behaviour might change in the future depending on how users react
-            var firstSelectedPackageUniqueId = m_PageManager.GetPage().GetSelection().firstSelection?.packageUniqueId;
+            var firstSelectedPackageUniqueId = m_PageManager.activePage.GetSelection().firstSelection?.packageUniqueId;
             if (string.IsNullOrEmpty(firstSelectedPackageUniqueId))
                 return;
 
@@ -200,7 +200,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var state in visualStates)
                 GetPackageItem(state.packageUniqueId)?.UpdateVisualState(state);
 
-            if (m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid())
+            if (m_PageManager.activePage.UpdateSelectionIfCurrentSelectionIsInvalid())
                 ScrollToSelection();
         }
 
@@ -208,7 +208,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             UpdateItemsSource(page.visualStates.ToList(), true);
 
-            m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid();
+            m_PageManager.activePage.UpdateSelectionIfCurrentSelectionIsInvalid();
             ScrollToSelection();
         }
 
@@ -218,21 +218,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!rebuildCalled)
             {
                 foreach (var package in args.updated)
-                    GetPackageItem(package.uniqueId)?.SetPackageAndVisualState(package, m_PageManager.GetPage().visualStates.Get(package.uniqueId));
+                    GetPackageItem(package.uniqueId)?.SetPackageAndVisualState(package, m_PageManager.activePage.visualStates.Get(package.uniqueId));
             }
 
-            if (m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid())
+            if (m_PageManager.activePage.UpdateSelectionIfCurrentSelectionIsInvalid())
                 ScrollToSelection();
         }
 
-        public void OnFilterTabChanged(PackageFilterTab filterTab)
+        public void OnActivePageChanged(IPage page)
         {
-            // Do nothing as we only show PackageListView for `My Assets` tab for now
+            // Do nothing as we only show PackageListView for `My Assets` page for now
         }
 
         public void OnSeeAllPackageVersionsChanged(bool value)
         {
-            // Do nothing as `My Assets` tab is not affected by `See All Package Versions` setting
+            // Do nothing as `My Assets` page is not affected by `See All Package Versions` setting
         }
 
         public void OnKeyDownShortcut(KeyDownEvent evt)
@@ -247,22 +247,30 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 case KeyCode.A when evt.actionKey:
                     SelectAll();
+                    evt.StopPropagation();
                     break;
                 case KeyCode.PageUp:
                     if (!selectedIndices.Any()) return;
                     index = Mathf.Max(0, selectedIndices.Max() - (virtualizationController.visibleItemCount - 1));
                     HandleSelectionAndScroll(index, evt.shiftKey);
+                    evt.StopPropagation();
                     break;
                 case KeyCode.PageDown:
                     if (!selectedIndices.Any()) return;
                     index = Mathf.Min(viewController.itemsSource.Count - 1,
                         selectedIndices.Max() + (virtualizationController.visibleItemCount - 1));
                     HandleSelectionAndScroll(index, evt.shiftKey);
+                    evt.StopPropagation();
+                    break;
+                // On mac moving up and down will trigger the sound of an incorrect key being pressed
+                // This should be fixed in UUM-26264 by the UIToolkit team
+                case KeyCode.DownArrow:
+                case KeyCode.UpArrow:
+                    evt.StopPropagation();
                     break;
             }
 
             Focus();
-            evt.StopPropagation();
         }
 
         public void OnNavigationMoveShortcut(NavigationMoveEvent evt)

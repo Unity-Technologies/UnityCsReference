@@ -203,13 +203,17 @@ namespace UnityEngine.Networking
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref data, safety);
         }
 
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(DownloadHandler handler) => handler.m_Ptr;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerBuffer.h")]
     public sealed class DownloadHandlerBuffer : DownloadHandler
     {
-        private extern static IntPtr Create(DownloadHandlerBuffer obj);
+        private extern static IntPtr Create([Unmarshalled] DownloadHandlerBuffer obj);
 
         private NativeArray<byte> m_NativeData;
 
@@ -239,14 +243,18 @@ namespace UnityEngine.Networking
             return GetCheckedDownloader<DownloadHandlerBuffer>(www).text;
         }
 
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(DownloadHandlerBuffer handler) => handler.m_Ptr;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/UnityWebRequest/Public/DownloadHandler/DownloadHandlerScript.h")]
     public class DownloadHandlerScript : DownloadHandler
     {
-        private extern static IntPtr Create(DownloadHandlerScript obj);
-        private extern static IntPtr CreatePreallocated(DownloadHandlerScript obj, [Unmarshalled]byte[] preallocatedBuffer);
+        private extern static IntPtr Create([Unmarshalled] DownloadHandlerScript obj);
+        private extern static IntPtr CreatePreallocated([Unmarshalled] DownloadHandlerScript obj, [Unmarshalled]byte[] preallocatedBuffer);
 
         private void InternalCreateScript()
         {
@@ -273,6 +281,10 @@ namespace UnityEngine.Networking
             InternalCreateScript(preallocatedBuffer);
         }
 
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(DownloadHandlerScript handler) => handler.m_Ptr;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -280,7 +292,7 @@ namespace UnityEngine.Networking
     public sealed class DownloadHandlerFile : DownloadHandler
     {
         [NativeThrows]
-        private extern static IntPtr Create(DownloadHandlerFile obj, string path, bool append);
+        private extern static IntPtr Create([Unmarshalled] DownloadHandlerFile obj, string path, bool append);
 
         private void InternalCreateVFS(string path, bool append)
         {
@@ -317,5 +329,11 @@ namespace UnityEngine.Networking
         }
 
         public extern bool removeFileOnAbort { get; set; }
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(DownloadHandlerFile handler) => handler.m_Ptr;
+        }
+
     }
 }

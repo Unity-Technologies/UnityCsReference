@@ -34,13 +34,20 @@ namespace Unity.GraphToolsFoundation.Editor
         public string StyleName { get; }
 
         /// <summary>
+        /// When applicable, the mode of this item.
+        /// </summary>
+        /// <remarks>A node can have multiple modes. Each mode needs to be added as a different item in the Item Library.</remarks>
+        public string Mode { get; }
+
+        /// <summary>
         /// Initializes a new instance of the LibraryItemAttribute class.
         /// </summary>
         /// <param name="stencilType">Type of Stencil to use to create the element.</param>
         /// <param name="context">Search context where this item should figure.</param>
         /// <param name="path">Path of the item in the library.</param>
         /// <param name="styleName">Style name to give to this item.</param>
-        public LibraryItemAttribute(Type stencilType, SearchContext context, string path, string styleName = null)
+        /// <param name="mode">When applicable, the mode of this item.</param>
+        public LibraryItemAttribute(Type stencilType, SearchContext context, string path, string styleName = null, string mode = null)
         {
             Assert.IsTrue(
                 stencilType.IsSubclassOf(typeof(Stencil)),
@@ -50,6 +57,7 @@ namespace Unity.GraphToolsFoundation.Editor
             Path = path;
             Context = context;
             StyleName = styleName;
+            Mode = mode;
         }
     }
 }

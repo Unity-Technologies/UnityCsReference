@@ -345,7 +345,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         internal void UpdateWindowsWithSameCurrentGraph_Internal(bool currentWindowIsClosing)
         {
-            var currentGraph = GraphTool?.ToolState?.GraphModel;
+            var currentGraph = GraphTool?.ToolState?.CurrentGraph;
             if (currentGraph == null)
                 return;
 
@@ -357,8 +357,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             foreach (var window in windows.Where(w => w.GetInstanceID() != s_LastFocusedEditor))
             {
-                var otherGraph = window.GraphTool?.ToolState?.GraphModel;
-                if (otherGraph != null && currentGraph == otherGraph)
+                var otherGraph = window.GraphTool?.ToolState?.CurrentGraph;
+                if (otherGraph != null && currentGraph.Equals(otherGraph))
                 {
                     // Unfocused windows with the same graph are disabled
                     window.GraphView?.SetEnabled(false);

@@ -16,7 +16,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     [Serializable]
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Editor")]
-    class UndoStateComponent : StateComponent<UndoStateComponent.StateUpdater>, IDisposable
+    class UndoStateComponent : StateComponent<UndoStateComponent.StateUpdater>, IDisposable, IUndoableCommandMerger
     {
         /// <summary>
         /// Updater for <see cref="UndoStateComponent"/>.
@@ -123,6 +123,16 @@ namespace Unity.GraphToolsFoundation.Editor
         ~UndoStateComponent()
         {
             Dispose(false);
+        }
+
+        public void StartMergingUndoableCommands()
+        {
+            m_UndoStateRecorder.StartMergingUndoableCommands();
+        }
+
+        public void StopMergingUndoableCommands()
+        {
+            m_UndoStateRecorder.StopMergingUndoableCommands();
         }
     }
 }

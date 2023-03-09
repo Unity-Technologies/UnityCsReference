@@ -85,13 +85,13 @@ namespace UnityEditor
         extern internal static void SetSelectionWithActiveObject(Object[] newSelection, Object activeObject);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern internal static void SetSelectionWithActiveInstanceID([NotNull("NullReferenceException")] int[] newSelection, int activeObject);
+        extern internal static void SetSelectionWithActiveInstanceID([NotNull] int[] newSelection, int activeObject);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetFullSelection(Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        internal static extern void SetFullSelectionByID([NotNull("NullReferenceException")]int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint);
+        internal static extern void SetFullSelectionByID([NotNull]int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         internal static extern void UpdateSelectionMetaData(Object context, DataMode dataModeHint);
@@ -131,7 +131,7 @@ namespace UnityEditor
         extern static int[] GetInstanceIDs();
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern static void SetInstanceIDs([NotNull("NullReferenceException")] int[] instanceIDs);
+        extern static void SetInstanceIDs([NotNull] int[] instanceIDs);
 
         [StaticAccessor("GetSceneTracker()", StaticAccessorType.Dot)]
         [NativeMethod("IsSelected")]

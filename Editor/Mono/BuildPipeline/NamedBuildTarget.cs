@@ -45,6 +45,7 @@ namespace UnityEditor.Build
         public static readonly NamedBuildTarget XboxOne = new NamedBuildTarget("XboxOne");
         public static readonly NamedBuildTarget tvOS = new NamedBuildTarget("tvOS");
         public static readonly NamedBuildTarget NintendoSwitch = new NamedBuildTarget("Nintendo Switch");
+        [System.Obsolete("Stadia has been removed in 2023.1")]
         public static readonly NamedBuildTarget Stadia = new NamedBuildTarget("Stadia");
         public static readonly NamedBuildTarget LinuxHeadlessSimulation = new NamedBuildTarget("LinuxHeadlessSimulation");
         [System.Obsolete("CloudRendering is deprecated, please use LinuxHeadlessSimulation (UnityUpgradable) -> LinuxHeadlessSimulation", false)]
@@ -99,8 +100,6 @@ namespace UnityEditor.Build
                     return NamedBuildTarget.tvOS;
                 case BuildTargetGroup.Switch:
                     return NamedBuildTarget.NintendoSwitch;
-                case BuildTargetGroup.Stadia:
-                    return NamedBuildTarget.Stadia;
                 case BuildTargetGroup.LinuxHeadlessSimulation:
                     return NamedBuildTarget.LinuxHeadlessSimulation;
                 case BuildTargetGroup.EmbeddedLinux:

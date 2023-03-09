@@ -122,6 +122,11 @@ namespace UnityEditor.VFX
         extern public void PushInt(int v);
         extern public void PushFloat(float v);
         extern public void PushBool(bool v);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(VFXCPUBufferData data) => data.m_Ptr;
+        }
     }
 
     [NativeType(CodegenOptions.Custom, "ScriptingVFXCPUBufferDesc")]

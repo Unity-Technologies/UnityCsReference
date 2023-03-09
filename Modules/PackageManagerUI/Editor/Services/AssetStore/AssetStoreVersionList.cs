@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private List<AssetStorePackageVersion> m_Versions;
 
-        public IEnumerable<IPackageVersion> key => m_Versions.Cast<IPackageVersion>();
+        public IEnumerable<IPackageVersion> key => m_Versions;
 
         public IPackageVersion installed => null;
 
@@ -50,13 +50,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_Versions = new List<AssetStorePackageVersion>();
 
-            if (productInfo == null || productInfo.productId <= 0 || productInfo.versionId <= 0)
-                return;
-
-            // The version we get from the product info the latest on the server
-            // The version we get from the localInfo is the version publisher set when uploading the .unitypackage file
-            // The publisher could update the version on the server but NOT upload a new .unitypackage file, that will
-            // result in a case where localInfo and productInfo have different version numbers but no update is available
+            // The version we get from productInfo is the latest on the server.
+            // The version we get from localInfo is the version publisher set when uploading the .unitypackage file.
+            // The publisher could've updated the version on the server but NOT upload a new .unitypackage file, that will
+            // result in a case where localInfo and productInfo have different version numbers but no update is available.
             // Because of this, we prefer showing version from the server (even when localInfo version is different)
             // and we only want to show the localInfo version when `localInfo.canUpdate` is set to true
             if (localInfo != null && updateInfo?.canUpdate == true)

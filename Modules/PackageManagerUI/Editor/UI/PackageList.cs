@@ -36,7 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageManagerPrefs m_PackageManagerPrefs;
         private PageManager m_PageManager;
         private UpmCache m_UpmCache;
-        private AssetStoreCallQueue m_AssetStoreCallQueue;
+        private BackgroundFetchHandler m_BackgroundFetchHandler;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private PageRefreshHandler m_PageRefreshHandler;
         private void ResolveDependencies()
@@ -47,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
             m_PageManager = container.Resolve<PageManager>();
             m_UpmCache = container.Resolve<UpmCache>();
-            m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
+            m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
         }
@@ -81,13 +81,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onListRebuild += OnListRebuild;
             m_PageManager.onListUpdate += OnListUpdate;
 
+            m_PageManager.onActivePageChanged += OnActivePageChanged;
             m_PageManager.onSelectionChanged += OnSelectionChanged;
 
-            m_AssetStoreCallQueue.onCheckUpdateProgress += OnCheckUpdateProgress;
+            m_BackgroundFetchHandler.onCheckUpdateProgress += OnCheckUpdateProgress;
 
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
-
-            m_PackageManagerPrefs.onFilterTabChanged += OnFilterTabChanged;
 
             listView.OnEnable();
             packageLoadBar.OnEnable();
@@ -99,7 +98,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             // manually build the items on initialization to refresh the UI
-            OnListRebuild(m_PageManager.GetPage());
+            OnListRebuild(m_PageManager.activePage);
         }
 
         public void OnDisable()
@@ -111,13 +110,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onListRebuild -= OnListRebuild;
             m_PageManager.onListUpdate -= OnListUpdate;
 
+            m_PageManager.onActivePageChanged += OnActivePageChanged;
             m_PageManager.onSelectionChanged -= OnSelectionChanged;
 
-            m_AssetStoreCallQueue.onCheckUpdateProgress -= OnCheckUpdateProgress;
+            m_BackgroundFetchHandler.onCheckUpdateProgress -= OnCheckUpdateProgress;
 
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
-
-            m_PackageManagerPrefs.onFilterTabChanged -= OnFilterTabChanged;
 
             listView.OnDisable();
             packageLoadBar.OnDisable();
@@ -182,44 +180,42 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
-            if (m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.AssetStore && UpdateListVisibility())
-                m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid();
+            var page = m_PageManager.activePage;
+            if (page.id == MyAssetsPage.k_Id && UpdateListVisibility())
+                page.UpdateSelectionIfCurrentSelectionIsInvalid();
         }
 
-        private void HideListShowMessage(bool isRefreshInProgress, bool isInitialFetchingDone, bool isCheckUpdateInProgress)
+        private void HideListShowMessage(bool isRefreshInProgress, bool isCheckUpdateInProgress)
         {
             string message;
-            var contentType = m_PageManager.GetPage().contentType ?? L10n.Tr("packages");
             if (isRefreshInProgress)
             {
-                if (!isInitialFetchingDone)
-                    message = string.Format(L10n.Tr("Fetching {0}..."), contentType);
-                else
-                    message = string.Format(L10n.Tr("Refreshing {0}..."), contentType);
+                message = L10n.Tr("Refreshing list...");
             }
             else if (isCheckUpdateInProgress)
             {
-                message = string.Format(L10n.Tr("Checking for updates {0}%..."), m_AssetStoreCallQueue.checkUpdatePercentage);
+                message = string.Format(L10n.Tr("Checking for updates {0}%..."), m_BackgroundFetchHandler.checkUpdatePercentage);
                 HideListShowEmptyArea(message, L10n.Tr("Cancel"), () =>
                 {
-                    m_PageManager.GetPage().ClearFilters();
-                    m_AssetStoreCallQueue.CancelCheckUpdates();
+                    m_PageManager.activePage.ClearFilters();
+                    m_BackgroundFetchHandler.CancelCheckUpdates();
                 });
                 return;
             }
-            else if (string.IsNullOrEmpty(m_PackageManagerPrefs.searchText))
-            {
-                message = string.Format(L10n.Tr("There are no {0}."), contentType);
-            }
             else
             {
-                const int maxSearchTextToDisplay = 64;
-                var searchText = m_PackageManagerPrefs.searchText;
-                if (searchText?.Length > maxSearchTextToDisplay)
-                    searchText = searchText.Substring(0, maxSearchTextToDisplay) + "...";
-                message = string.Format(L10n.Tr("No results for \"{0}\""), searchText);
+                var page = m_PageManager.activePage;
+                var searchText = page.searchText;
+                if (string.IsNullOrEmpty(searchText))
+                    message = page.filters.isFilterSet ? L10n.Tr("No results for the specified filters.") : L10n.Tr("No items to display.");
+                else
+                {
+                    const int maxSearchTextToDisplay = 64;
+                    if (searchText?.Length > maxSearchTextToDisplay)
+                        searchText = searchText.Substring(0, maxSearchTextToDisplay) + "...";
+                    message = string.Format(L10n.Tr("No results for \"{0}\""), searchText);
+                }
             }
-
             HideListShowEmptyArea(message);
         }
 
@@ -243,7 +239,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ButtonAction = buttonAction;
             UIUtils.SetElementDisplay(emptyAreaButton, buttonAction != null);
 
-            m_PageManager.GetPage().SetNewSelection(Enumerable.Empty<PackageAndVersionIdPair>());
+            m_PageManager.activePage.SetNewSelection(Enumerable.Empty<PackageAndVersionIdPair>());
         }
 
         private void HideEmptyAreaShowList(bool skipListRebuild)
@@ -258,32 +254,32 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageLoadBar.UpdateVisibility();
 
-            var page = m_PageManager.GetPage();
+            var page = m_PageManager.activePage;
             var selection = page.GetSelection();
             if (!selection.Any() && selection.previousSelections.Any())
                 page.SetNewSelection(selection.previousSelections);
 
             if (rebuild)
-                currentView.OnListRebuild(m_PageManager.GetPage());
+                currentView.OnListRebuild(page);
         }
 
         // Returns true if the list of packages is visible (either listView or scrollView), false otherwise
         private bool UpdateListVisibility(bool skipListRebuild = false)
         {
-            if (m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.AssetStore && !m_UnityConnect.isUserLoggedIn)
+            var page = m_PageManager.activePage;
+            if (page.id == MyAssetsPage.k_Id && !m_UnityConnect.isUserLoggedIn)
             {
                 HideListShowLogin();
                 return false;
             }
 
-            var page = m_PageManager.GetPage();
             var isListEmpty = !page.visualStates.Any(v => v.visible);
-            var isInitialFetchingDone = m_PageRefreshHandler.IsInitialFetchingDone();
-            var isCheckUpdateInProgress = m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.AssetStore &&
-                m_AssetStoreCallQueue.isCheckUpdateInProgress && page.filters.updateAvailableOnly;
+            var isInitialFetchingDone = m_PageRefreshHandler.IsInitialFetchingDone(page);
+            var isCheckUpdateInProgress = page.id == MyAssetsPage.k_Id &&
+                                          m_BackgroundFetchHandler.isCheckUpdateInProgress && page.filters.status == PageFilters.Status.UpdateAvailable;
             if (isListEmpty || !isInitialFetchingDone || isCheckUpdateInProgress)
             {
-                HideListShowMessage(m_PageRefreshHandler.IsRefreshInProgress(), isInitialFetchingDone, isCheckUpdateInProgress);
+                HideListShowMessage(m_PageRefreshHandler.IsRefreshInProgress(page), isCheckUpdateInProgress);
                 return false;
             }
 
@@ -299,18 +295,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnGeometryChange(GeometryChangedEvent evt)
         {
             const int heightCalculationBuffer = 4;
-            float containerHeight = resolvedStyle.height;
-            if (!float.IsNaN(containerHeight))
-            {
-                var numItems = ((int)containerHeight - heightCalculationBuffer - PackageLoadBar.k_FixedHeight) / PackageItem.k_MainItemHeight;
-                m_PackageManagerPrefs.numItemsPerPage = numItems <= 0 ? null : (int?)numItems;
-            }
+            var containerHeight = resolvedStyle.height;
+            if (float.IsNaN(containerHeight))
+                return;
+            var numItems = ((int)containerHeight - heightCalculationBuffer - PackageLoadBar.k_FixedHeight) / PackageItem.k_MainItemHeight;
+            m_PackageManagerPrefs.numItemsPerPage = numItems <= 0 ? null : numItems;
         }
 
         private void OnRefreshOperationStartOrFinish()
         {
             if (UpdateListVisibility())
-                m_PageManager.GetPage().UpdateSelectionIfCurrentSelectionIsInvalid();
+                m_PageManager.activePage.UpdateSelectionIfCurrentSelectionIsInvalid();
         }
 
         internal void OnFocus()
@@ -336,18 +331,18 @@ namespace UnityEditor.PackageManager.UI.Internal
                 currentView.OnListUpdate(args);
         }
 
-        private void OnFilterTabChanged(PackageFilterTab filterTab)
+        private void OnActivePageChanged(IPage page)
         {
-            if (m_PackageManagerPrefs.previousFilterTab == PackageFilterTab.AssetStore)
-                m_PageRefreshHandler.CancelRefresh();
+            if (m_PageManager.lastActivePage?.id == MyAssetsPage.k_Id)
+                m_PageRefreshHandler.CancelRefresh(m_PageManager.lastActivePage.refreshOptions);
 
             if (UpdateListVisibility())
-                currentView.OnFilterTabChanged(filterTab);
+                currentView.OnActivePageChanged(page);
         }
 
-        internal IPackageListView currentView => m_PackageManagerPrefs.currentFilterTab == PackageFilterTab.AssetStore ? (IPackageListView)listView : scrollView;
+        internal IPackageListView currentView => m_PageManager.activePage.id == MyAssetsPage.k_Id ? listView : scrollView;
 
-        private VisualElementCache cache { get; set; }
+        private VisualElementCache cache { get; }
         private PackageListView listView => cache.Get<PackageListView>("listView");
         private PackageListScrollView scrollView => cache.Get<PackageListScrollView>("scrollView");
         private VisualElement listContainer => cache.Get<VisualElement>("listContainer");

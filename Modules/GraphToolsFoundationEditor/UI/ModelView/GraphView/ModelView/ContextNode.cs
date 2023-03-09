@@ -65,6 +65,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public VisualElement ContextBlocksRoot { get; private set; }
 
+        public override float MaxInputLabelWidth => 70;
+
         /// <inheritdoc/>
         protected override void BuildElementUI()
         {

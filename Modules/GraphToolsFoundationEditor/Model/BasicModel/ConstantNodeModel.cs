@@ -4,7 +4,6 @@
 
 using System;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -12,7 +11,7 @@ namespace Unity.GraphToolsFoundation.Editor
 {
     [Serializable]
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Model")]
-    sealed class ConstantNodeModel : NodeModel, ISingleOutputPortNodeModel
+    sealed class ConstantNodeModel : NodeModel, ISingleOutputPortNodeModel, ICloneable
     {
         const string k_OutputPortId = "Output_0";
 
@@ -49,15 +48,6 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// The value, as an <see cref="object"/>.
-        /// </summary>
-        public object ObjectValue
-        {
-            get => m_Value.ObjectValue;
-            set => m_Value.ObjectValue = value;
-        }
-
-        /// <summary>
         /// The <see cref="Type"/> of the value.
         /// </summary>
         public Type Type => m_Value.Type;
@@ -77,30 +67,21 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConstantNodeModel"/> class.
+        /// </summary>
         public ConstantNodeModel()
         {
             this.SetCapability(Editor.Capabilities.Colorable, false);
         }
 
         /// <summary>
-        /// Initializes the node.
-        /// </summary>
-        /// <param name="constantTypeHandle">The type of value held by the node.</param>
-        public void Initialize(TypeHandle constantTypeHandle) => m_Value.Initialize(constantTypeHandle);
-
-        /// <summary>
         /// Clones this instance.
         /// </summary>
         /// <returns>A clone of this instance.</returns>
-        public ConstantNodeModel Clone()
+        public GraphElementModel Clone()
         {
-            if (GetType() == typeof(ConstantNodeModel))
-            {
-                return new ConstantNodeModel { Value = Value.Clone() };
-            }
-            var clone = Activator.CreateInstance(GetType());
-            EditorUtility.CopySerializedManagedFieldsOnly(this, clone);
-            var clonedModel = (ConstantNodeModel)clone;
+            var clonedModel = CloneHelpers.CloneUsingScriptableObjectInstantiate(this);
             if (clonedModel.Value != null)
                 clonedModel.Value.OwnerModel = clonedModel;
             return clonedModel;
@@ -109,7 +90,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"{GetType().Name}: {ObjectValue}";
+            return $"{GetType().Name}: {Value.ObjectValue}";
         }
 
         /// <summary>
@@ -136,6 +117,18 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (m_Value != null)
                 m_Value.OwnerModel = this;
+        }
+
+        /// <inheritdoc />
+        public override void OnBeforeCopy()
+        {
+            (m_Value as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
+        }
+
+        /// <inheritdoc />
+        public override void OnAfterPaste()
+        {
+            (m_Value as ICopyPasteCallbackReceiver)?.OnAfterPaste();
         }
     }
 }

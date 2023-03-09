@@ -15,7 +15,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// Base model that represents a dynamically defined node.
     /// </summary>
     [Serializable]
-    abstract class NodeModel : InputOutputPortsNodeModel, IHasProgress, ICollapsible
+    abstract class NodeModel : InputOutputPortsNodeModel, IHasProgress, ICollapsible, ICopyPasteCallbackReceiver
     {
         [SerializeField, HideInInspector]
         SerializedReferenceDictionary<string, Constant> m_InputConstantsById;
@@ -30,6 +30,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         [SerializeField, HideInInspector]
         bool m_Collapsed;
+
+        [SerializeField, HideInInspector]
+        int m_CurrentModeIndex;
 
         /// <inheritdoc />
         public override string IconTypeString => "node";
@@ -90,6 +93,23 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        /// <summary>
+        /// The different modes of the node.
+        /// </summary>
+        /// <remarks>The modes of a node share functionalities and are part of the same category.
+        /// E.g.: A “BasicOperator” node that has the following modes: “Add” , “divide” , “Multiply”, “Power”, “Square Root” and “Subtract”.
+        /// </remarks>
+        public virtual List<string> Modes { get; } = new List<string>();
+
+        /// <summary>
+        /// The current mode.
+        /// </summary>
+        public int CurrentModeIndex
+        {
+            get => m_CurrentModeIndex;
+            set => m_CurrentModeIndex = Modes.ElementAtOrDefault(m_CurrentModeIndex) != null ? value : 0;
+        }
+
         /// <inheritdoc />
         public virtual bool HasProgress => false;
 
@@ -121,6 +141,96 @@ namespace Unity.GraphToolsFoundation.Editor
             m_OutputsById = new OrderedPorts();
             m_PreviousInputs = null;
             m_PreviousOutputs = null;
+        }
+
+        /// <summary>
+        /// Changes the node mode.
+        /// </summary>
+        /// <param name="newModeIndex">The index of the mode to change to.</param>
+        public void ChangeMode(int newModeIndex)
+        {
+            if (Modes.ElementAtOrDefault(newModeIndex) == null)
+                return;
+
+            var existingWires = GetConnectedWires().ToList();
+            var oldInputConstants = m_InputConstantsById.ToList();
+            m_InputConstantsById.Clear();
+
+            // Remove old ports
+            foreach (var kv in m_InputsById)
+                GraphModel?.UnregisterPort(kv.Value);
+            foreach (var kv in m_OutputsById)
+                GraphModel?.UnregisterPort(kv.Value);
+
+            // Set the node mode index
+            CurrentModeIndex = newModeIndex;
+
+            // Instantiate the ports of the new node mode
+            m_InputsById = new OrderedPorts();
+            m_OutputsById = new OrderedPorts();
+            OnDefineNode();
+
+            // Keep the same constant values if possible
+            CopyInputConstantValues(oldInputConstants);
+
+            foreach (var wire in existingWires)
+            {
+                if (wire.ToNodeGuid == Guid)
+                    ConnectWireToCorrectPort(PortDirection.Input, wire);
+                else if (wire.FromNodeGuid == Guid)
+                    ConnectWireToCorrectPort(PortDirection.Output, wire);
+            }
+
+            GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
+
+            void ConnectWireToCorrectPort(PortDirection direction, WireModel wire)
+            {
+                var otherPort = direction == PortDirection.Input ? wire.FromPort : wire.ToPort;
+                var oldPort = direction == PortDirection.Input ? wire.ToPort : wire.FromPort;
+                var newModePorts = direction == PortDirection.Input ? InputsByDisplayOrder : OutputsByDisplayOrder;
+
+                var compatiblePorts = new List<PortModel>();
+                foreach (var newModePort in GraphModel.GetCompatiblePorts(newModePorts, otherPort))
+                {
+                    var connectedWires = newModePort.GetConnectedWires();
+                    if (connectedWires.Contains(wire))
+                    {
+                        // First choice: Port with the same unique name.
+                        // If the wire is already connected to a compatible port on the new mode, its unique name has to be the same as the old port unique name. Keep the wire as is.
+                        return;
+                    }
+
+                    if (newModePort.Capacity == PortCapacity.Multi || !connectedWires.Any())
+                        compatiblePorts.Add(newModePort);
+                }
+
+                PortModel newPort;
+
+                if (oldPort.PortType != PortType.MissingPort)
+                {
+                    // Second choice: Connect to the first compatible port that is not taken.
+                    newPort = compatiblePorts.FirstOrDefault(p => !p.GetConnectedWires().Any());
+                }
+                else
+                {
+                    // When the old port is a missing port, its unique name is most likely different from its title. Connect with the compatible port with the same title.
+                    // When both ports are missing ports, the type cannot be retrieved. Connect with the port that has the same title.
+                    newPort = otherPort.PortType == PortType.MissingPort ?
+                        newModePorts.FirstOrDefault(p => p.DisplayTitle == oldPort.DisplayTitle) :
+                        compatiblePorts.FirstOrDefault(p => p.DisplayTitle == oldPort.DisplayTitle);
+                }
+
+                // Last choice: Become a missing port
+                newPort ??= this.AddMissingPort(direction, SerializableGUID.Generate().ToString(), oldPort.Orientation, oldPort.Title);
+
+                if (newPort != null)
+                {
+                    if (direction == PortDirection.Input)
+                        wire.SetPorts(newPort, otherPort);
+                    else
+                        wire.SetPorts(otherPort, newPort);
+                }
+            }
         }
 
         /// <summary>
@@ -163,9 +273,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public override void OnDuplicateNode(AbstractNodeModel sourceNode)
         {
             base.OnDuplicateNode(sourceNode);
-
             DefineNode();
-            CloneInputConstants();
         }
 
         void RemoveObsoleteWiresAndConstants()
@@ -174,17 +282,33 @@ namespace Unity.GraphToolsFoundation.Editor
             foreach (var kv in m_PreviousInputs
                      .Where<KeyValuePair<string, PortModel>>(kv => !m_InputsById.ContainsKey(kv.Key)))
             {
-                DisconnectPort(kv.Value);
-                GraphModel?.UnregisterPort(kv.Value);
-                portsRemoved = true;
+                if (kv.Value.PortType != PortType.MissingPort)
+                {
+                    DisconnectPort(kv.Value);
+                    GraphModel?.UnregisterPort(kv.Value);
+                    portsRemoved = true;
+                }
+                else if (kv.Value.PortType == PortType.MissingPort && kv.Value.GetConnectedWires().Any())
+                {
+                    // This is needed to prevent added missing ports that aren't obsolete yet from being overwritten by newly instantiated ports in OnDefineNode().
+                    m_InputsById.Add(kv.Value);
+                }
             }
 
             foreach (var kv in m_PreviousOutputs
-                     .Where<KeyValuePair<string, PortModel>>(kv => !m_OutputsById.ContainsKey(kv.Key)))
+                .Where<KeyValuePair<string, PortModel>>(kv => !m_OutputsById.ContainsKey(kv.Key)))
             {
-                DisconnectPort(kv.Value);
-                GraphModel?.UnregisterPort(kv.Value);
-                portsRemoved = true;
+                if (kv.Value.PortType != PortType.MissingPort)
+                {
+                    DisconnectPort(kv.Value);
+                    GraphModel?.UnregisterPort(kv.Value);
+                    portsRemoved = true;
+                }
+                else if (kv.Value.PortType == PortType.MissingPort && kv.Value.GetConnectedWires().Any())
+                {
+                    // This is needed to prevent added missing ports that aren't obsolete yet from being overwritten by newly instantiated ports in OnDefineNode().
+                    m_OutputsById.Add(kv.Value);
+                }
             }
 
             if (portsRemoved)
@@ -286,6 +410,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if ((inputPort.Options & PortModelOptions.NoEmbeddedConstant) != 0)
             {
                 m_InputConstantsById.Remove(id);
+                GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Unspecified);
                 return;
             }
 
@@ -307,6 +432,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (!constant.IsAssignableFrom(portDefinitionType))
                 {
                     m_InputConstantsById.Remove(id);
+                    GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Unspecified);
                 }
                 else
                 {
@@ -325,7 +451,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 embeddedConstant.OwnerModel = inputPort;
                 initializationCallback?.Invoke(embeddedConstant);
                 m_InputConstantsById[id] = embeddedConstant;
-                GraphModel.Asset.Dirty = true;
+                GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Unspecified);
             }
         }
 
@@ -336,16 +462,26 @@ namespace Unity.GraphToolsFoundation.Editor
             return (ConstantNodeModel)clone;
         }
 
-        public void CloneInputConstants()
+        void CopyInputConstantValues(List<KeyValuePair<string, Constant>> otherInputConstants)
         {
+            var index = 0;
             foreach (var id in m_InputConstantsById.Keys.ToList())
             {
-                var inputConstant = m_InputConstantsById[id];
-                var newConstant = inputConstant.Clone();
-                if (m_InputsById.TryGetValue(id, out var portModel))
-                    newConstant.OwnerModel = portModel;
-                m_InputConstantsById[id] = newConstant;
-                GraphModel.Asset.Dirty = true;
+                // First choice: constant with the same Id
+                var constantWithSameId = otherInputConstants.FirstOrDefault(c => id == c.Key).Value;
+                if (constantWithSameId != null)
+                {
+                    if (m_InputConstantsById[id].IsAssignableFrom(constantWithSameId.Type))
+                        m_InputConstantsById[id] = constantWithSameId;
+                }
+                else
+                {
+                    // Second choice: constant at the same index
+                    var constantAtSameIndex = otherInputConstants.ElementAtOrDefault(index).Value;
+                    if (constantAtSameIndex != null && m_InputConstantsById[id].IsAssignableFrom(constantAtSameIndex.Type))
+                        m_InputConstantsById[id] = constantAtSameIndex;
+                }
+                index++;
             }
         }
 
@@ -358,6 +494,24 @@ namespace Unity.GraphToolsFoundation.Editor
             GraphModel.UnregisterPort(portModel);
             GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.GraphTopology);
             return portModel.Direction == PortDirection.Input ? m_InputsById.Remove(portModel) : m_OutputsById.Remove(portModel);
+        }
+
+        /// <inheritdoc />
+        public virtual void OnBeforeCopy()
+        {
+            foreach (var callbackReceiver in m_InputConstantsById.Values.OfType<ICopyPasteCallbackReceiver>())
+            {
+                callbackReceiver.OnBeforeCopy();
+            }
+        }
+
+        /// <inheritdoc />
+        public virtual void OnAfterPaste()
+        {
+            foreach (var callbackReceiver in m_InputConstantsById.Values.OfType<ICopyPasteCallbackReceiver>())
+            {
+                callbackReceiver.OnAfterPaste();
+            }
         }
     }
 }

@@ -194,7 +194,7 @@ namespace UnityEngine
         // Fire a sub-emitter
         public void TriggerSubEmitter(int subEmitterIndex)
         {
-            TriggerSubEmitter(subEmitterIndex, null);
+            TriggerSubEmitterForAllParticles(subEmitterIndex);
         }
 
         public void TriggerSubEmitter(int subEmitterIndex, ref ParticleSystem.Particle particle)
@@ -202,11 +202,22 @@ namespace UnityEngine
             TriggerSubEmitterForParticle(subEmitterIndex, particle);
         }
 
+        public void TriggerSubEmitter(int subEmitterIndex, List<ParticleSystem.Particle> particles)
+        {
+            if (particles == null)
+                TriggerSubEmitterForAllParticles(subEmitterIndex);
+            else
+                TriggerSubEmitterForParticles(subEmitterIndex, particles);
+        }
+
         [FreeFunction(Name = "ParticleSystemScriptBindings::TriggerSubEmitterForParticle", HasExplicitThis = true)]
         extern internal void TriggerSubEmitterForParticle(int subEmitterIndex, ParticleSystem.Particle particle);
 
-        [FreeFunction(Name = "ParticleSystemScriptBindings::TriggerSubEmitter", HasExplicitThis = true)]
-        extern public void TriggerSubEmitter(int subEmitterIndex, List<ParticleSystem.Particle> particles);
+        [FreeFunction(Name = "ParticleSystemScriptBindings::TriggerSubEmitterForParticles", HasExplicitThis = true)]
+        extern private void TriggerSubEmitterForParticles(int subEmitterIndex, List<ParticleSystem.Particle> particles);
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::TriggerSubEmitterForAllParticles", HasExplicitThis = true)]
+        extern private void TriggerSubEmitterForAllParticles(int subEmitterIndex);
 
         [FreeFunction(Name = "ParticleSystemGeometryJob::ResetPreMappedBufferMemory")]
         extern public static void ResetPreMappedBufferMemory();

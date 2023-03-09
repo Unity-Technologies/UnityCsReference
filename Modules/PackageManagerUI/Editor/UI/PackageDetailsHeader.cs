@@ -76,12 +76,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void CreateTags()
         {
-            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Git, L10n.Tr("git")));
-            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Local, L10n.Tr("local")));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Git, L10n.Tr("Git")));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Local, L10n.Tr("Local")));
             versionContainer.Add(new PackageAssetStoreTagLabel());
             versionContainer.Add(new PackageDeprecatedTagLabel());
-            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Disabled, L10n.Tr("disabled")));
-            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Custom, L10n.Tr("custom")));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Disabled, L10n.Tr("Disabled")));
+            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Custom, L10n.Tr("Custom")));
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.PreRelease, L10n.Tr("Pre-Release")));
             versionContainer.Add(new PackageReleaseTagLabel(m_PackageDatabase));
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.ReleaseCandidate, L10n.Tr("Release Candidate")));
@@ -170,7 +170,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var showLockedIcon = featureSets?.Any() == true;
             if (showLockedIcon)
             {
-                visualState = visualState ?? m_PageManager.GetPage().visualStates.Get(m_Package?.uniqueId);
+                visualState = visualState ?? m_PageManager.activePage.visualStates.Get(m_Package?.uniqueId);
                 if (visualState?.isLocked == true)
                 {
                     lockedIcon.RemoveFromClassList("unlocked");
@@ -354,9 +354,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UIUtils.SetElementDisplay(versionInfoIcon, false);
                 return;
             }
-
             var installedVersionString = installed.versionString;
-            if (installed.IsDifferentVersionThanRequested)
+            if (installed.IsDifferentVersionThanRequested && !installed.isInvalidSemVerInManifest)
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
                 versionInfoIcon.tooltip = string.Format(L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
@@ -404,9 +403,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(scopedRegistryInfoBox, showRegistry);
             if (showRegistry)
             {
-                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
-
                 var detailRegistryName = L10n.Tr("Unknown");
                 detailRegistry.tooltip = string.Empty;
                 if (packageInfo.versions.all.Any())
@@ -427,6 +423,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                         detailRegistry.text = L10n.Tr($"From <b>{detailRegistryName}</b>");
                 }
             }
+
+            // To be reworked in PAX-2547
             if (m_Version.HasTag(PackageTag.Experimental))
             {
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.Experimental];
@@ -442,6 +440,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ReleaseCandidate];
                 UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
             }
+            else if (showRegistry)
+            {
+                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
+            }
         }
 
         private void RefreshEmbeddedFeatureSetWarningBox()
@@ -449,15 +452,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(embeddedFeatureSetWarningBox, m_Version.HasTag(PackageTag.Feature) && m_Version.HasTag(PackageTag.Custom));
         }
 
+        // To be reworked in PAX-2547
         private void OnInfoBoxClickMore()
         {
-            if (m_Version.HasTag(PackageTag.PreRelease))
-                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.PreRelease]}");
-            else if (m_Version.HasTag(PackageTag.Experimental))
+            if (m_Version.HasTag(PackageTag.Experimental))
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.Experimental]}");
+            else if (m_Version.HasTag(PackageTag.PreRelease))
+                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.PreRelease]}");
             else if (m_Version.HasTag(PackageTag.ReleaseCandidate))
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ReleaseCandidate]}");
-            else if (m_Version.HasTag(PackageTag.ScopedRegistry))
+            else
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ScopedRegistry]}");
         }
 

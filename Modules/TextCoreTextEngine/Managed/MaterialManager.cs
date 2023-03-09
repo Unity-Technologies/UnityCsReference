@@ -26,16 +26,21 @@ namespace UnityEngine.TextCore.Text
             Material fallbackMaterial;
             if (s_FallbackMaterials.TryGetValue(key, out fallbackMaterial))
             {
-                // Check if source material properties have changed.
-                int sourceMaterialCRC = sourceMaterial.ComputeCRC();
-                int fallbackMaterialCRC = fallbackMaterial.ComputeCRC();
+                if (fallbackMaterial == null)
+                    s_FallbackMaterials.Remove(key);
+                else
+                {
+                    // Check if source material properties have changed.
+                    int sourceMaterialCRC = sourceMaterial.ComputeCRC();
+                    int fallbackMaterialCRC = fallbackMaterial.ComputeCRC();
 
-                if (sourceMaterialCRC == fallbackMaterialCRC)
+                    if (sourceMaterialCRC == fallbackMaterialCRC)
+                        return fallbackMaterial;
+
+                    CopyMaterialPresetProperties(sourceMaterial, fallbackMaterial);
+
                     return fallbackMaterial;
-
-                CopyMaterialPresetProperties(sourceMaterial, fallbackMaterial);
-
-                return fallbackMaterial;
+                }
             }
 
             // Create new material from the source material and copy properties if using distance field shaders.

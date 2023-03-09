@@ -207,10 +207,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 versionState.tooltip = string.Format(L10n.Tr("Using version {0} because at least one other package or feature depends on it"), installedPackageVersion.versionString);
             }
 
-            var tab = PackageFilterTab.UnityRegistry;
-            if (version.isDirectDependency)
-                tab = PackageFilterTab.InProject;
-            dependencyLink.clickable.clicked += () => PackageManagerWindow.SelectPackageAndFilterStatic(version.name, tab);
+            var pageId = version.isDirectDependency ? InProjectPage.k_Id : UnityRegistryPage.k_Id;
+            dependencyLink.clickable.clicked += () => PackageManagerWindow.SelectPackageAndPageStatic(version.name, pageId);
 
             UIUtils.SetElementDisplay(dependencyInfoBox, featureState == FeatureState.Customized);
             if (installedPackageVersion?.HasTag(PackageTag.Custom) ?? false)

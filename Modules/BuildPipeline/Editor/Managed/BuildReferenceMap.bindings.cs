@@ -106,5 +106,10 @@ namespace UnityEditor.Build.Content
             byte[] data = (byte[])info.GetValue("referenceMap", typeof(byte[]));
             DeserializeFromBinary(data);
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(BuildReferenceMap buildReferenceMap) => buildReferenceMap.m_Ptr;
+        }
     }
 }

@@ -14,16 +14,16 @@ namespace UnityEditor
     internal static class TextureUtil
     {
         [FreeFunction]
-        public static extern long GetStorageMemorySizeLong([NotNull("NullExceptionObject")] Texture t);
+        public static extern long GetStorageMemorySizeLong([NotNull] Texture t);
 
         [FreeFunction]
-        public static extern long GetRuntimeMemorySizeLong([NotNull("NullExceptionObject")] Texture t);
+        public static extern long GetRuntimeMemorySizeLong([NotNull] Texture t);
 
         [FreeFunction]
-        public static extern bool IsNonPowerOfTwo([NotNull("NullExceptionObject")] Texture2D t);
+        public static extern bool IsNonPowerOfTwo([NotNull] Texture2D t);
 
         [FreeFunction]
-        public static extern TextureUsageMode GetUsageMode([NotNull("NullExceptionObject")] Texture t);
+        public static extern TextureUsageMode GetUsageMode([NotNull] Texture t);
 
         [FreeFunction]
         public static extern bool IsNormalMapUsageMode(TextureUsageMode usageMode);
@@ -52,7 +52,7 @@ namespace UnityEditor
         public static extern bool IsCompressedCrunchTextureFormat(TextureFormat format);
 
         [FreeFunction]
-        public static extern TextureFormat GetTextureFormat([NotNull("NullExceptionObject")] Texture texture);
+        public static extern TextureFormat GetTextureFormat([NotNull] Texture texture);
 
         [Obsolete("IsAlphaOnlyTextureFormat has been moved to GraphicsFormatUtility.IsAlphaOnlyFormat(TextureFormat)")]
         [FreeFunction]
@@ -75,7 +75,7 @@ namespace UnityEditor
         public static extern string GetTextureFormatString(TextureFormat format);
 
         [FreeFunction]
-        public static extern string GetTextureColorSpaceString([NotNull("NullExceptionObject")] Texture texture);
+        public static extern string GetTextureColorSpaceString([NotNull] Texture texture);
 
         [Obsolete("ConvertToAlphaTextureFormat has been moved to GraphicsFormatUtility.ConvertToAlphaFormat(TextureFormat)")]
         [FreeFunction]
@@ -87,22 +87,22 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        public static extern bool HasMipMap([NotNull("NullExceptionObject")] Texture t);
+        public static extern bool HasMipMap([NotNull] Texture t);
 
         [FreeFunction]
-        public static extern bool NeedsExposureControl([NotNull("NullExceptionObject")] Texture t);
+        public static extern bool NeedsExposureControl([NotNull] Texture t);
 
         [FreeFunction]
-        public static extern int GetGPUWidth([NotNull("NullExceptionObject")] Texture t);
+        public static extern int GetGPUWidth([NotNull] Texture t);
 
         [FreeFunction]
-        public static extern int GetGPUHeight([NotNull("NullExceptionObject")] Texture t);
+        public static extern int GetGPUHeight([NotNull] Texture t);
 
         [FreeFunction]
-        public static extern int GetMipmapCount([NotNull("NullExceptionObject")] Texture t);
+        public static extern int GetMipmapCount([NotNull] Texture t);
 
         [FreeFunction]
-        public static extern bool GetLinearSampled([NotNull("NullExceptionObject")] Texture t);
+        public static extern bool GetLinearSampled([NotNull] Texture t);
 
         public static int GetDefaultCompressionQuality()
         {
@@ -110,25 +110,25 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        public static extern Vector4 GetTexelSizeVector([NotNull("NullExceptionObject")] Texture t);
+        public static extern Vector4 GetTexelSizeVector([NotNull] Texture t);
 
         [FreeFunction]
-        public static extern Texture2D GetSourceTexture([NotNull("NullExceptionObject")] Cubemap cubemapRef, CubemapFace face);
+        public static extern Texture2D GetSourceTexture([NotNull] Cubemap cubemapRef, CubemapFace face);
 
         [FreeFunction]
-        public static extern void SetSourceTexture([NotNull("NullExceptionObject")] Cubemap cubemapRef, CubemapFace face, Texture2D tex);
+        public static extern void SetSourceTexture([NotNull] Cubemap cubemapRef, CubemapFace face, Texture2D tex);
 
         [FreeFunction]
-        public static extern void CopyTextureIntoCubemapFace([NotNull("NullExceptionObject")] Texture2D textureRef, [NotNull("NullExceptionObject")] Cubemap cubemapRef, CubemapFace face);
+        public static extern void CopyTextureIntoCubemapFace([NotNull] Texture2D textureRef, [NotNull] Cubemap cubemapRef, CubemapFace face);
 
         [FreeFunction]
-        public static extern void CopyCubemapFaceIntoTexture([NotNull("NullExceptionObject")] Cubemap cubemapRef, CubemapFace face, [NotNull("NullExceptionObject")] Texture2D textureRef);
+        public static extern void CopyCubemapFaceIntoTexture([NotNull] Cubemap cubemapRef, CubemapFace face, [NotNull] Texture2D textureRef);
 
         [FreeFunction]
-        public static extern bool ReformatCubemap([NotNull("NullExceptionObject")] Cubemap cubemap, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);
+        public static extern bool ReformatCubemap([NotNull] Cubemap cubemap, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);
 
         [FreeFunction]
-        public static extern bool ReformatTexture([NotNull("NullExceptionObject")] ref Texture2D texture, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);
+        public static extern bool ReformatTexture([NotNull] ref Texture2D texture, int width, int height, TextureFormat textureFormat, bool useMipmap, bool linear);
 
         [FreeFunction]
         public static extern void SetAnisoLevelNoDirty(Texture tex, int level);
@@ -143,7 +143,7 @@ namespace UnityEditor
         public static extern void SetFilterModeNoDirty(Texture tex, FilterMode mode);
 
         [FreeFunction]
-        public static extern bool IsCubemapReadable([NotNull("NullExceptionObject")] Cubemap cubemapRef);
+        public static extern bool IsCubemapReadable([NotNull] Cubemap cubemapRef);
 
         [FreeFunction]
         public static extern void MarkCubemapReadable(Cubemap cubemapRef, bool readable);

@@ -62,10 +62,13 @@ namespace Unity.GraphToolsFoundation.Editor
 
                     if (attribute.Context == SearchContext.Graph)
                     {
-                        var node = new GraphNodeModelLibraryItem(new NodeItemLibraryData(type),
+                        ItemLibraryItem.ExtractPathAndNameFromFullName(attribute.Path, out var categoryPath, out var name);
+                        var node = new GraphNodeModelLibraryItem(
+                            name,
+                            new NodeItemLibraryData(type),
                             data => data.CreateBlock(type, contextTypeToCreate: m_ContextType))
                         {
-                            FullName = attribute.Path,
+                            CategoryPath = categoryPath,
                             StyleName = attribute.StyleName
                         };
                         m_Items.Add(node);

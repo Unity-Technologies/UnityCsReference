@@ -573,6 +573,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetHeights", HasExplicitThis = true)]
+        [return: Unmarshalled]
         extern private float[,] Internal_GetHeights(int xBase, int yBase, int width, int height);
 
         public void SetHeights(int xBase, int yBase, float[,] heights)
@@ -679,6 +680,7 @@ namespace UnityEngine
         extern private void Internal_SetHoles(int xBase, int yBase, int width, int height, bool[,] holes);
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetHoles", HasExplicitThis = true)]
+        [return: Unmarshalled]
         extern private bool[,] Internal_GetHoles(int xBase, int yBase, int width, int height);
 
         [FreeFunction(k_ScriptingInterfacePrefix + "IsHole", HasExplicitThis = true)]
@@ -833,6 +835,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetDetailLayer", HasExplicitThis = true)]
+        [return:Unmarshalled]
         extern public int[,] GetDetailLayer(int xBase, int yBase, int width, int height, int layer);
 
         public int[,] GetDetailLayer(Vector2Int positionBase, Vector2Int size, int layer)
@@ -939,6 +942,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(k_ScriptingInterfacePrefix + "GetAlphamaps", HasExplicitThis = true)]
+        [return:Unmarshalled]
         extern private float[,,] Internal_GetAlphamaps(int x, int y, int width, int height);
 
         public int alphamapResolution

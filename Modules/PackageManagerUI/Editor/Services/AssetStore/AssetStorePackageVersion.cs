@@ -91,9 +91,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public AssetStorePackageVersion(IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null, AssetStoreImportedPackage importedPackage = null)
         {
-            if (productInfo == null)
-                throw new ArgumentNullException(nameof(productInfo));
-
             m_Errors = new List<UIError>();
             m_Tag = PackageTag.LegacyFormat;
 
@@ -101,19 +98,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             // For asset store packages, we have the `productDescription` at the package level.
             m_Description = string.Empty;
 
-            m_Category = productInfo.category;
+            m_Category = productInfo?.category ?? string.Empty;
 
             m_PublishNotes = localInfo?.publishNotes ?? string.Empty;
 
-            m_VersionString = localInfo?.versionString ?? productInfo.versionString ?? string.Empty;
-            m_VersionId = localInfo?.versionId ?? productInfo.versionId;
+            m_VersionString = importedPackage?.versionString ?? localInfo?.versionString ?? productInfo?.versionString ?? string.Empty;
+            m_VersionId = localInfo?.versionId ?? productInfo?.versionId ?? 0;
             SemVersionParser.TryParse(m_VersionString.Trim(), out m_Version);
 
             m_ImportedPackage = importedPackage;
 
-            var publishDateString = localInfo?.publishedDate ?? productInfo.publishedDate ?? string.Empty;
+            var publishDateString = localInfo?.publishedDate ?? productInfo?.publishedDate ?? string.Empty;
             m_PublishedDateTicks = !string.IsNullOrEmpty(publishDateString) ? DateTime.Parse(publishDateString).Ticks : 0;
-            m_DisplayName = !string.IsNullOrEmpty(productInfo.displayName) ? productInfo.displayName : $"Package {productInfo.productId}@{m_VersionId}";
+            m_DisplayName = !string.IsNullOrEmpty(productInfo?.displayName) ? productInfo.displayName : importedPackage?.displayName ?? string.Empty;
 
             m_SupportedUnityVersions = new List<SemVersion>();
             if (localInfo != null)
@@ -122,7 +119,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SemVersionParser.TryParse(simpleVersion.Trim(), out m_SupportedUnityVersion);
                 m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
-            else if (productInfo.supportedVersions?.Any() ?? false)
+            else if (productInfo?.supportedVersions?.Any() ?? false)
             {
                 foreach (var supportedVersion in productInfo.supportedVersions)
                 {
@@ -138,10 +135,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_SupportedUnityVersionString = m_SupportedUnityVersion?.ToString();
             }
 
-            m_SizeInfos = new List<PackageSizeInfo>(productInfo.sizeInfos);
+            m_SizeInfos = new List<PackageSizeInfo>(productInfo?.sizeInfos ?? Enumerable.Empty<PackageSizeInfo>());
             m_SizeInfos.Sort((left, right) => left.supportedUnityVersion.CompareTo(right.supportedUnityVersion));
 
-            var state = productInfo.state ?? string.Empty;
+            var state = productInfo?.state ?? string.Empty;
             if (state.Equals("published", StringComparison.InvariantCultureIgnoreCase))
                 m_Tag |= PackageTag.Published;
             else if (state.Equals("disabled", StringComparison.InvariantCultureIgnoreCase))

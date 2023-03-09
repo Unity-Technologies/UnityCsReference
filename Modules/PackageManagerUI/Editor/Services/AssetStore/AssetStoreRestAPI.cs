@@ -50,7 +50,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             "Essentials",
             "Templates",
             "Tools",
-            "VFX"
+            "VFX",
+            "Web3"
         };
 
         private string m_Host;
@@ -161,6 +162,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void HandleHttpRequest(string urlWithoutHost, Action<Dictionary<string, object>> doneCallback, Action<UIError> errorCallback, string postData = null, string tag = null, bool abortPreviousRequest = false)
         {
+            if (m_UnityConnect.isUserInfoReady && !m_UnityConnect.isUserLoggedIn)
+            {
+                var errorMessage = L10n.Tr("You need to be signed in.");
+                errorCallback?.Invoke(new UIError(UIErrorCode.UserNotSignedIn, L10n.Tr(errorMessage)));
+                return;
+            }
+
             if (abortPreviousRequest && !string.IsNullOrEmpty(tag))
                 m_HttpClientFactory.AbortByTag(tag);
 

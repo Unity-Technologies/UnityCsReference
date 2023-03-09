@@ -47,7 +47,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     [Serializable]
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Model")]
-    class VariableDeclarationModel : DeclarationModel, IGroupItemModel
+    class VariableDeclarationModel : DeclarationModel, IGroupItemModel, ICopyPasteCallbackReceiver
     {
         [SerializeField, HideInInspector]
         TypeHandle m_DataType;
@@ -213,10 +213,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public virtual void CreateInitializationValue()
         {
+            Debug.Assert(GraphModel != null, $"{nameof(GraphModel)} needs to be set before calling {nameof(CreateInitializationValue)}.");
+
             if (GraphModel.Stencil.GetConstantType(DataType) != null)
             {
                 InitializationModel = GraphModel.Stencil.CreateConstantValue(DataType);
-                GraphModel.Asset.Dirty = true;
+                GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
             }
         }
 
@@ -238,7 +240,7 @@ namespace Unity.GraphToolsFoundation.Editor
         bool Equals(VariableDeclarationModel other)
         {
             // ReSharper disable once BaseObjectEqualsIsObjectEquals
-            return base.Equals(other) && m_DataType.Equals(other.m_DataType) && m_IsExposed == other.m_IsExposed;
+            return base.Equals(other) && DataType.Equals(other.DataType) && IsExposed == other.IsExposed;
         }
 
         /// <inheritdoc />
@@ -278,6 +280,18 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (InitializationModel != null)
                 InitializationModel.OwnerModel = this;
+        }
+
+        /// <inheritdoc />
+        public virtual void OnBeforeCopy()
+        {
+            (InitializationModel as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
+        }
+
+        /// <inheritdoc />
+        public virtual void OnAfterPaste()
+        {
+            (InitializationModel as ICopyPasteCallbackReceiver)?.OnAfterPaste();
         }
     }
 }

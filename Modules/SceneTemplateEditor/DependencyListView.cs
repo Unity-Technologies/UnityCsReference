@@ -161,6 +161,7 @@ namespace UnityEditor.SceneTemplate
             var listViewContainer = new VisualElement();
             listViewContainer.AddToClassList(k_ListView);
             listViewContainer.style.flexGrow = 1;
+            listViewContainer.style.maxHeight = (Mathf.Min(m_OriginalItems.Count, 30) + 2) * m_ItemSize;
 
             listView = new ListView(m_FilteredItems, itemHeight, MakeItem, BindItem);
             listView.name = k_ListInternalView;
@@ -169,7 +170,8 @@ namespace UnityEditor.SceneTemplate
             listView.RegisterCallback<KeyUpEvent>(OnKeyUpEvent);
             listView.selectionType = SelectionType.Multiple;
             listView.itemsChosen += OnDoubleClick;
-            listView.style.maxHeight = Mathf.Max(m_OriginalItems.Count * m_ItemSize + 100, listView.style.maxHeight.value.value);
+            listView.style.minHeight = 0;
+            listView.style.maxHeight = (Mathf.Min(m_OriginalItems.Count, 30) + 1) * m_ItemSize;
 
             var searchField = new ToolbarSearchField();
             searchField.name = "dependency-listview-toolbar-searchfield";
@@ -238,7 +240,6 @@ namespace UnityEditor.SceneTemplate
             });
             m_CloneHeaderToggle.AddToClassList("scene-template-asset-inspector-dependency-header-clone-column");
             changeAllRowElement.Add(m_CloneHeaderToggle);
-
             return changeAllRowElement;
         }
 
@@ -274,10 +275,7 @@ namespace UnityEditor.SceneTemplate
                 instantiationModeProperty.enumValueIndex = (int)newInstantiationType;
 
                 // Sync Selection if the dependency is part of it:
-                if (listView.selectedIndices.Contains(modelIndex))
-                    SyncListSelectionToValue(newInstantiationType);
-                m_SerializedObject.ApplyModifiedProperties();
-
+                SyncListSelectionToValue(newInstantiationType);
                 UpdateGlobalCloneToggle();
             });
         }
@@ -323,16 +321,9 @@ namespace UnityEditor.SceneTemplate
 
         void SyncListSelectionToValue(TemplateInstantiationMode mode)
         {
-            if (listView.selectedIndex != -1)
+            foreach(var item in GetSelectedItems())
             {
-                var listContent = listView.Q<VisualElement>("unity-content-container");
-                foreach (var row in listContent.Children())
-                {
-                    if (row.ClassListContains("unity-list-view__item--selected"))
-                    {
-                        SetDependencyInstantiationMode(row, mode);
-                    }
-                }
+                SetDependencyInstantiationMode(item, mode);
             }
             m_SerializedObject.ApplyModifiedProperties();
         }
@@ -354,22 +345,24 @@ namespace UnityEditor.SceneTemplate
             }
         }
 
-        IEnumerable<SerializedProperty> GetSelectedDependencies()
+        IEnumerable<VisualElement> GetSelectedItems()
         {
-            var selectedItems = new List<SerializedProperty>();
-            if (listView.selectedIndex != -1)
+            if (listView.selectedIndex == -1)
+                yield break;
+
+            var listContent = listView.Q<VisualElement>("unity-content-container");
+            foreach (var row in listContent.Children())
             {
-                var listContent = listView.Q<VisualElement>("unity-content-container");
-                foreach (var row in listContent.Children())
+                if (row.ClassListContains("unity-collection-view__item--selected"))
                 {
-                    var prop = (SerializedProperty)row.userData;
-                    if (row.ClassListContains("unity-list-view__item--selected"))
-                    {
-                        selectedItems.Add(prop);
-                    }
+                    yield return row;
                 }
             }
-            return selectedItems;
+        }
+
+        IEnumerable<SerializedProperty> GetSelectedDependencies()
+        {
+            return GetSelectedItems().Select(item => (SerializedProperty)item.userData);
         }
 
         static void OnDoubleClick(IEnumerable<object> objs)

@@ -115,7 +115,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
         {
-            yield return new ButtonDisableCondition(() => version != null && !version.HasTag(PackageTag.ScopedRegistry) && version.HasTag(PackageTag.Deprecated),
+            yield return new ButtonDisableCondition(() => version != null && version.HasTag(PackageTag.Deprecated) && version.availableRegistry != RegistryType.MyRegistries,
                 L10n.Tr("This version is deprecated."));
 
             yield return new ButtonDisableCondition(() => version?.package.hasEntitlementsError ?? false,

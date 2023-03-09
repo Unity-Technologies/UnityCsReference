@@ -651,7 +651,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 });
                 var nodesAndNotes = selection.
                     Where(e => e is AbstractNodeModel || e is StickyNoteModel).
-                    Select(m => m.GetView<GraphElement>(this)).ToList();
+                    Select(m => m.GetView<GraphElement>(this)).
+                    Where(v => v != null).ToList();
 
                 bool hasNodeOnGraph = nodesAndNotes.Any(t => !t.GraphElementModel.NeedsContainer());
 
@@ -676,6 +677,13 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         Dispatch(new CreatePlacematCommand(graphPosition));
                     }
+                });
+                evt.menu.AppendAction("Create Sticky Note", menuAction =>
+                {
+                    Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
+                    Vector2 graphPosition = ContentViewContainer.WorldToLocal(mousePosition);
+
+                    Dispatch(new CreateStickyNoteCommand(graphPosition));
                 });
 
                 if (selection.Any())

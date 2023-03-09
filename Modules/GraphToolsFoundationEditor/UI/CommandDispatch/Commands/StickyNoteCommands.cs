@@ -38,6 +38,14 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CreateStickyNoteCommand"/> class.
+        /// </summary>
+        /// <param name="position">The position of the new sticky note.</param>
+        public CreateStickyNoteCommand(Vector2 position) : this(new Rect(position, StickyNote.defaultSize))
+        {
+        }
+
+        /// <summary>
         /// Default command handler.
         /// </summary>
         /// <param name="undoState">The undo state component.</param>

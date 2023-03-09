@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
@@ -106,6 +107,9 @@ namespace UnityEngine
         public static void SetGlobalConstantBuffer(int nameID, ComputeBuffer value, int offset, int size) { SetGlobalConstantBufferImpl(nameID, value, offset, size); }
         public static void SetGlobalConstantBuffer(string name, GraphicsBuffer value, int offset, int size) { SetGlobalConstantGraphicsBufferImpl(Shader.PropertyToID(name), value, offset, size); }
         public static void SetGlobalConstantBuffer(int nameID, GraphicsBuffer value, int offset, int size) { SetGlobalConstantGraphicsBufferImpl(nameID, value, offset, size); }
+
+        public static void SetGlobalRayTracingAccelerationStructure(string name, RayTracingAccelerationStructure value) { SetGlobalRayTracingAccelerationStructureImpl(Shader.PropertyToID(name), value); }
+        public static void SetGlobalRayTracingAccelerationStructure(int nameID, RayTracingAccelerationStructure value) { SetGlobalRayTracingAccelerationStructureImpl(nameID, value); }
 
         public static void SetGlobalFloatArray(string name, List<float> values) { SetGlobalFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }

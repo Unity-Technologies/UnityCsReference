@@ -32,10 +32,13 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 foreach (var window in windows)
                 {
-                    if (IsWindowReferencingGraphAsset(window, guid) || IsWindowDisplayingGraphAsset_Internal(window, guid))
+                    if (window.GraphView?.GraphModel != null)
                     {
-                        window.GraphTool.Dispatch(new LoadGraphCommand(window.GraphView.GraphModel,
-                            loadStrategy: LoadGraphCommand.LoadStrategies.KeepHistory));
+                        if (IsWindowReferencingGraphAsset(window, guid) || IsWindowDisplayingGraphAsset_Internal(window, guid))
+                        {
+                            window.GraphTool.Dispatch(new LoadGraphCommand(window.GraphView.GraphModel,
+                                loadStrategy: LoadGraphCommand.LoadStrategies.KeepHistory));
+                        }
                     }
                 }
             }
@@ -47,10 +50,13 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 foreach (var window in windows)
                 {
-                    if (IsWindowReferencingGraphAsset(window, guid))
+                    if (window.GraphView?.GraphModel != null)
                     {
-                        window.GraphTool.Dispatch(new LoadGraphCommand(window.GraphView.GraphModel,
-                            loadStrategy: LoadGraphCommand.LoadStrategies.KeepHistory));
+                        if (IsWindowReferencingGraphAsset(window, guid))
+                        {
+                            window.GraphTool.Dispatch(new LoadGraphCommand(window.GraphView.GraphModel,
+                                loadStrategy: LoadGraphCommand.LoadStrategies.KeepHistory));
+                        }
                     }
                 }
             }

@@ -96,8 +96,16 @@ namespace Unity.GraphToolsFoundation.Editor
             if (evt.button == (int)MouseButton.LeftMouse)
             {
                 m_RegistrationTarget?.RegisterCallback<PointerCaptureEvent>(OnPointerCaptureEvent, TrickleDown.TrickleDown);
+                m_RegistrationTarget?.RegisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent, TrickleDown.TrickleDown);
                 StartBlocking();
             }
+        }
+
+        void OnPointerLeaveEvent(PointerLeaveEvent evt)
+        {
+            // We received a PointerLeaveEvent and the mouse was not captured, so we are likely no longer focusing the
+            // relevant target. Consider this as a PointerUpEvent. Don't stop the propagation of the event.
+            StopBlocking();
         }
 
         void OnPointerCaptureEvent(PointerCaptureEvent evt)
@@ -105,6 +113,10 @@ namespace Unity.GraphToolsFoundation.Editor
             // PointerDown captured the pointer, so we are not going
             // to receive a PointerUp event. Register PointerCaptureOut event instead.
             m_RegistrationTarget?.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOutEvent, TrickleDown.TrickleDown);
+
+            // And since we are capturing the mouse, we are probably dragging something so no
+            // need to check for OnPointerLeaveEvent (which we still receive)
+            m_RegistrationTarget?.UnregisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent, TrickleDown.TrickleDown);
         }
 
         void OnPointerUpEvent(PointerUpEvent evt)
@@ -140,6 +152,7 @@ namespace Unity.GraphToolsFoundation.Editor
             m_RegistrationTarget.UnregisterCallback<KeyDownEvent>(OnKeyDownEvent, TrickleDown.TrickleDown);
             m_RegistrationTarget.UnregisterCallback<PointerCaptureEvent>(OnPointerCaptureEvent, TrickleDown.TrickleDown);
             m_RegistrationTarget.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOutEvent, TrickleDown.TrickleDown);
+            m_RegistrationTarget.UnregisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent, TrickleDown.TrickleDown);
         }
     }
 }

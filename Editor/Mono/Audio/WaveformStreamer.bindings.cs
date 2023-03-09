@@ -47,7 +47,7 @@ namespace UnityEditor
         }
 
         [NativeThrows]
-        internal static extern IntPtr Internal_WaveformStreamerCreate(WaveformStreamer instance, [NotNull] AudioClip clip, double start, double duration,
+        internal static extern IntPtr Internal_WaveformStreamerCreate([Unmarshalled] WaveformStreamer instance, [NotNull] AudioClip clip, double start, double duration,
             int numOutputSamples, [NotNull] Func<WaveformStreamer, float[], int, bool> onNewWaveformData);
 
         internal static extern bool Internal_WaveformStreamerQueryFinishedStatus(IntPtr streamer);
@@ -60,5 +60,10 @@ namespace UnityEditor
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern void Internal_WaveformStreamerDestroy(IntPtr streamer);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(WaveformStreamer streamer) => streamer.m_Data;
+        }
     }
 }

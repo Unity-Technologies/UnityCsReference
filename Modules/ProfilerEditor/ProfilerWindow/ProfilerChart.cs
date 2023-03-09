@@ -19,9 +19,6 @@ namespace UnityEditorInternal
 
         const string k_ProfilerChartSettingsPreferenceKeyFormat = "ProfilerChart.{0}.ChartSettings";
 
-        private static readonly GUIContent performanceWarning =
-            new GUIContent("", EditorGUIUtility.LoadIcon("console.warnicon.sml"), L10n.Tr("Collecting GPU Profiler data might have overhead. Close graph if you don't need its data"));
-
         public ProfilerArea m_Area;
         public ProfilerModuleChartType m_Type;
         public float m_DataScale;
@@ -40,7 +37,7 @@ namespace UnityEditorInternal
         public bool ShowGrid { get; set; }
         public string Tooltip { get; set; }
 
-        public ProfilerChart(ProfilerArea area, ProfilerModuleChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string localizedName, string iconName) : base()
+        public ProfilerChart(ProfilerArea area, ProfilerModuleChartType type, float dataScale, float maximumScaleInterpolationValue, int seriesCount, string name, string localizedName, string iconName)
         {
             Debug.Assert(seriesCount <= k_MaximumSeriesCount);
 
@@ -65,6 +62,11 @@ namespace UnityEditorInternal
         bool usesCounters => ((uint)m_Area == Profiler.invalidProfilerArea);
 
         /// <summary>
+        /// Warning message to warn user about module pecular properties, such as extra overhead or limited availability
+        /// </summary>
+        public GUIContent WarningMsg { get; set; }
+
+        /// <summary>
         /// Callback parameter will be either true if a state change occured
         /// </summary>
         /// <param name="onSeriesToggle"></param>
@@ -85,8 +87,7 @@ namespace UnityEditorInternal
         {
             base.DoLegendGUI(position, type, cdata, evtType, active);
 
-            // TODO Move to a GPU chart subclass would be better.
-            if (m_Area == ProfilerArea.GPU)
+            if (WarningMsg != null)
             {
                 const float rightMmargin = 2f;
                 const float topMargin = 4f;
@@ -94,7 +95,7 @@ namespace UnityEditorInternal
                 var padding = GUISkin.current.label.padding;
                 float width = iconSize + padding.horizontal;
 
-                GUI.Label(new Rect(position.xMax - width - rightMmargin, position.y + topMargin, width, iconSize + padding.vertical), performanceWarning);
+                GUI.Label(new Rect(position.xMax - width - rightMmargin, position.y + topMargin, width, iconSize + padding.vertical), WarningMsg);
             }
         }
 

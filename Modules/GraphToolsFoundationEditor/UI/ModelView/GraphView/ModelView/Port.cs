@@ -193,11 +193,19 @@ namespace Unity.GraphToolsFoundation.Editor
             PartList.AppendPart(PortConstantEditorPart.Create(constantEditorPartName, Model, this, ussClassName));
         }
 
+        public Label Label
+        {
+            get;
+            private set;
+        }
+
         /// <inheritdoc />
         protected override void PostBuildUI()
         {
             ConnectorElement = this.SafeQ(connectorPartName) ?? this;
             WireConnector = new WireConnector(GraphView);
+
+            Label = ConnectorElement.Q<Label>(PortConnectorPart.labelName);
 
             AddToClassList(ussClassName);
             this.AddStylesheet_Internal("Port.uss");

@@ -116,5 +116,10 @@ namespace UnityEngine.VFX
         {
             return GetMesh(Shader.PropertyToID(name));
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(VFXExpressionValues vFXExpressionValues) => vFXExpressionValues.m_Ptr;
+        }
     }
 }

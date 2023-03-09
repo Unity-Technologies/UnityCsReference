@@ -44,7 +44,7 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        extern internal static bool NeedUpdateLODGroupBoundingBox([NotNull("NullExceptionObject")] LODGroup group);
+        extern internal static bool NeedUpdateLODGroupBoundingBox([NotNull] LODGroup group);
 
         public static void CalculateLODGroupBoundingBox(LODGroup group)
         {

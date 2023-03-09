@@ -201,7 +201,6 @@ namespace UnityEditor
         protected PlayModeView()
         {
             RegisterWindow();
-            SetPlayModeView(true);
             SetDisplayViewSize(m_TargetDisplay, m_TargetSize);
         }
 

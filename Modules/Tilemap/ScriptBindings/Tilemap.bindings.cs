@@ -29,6 +29,7 @@ namespace UnityEngine.Tilemaps
         LoopOnce = 1 << 0,
         PauseAnimation = 1 << 1,
         UpdatePhysics = 1 << 2,
+        UnscaledTime = 1 << 3,
     }
 
     [RequireComponent(typeof(Transform))]
@@ -562,6 +563,7 @@ namespace UnityEngine.Tilemaps
         }
     }
 
+    [Serializable]
     [RequiredByNativeCode]
     [StructLayoutAttribute(LayoutKind.Sequential)]
     [NativeType(Header = "Modules/Tilemap/TilemapScripting.h")]
@@ -572,9 +574,13 @@ namespace UnityEngine.Tilemaps
         public Color color { get { return m_Color; } set { m_Color = value; } }
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
 
+        [SerializeField]
         private Vector3Int m_Position;
+        [SerializeField]
         private Object m_TileAsset;
+        [SerializeField]
         private Color m_Color;
+        [SerializeField]
         private Matrix4x4 m_Transform;
 
         public TileChangeData(Vector3Int position, TileBase tile, Color color, Matrix4x4 transform)

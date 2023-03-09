@@ -291,5 +291,10 @@ namespace UnityEditor
                 return m_DependencyCount;
             }
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(ArtifactInfo artifactInfo) => artifactInfo.m_Ptr;
+        }
     }
 }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -15,16 +16,16 @@ namespace UnityEngine
         [StructLayout(LayoutKind.Sequential), NativeType(CodegenOptions.Custom, "MonoBurst", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
         public partial struct Burst
         {
-            public Burst(float _time, short _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
-            public Burst(float _time, short _minCount, short _maxCount) { m_Time = _time; m_Count = new MinMaxCurve(_minCount, _maxCount); m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
-            public Burst(float _time, short _minCount, short _maxCount, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = new MinMaxCurve(_minCount, _maxCount); m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; m_InvProbability = 0.0f; }
-            public Burst(float _time, MinMaxCurve _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
-            public Burst(float _time, MinMaxCurve _count, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = _count; m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; m_InvProbability = 0.0f; }
+            public Burst(float _time, short _count) { m_Time = _time; m_Count = MinMaxCurveBlittable.FromMixMaxCurve(_count); m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
+            public Burst(float _time, short _minCount, short _maxCount) { m_Time = _time; m_Count = MinMaxCurveBlittable.FromMixMaxCurve(new MinMaxCurve(_minCount, _maxCount)); m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
+            public Burst(float _time, short _minCount, short _maxCount, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = MinMaxCurveBlittable.FromMixMaxCurve(new MinMaxCurve(_minCount, _maxCount)); m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; m_InvProbability = 0.0f; }
+            public Burst(float _time, MinMaxCurve _count) { m_Time = _time; m_Count = MinMaxCurveBlittable.FromMixMaxCurve(_count); m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
+            public Burst(float _time, MinMaxCurve _count, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = MinMaxCurveBlittable.FromMixMaxCurve(_count); m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; m_InvProbability = 0.0f; }
 
             public float time { get { return m_Time; } set { m_Time = value; } }                                                // The time the burst happens.
-            public MinMaxCurve count { get { return m_Count; } set { m_Count = value; } }                                       // Number of particles to be emitted.
-            public short minCount { get { return (short)m_Count.constantMin; } set { m_Count.constantMin = (short)value; } }    // Minimum number of particles to be emitted.
-            public short maxCount { get { return (short)m_Count.constantMax; } set { m_Count.constantMax = (short)value; } }    // Maximum number of particles to be emitted.
+            public MinMaxCurve count { get { return MinMaxCurveBlittable.ToMinMaxCurve(m_Count); } set { m_Count = MinMaxCurveBlittable.FromMixMaxCurve(value); } }                                       // Number of particles to be emitted.
+            public short minCount { get { return (short)m_Count.m_ConstantMin; } set { m_Count.m_ConstantMin = (short)value; } }    // Minimum number of particles to be emitted.
+            public short maxCount { get { return (short)m_Count.m_ConstantMax; } set { m_Count.m_ConstantMax = (short)value; } }    // Maximum number of particles to be emitted.
 
             // How many times to play the burst.
             public int cycleCount
@@ -72,13 +73,13 @@ namespace UnityEngine
             }
 
             private float m_Time;
-            private MinMaxCurve m_Count;
+            private MinMaxCurveBlittable m_Count;
             private int m_RepeatCount; // externally, we use "cycles", because users preferred that, but internally, we must use something that defaults to 0, due to C# struct rules
             private float m_RepeatInterval;
             private float m_InvProbability; // internally, we must use something that defaults to 0, due to C# struct rules, so reverse the storage from 0-1 to 1-0
         }
 
-        [Serializable, NativeType(CodegenOptions.Custom, "MonoMinMaxCurve", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
+        [Serializable]
         public partial struct MinMaxCurve
         {
             public MinMaxCurve(float constant) { m_Mode = ParticleSystemCurveMode.Constant; m_CurveMultiplier = 0.0f; m_CurveMin = null; m_CurveMax = null; m_ConstantMin = 0.0f; m_ConstantMax = constant; }
@@ -118,15 +119,65 @@ namespace UnityEngine
                 return new MinMaxCurve(constant);
             }
 
-            [SerializeField] private ParticleSystemCurveMode m_Mode;
-            [SerializeField] private float m_CurveMultiplier;
-            [SerializeField] private AnimationCurve m_CurveMin;
-            [SerializeField] private AnimationCurve m_CurveMax;
-            [SerializeField] private float m_ConstantMin;
-            [SerializeField] private float m_ConstantMax;
+            [SerializeField] internal ParticleSystemCurveMode m_Mode;
+            [SerializeField] internal float m_CurveMultiplier;
+            [SerializeField] internal AnimationCurve m_CurveMin;
+            [SerializeField] internal AnimationCurve m_CurveMax;
+            [SerializeField] internal float m_ConstantMin;
+            [SerializeField] internal float m_ConstantMax;
         }
 
-        [Serializable, NativeType(CodegenOptions.Custom, "MonoMinMaxGradient", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
+        [Serializable, NativeType(CodegenOptions.Custom, "MonoMinMaxCurve", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
+        [StructLayout(LayoutKind.Sequential)]
+        [RequiredByNativeCode]
+        internal struct MinMaxCurveBlittable
+        {
+            private ParticleSystemCurveMode m_Mode;
+            private float m_CurveMultiplier;
+            private IntPtr m_CurveMin;
+            private IntPtr m_CurveMax;
+            internal float m_ConstantMin;
+            internal float m_ConstantMax;
+
+            public static implicit operator MinMaxCurve(MinMaxCurveBlittable minMaxCurveBlittable) => ToMinMaxCurve(minMaxCurveBlittable);
+            public static implicit operator MinMaxCurveBlittable(MinMaxCurve minMaxCurve) => FromMixMaxCurve(minMaxCurve);
+
+            internal static MinMaxCurveBlittable FromMixMaxCurve(in MinMaxCurve minMaxCurve)
+            {
+                var minMaxCurveBlittable = new MinMaxCurveBlittable
+                {
+                    m_Mode = minMaxCurve.m_Mode,
+                    m_CurveMultiplier = minMaxCurve.m_CurveMultiplier,
+                    m_ConstantMin = minMaxCurve.m_ConstantMin,
+                    m_ConstantMax = minMaxCurve.m_ConstantMax,
+                };
+
+                if (minMaxCurve.m_CurveMin != null)
+                    minMaxCurveBlittable.m_CurveMin = minMaxCurve.m_CurveMin.m_Ptr;
+                if (minMaxCurve.m_CurveMax != null)
+                    minMaxCurveBlittable.m_CurveMax = minMaxCurve.m_CurveMax.m_Ptr;
+
+                return minMaxCurveBlittable;
+            }
+
+            internal static MinMaxCurve ToMinMaxCurve(in MinMaxCurveBlittable minMaxCurveBlittable)
+            {
+                var minMaxCurve = new MinMaxCurve();
+
+                minMaxCurve.m_Mode = minMaxCurveBlittable.m_Mode;
+                minMaxCurve.m_CurveMultiplier = minMaxCurveBlittable.m_CurveMultiplier;
+                if (minMaxCurveBlittable.m_CurveMin != IntPtr.Zero)
+                    minMaxCurve.m_CurveMin = new AnimationCurve(minMaxCurveBlittable.m_CurveMin);
+                if (minMaxCurveBlittable.m_CurveMax != IntPtr.Zero)
+                    minMaxCurve.m_CurveMax = new AnimationCurve(minMaxCurveBlittable.m_CurveMax);
+                minMaxCurve.m_ConstantMin = minMaxCurveBlittable.m_ConstantMin;
+                minMaxCurve.m_ConstantMax = minMaxCurveBlittable.m_ConstantMax;
+
+                return minMaxCurve;
+            }
+        }
+
+        [Serializable]
         public partial struct MinMaxGradient
         {
             public MinMaxGradient(Color color) { m_Mode = ParticleSystemGradientMode.Color; m_GradientMin = null; m_GradientMax = null; m_ColorMin = Color.black; m_ColorMax = color; }
@@ -172,11 +223,59 @@ namespace UnityEngine
                 return new MinMaxGradient(gradient);
             }
 
-            [SerializeField] private ParticleSystemGradientMode m_Mode;
-            [SerializeField] private Gradient m_GradientMin;
-            [SerializeField] private Gradient m_GradientMax;
-            [SerializeField] private Color m_ColorMin;
-            [SerializeField] private Color m_ColorMax;
+            [SerializeField] internal ParticleSystemGradientMode m_Mode;
+            [SerializeField] internal Gradient m_GradientMin;
+            [SerializeField] internal Gradient m_GradientMax;
+            [SerializeField] internal Color m_ColorMin;
+            [SerializeField] internal Color m_ColorMax;
+        }
+
+        [Serializable, NativeType(CodegenOptions.Custom, "MonoMinMaxGradient", Header = "Runtime/Scripting/ScriptingCommonStructDefinitions.h")]
+        [StructLayout(LayoutKind.Sequential)]
+        [RequiredByNativeCode]
+        internal struct MinMaxGradientBlittable
+        {
+            private ParticleSystemGradientMode m_Mode;
+            private IntPtr m_GradientMin;
+            private IntPtr m_GradientMax;
+            private Color m_ColorMin;
+            private Color m_ColorMax;
+
+            public static implicit operator MinMaxGradient(MinMaxGradientBlittable minMaxGradientBlittable) => ToMinMaxGradient(minMaxGradientBlittable);
+            public static implicit operator MinMaxGradientBlittable(MinMaxGradient minMaxGradient) => FromMixMaxGradient(minMaxGradient);
+
+            internal static MinMaxGradientBlittable FromMixMaxGradient(in MinMaxGradient minMaxGradient)
+            {
+                var minMaxGradientBlittable = new MinMaxGradientBlittable
+                {
+                    m_Mode = minMaxGradient.m_Mode,
+                    m_ColorMin = minMaxGradient.m_ColorMin,
+                    m_ColorMax = minMaxGradient.m_ColorMax,
+                };
+
+                if (minMaxGradient.m_GradientMin != null)
+                    minMaxGradientBlittable.m_GradientMin = minMaxGradient.m_GradientMin.m_Ptr;
+                if (minMaxGradient.m_GradientMax != null)
+                    minMaxGradientBlittable.m_GradientMax = minMaxGradient.m_GradientMax.m_Ptr;
+
+                return minMaxGradientBlittable;
+            }
+
+            internal static MinMaxGradient ToMinMaxGradient(in MinMaxGradientBlittable minMaxGradientBlittable)
+            {
+                var minMaxGradient = new MinMaxGradient();
+
+                minMaxGradient.m_Mode = minMaxGradientBlittable.m_Mode;
+                if (minMaxGradientBlittable.m_GradientMin != IntPtr.Zero)
+                    minMaxGradient.m_GradientMin = new Gradient(minMaxGradientBlittable.m_GradientMin);
+                if (minMaxGradientBlittable.m_GradientMax != IntPtr.Zero)
+                    minMaxGradient.m_GradientMax = new Gradient(minMaxGradientBlittable.m_GradientMax);
+                minMaxGradient.m_ColorMin = minMaxGradientBlittable.m_ColorMin;
+                minMaxGradient.m_ColorMax = minMaxGradientBlittable.m_ColorMax;
+
+                return minMaxGradient;
+            }
+
         }
 
         [RequiredByNativeCode("particleSystemParticle", Optional = true)]

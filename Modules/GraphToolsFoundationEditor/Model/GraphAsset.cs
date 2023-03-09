@@ -149,12 +149,12 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        public void OnBeforeSerialize()
+        public virtual void OnBeforeSerialize()
         {
         }
 
         /// <inheritdoc />
-        public void OnAfterDeserialize()
+        public virtual void OnAfterDeserialize()
         {
             if (m_GraphModel != null)
                 m_GraphModel.Asset = this;

@@ -85,7 +85,7 @@ namespace UnityEngine.Profiling
 
         // This class can't be explicitly created
         internal CustomSampler() {}
-        internal CustomSampler(IntPtr ptr) { m_Ptr = ptr; }
+        private CustomSampler(IntPtr ptr) : base(ptr) { }
 
         public static CustomSampler Create(string name, bool collectGpuData = false)
         {
@@ -114,6 +114,11 @@ namespace UnityEngine.Profiling
         public void End()
         {
             ProfilerUnsafeUtility.EndSample(m_Ptr);
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(CustomSampler customSampler) => customSampler.m_Ptr;
         }
     }
 }

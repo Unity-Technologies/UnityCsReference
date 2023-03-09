@@ -88,5 +88,10 @@ namespace UnityEngine
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern int GetDoubleClickTime();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Event e) => e.m_Ptr;
+        }
     }
 }

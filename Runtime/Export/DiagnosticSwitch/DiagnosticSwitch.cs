@@ -19,15 +19,18 @@ namespace UnityEngine
     {
         private IntPtr m_Ptr;
 
-        // Only constructed in native code
-        private DiagnosticSwitch() {}
+        private DiagnosticSwitch(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+        }
 
         // Keep this in sync with DiagnosticSwitch::SwitchFlags in C++
         [Flags]
         internal enum Flags
         {
-            None                        = 0,
-            CanChangeAfterEngineStart   = (1 << 0)
+            None = 0,
+            CanChangeAfterEngineStart = (1 << 0),
+            PropagateToAssetImportWorkerProcess = (1 << 1),
         }
 
         public extern string name { get; }
@@ -50,5 +53,17 @@ namespace UnityEngine
 
         public bool isSetToDefault => Equals(persistentValue, defaultValue);
         public bool needsRestart => !Equals(value, persistentValue);
+
+        public override string ToString()
+        {
+            var valueText = value == null ? "<null>" : value.ToString();
+            return $"{name} = {valueText}";
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(DiagnosticSwitch diagnosticSwitch) => diagnosticSwitch.m_Ptr;
+            public static DiagnosticSwitch ConvertToManaged(IntPtr ptr) => new DiagnosticSwitch(ptr);
+        }
     }
 }

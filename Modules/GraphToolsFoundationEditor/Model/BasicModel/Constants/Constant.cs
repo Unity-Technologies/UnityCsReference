@@ -49,12 +49,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Clones the constant.
         /// </summary>
         /// <returns>The cloned constant.</returns>
-        public virtual Constant Clone()
-        {
-            var copy = (Constant)Activator.CreateInstance(GetType());
-            copy.ObjectValue = ObjectValue;
-            return copy;
-        }
+        public abstract Constant Clone();
 
         /// <summary>
         /// Gets the <see cref="TypeHandle"/> of the value.

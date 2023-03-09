@@ -41,20 +41,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         private InProgressContainer enablingContainer => m_EnablingContainer ??= new InProgressContainer(ViewEnabling);
 
         private ResourceLoader m_ResourceLoader;
-        private PackageManagerPrefs m_PackageManagerPrefs;
         private UpmClient m_UpmClient;
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
         private void ResolveDependencies(ResourceLoader resourceLoader,
-                                         PackageManagerPrefs packageManagerPrefs,
                                          UpmClient upmClient,
                                          AssetStoreDownloadManager assetStoreDownloadManager,
                                          PackageDatabase packageDatabase,
                                          PageManager packageManager)
         {
             m_ResourceLoader = resourceLoader;
-            m_PackageManagerPrefs = packageManagerPrefs;
             m_UpmClient = upmClient;
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_PackageDatabase = packageDatabase;
@@ -62,13 +59,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public InProgressDropdown(ResourceLoader resourceLoader,
-                                  PackageManagerPrefs packageManagerPrefs,
                                   UpmClient upmClient,
                                   AssetStoreDownloadManager assetStoreDownloadManager,
                                   PackageDatabase packageDatabase,
                                   PageManager packageManager)
         {
-            ResolveDependencies(resourceLoader, packageManagerPrefs, upmClient, assetStoreDownloadManager, packageDatabase, packageManager);
+            ResolveDependencies(resourceLoader, upmClient, assetStoreDownloadManager, packageDatabase, packageManager);
             styleSheets.Add(m_ResourceLoader.inProgressDropdownStyleSheet);
 
             m_Height = 0;
@@ -117,28 +113,28 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewDownloading()
         {
-            ViewPackagesOnTab(PackageFilterTab.AssetStore, PackageProgress.Downloading);
+            ViewPackagesOnPage(m_PageManager.GetPage(MyAssetsPage.k_Id), PackageProgress.Downloading);
         }
 
         private void ViewInstalling()
         {
-            ViewPackagesOnTab(PackageFilterTab.InProject, PackageProgress.Installing, ~PackageTag.BuiltIn);
+            ViewPackagesOnPage(m_PageManager.GetPage(InProjectPage.k_Id), PackageProgress.Installing, ~PackageTag.BuiltIn);
         }
 
         private void ViewEnabling()
         {
-            ViewPackagesOnTab(PackageFilterTab.BuiltIn, PackageProgress.Installing, PackageTag.BuiltIn);
+            ViewPackagesOnPage(m_PageManager.GetPage(BuiltInPage.k_Id), PackageProgress.Installing, PackageTag.BuiltIn);
         }
 
-        private void ViewPackagesOnTab(PackageFilterTab tab, PackageProgress progress, PackageTag tag = PackageTag.None)
+        private void ViewPackagesOnPage(IPage page, PackageProgress progress, PackageTag tag = PackageTag.None)
         {
             var packagesInProgress = m_PackageDatabase.allPackages.Where(p =>
                 p.progress == progress && (tag == PackageTag.None || p.versions.primary.HasTag(tag))).ToArray();
             if (packagesInProgress.Any())
             {
-                m_PackageManagerPrefs.currentFilterTab = tab;
-                m_PageManager.GetPage().LoadExtraItems(packagesInProgress);
-                m_PageManager.GetPage().SetNewSelection(packagesInProgress.Select(p => new PackageAndVersionIdPair(p.uniqueId)));
+                m_PageManager.activePage = page;
+                page.LoadExtraItems(packagesInProgress);
+                page.SetNewSelection(packagesInProgress.Select(p => new PackageAndVersionIdPair(p.uniqueId)));
             }
             Close();
         }

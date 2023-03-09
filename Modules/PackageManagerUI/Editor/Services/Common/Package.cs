@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private bool m_IsDiscoverable;
-        public bool isDiscoverable => m_IsDiscoverable;
+        public bool isDiscoverable => m_IsDiscoverable || versions.installed?.isDirectDependency == true;
 
         public string displayName => !string.IsNullOrEmpty(m_Product?.displayName) ? m_Product?.displayName : versions.FirstOrDefault()?.displayName ?? string.Empty;
         public PackageState state
@@ -108,21 +108,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                     yield return versionError;
         }
 
-        public bool hasEntitlements => versions.Any(version => version.HasTag(PackageTag.Unity) && version.hasEntitlements);
+        public bool hasEntitlements => versions.Any(v => v.HasTag(PackageTag.Unity) && v.hasEntitlements);
 
-        public bool hasEntitlementsError => m_Errors.Any(error => error.errorCode == UIErrorCode.UpmError_Forbidden) || versions.Any(version => version.hasEntitlementsError);
+        public bool hasEntitlementsError => m_Errors.Any(e => e.errorCode == UIErrorCode.UpmError_Forbidden) || versions.Any(v => v.hasEntitlementsError);
 
+        [SerializeReference]
         private IVersionList m_VersionList;
         public IVersionList versions => m_VersionList;
 
-        [SerializeField]
-        private AssetStoreVersionList m_SerializedAssetStoreVersionList;
-        [SerializeField]
-        private UpmVersionList m_SerializedUpmVersionList;
-        [SerializeField]
-        private PlaceholderVersionList m_SerializedPlaceholderVersionList;
-
-        IEnumerable<UI.IPackageVersion> UI.IPackage.versions => versions.Cast<UI.IPackageVersion>();
+        IEnumerable<UI.IPackageVersion> UI.IPackage.versions => versions;
 
         private void LinkPackageAndVersions()
         {
@@ -132,22 +126,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            if (m_VersionList is UpmVersionList)
-                m_SerializedUpmVersionList = m_VersionList as UpmVersionList;
-            else if (m_VersionList is AssetStoreVersionList)
-                m_SerializedAssetStoreVersionList = m_VersionList as AssetStoreVersionList;
-            else
-                m_SerializedPlaceholderVersionList = m_VersionList as PlaceholderVersionList;
         }
 
         public void OnAfterDeserialize()
         {
-            if (m_SerializedPlaceholderVersionList?.Any() == true)
-                m_VersionList = m_SerializedPlaceholderVersionList;
-            else if (string.IsNullOrEmpty(name))
-                m_VersionList = m_SerializedAssetStoreVersionList;
-            else
-                m_VersionList = m_SerializedUpmVersionList;
             LinkPackageAndVersions();
         }
 
@@ -167,26 +149,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DeprecationMessage = deprecationMessage;
 
             LinkPackageAndVersions();
-        }
-
-        public virtual bool IsInTab(PackageFilterTab tab)
-        {
-            var version = versions.primary;
-            switch (tab)
-            {
-                case PackageFilterTab.BuiltIn:
-                    return version.HasTag(PackageTag.BuiltIn);
-                case PackageFilterTab.UnityRegistry:
-                    return !version.HasTag(PackageTag.BuiltIn) && version.HasTag(PackageTag.UpmFormat) && version.HasTag(PackageTag.Unity) && (isDiscoverable || (versions.installed?.isDirectDependency ?? false));
-                case PackageFilterTab.MyRegistries:
-                    return version.HasTag(PackageTag.UpmFormat) && version.HasTag(PackageTag.ScopedRegistry | PackageTag.MainNotUnity) && (isDiscoverable || (versions.installed?.isDirectDependency ?? false));
-                case PackageFilterTab.InProject:
-                    return !version.HasTag(PackageTag.BuiltIn) && (progress == PackageProgress.Installing || versions.installed != null);
-                case PackageFilterTab.AssetStore:
-                    return product != null;
-                default:
-                    return false;
-            }
         }
 
         // We are making package factories inherit from a sub class of Package to make sure that we can keep all the package modifying code

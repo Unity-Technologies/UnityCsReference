@@ -38,7 +38,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static RunnableProgram DefaultScriptUpdaterProgram()
         {
-            NPath scriptUpdaterExe = $"{EditorApplication.applicationContentsPath}/Tools/ScriptUpdater/ScriptUpdater.exe";
+            NPath scriptUpdaterExe = $"{EditorApplication.applicationContentsPath}/Tools/Compilation/ApiUpdater/ScriptUpdater.dll";
             return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath, new[] {scriptUpdaterExe.InQuotes()}, stdOutMode: StdOutMode.LogStdOutOnFinish);
         }
 

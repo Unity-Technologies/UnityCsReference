@@ -208,7 +208,8 @@ namespace UnityEditor
 
         internal static SavedBool s_ShowRepaintDots = new SavedBool("ShowRepaintDots", true);
 
-        internal static readonly Regex s_HyperlinkRegex = new Regex(@"(?<=\b=')[^']*");
+        internal static readonly Regex s_ATagRegex = new Regex(@"(?<=\b="")[^""]*");
+        internal static readonly Regex s_LinkTagRegex = new Regex(@"(?<=\b=')[^']*");
 
         static class Styles
         {
@@ -1461,7 +1462,9 @@ namespace UnityEditor
             if (!editor.HasClickedOnLink(mousePosition, out string link))
                 return false;
 
-            MatchCollection matches = s_HyperlinkRegex.Matches(link);
+            MatchCollection matches = s_ATagRegex.Matches(link);
+            if (matches.Count == 0)
+                matches = s_LinkTagRegex.Matches(link);
 
             int endPreviousAttributeIndex = 0;
             // for each attribute we need to find the attribute name
@@ -4196,9 +4199,7 @@ namespace UnityEditor
 
         public static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, [DefaultValue("false")] bool includeObsolete, [DefaultValue("null")] GUIStyle style = null)
         {
-            int changedFlags;
-            bool changedToValue;
-            return EnumFlagsField(position, label, enumValue, includeObsolete, out changedFlags, out changedToValue, style ?? EditorStyles.popup);
+            return EnumFlagsField(position, label, enumValue, includeObsolete, out _, out _, style ?? EditorStyles.popup);
         }
 
         // Internal version that also gives you back which flags were changed and what they were changed to.
@@ -6064,7 +6065,7 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.Repaint:
-                    textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0])), hovered, pressed, foldout, hasFocus);
+                    textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0], targetObjs.Length > 1)), hovered, pressed, foldout, hasFocus);
                     if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
                     {
                         EditorStyles.optionsButtonStyle.Draw(settingsRect, GUIContent.none, id, foldout, settingsRect.Contains(Event.current.mousePosition));

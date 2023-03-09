@@ -117,6 +117,7 @@ namespace UnityEditor
         const string k_Id = "unity-grid-and-snap-toolbar";
 
         public GridAndSnapToolBar() : base(
+            "Tools/Snap Size",
             "SceneView/Grids",
             "Tools/Snap Settings",
             "SceneView/Snap Increment") {}

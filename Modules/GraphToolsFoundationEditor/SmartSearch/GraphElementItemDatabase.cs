@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using Unity.ItemLibrary.Editor;
 using UnityEditor;
+using UnityEditor.Utils;
 using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -66,20 +68,30 @@ namespace Unity.GraphToolsFoundation.Editor
                     if (!attribute.StencilType.IsInstanceOfType(Stencil))
                         continue;
 
-                    var name = attribute.Path.Split('/').Last();
-
                     switch (attribute.Context)
                     {
                         case SearchContext.Graph:
                         {
+                            ItemLibraryItem.ExtractPathAndNameFromFullName(attribute.Path, out var categoryPath, out var name);
+                            if (attribute.Mode != null && name != attribute.Mode)
+                                name = attribute.Mode;
+
                             var node = new GraphNodeModelLibraryItem(
+                                name,
                                 new NodeItemLibraryData(type),
-                                data => data.CreateNode(type, name))
+                                data => data.CreateNode(type, name, n =>
                                 {
-                                    FullName = attribute.Path,
-                                    Help = nodeHelpAttribute?.HelpText,
-                                    StyleName = attribute.StyleName
-                                };
+                                    if (attribute.Mode != null && n is NodeModel nodeModel)
+                                    {
+                                        var modeIndex = nodeModel.Modes.IndexOf_Internal(name);
+                                        nodeModel.CurrentModeIndex = modeIndex;
+                                    }
+                                }))
+                            {
+                                CategoryPath = categoryPath,
+                                Help = nodeHelpAttribute?.HelpText,
+                                StyleName = attribute.StyleName
+                            };
 
                             Items.Add(node);
                             break;
@@ -90,30 +102,10 @@ namespace Unity.GraphToolsFoundation.Editor
                                 $"{SearchContext.Graph} node, so it cannot be added to the library");
                             break;
                     }
-
-                    break;
+                    if (attribute.Mode == null)
+                        break;
                 }
             }
-
-            return this;
-        }
-
-        /// <summary>
-        /// Adds a <see cref="GraphNodeModelLibraryItem"/> for Sticky Note to the database.
-        /// </summary>
-        /// <returns>The database with the elements.</returns>
-        public GraphElementItemDatabase AddStickyNote()
-        {
-            var node = new GraphNodeModelLibraryItem(StickyNotePath,
-                new TagItemLibraryData(CommonLibraryTags.StickyNote),
-                data =>
-                {
-                    var rect = new Rect(data.Position, StickyNote.defaultSize);
-                    var graphModel = data.GraphModel;
-                    return graphModel.CreateStickyNote(rect, data.SpawnFlags);
-                }
-            );
-            Items.Add(node);
 
             return this;
         }
@@ -170,10 +162,13 @@ namespace Unity.GraphToolsFoundation.Editor
             return this;
         }
 
-        protected virtual IEnumerable<GraphModel> GetSubgraphs()
+        /// <summary>
+        /// Gets subgraphs of a given asset type.
+        /// </summary>
+        /// <param name="graphAssetType">The type of subgraphs to get.</param>
+        /// <returns>The subgraph assets found.</returns>
+        protected IEnumerable<GraphModel> GetSubgraphs(Type graphAssetType)
         {
-            var graphAssetType = Stencil.GraphModel?.Asset == null ? null : Stencil.GraphModel.Asset.GetType();
-
             if (graphAssetType != null)
             {
                 var assetPaths = AssetDatabase.FindAssets($"t:{graphAssetType}").Select(AssetDatabase.GUIDToAssetPath).ToList();
@@ -183,6 +178,61 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             return Enumerable.Empty<GraphModel>();
+        }
+
+        /// <summary>
+        /// Gets subgraphs of the same type as the main graph asset type.
+        /// </summary>
+        /// <returns>The subgraph assets found.</returns>
+        protected virtual IEnumerable<GraphModel> GetSubgraphs()
+        {
+            var graphAssetType = Stencil.GraphModel?.Asset == null ? null : Stencil.GraphModel.Asset.GetType();
+            return GetSubgraphs(graphAssetType);
+        }
+
+        /// <summary>
+        /// Gets a name for the subgraph suitable for use in the item library.
+        /// </summary>
+        /// <param name="subgraphModel">The subgraph.</param>
+        /// <returns>The name of the subgraph.</returns>
+        protected virtual string GetSubgraphName(GraphModel subgraphModel)
+        {
+            var name = subgraphModel.Name ?? "UnknownAssetGraphModel";
+
+            if (subgraphModel.Asset != null && subgraphModel.Asset.FilePath != null)
+            {
+                var path = Path.GetDirectoryName(subgraphModel.Asset.FilePath);
+
+                if (path is not (null or "Assets"))
+                {
+                    path = path.NormalizePath();
+                    Path.GetRelativePath("Assets", path);
+
+                    return $"{path}/{name}";
+                }
+            }
+
+            return name;
+        }
+
+        /// <summary>
+        /// Gets the category where to list the subgraph in the item library.
+        /// </summary>
+        /// <param name="subgraphModel">The subgraph.</param>
+        /// <returns>The category.</returns>
+        protected virtual string GetSubgraphCategoryPath(GraphModel subgraphModel)
+        {
+            return SubgraphsPath;
+        }
+
+        /// <summary>
+        /// Gets a description for the subgraph in the item library.
+        /// </summary>
+        /// <param name="subgraphModel">The subgraph.</param>
+        /// <returns>The description.</returns>
+        protected virtual string GetSubgraphDescription(GraphModel subgraphModel)
+        {
+            return "";
         }
 
         /// <summary>
@@ -197,12 +247,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
             foreach (var graphModel in graphModels)
             {
-                string name = graphModel.Name;
-                Items.Add(new GraphNodeModelLibraryItem(name ?? "UnknownAssetGraphModel",
+                Items.Add(new GraphNodeModelLibraryItem(GetSubgraphName(graphModel),
                     new TypeItemLibraryData(handle),
                     data => data.CreateSubgraphNode(graphModel))
                 {
-                    CategoryPath = SubgraphsPath
+                    CategoryPath = GetSubgraphCategoryPath(graphModel),
+                    Help = GetSubgraphDescription(graphModel)
                 });
             }
 
@@ -213,7 +263,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Gets a version of the database compatible with the library.
         /// </summary>
         /// <returns>A version of the database compatible with the library.</returns>
-        internal ItemLibraryDatabase Build_Internal()
+        public ItemLibraryDatabase Build()
         {
             return new ItemLibraryDatabase(Items);
         }

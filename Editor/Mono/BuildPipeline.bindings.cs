@@ -32,7 +32,7 @@ namespace UnityEditor
         // Show the built player.
         ShowBuiltPlayer = 1 << 3,
 
-        // Build a compressed asset bundle that contains streamed scenes loadable with the WWW class.
+        // For internal use. Used when BuildAssetBundles implementation triggers part of the player build code path when packaging Scenes into AssetBundles.
         BuildAdditionalStreamedScenes = 1 << 4,
 
         // Do not overwrite player directory, but accept user's modifications.
@@ -270,13 +270,11 @@ namespace UnityEditor
         [FreeFunction(IsThreadSafe = true)]
         internal static extern string GetEditorTargetName();
 
-        // Lets you manage cross-references and dependencies between different asset bundles and player builds.
-        [Obsolete("PushAssetDependencies has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
+        [Obsolete("PushAssetDependencies has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
         [FreeFunction]
         public static extern void PushAssetDependencies();
 
-        // Lets you manage cross-references and dependencies between different asset bundles and player builds.
-        [Obsolete("PopAssetDependencies has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
+        [Obsolete("PopAssetDependencies has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
         [FreeFunction]
         public static extern void PopAssetDependencies();
 
@@ -333,10 +331,7 @@ namespace UnityEditor
 
         public static BuildReport BuildPlayer(BuildPlayerOptions buildPlayerOptions)
         {
-            if ((buildPlayerOptions.target == BuildTarget.StandaloneLinux64 ||
-                buildPlayerOptions.target == BuildTarget.StandaloneOSX ||
-                buildPlayerOptions.target == BuildTarget.StandaloneWindows ||
-                buildPlayerOptions.target == BuildTarget.StandaloneWindows64) &&
+            if (GetBuildTargetGroup(buildPlayerOptions.target) == BuildTargetGroup.Standalone &&
                 buildPlayerOptions.subtarget == (int)StandaloneBuildSubtarget.Default)
             {
                 buildPlayerOptions.subtarget = (int) EditorUserBuildSettings.standaloneBuildSubtarget;
@@ -446,54 +441,35 @@ namespace UnityEditor
         internal static extern bool IsFeatureSupported(string define, BuildTarget platform);
 
         // Builds one or more scenes and all their dependencies into a compressed asset bundle.
-        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
-        public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target, BuildOptions options)
-        {
-            return BuildPlayer(levels, locationPath, target, options | BuildOptions.BuildAdditionalStreamedScenes).SummarizeErrors();
-        }
+        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
+        public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target, BuildOptions options) { return ""; }
 
         // Builds one or more scenes and all their dependencies into a compressed asset bundle.
-        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
-        public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target)
-        {
-            return BuildPlayer(levels, locationPath, target, BuildOptions.BuildAdditionalStreamedScenes).SummarizeErrors();
-        }
+        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
+        public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target) { return ""; }
 
         // Builds one or more scenes and all their dependencies into a compressed asset bundle.
-        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
+        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
         public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target, out uint crc, BuildOptions options)
         {
-            BuildTargetGroup buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
-            return BuildStreamedSceneAssetBundle(levels, locationPath, buildTargetGroup, target, EditorUserBuildSettings.GetActiveSubtargetFor(target), out crc, options);
+            crc = 0;
+            return "";
         }
 
         // Builds one or more scenes and all their dependencies into a compressed asset bundle.
-        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
+        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
         internal static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, out uint crc, BuildOptions options)
         {
             crc = 0;
-            try
-            {
-                var report = BuildPlayerInternal(levels, locationPath, null, buildTargetGroup, target, subtarget, options | BuildOptions.BuildAdditionalStreamedScenes | BuildOptions.ComputeCRC, new string[] {});
-                crc = report.summary.crc;
-
-                var summary = report.SummarizeErrors();
-                UnityEngine.Object.DestroyImmediate(report, true);
-                return summary;
-            }
-            catch (System.Exception exception)
-            {
-                // In some case BuildPlayer might let a null reference exception fall through. Prevent data loss by just exiting.
-                LogBuildExceptionAndExit("BuildPipeline.BuildStreamedSceneAssetBundle", exception);
-                return "";
-            }
+            return "";
         }
 
         // Builds one or more scenes and all their dependencies into a compressed asset bundle.
-        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
+        [Obsolete("BuildStreamedSceneAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
         public static string BuildStreamedSceneAssetBundle(string[] levels, string locationPath, BuildTarget target, out uint crc)
         {
-            return BuildStreamedSceneAssetBundle(levels, locationPath, target, out crc, 0);
+            crc = 0;
+            return "";
         }
 
         private static BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, string[] extraScriptingDefines)
@@ -530,6 +506,12 @@ namespace UnityEditor
 
         internal static BuildReport BuildPlayerData(BuildPlayerDataOptions buildPlayerDataOptions, out RuntimeClassRegistry usedClasses)
         {
+            if (GetBuildTargetGroup(buildPlayerDataOptions.target) == BuildTargetGroup.Standalone &&
+                buildPlayerDataOptions.subtarget == (int)StandaloneBuildSubtarget.Default)
+            {
+                buildPlayerDataOptions.subtarget = (int) EditorUserBuildSettings.standaloneBuildSubtarget;
+            }
+
             var result = BuildPlayerData(buildPlayerDataOptions);
             usedClasses = result.usedClasses;
             return result.report;
@@ -539,70 +521,33 @@ namespace UnityEditor
 #pragma warning disable 618
 
         // Builds an AssetBundle.
-        [Obsolete("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
-        public static bool BuildAssetBundle(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
-        {
-            uint crc;
-            return BuildAssetBundle(mainAsset, assets, pathName, out crc, assetBundleOptions, targetPlatform);
-        }
+        [Obsolete("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
+        public static bool BuildAssetBundle(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform) { return false; }
 
-        [Obsolete("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
+        [Obsolete("BuildAssetBundle has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
         public static bool BuildAssetBundle(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
-            BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
-            return BuildAssetBundle(mainAsset, assets, pathName, out crc, assetBundleOptions, targetPlatformGroup, targetPlatform, EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform));
-        }
-
-        // Builds an AssetBundle (Obsolete)
-        internal static bool BuildAssetBundle(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget)
-        {
             crc = 0;
-            try
-            {
-                return BuildAssetBundleInternal(mainAsset, assets, null, pathName, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget, out crc);
-            }
-            catch (System.Exception exception)
-            {
-                LogBuildExceptionAndExit("BuildPipeline.BuildAssetBundle", exception);
-                return false;
-            }
+            return false;
         }
 
         // Builds an AssetBundle, with custom names for the assets.
-        [Obsolete("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
+        [Obsolete("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
         public static bool BuildAssetBundleExplicitAssetNames(UnityEngine.Object[] assets, string[] assetNames, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
-            uint crc;
-            return BuildAssetBundleExplicitAssetNames(assets, assetNames, pathName, out crc, assetBundleOptions, targetPlatform);
+            return false;
         }
 
         // Builds an AssetBundle, with custom names for the assets.
-        [Obsolete("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
+        [Obsolete("BuildAssetBundleExplicitAssetNames has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.", true)]
         public static bool BuildAssetBundleExplicitAssetNames(UnityEngine.Object[] assets, string[] assetNames, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
-            BuildTargetGroup targetPlatformGroup = BuildPipeline.GetBuildTargetGroup(targetPlatform);
-            return BuildAssetBundleExplicitAssetNames(assets, assetNames, pathName, out crc, assetBundleOptions, targetPlatformGroup, targetPlatform, EditorUserBuildSettings.GetActiveSubtargetFor(targetPlatform));
-        }
-
-        // Builds an AssetBundle, with custom names for the assets (Obsolete)
-        internal static bool BuildAssetBundleExplicitAssetNames(UnityEngine.Object[] assets, string[] assetNames, string pathName, out uint crc, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget)
-        {
             crc = 0;
-            try
-            {
-                return BuildAssetBundleInternal(null, assets, assetNames, pathName, assetBundleOptions, targetPlatformGroup, targetPlatform, subtarget, out crc);
-            }
-            catch (System.Exception exception)
-            {
-                LogBuildExceptionAndExit("BuildPipeline.BuildAssetBundleExplicitAssetNames", exception);
-                return false;
-            }
+            return false;
         }
 
 #pragma warning restore 618
 
-        //Obsolete
-        private static extern bool BuildAssetBundleInternal(UnityEngine.Object mainAsset, UnityEngine.Object[] assets, string[] assetNames, string pathName, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform, int subtarget, out uint crc);
 
         public static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTarget targetPlatform)
         {
@@ -644,6 +589,13 @@ namespace UnityEditor
 
                 // Note: subtarget is associated with multiple enums, and 0 may have a specific meaning,
                 // so we only auto-set it when the target is also coming from the build settings
+                buildParameters.subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(buildParameters.targetPlatform);
+            }
+
+            // For Standalone platforms, the Default subtarget means to use the current active one
+            if (GetBuildTargetGroup(buildParameters.targetPlatform) == BuildTargetGroup.Standalone &&
+                (StandaloneBuildSubtarget)buildParameters.subtarget == StandaloneBuildSubtarget.Default)
+            {
                 buildParameters.subtarget = EditorUserBuildSettings.GetActiveSubtargetFor(buildParameters.targetPlatform);
             }
 

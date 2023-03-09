@@ -205,7 +205,7 @@ namespace UnityEditor
 
         extern public static ComputeShader CreateComputeShaderAsset(AssetImportContext context, string source);
 
-        [FreeFunction("GetShaderNameRegistry().AddShader")] extern public static void RegisterShader([NotNull("NullExceptionObject")] Shader shader);
+        [FreeFunction("GetShaderNameRegistry().AddShader")] extern public static void RegisterShader([NotNull] Shader shader);
 
 
         extern internal static void OpenCompiledShader(Shader shader, int mode, int externPlatformsMask, bool includeAllVariants, bool preprocessOnly, bool stripLineDirectives);

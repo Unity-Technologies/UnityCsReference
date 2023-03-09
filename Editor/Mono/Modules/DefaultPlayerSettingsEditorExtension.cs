@@ -146,5 +146,12 @@ namespace UnityEditor.Modules
         }
 
         public virtual void VulkanSectionGUI() {}
+
+        public virtual bool HasDedicatedServerSections()
+        {
+            return false;
+        }
+
+        public virtual void DedicatedServerSectionsGUI(ref int nextIndex) {}
     }
 }

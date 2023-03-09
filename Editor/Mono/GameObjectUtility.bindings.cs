@@ -130,10 +130,10 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        public static extern int GetMonoBehavioursWithMissingScriptCount([NotNull("NullExceptionObject")] GameObject go);
+        public static extern int GetMonoBehavioursWithMissingScriptCount([NotNull] GameObject go);
 
         [FreeFunction]
-        public static extern int RemoveMonoBehavioursWithMissingScript([NotNull("NullExceptionObject")] GameObject go);
+        public static extern int RemoveMonoBehavioursWithMissingScript([NotNull] GameObject go);
 
         public static ulong ModifyMaskIfGameObjectIsHiddenForPrefabModeInContext(ulong sceneCullingMask, GameObject gameObject)
         {

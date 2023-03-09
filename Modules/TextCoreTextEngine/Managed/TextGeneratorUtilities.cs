@@ -1931,31 +1931,34 @@ namespace UnityEngine.TextCore.Text
 
         internal static bool IsCJK(uint c)
         {
-            return c >= 0x3100  && c <= 0x312F  || /* Bopomofo */
-                   c >= 0x31A0  && c <= 0x31BF  || /* Bopomofo Extended */
-                   c >= 0x4E00  && c <= 0x9FFF  || /* CJK Unified Ideographs (Han) */
-                   c >= 0x3400  && c <= 0x4DBF  || /* CJK Extension A */
-                   c >= 0x20000 && c <= 0x2A6DF || /* CJK Extension B */
-                   c >= 0x2A700 && c <= 0x2B73F || /* CJK Extension C */
-                   c >= 0x2B740 && c <= 0x2B81F || /* CJK Extension D */
-                   c >= 0x2B820 && c <= 0x2CEAF || /* CJK Extension E */
-                   c >= 0x2CEB0 && c <= 0x2EBE0 || /* CJK Extension F */
-                   c >= 0x30000 && c <= 0x3134A || /* CJK Extension G */
-                   c >= 0xF900  && c <= 0xFAFF  || /* CJK Compatibility Ideographs */
-                   c >= 0x2F800 && c <= 0x2FA1F || /* CJK Compatibility Ideographs Supplement */
-                   c >= 0x2F00  && c <= 0x2FDF  || /* CJK Radicals / Kangxi Radicals */
-                   c >= 0x2E80  && c <= 0x2EFF  || /* CJK Radicals Supplement */
-                   c >= 0x31C0  && c <= 0x31EF  || /* CJK Strokes */
-                   c >= 0x2FF0  && c <= 0x2FFF  || /* Ideographic Description Characters */
-                   c >= 0x3040  && c <= 0x309F  || /* Hiragana */
-                   c >= 0x1B100 && c <= 0x1B12F || /* Kana Extended-A */
-                   c >= 0x1AFF0 && c <= 0x1AFFF || /* Kana Extended-B */
-                   c >= 0x1B000 && c <= 0x1B0FF || /* Kana Supplement */
-                   c >= 0x1B130 && c <= 0x1B16F || /* Small Kana Extension */
-                   c >= 0x3190  && c <= 0x319F  || /* Kanbun */
-                   c >= 0x30A0  && c <= 0x30FF  || /* Katakana */
-                   c >= 0x31F0  && c <= 0x31FF  || /* Katakana Phonetic Extensions */
-                   c >= 0xFF65  && c <= 0xFF9F;    /* Halfwidth Katakana */
+            return
+                    c >= 0x3000  && c <= 0x303F  || /* CJK Symbols and Punctuation */
+                    c >= 0x16FE0 && c <= 0x16FF  || /* CJK Ideographic Symbols and Punctuation */
+                    c >= 0x3100  && c <= 0x312F  || /* Bopomofo */
+                    c >= 0x31A0  && c <= 0x31BF  || /* Bopomofo Extended */
+                    c >= 0x4E00  && c <= 0x9FFF  || /* CJK Unified Ideographs (Han) */
+                    c >= 0x3400  && c <= 0x4DBF  || /* CJK Extension A */
+                    c >= 0x20000 && c <= 0x2A6DF || /* CJK Extension B */
+                    c >= 0x2A700 && c <= 0x2B73F || /* CJK Extension C */
+                    c >= 0x2B740 && c <= 0x2B81F || /* CJK Extension D */
+                    c >= 0x2B820 && c <= 0x2CEAF || /* CJK Extension E */
+                    c >= 0x2CEB0 && c <= 0x2EBE0 || /* CJK Extension F */
+                    c >= 0x30000 && c <= 0x3134A || /* CJK Extension G */
+                    c >= 0xF900  && c <= 0xFAFF  || /* CJK Compatibility Ideographs */
+                    c >= 0x2F800 && c <= 0x2FA1F || /* CJK Compatibility Ideographs Supplement */
+                    c >= 0x2F00  && c <= 0x2FDF  || /* CJK Radicals / Kangxi Radicals */
+                    c >= 0x2E80  && c <= 0x2EFF  || /* CJK Radicals Supplement */
+                    c >= 0x31C0  && c <= 0x31EF  || /* CJK Strokes */
+                    c >= 0x2FF0  && c <= 0x2FFF  || /* Ideographic Description Characters */
+                    c >= 0x3040  && c <= 0x309F  || /* Hiragana */
+                    c >= 0x1B100 && c <= 0x1B12F || /* Kana Extended-A */
+                    c >= 0x1AFF0 && c <= 0x1AFFF || /* Kana Extended-B */
+                    c >= 0x1B000 && c <= 0x1B0FF || /* Kana Supplement */
+                    c >= 0x1B130 && c <= 0x1B16F || /* Small Kana Extension */
+                    c >= 0x3190  && c <= 0x319F  || /* Kanbun */
+                    c >= 0x30A0  && c <= 0x30FF  || /* Katakana */
+                    c >= 0x31F0  && c <= 0x31FF  || /* Katakana Phonetic Extensions */
+                    c >= 0xFF65  && c <= 0xFF9F;    /* Halfwidth Katakana */
         }
     }
 }

@@ -53,69 +53,69 @@ namespace UnityEditor
 
         internal static bool activeToolGridSnapEnabled
         {
-            get
+            get => ToolManager.activeToolType != null && EditorToolManager.activeTool.gridSnapEnabled;
+        }
+
+        // gridSnapEnabled controls whether objects are rounded to absolute positions on the grid, as opposed to
+        // incremental rounding from translation origin. this option is only applicable when the handle rotation
+        // is set to "Global."
+        public static bool gridSnapEnabled
+        {
+            get => instance.snapSettings.snapToGrid;
+            set
             {
-                return (EditorTools.ToolManager.activeToolType != null)
-                    && EditorToolManager.activeTool.gridSnapEnabled;
+                instance.snapSettings.snapToGrid = value;
+                gridSnapEnabledChanged?.Invoke();
             }
         }
 
-        public static bool gridSnapActive
+        // snapEnabled is the general "is snap on" toggle. it controls all snapping; grid, increment, rotation, scale.
+        public static bool snapEnabled
         {
-            get { return !incrementalSnapActive && activeToolGridSnapEnabled && gridSnapEnabled; }
-        }
-
-        public static event Action gridSnapEnabledChanged;
-
-        internal static bool vertexSnapActive
-        {
-            get { return Tools.vertexDragging; }
-        }
-
-        public static bool gridSnapEnabled
-        {
-            get { return instance.snapEnabled; }
+            get { return EditorGUI.actionKey ? !instance.snapEnabled : instance.snapEnabled; }
             set
             {
-                if (gridSnapEnabled != value)
+                if (snapEnabled != value)
                 {
                     instance.snapEnabled = value;
-                    gridSnapEnabledChanged?.Invoke();
+                    snapEnabledChanged?.Invoke();
                 }
             }
         }
 
+        // where the 'snapEnabled' properties are preference toggles, the 'snapActive' properties are what tells tools
+        // when and which snapping modes should be be applied.
+        public static bool gridSnapActive => activeToolGridSnapEnabled && gridSnapEnabled && snapEnabled;
+
+        // callback invoked when grid snapping is enabled or disabled
+        public static event Action gridSnapEnabledChanged;
+
+        public static event Action snapEnabledChanged;
+
+        internal static bool vertexSnapActive => Tools.vertexDragging;
+
+        // Used by 2D package
+        internal static bool hotkeyActive => EditorGUI.actionKey;
+
+        public static bool incrementalSnapActive => !gridSnapActive && snapEnabled;
+
         public static Vector3 gridSize
         {
             get => GridSettings.size;
-            set => GridSettings.size = value;
+            set
+            {
+                if (GridSettings.size != value)
+                    GridSettings.size = value;
+            }
         }
 
-        internal static bool hotkeyActive
-        {
-            get { return EditorGUI.actionKey; }
-        }
-
-        public static bool incrementalSnapActive
-        {
-            get { return Event.current != null && EditorGUI.actionKey; }
-        }
-
-        internal static Action<Vector3> moveChanged;
         internal static Action<float> rotateChanged;
         internal static Action<float> scaleChanged;
 
         public static Vector3 move
         {
-            get { return instance.snapSettings.snapValue; }
-            set
-            {
-                if (instance.snapSettings.snapValue != value)
-                {
-                    instance.snapSettings.snapValue = value;
-                    moveChanged?.Invoke(value);
-                }
-            }
+            get => gridSize;
+            set => gridSize = value;
         }
 
         public static float rotate
@@ -147,17 +147,6 @@ namespace UnityEditor
         public static void ResetSnapSettings()
         {
             instance.snapSettings = new SnapSettings();
-        }
-
-        internal static Vector3Int snapMultiplier
-        {
-            get { return instance.snapSettings.snapMultiplier; }
-            set { instance.snapSettings.snapMultiplier = value; }
-        }
-
-        internal static void ResetMultiplier()
-        {
-            instance.snapSettings.ResetMultiplier();
         }
 
         internal static void Save()

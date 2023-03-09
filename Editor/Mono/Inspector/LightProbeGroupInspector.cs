@@ -9,6 +9,8 @@ using System.Xml.Serialization;
 using UnityEditorInternal;
 using UnityEngine;
 using System.Linq;
+using UnityEditor.EditorTools;
+using UnityEditor.Overlays;
 using Object = UnityEngine.Object;
 using UnityEngine.Rendering;
 
@@ -506,15 +508,16 @@ namespace UnityEditor
         /// How many points are there in the array.
         public int Count { get { return m_SourcePositions.Count; } }
 
-
         /// How many points are selected in the array.
         public int SelectedCount { get { return m_Selection.Count; } }
     }
 
-    [CustomEditor(typeof(LightProbeGroup))]
-    class LightProbeGroupInspector : Editor
+    class LightProbeGroupOverlay : TransientSceneViewOverlay
     {
-        private static class Styles
+        LightProbeGroup m_Target;
+        LightProbeGroupEditor m_Editor;
+
+        internal static class Styles
         {
             public static readonly GUIContent showWireframe = EditorGUIUtility.TrTextContent("Show Wireframe", "Show the tetrahedron wireframe visualizing the blending between probes.");
             public static readonly GUIContent selectedProbePosition = EditorGUIUtility.TrTextContent("Selected Probe Position", "The local position of this probe relative to the parent group.");
@@ -523,199 +526,84 @@ namespace UnityEditor
             public static readonly GUIContent selectAll = EditorGUIUtility.TrTextContent("Select All", "Select all Light Probes in the Light Probe Group.");
             public static readonly GUIContent duplicateSelected = EditorGUIUtility.TrTextContent("Duplicate Selected", "Duplicate the selected Light Probes.");
             public static readonly GUIContent performDeringing = EditorGUIUtility.TrTextContent("Remove Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.");
-
-            public static readonly GUIContent[] enterToolbarButtons = { EditorGUIUtility.TrTextContent("Edit Light Probe Positions", "Change positions for Light Probes.") };
-            public static readonly GUIContent[] exitToolbarButtons = { EditorGUIUtility.TrTextContent("Exit Light Probe Editing", "Exit Light Probe Positions Editing.") };
-            public static readonly EditMode.SceneViewEditMode[] toolbarModes = { EditMode.SceneViewEditMode.LightProbeGroup };
+            public static readonly GUIContent enterEditMode = EditorGUIUtility.TrTextContent("Edit Light Probe Positions", "Change positions for Light Probes.");
+            public static readonly GUIContent exitEditMode = EditorGUIUtility.TrTextContent("Exit Light Probe Editing", "Exit Light Probe Positions Editing.");
+            public static readonly GUIContent toolIcon = EditorGUIUtility.TrIconContent("EditCollider", "Edit Light Probe Group.\n\nUse the overlay to add Light Probes and modify probe positions.");
+            public static readonly GUIContent editModeInfoBox = EditorGUIUtility.TrTextContentWithIcon("Use the <b>Edit Light Probe Group Tool</b> in the <b>Scene Tools Overlay</b> to edit Light Probe positions.", MessageType.Info);
+            public static readonly GUIStyle editModeInfoBoxStyle = new GUIStyle(EditorStyles.helpBox) { richText = true };
         }
-        private LightProbeGroupEditor m_Editor;
-        private LightProbeGroup m_LightProbeGroup;
 
-        private bool m_EditingProbes;
-        private bool m_ShouldFocus;
-
-        public void OnEnable()
+        public LightProbeGroupOverlay(LightProbeGroup target, LightProbeGroupEditor editor)
         {
-            m_LightProbeGroup = target as LightProbeGroup;
-            m_Editor = new LightProbeGroupEditor(m_LightProbeGroup);
+            m_Target = target;
+            m_Editor = editor;
+
+            displayName = "Edit Light Probes";
+        }
+
+        public override void OnGUI()
+        {
+            EditorGUI.BeginChangeCheck();
+
             m_Editor.PullProbePositions();
-            m_Editor.DeselectProbes();
+            m_Editor.drawTetrahedra.value = GUILayout.Toggle(m_Editor.drawTetrahedra.value, Styles.showWireframe, EditorStyles.toggle);
+
+            EditorGUI.BeginChangeCheck();
+            Vector3 pos = m_Editor.SelectedCount > 0 ? m_Editor.GetSelectedPositions()[0] : Vector3.zero;
+            Vector3 newPosition = EditorGUILayout.Vector3Field(Styles.selectedProbePosition, pos);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Vector3[] selectedPositions = m_Editor.GetSelectedPositions();
+                Vector3 delta = CalculateDeltaAndClamp(newPosition, pos);
+                for (int i = 0; i < selectedPositions.Length; i++)
+                    m_Editor.UpdateSelectedPosition(i, selectedPositions[i] + delta);
+            }
+
+            GUILayout.Space(3);
+
+            GUILayoutOption minButtonWidth = GUILayout.MinWidth(130);
+            GUILayout.BeginHorizontal();
+            {
+                GUILayout.BeginVertical();
+                if (GUILayout.Button(Styles.addProbe, minButtonWidth))
+                {
+                    var position = Vector3.zero;
+                    if (SceneView.lastActiveSceneView)
+                        position = m_Target.transform.InverseTransformPoint(position);
+
+                    m_Editor.DeselectProbes();
+                    m_Editor.AddProbe(position);
+                }
+
+                if (GUILayout.Button(Styles.deleteSelected, minButtonWidth))
+                    m_Editor.RemoveSelectedProbes();
+
+                GUILayout.EndVertical();
+            }
+            GUILayout.BeginVertical();
+            {
+                if (GUILayout.Button(Styles.selectAll, minButtonWidth))
+                    m_Editor.SelectAllProbes();
+
+                if (GUILayout.Button(Styles.duplicateSelected, minButtonWidth))
+                    m_Editor.DuplicateSelectedProbes();
+
+                GUILayout.EndVertical();
+            }
+            GUILayout.EndHorizontal();
+
+            m_Editor.HandleEditMenuHotKeyCommands();
             m_Editor.PushProbePositions();
 
-            m_Editor.drawTetrahedra = new SavedBool($"{target.GetType()}.drawTetrahedra", true);
-
-            Undo.undoRedoEvent += UndoRedoPerformed;
-            EditMode.editModeStarted += OnEditModeStarted;
-            EditMode.editModeEnded += OnEditModeEnded;
-        }
-
-        private void OnEditModeEnded(IToolModeOwner owner)
-        {
-            if (owner == (IToolModeOwner)this)
+            if (EditorGUI.EndChangeCheck())
             {
-                EndEditProbes();
+                m_Editor.MarkSourcePositionsDirty();
+                SceneView.RepaintAll();
             }
         }
 
-        private void OnEditModeStarted(IToolModeOwner owner, EditMode.SceneViewEditMode mode)
-        {
-            if (owner == (IToolModeOwner)this && mode == EditMode.SceneViewEditMode.LightProbeGroup)
-            {
-                StartEditProbes();
-            }
-        }
-
-        public void StartEditMode()
-        {
-            EditMode.ChangeEditMode(EditMode.SceneViewEditMode.LightProbeGroup, m_Editor.bounds, this);
-        }
-
-        private void StartEditProbes()
-        {
-            if (m_EditingProbes)
-                return;
-
-            m_EditingProbes = true;
-            m_Editor.SetEditing(true);
-            Tools.s_Hidden = true;
-            SceneView.RepaintAll();
-        }
-
-        private void EndEditProbes()
-        {
-            if (!m_EditingProbes)
-                return;
-
-            m_Editor.DeselectProbes();
-            m_Editor.SetEditing(false);
-            m_EditingProbes = false;
-            Tools.s_Hidden = false;
-            SceneView.RepaintAll();
-        }
-
-        public void OnDisable()
-        {
-            EndEditProbes();
-            Undo.undoRedoEvent-= UndoRedoPerformed;
-            EditMode.editModeStarted -= OnEditModeStarted;
-            EditMode.editModeEnded -= OnEditModeEnded;
-
-            if (target != null)
-            {
-                m_Editor.PushProbePositions();
-                m_Editor = null;
-            }
-            m_LightProbeGroup = null;
-        }
-
-        private void UndoRedoPerformed(in UndoRedoInfo info)
-        {
-            // Update the cached probe positions from the ones just restored in the LightProbeGroup
-            m_Editor.PullProbePositions();
-
-            m_Editor.MarkSourcePositionsDirty();
-        }
-
-        public override void OnInspectorGUI()
-        {
-            bool srpHasAlternativeToLegacyProbes = UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystem;
-            if (srpHasAlternativeToLegacyProbes)
-            {
-                EditorGUILayout.HelpBox(UnityEngine.Rendering.SupportedRenderingFeatures.active.overridesLightProbeSystemWarningMessage, MessageType.Warning, wide: true);
-            }
-
-            using (new EditorGUI.DisabledScope(srpHasAlternativeToLegacyProbes))
-            {
-                EditorGUI.BeginChangeCheck();
-
-                m_Editor.PullProbePositions();
-
-                GUILayout.Space(3);
-                m_Editor.drawTetrahedra.value = EditorGUILayout.Toggle(Styles.showWireframe, m_Editor.drawTetrahedra.value);
-                m_Editor.deringProbes = EditorGUILayout.Toggle(Styles.performDeringing, m_Editor.deringProbes);
-
-                var isCurrentLightProbeInEditMode = EditMode.editMode == EditMode.SceneViewEditMode.LightProbeGroup && EditMode.IsOwner(this);
-                EditorGUILayout.BeginHorizontal();
-                {
-                    EditMode.DoInspectorToolbar(Styles.toolbarModes, isCurrentLightProbeInEditMode ? Styles.exitToolbarButtons : Styles.enterToolbarButtons, this);
-                }
-                EditorGUILayout.EndHorizontal();
-
-                EditorGUI.BeginDisabledGroup(!isCurrentLightProbeInEditMode);
-                {
-                    GUILayout.BeginHorizontal();
-                    {
-                        GUILayout.BeginVertical();
-                        if (GUILayout.Button(Styles.addProbe))
-                        {
-                            var position = Vector3.zero;
-                            if (SceneView.lastActiveSceneView)
-                                position = m_LightProbeGroup.transform.InverseTransformPoint(position);
-                            StartEditProbes();
-                            m_Editor.DeselectProbes();
-                            m_Editor.AddProbe(position);
-                        }
-
-                        if (GUILayout.Button(Styles.deleteSelected))
-                        {
-                            StartEditProbes();
-                            m_Editor.RemoveSelectedProbes();
-                        }
-                        GUILayout.EndVertical();
-                    }
-                    GUILayout.BeginVertical();
-                    {
-                        if (GUILayout.Button(Styles.selectAll))
-                        {
-                            StartEditProbes();
-                            m_Editor.SelectAllProbes();
-                        }
-
-                        if (GUILayout.Button(Styles.duplicateSelected))
-                        {
-                            StartEditProbes();
-                            m_Editor.DuplicateSelectedProbes();
-                        }
-
-                        GUILayout.EndVertical();
-                    }
-                    GUILayout.EndHorizontal();
-
-                    EditorGUI.BeginDisabledGroup(m_Editor.SelectedCount == 0);
-                    {
-                        EditorGUI.BeginChangeCheck();
-                        Vector3 pos = m_Editor.SelectedCount > 0 ? m_Editor.GetSelectedPositions()[0] : Vector3.zero;
-                        Vector3 newPosition = EditorGUILayout.Vector3Field(Styles.selectedProbePosition, pos);
-
-                        if (EditorGUI.EndChangeCheck())
-                        {
-                            Vector3[] selectedPositions = m_Editor.GetSelectedPositions();
-                            Vector3 delta = CalculateDeltaAndClamp(newPosition, pos);
-                            for (int i = 0; i < selectedPositions.Length; i++)
-                                m_Editor.UpdateSelectedPosition(i, selectedPositions[i] + delta);
-                        }
-                    }
-                    EditorGUI.EndDisabledGroup();
-                }
-                EditorGUI.EndDisabledGroup();
-
-                m_Editor.HandleEditMenuHotKeyCommands();
-                m_Editor.PushProbePositions();
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    m_Editor.MarkSourcePositionsDirty();
-                    SceneView.RepaintAll();
-                }
-            }
-        }
-
-        internal override Bounds GetWorldBoundsOfTarget(Object targetObject)
-        {
-            return m_Editor.bounds;
-        }
-
-        private Vector3 CalculateDeltaAndClamp(Vector3 vec1, Vector3 vec2)
+        Vector3 CalculateDeltaAndClamp(Vector3 vec1, Vector3 vec2)
         {
             if (float.IsInfinity(vec1.x) || float.IsNaN(vec1.x))
                 vec1.x = 0;
@@ -733,48 +621,98 @@ namespace UnityEditor
             return vec1 - vec2;
         }
 
-        public static bool IsSceneGUIEnabled()
+        public override bool visible => true;
+    }
+
+    [EditorTool("Light Probe Group", typeof(LightProbeGroup))]
+    class LightProbeGroupTool : EditorTool, IDrawSelectedHandles
+    {
+        LightProbeGroup m_LightProbeGroup;
+        LightProbeGroupEditor m_Editor;
+        LightProbeGroupOverlay m_Overlay;
+
+        void OnEnable()
         {
-            if (SceneView.lastActiveSceneView != null)
-            {
-                if (!SceneView.lastActiveSceneView.drawGizmos)
-                    return false;
-            }
+            m_LightProbeGroup = (LightProbeGroup) target;
+            if (m_LightProbeGroup == null)
+                return;
 
-            return true;
-        }
-
-        public void OnSceneGUI()
-        {
-            if (SceneView.lastActiveSceneView != null)
-            {
-                if (m_ShouldFocus)
-                {
-                    m_ShouldFocus = false;
-                    SceneView.lastActiveSceneView.FrameSelected();
-                }
-            }
-
+            m_Editor = new LightProbeGroupEditor(m_LightProbeGroup);
             m_Editor.PullProbePositions();
-            var lpg = target as LightProbeGroup;
-            if (lpg != null)
-            {
-                if (m_Editor.OnSceneGUI(lpg.transform))
-                    StartEditProbes();
-                else
-                    EndEditProbes();
-            }
+            m_Editor.DeselectProbes();
             m_Editor.PushProbePositions();
+            m_Editor.drawTetrahedra = new SavedBool($"{target.GetType()}.drawTetrahedra", true);
+            Undo.undoRedoEvent += UndoRedoPerformed;
         }
 
-        public bool HasFrameBounds()
+        void OnDisable()
         {
-            return m_Editor.SelectedCount > 0;
+            Undo.undoRedoEvent -= UndoRedoPerformed;
         }
 
-        public Bounds OnGetFrameBounds()
+        void UndoRedoPerformed(in UndoRedoInfo info)
         {
-            return m_Editor.selectedProbeBounds;
+            // Update the cached probe positions from the ones just restored in the LightProbeGroup
+            m_Editor.PullProbePositions();
+            m_Editor.MarkSourcePositionsDirty();
+            SceneView.RepaintAll();
+        }
+
+        public override void OnActivated()
+        {
+            m_Editor.SetEditing(true);
+            SceneView.AddOverlayToActiveView(m_Overlay = new LightProbeGroupOverlay(m_LightProbeGroup, m_Editor));
+            SceneView.RepaintAll();
+        }
+
+        public override void OnWillBeDeactivated()
+        {
+            m_Editor.DeselectProbes();
+            m_Editor.SetEditing(false);
+            m_Editor.PushProbePositions();
+            SceneView.RemoveOverlayFromActiveView(m_Overlay);
+            SceneView.RepaintAll();
+        }
+
+        public void OnDrawHandles()
+        {
+            m_Editor.PullProbePositions();
+            if (m_Editor.OnSceneGUI(m_LightProbeGroup.transform))
+            {
+                m_Editor.PushProbePositions();
+
+                // OnSceneGUI can cause us to enter edit mode, for example when pasting probes.
+                // In these cases, we must set the active EditorTool to reflect that change.
+                if (!ToolManager.IsActiveTool(this))
+                    EditorToolManager.activeTool = this;
+            }
+        }
+
+        public override bool IsAvailable() => !SupportedRenderingFeatures.active.overridesLightProbeSystem;
+
+        public override GUIContent toolbarIcon => LightProbeGroupOverlay.Styles.toolIcon;
+    }
+
+    [CustomEditor(typeof(LightProbeGroup))]
+    class LightProbeGroupInspector : Editor
+    {
+        public override void OnInspectorGUI()
+        {
+            bool srpHasAlternativeToLegacyProbes = SupportedRenderingFeatures.active.overridesLightProbeSystem;
+            using (new EditorGUI.DisabledScope(srpHasAlternativeToLegacyProbes))
+            {
+                LightProbeGroup probeGroup = target as LightProbeGroup;
+                probeGroup.dering = EditorGUILayout.Toggle(LightProbeGroupOverlay.Styles.performDeringing, probeGroup.dering);
+            }
+
+            if (srpHasAlternativeToLegacyProbes)
+            {
+                EditorGUILayout.HelpBox(SupportedRenderingFeatures.active.overridesLightProbeSystemWarningMessage, MessageType.Warning, true);
+            }
+            else
+            {
+                EditorGUILayout.LabelField(GUIContent.none, LightProbeGroupOverlay.Styles.editModeInfoBox, LightProbeGroupOverlay.Styles.editModeInfoBoxStyle);
+            }
         }
     }
 }

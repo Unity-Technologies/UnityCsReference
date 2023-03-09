@@ -508,20 +508,50 @@ namespace UnityEditor
                 set { SetAndroidMaxAspectRatioInternal(value); }
             }
 
+            public static float minAspectRatio
+            {
+                get { return GetAndroidMinAspectRatio(); }
+                set { SetAndroidMinAspectRatioInternal(value); }
+            }
+
             internal static extern float GetAndroidMaxAspectRatio();
+            internal static extern float GetAndroidMinAspectRatio();
 
             private static void SetAndroidMaxAspectRatioInternal(float value)
             {
-                if ((Mathf.Abs(value - 1.86f) <= 0.001f) || (value >= 1.86f))
+                if (value < 1.86f)
                 {
-                    SetAndroidSupportedAspectRatio(2);  // set supported aspect ratio mode to "Custom"
+                    Debug.LogWarning($"Maximum Aspect Ratio must be greater or equal to 1.86. {value} is too small, setting to 1.86 instead.");
+                    SetAndroidMinAspectRatio(1.86f);
+                }
+                else
+                {
                     SetAndroidMaxAspectRatio(value);
                 }
+
+                SetAndroidSupportedAspectRatio(2); // set supported aspect ratio mode to "Custom"
+            }
+
+            private static void SetAndroidMinAspectRatioInternal(float value)
+            {
+                if (value < 1.0f)
+                {
+                    Debug.LogWarning($"Minimum Aspect Ratio must be greater or equal to 1.0. {value} is too small, setting to 1.0 instead.");
+                    SetAndroidMinAspectRatio(1.0f);
+                }
+                else
+                {
+                    SetAndroidMinAspectRatio(value);
+                }
+
+                SetAndroidSupportedAspectRatio(2); // set supported aspect ratio mode to "Custom"
             }
 
             internal static extern void SetAndroidSupportedAspectRatio(int value);
 
             internal static extern void SetAndroidMaxAspectRatio(float value);
+
+            internal static extern void SetAndroidMinAspectRatio(float value);
 
             internal static extern bool useLowAccuracyLocation
             {

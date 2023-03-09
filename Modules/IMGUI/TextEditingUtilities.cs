@@ -460,7 +460,7 @@ namespace UnityEngine
         {
             RestoreCursorState();
             DeleteSelection();
-            text = text.Insert(cursorIndex, replace);
+            text = text.Insert(stringCursorIndex, replace);
 
             var newIndex = cursorIndex + new StringInfo(replace).LengthInTextElements;
             cursorIndex = newIndex;

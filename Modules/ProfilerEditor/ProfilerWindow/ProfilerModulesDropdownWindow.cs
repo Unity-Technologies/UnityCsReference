@@ -160,9 +160,11 @@ namespace UnityEditor.Profiling
             const string k_UssClass = "module-list-view-item";
             const string k_UssClass_Icon = "module-list-view-item__icon";
             const string k_UssClass_Label = "module-list-view-item__label";
+            const string k_UssClass_WarningIcon = "module-list-view-item__warning-icon";
 
             Image m_Icon;
             Label m_Label;
+            Image m_WarningIcon;
 
             public ModuleListViewItem()
             {
@@ -178,6 +180,14 @@ namespace UnityEditor.Profiling
                 m_Label = new Label();
                 m_Label.AddToClassList(k_UssClass_Label);
                 Add(m_Label);
+
+                m_WarningIcon = new Image
+                {
+                    scaleMode = ScaleMode.ScaleToFit,
+                    image = EditorGUIUtility.LoadIcon("console.warnicon.sml")
+                };
+                m_WarningIcon.AddToClassList(k_UssClass_WarningIcon);
+                Add(m_WarningIcon);
             }
 
             public void ConfigureWithModule(ProfilerModule module)
@@ -186,6 +196,13 @@ namespace UnityEditor.Profiling
                 SetActive(isActive);
 
                 m_Label.text = module.DisplayName;
+                if (!string.IsNullOrEmpty(module.WarningMsg))
+                {
+                    m_WarningIcon.style.visibility = Visibility.Visible;
+                    m_WarningIcon.tooltip = module.WarningMsg;
+                }
+                else
+                    m_WarningIcon.style.visibility = Visibility.Hidden;
             }
 
             public void SetActive(bool active)

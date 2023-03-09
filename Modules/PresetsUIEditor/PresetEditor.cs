@@ -405,7 +405,7 @@ namespace UnityEditor.Presets
                     var defaultList = Preset.GetDefaultPresetsForType(preset.GetPresetType()).Where(d => d.preset == preset);
                     if (defaultList.Any())
                     {
-                        if (GUILayout.Button(GUIContent.Temp(string.Format(Style.removeFromDefault.text, preset.GetTargetTypeName()), Style.removeFromDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                        if (GUILayout.Button(GUIContent.Temp(string.Format(Style.removeFromDefault.text, ObjectNames.NicifyVariableName(preset.GetTargetTypeName())), Style.removeFromDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                         {
                             Undo.RecordObject(Resources.FindObjectsOfTypeAll<PresetManager>().First(), "Preset Manager");
                             Preset.RemoveFromDefault(preset);
@@ -414,7 +414,7 @@ namespace UnityEditor.Presets
                     }
                     else
                     {
-                        if (GUILayout.Button(GUIContent.Temp(string.Format(Style.addToDefault.text, preset.GetTargetTypeName()), Style.addToDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                        if (GUILayout.Button(GUIContent.Temp(string.Format(Style.addToDefault.text, ObjectNames.NicifyVariableName(preset.GetTargetTypeName())), Style.addToDefault.tooltip), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                         {
                             Undo.RecordObject(Resources.FindObjectsOfTypeAll<PresetManager>().First(), "Preset Manager");
                             var list = Preset.GetDefaultPresetsForType(preset.GetPresetType()).ToList();

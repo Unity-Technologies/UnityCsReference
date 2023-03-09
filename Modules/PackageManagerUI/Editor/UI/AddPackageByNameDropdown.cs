@@ -4,40 +4,36 @@
 
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.PackageManager.Requests;
 using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class AddPackageByNameDropdown : DropdownContent
     {
-        private static readonly Vector2 k_DefaultWindowSize = new Vector2(320, 72);
-        private static readonly Vector2 k_WindowSizeWithError = new Vector2(320, 110);
+        private static readonly Vector2 k_DefaultWindowSize = new(320, 72);
+        private static readonly Vector2 k_WindowSizeWithError = new(320, 110);
         internal override Vector2 windowSize => string.IsNullOrEmpty(errorInfoBox.text) ? k_DefaultWindowSize : k_WindowSizeWithError;
 
         private EditorWindow m_AnchorWindow;
-        private UpmSearchOperation m_ExtraFetchOperation;
 
         private TextFieldPlaceholder m_PackageNamePlaceholder;
         private TextFieldPlaceholder m_PackageVersionPlaceholder;
 
         private ResourceLoader m_ResourceLoader;
-        private PackageManagerPrefs m_PackageManagerPrefs;
         private UpmClient m_UpmClient;
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
-        private void ResolveDependencies(ResourceLoader resourceLoader, PackageManagerPrefs packageManagerPrefs, UpmClient upmClient, PackageDatabase packageDatabase, PageManager packageManager)
+        private void ResolveDependencies(ResourceLoader resourceLoader, UpmClient upmClient, PackageDatabase packageDatabase, PageManager packageManager)
         {
             m_ResourceLoader = resourceLoader;
-            m_PackageManagerPrefs = packageManagerPrefs;
             m_UpmClient = upmClient;
             m_PackageDatabase = packageDatabase;
             m_PageManager = packageManager;
         }
 
-        public AddPackageByNameDropdown(ResourceLoader resourceLoader, PackageManagerPrefs packageManagerPrefs, UpmClient upmClient, PackageDatabase packageDatabase, PageManager packageManager, EditorWindow anchorWindow)
+        public AddPackageByNameDropdown(ResourceLoader resourceLoader, UpmClient upmClient, PackageDatabase packageDatabase, PageManager packageManager, EditorWindow anchorWindow)
         {
-            ResolveDependencies(resourceLoader, packageManagerPrefs, upmClient, packageDatabase, packageManager);
+            ResolveDependencies(resourceLoader, upmClient, packageDatabase, packageManager);
 
             styleSheets.Add(m_ResourceLoader.inputDropdownStyleSheet);
 
@@ -85,14 +81,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             packageNameField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
             packageNameField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
             packageVersionField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
-
-            if (m_ExtraFetchOperation != null)
-            {
-                m_ExtraFetchOperation.onOperationError -= OnExtraFetchError;
-                m_ExtraFetchOperation.onProcessResult -= OnExtraFetchResult;
-                m_ExtraFetchOperation.Cancel();
-                m_ExtraFetchOperation = null;
-            }
 
             if (m_AnchorWindow != null)
             {
@@ -146,8 +134,25 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
             }
 
-            m_UpmClient.onExtraFetchOperation += OnExtraFetchOperation;
-            m_UpmClient.ExtraFetch(packageName);
+            m_UpmClient.ExtraFetchPackageInfo(packageName,
+                successCallback: packageInfo =>
+                {
+                    var packageVersion = packageVersionField.value;
+                    if (string.IsNullOrEmpty(packageVersion))
+                        InstallByNameAndVersion(packageInfo.name);
+                    else if (packageInfo.versions.all.Contains(packageVersion))
+                        InstallByNameAndVersion(packageInfo.name, packageVersion);
+                    else
+                    {
+                        SetError(L10n.Tr("Unable to find the package with the specified version.\nPlease check the version and try again."), false, true);
+                        ShowWithNewWindowSize();
+                    }
+                },
+                errorCallback: error =>
+                {
+                    SetError(L10n.Tr("Unable to find the package with the specified name.\nPlease check the name and try again."), true);
+                    ShowWithNewWindowSize();
+                });
 
             inputForm.SetEnabled(false);
         }
@@ -162,48 +167,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             Close();
 
             var package = m_PackageDatabase.GetPackage(packageName);
-            if (package != null)
+            if (package == null)
+                return;
+
+            var page = m_PageManager.FindPage(package);
+            if (page != null)
             {
-                var page = m_PageManager.FindPage(package);
-                m_PackageManagerPrefs.currentFilterTab = page.tab;
+                m_PageManager.activePage = page;
                 page.SetNewSelection(package, package.versions?.FirstOrDefault(v => v.versionString == packageVersion));
-            }
-        }
-
-        private void OnExtraFetchOperation(IOperation operation)
-        {
-            m_ExtraFetchOperation = operation as UpmSearchOperation;
-            m_ExtraFetchOperation.onOperationError += OnExtraFetchError;
-            m_ExtraFetchOperation.onProcessResult += OnExtraFetchResult;
-
-            m_UpmClient.onExtraFetchOperation -= OnExtraFetchOperation;
-        }
-
-        private void OnExtraFetchResult(SearchRequest request)
-        {
-            var packageInfo = request.Result.FirstOrDefault();
-            if (packageInfo.name == packageNameField.value.Trim())
-            {
-                var version = packageVersionField.value;
-                if (string.IsNullOrEmpty(version))
-                    InstallByNameAndVersion(packageInfo.name);
-                else if (packageInfo.versions.all.Contains(version))
-                    InstallByNameAndVersion(packageInfo.name, version);
-                else
-                {
-                    SetError(L10n.Tr("Unable to find the package with the specified version.\nPlease check the version and try again."), false, true);
-                    ShowWithNewWindowSize();
-                }
-            }
-        }
-
-        private void OnExtraFetchError(IOperation operation, UIError error)
-        {
-            var searchOperation = operation as UpmSearchOperation;
-            if (searchOperation.packageName == packageNameField.value.Trim())
-            {
-                SetError(L10n.Tr("Unable to find the package with the specified name.\nPlease check the name and try again."), true, false);
-                ShowWithNewWindowSize();
             }
         }
 

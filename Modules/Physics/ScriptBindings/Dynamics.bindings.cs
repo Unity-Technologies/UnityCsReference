@@ -1013,7 +1013,7 @@ namespace UnityEngine
         [NativeProperty("DefaultPhysicsSceneHandle", true, TargetType.Function, true)]
         extern public static PhysicsScene defaultPhysicsScene { get; }
 
-        extern public static void IgnoreCollision([NotNull("NullExceptionObject")] Collider collider1, [NotNull("NullExceptionObject")] Collider collider2, [DefaultValue("true")] bool ignore);
+        extern public static void IgnoreCollision([NotNull] Collider collider1, [NotNull] Collider collider2, [DefaultValue("true")] bool ignore);
 
         [ExcludeFromDocs]
         public static void IgnoreCollision(Collider collider1, Collider collider2)
@@ -1032,7 +1032,7 @@ namespace UnityEngine
 
         extern public static bool GetIgnoreLayerCollision(int layer1, int layer2);
 
-        extern public static bool GetIgnoreCollision([NotNull("NullExceptionObject")] Collider collider1, [NotNull("NullExceptionObject")] Collider collider2);
+        extern public static bool GetIgnoreCollision([NotNull] Collider collider1, [NotNull] Collider collider2);
         static public bool Raycast(Vector3 origin, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
             return defaultPhysicsScene.Raycast(origin, direction, maxDistance, layerMask, queryTriggerInteraction);

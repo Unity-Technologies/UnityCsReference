@@ -49,9 +49,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return AssetDatabase.LoadMainAssetAtPath(assetPath);
         }
 
-        public virtual bool GetAssetFolderInfo(string path, out bool rootFolder, out bool immutable)
+        public virtual bool TryGetAssetFolderInfo(string path, out bool rootFolder, out bool immutable)
         {
-            return AssetDatabase.GetAssetFolderInfo(path, out rootFolder, out immutable);
+            return AssetDatabase.TryGetAssetFolderInfo(path, out rootFolder, out immutable);
         }
 
         public virtual AssetOrigin GetAssetOrigin(string guid)

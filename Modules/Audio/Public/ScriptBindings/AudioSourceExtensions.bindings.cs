@@ -28,10 +28,10 @@ namespace UnityEngine.Experimental.Audio
         }
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        private extern static void Internal_RegisterSampleProviderWithAudioSource([NotNull("NullExceptionObject")] AudioSource source, uint providerId);
+        private extern static void Internal_RegisterSampleProviderWithAudioSource([NotNull] AudioSource source, uint providerId);
 
         [NativeMethod(IsFreeFunction = true, ThrowsException = true)]
-        private extern static void Internal_UnregisterSampleProviderFromAudioSource([NotNull("NullExceptionObject")] AudioSource source, uint providerId);
+        private extern static void Internal_UnregisterSampleProviderFromAudioSource([NotNull] AudioSource source, uint providerId);
     }
 }
 

@@ -109,7 +109,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            var seeVersionsToolbar = versions.numUnloadedVersions > 0 && (m_Version.HasTag(PackageTag.ScopedRegistry) || m_SettingsProxy.seeAllPackageVersions || m_Version.package.versions.installed?.HasTag(PackageTag.Experimental) == true);
+            var seeVersionsToolbar = versions.numUnloadedVersions > 0 && (m_SettingsProxy.seeAllPackageVersions || m_Version.availableRegistry == RegistryType.MyRegistries || m_Version.package.versions.installed?.HasTag(PackageTag.Experimental) == true);
             UIUtils.SetElementDisplay(m_VersionsToolbar, seeVersionsToolbar);
 
             var latestVersion = m_Version.package?.versions.latest;

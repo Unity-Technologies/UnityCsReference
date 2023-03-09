@@ -112,7 +112,7 @@ namespace UnityEditor.LightBaking
             OverlapPixelIndex = 1 << 11,
             All = 0xFFFFFFFF
         };
-        public enum TilingMode
+        public enum TilingMode : byte
         {   // Assuming a 4k lightmap (16M texels), the tiling will yield the following chunk sizes:
             None = 0,                 // 4k * 4k =    16M texels
             Quarter = 1,              // 2k * 2k =     4M texels
@@ -538,7 +538,6 @@ namespace UnityEditor.LightBaking
             extern public void SetLightmapResolution(Resolution resolution);
             extern public void SetEnvironment(Vector4 color);
 
-            extern public void SetBackend(Backend backend);
             public extern ProbeRequest[] GetProbeRequests();
             public extern void SetLightProbeRequests(ProbeRequest[] requests);
             public extern LightmapRequest[] GetLightmapRequests();
@@ -549,9 +548,65 @@ namespace UnityEditor.LightBaking
                 SetProbePositions(positions.AsSpan());
             }
             public extern void SetProbePositions(ReadOnlySpan<Vector3> positions);
-            
+
             public extern Vector3[] GetProbePositions();
+
+            internal static class BindingsMarshaller
+            {
+                public static IntPtr ConvertToNative(BakeInput bakeInput) => bakeInput.m_Ptr;
+            }
         }
-        extern static public Result Bake(BakeInput input);
+
+        [StructLayout(LayoutKind.Sequential)]
+        public class DeviceSettings : IDisposable
+        {
+            static extern IntPtr Internal_Create();
+            [NativeMethod(IsThreadSafe = true)]
+
+            public extern bool Initialize(Backend backend);
+            static extern void Internal_Destroy(IntPtr ptr);
+
+            internal IntPtr m_Ptr;
+            internal bool m_OwnsPtr;
+
+            public DeviceSettings()
+            {
+                m_Ptr = Internal_Create();
+                m_OwnsPtr = true;
+            }
+            public DeviceSettings(IntPtr ptr)
+            {
+                m_Ptr = ptr;
+                m_OwnsPtr = false;
+            }
+            ~DeviceSettings()
+            {
+                Destroy();
+            }
+
+            public void Dispose()
+            {
+                Destroy();
+                GC.SuppressFinalize(this);
+            }
+
+            void Destroy()
+            {
+                if (m_OwnsPtr && m_Ptr != IntPtr.Zero)
+                {
+                    Internal_Destroy(m_Ptr);
+                    m_Ptr = IntPtr.Zero;
+                }
+            }
+
+            internal static class BindingsMarshaller
+            {
+                public static IntPtr ConvertToNative(DeviceSettings obj) => obj.m_Ptr;
+            }
+
+        }
+		extern static public bool Serialize(String path, BakeInput input);
+		extern static public bool Deserialize(String path, BakeInput input);
+        extern static public Result Bake(BakeInput input, DeviceSettings deviceSettings);
     }
 }

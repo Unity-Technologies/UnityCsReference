@@ -570,8 +570,12 @@ namespace UnityEditor
             {
                 if (property.prefabOverride && property.propertyType == SerializedPropertyType.ManagedReference)
                 {
-                    allowWarnAboutApplyingPartsOfManagedReferences = false; // we should always be allowed to apply a managed reference root
-                    ApplySinglePropertyAndRemoveOverride(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, false, allowWarnAboutApplyingPartsOfManagedReferences, allowApplyDefaultOverride, serializedObjects, changedObjects, action, out _);
+                    bool skipRestOfProperties = false;
+                    ApplySinglePropertyAndRemoveOverride(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, false, allowWarnAboutApplyingPartsOfManagedReferences, allowApplyDefaultOverride, serializedObjects, changedObjects, action, out skipRestOfProperties);
+                    if (skipRestOfProperties)
+                        return;
+
+                    allowWarnAboutApplyingPartsOfManagedReferences = false; // The managed reference was applied to the Asset so do not check for sub properties
                 }
 
                 var visitedManagedReferenceProperties = new HashSet<long>();
@@ -621,11 +625,11 @@ namespace UnityEditor
                 }
             }
         }
-        
+
         internal static PropertyValueOriginInfo GetPropertyValueOriginInfo(SerializedProperty property)
-        {            
+        {
             if (property == null)
-                return new PropertyValueOriginInfo("The property is null");            
+                return new PropertyValueOriginInfo("The property is null");
 
             if (property.prefabOverride)
                 return new PropertyValueOriginInfo("The property value is overriden in the currently open object");
@@ -2040,7 +2044,7 @@ namespace UnityEditor
             // We allow relative paths outside the Assets folder so we do not throw if isValidAssetFolder is false
             bool isRootFolder = false;
             bool isImmutableFolder = false;
-            bool isValidAssetFolder = AssetDatabase.GetAssetFolderInfo(directory, out isRootFolder, out isImmutableFolder);
+            bool isValidAssetFolder = AssetDatabase.TryGetAssetFolderInfo(directory, out isRootFolder, out isImmutableFolder);
 
             if (isValidAssetFolder && isImmutableFolder)
                 throw new ArgumentException("Saving Prefab to immutable folder is not allowed: '" + path + "'");

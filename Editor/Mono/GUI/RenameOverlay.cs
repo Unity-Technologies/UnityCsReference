@@ -41,6 +41,8 @@ namespace UnityEditor
         [SerializeField]
         bool m_IsRenamingFilename = false;
         [SerializeField]
+        bool m_TrimLeadingAndTrailingWhitespace = false;
+        [SerializeField]
         GUIView m_ClientGUIView;
 
         [System.NonSerialized]
@@ -58,6 +60,11 @@ namespace UnityEditor
         public bool isWaitingForDelay { get {return m_IsWaitingForDelay; }}
         public Rect editFieldRect { get {return m_EditFieldRect; } set {m_EditFieldRect = value; }}
         public bool isRenamingFilename {get {return m_IsRenamingFilename; } set {m_IsRenamingFilename = value; }}
+        public bool trimLeadingAndTrailingWhitespace
+        {
+            get { return m_TrimLeadingAndTrailingWhitespace; }
+            set { m_TrimLeadingAndTrailingWhitespace = value; }
+        }
 
         private static GUIStyle s_DefaultTextFieldStyle = null;
         private static int s_TextFieldHash = "RenameFieldTextField".GetHashCode();
@@ -112,6 +119,17 @@ namespace UnityEditor
 
             if (isRenamingFilename)
                 m_Name = InternalEditorUtility.RemoveInvalidCharsFromFileName(m_Name, true);
+
+            if (trimLeadingAndTrailingWhitespace)
+            {
+                var trimmedName = m_Name.Trim();
+                if (trimmedName != m_Name)
+                {
+                    m_Name = trimmedName;
+                    ShowMessage("Leading/trailing whitespace was removed.");
+                    TooltipView.AutoCloseAfterDelay(2f);
+                }
+            }
 
             m_IsRenaming = false;
             m_IsWaitingForDelay = false;

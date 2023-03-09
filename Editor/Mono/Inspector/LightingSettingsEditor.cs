@@ -40,7 +40,7 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
-        private void OnFocus() 
+        private void OnFocus()
         {
             m_Editor.ClampMaxRanges();
         }
@@ -76,6 +76,7 @@ namespace UnityEditor
         SerializedProperty m_LightmapCompression;
         SerializedProperty m_LightmapMaxSize;
         SerializedProperty m_LightmapSizeFixed;
+        SerializedProperty m_UseMipmapLimits;
         SerializedProperty m_BakeBackend;
         // pvr
         SerializedProperty m_PVRSampleCount;
@@ -117,6 +118,8 @@ namespace UnityEditor
 
         static class Styles
         {
+            public static readonly float buttonWidth = 200;
+
             public static readonly int[] bakeBackendValues = { (int)LightingSettings.Lightmapper.ProgressiveCPU, (int)LightingSettings.Lightmapper.ProgressiveGPU };
             public static readonly GUIContent[] bakeBackendStrings =
             {
@@ -180,6 +183,14 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("High Quality")
             };
 
+            public static readonly int[] concurrentJobsTypeValues = { (int)Lightmapping.ConcurrentJobsType.Min, (int)Lightmapping.ConcurrentJobsType.Low, (int)Lightmapping.ConcurrentJobsType.High };
+            public static readonly GUIContent[] concurrentJobsTypeStrings =
+            {
+                EditorGUIUtility.TrTextContent("Min"),
+                EditorGUIUtility.TrTextContent("Low"),
+                EditorGUIUtility.TrTextContent("High")
+            };
+
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
             public static readonly GUIContent appleSiliconLightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is not avaliable on Apple silicon. Use Progressive GPU Lightmapper instead.");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
@@ -194,7 +205,8 @@ namespace UnityEditor
             public static readonly GUIContent indirectOutputScale = EditorGUIUtility.TrTextContent("Indirect Intensity", "Controls the brightness of indirect light stored in realtime and baked lightmaps. A value above 1.0 will increase the intensity of indirect light while a value less than 1.0 will reduce indirect light intensity.");
             public static readonly GUIContent lightmapDirectionalMode = EditorGUIUtility.TrTextContent("Directional Mode", "Controls whether baked and realtime lightmaps will store directional lighting information from the lighting environment. Options are Directional and Non-Directional.");
             public static readonly GUIContent lightmapParameters = EditorGUIUtility.TrTextContent("Lightmap Parameters", "Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
-            public static readonly GUIContent lightmapParametersDefault = EditorGUIUtility.TrTextContent("Default-Medium");
+            public static readonly GUIContent newLightmapParameters = EditorGUIUtility.TrTextContent("New", "Create a new Lightmap Parameters Asset with default settings.");
+            public static readonly GUIContent cloneLightmapParameters = EditorGUIUtility.TrTextContent("Clone", "Create a new Lightmap Parameters Asset based on the current settings.");
             public static readonly GUIContent realtimeLightsLabel = EditorGUIUtility.TrTextContent("Realtime Lighting", "Precompute Realtime indirect lighting for realtime lights and static objects. In this mode realtime lights, ambient lighting, materials of static objects (including emission) will generate indirect lighting at runtime. Only static objects are blocking and bouncing light, dynamic objects receive indirect lighting via light probes.");
             public static readonly GUIContent realtimeEnvironmentLighting = EditorGUIUtility.TrTextContent("Realtime Environment Lighting", "Specifies the Global Illumination mode that should be used for handling ambient light in the Scene. This property is not editable unless both Realtime Global Illumination and Baked Global Illumination are enabled for the scene.");
             public static readonly GUIContent mixedLightsLabel = EditorGUIUtility.TrTextContent("Mixed Lighting", "Bake Global Illumination for mixed lights and static objects. May bake both direct and/or indirect lighting based on settings. Only static objects are blocking and bouncing light, dynamic objects receive baked lighting via light probes.");
@@ -205,11 +217,13 @@ namespace UnityEditor
             public static readonly GUIContent filterMode = EditorGUIUtility.TrTextContent("Filter Mode");
             public static readonly GUIContent exportTrainingData = EditorGUIUtility.TrTextContent("Export Training Data", "Exports unfiltered textures, normals, positions.");
             public static readonly GUIContent trainingDataDestination = EditorGUIUtility.TrTextContent("Destination", "Destination for the training data, for example 'mysetup/30samples'. Will still be located at the first level in the project folder. ");
+            public static readonly GUIContent concurrentJobs = EditorGUIUtility.TrTextContent("Concurrent Jobs", "The amount of simultaneously scheduled jobs.");
             public static readonly GUIContent indirectResolution = EditorGUIUtility.TrTextContent("Indirect Resolution", "Sets the resolution in texels that are used per unit for objects being lit by indirect lighting. The higher this value is, the more time the Editor needs to bake lighting.");
             public static readonly GUIContent lightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution", "Sets the resolution in texels used per unit for objects lit by baked global illumination. The higher this value is, the more time the Editor needs to bake lighting.");
             public static readonly GUIContent padding = EditorGUIUtility.TrTextContent("Lightmap Padding", "Sets the separation in texels between shapes in the baked lightmap.");
             public static readonly GUIContent lightmapMaxSize = EditorGUIUtility.TrTextContent("Max Lightmap Size", "Sets the max size of the full lightmap Texture in pixels. Values are squared, so a setting of 1024 can produce a 1024x1024 pixel sized lightmap.");
             public static readonly GUIContent lightmapSizeFixed = EditorGUIUtility.TrTextContent("Fixed Lightmap Size", "Forces all lightmap textures to use the same size. These can be no larger than Max Lightmap Size.");
+            public static readonly GUIContent useMipmapLimits = EditorGUIUtility.TrTextContent("Use Mipmap Limits", "Whether lightmap textures use the Global Mipmap limit defined in Quality Settings. Disable this to ensure lightmaps are available at the full mipmap resolution.");
             public static readonly GUIContent lightmapCompression = EditorGUIUtility.TrTextContent("Lightmap Compression", "Compresses baked lightmaps created using this Lighting Settings Asset. Lower quality compression reduces memory and storage requirements, at the cost of more visual artifacts. Higher quality compression requires more memory and storage, but provides better visual results.");
             public static readonly GUIContent tiledBaking = EditorGUIUtility.TrTextContent("Tiled baking", "Determines the tiled baking mode. Auto: Memory status triggers tiling. If Auto is not enabled, bakes may fail. Disabled: Never use tiling.");
             public static readonly GUIContent ambientOcclusion = EditorGUIUtility.TrTextContent("Ambient Occlusion", "Specifies whether to include ambient occlusion or not in the baked lightmap result. Enabling this results in simulating the soft shadows that occur in cracks and crevices of objects when light is reflected onto them.");
@@ -300,7 +314,7 @@ namespace UnityEditor
         {
             if (lightingSettingsObject == null)
                 return;
-            
+
             m_GIWorkflowMode = lightingSettingsObject.FindProperty("m_GIWorkflowMode");
 
             //realtime GI
@@ -316,6 +330,7 @@ namespace UnityEditor
             m_IndirectOutputScale = lightingSettingsObject.FindProperty("m_IndirectOutputScale");
             m_LightmapMaxSize = lightingSettingsObject.FindProperty("m_LightmapMaxSize");
             m_LightmapSizeFixed = lightingSettingsObject.FindProperty("m_LightmapSizeFixed");
+            m_UseMipmapLimits = lightingSettingsObject.FindProperty("m_UseMipmapLimits");
             m_LightmapParameters = lightingSettingsObject.FindProperty("m_LightmapParameters");
             m_LightmapDirectionalMode = lightingSettingsObject.FindProperty("m_LightmapsBakeMode");
             m_BakeResolution = lightingSettingsObject.FindProperty("m_BakeResolution");
@@ -644,6 +659,8 @@ namespace UnityEditor
 
                             EditorGUILayout.PropertyField(m_LightmapSizeFixed, Styles.lightmapSizeFixed);
 
+                            EditorGUILayout.PropertyField(m_UseMipmapLimits, Styles.useMipmapLimits);
+
                             EditorGUILayout.IntPopup(m_LightmapCompression, Styles.lightmapCompressionStrings, Styles.lightmapCompressionValues, Styles.lightmapCompression);
 
                             EditorGUILayout.PropertyField(m_AmbientOcclusion, Styles.ambientOcclusion);
@@ -727,6 +744,26 @@ namespace UnityEditor
                 {
                     EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.bounceScale);
                 }
+
+                Lightmapping.concurrentJobsType = (Lightmapping.ConcurrentJobsType)EditorGUILayout.IntPopup(Styles.concurrentJobs, (int)Lightmapping.concurrentJobsType, Styles.concurrentJobsTypeStrings, Styles.concurrentJobsTypeValues);
+
+                if (GUILayout.Button("Clear disk cache", GUILayout.Width(Styles.buttonWidth)))
+                {
+                    Lightmapping.Clear();
+                    Lightmapping.ClearDiskCache();
+                }
+
+                if (GUILayout.Button("Print state to console", GUILayout.Width(Styles.buttonWidth)))
+                {
+                    Lightmapping.PrintStateToConsole();
+                }
+
+                if (GUILayout.Button("Reset albedo/emissive", GUILayout.Width(Styles.buttonWidth)))
+                    GIDebugVisualisation.ResetRuntimeInputTextures();
+
+                if (GUILayout.Button("Reset environment", GUILayout.Width(Styles.buttonWidth)))
+                    DynamicGI.UpdateEnvironment();
+
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space();
             }
@@ -815,29 +852,54 @@ namespace UnityEditor
             return true;
         }
 
-        static void LightmapParametersGUI(SerializedProperty prop, GUIContent content)
+        private class DoCreateNewLightmapParameters : ProjectWindowCallback.DoCreateNewAsset
         {
-            EditorGUILayout.BeginHorizontal();
-
-            var rect = EditorGUILayout.GetControlRect();
-            EditorGUI.BeginProperty(rect, content, prop);
-
-            rect = EditorGUI.PrefixLabel(rect, content);
-            GUIContent buttonContent = prop.hasMultipleDifferentValues ? EditorGUI.mixedValueContent : (prop.objectReferenceValue != null ? GUIContent.Temp(prop.objectReferenceStringValue) : Styles.lightmapParametersDefault);
-
-            if (EditorGUI.DropdownButton(rect, buttonContent, FocusType.Passive, EditorStyles.popup))
-                AssetPopupBackend.ShowAssetsPopupMenu<LightmapParameters>(rect, prop.objectReferenceTypeString, prop, "giparams", Styles.lightmapParametersDefault.text);
-
-            string label = isBuiltIn(prop) ? "View" : "Edit...";
-
-            if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+            public override void Action(int instanceId, string pathName, string resourceFile)
             {
-                Selection.activeObject = prop.objectReferenceValue;
-                EditorWindow.FocusWindowIfItsOpen<InspectorWindow>();
-            }
+                base.Action(instanceId, pathName, resourceFile);
 
-            EditorGUILayout.EndHorizontal();
-            EditorGUI.EndProperty();
+                // Only assign the new parameters asset once it is fully imported.
+                if (EditorUtility.InstanceIDToObject(instanceId) is LightmapParameters lmp)
+                    lmp.AssignToLightingSettings(Lightmapping.lightingSettingsInternal);
+            }
+        }
+
+        void CreateLightmapParameters(LightmapParameters from = null)
+        {
+            string newName = L10n.Tr("New Lightmap Parameters");
+
+            LightmapParameters lmp;
+            if (from == null)
+            {
+                lmp = new LightmapParameters();
+                lmp.name = newName;
+            }
+            else
+            {
+                lmp = Object.Instantiate(from);
+                lmp.name = from.name;
+            }
+            Undo.RecordObject(m_LightmapParameters.objectReferenceValue, newName);
+            ProjectWindowUtil.StartNameEditingIfProjectWindowExists(
+                lmp.GetInstanceID(),
+                ScriptableObject.CreateInstance<DoCreateNewLightmapParameters>(),
+                (lmp.name + ".giparams"),
+                AssetPreview.GetMiniThumbnail(lmp),
+                null);
+        }
+
+        void LightmapParametersGUI(SerializedProperty prop, GUIContent content)
+        {
+            GUILayout.BeginHorizontal();
+
+            EditorGUILayout.PropertyField(prop);
+
+            if (GUILayout.Button(Styles.newLightmapParameters, EditorStyles.miniButtonLeft, GUILayout.Width(50)))
+                CreateLightmapParameters();
+            else if (GUILayout.Button(Styles.cloneLightmapParameters, EditorStyles.miniButtonRight, GUILayout.Width(50)))
+                CreateLightmapParameters(prop.objectReferenceValue as LightmapParameters);
+
+            GUILayout.EndHorizontal();
         }
 
         static bool DenoiserSupported(LightingSettings.DenoiserType denoiserType)
@@ -974,9 +1036,9 @@ namespace UnityEditor
                 int newValue = EditorGUILayout.LogarithmicIntSlider(style, property.intValue, min, max, 2, textFieldMin, textFieldMax);
                 if (EditorGUI.EndChangeCheck())
                     property.intValue = newValue;
-                
+
                 EditorGUI.showMixedValue = false;
-            } 
+            }
             else
                 property.intValue = EditorGUILayout.LogarithmicIntSlider(style, property.intValue, min, max, 2, textFieldMin, textFieldMax);
 

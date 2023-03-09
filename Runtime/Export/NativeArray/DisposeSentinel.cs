@@ -5,51 +5,71 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 namespace Unity.Collections
 {
     public enum NativeLeakDetectionMode
     {
-        EnabledWithStackTrace = 3,
+        Disabled = 1,
         Enabled = 2,
-        Disabled = 1
+        EnabledWithStackTrace = 3
     }
 
     public static class NativeLeakDetection
     {
-        // For performance reasons no assignment operator (static initializer cost in il2cpp)
-        // and flipped enabled / disabled enum value
-        static int s_NativeLeakDetectionMode;
         const string kNativeLeakDetectionModePrefsString = "Unity.Collections.NativeLeakDetection.Mode";
 
         // Initialize leak detection on startup/domain reload to avoid NativeLeakDetection.Mode
         // access on a job to trigger the initialization.
         [RuntimeInitializeOnLoadMethod]
-        static void Initialize()
+        static NativeLeakDetectionMode Initialize()
         {
-            s_NativeLeakDetectionMode = UnityEngine.PlayerPrefs.EditorPrefsGetInt(kNativeLeakDetectionModePrefsString, (int)NativeLeakDetectionMode.Enabled);
-            if (s_NativeLeakDetectionMode < (int)NativeLeakDetectionMode.Disabled || s_NativeLeakDetectionMode > (int)NativeLeakDetectionMode.EnabledWithStackTrace)
-                s_NativeLeakDetectionMode = (int)NativeLeakDetectionMode.Enabled;
+            var mode = UnsafeUtility.GetLeakDetectionMode();
+            if (mode == 0)
+            {
+                // If editor pref is out of range, reset it to Enabled                                                                                
+                // Also reset it to Enabled if stack traces were enabled, for performance reasons.                                                    
+                var editorPref = UnityEngine.PlayerPrefs.EditorPrefsGetInt(kNativeLeakDetectionModePrefsString, (int)NativeLeakDetectionMode.Enabled);
+                if (editorPref < (int)NativeLeakDetectionMode.Disabled || editorPref > (int)NativeLeakDetectionMode.Enabled)
+                {
+                    editorPref = (int)NativeLeakDetectionMode.Enabled;
+                    UnityEngine.PlayerPrefs.EditorPrefsSetInt(kNativeLeakDetectionModePrefsString, editorPref);
+                }
+
+                // Set mode based on editor pref
+                mode = (NativeLeakDetectionMode)editorPref;
+                NativeLeakDetection.Mode = mode;
+                AppDomain.CurrentDomain.ProcessExit += (_, __) => { OnProcessExit(); };
+            }
+            return mode;
         }
 
         public static NativeLeakDetectionMode Mode
         {
             get
             {
-                if (s_NativeLeakDetectionMode == 0)
-                    Initialize();
-                return (NativeLeakDetectionMode)s_NativeLeakDetectionMode;
+                var mode = UnsafeUtility.GetLeakDetectionMode();
+                if (mode == 0)
+                    mode = Initialize();
+                return mode;
             }
             set
             {
-                var intValue = (int)value;
-                if (s_NativeLeakDetectionMode != intValue)
+                if (value < NativeLeakDetectionMode.Disabled || value > NativeLeakDetectionMode.EnabledWithStackTrace)
                 {
-                    s_NativeLeakDetectionMode = intValue;
-                    UnityEngine.PlayerPrefs.EditorPrefsSetInt(kNativeLeakDetectionModePrefsString, intValue);
+                    throw new ArgumentException("NativeLeakDetectionMode out of range");
                 }
+
+                // If value is set programmatically, don't change Editor Pref.
+                UnsafeUtility.SetLeakDetectionMode(value);
             }
+        }
+
+        static void OnProcessExit()
+        {
+            UnsafeUtility.CheckForLeaks();
         }
     }
 }

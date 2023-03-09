@@ -71,6 +71,22 @@ namespace UnityEditor
 
     [UsedByNativeCode]
     [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
+    internal struct LightmapSize
+    {
+        [NativeName("m_Width")]  public int width;
+        [NativeName("m_Height")] public int height;
+    }
+
+    [UsedByNativeCode]
+    [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
+    internal struct RunningBakeInfo
+    {
+        [NativeName("m_LightmapSizes")]  public LightmapSize[] lightmapSizes;
+        [NativeName("m_ProbePositions")] public UInt64 probePositions;
+    }
+
+    [UsedByNativeCode]
+    [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
     internal struct LightmapMemory
     {
         [NativeName("m_LightmapDataSizeCPU")]   public float lightmapDataSizeCPU;
@@ -227,11 +243,15 @@ namespace UnityEditor
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern ulong GetVisibleTexelCount(int lightmapIndex);
 
+        // TODO: Note that 'atlasCount' is only used in auto mode, it can be deleted when auto mode is removed!
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern int atlasCount { [NativeName("GetAtlasCount")] get; }
 
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern LightmapConvergence GetLightmapConvergence(int lightmapIndex);
+
+        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern RunningBakeInfo GetRunningBakeInfo();
 
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern LightProbesConvergence GetLightProbesConvergence();
@@ -620,28 +640,28 @@ namespace UnityEditor
         // Packing for realtime GI may fail of the mesh has zero UV or surface area. This is the outcome for the given renderer.
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool HasZeroAreaMesh([NotNull("NullExceptionObject")] Renderer renderer);
+        extern static internal bool HasZeroAreaMesh([NotNull] Renderer renderer);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool HasUVOverlaps([NotNull("NullExceptionObject")] Renderer renderer);
+        extern static internal bool HasUVOverlaps([NotNull] Renderer renderer);
 
         // Packing for realtime GI may clamp the output resolution. This is the outcome for the given renderer.
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool HasClampedResolution([NotNull("NullExceptionObject")] Renderer renderer);
+        extern static internal bool HasClampedResolution([NotNull] Renderer renderer);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetSystemResolution([NotNull("NullExceptionObject")] Renderer renderer, out int width, out int height);
+        extern static internal bool GetSystemResolution([NotNull] Renderer renderer, out int width, out int height);
 
         [FreeFunction("GetSystemResolution")]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetTerrainSystemResolution([NotNull("NullExceptionObject")] Terrain terrain, out int width, out int height, out int numChunksInX, out int numChunksInY);
+        extern static internal bool GetTerrainSystemResolution([NotNull] Terrain terrain, out int width, out int height, out int numChunksInX, out int numChunksInY);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetInstanceResolution([NotNull("NullExceptionObject")] Renderer renderer, out int width, out int height);
+        extern static internal bool GetInstanceResolution([NotNull] Renderer renderer, out int width, out int height);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
@@ -657,15 +677,15 @@ namespace UnityEditor
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetInstanceHash([NotNull("NullExceptionObject")] Renderer renderer, out Hash128 instanceHash);
+        extern static internal bool GetInstanceHash([NotNull] Renderer renderer, out Hash128 instanceHash);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetGeometryHash([NotNull("NullExceptionObject")] Renderer renderer, out Hash128 geometryHash);
+        extern static internal bool GetGeometryHash([NotNull] Renderer renderer, out Hash128 geometryHash);
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/ExtractInstances.h")]
-        extern static internal bool IsRendererValid([NotNull("NullExceptionObject")] Renderer renderer);
+        extern static internal bool IsRendererValid([NotNull] Renderer renderer);
     }
 }
 
@@ -704,13 +724,25 @@ namespace UnityEditor.Experimental
             set { UnityEditor.Lightmapping.GetOrCreateLightingsSettings().extractAO = value; }
         }
 
-        [NativeThrows]
-        [FreeFunction]
-        public static extern bool BakeAsync(Scene targetScene);
+        public static bool BakeAsync(Scene targetScene)
+        {
+            return BakeSceneAsync(targetScene);
+        }
 
         [NativeThrows]
         [FreeFunction]
-        public static extern bool Bake(Scene targetScene);
+        [NativeName("BakeAsync")]
+        static extern bool BakeSceneAsync(Scene targetScene);
+
+        public static bool Bake(Scene targetScene)
+        {
+            return BakeScene(targetScene);
+        }
+
+        [NativeThrows]
+        [FreeFunction]
+        [NativeName("Bake")]
+        static extern bool BakeScene(Scene targetScene);
 
         public static event Action additionalBakedProbesCompleted;
         internal static void Internal_CallAdditionalBakedProbesCompleted()

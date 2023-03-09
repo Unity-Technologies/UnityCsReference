@@ -20,5 +20,16 @@ namespace UnityEngine
     {
         [NativeMethod("WaitForCompletion")]
         public extern void WaitForCompletion();
+
+        public AssetBundleUnloadOperation() { }
+
+        private AssetBundleUnloadOperation(IntPtr ptr) : base(ptr)
+        { }
+
+        new internal static class BindingsMarshaller
+        {
+            public static AssetBundleUnloadOperation ConvertToManaged(IntPtr ptr) => new AssetBundleUnloadOperation(ptr);
+            public static IntPtr ConvertToNative(AssetBundleUnloadOperation assetBundleUnloadOperation) => assetBundleUnloadOperation.m_Ptr;
+        }
     }
 }

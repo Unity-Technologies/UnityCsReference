@@ -67,6 +67,7 @@ namespace UnityEngine.TextCore.Text
 
         int m_PreviousGenerationSettingsHash;
         protected TextGenerationSettings textGenerationSettings;
+        protected internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
 
         //static instance cached to minimize allocation
         protected static TextGenerationSettings s_LayoutSettings = new TextGenerationSettings();
@@ -87,8 +88,6 @@ namespace UnityEngine.TextCore.Text
             isDirty = false;
             return true;
         }
-
-        internal float lastTimeUsed;
 
         public Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {

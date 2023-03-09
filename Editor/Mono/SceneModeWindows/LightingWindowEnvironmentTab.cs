@@ -168,7 +168,6 @@ namespace UnityEditor
             OtherSettingsGUI();
 
             EditorGUILayout.EndScrollView();
-            EditorGUILayout.Space();
         }
 
         public void OnSummaryGUI()

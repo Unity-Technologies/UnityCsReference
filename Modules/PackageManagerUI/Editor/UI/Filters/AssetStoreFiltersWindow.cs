@@ -12,16 +12,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class AssetStoreFiltersWindow : PackageManagerFiltersWindow
     {
-        internal static readonly string[] k_Statuses =
-        {
-            PageFilters.k_DownloadedStatus,
-            PageFilters.k_ImportedStatus,
-            PageFilters.k_UpdateAvailableStatus,
-            PageFilters.k_UnlabeledStatus,
-            "Hidden",
-            "Deprecated"
-        };
-
         [NonSerialized]
         private List<string> m_Categories;
 
@@ -29,21 +19,22 @@ namespace UnityEditor.PackageManager.UI.Internal
         private List<string> m_Labels;
 
         private AssetStoreRestAPI m_AssetStoreRestAPI;
-        private AssetStoreCallQueue m_AssetStoreCallQueue;
+        private BackgroundFetchHandler m_BackgroundFetchHandler;
         protected override void ResolveDependencies()
         {
             base.ResolveDependencies();
             var container = ServicesContainer.instance;
             m_AssetStoreRestAPI = container.Resolve<AssetStoreRestAPI>();
-            m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
+            m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
         }
 
         protected override Vector2 GetSize(IPage page)
         {
-            var height = k_FoldOutHeight + k_Statuses.Length * k_ToggleHeight;
+            var height = k_FoldOutHeight + page.supportedStatusFilters.Count() * k_ToggleHeight;
 
             var categories = m_CategoriesFoldOut?.Children().OfType<Toggle>() ?? Enumerable.Empty<Toggle>();
-            height += (categories.Any() ? k_FoldOutHeight : 0) + categories.Count() * k_ToggleHeight;
+            var numCategories = categories.Count();
+            height += (numCategories > 0 ? k_FoldOutHeight : 0) + numCategories * k_ToggleHeight;
 
             return new Vector2(k_Width, Math.Min(height, k_MaxHeight));
         }
@@ -97,7 +88,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override void ApplyFilters()
         {
             foreach (var toggle in m_StatusFoldOut.Children().OfType<Toggle>())
-                toggle.SetValueWithoutNotify(toggle.name == m_Filters.status);
+                toggle.SetValueWithoutNotify(toggle.name == m_Filters.status.ToString());
 
             foreach (var toggle in m_CategoriesFoldOut?.Children().OfType<Toggle>() ?? Enumerable.Empty<Toggle>())
                 toggle.SetValueWithoutNotify(m_Filters.categories?.Contains(toggle.name.ToLower()) ?? false);
@@ -130,9 +121,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override void DoDisplay(IPage page)
         {
             m_StatusFoldOut = new Foldout {text = L10n.Tr("Status"), name = k_StatusFoldOutName, classList = {k_FoldoutClass}};
-            foreach (var status in k_Statuses)
+            foreach (var status in page.supportedStatusFilters)
             {
-                var toggle = new Toggle(status) {name = status.ToLower(), classList = {k_ToggleClass}};
+                var toggle = new Toggle(status.GetDisplayName()) {name = status.ToString(), classList = {k_ToggleClass}};
                 toggle.RegisterValueChangedCallback(evt =>
                 {
                     if (evt.newValue)
@@ -145,13 +136,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                             t.SetValueWithoutNotify(false);
                         }
 
-                        if (status == PageFilters.k_UnlabeledStatus && m_LabelsFoldOut != null)
+                        if (status == PageFilters.Status.Unlabeled && m_LabelsFoldOut != null)
                             foreach (var t in m_LabelsFoldOut.Children().OfType<Toggle>())
                                 t.value = false;
 
-                        if (status == PageFilters.k_UpdateAvailableStatus)
+                        if (status == PageFilters.Status.UpdateAvailable)
                         {
-                            m_AssetStoreCallQueue.CheckUpdateForUncheckedLocalInfos();
+                            m_BackgroundFetchHandler.CheckUpdateForUncheckedLocalInfos();
                         }
                     }
 
@@ -189,7 +180,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (evt.newValue)
                     {
                         // Uncheck Unlabeled if checked
-                        m_StatusFoldOut.Q<Toggle>(PageFilters.k_UnlabeledStatus.ToLower()).value = false;
+                        m_StatusFoldOut.Q<Toggle>(PageFilters.Status.Unlabeled.ToString()).value = false;
                     }
                     UpdateFiltersIfNeeded();
                 });
@@ -206,8 +197,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void UpdateFiltersIfNeeded()
         {
             var filters = m_Filters.Clone();
-            var selectedStatuses = m_StatusFoldOut.Children().OfType<Toggle>().Where(toggle => toggle.value).Select(toggle => toggle.name.ToLower());
-            filters.status = selectedStatuses.FirstOrDefault();
+            var selectedStatus = m_StatusFoldOut.Children().OfType<Toggle>().Where(toggle => toggle.value).Select(toggle => toggle.name).FirstOrDefault();
+            filters.status = !string.IsNullOrEmpty(selectedStatus) && Enum.TryParse(selectedStatus, out PageFilters.Status status) ? status : PageFilters.Status.None;
 
             if (m_CategoriesFoldOut != null)
             {

@@ -49,5 +49,10 @@ namespace UnityEditor.VersionControl
 
         [NativeMethod(IsThreadSafe = true)]
         public extern string message { get; }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Message message) => message.m_Self;
+        }
     }
 }

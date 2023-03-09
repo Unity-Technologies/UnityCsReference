@@ -51,13 +51,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PurchasesQueryArgs m_AdjustedQueryArgs;
 
         [SerializeField]
-        private bool m_DownloadedAssetsOnly;
-        [SerializeField]
-        private bool m_ImportedAssetsOnly;
-        [SerializeField]
-        private bool m_UpdateAvailableOnly;
-
-        [SerializeField]
         private AssetStorePurchases m_Result;
         public AssetStorePurchases result => m_Result;
 
@@ -83,29 +76,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             ResolveDependencies(unityConnect, assetStoreRestAPI, assetStoreCache);
         }
 
-        public static string QueryToString(PurchasesQueryArgs queryArgs)
-        {
-            var stringBuilder = new StringBuilder($"?offset={queryArgs.startIndex}&limit={queryArgs.limit}", 512);
-            var status = queryArgs.status;
-            if (!string.IsNullOrEmpty(status))
-                stringBuilder.Append($"&status={status}");
-
-            if (!string.IsNullOrEmpty(queryArgs.searchText))
-                stringBuilder.Append($"&query={Uri.EscapeDataString(queryArgs.searchText)}");
-            if (!string.IsNullOrEmpty(queryArgs.orderBy))
-            {
-                stringBuilder.Append($"&orderBy={queryArgs.orderBy}");
-                stringBuilder.Append(queryArgs.isReverseOrder ? "&order=desc" : "&order=asc");
-            }
-            if (queryArgs.labels?.Any() ?? false)
-                stringBuilder.Append($"&tagging={string.Join(",", queryArgs.labels.Select(label => Uri.EscapeDataString(label)).ToArray())}");
-            if (queryArgs.categories?.Any() ?? false)
-                stringBuilder.Append($"&categories={string.Join(",", queryArgs.categories.Select(cat => Uri.EscapeDataString(cat)).ToArray())}");
-            if (queryArgs.productIds?.Any() ?? false)
-                stringBuilder.Append($"&ids={string.Join(",", queryArgs.productIds.ToArray())}");
-            return stringBuilder.ToString();
-        }
-
         public void Start(PurchasesQueryArgs queryArgs)
         {
             SetQueryArgs(queryArgs);
@@ -119,7 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             m_Result = new AssetStorePurchases(m_OriginalQueryArgs);
-            if ((m_DownloadedAssetsOnly || m_UpdateAvailableOnly || m_ImportedAssetsOnly) && !m_AdjustedQueryArgs.productIds.Any())
+            if (m_OriginalQueryArgs.status is PageFilters.Status.Downloaded or PageFilters.Status.Imported or PageFilters.Status.UpdateAvailable && !m_AdjustedQueryArgs.productIds.Any())
             {
                 m_Result.total = 0;
                 onOperationSuccess?.Invoke(this);
@@ -143,29 +113,26 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_OriginalQueryArgs = queryArgs;
 
-            m_DownloadedAssetsOnly = m_OriginalQueryArgs.downloadedOnly;
-            m_ImportedAssetsOnly = m_OriginalQueryArgs.importedOnly;
-            m_UpdateAvailableOnly = m_OriginalQueryArgs.updateAvailableOnly;
             // The GetPurchases API has a limit of maximum 1000 items (to avoid performance issues)
             // therefore we do some adjustments to the original query args enforce that limit and split
             // the original query to multiple batches. We make a clone before when adjusting is needed
             m_AdjustedQueryArgs = m_OriginalQueryArgs.Clone();
             m_AdjustedQueryArgs.limit = Math.Min(m_OriginalQueryArgs.limit, k_QueryLimit);
 
-            if (m_DownloadedAssetsOnly)
+            switch (m_OriginalQueryArgs.status)
             {
-                m_AdjustedQueryArgs.status = string.Empty;
-                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Select(info => info.productId).ToList();
-            }
-            else if (m_ImportedAssetsOnly)
-            {
-                m_AdjustedQueryArgs.status = string.Empty;
-                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.importedPackages.Select(p => p.productId).ToList();
-            }
-            else if (m_UpdateAvailableOnly)
-            {
-                m_AdjustedQueryArgs.status = string.Empty;
-                m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId)?.canUpdate == true).Select(info => info.productId).ToList();
+                case PageFilters.Status.Downloaded:
+                    m_AdjustedQueryArgs.status = PageFilters.Status.None;
+                    m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Select(info => info.productId).ToList();
+                    break;
+                case PageFilters.Status.Imported:
+                    m_AdjustedQueryArgs.status = PageFilters.Status.None;
+                    m_AdjustedQueryArgs.productIds = m_AssetStoreCache.importedPackages.Select(p => p.productId).ToList();
+                    break;
+                case PageFilters.Status.UpdateAvailable:
+                    m_AdjustedQueryArgs.status = PageFilters.Status.None;
+                    m_AdjustedQueryArgs.productIds = m_AssetStoreCache.localInfos.Where(info => m_AssetStoreCache.GetUpdateInfo(info?.productId)?.canUpdate == true).Select(info => info.productId).ToList();
+                    break;
             }
         }
 

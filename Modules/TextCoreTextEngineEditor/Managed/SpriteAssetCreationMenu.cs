@@ -155,6 +155,7 @@ namespace UnityEditor.TextCore.Text
                     }
                     else
                     {
+                        spriteCharacter.unicode = 0xFFFE;
                         if (!string.IsNullOrEmpty(sprite.name) && sprite.name.Length > 2 && sprite.name[0] == '0' && (sprite.name[1] == 'x' || sprite.name[1] == 'X'))
                         {
                             spriteCharacter.unicode = TextUtilities.StringHexToInt(sprite.name.Remove(0, 2));
@@ -186,14 +187,32 @@ namespace UnityEditor.TextCore.Text
         [MenuItem("Assets/Create/Text/Sprite Asset", false, 150)]
         internal static void CreateSpriteAsset()
         {
-            Object target = Selection.activeObject;
+            Object[] targets = Selection.objects;
 
-            if (target == null || target.GetType() != typeof(Texture2D)) // && target.GetType() != typeof(SpriteAtlas)))
+            if (targets == null)
             {
-                Debug.LogWarning("A texture must first be selected in order to create a Sprite Asset.");
+                Debug.LogWarning("A Sprite Texture must first be selected in order to create a Sprite Asset.");
                 return;
             }
 
+            for (int i = 0; i < targets.Length; i++)
+            {
+                Object target = targets[i];
+
+                // Make sure the selection is a font file
+                if (target == null || target.GetType() != typeof(Texture2D))
+                {
+                    Debug.LogWarning("Selected Object [" + target.name + "] is not a Sprite Texture. A Sprite Texture must be selected in order to create a Sprite Asset.", target);
+                    continue;
+                }
+
+                CreateSpriteAssetFromSelectedObject(target);
+            }
+        }
+
+
+        static void CreateSpriteAssetFromSelectedObject(Object target)
+        {
             // Get the path to the selected asset.
             string filePathWithName = AssetDatabase.GetAssetPath(target);
             string fileNameWithExtension = Path.GetFileName(filePathWithName);
@@ -208,7 +227,7 @@ namespace UnityEditor.TextCore.Text
             spriteAsset.version = "1.1.0";
 
             // Compute the hash code for the sprite asset.
-            //spriteAsset.hashCode = TM_TextUtilities.GetHashCodeCaseInSensitive(spriteAsset.name);
+            spriteAsset.hashCode = TextUtilities.GetSimpleHashCode(spriteAsset.name);
 
             List<SpriteGlyph> spriteGlyphTable = new List<SpriteGlyph>();
             List<SpriteCharacter> spriteCharacterTable = new List<SpriteCharacter>();
@@ -349,7 +368,9 @@ namespace UnityEditor.TextCore.Text
 
             spriteAsset.material = material;
             material.hideFlags = HideFlags.HideInHierarchy;
+            material.name = spriteAsset.name + " Material";
             AssetDatabase.AddObjectToAsset(material, spriteAsset);
         }
+
     }
 }

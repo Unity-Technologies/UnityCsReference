@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -12,39 +11,24 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class UpmFiltersWindow : PackageManagerFiltersWindow
     {
-        private PackageDatabase m_PackageDatabase;
-        protected override void ResolveDependencies()
-        {
-            base.ResolveDependencies();
-            var container = ServicesContainer.instance;
-            m_PackageDatabase = container.Resolve<PackageDatabase>();
-        }
-
-        private IEnumerable<string> GetStatuses(IPage page)
-        {
-            yield return PageFilters.k_UpdateAvailableStatus;
-            if (page.visualStates.Any(v => m_PackageDatabase.GetPackage(v.packageUniqueId)?.hasEntitlements == true))
-                yield return PageFilters.k_SubscriptionBasedStatus;
-        }
-
         protected override Vector2 GetSize(IPage page)
         {
-            var height = k_FoldOutHeight + GetStatuses(page).Count() * k_ToggleHeight;
+            var height = k_FoldOutHeight + page.supportedStatusFilters.Count() * k_ToggleHeight;
             return new Vector2(k_Width, Math.Min(height, k_MaxHeight));
         }
 
         protected override void ApplyFilters()
         {
             foreach (var toggle in m_StatusFoldOut.Children().OfType<Toggle>())
-                toggle.SetValueWithoutNotify(toggle.name == m_Filters.status);
+                toggle.SetValueWithoutNotify(toggle.name == m_Filters.status.ToString());
         }
 
         protected override void DoDisplay(IPage page)
         {
             m_StatusFoldOut = new Foldout {text = L10n.Tr("Status"), name = k_StatusFoldOutName, classList = {k_FoldoutClass}};
-            foreach (var status in GetStatuses(page))
+            foreach (var status in page.supportedStatusFilters)
             {
-                var toggle = new Toggle(status) {name = status.ToLower(), classList = {k_ToggleClass}};
+                var toggle = new Toggle(status.GetDisplayName()) {name = status.ToString(), classList = {k_ToggleClass}};
                 toggle.RegisterValueChangedCallback(evt =>
                 {
                     if (evt.newValue)
@@ -68,8 +52,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void UpdateFiltersIfNeeded()
         {
             var filters = m_Filters.Clone();
-            var selectedStatuses = m_StatusFoldOut.Children().OfType<Toggle>().Where(toggle => toggle.value).Select(toggle => toggle.name.ToLower());
-            filters.status = selectedStatuses.FirstOrDefault();
+            var selectedStatus = m_StatusFoldOut.Children().OfType<Toggle>().Where(toggle => toggle.value).Select(toggle => toggle.name).FirstOrDefault();
+            filters.status = !string.IsNullOrEmpty(selectedStatus) && Enum.TryParse(selectedStatus, out PageFilters.Status status) ? status : PageFilters.Status.None;
 
             if (!filters.Equals(m_Filters))
             {

@@ -136,7 +136,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             k_OnMouseUpAllUIs.Clear();
 
-            var selectedModels = newSelection.Where(elem => !(elem is Placemat)).Select(elem => elem.Model).OfType<GraphElementModel>().ToList();
+            var selectedModels = newSelection.Select(elem => elem.Model).OfType<GraphElementModel>().ToList();
 
             if (e.altKey)
             {

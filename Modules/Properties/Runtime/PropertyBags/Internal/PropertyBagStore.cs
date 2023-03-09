@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Unity.Jobs;
-using UnityEngine.Scripting;
 
 namespace Unity.Properties.Internal
 {
@@ -43,7 +42,9 @@ namespace Unity.Properties.Internal
         /// </summary>
         static ReflectedPropertyBagProvider s_PropertyBagProvider = null;
 
-        internal static bool HasProvider => null != s_PropertyBagProvider;
+        // The reflected property bag provider is created inside of a job to lessen the impact on domain reload.
+        // If it is queried before the job finishes, we go through the slower path.
+        static ReflectedPropertyBagProvider ReflectedPropertyBagProvider => s_PropertyBagProvider ??= new ReflectedPropertyBagProvider();
 
         internal static List<Type> AllTypes => s_RegisteredTypes;
 
@@ -123,7 +124,6 @@ namespace Unity.Properties.Internal
         /// <returns>The resolved property bag.</returns>
         internal static IPropertyBag GetPropertyBag(Type type)
         {
-            WaitForJobs();
             if (s_PropertyBags.TryGetValue(type, out var propertyBag))
             {
                 return propertyBag;
@@ -149,21 +149,15 @@ namespace Unity.Properties.Internal
                 return null;
             }
 
-            if (null != s_PropertyBagProvider)
+            propertyBag = ReflectedPropertyBagProvider.CreatePropertyBag(type);
+            if (null == propertyBag)
             {
-                propertyBag = s_PropertyBagProvider.CreatePropertyBag(type);
-
-                if (null == propertyBag)
-                {
-
-                    s_PropertyBags.TryAdd(type, null);
-
-                }
-                else
-                {
-                    (propertyBag as IPropertyBagRegister)?.Register();
-                    return propertyBag;
-                }
+                s_PropertyBags.TryAdd(type, null);
+            }
+            else
+            {
+                (propertyBag as IPropertyBagRegister)?.Register();
+                return propertyBag;
             }
 
             return null;

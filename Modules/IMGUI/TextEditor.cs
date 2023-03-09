@@ -141,7 +141,7 @@ namespace UnityEngine
         public TextEditor()
         {
             var style = GUIStyle.none;
-            m_TextHandle = new IMGUITextHandle();
+            m_TextHandle = IMGUITextHandle.GetTextHandle(style, position, textWithWhitespace, Color.white);
             m_TextSelecting = new TextSelectingUtilities(m_TextHandle);
             m_TextEditing = new TextEditingUtilities(m_TextSelecting, m_TextHandle, m_Content.text);
             m_Content.OnTextChanged += OnContentTextChangedHandle;
@@ -204,6 +204,10 @@ namespace UnityEngine
                 if (link.linkId != null && link.linkIdLength > 0)
                 {
                     href = new string(link.linkId);
+                    if (!href.StartsWith("href"))
+                        return false;
+                    // Removes href="..."
+                    href = href.Substring(6, href.Length - 7);
                     if (Uri.IsWellFormedUriString(href, UriKind.Absolute))
                     {
                         return true;
@@ -408,7 +412,7 @@ namespace UnityEngine
 
         internal void UpdateTextHandle()
         {
-            m_TextHandle = IMGUITextHandle.GetTextHandle(style, style.padding.Remove(position), textWithWhitespace, Color.white, true);
+            m_TextHandle = IMGUITextHandle.GetTextHandle(style, style.padding.Remove(position), textWithWhitespace, Color.white);
             m_TextEditing.textHandle = m_TextHandle;
             m_TextSelecting.textHandle = m_TextHandle;
         }

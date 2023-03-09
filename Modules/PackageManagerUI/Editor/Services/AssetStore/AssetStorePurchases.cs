@@ -24,11 +24,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             this.startIndex = startIndex;
             this.limit = limit;
             this.searchText = searchText ?? string.Empty;
-            status = filters?.status ?? string.Empty;
+            status = filters?.status ?? Status.None;
+            sortOption = filters?.sortOption ?? PageSortOption.NameAsc;
             categories = filters?.categories ?? new List<string>();
             labels = filters?.labels ?? new List<string>();
-            orderBy = filters?.orderBy ?? string.Empty;
-            isReverseOrder = filters?.isReverseOrder ?? false;
         }
 
         public new PurchasesQueryArgs Clone()
@@ -39,16 +38,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string ToString()
         {
             var stringBuilder = new StringBuilder($"?offset={startIndex}&limit={limit}", 512);
-            if (!string.IsNullOrEmpty(status))
-                stringBuilder.Append($"&status={status}");
-
+            var statusQuery = ToQueryString(status);
+            if (!string.IsNullOrEmpty(statusQuery))
+                stringBuilder.Append($"&{statusQuery}");
             if (!string.IsNullOrEmpty(searchText))
                 stringBuilder.Append($"&query={Uri.EscapeDataString(searchText)}");
+            var orderBy = ToQueryString(sortOption);
             if (!string.IsNullOrEmpty(orderBy))
-            {
-                stringBuilder.Append($"&orderBy={orderBy}");
-                stringBuilder.Append(isReverseOrder ? "&order=desc" : "&order=asc");
-            }
+                stringBuilder.Append($"&{orderBy}");
             if (labels?.Any() ?? false)
                 stringBuilder.Append($"&tagging={string.Join(",", labels.Select(label => Uri.EscapeDataString(label)).ToArray())}");
             if (categories?.Any() ?? false)
@@ -56,6 +53,35 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (productIds?.Any() ?? false)
                 stringBuilder.Append($"&ids={string.Join(",", productIds.ToArray())}");
             return stringBuilder.ToString();
+        }
+
+        public static string ToQueryString(Status value)
+        {
+            return value switch
+            {
+                Status.Unlabeled => "status=unlabeled",
+                Status.Hidden => "status=hidden",
+                Status.Deprecated => "status=deprecated",
+                Status.Downloaded => string.Empty,
+                Status.Imported => string.Empty,
+                Status.UpdateAvailable => string.Empty,
+                Status.SubscriptionBased => string.Empty,
+                Status.None => string.Empty,
+                _ => string.Empty
+            };
+        }
+
+        public static string ToQueryString(PageSortOption value)
+        {
+            return value switch
+            {
+                PageSortOption.NameAsc => "orderBy=name&order=asc",
+                PageSortOption.NameDesc => "orderBy=name&order=desc",
+                PageSortOption.UpdateDateDesc => "orderBy=update_date&order=desc",
+                PageSortOption.PurchasedDateDesc => "orderBy=purchased_date&order=desc",
+                PageSortOption.PublishedDateDesc => string.Empty,
+                _ => string.Empty
+            };
         }
     }
 
@@ -71,14 +97,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public long total;
         public PurchasesQueryArgs queryArgs;
-        public List<AssetStorePurchaseInfo> list = new List<AssetStorePurchaseInfo>();
+        public List<AssetStorePurchaseInfo> list = new();
 
         public string searchText => queryArgs?.searchText;
         public int startIndex => queryArgs?.startIndex ?? 0;
 
         public IEnumerable<long> productIds => list.Select(p => p.productId);
 
-        public List<Category> categories = new List<Category>();
+        public List<Category> categories = new();
 
         public AssetStorePurchases(PurchasesQueryArgs queryArgs = null)
         {

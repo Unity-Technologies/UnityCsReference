@@ -96,9 +96,6 @@ namespace UnityEditor
             private static readonly string kBakedGI = "Baked Global Illumination";
             private static readonly string kMaterialValidation = "Material Validation";
 
-            public static readonly GUIContent sResolutionToggle =
-                EditorGUIUtility.TrTextContent("Show Lightmap Resolution");
-
             // Map all builtin DrawCameraMode entries
             // This defines the order in which the entries appear in the dropdown menu!
             public static readonly SceneView.CameraMode[] sBuiltinCameraModes =
@@ -161,18 +158,14 @@ namespace UnityEditor
                 modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode)) + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode));
 
                 int separators = headers - 1;
-                return ((headers + modes) * EditorGUI.kSingleLineHeight) + (kSeparatorHeight * separators) + kShowLightmapResolutionHeight;
+                return ((headers + modes) * EditorGUI.kSingleLineHeight) + (kSeparatorHeight * separators);
             }
         }
 
         const float windowWidth = 205;
         const float kSeparatorHeight = 3;
-        const float kFrameWidth = 1f;
         const float kHeaderHorizontalPadding = 5f;
         const float kHeaderVerticalPadding = 3f;
-        const float kTogglePadding = 7f;
-
-        static readonly float kShowLightmapResolutionHeight = EditorGUI.kSingleLineHeight + kSeparatorHeight * 2;
 
         readonly SceneView m_SceneView;
 
@@ -262,32 +255,11 @@ namespace UnityEditor
 
             bool disabled = (m_SceneView.cameraMode.drawMode < DrawCameraMode.RealtimeCharting) ||
                 !IsModeEnabled(m_SceneView.cameraMode.drawMode);
-            DoResolutionToggle(drawPos, disabled);
         }
 
         bool IsModeEnabled(DrawCameraMode mode)
         {
             return m_SceneView.IsCameraDrawModeEnabled(GetBuiltinCameraMode(mode));
-        }
-
-        void DoResolutionToggle(Rect rect, bool disabled)
-        {
-            // Bg
-            GUI.Label(new Rect(kFrameWidth, rect.y, windowWidth - kFrameWidth * 2, kShowLightmapResolutionHeight), "", EditorStyles.inspectorBig);
-
-            rect.y += kSeparatorHeight;
-            rect.x += kTogglePadding;
-
-            using (new EditorGUI.DisabledScope(disabled))
-            {
-                EditorGUI.BeginChangeCheck();
-                bool showResolution = GUI.Toggle(rect, LightmapVisualization.showResolution, Styles.sResolutionToggle);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    LightmapVisualization.showResolution = showResolution;
-                    SceneView.RepaintAll();
-                }
-            }
         }
 
         void DoBuiltinMode(ref Rect rect, SceneView.CameraMode mode)

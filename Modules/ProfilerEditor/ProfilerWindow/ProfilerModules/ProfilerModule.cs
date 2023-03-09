@@ -213,6 +213,9 @@ namespace Unity.Profiling.Editor
         // Used by ProfilerEditorTests.
         internal ProfilerChart Chart => m_Chart;
 
+        // Some modules might expose a warning message
+        internal string WarningMsg { get; private protected set; }
+
         private protected virtual string activeStatePreferenceKey => string.Format(k_ProfilerModuleActiveStatePreferenceKeyFormat, Identifier);
 
         private protected string orderIndexPreferenceKey => string.Format(k_ProfilerModuleOrderIndexPreferenceKeyFormat, Identifier);

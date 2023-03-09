@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 
@@ -65,9 +66,9 @@ namespace Unity.UI.Builder
 
         static bool IsBuilderFile(string assetPath)
         {
-            if (assetPath.EndsWith(BuilderConstants.UxmlExtension)
-                || assetPath.EndsWith(BuilderConstants.UssExtension)
-                || assetPath.EndsWith(BuilderConstants.TssExtension))
+            if (assetPath.EndsWith(BuilderConstants.UxmlExtension, StringComparison.OrdinalIgnoreCase)
+                || assetPath.EndsWith(BuilderConstants.UssExtension, StringComparison.OrdinalIgnoreCase)
+                || assetPath.EndsWith(BuilderConstants.TssExtension, StringComparison.OrdinalIgnoreCase))
                 return true;
 
             return false;

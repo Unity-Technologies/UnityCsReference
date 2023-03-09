@@ -75,6 +75,16 @@ namespace UnityEngine.TextCore.Text
         protected bool m_MatchMaterialPreset;
 
         /// <summary>
+        /// Determines if OpenType Font Features should be retrieved at runtime from the source font file.
+        /// </summary>
+        // public bool getFontFeaturesAtRuntime
+        // {
+        //     get { return m_GetFontFeaturesAtRuntime; }
+        // }
+        // [SerializeField]
+        // private bool m_GetFontFeaturesAtRuntime = true;
+
+        /// <summary>
         /// The unicode value of the character that will be used when the requested character is missing from the font asset and potential fallbacks.
         /// </summary>
         public int missingCharacterUnicode
@@ -96,6 +106,28 @@ namespace UnityEngine.TextCore.Text
         }
         [SerializeField]
         protected bool m_ClearDynamicDataOnBuild = true;
+
+        /// <summary>
+        /// Determines if Emoji support is enabled in the Input Field TouchScreenKeyboard.
+        /// </summary>
+        public bool enableEmojiSupport
+        {
+            get { return m_EnableEmojiSupport; }
+            set { m_EnableEmojiSupport = value; }
+        }
+        [SerializeField]
+        private bool m_EnableEmojiSupport;
+
+        /// <summary>
+        /// list of Fallback Text Assets (Font Assets and Sprite Assets) used to lookup characters defined in the Unicode as Emojis.
+        /// </summary>
+        public List<TextAsset> emojiFallbackTextAssets
+        {
+            get => m_EmojiFallbackTextAssets;
+            set => m_EmojiFallbackTextAssets = value;
+        }
+        [SerializeField]
+        private List<TextAsset> m_EmojiFallbackTextAssets;
 
         /// <summary>
         /// The Sprite Asset to be used by default.
@@ -201,16 +233,6 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         protected UnicodeLineBreakingRules m_UnicodeLineBreakingRules;
 
-        /// <summary>
-        /// Determines if Modern or Traditional line breaking rules should be used for Korean text.
-        /// </summary>
-        public bool useModernHangulLineBreakingRules
-        {
-            get { return m_UseModernHangulLineBreakingRules; }
-            set { m_UseModernHangulLineBreakingRules = value; }
-        }
-        [SerializeField]
-        private bool m_UseModernHangulLineBreakingRules;
 
         // =============================================
         // Text object specific settings

@@ -48,5 +48,10 @@ namespace UnityEngine
 
         // Remove the border offsets from a /rect/.
         public extern Rect Remove(Rect rect);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(RectOffset rectOffset) => rectOffset.m_Ptr;
+        }
     }
 }

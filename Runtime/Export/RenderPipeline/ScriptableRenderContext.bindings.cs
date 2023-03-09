@@ -60,23 +60,23 @@ namespace UnityEngine.Rendering
         [NativeThrows]
         extern private void ExecuteCommandBufferAsync_Internal(CommandBuffer commandBuffer, ComputeQueueType queueType);
 
-        extern private void SetupCameraProperties_Internal([NotNull("NullExceptionObject")] Camera camera, bool stereoSetup, int eye);
+        extern private void SetupCameraProperties_Internal([NotNull] Camera camera, bool stereoSetup, int eye);
 
-        extern private void StereoEndRender_Internal([NotNull("NullExceptionObject")] Camera camera, int eye, bool isFinalPass);
+        extern private void StereoEndRender_Internal([NotNull] Camera camera, int eye, bool isFinalPass);
 
-        extern private void StartMultiEye_Internal([NotNull("NullExceptionObject")] Camera camera, int eye);
+        extern private void StartMultiEye_Internal([NotNull] Camera camera, int eye);
 
-        extern private void StopMultiEye_Internal([NotNull("NullExceptionObject")] Camera camera);
+        extern private void StopMultiEye_Internal([NotNull] Camera camera);
 
-        extern private void DrawSkybox_Internal([NotNull("NullExceptionObject")] Camera camera);
+        extern private void DrawSkybox_Internal([NotNull] Camera camera);
 
         extern private void InvokeOnRenderObjectCallback_Internal();
 
-        extern private void DrawGizmos_Internal([NotNull("NullExceptionObject")] Camera camera, GizmoSubset gizmoSubset);
+        extern private void DrawGizmos_Internal([NotNull] Camera camera, GizmoSubset gizmoSubset);
 
-        extern private void DrawWireOverlay_Impl([NotNull("NullExceptionObject")] Camera camera);
+        extern private void DrawWireOverlay_Impl([NotNull] Camera camera);
 
-        extern private void DrawUIOverlay_Internal([NotNull("NullExceptionObject")] Camera camera);
+        extern private void DrawUIOverlay_Internal([NotNull] Camera camera);
 
         internal IntPtr Internal_GetPtr()
         {
@@ -92,10 +92,10 @@ namespace UnityEngine.Rendering
             Enabled,
             LegacySinglePass
         }
-        extern private unsafe RendererList CreateSkyboxRendererList_Internal([NotNull("NullExceptionObject")] Camera camera, int mode, Matrix4x4 proj, Matrix4x4 view, Matrix4x4 projR, Matrix4x4 viewR);
-        extern private unsafe RendererList CreateGizmoRendererList_Internal([NotNull("NullExceptionObject")] Camera camera, GizmoSubset gizmoSubset);
-        extern private unsafe RendererList CreateUIOverlayRendererList_Internal([NotNull("NullExceptionObject")] Camera camera);
-        extern private unsafe RendererList CreateWireOverlayRendererList_Internal([NotNull("NullExceptionObject")] Camera camera);
+        extern private unsafe RendererList CreateSkyboxRendererList_Internal([NotNull] Camera camera, int mode, Matrix4x4 proj, Matrix4x4 view, Matrix4x4 projR, Matrix4x4 viewR);
+        extern private unsafe RendererList CreateGizmoRendererList_Internal([NotNull] Camera camera, GizmoSubset gizmoSubset);
+        extern private unsafe RendererList CreateUIOverlayRendererList_Internal([NotNull] Camera camera);
+        extern private unsafe RendererList CreateWireOverlayRendererList_Internal([NotNull] Camera camera);
 
         extern private unsafe void PrepareRendererListsAsync_Internal(object rendererLists);
         extern private RendererListStatus QueryRendererListStatus_Internal(RendererList handle);

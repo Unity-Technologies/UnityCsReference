@@ -296,6 +296,11 @@ namespace UnityEngine.Windows.WebCam
         [NativeConditional("(PLATFORM_WIN || PLATFORM_WINRT) && !PLATFORM_XBOXONE")]
         [NativeName("DisposeThreaded")]
         private extern void DisposeThreaded_Internal();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(PhotoCapture photoCapture) => photoCapture.m_NativePtr;
+        }
     }
 
     [NativeConditional("(PLATFORM_WIN || PLATFORM_WINRT) && !PLATFORM_XBOXONE")]
@@ -479,6 +484,11 @@ namespace UnityEngine.Windows.WebCam
         ~PhotoCaptureFrame()
         {
             Cleanup();
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(PhotoCaptureFrame photoCaptureFrame) => photoCaptureFrame.m_NativePtr;
         }
     }
 }

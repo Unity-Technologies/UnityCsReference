@@ -14,6 +14,20 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         static HashSet<int> k_SearchedAssets;
 
+        /// <summary>
+        /// Returns the text element (character) for the given unicode value taking into consideration the requested font style and weight.
+        /// Function searches the source font asset, its list of font assets assigned as alternative typefaces and potentially its fallbacks.
+        /// The font asset out parameter contains a reference to the font asset containing the character.
+        /// The typeface type indicates whether the returned font asset is the source font asset, an alternative typeface or fallback font asset.
+        /// </summary>
+        /// <param name="unicode">The unicode value of the requested character</param>
+        /// <param name="sourceFontAsset">The font asset to be searched</param>
+        /// <param name="includeFallbacks">Include the fallback font assets in the search</param>
+        /// <param name="fontStyle">The font style</param>
+        /// <param name="fontWeight">The font weight</param>
+        /// <param name="isAlternativeTypeface">Indicates if the OUT font asset is an alternative typeface or fallback font asset</param>
+        /// <param name="fontAsset">The font asset that contains the requested character</param>
+        /// <returns></returns>
         internal static Character GetCharacterFromFontAsset(uint unicode, FontAsset sourceFontAsset, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
         {
             if (includeFallbacks)
@@ -223,6 +237,52 @@ namespace UnityEngine.TextCore.Text
 
             return null;
         }
+
+        internal static TextElement GetTextElementFromTextAssets(uint unicode, FontAsset sourceFontAsset, List<TextAsset> textAssets, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
+        {
+            isAlternativeTypeface = false;
+
+            // Make sure font asset list is valid
+            if (textAssets == null || textAssets.Count == 0)
+                return null;
+
+            if (includeFallbacks)
+            {
+                if (k_SearchedAssets == null)
+                    k_SearchedAssets = new HashSet<int>();
+                else
+                    k_SearchedAssets.Clear();
+            }
+
+            int textAssetCount = textAssets.Count;
+
+            for (int i = 0; i < textAssetCount; i++)
+            {
+                TextAsset textAsset = textAssets[i];
+
+                if (textAsset == null) continue;
+
+                if (textAsset.GetType() == typeof(FontAsset))
+                {
+                    FontAsset fontAsset = textAsset as FontAsset;
+                    Character character = GetCharacterFromFontAsset_Internal(unicode, fontAsset, includeFallbacks, fontStyle, fontWeight, out isAlternativeTypeface);
+
+                    if (character != null)
+                        return character;
+                }
+                else
+                {
+                    SpriteAsset spriteAsset = textAsset as SpriteAsset;
+                    SpriteCharacter spriteCharacter = GetSpriteCharacterFromSpriteAsset_Internal(unicode, spriteAsset, true);
+
+                    if (spriteCharacter != null)
+                        return spriteCharacter;
+                }
+            }
+
+            return null;
+        }
+
 
         // =====================================================================
         // SPRITE ASSET - Functions

@@ -49,5 +49,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="value">The object to convert.</param>
         /// <returns>The object cast to type {T}.</returns>
         protected virtual T FromObject(object value) => (T)value;
+
+        /// <inheritdoc />
+        public override Constant Clone()
+        {
+            var copy = (Constant<T>)Activator.CreateInstance(GetType());
+            copy.m_Value = m_Value;
+            return copy;
+        }
     }
 }

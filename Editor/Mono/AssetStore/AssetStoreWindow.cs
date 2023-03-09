@@ -42,7 +42,7 @@ namespace UnityEditor
         [MenuItem("Window/My Assets", false, 1498)]
         public static void OpenMyAssetsInPackageManager()
         {
-            PackageManagerWindow.SelectPackageAndFilterStatic(string.Empty, PackageManager.UI.Internal.PackageFilterTab.AssetStore);
+            PackageManagerWindow.SelectPackageAndPageStatic(pageId: PackageManager.UI.Internal.MyAssetsPage.k_Id);
         }
 
         public void OnEnable()

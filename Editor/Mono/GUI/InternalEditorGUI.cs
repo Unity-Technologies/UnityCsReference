@@ -207,7 +207,7 @@ namespace UnityEditor
         // Returns true if button was activated, returns false if the the dropdown button was activated or the button was not clicked.
         internal static bool ButtonWithDropdownList(GUIContent content, string[] buttonNames, GenericMenu.MenuFunction2 callback, params GUILayoutOption[] options)
         {
-            var rect = GUILayoutUtility.GetRect(content, EditorStyles.dropDownList, options);
+            var rect = GUILayoutUtility.GetRect(content, GUI.skin.button, options);
 
             var dropDownRect = rect;
             const float kDropDownButtonWidth = 20f;

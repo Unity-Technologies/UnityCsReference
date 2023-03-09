@@ -153,7 +153,7 @@ namespace UnityEditor.Presets
             var targetTypeName = presetType.GetManagedTypeName();
             if (!string.IsNullOrEmpty(targetTypeName))
             {
-                targetTypeName = targetTypeName.Substring(targetTypeName.LastIndexOf('.') + 1);
+                targetTypeName = ObjectNames.NicifyVariableName(targetTypeName.Substring(targetTypeName.LastIndexOf('.') + 1));
                 return $"<b>Create New {targetTypeName} Preset...</b>";
             }
 

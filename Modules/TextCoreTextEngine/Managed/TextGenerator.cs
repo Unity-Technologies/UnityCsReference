@@ -45,7 +45,8 @@ namespace UnityEngine.TextCore.Text
         public float fontSizeMin;
         public float fontSizeMax;
 
-        public bool enableKerning = true;
+        public List<OTL_FeatureTag> fontFeatures = new List<OTL_FeatureTag>();
+        public bool emojiFallbackSupport = true;
         public bool richText;
         public bool isRightToLeft;
         public bool extraPadding;
@@ -75,12 +76,14 @@ namespace UnityEngine.TextCore.Text
         public float uvLineOffset;
         public VertexSortingOrder geometrySortingOrder = VertexSortingOrder.Normal;
         public bool inverseYAxis;
+        public bool isIMGUI;
 
         public float charWidthMaxAdj;
         internal TextInputSource inputSource = TextInputSource.TextString;
 
         private bool m_CachedHashCodeIsIntialized = false;
         private int m_CachedHashCode;
+
         public int cachedHashCode
         {
             get
@@ -90,55 +93,40 @@ namespace UnityEngine.TextCore.Text
                     m_CachedHashCode = GetHashCode();
                     m_CachedHashCodeIsIntialized = true;
                 }
+
                 return m_CachedHashCode;
             }
         }
 
-        private bool m_CachedGeometryHashCodeIsIntialized = false;
-        private int m_CachedGeometryHashCode;
-        public int cachedGeomertyHashCode
-        {
-            get
-            {
-                if (!m_CachedGeometryHashCodeIsIntialized)
-                {
-                    m_CachedGeometryHashCode = GetGeomertyHashCode();
-                    m_CachedGeometryHashCodeIsIntialized = true;
-                }
-                return m_CachedGeometryHashCode;
-            }
-        }
-
-	public bool Equals(TextGenerationSettings other)
+        public bool Equals(TextGenerationSettings other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return text == other.text && screenRect.Equals(other.screenRect) && margins.Equals(other.margins) &&
-                scale.Equals(other.scale) && Equals(fontAsset, other.fontAsset) && Equals(material, other.material) &&
-                Equals(spriteAsset, other.spriteAsset) && Equals(styleSheet, other.styleSheet) &&
-                fontStyle == other.fontStyle && Equals(textSettings, other.textSettings) &&
-                textAlignment == other.textAlignment && overflowMode == other.overflowMode &&
-                wordWrap == other.wordWrap && wordWrappingRatio.Equals(other.wordWrappingRatio) &&
-                color.Equals(other.color) && Equals(fontColorGradient, other.fontColorGradient) &&
-                Equals(fontColorGradientPreset, other.fontColorGradientPreset) && tintSprites == other.tintSprites &&
-                overrideRichTextColors == other.overrideRichTextColors &&
-                shouldConvertToLinearSpace == other.shouldConvertToLinearSpace && fontSize.Equals(other.fontSize) &&
-                autoSize == other.autoSize && fontSizeMin.Equals(other.fontSizeMin) &&
-                fontSizeMax.Equals(other.fontSizeMax) && enableKerning == other.enableKerning &&
-                richText == other.richText && isRightToLeft == other.isRightToLeft &&
-                extraPadding == other.extraPadding && parseControlCharacters == other.parseControlCharacters &&
-                isOrthographic == other.isOrthographic && tagNoParsing == other.tagNoParsing &&
-                characterSpacing.Equals(other.characterSpacing) && wordSpacing.Equals(other.wordSpacing) &&
-                lineSpacing.Equals(other.lineSpacing) && paragraphSpacing.Equals(other.paragraphSpacing) &&
-                lineSpacingMax.Equals(other.lineSpacingMax) && textWrappingMode == other.textWrappingMode &&
-                maxVisibleCharacters == other.maxVisibleCharacters && maxVisibleWords == other.maxVisibleWords &&
-                maxVisibleLines == other.maxVisibleLines && firstVisibleCharacter == other.firstVisibleCharacter &&
-                useMaxVisibleDescender == other.useMaxVisibleDescender && fontWeight == other.fontWeight &&
-                pageToDisplay == other.pageToDisplay && horizontalMapping == other.horizontalMapping &&
-                verticalMapping == other.verticalMapping && uvLineOffset.Equals(other.uvLineOffset) &&
-                geometrySortingOrder == other.geometrySortingOrder && inverseYAxis == other.inverseYAxis &&
-                charWidthMaxAdj.Equals(other.charWidthMaxAdj) && inputSource == other.inputSource &&
-                isOrthographic.Equals(other.isOrthographic) && isPlaceholder.Equals(other.isPlaceholder);
+            return text == other.text && screenRect.Equals(other.screenRect) && margins.Equals(other.margins)
+                && scale.Equals(other.scale) && Equals(fontAsset, other.fontAsset) && Equals(material, other.material)
+                && Equals(spriteAsset, other.spriteAsset) && Equals(styleSheet, other.styleSheet)
+                && fontStyle == other.fontStyle && Equals(textSettings, other.textSettings)
+                && textAlignment == other.textAlignment && overflowMode == other.overflowMode
+                && wordWrap == other.wordWrap && wordWrappingRatio.Equals(other.wordWrappingRatio)
+                && color.Equals(other.color) && Equals(fontColorGradient, other.fontColorGradient)
+                && Equals(fontColorGradientPreset, other.fontColorGradientPreset) && tintSprites == other.tintSprites
+                && overrideRichTextColors == other.overrideRichTextColors
+                && shouldConvertToLinearSpace == other.shouldConvertToLinearSpace && fontSize.Equals(other.fontSize)
+                && autoSize == other.autoSize && fontSizeMin.Equals(other.fontSizeMin)
+                && fontSizeMax.Equals(other.fontSizeMax) && Equals(fontFeatures, other.fontFeatures)
+                && emojiFallbackSupport == other.emojiFallbackSupport && richText == other.richText
+                && isRightToLeft == other.isRightToLeft && extraPadding == other.extraPadding
+                && parseControlCharacters == other.parseControlCharacters && isOrthographic == other.isOrthographic
+                && isPlaceholder == other.isPlaceholder && tagNoParsing == other.tagNoParsing
+                && characterSpacing.Equals(other.characterSpacing) && wordSpacing.Equals(other.wordSpacing)
+                && lineSpacing.Equals(other.lineSpacing) && paragraphSpacing.Equals(other.paragraphSpacing)
+                && lineSpacingMax.Equals(other.lineSpacingMax) && textWrappingMode == other.textWrappingMode
+                && maxVisibleCharacters == other.maxVisibleCharacters && maxVisibleWords == other.maxVisibleWords
+                && maxVisibleLines == other.maxVisibleLines && firstVisibleCharacter == other.firstVisibleCharacter
+                && useMaxVisibleDescender == other.useMaxVisibleDescender && fontWeight == other.fontWeight
+                && horizontalMapping == other.horizontalMapping && verticalMapping == other.verticalMapping
+                && uvLineOffset.Equals(other.uvLineOffset) && geometrySortingOrder == other.geometrySortingOrder
+                && inverseYAxis == other.inverseYAxis && charWidthMaxAdj.Equals(other.charWidthMaxAdj);
         }
 
         public override bool Equals(object obj)
@@ -176,12 +164,14 @@ namespace UnityEngine.TextCore.Text
             hashCode.Add(autoSize);
             hashCode.Add(fontSizeMin);
             hashCode.Add(fontSizeMax);
-            hashCode.Add(enableKerning);
+            hashCode.Add(fontFeatures);
+            hashCode.Add(emojiFallbackSupport);
             hashCode.Add(richText);
             hashCode.Add(isRightToLeft);
             hashCode.Add(extraPadding);
             hashCode.Add(parseControlCharacters);
             hashCode.Add(isOrthographic);
+            hashCode.Add(isPlaceholder);
             hashCode.Add(tagNoParsing);
             hashCode.Add(characterSpacing);
             hashCode.Add(wordSpacing);
@@ -195,64 +185,14 @@ namespace UnityEngine.TextCore.Text
             hashCode.Add(firstVisibleCharacter);
             hashCode.Add(useMaxVisibleDescender);
             hashCode.Add((int)fontWeight);
-            hashCode.Add(pageToDisplay);
             hashCode.Add((int)horizontalMapping);
             hashCode.Add((int)verticalMapping);
             hashCode.Add(uvLineOffset);
             hashCode.Add((int)geometrySortingOrder);
             hashCode.Add(inverseYAxis);
             hashCode.Add(charWidthMaxAdj);
-            hashCode.Add((int)inputSource);
-            hashCode.Add(isPlaceholder);
+            hashCode.Add(isIMGUI);
             return hashCode.ToHashCode();
-        }
-
-        public int GetGeomertyHashCode()
-        {
-            unchecked
-            {
-                var hashCode = (text != null ? text.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ screenRect.GetHashCode();
-                hashCode = (hashCode * 397) ^ margins.GetHashCode();
-                hashCode = (hashCode * 397) ^ scale.GetHashCode();
-                hashCode = (hashCode * 397) ^ (fontAsset != null ? fontAsset.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (spriteAsset != null ? spriteAsset.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (int)fontStyle;
-                hashCode = (hashCode * 397) ^ (int)textAlignment;
-                hashCode = (hashCode * 397) ^ (int)overflowMode;
-                hashCode = (hashCode * 397) ^ wordWrap.GetHashCode();
-                hashCode = (hashCode * 397) ^ wordWrappingRatio.GetHashCode();
-                hashCode = (hashCode * 397) ^ fontSize.GetHashCode();
-                hashCode = (hashCode * 397) ^ autoSize.GetHashCode();
-                hashCode = (hashCode * 397) ^ fontSizeMin.GetHashCode();
-                hashCode = (hashCode * 397) ^ fontSizeMax.GetHashCode();
-                hashCode = (hashCode * 397) ^ enableKerning.GetHashCode();
-                hashCode = (hashCode * 397) ^ richText.GetHashCode();
-                hashCode = (hashCode * 397) ^ isRightToLeft.GetHashCode();
-                hashCode = (hashCode * 397) ^ extraPadding.GetHashCode();
-                hashCode = (hashCode * 397) ^ parseControlCharacters.GetHashCode();
-                hashCode = (hashCode * 397) ^ characterSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ wordSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ lineSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ paragraphSpacing.GetHashCode();
-                hashCode = (hashCode * 397) ^ lineSpacingMax.GetHashCode();
-                hashCode = (hashCode * 397) ^ maxVisibleCharacters;
-                hashCode = (hashCode * 397) ^ maxVisibleWords;
-                hashCode = (hashCode * 397) ^ maxVisibleLines;
-                hashCode = (hashCode * 397) ^ firstVisibleCharacter;
-                hashCode = (hashCode * 397) ^ useMaxVisibleDescender.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)fontWeight;
-                hashCode = (hashCode * 397) ^ pageToDisplay;
-                hashCode = (hashCode * 397) ^ (int)horizontalMapping;
-                hashCode = (hashCode * 397) ^ (int)verticalMapping;
-                hashCode = (hashCode * 397) ^ uvLineOffset.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)geometrySortingOrder;
-                hashCode = (hashCode * 397) ^ inverseYAxis.GetHashCode();
-                hashCode = (hashCode * 397) ^ charWidthMaxAdj.GetHashCode();
-                hashCode = (hashCode * 397) ^ (int)textWrappingMode;
-                hashCode = (hashCode * 397) ^ isOrthographic.GetHashCode();
-                return hashCode;
-            }
         }
 
         public static bool operator ==(TextGenerationSettings left, TextGenerationSettings right)
@@ -267,8 +207,9 @@ namespace UnityEngine.TextCore.Text
 
         public override string ToString()
         {
-            return $"{nameof(text)}: {text}\n {nameof(screenRect)}: {screenRect}\n {nameof(margins)}: {margins}\n {nameof(scale)}: {scale}\n {nameof(fontAsset)}: {fontAsset}\n {nameof(material)}: {material}\n {nameof(spriteAsset)}: {spriteAsset}\n {nameof(styleSheet)}: {styleSheet}\n {nameof(fontStyle)}: {fontStyle}\n {nameof(textSettings)}: {textSettings}\n {nameof(textAlignment)}: {textAlignment}\n {nameof(overflowMode)}: {overflowMode}\n {nameof(wordWrap)}: {wordWrap}\n {nameof(wordWrappingRatio)}: {wordWrappingRatio}\n {nameof(color)}: {color}\n {nameof(fontColorGradient)}: {fontColorGradient}\n {nameof(fontColorGradientPreset)}: {fontColorGradientPreset}\n {nameof(tintSprites)}: {tintSprites}\n {nameof(overrideRichTextColors)}: {overrideRichTextColors}\n {nameof(shouldConvertToLinearSpace)}: {shouldConvertToLinearSpace}\n {nameof(fontSize)}: {fontSize}\n {nameof(autoSize)}: {autoSize}\n {nameof(fontSizeMin)}: {fontSizeMin}\n {nameof(fontSizeMax)}: {fontSizeMax}\n {nameof(enableKerning)}: {enableKerning}\n {nameof(richText)}: {richText}\n {nameof(isRightToLeft)}: {isRightToLeft}\n {nameof(extraPadding)}: {extraPadding}\n {nameof(parseControlCharacters)}: {parseControlCharacters}\n {nameof(isOrthographic)}: {isOrthographic}\n {nameof(tagNoParsing)}: {tagNoParsing}\n {nameof(characterSpacing)}: {characterSpacing}\n {nameof(wordSpacing)}: {wordSpacing}\n {nameof(lineSpacing)}: {lineSpacing}\n {nameof(paragraphSpacing)}: {paragraphSpacing}\n {nameof(lineSpacingMax)}: {lineSpacingMax}\n {nameof(textWrappingMode)}: {textWrappingMode}\n {nameof(maxVisibleCharacters)}: {maxVisibleCharacters}\n {nameof(maxVisibleWords)}: {maxVisibleWords}\n {nameof(maxVisibleLines)}: {maxVisibleLines}\n {nameof(firstVisibleCharacter)}: {firstVisibleCharacter}\n {nameof(useMaxVisibleDescender)}: {useMaxVisibleDescender}\n {nameof(fontWeight)}: {fontWeight}\n {nameof(pageToDisplay)}: {pageToDisplay}\n {nameof(horizontalMapping)}: {horizontalMapping}\n {nameof(verticalMapping)}: {verticalMapping}\n {nameof(uvLineOffset)}: {uvLineOffset}\n {nameof(geometrySortingOrder)}: {geometrySortingOrder}\n {nameof(inverseYAxis)}: {inverseYAxis}\n {nameof(charWidthMaxAdj)}: {charWidthMaxAdj}\n {nameof(inputSource)}: {inputSource}\n {nameof(isPlaceholder)}: {isPlaceholder}";        }
+            return $"{nameof(text)}: {text}\n {nameof(screenRect)}: {screenRect}\n {nameof(margins)}: {margins}\n {nameof(scale)}: {scale}\n {nameof(fontAsset)}: {fontAsset}\n {nameof(material)}: {material}\n {nameof(spriteAsset)}: {spriteAsset}\n {nameof(styleSheet)}: {styleSheet}\n {nameof(fontStyle)}: {fontStyle}\n {nameof(textSettings)}: {textSettings}\n {nameof(textAlignment)}: {textAlignment}\n {nameof(overflowMode)}: {overflowMode}\n {nameof(wordWrap)}: {wordWrap}\n {nameof(wordWrappingRatio)}: {wordWrappingRatio}\n {nameof(color)}: {color}\n {nameof(fontColorGradient)}: {fontColorGradient}\n {nameof(fontColorGradientPreset)}: {fontColorGradientPreset}\n {nameof(tintSprites)}: {tintSprites}\n {nameof(overrideRichTextColors)}: {overrideRichTextColors}\n {nameof(shouldConvertToLinearSpace)}: {shouldConvertToLinearSpace}\n {nameof(fontSize)}: {fontSize}\n {nameof(autoSize)}: {autoSize}\n {nameof(fontSizeMin)}: {fontSizeMin}\n {nameof(fontSizeMax)}: {fontSizeMax}\n {nameof(richText)}: {richText}\n {nameof(isRightToLeft)}: {isRightToLeft}\n {nameof(extraPadding)}: {extraPadding}\n {nameof(parseControlCharacters)}: {parseControlCharacters}\n {nameof(isOrthographic)}: {isOrthographic}\n {nameof(tagNoParsing)}: {tagNoParsing}\n {nameof(characterSpacing)}: {characterSpacing}\n {nameof(wordSpacing)}: {wordSpacing}\n {nameof(lineSpacing)}: {lineSpacing}\n {nameof(paragraphSpacing)}: {paragraphSpacing}\n {nameof(lineSpacingMax)}: {lineSpacingMax}\n {nameof(textWrappingMode)}: {textWrappingMode}\n {nameof(maxVisibleCharacters)}: {maxVisibleCharacters}\n {nameof(maxVisibleWords)}: {maxVisibleWords}\n {nameof(maxVisibleLines)}: {maxVisibleLines}\n {nameof(firstVisibleCharacter)}: {firstVisibleCharacter}\n {nameof(useMaxVisibleDescender)}: {useMaxVisibleDescender}\n {nameof(fontWeight)}: {fontWeight}\n {nameof(pageToDisplay)}: {pageToDisplay}\n {nameof(horizontalMapping)}: {horizontalMapping}\n {nameof(verticalMapping)}: {verticalMapping}\n {nameof(uvLineOffset)}: {uvLineOffset}\n {nameof(geometrySortingOrder)}: {geometrySortingOrder}\n {nameof(inverseYAxis)}: {inverseYAxis}\n {nameof(charWidthMaxAdj)}: {charWidthMaxAdj}\n {nameof(inputSource)}: {inputSource}\n {nameof(isPlaceholder)}: {isPlaceholder}";
         }
+    }
 
     internal class TextGenerator
     {
@@ -276,6 +217,7 @@ namespace UnityEngine.TextCore.Text
         const int
             k_Tab = 9,
             k_LineFeed = 10,
+            k_VerticalTab = 11,
             k_CarriageReturn = 13,
             k_Space = 32,
             k_DoubleQuotes = 34,
@@ -283,7 +225,6 @@ namespace UnityEngine.TextCore.Text
             k_PercentSign = 37,
             k_SingleQuote = 39,
             k_Plus = 43,
-            k_Minus = 45,
             k_Period = 46,
             k_LesserThan = 60,
             k_Equal = 61,
@@ -299,6 +240,8 @@ namespace UnityEngine.TextCore.Text
             k_NarrowNoBreakSpace = 0x202F,
             k_WordJoiner = 0x2060,
             k_HorizontalEllipsis = 0x2026,
+            k_LineSeparator = 0x2028,
+            k_ParagraphSeparator = 0x2029,
             k_RightSingleQuote = 8217,
             k_Square = 9633,
             k_HangulJamoStart = 0x1100,
@@ -548,6 +491,7 @@ namespace UnityEngine.TextCore.Text
         bool m_IsDrivenLineSpacing;
         float m_CSpacing;
         float m_MonoSpacing;
+        bool m_DuoSpace;
         float m_XAdvance;
         float m_TagLineIndent;
         float m_TagIndent;
@@ -717,10 +661,11 @@ namespace UnityEngine.TextCore.Text
             m_FontWeightStack.SetDefault(m_FontWeightInternal);
             m_FontStyleStack.Clear();
 
-            m_LineJustification = generationSettings.textAlignment;// m_textAlignment; // Sets the line justification mode to match editor alignment.
+            m_LineJustification = generationSettings.textAlignment; // m_textAlignment; // Sets the line justification mode to match editor alignment.
             m_LineJustificationStack.SetDefault(m_LineJustification);
 
             float padding = 0;
+
             //float boldXAdvanceMultiplier = 1; // Used to increase spacing between character when style is bold.
 
             m_BaselineOffset = 0; // Used by subscript characters.
@@ -794,6 +739,10 @@ namespace UnityEngine.TextCore.Text
             m_FirstOverflowCharacterIndex = -1;
             m_LastBaseGlyphIndex = int.MinValue;
 
+            bool kerning = generationSettings.fontFeatures.Contains(OTL_FeatureTag.kern);
+            bool markToBase = generationSettings.fontFeatures.Contains(OTL_FeatureTag.mark);
+            bool markToMark = generationSettings.fontFeatures.Contains(OTL_FeatureTag.mkmk);
+
             m_PageNumber = 0;
             int pageToDisplay = Mathf.Clamp(generationSettings.pageToDisplay - 1, 0, textInfo.pageInfo.Length - 1);
             textInfo.ClearPageInfo();
@@ -840,6 +789,7 @@ namespace UnityEngine.TextCore.Text
             SaveWordWrappingState(ref m_SavedSoftLineBreakState, -1, -1, textInfo);
 
             m_EllipsisInsertionCandidateStack.Clear();
+
             // Clear the previous truncated / ellipsed state
             m_IsTextTruncated = false;
 
@@ -866,6 +816,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Parse Rich Text Tag
                 #region Parse Rich Text Tag
+
                 if (generationSettings.richText && charCode == '<')
                 {
                     m_isTextLayoutPhase = true;
@@ -879,9 +830,7 @@ namespace UnityEngine.TextCore.Text
 
                         // Continue to next character or handle the sprite element
                         if (m_TextElementType == TextElementType.Character)
-                        {
                             continue;
-                        }
                     }
                 }
                 else
@@ -890,6 +839,7 @@ namespace UnityEngine.TextCore.Text
                     m_CurrentMaterialIndex = textInfo.textElementInfo[m_CharacterCount].materialReferenceIndex;
                     m_CurrentFontAsset = textInfo.textElementInfo[m_CharacterCount].fontAsset;
                 }
+
                 #endregion End Parse Rich Text Tag
 
                 int previousMaterialIndex = m_CurrentMaterialIndex;
@@ -899,6 +849,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Handle potential character substitutions
                 #region Character Substitutions
+
                 bool isInjectedCharacter = false;
 
                 if (characterToSubstitute.index == m_CharacterCount)
@@ -913,7 +864,7 @@ namespace UnityEngine.TextCore.Text
                             textInfo.textElementInfo[m_CharacterCount].textElement = m_CurrentFontAsset.characterLookupTable[k_EndOfText];
                             m_IsTextTruncated = true;
                             break;
-                        case 0x2D:
+                        case k_HyphenMinus:
                             //
                             break;
                         case k_HorizontalEllipsis:
@@ -922,6 +873,9 @@ namespace UnityEngine.TextCore.Text
                             textInfo.textElementInfo[m_CharacterCount].fontAsset = m_Ellipsis.fontAsset;
                             textInfo.textElementInfo[m_CharacterCount].material = m_Ellipsis.material;
                             textInfo.textElementInfo[m_CharacterCount].materialReferenceIndex = m_Ellipsis.materialIndex;
+
+                            // Need to increase reference count in the event the primary mesh has no characters.
+                            m_MaterialReferences[m_Underline.materialIndex].referenceCount += 1;
 
                             // Indicates the source parsing data has been modified.
                             m_IsTextTruncated = true;
@@ -932,11 +886,12 @@ namespace UnityEngine.TextCore.Text
                             break;
                     }
                 }
-                #endregion
 
+                #endregion
 
                 // When using Linked text, mark character as ignored and skip to next character.
                 #region Linked Text
+
                 if (m_CharacterCount < generationSettings.firstVisibleCharacter && charCode != k_EndOfText)
                 {
                     textInfo.textElementInfo[m_CharacterCount].isVisible = false;
@@ -945,8 +900,8 @@ namespace UnityEngine.TextCore.Text
                     m_CharacterCount += 1;
                     continue;
                 }
-                #endregion
 
+                #endregion
 
                 // Handle Font Styles like LowerCase, UpperCase and SmallCaps.
                 #region Handling of LowerCase, UpperCase and SmallCaps Font Styles
@@ -977,8 +932,8 @@ namespace UnityEngine.TextCore.Text
                         }
                     }
                 }
-                #endregion
 
+                #endregion
 
                 // Look up Character Data from Dictionary and cache it.
                 #region Look up Character Data
@@ -1074,18 +1029,19 @@ namespace UnityEngine.TextCore.Text
                     textInfo.textElementInfo[m_CharacterCount].elementType = TextElementType.Character;
                     textInfo.textElementInfo[m_CharacterCount].scale = currentElementScale;
 
-                    padding = m_Padding;
+                    padding = m_CurrentMaterialIndex == 0 ? m_Padding : GetPaddingForMaterial(m_CurrentMaterial, generationSettings.extraPadding);
                 }
-                #endregion
 
+                #endregion
 
                 // Handle Soft Hyphen
                 #region Handle Soft Hyphen
-                float currentElementUnmodifiedScale = currentElementScale;
-                if (charCode == 0xAD || charCode == k_EndOfText)
-                    currentElementScale = 0;
-                #endregion
 
+                float currentElementUnmodifiedScale = currentElementScale;
+                if (charCode == k_SoftHyphen || charCode == k_EndOfText)
+                    currentElementScale = 0;
+
+                #endregion
 
                 // Store some of the text object's information
                 textInfo.textElementInfo[m_CharacterCount].character = (char)charCode;
@@ -1105,9 +1061,10 @@ namespace UnityEngine.TextCore.Text
 
                 // Handle Kerning if Enabled.
                 #region Handle Kerning
+
                 GlyphValueRecord glyphAdjustments = new GlyphValueRecord();
                 float characterSpacingAdjustment = generationSettings.characterSpacing;
-                if (generationSettings.enableKerning)
+                if (kerning)
                 {
                     GlyphPairAdjustmentRecord adjustmentPair;
                     uint baseGlyphIndex = m_CachedTextElement.m_GlyphIndex;
@@ -1135,14 +1092,15 @@ namespace UnityEngine.TextCore.Text
                             characterSpacingAdjustment = (adjustmentPair.featureLookupFlags & FontFeatureLookupFlags.IgnoreSpacingAdjustments) == FontFeatureLookupFlags.IgnoreSpacingAdjustments ? 0 : characterSpacingAdjustment;
                         }
                     }
+
+                    textInfo.textElementInfo[m_CharacterCount].adjustedHorizontalAdvance = glyphAdjustments.xAdvance;
                 }
 
-                textInfo.textElementInfo[m_CharacterCount].adjustedHorizontalAdvance = glyphAdjustments.xAdvance;
                 #endregion
-
 
                 // Handle Diacritical Marks
                 #region Handle Diacritical Marks
+
                 bool isBaseGlyph = TextGeneratorUtilities.IsBaseGlyph((uint)charCode);
 
                 if (isBaseGlyph)
@@ -1151,7 +1109,7 @@ namespace UnityEngine.TextCore.Text
                 if (m_CharacterCount > 0 && !isBaseGlyph)
                 {
                     // Check for potential Mark-to-Base lookup if previous glyph was a base glyph
-                    if (m_LastBaseGlyphIndex != int.MinValue && m_LastBaseGlyphIndex == m_CharacterCount - 1)
+                    if (markToBase && m_LastBaseGlyphIndex != int.MinValue && m_LastBaseGlyphIndex == m_CharacterCount - 1)
                     {
                         Glyph baseGlyph = textInfo.textElementInfo[m_LastBaseGlyphIndex].textElement.glyph;
                         uint baseGlyphIndex = baseGlyph.index;
@@ -1174,31 +1132,34 @@ namespace UnityEngine.TextCore.Text
                         bool wasLookupApplied = false;
 
                         // Check for any potential Mark-to-Mark lookups
-                        for (int characterLookupIndex = m_CharacterCount - 1; characterLookupIndex >= 0 && characterLookupIndex != m_LastBaseGlyphIndex; characterLookupIndex--)
+                        if (markToMark)
                         {
-                            // Handle any potential Mark-to-Mark lookup
-                            Glyph baseMarkGlyph = textInfo.textElementInfo[characterLookupIndex].textElement.glyph;
-                            uint baseGlyphIndex = baseMarkGlyph.index;
-                            uint combiningMarkGlyphIndex = m_CachedTextElement.glyphIndex;
-                            uint key = combiningMarkGlyphIndex << 16 | baseGlyphIndex;
-
-                            if (m_CurrentFontAsset.fontFeatureTable.m_MarkToMarkAdjustmentRecordLookup.TryGetValue(key, out MarkToMarkAdjustmentRecord glyphAdjustmentRecord))
+                            for (int characterLookupIndex = m_CharacterCount - 1; characterLookupIndex >= 0 && characterLookupIndex != m_LastBaseGlyphIndex; characterLookupIndex--)
                             {
-                                float baseMarkOrigin = (textInfo.textElementInfo[characterLookupIndex].origin - m_XAdvance) / currentElementScale;
-                                float currentBaseline = baselineOffset - m_LineOffset + m_BaselineOffset;
-                                float baseMarkBaseline = (textInfo.textElementInfo[characterLookupIndex].baseLine - currentBaseline) / currentElementScale;
+                                // Handle any potential Mark-to-Mark lookup
+                                Glyph baseMarkGlyph = textInfo.textElementInfo[characterLookupIndex].textElement.glyph;
+                                uint baseGlyphIndex = baseMarkGlyph.index;
+                                uint combiningMarkGlyphIndex = m_CachedTextElement.glyphIndex;
+                                uint key = combiningMarkGlyphIndex << 16 | baseGlyphIndex;
 
-                                glyphAdjustments.xPlacement = baseMarkOrigin + glyphAdjustmentRecord.baseMarkGlyphAnchorPoint.xCoordinate - glyphAdjustmentRecord.combiningMarkPositionAdjustment.xPositionAdjustment;
-                                glyphAdjustments.yPlacement = baseMarkBaseline + glyphAdjustmentRecord.baseMarkGlyphAnchorPoint.yCoordinate - glyphAdjustmentRecord.combiningMarkPositionAdjustment.yPositionAdjustment;
+                                if (m_CurrentFontAsset.fontFeatureTable.m_MarkToMarkAdjustmentRecordLookup.TryGetValue(key, out MarkToMarkAdjustmentRecord glyphAdjustmentRecord))
+                                {
+                                    float baseMarkOrigin = (textInfo.textElementInfo[characterLookupIndex].origin - m_XAdvance) / currentElementScale;
+                                    float currentBaseline = baselineOffset - m_LineOffset + m_BaselineOffset;
+                                    float baseMarkBaseline = (textInfo.textElementInfo[characterLookupIndex].baseLine - currentBaseline) / currentElementScale;
 
-                                characterSpacingAdjustment = 0;
-                                wasLookupApplied = true;
-                                break;
+                                    glyphAdjustments.xPlacement = baseMarkOrigin + glyphAdjustmentRecord.baseMarkGlyphAnchorPoint.xCoordinate - glyphAdjustmentRecord.combiningMarkPositionAdjustment.xPositionAdjustment;
+                                    glyphAdjustments.yPlacement = baseMarkBaseline + glyphAdjustmentRecord.baseMarkGlyphAnchorPoint.yCoordinate - glyphAdjustmentRecord.combiningMarkPositionAdjustment.yPositionAdjustment;
+
+                                    characterSpacingAdjustment = 0;
+                                    wasLookupApplied = true;
+                                    break;
+                                }
                             }
                         }
 
                         // If no Mark-to-Mark lookups were applied, check for potential Mark-to-Base lookup.
-                        if (m_LastBaseGlyphIndex != int.MinValue && !wasLookupApplied)
+                        if (markToBase && m_LastBaseGlyphIndex != int.MinValue && !wasLookupApplied)
                         {
                             // Handle lookup for Mark-to-Base
                             Glyph baseGlyph = textInfo.textElementInfo[m_LastBaseGlyphIndex].textElement.glyph;
@@ -1222,11 +1183,12 @@ namespace UnityEngine.TextCore.Text
                 // Adjust relevant text metrics
                 elementAscentLine += glyphAdjustments.yPlacement;
                 elementDescentLine += glyphAdjustments.yPlacement;
-                #endregion
 
+                #endregion
 
                 // Initial Implementation for RTL support.
                 #region Handle Right-to-Left
+
                 if (generationSettings.isRightToLeft)
                 {
                     m_XAdvance -= currentGlyphMetrics.horizontalAdvance * (1 - m_CharWidthAdjDelta) * currentElementScale;
@@ -1234,22 +1196,27 @@ namespace UnityEngine.TextCore.Text
                     if (isWhiteSpace || charCode == k_ZeroWidthSpace)
                         m_XAdvance -= generationSettings.wordSpacing * currentEmScale;
                 }
-                #endregion
 
+                #endregion
 
                 // Handle Mono Spacing
                 #region Handle Mono Spacing
+
                 float monoAdvance = 0;
-                if (m_MonoSpacing != 0)
+                if (m_MonoSpacing != 0 && charCode != k_ZeroWidthSpace)
                 {
-                    monoAdvance = (m_MonoSpacing / 2 - (currentGlyphMetrics.width / 2 + currentGlyphMetrics.horizontalBearingX) * currentElementScale) * (1 - m_CharWidthAdjDelta);
+                    if (m_DuoSpace && (charCode == '.' || charCode == ':' || charCode == ','))
+                        monoAdvance = (m_MonoSpacing / 4 - (currentGlyphMetrics.width / 2 + currentGlyphMetrics.horizontalBearingX) * currentElementScale) * (1 - m_CharWidthAdjDelta);
+                    else
+                        monoAdvance = (m_MonoSpacing / 2 - (currentGlyphMetrics.width / 2 + currentGlyphMetrics.horizontalBearingX) * currentElementScale) * (1 - m_CharWidthAdjDelta);
+
                     m_XAdvance += monoAdvance;
                 }
                 #endregion
 
-
                 // Set Padding based on selected font style
                 #region Handle Style Padding
+
                 float boldSpacingAdjustment;
                 float stylePadding;
                 if (m_TextElementType == TextElementType.Character && !isUsingAltTypeface && ((m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold)) // Checks for any combination of Bold Style.
@@ -1284,11 +1251,12 @@ namespace UnityEngine.TextCore.Text
 
                     boldSpacingAdjustment = 0;
                 }
-                #endregion Handle Style Padding
 
+                #endregion Handle Style Padding
 
                 // Determine the position of the vertices of the Character or Sprite.
                 #region Calculate Vertices Position
+
                 Vector3 topLeft;
                 topLeft.x = m_XAdvance + ((currentGlyphMetrics.horizontalBearingX * m_FXScale.x - padding - stylePadding + glyphAdjustments.xPlacement) * currentElementScale * (1 - m_CharWidthAdjDelta));
                 topLeft.y = baselineOffset + (currentGlyphMetrics.horizontalBearingY + padding + glyphAdjustments.yPlacement) * currentElementScale - m_LineOffset + m_BaselineOffset;
@@ -1308,11 +1276,12 @@ namespace UnityEngine.TextCore.Text
                 bottomRight.x = topRight.x;
                 bottomRight.y = bottomLeft.y;
                 bottomRight.z = 0;
-                #endregion
 
+                #endregion
 
                 // Check if we need to Shear the rectangles for Italic styles
                 #region Handle Italic & Shearing
+
                 if (m_TextElementType == TextElementType.Character && !isUsingAltTypeface && ((m_FontStyleInternal & FontStyles.Italic) == FontStyles.Italic))
                 {
                     // Shift Top vertices forward by half (Shear Value * height of character) and Bottom vertices back by same amount.
@@ -1326,11 +1295,12 @@ namespace UnityEngine.TextCore.Text
                     topRight += topShear;
                     bottomRight += bottomShear;
                 }
-                #endregion Handle Italics & Shearing
 
+                #endregion Handle Italics & Shearing
 
                 // Handle Character FX Rotation
                 #region Handle Character FX Rotation
+
                 if (m_FXRotation != Quaternion.identity)
                 {
                     Matrix4x4 rotationMatrix = Matrix4x4.Rotate(m_FXRotation);
@@ -1341,8 +1311,8 @@ namespace UnityEngine.TextCore.Text
                     topRight = rotationMatrix.MultiplyPoint3x4(topRight - positionOffset) + positionOffset;
                     bottomRight = rotationMatrix.MultiplyPoint3x4(bottomRight - positionOffset) + positionOffset;
                 }
-                #endregion
 
+                #endregion
 
                 // Store vertex information for the character or sprite.
                 textInfo.textElementInfo[m_CharacterCount].bottomLeft = bottomLeft;
@@ -1354,9 +1324,9 @@ namespace UnityEngine.TextCore.Text
                 textInfo.textElementInfo[m_CharacterCount].baseLine = (baselineOffset - m_LineOffset + m_BaselineOffset) + glyphAdjustments.yPlacement * currentElementScale;
                 textInfo.textElementInfo[m_CharacterCount].aspectRatio = (topRight.x - bottomLeft.x) / (topLeft.y - bottomLeft.y);
 
-
                 // Compute text metrics
                 #region Compute Ascender & Descender values
+
                 // Element Ascender in line space
                 float elementAscender = m_TextElementType == TextElementType.Character
                     ? elementAscentLine * currentElementScale / smallCapsMultiplier + m_BaselineOffset
@@ -1419,8 +1389,8 @@ namespace UnityEngine.TextCore.Text
                     if (isFirstCharacterOfLine || isWhiteSpace == false)
                         m_PageAscender = m_PageAscender > elementAscender ? m_PageAscender : elementAscender;
                 }
-                #endregion
 
+                #endregion
 
                 // Set Characters to not visible by default.
                 textInfo.textElementInfo[m_CharacterCount].isVisible = false;
@@ -1429,11 +1399,13 @@ namespace UnityEngine.TextCore.Text
 
                 // Setup Mesh for visible text elements. ie. not a SPACE / LINEFEED / CARRIAGE RETURN.
                 #region Handle Visible Characters
-                if (charCode == k_Tab || ((wordWrap == TextWrappingMode.PreserveWhitespace || wordWrap == TextWrappingMode.PreserveWhitespaceNoWrap) && (isWhiteSpace || charCode == k_ZeroWidthSpace)) || (isWhiteSpace == false && charCode != k_ZeroWidthSpace && charCode != 0xAD && charCode != k_EndOfText) || (charCode == 0xAD && isSoftHyphenIgnored == false) || m_TextElementType == TextElementType.Sprite)
+
+                if (charCode == k_Tab || ((wordWrap == TextWrappingMode.PreserveWhitespace || wordWrap == TextWrappingMode.PreserveWhitespaceNoWrap) && (isWhiteSpace || charCode == k_ZeroWidthSpace)) || (isWhiteSpace == false && charCode != k_ZeroWidthSpace && charCode != k_SoftHyphen && charCode != k_EndOfText) || (charCode == k_SoftHyphen && isSoftHyphenIgnored == false) || m_TextElementType == TextElementType.Sprite)
                 {
                     textInfo.textElementInfo[m_CharacterCount].isVisible = true;
 
                     #region Experimental Margin Shaper
+
                     //Vector2 shapedMargins;
                     //if (marginShaper)
                     //{HorizontalAlignmentOption
@@ -1466,6 +1438,7 @@ namespace UnityEngine.TextCore.Text
                     //    width = m_Width;
                     //}
                     //textInfo.lineInfo[m_LineNumber].marginLeft = shapedMargins.x;
+
                     #endregion
 
                     float marginLeft = m_MarginLeft;
@@ -1481,13 +1454,15 @@ namespace UnityEngine.TextCore.Text
                     widthOfTextArea = m_Width != -1 ? Mathf.Min(marginWidth + 0.0001f - marginLeft - marginRight, m_Width) : marginWidth + 0.0001f - marginLeft - marginRight;
 
                     // Calculate the line breaking width of the text.
-                    float textWidth = Mathf.Abs(m_XAdvance) + (!generationSettings.isRightToLeft ? currentGlyphMetrics.horizontalAdvance : 0) * (1 - m_CharWidthAdjDelta) * (charCode == 0xAD ? currentElementUnmodifiedScale : currentElementScale);
+                    float textWidth = Mathf.Abs(m_XAdvance) + (!generationSettings.isRightToLeft ? currentGlyphMetrics.horizontalAdvance : 0) * (1 - m_CharWidthAdjDelta) * (charCode == k_SoftHyphen ? currentElementUnmodifiedScale : currentElementScale);
                     float textHeight = m_MaxAscender - (m_MaxLineDescender - m_LineOffset) + (m_LineOffset > 0 && m_IsDrivenLineSpacing == false ? m_MaxLineAscender - m_StartOfLineAscender : 0);
 
                     int testedCharacterCount = m_CharacterCount;
 
                     // Handling of current line Vertical Bounds
+
                     #region Current Line Vertical Bounds Check
+
                     if (textHeight > marginHeight + 0.0001f)
                     {
                         // Set isTextOverflowing and firstOverflowCharacterIndex
@@ -1498,7 +1473,9 @@ namespace UnityEngine.TextCore.Text
                         if (generationSettings.autoSize)
                         {
                             // Handle Line spacing adjustments
+
                             #region Line Spacing Adjustments
+
                             if (m_LineSpacingDelta > generationSettings.lineSpacingMax && m_LineOffset > 0 && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
                             {
                                 float adjustmentDelta = (marginHeight - textHeight) / m_LineNumber;
@@ -1507,11 +1484,14 @@ namespace UnityEngine.TextCore.Text
 
                                 return;
                             }
+
                             #endregion
 
 
                             // Handle Text Auto-sizing resulting from text exceeding vertical bounds.
+
                             #region Text Auto-Sizing (Text greater than vertical bounds)
+
                             if (m_FontSize > generationSettings.fontSizeMin && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
                             {
                                 m_MaxFontSize = m_FontSize;
@@ -1522,6 +1502,7 @@ namespace UnityEngine.TextCore.Text
 
                                 return;
                             }
+
                             #endregion Text Auto-Sizing
                         }
 
@@ -1538,7 +1519,7 @@ namespace UnityEngine.TextCore.Text
                                 i = RestoreWordWrappingState(ref m_SavedLastValidState, textInfo);
 
                                 characterToSubstitute.index = testedCharacterCount;
-                                //characterToSubstitute.unicode = k_EndOfText;
+                                characterToSubstitute.unicode = k_EndOfText;
                                 continue;
 
                             case TextOverflowMode.Ellipsis:
@@ -1565,6 +1546,7 @@ namespace UnityEngine.TextCore.Text
                                     restoreCount += 1;
                                     continue;
                                 }
+
                                 break;
                             case TextOverflowMode.Linked:
                                 i = RestoreWordWrappingState(ref m_SavedLastValidState, textInfo);
@@ -1615,10 +1597,13 @@ namespace UnityEngine.TextCore.Text
                                 continue;
                         }
                     }
+
                     #endregion
 
                     // Handling of Horizontal Bounds
+
                     #region Current Line Horizontal Bounds Check
+
                     if (isBaseGlyph && textWidth > widthOfTextArea * (isJustifiedOrFlush ? 1.05f : 1.0f))
                     {
                         // Handle Line Breaking (if still possible)
@@ -1645,13 +1630,13 @@ namespace UnityEngine.TextCore.Text
 
                             // Replace Soft Hyphen by Hyphen Minus 0x2D
                             #region Handle Soft Hyphenation
-                            if (textInfo.textElementInfo[m_CharacterCount - 1].character == 0xAD && isSoftHyphenIgnored == false)
+                            if (textInfo.textElementInfo[m_CharacterCount - 1].character == k_SoftHyphen && isSoftHyphenIgnored == false)
                             {
                                 // Only inject Hyphen Minus if new line is possible
                                 if (generationSettings.overflowMode == TextOverflowMode.Overflow || newTextHeight < marginHeight + 0.0001f)
                                 {
                                     characterToSubstitute.index = m_CharacterCount - 1;
-                                    characterToSubstitute.unicode = (uint)0x2D;
+                                    characterToSubstitute.unicode = k_HyphenMinus;
 
                                     i -= 1;
                                     m_CharacterCount -= 1;
@@ -1662,7 +1647,7 @@ namespace UnityEngine.TextCore.Text
                             isSoftHyphenIgnored = false;
 
                             // Ignore Soft Hyphen to prevent it from wrapping
-                            if (textInfo.textElementInfo[m_CharacterCount].character == 0xAD)
+                            if (textInfo.textElementInfo[m_CharacterCount].character == k_SoftHyphen)
                             {
                                 isSoftHyphenIgnored = true;
                                 continue;
@@ -1674,6 +1659,7 @@ namespace UnityEngine.TextCore.Text
                             {
                                 // Handle Character Width Adjustments
                                 #region Character Width Adjustments
+
                                 if (m_CharWidthAdjDelta < generationSettings.charWidthMaxAdj / 100 && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
                                 {
                                     float adjustedTextWidth = textWidth;
@@ -1692,6 +1678,7 @@ namespace UnityEngine.TextCore.Text
 
                                 // Handle Text Auto-sizing resulting from text exceeding vertical bounds.
                                 #region Text Auto-Sizing (Text greater than vertical bounds)
+
                                 if (m_FontSize > generationSettings.fontSizeMin && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
                                 {
                                     m_MaxFontSize = m_FontSize;
@@ -1705,7 +1692,6 @@ namespace UnityEngine.TextCore.Text
                                 #endregion Text Auto-Sizing
                             }
 
-
                             // Special handling if first word of line and non breaking space
                             int savedSoftLineBreakingSpace = m_SavedSoftLineBreakState.previousWordBreak;
                             if (isFirstWordOfLine && savedSoftLineBreakingSpace != -1)
@@ -1716,10 +1702,10 @@ namespace UnityEngine.TextCore.Text
                                     lastSoftLineBreak = savedSoftLineBreakingSpace;
 
                                     // check if soft hyphen
-                                    if (textInfo.textElementInfo[m_CharacterCount - 1].character == 0xAD)
+                                    if (textInfo.textElementInfo[m_CharacterCount - 1].character == k_SoftHyphen)
                                     {
                                         characterToSubstitute.index = m_CharacterCount - 1;
-                                        characterToSubstitute.unicode = 0x2D;
+                                        characterToSubstitute.unicode = k_HyphenMinus;
 
                                         i -= 1;
                                         m_CharacterCount -= 1;
@@ -1740,6 +1726,7 @@ namespace UnityEngine.TextCore.Text
                                 {
                                     // Handle Line spacing adjustments
                                     #region Line Spacing Adjustments
+
                                     if (m_LineSpacingDelta > generationSettings.lineSpacingMax && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
                                     {
                                         float adjustmentDelta = (marginHeight - newTextHeight) / (m_LineNumber + 1);
@@ -1747,10 +1734,12 @@ namespace UnityEngine.TextCore.Text
                                         m_LineSpacingDelta = Mathf.Max(m_LineSpacingDelta + adjustmentDelta / baseScale, generationSettings.lineSpacingMax);
                                         return;
                                     }
+
                                     #endregion
 
                                     // Handle Character Width Adjustments
                                     #region Character Width Adjustments
+
                                     if (m_CharWidthAdjDelta < generationSettings.charWidthMaxAdj / 100 && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
                                     {
                                         float adjustedTextWidth = textWidth;
@@ -1765,10 +1754,12 @@ namespace UnityEngine.TextCore.Text
 
                                         return;
                                     }
+
                                     #endregion
 
                                     // Handle Text Auto-sizing resulting from text exceeding vertical bounds.
                                     #region Text Auto-Sizing (Text greater than vertical bounds)
+
                                     if (m_FontSize > generationSettings.fontSizeMin && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
                                     {
                                         m_MaxFontSize = m_FontSize;
@@ -1779,6 +1770,7 @@ namespace UnityEngine.TextCore.Text
 
                                         return;
                                     }
+
                                     #endregion Text Auto-Sizing
                                 }
 
@@ -1884,6 +1876,7 @@ namespace UnityEngine.TextCore.Text
                             {
                                 // Handle Character Width Adjustments
                                 #region Character Width Adjustments
+
                                 if (m_CharWidthAdjDelta < generationSettings.charWidthMaxAdj / 100)
                                 {
                                     float adjustedTextWidth = textWidth;
@@ -1898,10 +1891,12 @@ namespace UnityEngine.TextCore.Text
 
                                     return;
                                 }
+
                                 #endregion
 
                                 // Handle Text Auto-sizing resulting from text exceeding horizontal bounds.
                                 #region Text Exceeds Horizontal Bounds - Reducing Point Size
+
                                 if (m_FontSize > generationSettings.fontSizeMin)
                                 {
                                     // Adjust Point Size
@@ -1913,6 +1908,7 @@ namespace UnityEngine.TextCore.Text
 
                                     return;
                                 }
+
                                 #endregion
                             }
 
@@ -1966,7 +1962,6 @@ namespace UnityEngine.TextCore.Text
                     }
                     #endregion
 
-
                     // Special handling of characters that are not ignored at the end of a line.
                     if (isWhiteSpace)
                     {
@@ -1976,8 +1971,10 @@ namespace UnityEngine.TextCore.Text
                         textInfo.lineInfo[m_LineNumber].marginLeft = marginLeft;
                         textInfo.lineInfo[m_LineNumber].marginRight = marginRight;
                         textInfo.spaceCount += 1;
+                        if (charCode == k_NoBreakSpace)
+                            textInfo.lineInfo[m_LineNumber].controlCharacterCount += 1;
                     }
-                    else if (charCode == 0xAD)
+                    else if (charCode == k_SoftHyphen)
                     {
                         textInfo.textElementInfo[m_CharacterCount].isVisible = false;
                     }
@@ -2017,6 +2014,7 @@ namespace UnityEngine.TextCore.Text
                 {
                     // Special handling for text overflow linked mode
                     #region Check Vertical Bounds
+
                     if (generationSettings.overflowMode == TextOverflowMode.Linked && (charCode == k_LineFeed || charCode == 11))
                     {
                         float textHeight = m_MaxAscender - (m_MaxLineDescender - m_LineOffset) + (m_LineOffset > 0 && m_IsDrivenLineSpacing == false ? m_MaxLineAscender - m_StartOfLineAscender : 0);
@@ -2037,26 +2035,27 @@ namespace UnityEngine.TextCore.Text
                             continue;
                         }
                     }
+
                     #endregion
 
                     // Track # of spaces per line which is used for line justification.
-                    if ((charCode == k_LineFeed || charCode == 11 || charCode == 0xA0 || charCode == k_FigureSpace || charCode == 0x2028 || charCode == 0x2029 || char.IsSeparator((char)charCode)) && charCode != 0xAD && charCode != k_ZeroWidthSpace && charCode != k_WordJoiner)
+                    if ((charCode == k_LineFeed || charCode == k_VerticalTab || charCode == k_NoBreakSpace || charCode == k_FigureSpace || charCode == k_LineSeparator || charCode == k_ParagraphSeparator || char.IsSeparator((char)charCode)) && charCode != k_SoftHyphen && charCode != k_ZeroWidthSpace && charCode != k_WordJoiner)
                     {
                         textInfo.lineInfo[m_LineNumber].spaceCount += 1;
                         textInfo.spaceCount += 1;
                     }
 
                     // Special handling for control characters like <NBSP>
-                    if (charCode == 0xA0)
+                    if (charCode == k_NoBreakSpace)
                         textInfo.lineInfo[m_LineNumber].controlCharacterCount += 1;
 
                 }
                 #endregion Handle Visible Characters
 
-
                 // Tracking of potential insertion positions for Ellipsis character
                 #region Track Potential Insertion Location for Ellipsis
-                if (generationSettings.overflowMode == TextOverflowMode.Ellipsis && (isInjectedCharacter == false || charCode == 0x2D))
+
+                if (generationSettings.overflowMode == TextOverflowMode.Ellipsis && (isInjectedCharacter == false || charCode == k_HyphenMinus))
                 {
                     float fontScale = m_CurrentFontSize / m_Ellipsis.fontAsset.m_FaceInfo.pointSize * m_Ellipsis.fontAsset.m_FaceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f);
                     float scale = fontScale * m_FontScaleMultiplier * m_Ellipsis.character.m_Scale * m_Ellipsis.character.m_Glyph.scale;
@@ -2082,66 +2081,79 @@ namespace UnityEngine.TextCore.Text
                         m_EllipsisInsertionCandidateStack.Push(m_SavedEllipsisState);
                     }
                 }
-                #endregion
 
+                #endregion
 
                 // Store Rectangle positions for each Character.
                 #region Store Character Data
+
                 textInfo.textElementInfo[m_CharacterCount].lineNumber = m_LineNumber;
                 textInfo.textElementInfo[m_CharacterCount].pageNumber = m_PageNumber;
 
-                if (charCode != 10 && charCode != 11 && charCode != 13 && isInjectedCharacter == false /* && charCode != k_HorizontalEllipsis */ || textInfo.lineInfo[m_LineNumber].characterCount == 1)
+                if (charCode != k_LineFeed && charCode != k_VerticalTab && charCode != k_CarriageReturn && isInjectedCharacter == false /* && charCode != k_HorizontalEllipsis */ || textInfo.lineInfo[m_LineNumber].characterCount == 1)
                     textInfo.lineInfo[m_LineNumber].alignment = m_LineJustification;
-                #endregion Store Character Data
 
+                #endregion Store Character Data
 
                 // Handle xAdvance & Tabulation Stops. Tab stops at every 25% of Font Size.
                 #region XAdvance, Tabulation & Stops
-                if (charCode == k_Tab)
-                {
-                    float tabSize = m_CurrentFontAsset.m_FaceInfo.tabWidth * m_CurrentFontAsset.tabMultiple * currentElementScale;
-                    float tabs = Mathf.Ceil(m_XAdvance / tabSize) * tabSize;
-                    m_XAdvance = tabs > m_XAdvance ? tabs : m_XAdvance + tabSize;
-                }
-                else if (m_MonoSpacing != 0)
-                {
-                    m_XAdvance += (m_MonoSpacing - monoAdvance + ((m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment) * currentEmScale) + m_CSpacing) * (1 - m_CharWidthAdjDelta);
 
-                    if (isWhiteSpace || charCode == k_ZeroWidthSpace)
-                        m_XAdvance += generationSettings.wordSpacing * currentEmScale;
-                }
-                else if (generationSettings.isRightToLeft)
+                if (charCode != k_ZeroWidthSpace)
                 {
-                    m_XAdvance -= ((glyphAdjustments.xAdvance * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta));
+                    if (charCode == k_Tab)
+                    {
+                        float tabSize = m_CurrentFontAsset.m_FaceInfo.tabWidth * m_CurrentFontAsset.tabMultiple * currentElementScale;
+                        float tabs = Mathf.Ceil(m_XAdvance / tabSize) * tabSize;
+                        m_XAdvance = tabs > m_XAdvance ? tabs : m_XAdvance + tabSize;
+                    }
+                    else if (m_MonoSpacing != 0)
+                    {
+                        float monoAdjustment;
+                        if (m_DuoSpace && (charCode == '.' || charCode == ':' || charCode == ','))
+                            monoAdjustment = m_MonoSpacing / 2 - monoAdvance;
+                        else
+                            monoAdjustment = m_MonoSpacing - monoAdvance;
 
-                    if (isWhiteSpace || charCode == k_ZeroWidthSpace)
-                        m_XAdvance -= generationSettings.wordSpacing * currentEmScale;
-                }
-                else
-                {
-                    m_XAdvance += ((currentGlyphMetrics.horizontalAdvance * m_FXScale.x + glyphAdjustments.xAdvance) * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta);
+                        m_XAdvance += (monoAdjustment + ((m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment) * currentEmScale) + m_CSpacing) * (1 - m_CharWidthAdjDelta);
 
-                    if (isWhiteSpace || charCode == k_ZeroWidthSpace)
-                        m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                        if (isWhiteSpace || charCode == k_ZeroWidthSpace)
+                            m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                    }
+                    else if (generationSettings.isRightToLeft)
+                    {
+                        m_XAdvance -= ((glyphAdjustments.xAdvance * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta));
+
+                        if (isWhiteSpace || charCode == k_ZeroWidthSpace)
+                            m_XAdvance -= generationSettings.wordSpacing * currentEmScale;
+                    }
+                    else
+                    {
+                        m_XAdvance += ((currentGlyphMetrics.horizontalAdvance * m_FXScale.x + glyphAdjustments.xAdvance) * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta);
+
+                        if (isWhiteSpace || charCode == k_ZeroWidthSpace)
+                            m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                    }
                 }
 
                 // Store xAdvance information
                 textInfo.textElementInfo[m_CharacterCount].xAdvance = m_XAdvance;
-                #endregion Tabulation & Stops
 
+                #endregion Tabulation & Stops
 
                 // Handle Carriage Return
                 #region Carriage Return
+
                 if (charCode == k_CarriageReturn)
                 {
                     m_XAdvance = 0 + m_TagIndent;
                 }
-                #endregion Carriage Return
 
+                #endregion Carriage Return
 
                 // Tracking of text overflow page mode
                 #region Save PageInfo
-                if (generationSettings.overflowMode == TextOverflowMode.Page && charCode != 10 && charCode != 11 && charCode != 13 && charCode != 0x2028 && charCode != 0x2029)
+
+                if (generationSettings.overflowMode == TextOverflowMode.Page && charCode != k_LineFeed && charCode != k_VerticalTab && charCode != k_CarriageReturn && charCode != k_LineSeparator && charCode != k_LineSeparator)
                 {
                     // Check if we need to increase allocations for the pageInfo array.
                     if (m_PageNumber + 1 > textInfo.pageInfo.Length)
@@ -2163,10 +2175,10 @@ namespace UnityEngine.TextCore.Text
                 }
                 #endregion Save PageInfo
 
-
                 // Handle Line Spacing Adjustments + Word Wrapping & special case for last line.
                 #region Check for Line Feed and Last Character
-                if (charCode == k_LineFeed || charCode == 11 || charCode == k_EndOfText || charCode == 0x2028 || charCode == 0x2029 || (charCode == 0x2D && isInjectedCharacter) || m_CharacterCount == totalCharacterCount - 1)
+
+                if (charCode == k_LineFeed || charCode == k_VerticalTab || charCode == k_EndOfText || charCode == k_LineSeparator || charCode == k_LineSeparator || (charCode == k_HyphenMinus && isInjectedCharacter) || m_CharacterCount == totalCharacterCount - 1)
                 {
                     // Adjust current line spacing (if necessary) before inserting new line
                     float baselineAdjustmentDelta = m_MaxLineAscender - m_StartOfLineAscender;
@@ -2185,6 +2197,7 @@ namespace UnityEngine.TextCore.Text
                             m_EllipsisInsertionCandidateStack.Push(m_SavedEllipsisState);
                         }
                     }
+
                     m_IsNewPage = false;
 
                     // Calculate lineAscender & make sure if last character is superscript or subscript that we check that as well.
@@ -2228,7 +2241,7 @@ namespace UnityEngine.TextCore.Text
                     textInfo.lineInfo[m_LineNumber].lineHeight = lineAscender - lineDescender + lineGap * baseScale;
 
                     // Add new line if not last line or character.
-                    if (charCode == k_LineFeed || charCode == 11 || charCode == 0x2D || charCode == 0x2028 || charCode == 0x2029)
+                    if (charCode == k_LineFeed || charCode == k_VerticalTab|| charCode == k_HyphenMinus || charCode == k_LineSeparator || charCode == k_ParagraphSeparator)
                     {
                         // Store the state of the line before starting on the new line.
                         SaveWordWrappingState(ref m_SavedLineState, i, m_CharacterCount, textInfo);
@@ -2251,13 +2264,13 @@ namespace UnityEngine.TextCore.Text
                         // Apply Line Spacing with special handling for VT char(11)
                         if (m_LineHeight == k_FloatUnset)
                         {
-                            float lineOffsetDelta = 0 - m_MaxLineDescender + lastVisibleAscender + (lineGap + m_LineSpacingDelta) * baseScale + (generationSettings.lineSpacing + (charCode == k_LineFeed || charCode == 0x2029 ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
+                            float lineOffsetDelta = 0 - m_MaxLineDescender + lastVisibleAscender + (lineGap + m_LineSpacingDelta) * baseScale + (generationSettings.lineSpacing + (charCode == k_LineFeed || charCode == k_ParagraphSeparator ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
                             m_LineOffset += lineOffsetDelta;
                             m_IsDrivenLineSpacing = false;
                         }
                         else
                         {
-                            m_LineOffset += m_LineHeight + (generationSettings.lineSpacing + (charCode == k_LineFeed || charCode == 0x2029 ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
+                            m_LineOffset += m_LineHeight + (generationSettings.lineSpacing + (charCode == k_LineFeed || charCode == k_ParagraphSeparator ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
                             m_IsDrivenLineSpacing = true;
                         }
 
@@ -2279,11 +2292,12 @@ namespace UnityEngine.TextCore.Text
                     if (charCode == k_EndOfText)
                         i = m_TextProcessingArray.Length;
                 }
-                #endregion Check for Linefeed or Last Character
 
+                #endregion Check for Linefeed or Last Character
 
                 // Track extents of the text
                 #region Track Text Extents
+
                 // Determine the bounds of the Mesh.
                 if (textInfo.textElementInfo[m_CharacterCount].isVisible)
                 {
@@ -2296,34 +2310,31 @@ namespace UnityEngine.TextCore.Text
                     //m_MeshExtents.min = new Vector2(Mathf.Min(m_MeshExtents.min.x, textInfo.textElementInfo[m_CharacterCount].bottomLeft.x), Mathf.Min(m_MeshExtents.min.y, textInfo.textElementInfo[m_CharacterCount].bottomLeft.y));
                     //m_MeshExtents.max = new Vector2(Mathf.Max(m_MeshExtents.max.x, textInfo.textElementInfo[m_CharacterCount].topRight.x), Mathf.Max(m_MeshExtents.max.y, textInfo.textElementInfo[m_CharacterCount].topRight.y));
                 }
-                #endregion Track Text Extents
 
+                #endregion Track Text Extents
 
                 // Save State of Mesh Creation for handling of Word Wrapping
                 #region Save Word Wrapping State
+
                 if ((wordWrap != TextWrappingMode.NoWrap && wordWrap != TextWrappingMode.PreserveWhitespaceNoWrap) || generationSettings.overflowMode == TextOverflowMode.Truncate || generationSettings.overflowMode == TextOverflowMode.Ellipsis || generationSettings.overflowMode == TextOverflowMode.Linked)
                 {
-                    if ((isWhiteSpace || charCode == k_ZeroWidthSpace || charCode == 0x2D || charCode == 0xAD) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != 0xA0 && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
+                    bool shouldSaveHardLineBreak = false;
+                    bool shouldSaveSoftLineBreak = false;
+
+                    if ((isWhiteSpace || charCode == k_ZeroWidthSpace || charCode == k_HyphenMinus || charCode == k_SoftHyphen) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != k_NoBreakSpace && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
                     {
-                        // We store the state of numerous variables for the most recent Space, LineFeed or Carriage Return to enable them to be restored
-                        // for Word Wrapping.
-                        SaveWordWrappingState(ref m_SavedWordWrapState, i, m_CharacterCount, textInfo);
-                        isFirstWordOfLine = false;
+                        // Ignore Hyphen (0x2D) when preceded by a whitespace
+                        if ((charCode == k_HyphenMinus && m_CharacterCount > 0 && char.IsWhiteSpace(textInfo.textElementInfo[m_CharacterCount - 1].character)) == false)
+                        {
+                            isFirstWordOfLine = false;
+                            shouldSaveHardLineBreak = true;
 
-                        // Reset soft line breaking point since we now have a valid hard break point.
-                        m_SavedSoftLineBreakState.previousWordBreak = -1;
+                            // Reset soft line breaking point since we now have a valid hard break point.
+                            m_SavedSoftLineBreakState.previousWordBreak = -1;
+                        }
                     }
-                    // Handling for East Asian characters
-                    else if (m_IsNonBreakingSpace == false &&
-                             ((charCode > k_HangulJamoStart && charCode < k_HangulJamoEnd || /* Hangul Jamo */
-                               charCode > k_HangulJameExtendedStart && charCode < k_HangulJameExtendedEnd || /* Hangul Jamo Extended-A */
-                               charCode > k_HangulSyllablesStart && charCode < k_HangulSyllablesEnd) && /* Hangul Syllables */
-                              generationSettings.textSettings.lineBreakingRules.useModernHangulLineBreakingRules == false ||
-
-                              (charCode > k_CjkStart && charCode < k_CjkEnd || /* CJK */
-                               charCode > k_CjkIdeographsStart && charCode < k_CjkIdeographsEnd || /* CJK Compatibility Ideographs */
-                               charCode > k_CjkFormsStart && charCode < k_CjkFormsEnd || /* CJK Compatibility Forms */
-                               charCode > k_CjkHalfwidthStart && charCode < k_CjkHalfwidthEnd))) /* CJK Halfwidth */
+                    // Handling for East Asian scripts
+                    else if (m_IsNonBreakingSpace == false && (TextGeneratorUtilities.IsHangul(charCode) && textSettings.lineBreakingRules.useModernHangulLineBreakingRules == false || TextGeneratorUtilities.IsCJK(charCode)))
                     {
                         bool isCurrentLeadingCharacter = textSettings.lineBreakingRules.leadingCharactersLookup.Contains((uint)charCode);
                         bool isNextFollowingCharacter = m_CharacterCount < totalCharacterCount - 1 && textSettings.lineBreakingRules.followingCharactersLookup.Contains((uint)textInfo.textElementInfo[m_CharacterCount + 1].character);
@@ -2332,17 +2343,17 @@ namespace UnityEngine.TextCore.Text
                         {
                             if (isNextFollowingCharacter == false)
                             {
-                                SaveWordWrappingState(ref m_SavedWordWrapState, i, m_CharacterCount, textInfo);
                                 isFirstWordOfLine = false;
+                                shouldSaveHardLineBreak = true;
                             }
 
                             if (isFirstWordOfLine)
                             {
                                 // Special handling for non-breaking space and soft line breaks
                                 if (isWhiteSpace)
-                                    SaveWordWrappingState(ref m_SavedSoftLineBreakState, i, m_CharacterCount, textInfo);
+                                    shouldSaveSoftLineBreak = true;
 
-                                SaveWordWrappingState(ref m_SavedWordWrapState, i, m_CharacterCount, textInfo);
+                                shouldSaveHardLineBreak = true;
                             }
                         }
                         else
@@ -2351,21 +2362,37 @@ namespace UnityEngine.TextCore.Text
                             {
                                 // Special handling for non-breaking space and soft line breaks
                                 if (isWhiteSpace)
-                                    SaveWordWrappingState(ref m_SavedSoftLineBreakState, i, m_CharacterCount, textInfo);
+                                    shouldSaveSoftLineBreak = true;
 
-                                SaveWordWrappingState(ref m_SavedWordWrapState, i, m_CharacterCount, textInfo);
+                                shouldSaveHardLineBreak = true;
                             }
                         }
+                    }
+                    // Special handling for Latin characters followed by a CJK character.
+                    else if (m_IsNonBreakingSpace == false && m_CharacterCount + 1 < totalCharacterCount && TextGeneratorUtilities.IsCJK(textInfo.textElementInfo[m_CharacterCount + 1].character))
+                    {
+                        shouldSaveHardLineBreak = true;
                     }
                     else if (isFirstWordOfLine)
                     {
                         // Special handling for non-breaking space and soft line breaks
-                        if (isWhiteSpace && charCode != 0xA0 || (charCode == 0xAD && isSoftHyphenIgnored == false))
-                            SaveWordWrappingState(ref m_SavedSoftLineBreakState, i, m_CharacterCount, textInfo);
+                        if (isWhiteSpace && charCode != k_NoBreakSpace || (charCode == k_SoftHyphen && isSoftHyphenIgnored == false))
+                            shouldSaveSoftLineBreak = true;
 
-                        SaveWordWrappingState(ref m_SavedWordWrapState, i, m_CharacterCount, textInfo);
+                        shouldSaveHardLineBreak = true;
                     }
+
+                    // Save potential Hard lines break
+                    if (shouldSaveHardLineBreak)
+                        SaveWordWrappingState(ref m_SavedWordWrapState, i, m_CharacterCount, textInfo);
+
+                    // Save potential Soft line break
+                    if (shouldSaveSoftLineBreak)
+                        SaveWordWrappingState(ref m_SavedSoftLineBreakState, i, m_CharacterCount, textInfo);
+
+                    // k_SaveProcessingStatesMarker.End();
                 }
+
                 #endregion Save Word Wrapping State
 
                 // Consider only saving state on base glyphs
@@ -2376,8 +2403,9 @@ namespace UnityEngine.TextCore.Text
 
             // Check Auto Sizing and increase font size to fill text container.
             #region Check Auto-Sizing (Upper Font Size Bounds)
+
             fontSizeDelta = m_MaxFontSize - m_MinFontSize;
-            if (/* !m_isCharacterWrappingEnabled && */ generationSettings.autoSize && fontSizeDelta > 0.051f && m_FontSize < generationSettings.fontSizeMax && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
+            if ( /* !m_isCharacterWrappingEnabled && */ generationSettings.autoSize && fontSizeDelta > 0.051f && m_FontSize < generationSettings.fontSizeMax && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
             {
                 // Reset character width adjustment delta
                 if (m_CharWidthAdjDelta < generationSettings.charWidthMaxAdj / 100)
@@ -2391,6 +2419,7 @@ namespace UnityEngine.TextCore.Text
 
                 return;
             }
+
             #endregion End Auto-sizing Check
 
             m_IsAutoSizePointSizeSet = true;
@@ -2406,12 +2435,14 @@ namespace UnityEngine.TextCore.Text
             }
 
             // *** PHASE II of Text Generation ***
+            int lastVertIndex = m_MaterialReferences[m_Underline.materialIndex].referenceCount * 4;
 
             // Partial clear of the vertices array to mark unused vertices as degenerate.
             textInfo.meshInfo[m_CurrentMaterialIndex].Clear(false);
 
             // Handle Text Alignment
             #region Text Vertical Alignment
+
             Vector3 anchorOffset = Vector3.zero;
             Vector3[] corners = m_RectTransformCorners; // GetTextContainerLocalCorners();
 
@@ -2503,6 +2534,7 @@ namespace UnityEngine.TextCore.Text
             int wordLastChar = 0;
 
             // Second Pass : Line Justification, UV Mapping, Character & Line Visibility & more.
+
             Color32 underlineColor = Color.white;
             Color32 strikethroughColor = Color.white;
             HighlightState highlightState = new HighlightState(new Color32(255, 255, 0, 64), Offset.zero);
@@ -2519,7 +2551,9 @@ namespace UnityEngine.TextCore.Text
             float strikethroughBaseline = 0;
 
             TextElementInfo[] textElementInfos = textInfo.textElementInfo;
+
             #region Handle Line Justification & UV Mapping & Character Visibility & More
+
             for (int i = 0; i < m_CharacterCount; i++)
             {
                 FontAsset currentFontAsset = textElementInfos[i].fontAsset;
@@ -2535,6 +2569,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Process Line Justification
                 #region Handle Line Justification
+
                 switch (lineAlignment)
                 {
                     case TextAlignment.TopLeft:
@@ -2592,7 +2627,7 @@ namespace UnityEngine.TextCore.Text
                     case TextAlignment.MidlineFlush:
                     case TextAlignment.CaplineFlush:
                         // Skip Zero Width Characters and spaces outside of the margins.
-                        if (i > lineInfo.lastVisibleCharacterIndex || unicode == 0x0A || unicode == 0xAD || unicode == k_ZeroWidthSpace || unicode == k_WordJoiner || unicode == k_EndOfText) break;
+                        if (i > lineInfo.lastVisibleCharacterIndex || unicode == 0x0A || unicode == k_SoftHyphen || unicode == k_ZeroWidthSpace || unicode == k_WordJoiner || unicode == k_EndOfText) break;
 
                         char lastCharOfCurrentLine = textElementInfos[lineInfo.lastCharacterIndex].character;
 
@@ -2627,7 +2662,7 @@ namespace UnityEngine.TextCore.Text
 
                                 if (spaces < 1) spaces = 1;
 
-                                if (unicode != 0xA0 && (unicode == k_Tab || char.IsSeparator(unicode)))
+                                if (unicode != k_NoBreakSpace && (unicode == k_Tab || char.IsSeparator(unicode)))
                                 {
                                     if (!generationSettings.isRightToLeft)
                                         justificationOffset += new Vector3(gap * (1 - ratio) / spaces, 0, 0);
@@ -2650,14 +2685,18 @@ namespace UnityEngine.TextCore.Text
                             else
                                 justificationOffset = new Vector3(lineInfo.marginLeft + lineInfo.width, 0, 0); // Keep last line right justified.
                         }
+
+                        //Debug.Log("Char [" + (char)charCode + "] Code:" + charCode + "  Line # " + currentLine + "  Offset:" + justificationOffset + "  # Spaces:" + lineInfo.spaceCount + "  # Characters:" + lineInfo.characterCount);
                         break;
                 }
+
                 #endregion End Text Justification
 
                 offset = anchorOffset + justificationOffset;
 
                 // Handle UV2 mapping options and packing of scale information into UV2.
                 #region Handling of UV2 mapping & Scale packing
+
                 bool isCharacterVisible = textElementInfos[i].isVisible;
                 if (isCharacterVisible)
                 {
@@ -2670,7 +2709,9 @@ namespace UnityEngine.TextCore.Text
                             float uvOffset = (generationSettings.uvLineOffset * currentLine) % 1; // + m_uvOffset.x;
 
                             // Setup UV2 based on Character Mapping Options Selected
+
                             #region Handle UV Mapping Options
+
                             switch (generationSettings.horizontalMapping)
                             {
                                 case TextureMapping.Character:
@@ -2777,10 +2818,12 @@ namespace UnityEngine.TextCore.Text
                                     textElementInfos[i].vertexTopRight.uv2.y = textElementInfos[i].vertexTopLeft.uv2.y;
                                     break;
                             }
+
                             #endregion
 
                             // Pack UV's so that we can pass Xscale needed for Shader to maintain 1:1 ratio.
                             #region Pack Scale into UV2
+
                             xScale = textElementInfos[i].scale * (1 - m_CharWidthAdjDelta) * 1; // generationSettings.scale;
                             if (!textElementInfos[i].isUsingAlternateTypeface && (textElementInfos[i].style & FontStyles.Bold) == FontStyles.Bold) xScale *= -1;
 
@@ -2800,7 +2843,9 @@ namespace UnityEngine.TextCore.Text
                             textElementInfos[i].vertexTopRight.uv2.y = xScale;
                             textElementInfos[i].vertexBottomRight.uv2.x = 1;
                             textElementInfos[i].vertexBottomRight.uv2.y = xScale;
+
                             #endregion
+
                             break;
 
                         // SPRITES
@@ -2811,6 +2856,7 @@ namespace UnityEngine.TextCore.Text
 
                     // Handle maxVisibleCharacters, maxVisibleLines and Overflow Page Mode.
                     #region Handle maxVisibleCharacters / maxVisibleLines / Page Mode
+
                     if (i < generationSettings.maxVisibleCharacters && wordCount < generationSettings.maxVisibleWords && currentLine < generationSettings.maxVisibleLines && generationSettings.overflowMode != TextOverflowMode.Page)
                     {
                         textElementInfos[i].vertexBottomLeft.position += offset;
@@ -2836,7 +2882,7 @@ namespace UnityEngine.TextCore.Text
                     #endregion
 
                     bool convertToLinearSpace = QualitySettings.activeColorSpace == ColorSpace.Linear
-                                                && generationSettings.shouldConvertToLinearSpace;
+                        && generationSettings.shouldConvertToLinearSpace;
 
                     // Fill Vertex Buffers for the various types of element
                     if (elementType == TextElementType.Character)
@@ -2872,6 +2918,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Need to recompute lineExtent to account for the offset from justification.
                 #region Adjust lineExtents resulting from alignment offset
+
                 if (currentLine != lastLine || i == m_CharacterCount - 1)
                 {
                     // Update the previous line's extents
@@ -2905,7 +2952,8 @@ namespace UnityEngine.TextCore.Text
 
                 // Track Word Count per line and for the object
                 #region Track Word Count
-                if (char.IsLetterOrDigit(unicode) || unicode == 0x2D || unicode == 0xAD || unicode == k_Hyphen || unicode == k_NonBreakingHyphen)
+
+                if (char.IsLetterOrDigit(unicode) || unicode == k_HyphenMinus || unicode == k_SoftHyphen || unicode == k_Hyphen || unicode == k_NonBreakingHyphen)
                 {
                     if (isStartOfWord == false)
                     {
@@ -2935,10 +2983,7 @@ namespace UnityEngine.TextCore.Text
                 }
                 else if (isStartOfWord || i == 0 && (!char.IsPunctuation(unicode) || isWhiteSpace || unicode == k_ZeroWidthSpace || i == m_CharacterCount - 1))
                 {
-                    if (i > 0 && i < textElementInfos.Length - 1 && i < m_CharacterCount && (unicode == k_SingleQuote || unicode == k_RightSingleQuote) && char.IsLetterOrDigit(textElementInfos[i - 1].character) && char.IsLetterOrDigit(textElementInfos[i + 1].character))
-                    {
-
-                    }
+                    if (i > 0 && i < textElementInfos.Length - 1 && i < m_CharacterCount && (unicode == k_SingleQuote || unicode == k_RightSingleQuote) && char.IsLetterOrDigit(textElementInfos[i - 1].character) && char.IsLetterOrDigit(textElementInfos[i + 1].character)) { }
                     else
                     {
                         wordLastChar = i == m_CharacterCount - 1 && char.IsLetterOrDigit(unicode) ? i : i - 1;
@@ -2961,16 +3006,16 @@ namespace UnityEngine.TextCore.Text
                 }
                 #endregion
 
-
                 // Setup & Handle Underline
                 #region Underline
+
                 // NOTE: Need to figure out how underline will be handled with multiple fonts and which font will be used for the underline.
                 bool isUnderline = (textInfo.textElementInfo[i].style & FontStyles.Underline) == FontStyles.Underline;
                 if (isUnderline)
                 {
                     bool isUnderlineVisible = true;
                     int currentPage = textInfo.textElementInfo[i].pageNumber;
-                    textInfo.textElementInfo[i].underlineVertexIndex = m_MaterialReferences[m_Underline.materialIndex].referenceCount * 4;
+                    textInfo.textElementInfo[i].underlineVertexIndex = lastVertIndex;
 
                     if (i > generationSettings.maxVisibleCharacters || currentLine > generationSettings.maxVisibleLines || (generationSettings.overflowMode == TextOverflowMode.Page && currentPage + 1 != generationSettings.pageToDisplay))
                         isUnderlineVisible = false;
@@ -2986,8 +3031,7 @@ namespace UnityEngine.TextCore.Text
 
                     if (beginUnderline == false && isUnderlineVisible == true && i <= lineInfo.lastVisibleCharacterIndex && unicode != 10 && unicode != 11 && unicode != 13)
                     {
-                        if (i == lineInfo.lastVisibleCharacterIndex && char.IsSeparator(unicode))
-                        { }
+                        if (i == lineInfo.lastVisibleCharacterIndex && char.IsSeparator(unicode)) { }
                         else
                         {
                             beginUnderline = true;
@@ -2997,6 +3041,7 @@ namespace UnityEngine.TextCore.Text
                                 underlineMaxScale = underlineStartScale;
                                 xScaleMax = xScale;
                             }
+
                             underlineStart = new Vector3(textInfo.textElementInfo[i].bottomLeft.x, underlineBaseLine, 0);
                             underlineColor = textInfo.textElementInfo[i].underlineColor;
                         }
@@ -3024,7 +3069,8 @@ namespace UnityEngine.TextCore.Text
                             underlineEndScale = textInfo.textElementInfo[lastVisibleCharacterIndex].scale;
                         }
                         else
-                        {   // End underline if last character of the line.
+                        {
+                            // End underline if last character of the line.
                             underlineEnd = new Vector3(textInfo.textElementInfo[i].topRight.x, underlineBaseLine, 0);
                             underlineEndScale = textInfo.textElementInfo[i].scale;
                         }
@@ -3079,6 +3125,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Setup & Handle Strikethrough
                 #region Strikethrough
+
                 // NOTE: Need to figure out how underline will be handled with multiple fonts and which font will be used for the underline.
                 bool isStrikethrough = (textInfo.textElementInfo[i].style & FontStyles.Strikethrough) == FontStyles.Strikethrough;
                 float strikethroughOffset = currentFontAsset.faceInfo.strikethroughOffset;
@@ -3093,8 +3140,7 @@ namespace UnityEngine.TextCore.Text
 
                     if (beginStrikethrough == false && isStrikeThroughVisible && i <= lineInfo.lastVisibleCharacterIndex && unicode != 10 && unicode != 11 && unicode != 13)
                     {
-                        if (i == lineInfo.lastVisibleCharacterIndex && char.IsSeparator(unicode))
-                        { }
+                        if (i == lineInfo.lastVisibleCharacterIndex && char.IsSeparator(unicode)) { }
                         else
                         {
                             beginStrikethrough = true;
@@ -3174,9 +3220,9 @@ namespace UnityEngine.TextCore.Text
                 }
                 #endregion
 
-
                 // HANDLE TEXT HIGHLIGHTING
                 #region Text Highlighting
+
                 bool isHighlight = (textInfo.textElementInfo[i].style & FontStyles.Highlight) == FontStyles.Highlight;
                 if (isHighlight)
                 {
@@ -3188,8 +3234,7 @@ namespace UnityEngine.TextCore.Text
 
                     if (beginHighlight == false && isHighlightVisible == true && i <= lineInfo.lastVisibleCharacterIndex && unicode != 10 && unicode != 11 && unicode != 13)
                     {
-                        if (i == lineInfo.lastVisibleCharacterIndex && char.IsSeparator(unicode))
-                        { }
+                        if (i == lineInfo.lastVisibleCharacterIndex && char.IsSeparator(unicode)) { }
                         else
                         {
                             beginHighlight = true;
@@ -3280,10 +3325,12 @@ namespace UnityEngine.TextCore.Text
                         DrawTextHighlight(highlightStart, highlightEnd, highlightState.color, generationSettings, textInfo);
                     }
                 }
+
                 #endregion
 
                 lastLine = currentLine;
             }
+
             #endregion
 
             // METRICS ABOUT THE TEXT OBJECT
@@ -3384,7 +3431,7 @@ namespace UnityEngine.TextCore.Text
                 state.lineInfo = textInfo.lineInfo[m_LineNumber];
         }
 
-        protected int RestoreWordWrappingState(ref WordWrapState state, TextInfo textInfo)
+        int RestoreWordWrappingState(ref WordWrapState state, TextInfo textInfo)
         {
             int index = state.previousWordBreak;
 
@@ -3465,7 +3512,14 @@ namespace UnityEngine.TextCore.Text
             return index;
         }
 
-        protected bool ValidateHtmlTag(TextProcessingElement[] chars, int startIndex, out int endIndex, TextGenerationSettings generationSettings, TextInfo textInfo)
+        /// <summary>
+        /// Function to identify and validate the rich tag. Returns the position of the > if the tag was valid.
+        /// </summary>
+        /// <param name="chars"></param>
+        /// <param name="startIndex"></param>
+        /// <param name="endIndex"></param>
+        /// <returns></returns>
+        bool ValidateHtmlTag(TextProcessingElement[] chars, int startIndex, out int endIndex, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             TextSettings textSettings = generationSettings.textSettings;
 
@@ -3590,7 +3644,7 @@ namespace UnityEngine.TextCore.Text
                         else if (tagValueType == TagValueType.StringValue)
                         {
                             // Compute HashCode value for the named tag.
-                            if (unicode != '"')
+                            if (generationSettings.isIMGUI || unicode != '"')
                             {
                                 m_XmlAttribute[attributeIndex].valueHashCode = (m_XmlAttribute[attributeIndex].valueHashCode << 5) + m_XmlAttribute[attributeIndex].valueHashCode ^ TextGeneratorUtilities.ToUpperFast((char)unicode);
                                 m_XmlAttribute[attributeIndex].valueLength += 1;
@@ -3611,7 +3665,6 @@ namespace UnityEngine.TextCore.Text
                         }
                     }
                 }
-
 
                 if (unicode == '=') // '='
                     attributeFlag = 1;
@@ -3640,13 +3693,10 @@ namespace UnityEngine.TextCore.Text
 
                 if (attributeFlag == 2 && unicode == ' ')
                     attributeFlag = 0;
-
             }
 
             if (!isValidHtmlTag)
-            {
                 return false;
-            }
 
             #region Rich Text Tag Processing
             // Special handling of the no parsing tag </noparse> </NOPARSE> tag
@@ -4005,7 +4055,7 @@ namespace UnityEngine.TextCore.Text
                                     m_SizeStack.Add(m_CurrentFontSize);
                                     return true;
                                 }
-                                else if (m_HtmlTag[5] == k_Minus) // <size=-00>
+                                else if (m_HtmlTag[5] == k_HyphenMinus) // <size=-00>
                                 {
                                     m_CurrentFontSize = m_FontSize + value;
                                     m_SizeStack.Add(m_CurrentFontSize);
@@ -4115,15 +4165,15 @@ namespace UnityEngine.TextCore.Text
 
                         return true;
                     case MarkupTag.SLASH_FONT:
-                        {
-                            MaterialReference materialReference = m_MaterialReferenceStack.Remove();
+                    {
+                        MaterialReference materialReference = m_MaterialReferenceStack.Remove();
 
-                            m_CurrentFontAsset = materialReference.fontAsset;
-                            m_CurrentMaterial = materialReference.material;
-                            m_CurrentMaterialIndex = materialReference.index;
+                        m_CurrentFontAsset = materialReference.fontAsset;
+                        m_CurrentMaterial = materialReference.material;
+                        m_CurrentMaterialIndex = materialReference.index;
 
-                            return true;
-                        }
+                        return true;
+                    }
                     case MarkupTag.MATERIAL:
                         materialHashCode = m_XmlAttribute[0].valueHashCode;
 
@@ -4131,7 +4181,7 @@ namespace UnityEngine.TextCore.Text
                         if (materialHashCode == (int)MarkupTag.DEFAULT)
                         {
                             // Check if material font atlas texture matches that of the current font asset.
-                            //if (m_CurrentFontAsset.atlas.GetInstanceID() != m_CurrentMaterial.GetTexture(ShaderUtilities.ID_MainTex).GetInstanceID()) return false;
+                            //if (m_CurrentFontAsset.atlas.GetInstanceID() != m_CurrentMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID()) return false;
 
                             m_CurrentMaterial = m_MaterialReferences[0].material;
                             m_CurrentMaterialIndex = 0;
@@ -4146,7 +4196,7 @@ namespace UnityEngine.TextCore.Text
                         if (MaterialReferenceManager.TryGetMaterial(materialHashCode, out tempMaterial))
                         {
                             // Check if material font atlas texture matches that of the current font asset.
-                            //if (m_CurrentFontAsset.atlas.GetInstanceID() != tempMaterial.GetTexture(ShaderUtilities.ID_MainTex).GetInstanceID()) return false;
+                            //if (m_CurrentFontAsset.atlas.GetInstanceID() != tempMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID()) return false;
 
                             m_CurrentMaterial = tempMaterial;
 
@@ -4163,7 +4213,7 @@ namespace UnityEngine.TextCore.Text
                                 return false;
 
                             // Check if material font atlas texture matches that of the current font asset.
-                            //if (m_CurrentFontAsset.atlas.GetInstanceID() != tempMaterial.GetTexture(ShaderUtilities.ID_MainTex).GetInstanceID()) return false;
+                            //if (m_CurrentFontAsset.atlas.GetInstanceID() != tempMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID()) return false;
 
                             // Add new reference to this material in the MaterialReferenceManager
                             MaterialReferenceManager.AddFontMaterial(materialHashCode, tempMaterial);
@@ -4176,17 +4226,17 @@ namespace UnityEngine.TextCore.Text
                         }
                         return true;
                     case MarkupTag.SLASH_MATERIAL:
-                        {
-                            //if (m_CurrentMaterial.GetTexture(ShaderUtilities.ID_MainTex).GetInstanceID() != m_MaterialReferenceStack.PreviousItem().material.GetTexture(ShaderUtilities.ID_MainTex).GetInstanceID())
-                            //    return false;
+                    {
+                        //if (m_CurrentMaterial.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID() != m_MaterialReferenceStack.PreviousItem().material.GetTexture(TextShaderUtilities.ID_MainTex).GetInstanceID())
+                        //    return false;
 
-                            MaterialReference materialReference = m_MaterialReferenceStack.Remove();
+                        MaterialReference materialReference = m_MaterialReferenceStack.Remove();
 
-                            m_CurrentMaterial = materialReference.material;
-                            m_CurrentMaterialIndex = materialReference.index;
+                        m_CurrentMaterial = materialReference.material;
+                        m_CurrentMaterialIndex = materialReference.index;
 
-                            return true;
-                        }
+                        return true;
+                    }
                     case MarkupTag.SPACE:
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
@@ -4215,7 +4265,21 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.A:
                         if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
                         {
-                            if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF)
+                            // For IMGUI, we want to treat the a tag as we do with the link tag
+                            if (generationSettings.isIMGUI)
+                            {
+                                int index = textInfo.linkCount;
+
+                                if (index + 1 > textInfo.linkInfo.Length)
+                                    TextInfo.Resize(ref textInfo.linkInfo, index + 1);
+
+                                textInfo.linkInfo[index].hashCode = (int)MarkupTag.HREF;
+                                textInfo.linkInfo[index].linkTextfirstCharacterIndex = m_CharacterCount;
+
+                                textInfo.linkInfo[index].linkIdFirstCharacterIndex = 3;
+                                textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, m_XmlAttribute[1].valueLength + m_XmlAttribute[1].valueStartIndex - 2);
+                            }
+                            else if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF)
                             {
                                 // Make sure linkInfo array is of appropriate size.
                                 int index = textInfo.linkCount;
@@ -4394,7 +4458,7 @@ namespace UnityEngine.TextCore.Text
                                 m_HtmlColor = Color.red;
                                 m_ColorStack.Add(m_HtmlColor);
                                 return true;
-                            case -992792864: // <color=lightblue>
+                            case (int)MarkupTag.LIGHTBLUE: // <color=lightblue>
                                 m_HtmlColor = new Color32(173, 216, 230, 255);
                                 m_ColorStack.Add(m_HtmlColor);
                                 return true;
@@ -4402,7 +4466,7 @@ namespace UnityEngine.TextCore.Text
                                 m_HtmlColor = Color.blue;
                                 m_ColorStack.Add(m_HtmlColor);
                                 return true;
-                            case 3680713: // <color=grey>
+                            case (int)MarkupTag.GREY: // <color=grey>
                                 m_HtmlColor = new Color32(128, 128, 128, 255);
                                 m_ColorStack.Add(m_HtmlColor);
                                 return true;
@@ -4518,7 +4582,7 @@ namespace UnityEngine.TextCore.Text
                         // Reject tag if value is invalid.
                         if (value == Int16.MinValue) return false;
 
-                        switch (tagUnitType)
+                        switch (m_XmlAttribute[0].unitType)
                         {
                             case TagUnitType.Pixels:
                                 m_MonoSpacing = value * (generationSettings.isOrthographic ? 1 : 0.1f);
@@ -4529,9 +4593,15 @@ namespace UnityEngine.TextCore.Text
                             case TagUnitType.Percentage:
                                 return false;
                         }
+
+                        // Check for potential DuoSpace attribute.
+                        if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.DUOSPACE)
+                            m_DuoSpace = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength) != 0;
+
                         return true;
                     case MarkupTag.SLASH_MONOSPACE:
                         m_MonoSpacing = 0;
+                        m_DuoSpace = false;
                         return true;
                     case MarkupTag.CLASS:
                         return false;
@@ -5044,6 +5114,7 @@ namespace UnityEngine.TextCore.Text
             return false;
         }
 
+
         /// <summary>
         /// Store vertex information for each character.
         /// </summary>
@@ -5067,7 +5138,7 @@ namespace UnityEngine.TextCore.Text
             // Alpha is the lower of the vertex color or tag color alpha used.
             vertexColor.a = m_FontColor32.a < vertexColor.a ? m_FontColor32.a : vertexColor.a;
 
-            bool isColorGlyph = false;
+            bool isColorGlyph = ((GlyphRasterModes)m_CurrentFontAsset.m_AtlasRenderMode & GlyphRasterModes.RASTER_MODE_COLOR) == GlyphRasterModes.RASTER_MODE_COLOR;
 
             // Handle Vertex Colors & Vertex Color Gradient
             if (generationSettings.fontColorGradient == null || isColorGlyph)
@@ -5675,7 +5746,8 @@ namespace UnityEngine.TextCore.Text
             m_IsMaskingEnabled = false;
         }
 
-        internal int SetArraySizes(TextProcessingElement[] textProcessingArray, TextGenerationSettings generationSettings, TextInfo textInfo)
+        // This function parses through the Char[] to determine how many characters will be visible. It then makes sure the arrays are large enough for all those characters.
+        int SetArraySizes(TextProcessingElement[] textProcessingArray, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             TextSettings textSettings = generationSettings.textSettings;
 
@@ -5756,6 +5828,9 @@ namespace UnityEngine.TextCore.Text
                 }
             }
             #endregion
+
+            // Check if we should process Ligatures
+            bool ligature = generationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
 
             // Clear Linked Text object if we have one
             //if (generationSettings.overflowMode == TextOverflowMode.Linked && m_linkedTextComponent != null && !m_IsCalculatingPreferredValues)
@@ -5928,8 +6003,29 @@ namespace UnityEngine.TextCore.Text
                         isUsingFallbackOrAlternativeTypeface = true;
                         m_CurrentFontAsset = character.textAsset as FontAsset;
                     }
-                    // Process potential glyph substitutions
-                    if (m_CurrentFontAsset.fontFeatureTable.m_LigatureSubstitutionRecordLookup.TryGetValue(character.glyphIndex, out List<LigatureSubstitutionRecord> records))
+
+                    #region VARIATION SELECTOR
+                    uint nextCharacter = i + 1 < textProcessingArray.Length ? (uint)textProcessingArray[i + 1].unicode : 0;
+                    if (nextCharacter >= 0xFE00 && nextCharacter <= 0xFE0F)
+                    {
+                        // Get potential variant glyph index
+                        uint variantGlyphIndex = m_CurrentFontAsset.GetGlyphVariantIndex((uint)unicode, nextCharacter);
+
+                        if (variantGlyphIndex != 0)
+                        {
+                            if (m_CurrentFontAsset.TryAddGlyphInternal(variantGlyphIndex, out Glyph glyph))
+                            {
+                                textInfo.textElementInfo[m_TotalCharacterCount].alternativeGlyph = glyph;
+                            }
+                        }
+
+                        textProcessingArray[i + 1].unicode = 0x1A;
+                        i += 1;
+                    }
+                    #endregion
+
+                    #region LIGATURES
+                    if (ligature && m_CurrentFontAsset.fontFeatureTable.m_LigatureSubstitutionRecordLookup.TryGetValue(character.glyphIndex, out List<LigatureSubstitutionRecord> records))
                     {
                         if (records == null)
                             break;
@@ -5944,7 +6040,13 @@ namespace UnityEngine.TextCore.Text
                             //
                             for (int k = 1; k < componentCount; k++)
                             {
-                                uint glyphIndex = m_CurrentFontAsset.GetGlyphIndex((uint)textProcessingArray[i + k].unicode);
+                                uint componentUnicode = (uint)textProcessingArray[i + k].unicode;
+
+                                // Special Handling for Zero Width Joiner (ZWJ)
+                                //if (componentUnicode == 0x200D)
+                                //    continue;
+
+                                uint glyphIndex = m_CurrentFontAsset.GetGlyphIndex(componentUnicode);
 
                                 if (glyphIndex == record.componentGlyphIDs[k])
                                     continue;
@@ -5977,7 +6079,7 @@ namespace UnityEngine.TextCore.Text
                             }
                         }
                     }
-
+                    #endregion
                 }
                 #endregion
 
@@ -6108,26 +6210,26 @@ namespace UnityEngine.TextCore.Text
             return m_TotalCharacterCount;
         }
 
-        internal TextElement GetTextElement(TextGenerationSettings generationSettings, uint unicode, FontAsset fontAsset, FontStyles fontStyle, TextFontWeight fontWeight, out bool isUsingAlternativeTypeface)
+        TextElement GetTextElement(TextGenerationSettings generationSettings, uint unicode, FontAsset fontAsset, FontStyles fontStyle, TextFontWeight fontWeight, out bool isUsingAlternativeTypeface)
         {
             //Debug.Log("Unicode: " + unicode.ToString("X8"));
 
             TextSettings textSettings = generationSettings.textSettings;
-            // if (m_EmojiFallbackSupport && TextGeneratorUtilities.IsEmoji(unicode))
-            // {
-            //     if (TMP_Settings.emojiFallbackTextAssets != null && TMP_Settings.emojiFallbackTextAssets.Count > 0)
-            //     {
-            //         TMP_TextElement textElement = TMP_FontAssetUtilities.GetTextElementFromTextAssets(unicode, fontAsset, TMP_Settings.emojiFallbackTextAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface);
-            //
-            //         if (textElement != null)
-            //         {
-            //             // Add character to font asset lookup cache
-            //             //fontAsset.AddCharacterToLookupCache(unicode, character);
-            //
-            //             return textElement;
-            //         }
-            //     }
-            // }
+            if (generationSettings.emojiFallbackSupport && TextGeneratorUtilities.IsEmoji(unicode))
+            {
+                if (textSettings.emojiFallbackTextAssets != null && textSettings.emojiFallbackTextAssets.Count > 0)
+                {
+                    TextElement textElement = FontAssetUtilities.GetTextElementFromTextAssets(unicode, fontAsset, textSettings.emojiFallbackTextAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface);
+
+                    if (textElement != null)
+                    {
+                        // Add character to font asset lookup cache
+                        //fontAsset.AddCharacterToLookupCache(unicode, character);
+
+                        return textElement;
+                    }
+                }
+            }
 
             Character character = FontAssetUtilities.GetCharacterFromFontAsset(unicode, fontAsset, false, fontStyle, fontWeight, out isUsingAlternativeTypeface);
 
@@ -6498,6 +6600,10 @@ namespace UnityEngine.TextCore.Text
             m_IsDrivenLineSpacing = false;
             m_LastBaseGlyphIndex = int.MinValue;
 
+            bool kerning = generationSettings.fontFeatures.Contains(OTL_FeatureTag.kern);
+            bool markToBase = generationSettings.fontFeatures.Contains(OTL_FeatureTag.mark);
+            bool markToMark = generationSettings.fontFeatures.Contains(OTL_FeatureTag.mkmk);
+
             TextSettings textSettings = generationSettings.textSettings;
 
             float marginWidth = marginSize.x;
@@ -6595,7 +6701,7 @@ namespace UnityEngine.TextCore.Text
                             m_InternalTextElementInfo[m_CharacterCount].textElement = m_CurrentFontAsset.characterLookupTable[k_EndOfText];
                             m_IsTextTruncated = true;
                             break;
-                        case 0x2D:
+                        case k_HyphenMinus:
                             //
                             break;
                         case k_HorizontalEllipsis:
@@ -6741,7 +6847,7 @@ namespace UnityEngine.TextCore.Text
                 // Handle Soft Hyphen
                 #region Handle Soft Hyphen
                 float currentElementUnmodifiedScale = currentElementScale;
-                if (charCode == 0xAD || charCode == k_EndOfText)
+                if (charCode == k_SoftHyphen || charCode == k_EndOfText)
                     currentElementScale = 0;
                 #endregion
 
@@ -6760,7 +6866,7 @@ namespace UnityEngine.TextCore.Text
                 #region Handle Kerning
                 GlyphValueRecord glyphAdjustments = new GlyphValueRecord();
                 float characterSpacingAdjustment = generationSettings.characterSpacing;
-                if (generationSettings.enableKerning)
+                if (kerning)
                 {
                     GlyphPairAdjustmentRecord adjustmentPair;
                     uint baseGlyphIndex = m_CachedTextElement.m_GlyphIndex;
@@ -6892,7 +6998,7 @@ namespace UnityEngine.TextCore.Text
                 // Handle Mono Spacing
                 #region Handle Mono Spacing
                 float monoAdvance = 0;
-                if (m_MonoSpacing != 0)
+                if (m_MonoSpacing != 0 && charCode != k_ZeroWidthSpace)
                 {
                     monoAdvance = (m_MonoSpacing / 2 - (m_CachedTextElement.glyph.metrics.width / 2 + m_CachedTextElement.glyph.metrics.horizontalBearingX) * currentElementScale) * (1 - m_CharWidthAdjDelta);
                     m_XAdvance += monoAdvance;
@@ -6980,7 +7086,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Setup Mesh for visible text elements. ie. not a SPACE / LINEFEED / CARRIAGE RETURN.
                 #region Handle Visible Characters
-                if (charCode == k_Tab || charCode == k_ZeroWidthSpace || ((textWrapMode == TextWrappingMode.PreserveWhitespace || textWrapMode == TextWrappingMode.PreserveWhitespaceNoWrap) && (isWhiteSpace || charCode == k_ZeroWidthSpace)) || (isWhiteSpace == false && charCode != k_ZeroWidthSpace && charCode != 0xAD && charCode != k_EndOfText) || (charCode == 0xAD && isSoftHyphenIgnored == false) || m_TextElementType == TextElementType.Sprite)
+                if (charCode == k_Tab || charCode == k_ZeroWidthSpace || ((textWrapMode == TextWrappingMode.PreserveWhitespace || textWrapMode == TextWrappingMode.PreserveWhitespaceNoWrap) && (isWhiteSpace || charCode == k_ZeroWidthSpace)) || (isWhiteSpace == false && charCode != k_ZeroWidthSpace && charCode != k_SoftHyphen && charCode != k_EndOfText) || (charCode == k_SoftHyphen && isSoftHyphenIgnored == false) || m_TextElementType == TextElementType.Sprite)
                 {
                     //float marginLeft = m_MarginLeft;
                     //float marginRight = m_MarginRight;
@@ -6995,7 +7101,7 @@ namespace UnityEngine.TextCore.Text
                     widthOfTextArea = m_Width != -1 ? Mathf.Min(marginWidth + 0.0001f - m_MarginLeft - m_MarginRight, m_Width) : marginWidth + 0.0001f - m_MarginLeft - m_MarginRight;
 
                     // Calculate the line breaking width of the text.
-                    textWidth = Mathf.Abs(m_XAdvance) + currentGlyphMetrics.horizontalAdvance * (1 - m_CharWidthAdjDelta) * (charCode == 0xAD ? currentElementUnmodifiedScale : currentElementScale);
+                    textWidth = Mathf.Abs(m_XAdvance) + currentGlyphMetrics.horizontalAdvance * (1 - m_CharWidthAdjDelta) * (charCode == k_SoftHyphen ? currentElementUnmodifiedScale : currentElementScale);
 
                     int testedCharacterCount = m_CharacterCount;
 
@@ -7011,10 +7117,10 @@ namespace UnityEngine.TextCore.Text
 
                             // Replace Soft Hyphen by Hyphen Minus 0x2D
                             #region Handle Soft Hyphenation
-                            if (m_InternalTextElementInfo[m_CharacterCount - 1].character == 0xAD && isSoftHyphenIgnored == false && generationSettings.overflowMode == TextOverflowMode.Overflow)
+                            if (m_InternalTextElementInfo[m_CharacterCount - 1].character == k_SoftHyphen && isSoftHyphenIgnored == false && generationSettings.overflowMode == TextOverflowMode.Overflow)
                             {
                                 characterToSubstitute.index = m_CharacterCount - 1;
-                                characterToSubstitute.unicode = 0x2D;
+                                characterToSubstitute.unicode = k_HyphenMinus;
 
                                 i -= 1;
                                 m_CharacterCount -= 1;
@@ -7024,7 +7130,7 @@ namespace UnityEngine.TextCore.Text
                             isSoftHyphenIgnored = false;
 
                             // Ignore Soft Hyphen to prevent it from wrapping
-                            if (m_InternalTextElementInfo[m_CharacterCount].character == 0xAD)
+                            if (m_InternalTextElementInfo[m_CharacterCount].character == k_SoftHyphen)
                             {
                                 isSoftHyphenIgnored = true;
                                 continue;
@@ -7154,25 +7260,28 @@ namespace UnityEngine.TextCore.Text
 
                 // Handle xAdvance & Tabulation Stops. Tab stops at every 25% of Font Size.
                 #region XAdvance, Tabulation & Stops
-                if (charCode == k_Tab)
+                if (charCode != k_ZeroWidthSpace)
                 {
-                    float tabSize = m_CurrentFontAsset.faceInfo.tabWidth * m_CurrentFontAsset.tabMultiple * currentElementScale;
-                    float tabs = Mathf.Ceil(m_XAdvance / tabSize) * tabSize;
-                    m_XAdvance = tabs > m_XAdvance ? tabs : m_XAdvance + tabSize;
-                }
-                else if (m_MonoSpacing != 0)
-                {
-                    m_XAdvance += (m_MonoSpacing - monoAdvance + ((m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment) * currentEmScale) + m_CSpacing) * (1 - m_CharWidthAdjDelta);
+                    if (charCode == k_Tab)
+                    {
+                        float tabSize = m_CurrentFontAsset.faceInfo.tabWidth * m_CurrentFontAsset.tabMultiple * currentElementScale;
+                        float tabs = Mathf.Ceil(m_XAdvance / tabSize) * tabSize;
+                        m_XAdvance = tabs > m_XAdvance ? tabs : m_XAdvance + tabSize;
+                    }
+                    else if (m_MonoSpacing != 0)
+                    {
+                        m_XAdvance += (m_MonoSpacing - monoAdvance + ((m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment) * currentEmScale) + m_CSpacing) * (1 - m_CharWidthAdjDelta);
 
-                    if (isWhiteSpace || charCode == k_ZeroWidthSpace)
-                        m_XAdvance += generationSettings.wordSpacing * currentEmScale;
-                }
-                else
-                {
-                    m_XAdvance += ((currentGlyphMetrics.horizontalAdvance * m_FXScale.x + glyphAdjustments.xAdvance) * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta);
+                        if (isWhiteSpace || charCode == k_ZeroWidthSpace)
+                            m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                    }
+                    else
+                    {
+                        m_XAdvance += ((currentGlyphMetrics.horizontalAdvance * m_FXScale.x + glyphAdjustments.xAdvance) * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta);
 
-                    if (isWhiteSpace || charCode == k_ZeroWidthSpace)
-                        m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                        if (isWhiteSpace || charCode == k_ZeroWidthSpace)
+                            m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                    }
                 }
                 #endregion Tabulation & Stops
 
@@ -7188,7 +7297,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Handle Line Spacing Adjustments + Word Wrapping & special case for last line.
                 #region Check for Line Feed and Last Character
-                if (charCode == k_LineFeed || charCode == 11 || charCode == k_EndOfText || charCode == 0x2028 || charCode == 0x2029 || m_CharacterCount == totalCharacterCount - 1)
+                if (charCode == k_LineFeed || charCode == k_VerticalTab|| charCode == k_EndOfText || charCode == k_LineSeparator || charCode == k_ParagraphSeparator || m_CharacterCount == totalCharacterCount - 1)
                 {
                     // Check if Line Spacing of previous line needs to be adjusted.
                     float baselineAdjustmentDelta = m_MaxLineAscender - m_StartOfLineAscender;
@@ -7207,7 +7316,7 @@ namespace UnityEngine.TextCore.Text
                     m_MaxDescender = m_MaxDescender < lineDescender ? m_MaxDescender : lineDescender;
 
                     // Add new line if not last lines or character.
-                    if (charCode == k_LineFeed || charCode == 11 || charCode == 0x2D || charCode == 0x2028 || charCode == 0x2029)
+                    if (charCode == k_LineFeed || charCode == k_VerticalTab|| charCode == k_HyphenMinus || charCode == k_LineSeparator || charCode == k_ParagraphSeparator)
                     {
                         // Store the state of the line before starting on the new line.
                         SaveWordWrappingState(ref internalLineState, i, m_CharacterCount, textInfo);
@@ -7222,13 +7331,13 @@ namespace UnityEngine.TextCore.Text
                         // Apply Line Spacing with special handling for VT char(11)
                         if (m_LineHeight == k_FloatUnset)
                         {
-                            float lineOffsetDelta = 0 - m_MaxLineDescender + ascender + (lineGap + m_LineSpacingDelta) * baseScale + (generationSettings.lineSpacing + (charCode == k_LineFeed || charCode == 0x2029 ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
+                            float lineOffsetDelta = 0 - m_MaxLineDescender + ascender + (lineGap + m_LineSpacingDelta) * baseScale + (generationSettings.lineSpacing + (charCode == k_LineFeed || charCode == k_ParagraphSeparator ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
                             m_LineOffset += lineOffsetDelta;
                             m_IsDrivenLineSpacing = false;
                         }
                         else
                         {
-                            m_LineOffset += m_LineHeight + (generationSettings.lineSpacing + (charCode == k_LineFeed || charCode == 0x2029 ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
+                            m_LineOffset += m_LineHeight + (generationSettings.lineSpacing + (charCode == k_LineFeed || charCode == k_ParagraphSeparator ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
                             m_IsDrivenLineSpacing = true;
                         }
 
@@ -7256,10 +7365,10 @@ namespace UnityEngine.TextCore.Text
                     bool shouldSaveHardLineBreak = false;
                     bool shouldSaveSoftLineBreak = false;
 
-                    if ((isWhiteSpace || charCode == k_ZeroWidthSpace || charCode == 0x2D || charCode == 0xAD) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != 0xA0 && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
+                    if ((isWhiteSpace || charCode == k_ZeroWidthSpace || charCode == k_HyphenMinus || charCode == k_SoftHyphen) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != k_NoBreakSpace && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
                     {
                         // Ignore Hyphen (0x2D) when preceded by a whitespace
-                        if ((charCode == 0x2D && m_CharacterCount > 0 && char.IsWhiteSpace(textInfo.textElementInfo[m_CharacterCount - 1].character)) == false)
+                        if ((charCode == k_HyphenMinus && m_CharacterCount > 0 && char.IsWhiteSpace(textInfo.textElementInfo[m_CharacterCount - 1].character)) == false)
                         {
                             isFirstWordOfLine = false;
                             shouldSaveHardLineBreak = true;
@@ -7269,7 +7378,7 @@ namespace UnityEngine.TextCore.Text
                         }
                     }
                     // Handling for East Asian scripts
-                    else if (m_IsNonBreakingSpace == false && (TextGeneratorUtilities.IsHangul((uint)charCode) && textSettings.useModernHangulLineBreakingRules == false || TextGeneratorUtilities.IsCJK((uint)charCode)))
+                    else if (m_IsNonBreakingSpace == false && (TextGeneratorUtilities.IsHangul((uint)charCode) && textSettings.lineBreakingRules.useModernHangulLineBreakingRules == false || TextGeneratorUtilities.IsCJK((uint)charCode)))
                     {
                         bool isCurrentLeadingCharacter = textSettings.lineBreakingRules.leadingCharactersLookup.Contains((uint)charCode);
                         bool isNextFollowingCharacter = m_CharacterCount < totalCharacterCount - 1 && textSettings.lineBreakingRules.leadingCharactersLookup.Contains(m_InternalTextElementInfo[m_CharacterCount + 1].character);
@@ -7303,10 +7412,15 @@ namespace UnityEngine.TextCore.Text
                             }
                         }
                     }
+                    // Special handling for Latin characters followed by a CJK character.
+                    else if (m_IsNonBreakingSpace == false && m_CharacterCount + 1 < totalCharacterCount && TextGeneratorUtilities.IsCJK(textInfo.textElementInfo[m_CharacterCount + 1].character))
+                    {
+                        shouldSaveHardLineBreak = true;
+                    }
                     else if (isFirstWordOfLine)
                     {
                         // Special handling for non-breaking space and soft line breaks
-                        if (isWhiteSpace && charCode != 0xA0 || (charCode == 0xAD && isSoftHyphenIgnored == false))
+                        if (isWhiteSpace && charCode != k_NoBreakSpace || (charCode == k_SoftHyphen && isSoftHyphenIgnored == false))
                             shouldSaveSoftLineBreak = true;
 
                         shouldSaveHardLineBreak = true;
@@ -7636,7 +7750,7 @@ namespace UnityEngine.TextCore.Text
                             if (tagNoParsing) break;
                             if (writeIndex == m_TextProcessingArray.Length) TextGeneratorUtilities.ResizeInternalArray(ref m_TextProcessingArray);
 
-                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 6, unicode = 0xA0 };
+                            m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 6, unicode = k_NoBreakSpace };
                             writeIndex += 1;
                             readIndex += 5;
                             continue;

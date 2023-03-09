@@ -111,18 +111,20 @@ namespace UnityEngine
         [uei.ExcludeFromDocs] public AnimationState CrossFadeQueued(string animation, float fadeLength) { return CrossFadeQueued(animation, fadeLength, QueueMode.CompleteOthers); }
         [uei.ExcludeFromDocs] public AnimationState CrossFadeQueued(string animation, float fadeLength, QueueMode queue) { return CrossFadeQueued(animation, fadeLength, queue, PlayMode.StopSameLayer); }
         [FreeFunction("AnimationBindings::CrossFadeQueuedImpl", HasExplicitThis = true)]
+        [return: Unmarshalled]
         extern public AnimationState CrossFadeQueued(string animation, [uei.DefaultValue("0.3F")] float fadeLength, [uei.DefaultValue("QueueMode.CompleteOthers")] QueueMode queue, [uei.DefaultValue("PlayMode.StopSameLayer")] PlayMode mode);
 
         [uei.ExcludeFromDocs] public AnimationState PlayQueued(string animation) { return PlayQueued(animation, QueueMode.CompleteOthers); }
         [uei.ExcludeFromDocs] public AnimationState PlayQueued(string animation, QueueMode queue) { return PlayQueued(animation, queue, PlayMode.StopSameLayer); }
         [FreeFunction("AnimationBindings::PlayQueuedImpl", HasExplicitThis = true)]
+        [return: Unmarshalled]
         extern public AnimationState PlayQueued(string animation, [uei.DefaultValue("QueueMode.CompleteOthers")] QueueMode queue, [uei.DefaultValue("PlayMode.StopSameLayer")] PlayMode mode);
 
         public void AddClip(AnimationClip clip, string newName) { AddClip(clip, newName, Int32.MinValue, Int32.MaxValue); }
         [uei.ExcludeFromDocs] public void AddClip(AnimationClip clip, string newName, int firstFrame, int lastFrame) { AddClip(clip, newName, firstFrame, lastFrame, false); }
-        extern public void AddClip([NotNull("NullExceptionObject")] AnimationClip clip, string newName, int firstFrame, int lastFrame, [uei.DefaultValue("false")] bool addLoopFrame);
+        extern public void AddClip([NotNull] AnimationClip clip, string newName, int firstFrame, int lastFrame, [uei.DefaultValue("false")] bool addLoopFrame);
 
-        extern public void RemoveClip([NotNull("NullExceptionObject")] AnimationClip clip);
+        extern public void RemoveClip([NotNull] AnimationClip clip);
 
         public void RemoveClip(string clipName) { RemoveClipNamed(clipName); }
         [NativeName("RemoveClip")] extern private void RemoveClipNamed(string clipName);
@@ -159,9 +161,11 @@ namespace UnityEngine
         }
 
         [FreeFunction("AnimationBindings::GetState", HasExplicitThis = true)]
+        [return: Unmarshalled]
         extern internal AnimationState GetState(string name);
 
         [FreeFunction("AnimationBindings::GetStateAtIndex", HasExplicitThis = true, ThrowsException = true)]
+        [return: Unmarshalled]
         extern internal AnimationState GetStateAtIndex(int index);
 
         [NativeName("GetAnimationStateCount")] extern internal int GetStateCount();
@@ -210,9 +214,14 @@ namespace UnityEngine
         extern public AnimationBlendMode blendMode { get; set; }
 
         [uei.ExcludeFromDocs] public void AddMixingTransform(Transform mix) { AddMixingTransform(mix, true); }
-        extern public void AddMixingTransform([NotNull("NullExceptionObject")] Transform mix, [uei.DefaultValue("true")] bool recursive);
+        extern public void AddMixingTransform([NotNull] Transform mix, [uei.DefaultValue("true")] bool recursive);
 
-        extern public void RemoveMixingTransform([NotNull("NullExceptionObject")] Transform mix);
+        extern public void RemoveMixingTransform([NotNull] Transform mix);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(AnimationState animationState) => animationState.m_Ptr;
+        }
     }
 
     [System.Serializable]
@@ -307,7 +316,12 @@ namespace UnityEngine
             {
                 animationEventsBlittable[i].Dispose();
             }
+
+            FreeEventsInternal(animationEventBlittableArray);
         }
+
+        [FreeFunction(Name = "AnimationClipBindings::FreeEventsInternal")]
+        extern static private void FreeEventsInternal(IntPtr value);
 
         [ThreadStatic]
         static GCHandlePool s_handlePool;

@@ -56,11 +56,6 @@ namespace UnityEngine.Bindings
         CodegenOptions CodegenOptions { get; set; }
     }
 
-    interface IBindingsWritableSelfProviderAttribute : IBindingsAttribute
-    {
-        bool WritableSelf { get; set; }
-    }
-
     // This is a set of attributes used to override conventional behaviour in the bindings generator.
     // Please refer to bindings generator documentation.
 
@@ -143,23 +138,6 @@ namespace UnityEngine.Bindings
         }
     }
 
-    [AttributeUsage(AttributeTargets.Method)]
-    [VisibleToOtherModules]
-    sealed class NativeWritableSelfAttribute : Attribute, IBindingsWritableSelfProviderAttribute
-    {
-        public bool WritableSelf { get; set; }
-
-        public NativeWritableSelfAttribute()
-        {
-            WritableSelf = true;
-        }
-
-        public NativeWritableSelfAttribute(bool writable)
-        {
-            WritableSelf = writable;
-        }
-    }
-
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
     [VisibleToOtherModules]
     class NativeMethodAttribute : Attribute, IBindingsNameProviderAttribute, IBindingsIsThreadSafeProviderAttribute, IBindingsIsFreeFunctionProviderAttribute, IBindingsThrowsProviderAttribute
@@ -169,7 +147,6 @@ namespace UnityEngine.Bindings
         public bool IsFreeFunction { get; set; }
         public bool ThrowsException { get; set; }
         public bool HasExplicitThis { get; set; }
-        public bool WritableSelf { get; set; }
 
         public NativeMethodAttribute()
         {
@@ -294,24 +271,9 @@ namespace UnityEngine.Bindings
     [VisibleToOtherModules]
     class NotNullAttribute : Attribute, IBindingsAttribute
     {
-        public string Exception { get; set; }
-
-        public NotNullAttribute(string exception = "ArgumentNullException")
-        {
-            Exception = exception;
-        }
     }
 
-    [AttributeUsage(AttributeTargets.Parameter)]
-    [VisibleToOtherModules]
-    class UnityTypeAttribute : Attribute, IBindingsAttribute
-    {
-        public UnityTypeAttribute()
-        {
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Parameter)]
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.ReturnValue)]
     [VisibleToOtherModules]
     class UnmarshalledAttribute : Attribute, IBindingsAttribute
     {
@@ -408,17 +370,6 @@ namespace UnityEngine.Bindings
     class IgnoreAttribute : Attribute, IBindingsAttribute
     {
         public bool DoesNotContributeToSize { get; set; }
-    }
-
-    [AttributeUsage(AttributeTargets.Class)]
-    [VisibleToOtherModules]
-    class MarshalUnityObjectAs : Attribute, IBindingsAttribute
-    {
-        public Type MarshalAsType { get; set; }
-        public MarshalUnityObjectAs(Type marshalAsType)
-        {
-            MarshalAsType = marshalAsType;
-        }
     }
 
     [VisibleToOtherModules]

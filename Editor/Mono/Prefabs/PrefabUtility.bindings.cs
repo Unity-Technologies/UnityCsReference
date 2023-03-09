@@ -105,11 +105,11 @@ namespace UnityEditor
         // Instantiate an asset that is referenced by a prefab and use it on the prefab instance.
         [FreeFunction]
         [NativeHeader("Editor/Src/Prefabs/AttachedPrefabAsset.h")]
-        extern public static Object InstantiateAttachedAsset([NotNull("NullExceptionObject")] Object targetObject);
+        extern public static Object InstantiateAttachedAsset([NotNull] Object targetObject);
 
         // Force record property modifications by comparing against the parent prefab.
         [FreeFunction]
-        extern public static void RecordPrefabInstancePropertyModifications([NotNull("NullExceptionObject")] Object targetObject);
+        extern public static void RecordPrefabInstancePropertyModifications([NotNull] Object targetObject);
 
         // Force re-merging all prefab instances of this prefab.
         [Obsolete("MergeAllPrefabInstances is deprecated. Prefabs are merged automatically. There is no need to call this method.")]
@@ -127,7 +127,7 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull("NullExceptionObject")] GameObject prefabRoot, int sceneHandle);
+        extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull] GameObject prefabRoot, int sceneHandle);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
@@ -173,13 +173,13 @@ namespace UnityEditor
         // Returns the topmost game object that has the same prefab parent as /target/
         [FreeFunction]
         [Obsolete("FindRootGameObjectWithSameParentPrefab is deprecated, please use GetOutermostPrefabInstanceRoot instead.")]
-        extern public static GameObject FindRootGameObjectWithSameParentPrefab([NotNull("NullExceptionObject")] GameObject target);
+        extern public static GameObject FindRootGameObjectWithSameParentPrefab([NotNull] GameObject target);
 
         // Returns root game object of the prefab instance. Given an instance object the function finds the prefab
         // and uses the prefab root game object to find the matching instance root game object
         [NativeMethod("FindInstanceRootGameObject", IsFreeFunction = true)]
         [Obsolete("FindValidUploadPrefabInstanceRoot is deprecated, please use GetOutermostPrefabInstanceRoot instead.")]
-        extern public static GameObject FindValidUploadPrefabInstanceRoot([NotNull("NullExceptionObject")] GameObject target);
+        extern public static GameObject FindValidUploadPrefabInstanceRoot([NotNull] GameObject target);
 
         // Resets the properties of the component or game object to the parent prefab state
         [Obsolete("Use RevertObjectOverride.")]

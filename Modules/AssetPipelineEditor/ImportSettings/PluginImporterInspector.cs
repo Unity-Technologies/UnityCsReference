@@ -194,7 +194,7 @@ namespace UnityEditor
                         return Compatibility.Mixed;
 
                     // Otherwise revert to default behavior
-                    compatible |= m_CompatibleWithPlatform[(int)t] > 0;
+                    compatible = compatible || (m_CompatibleWithPlatform[(int)t] > 0);
                 }
                 return compatible ? Compatibility.Compatible : Compatibility.NotCompatible;
             }

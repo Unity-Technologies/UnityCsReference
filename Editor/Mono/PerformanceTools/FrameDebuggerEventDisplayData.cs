@@ -200,6 +200,18 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 return m_Details;
             }
         }
+
+        private string m_MeshNamesString;
+        internal string meshNames
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(m_MeshNamesString))
+                    m_MeshNamesString = m_MeshStringBuilder.ToString();
+
+                return m_MeshNamesString;
+            }
+        }
         internal ShaderPropertyCollection[] m_ShaderProperties;
         internal ShaderPropertyCollection m_Keywords => m_ShaderProperties[(int)ShaderPropertyType.Keyword];
         internal ShaderPropertyCollection m_Textures => m_ShaderProperties[(int)ShaderPropertyType.Texture];
@@ -220,6 +232,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         private int dataTypeEnumLength => Enum.GetNames(typeof(ShaderPropertyType)).Length;
         private StringBuilder m_StringBuilder = new StringBuilder(32768);
         private StringBuilder m_DetailsStringBuilder = new StringBuilder(4096);
+        private StringBuilder m_MeshStringBuilder = new StringBuilder(64);
 
         // Constants
         private const int k_MinNameLength = 38;
@@ -678,7 +691,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             FrameDebuggerHelper.DestroyTexture(ref m_RenderTargetRenderTexture);
             m_StringBuilder.Clear();
             m_DetailsStringBuilder.Clear();
+            m_MeshStringBuilder.Clear();
             m_Details = string.Empty;
+            m_MeshNamesString = string.Empty;
             m_RealShaderName = string.Empty;
             m_RealShader = null;
             m_OriginalShaderName = string.Empty;
@@ -953,6 +968,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             m_DetailsStringBuilder.AppendFormat(k_FourColumnFormat, FrameDebuggerStyles.EventDetails.s_BatchCauseText, string.Empty, string.Empty, string.Empty).AppendLine();
             m_DetailsStringBuilder.Append(batchbreakCause).AppendLine();
             m_DetailsStringBuilder.AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "LightMode", lightModeName);
+            m_DetailsStringBuilder.AppendLine();
+            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Pass", passName);
 
             if (curEventData.m_MeshInstanceIDs != null && curEventData.m_MeshInstanceIDs.Length > 0)
             {
@@ -969,45 +987,39 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 foreach (int id in meshIDs)
                 {
                     Mesh mesh = EditorUtility.InstanceIDToObject(id) as Mesh;
-
-                    if (meshes.Count == 0)
-                        m_DetailsStringBuilder.AppendLine(String.Format(k_TwoColumnFormat, "Meshes", mesh.name));
-                    else
-                        m_DetailsStringBuilder.AppendLine(String.Format(k_TwoColumnFormat, string.Empty, mesh.name));
-
                     meshes.Add(mesh);
                 }
 
                 m_Meshes = meshes.ToArray();
-
                 m_MeshNames = new GUIContent[meshes.Count];
+                m_MeshStringBuilder.AppendLine();
+                m_MeshStringBuilder.AppendLine(String.Format(k_TwoColumnFormat, "Meshes", string.Empty));
                 for (var i = 0; i < m_Meshes.Length; ++i)
                 {
                     m_MeshNames[i] = EditorGUIUtility.TrTextContent(m_Meshes[i].name, string.Empty);
+                    m_MeshStringBuilder.Append(String.Format(k_TwoColumnFormat, string.Empty, m_MeshNames[i].text));
+                    if (i != m_Meshes.Length - 1)
+                        m_MeshStringBuilder.AppendLine();
                 }
-
             }
             else
             {
+                m_MeshStringBuilder.AppendLine();
+                m_MeshStringBuilder.AppendLine(String.Format(k_TwoColumnFormat, "Mesh", string.Empty));
                 if (curEventData.m_Mesh == null)
                 {
-                    m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Mesh", k_NotAvailableString).AppendLine();
+                    m_MeshStringBuilder.AppendFormat(k_TwoColumnFormat, string.Empty, k_NotAvailableString);
                     m_Meshes = null;
                     m_MeshNames = null;
                 }
                 else
                 {
-                    m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Mesh", curEventData.m_Mesh.name).AppendLine();
                     m_Meshes = new Mesh[] { curEventData.m_Mesh };
                     m_MeshNames = new GUIContent[1];
                     m_MeshNames[0] = EditorGUIUtility.TrTextContent(curEventData.m_Mesh.name, string.Empty);
+                    m_MeshStringBuilder.AppendFormat(k_TwoColumnFormat, string.Empty, m_MeshNames[0].text);
                 }
             }
-
-            m_DetailsStringBuilder.AppendLine();
-            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "LightMode", lightModeName);
-            m_DetailsStringBuilder.AppendLine();
-            m_DetailsStringBuilder.AppendFormat(k_TwoColumnFormat, "Pass", passName);
         }
 
         private void CountCharacters(ShaderPropertyType dataType, ShaderInfo shaderInfo)

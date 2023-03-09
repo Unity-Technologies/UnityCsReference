@@ -749,7 +749,8 @@ namespace UnityEditor.ShortcutManagement
 
         void ShortcutTableRightClickDown(MouseDownEvent evt)
         {
-            evt.StopPropagation();
+            if(!m_ShortcutsTable.scrollView.verticalScroller.worldBound.Contains(evt.mousePosition))
+                evt.StopPropagation();
 
             var slider = m_ShortcutsTable.Q<Scroller>(className: Scroller.verticalVariantUssClassName);
             var clickedIndex = (int)((evt.localMousePosition.y + slider.value) / m_ShortcutsTable.ResolveItemHeight());
@@ -1441,6 +1442,8 @@ namespace UnityEditor.ShortcutManagement
             input.RegisterCallback<FocusEvent>((evt) => {
                 StartNewCombination();
                 evt.StopPropagation();
+                evt.propagation |= EventBase.EventPropagation.Cancellable;
+                evt.PreventDefault();
                 textSelection.MoveTextEnd();
             }, TrickleDown.TrickleDown);
             input.RegisterCallback<BlurEvent>((evt) =>

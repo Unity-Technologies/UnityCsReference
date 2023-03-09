@@ -63,6 +63,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
         internal VisualElement Etch_Internal => m_Etch;
 
+        public override float MaxInputLabelWidth => 70;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="BlockNode" /> class.
         /// </summary>

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Android;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Unity.Collections;
@@ -106,7 +107,7 @@ namespace UnityEngine
             var handle = GCHandle.Alloc(proxy);
             try
             {
-                return _AndroidJNIHelper.CreateJavaProxy(GCHandle.ToIntPtr(handle), proxy);
+                return _AndroidJNIHelper.CreateJavaProxy(AndroidApp.UnityPlayerRaw, GCHandle.ToIntPtr(handle), proxy);
             }
             catch
             {
@@ -352,6 +353,33 @@ namespace UnityEngine
     [NativeConditional("PLATFORM_ANDROID")]
     public static class AndroidJNI
     {
+        [StructLayout(LayoutKind.Sequential)]
+        private struct JStringBinding : IDisposable
+        {
+            private IntPtr javaString;
+            private IntPtr chars;
+            private int length;
+            private bool ownsRef;
+
+            public override string ToString()
+            {
+                if (length == 0)
+                    return chars == IntPtr.Zero ? null : string.Empty;
+                unsafe
+                {
+                    return new string((char*)chars, 0, length);
+                }
+            }
+            public void Dispose()
+            {
+                if (length > 0)
+                    ReleaseStringChars(this);
+            }
+        }
+
+        [ThreadSafe]
+        private static extern void ReleaseStringChars(JStringBinding str);
+
         [ThreadSafe]
         [StaticAccessor("jni", StaticAccessorType.DoubleColon)]
         public static extern IntPtr GetJavaVM();
@@ -503,8 +531,16 @@ namespace UnityEngine
         // Constructs a new <tt>java.lang.String</tt> object from an array of characters in modified UTF-8 encoding.
         [ThreadSafe]
         public static extern IntPtr NewStringUTF(string bytes);
+
+        public static string GetStringChars(IntPtr str)
+        {
+            using (var jstring = GetStringCharsInternal(str))
+                return jstring.ToString();
+        }
+
         [ThreadSafe]
-        public static extern string GetStringChars(IntPtr str);
+        private static extern JStringBinding GetStringCharsInternal(IntPtr str);
+
         // Returns the length (the count of Unicode characters) of a Java string.
         [ThreadSafe]
         public static extern int GetStringLength(IntPtr str);
@@ -532,8 +568,15 @@ namespace UnityEngine
                 }
             }
         }
+        public static unsafe string CallStringMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args)
+        {
+            using (var jstring = CallStringMethodUnsafeInternal(obj, methodID, args))
+                return jstring.ToString();
+        }
+
         [ThreadSafe]
-        public static extern unsafe string CallStringMethodUnsafe(IntPtr obj, IntPtr methodID, jvalue* args);
+        private static extern unsafe JStringBinding CallStringMethodUnsafeInternal(IntPtr obj, IntPtr methodID, jvalue* args);
+
         // Calls an instance (nonstatic) Java method defined by <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static IntPtr CallObjectMethod(IntPtr obj, IntPtr methodID, jvalue[] args)
         {
@@ -714,8 +757,15 @@ namespace UnityEngine
         //---------------------------------------------
 
         // This function returns the value of an instance (nonstatic) field of an object.
+        public static string GetStringField(IntPtr obj, IntPtr fieldID)
+        {
+            using (var jstring = GetStringFieldInternal(obj, fieldID))
+                return jstring.ToString();
+        }
+
         [ThreadSafe]
-        public static extern string GetStringField(IntPtr obj, IntPtr fieldID);
+        private static extern JStringBinding GetStringFieldInternal(IntPtr obj, IntPtr fieldID);
+
         // This function returns the value of an instance (nonstatic) field of an object.
         [ThreadSafe]
         public static extern IntPtr GetObjectField(IntPtr obj, IntPtr fieldID);
@@ -807,8 +857,14 @@ namespace UnityEngine
                 }
             }
         }
+        public static unsafe string CallStaticStringMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args)
+        {
+            using (var jstring = CallStaticStringMethodUnsafeInternal(clazz, methodID, args))
+                return jstring.ToString();
+        }
         [ThreadSafe]
-        public static extern unsafe string CallStaticStringMethodUnsafe(IntPtr clazz, IntPtr methodID, jvalue* args);
+        private static extern unsafe JStringBinding CallStaticStringMethodUnsafeInternal(IntPtr clazz, IntPtr methodID, jvalue* args);
+
         // Invokes a static method on a Java object, according to the specified <tt>methodID</tt>, optionally passing an array of arguments (<tt>args</tt>) to the method.
         public static IntPtr CallStaticObjectMethod(IntPtr clazz, IntPtr methodID, jvalue[] args)
         {
@@ -989,8 +1045,14 @@ namespace UnityEngine
         //---------------------------------------------
 
         // This function returns the value of a static field of an object.
+        public static string GetStaticStringField(IntPtr clazz, IntPtr fieldID)
+        {
+            using (var jstring = GetStaticStringFieldInternal(clazz, fieldID))
+                return jstring.ToString();
+        }
+
         [ThreadSafe]
-        public static extern string GetStaticStringField(IntPtr clazz, IntPtr fieldID);
+        private static extern JStringBinding GetStaticStringFieldInternal(IntPtr clazz, IntPtr fieldID);
         // This function returns the value of a static field of an object.
         [ThreadSafe]
         public static extern IntPtr GetStaticObjectField(IntPtr clazz, IntPtr fieldID);
@@ -1210,24 +1272,31 @@ namespace UnityEngine
         public static extern Byte[] FromByteArray(IntPtr array);
         // Convert a Java array of <tt>byte</tt> to a managed array of System.SByte.
         [ThreadSafe]
+        [return:Unmarshalled]
         public static extern SByte[] FromSByteArray(IntPtr array);
         // Convert a Java array of <tt>char</tt> to a managed array of System.Char.
         [ThreadSafe]
+        [return:Unmarshalled]
         public static extern Char[] FromCharArray(IntPtr array);
         // Convert a Java array of <tt>short</tt> to a managed array of System.Int16.
         [ThreadSafe]
+        [return:Unmarshalled]
         public static extern Int16[] FromShortArray(IntPtr array);
         // Convert a Java array of <tt>int</tt> to a managed array of System.Int32.
         [ThreadSafe]
+        [return:Unmarshalled]
         public static extern Int32[] FromIntArray(IntPtr array);
         // Convert a Java array of <tt>long</tt> to a managed array of System.Int64.
         [ThreadSafe]
+        [return:Unmarshalled]
         public static extern Int64[] FromLongArray(IntPtr array);
         // Convert a Java array of <tt>float</tt> to a managed array of System.Single.
         [ThreadSafe]
+        [return:Unmarshalled]
         public static extern float[] FromFloatArray(IntPtr array);
         // Convert a Java array of <tt>double</tt> to a managed array of System.Double.
         [ThreadSafe]
+        [return:Unmarshalled]
         public static extern double[] FromDoubleArray(IntPtr array);
         // Convert a Java array of <tt>java.lang.Object</tt> to a managed array of System.IntPtr, representing Java objects.
         [ThreadSafe]

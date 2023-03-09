@@ -79,7 +79,7 @@ namespace UnityEngine
     public sealed partial class Light : Behaviour
     {
         [NativeProperty("LightType")] extern public LightType type { get; set; }
-        [NativeProperty("LightShape")] extern public LightShape shape { get; set; }
+        [System.Obsolete("This property has been deprecated. Use Light.type instead.")] public LightShape shape { get; set; }
 
         extern public float spotAngle        { get; set; }
         extern public float innerSpotAngle   { get; set; }
@@ -101,6 +101,7 @@ namespace UnityEngine
         extern public Matrix4x4 shadowMatrixOverride { get; set; }
 
         extern public float range { get; set; }
+        extern public float dilatedRange { get; }
         extern public Flare flare { get; set; }
 
         extern public LightBakingOutput bakingOutput { get; set; }

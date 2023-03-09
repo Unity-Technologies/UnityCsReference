@@ -171,8 +171,8 @@ namespace UnityEngine
         // The name of the object.
         public string name
         {
-            get { return GetName(this); }
-            set { SetName(this, value); }
+            get { return GetName(); }
+            set { SetName(value); }
         }
 
         // Clones the object /original/ and returns the clone.
@@ -345,7 +345,7 @@ namespace UnityEngine
 
         // Makes the object /target/ not be destroyed automatically when loading a new scene.
         [FreeFunction("GetSceneManager().DontDestroyOnLoad", ThrowsException = true)]
-        public extern static void DontDestroyOnLoad([NotNull("NullExceptionObject")] Object target);
+        public extern static void DontDestroyOnLoad([NotNull] Object target);
 
         // // Should the object be hidden, saved with the scene or modifiable by the user?
         public extern HideFlags hideFlags { get; set; }
@@ -515,28 +515,28 @@ namespace UnityEngine
         extern static bool CurrentThreadIsMainThread();
 
         [NativeMethod(Name = "CloneObject", IsFreeFunction = true, ThrowsException = true)]
-        extern static Object Internal_CloneSingle([NotNull("NullExceptionObject")] Object data);
+        extern static Object Internal_CloneSingle([NotNull] Object data);
 
         [FreeFunction("CloneObject")]
-        extern static Object Internal_CloneSingleWithParent([NotNull("NullExceptionObject")] Object data, [NotNull("NullExceptionObject")] Transform parent, bool worldPositionStays);
+        extern static Object Internal_CloneSingleWithParent([NotNull] Object data, [NotNull] Transform parent, bool worldPositionStays);
 
         [FreeFunction("InstantiateObject")]
-        extern static Object Internal_InstantiateSingle([NotNull("NullExceptionObject")] Object data, Vector3 pos, Quaternion rot);
+        extern static Object Internal_InstantiateSingle([NotNull] Object data, Vector3 pos, Quaternion rot);
 
         [FreeFunction("InstantiateObject")]
-        extern static Object Internal_InstantiateSingleWithParent([NotNull("NullExceptionObject")] Object data, [NotNull("NullExceptionObject")] Transform parent, Vector3 pos, Quaternion rot);
+        extern static Object Internal_InstantiateSingleWithParent([NotNull] Object data, [NotNull] Transform parent, Vector3 pos, Quaternion rot);
 
         [FreeFunction("UnityEngineObjectBindings::ToString")]
         extern static string ToString(Object obj);
 
-        [FreeFunction("UnityEngineObjectBindings::GetName")]
-        extern static string GetName([NotNull("NullExceptionObject")] Object obj);
+        [FreeFunction("UnityEngineObjectBindings::GetName", HasExplicitThis = true)]
+        extern string GetName();
 
         [FreeFunction("UnityEngineObjectBindings::IsPersistent")]
-        internal extern static bool IsPersistent([NotNull("NullExceptionObject")] Object obj);
+        internal extern static bool IsPersistent([NotNull] Object obj);
 
-        [FreeFunction("UnityEngineObjectBindings::SetName")]
-        extern static void SetName([NotNull("NullExceptionObject")] Object obj, string name);
+        [FreeFunction("UnityEngineObjectBindings::SetName", HasExplicitThis = true)]
+        extern void SetName(string name);
 
         [NativeMethod(Name = "UnityEngineObjectBindings::DoesObjectWithInstanceIDExist", IsFreeFunction = true, IsThreadSafe = true)]
         internal extern static bool DoesObjectWithInstanceIDExist(int instanceID);
@@ -556,6 +556,9 @@ namespace UnityEngine
             return new Object { m_InstanceID = instanceID };
         }
 
+        [FreeFunction("UnityEngineObjectBindings::MarkObjectDirty", HasExplicitThis = true)]
+        internal extern void MarkDirty();
+
         [VisibleToOtherModules]
         internal static class MarshalledUnityObject
         {
@@ -568,33 +571,13 @@ namespace UnityEngine
                 // So this code can't call any icalls marked as ThreadSafe (e.g. DoesObjectWithInstanceIDExist)
                 if (ReferenceEquals(obj, null))
                     return IntPtr.Zero;
-                return MarshalAssumeNotNull(obj);
+                return MarshalNotNull(obj);
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr MarshalNullCheck(Object obj)
+            public static IntPtr MarshalNotNull(Object obj)
             {
-                // We want a NullReferenceExcption to be thrown if obj is null, so we can let the runtime generate that for us
-                var cachedPtr = MarshalAssumeNotNull(obj);
-                if (cachedPtr == IntPtr.Zero)
-                    ThrowNullExceptionObjectImpl(obj);
-                return cachedPtr;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr MarshalNullCheck<TException>(Object obj, string parameterName) where TException: Exception
-            {
-                if (ReferenceEquals(obj, null))
-                    ThrowException<TException>(parameterName);
-                var cachedPtr = MarshalAssumeNotNull(obj);
-                if (cachedPtr == IntPtr.Zero)
-                    ThrowException<TException>(parameterName);
-                return cachedPtr;
-            }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr MarshalAssumeNotNull(Object obj)
-            {
+                // obj has already been checked and is guaranteed to not be null
                 if (obj.m_CachedPtr != IntPtr.Zero)
                     return obj.m_CachedPtr;
                 return MarshalFromInstanceId(obj);
@@ -655,43 +638,34 @@ namespace UnityEngine
                 m_MonoBehaviorBaseClasses = baseClassList.ToArray();
             }
 
-
-            private static void ThrowException<TException>(string message) where TException:Exception
+            public static void TryThrowEditorNullExceptionObject(Object unityObj, string parameterName)
             {
-                throw (TException)Activator.CreateInstance(typeof(TException), message);
-            }
-
-            public static void ThrowNullExceptionObjectImpl(object obj)
-            {
-                if (obj is Object unityObj)
+                string error = unityObj.m_UnityRuntimeErrorString ?? "";
+                if (unityObj.m_InstanceID != kInstanceID_None && !error.StartsWith($"{nameof(MissingReferenceException)}:"))
                 {
-                    string error = unityObj.m_UnityRuntimeErrorString ?? "";
-                    if (unityObj.m_InstanceID != kInstanceID_None && !IsMissingReferenceException(error))
-                    {
-                        error = $"The object of type '{unityObj.GetType().FullName}' has been destroyed but you are still trying to access it.\n" +
-                            "Your script should either check if it is null or you should not destroy the object.";
+                    error = $"The object of type '{unityObj.GetType().FullName}' has been destroyed but you are still trying to access it.\n" +
+                        "Your script should either check if it is null or you should not destroy the object.";
 
-                        throw new MissingReferenceException(error);
-                    }
+                    if (!string.IsNullOrEmpty(parameterName))
+                        error += $" Parameter name: {parameterName}";
 
-                    var splitIndex = error?.IndexOf(':') ?? -1;
-                    if (splitIndex > 0)
-                    {
-                        var exceptionTypeString = error.Substring(0, splitIndex);
-                        error = error.Substring(splitIndex + 1);
-                        var exceptionType = Type.GetType($"UnityEngine.{exceptionTypeString}", false);
-                        if (exceptionType != null)
-                            throw (Exception)Activator.CreateInstance(exceptionType, error);
-                    }
+                    throw new MissingReferenceException(error);
                 }
 
-                throw new NullReferenceException();
+                var splitIndex = error.IndexOf(':');
+                if (splitIndex > 0)
+                {
+                    var exceptionTypeString = error.Substring(0, splitIndex);
+                    error = error.Substring(splitIndex + 1);
+                    if (!string.IsNullOrEmpty(parameterName))
+                        error += $" Parameter name: {parameterName}";
+
+                    var exceptionType = Type.GetType($"UnityEngine.{exceptionTypeString}", false);
+                    if (exceptionType != null)
+                        throw (Exception)Activator.CreateInstance(exceptionType, error);
+                }
             }
 
-            static bool IsMissingReferenceException(string error)
-            {
-                return error.StartsWith("MissingReferenceException:");
-            }
         }
     }
 }

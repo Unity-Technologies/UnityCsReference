@@ -8,11 +8,10 @@ using UnityEditor.Toolbars;
 using UnityEngine.UIElements;
 using UnityEditor.EditorTools;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEditor.TerrainTools
 {
-    [Overlay(typeof(SceneView), "Brush Attributes")]
+    [Overlay(typeof(SceneView), "Brush Attributes", defaultDockPosition = DockPosition.Top, defaultDockZone = DockZone.TopToolbar)]
     [Icon("TerrainOverlays/BrushSettingIcons/BrushAttributes.png")]
     internal class BrushAttributes : ToolbarOverlay, ITransientOverlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
@@ -20,24 +19,20 @@ namespace UnityEditor.TerrainTools
         {
             get
             {
-                if (packageIsInstalled) return false; // no core brushAttributes when package is installed
                 var currTool = TerrainInspector.GetActiveTerrainTool() as ITerrainPaintToolWithOverlays;
-                if (currTool == null)
-                    return false;
-                return currTool.HasBrushAttributes && BrushesOverlay.IsSelectedObjectTerrain();
+                if (currTool == null) return false;
+                bool directlyInheritsOverlays = currTool.GetType().BaseType.GetGenericTypeDefinition() == typeof(TerrainPaintToolWithOverlays<>).GetGenericTypeDefinition();
+                return currTool.HasBrushAttributes && BrushesOverlay.IsSelectedObjectTerrain() && directlyInheritsOverlays;
             }
         }
 
         internal static BrushAttributes s_Instance;
-        private bool packageIsInstalled;
-
         BrushAttributes() : base(
 
             BrushOpacity.k_Id,
             BrushSize.k_Id)
         {
             s_Instance = this;
-            packageIsInstalled = TerrainToolsPackageInstalled();
 
             // only rebuild if the next tool is/isn't PaintDetailsTool
             ToolManager.activeToolChanged += RebuildAttributesOverlays;
@@ -49,14 +44,6 @@ namespace UnityEditor.TerrainTools
             base.OnWillBeDestroyed();
             ToolManager.activeToolChanged -= RebuildAttributesOverlays;
             ToolManager.activeContextChanged -= RebuildAttributesOverlays;
-        }
-
-        private bool TerrainToolsPackageInstalled()
-        {
-            // check if package is installed
-            var upm = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages();
-            var terrainPackageInfo = upm.Where(pi => pi.name == "com.unity.terrain-tools");
-            return terrainPackageInfo.Any(); // if q returns any then yes a package is installed
         }
 
         // this function serves to prevent calling RebuildContent() more than necessary
@@ -195,11 +182,14 @@ namespace UnityEditor.TerrainTools
             };
             UpdateOverlayDirection(true);
 
-            ToolManager.activeToolChanged += UpdateValues;
-            ToolManager.activeContextChanged += UpdateValues;
-            TerrainInspector.BrushStrengthChanged += UpdateValues;
-            BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
-            BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            RegisterCallback<AttachToPanelEvent>(e =>
+            {
+                ToolManager.activeToolChanged += UpdateValues;
+                ToolManager.activeContextChanged += UpdateValues;
+                TerrainInspector.BrushStrengthChanged += UpdateValues;
+                BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
+                BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            });
 
             RegisterCallback<DetachFromPanelEvent>(e =>
             {
@@ -299,11 +289,14 @@ namespace UnityEditor.TerrainTools
         {
             UpdateOverlayDirection(true);
 
-            ToolManager.activeToolChanged += UpdateValues;
-            ToolManager.activeContextChanged += UpdateValues;
-            TerrainInspector.BrushSizeChanged += UpdateValues;
-            BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
-            BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            RegisterCallback<AttachToPanelEvent>(e =>
+            {
+                ToolManager.activeToolChanged += UpdateValues;
+                ToolManager.activeContextChanged += UpdateValues;
+                TerrainInspector.BrushSizeChanged += UpdateValues;
+                BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
+                BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            });
 
             RegisterCallback<DetachFromPanelEvent>(e =>
             {
@@ -389,11 +382,14 @@ namespace UnityEditor.TerrainTools
             };
             UpdateOverlayDirection(true);
 
-            ToolManager.activeToolChanged += UpdateValues;
-            ToolManager.activeContextChanged += UpdateValues;
-            PaintDetailsTool.BrushTargetStrengthChanged += UpdateValues;
-            BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
-            BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            RegisterCallback<AttachToPanelEvent>(e =>
+            {
+                ToolManager.activeToolChanged += UpdateValues;
+                ToolManager.activeContextChanged += UpdateValues;
+                PaintDetailsTool.BrushTargetStrengthChanged += UpdateValues;
+                BrushAttributes.s_Instance.layoutChanged += UpdateOverlayDirection; // when the overlay is dragged, see if the direction needs to be updated
+                BrushAttributes.s_Instance.collapsedChanged += UpdateOverlayDirection;
+            });
 
             RegisterCallback<DetachFromPanelEvent>(e =>
             {

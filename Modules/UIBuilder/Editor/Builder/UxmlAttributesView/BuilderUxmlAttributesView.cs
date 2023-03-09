@@ -893,6 +893,7 @@ namespace Unity.UI.Builder
                     // it will otherwise throw an exception.
                     var valueField = fieldsContainer.Query<EnumField>().Where(f => f.label == "Value").First();
                     UnsetAttributeProperty(valueField);
+                    needRefresh = true;
                 }
                 else if (attributesOwner is EnumFlagsField)
                 {
@@ -900,8 +901,14 @@ namespace Unity.UI.Builder
                     // it will otherwise throw an exception.
                     var valueField = fieldsContainer.Query<EnumFlagsField>().Where(f => f.label == "Value").First();
                     UnsetAttributeProperty(valueField);
+                    needRefresh = true;
                 }
-                needRefresh = true;
+
+                // If the type of an object field changes, we have to refresh the inspector to ensure it has the correct type associated with it.
+                if (attributesOwner is ObjectField && attribute.name == "type")
+                {
+                    needRefresh = true;
+                }
             }
 
             PostAttributeValueChange(field, uxmlValue);

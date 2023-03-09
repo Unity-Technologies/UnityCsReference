@@ -87,7 +87,8 @@ namespace UnityEditor.Build.Reporting
             return GetAppendicesByType(typeof(TAppendix)).Cast<TAppendix>().ToArray();
         }
 
-        internal extern Object[] GetAppendicesByType([NotNull, UnityType] Type type);
+        [NativeThrows]
+        internal extern Object[] GetAppendicesByType([NotNull] Type type);
 
         internal extern Object[] GetAllAppendices();
 

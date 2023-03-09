@@ -260,5 +260,12 @@ namespace UnityEditor
 
         [FreeFunction("SerializedObjectBindings::VersionEqualsInternal")]
         extern static bool VersionEqualsInternal(SerializedObject x, SerializedObject y);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(SerializedObject obj) => obj.m_NativeObjectPtr;
+            public static SerializedObject ConvertToManaged(IntPtr ptr) => new SerializedObject(ptr);
+        }
+
     }
 }

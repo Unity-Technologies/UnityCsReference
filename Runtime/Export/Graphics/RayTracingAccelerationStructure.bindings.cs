@@ -531,5 +531,10 @@ namespace UnityEngine.Rendering
 
         [Obsolete(obsoleteAABBMsg, true)]
         public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, Matrix4x4 instanceTransform, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteAABBMsg);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(RayTracingAccelerationStructure rayTracingAccelerationStructure) => rayTracingAccelerationStructure.m_Ptr;
+        }
     }
 }

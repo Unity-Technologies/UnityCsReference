@@ -29,6 +29,8 @@ namespace UnityEditor.Modules
         protected BeeDriverResult BeeDriverResult { get; set; }
         protected static bool isBuildingPlayer { get; set; }
 
+        public static readonly string kBackupFolderPostfix = "_BackUpThisFolder_ButDontShipItWithYourGame";
+
         static readonly string kXrBootSettingsKey = "xr-boot-settings";
         public virtual void LaunchPlayer(BuildLaunchPlayerArgs args) => throw new NotSupportedException();
 
@@ -89,7 +91,7 @@ namespace UnityEditor.Modules
             }
         }
 
-        protected virtual string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args) => $"{args.installPath.ToNPath().FileNameWithoutExtension}_BackUpThisFolder_ButDontShipItWithYourGame";
+        protected virtual string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args) => $"{args.installPath.ToNPath().FileNameWithoutExtension}{kBackupFolderPostfix}";
 
         public virtual string GetExtension(BuildTarget target, int subtarget, BuildOptions options) => string.Empty;
 

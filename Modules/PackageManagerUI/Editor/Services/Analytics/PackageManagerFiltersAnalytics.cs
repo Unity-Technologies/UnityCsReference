@@ -24,13 +24,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!editorAnalyticsProxy.RegisterEvent(k_EventName))
                 return;
 
-            var filterTab = PackageManagerWindowAnalytics.GetFilterNameWithSubPage(servicesContainer.Resolve<PackageManagerPrefs>(), servicesContainer.Resolve<PageManager>());
-            var orderBy = filters.isReverseOrder ? $"{filters.orderBy} (reversed)" : filters.orderBy;
+            var pageId = servicesContainer.Resolve<PageManager>().activePage.id;
             var parameters = new PackageManagerFiltersAnalytics
             {
-                filter_tab = filterTab,
-                order_by = orderBy,
-                status = filters.status,
+                filter_tab = pageId,
+                order_by = filters.sortOption.ToString(),
+                status = filters.status.ToString(),
                 categories = filters.categories.ToArray(),
                 labels = filters.labels.ToArray()
             };

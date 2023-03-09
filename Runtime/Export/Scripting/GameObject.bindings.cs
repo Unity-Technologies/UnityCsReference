@@ -37,7 +37,6 @@ namespace UnityEngine
         public extern Component GetComponent(Type type);
 
         [FreeFunction(Name = "GameObjectBindings::GetComponentFastPath", HasExplicitThis = true, ThrowsException = true)]
-        [NativeWritableSelf]
         internal extern void GetComponentFastPath(Type type, IntPtr oneFurtherThanResultValue);
 
         [FreeFunction(Name = "Scripting::GetScriptingWrapperOfComponentOfGameObject", HasExplicitThis = true)]
@@ -194,7 +193,6 @@ namespace UnityEngine
         internal extern Component TryGetComponentInternal(Type type);
 
         [FreeFunction(Name = "GameObjectBindings::TryGetComponentFastPath", HasExplicitThis = true, ThrowsException = true)]
-        [NativeWritableSelf]
         internal extern void TryGetComponentFastPath(Type type, IntPtr oneFurtherThanResultValue);
 
         public static GameObject FindWithTag(string tag)
@@ -301,8 +299,14 @@ namespace UnityEngine
             set;
         }
 
+        public bool CompareTag(string tag) => CompareTag_Internal(tag);
+        public bool CompareTag(TagHandle tag) => CompareTagHandle_Internal(tag);
+
         [FreeFunction(Name = "GameObjectBindings::CompareTag", HasExplicitThis = true)]
-        public extern bool CompareTag(string tag);
+        private extern bool CompareTag_Internal(string tag);
+
+        [FreeFunction(Name = "GameObjectBindings::CompareTagHandle", HasExplicitThis = true)]
+        private extern bool CompareTagHandle_Internal(TagHandle tag);
 
         [FreeFunction(Name = "GameObjectBindings::FindGameObjectWithTag", ThrowsException = true)]
         public static extern GameObject FindGameObjectWithTag(string tag);

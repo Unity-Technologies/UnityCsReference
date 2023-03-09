@@ -547,15 +547,6 @@ namespace UnityEditor
             GUILayout.Label(Content.graphics, EditorStyles.boldLabel);
             GUI.enabled = editorEnabled;
 
-            if (m_IsGlobalSettings)
-            {
-                EditorGUI.BeginChangeCheck();
-                bool showRes = LightmapVisualization.showResolution;
-                showRes = EditorGUILayout.Toggle(Content.showLightmapResolutionOverlay, showRes);
-                if (EditorGUI.EndChangeCheck())
-                    LightmapVisualization.showResolution = showRes;
-            }
-
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_UseLegacyProbeSampleCount, Content.useLegacyProbeSampleCount);
             if (EditorGUI.EndChangeCheck())

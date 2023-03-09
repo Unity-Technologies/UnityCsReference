@@ -135,15 +135,16 @@ namespace UnityEditor.ShaderFoundry
 
         internal FoundryHandle AddTemplateLinker(ITemplateLinker linker)
         {
-            // If the linker is either null, or has already been added, we return an invalid handle
+            // A null linker means block linker is used. Return invalid handle.
+            // TODO @ SHADERS: This all will be removed once legacy linker goes away.
+            FoundryHandle handle = new FoundryHandle();
             if (linker == null)
-                throw new Exception("Registering a null template linker is not valid.");
+                return handle;
 
             var existingLinkerIndex = m_TemplateLinkers.FindIndex((l) => (l == linker));
             if (existingLinkerIndex != -1)
                 throw new Exception($"Template linker '{linker}' has already been registered.");
 
-            FoundryHandle handle = new FoundryHandle();
             handle.LegacyHandle = (uint)m_TemplateLinkers.Count;
             m_TemplateLinkers.Add(linker);
 

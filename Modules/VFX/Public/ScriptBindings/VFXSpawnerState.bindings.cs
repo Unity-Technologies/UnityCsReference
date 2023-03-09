@@ -134,5 +134,10 @@ namespace UnityEngine.VFX
                 return Internal_GetVFXEventAttribute();
             }
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(VFXSpawnerState vfxSpawnerState) => vfxSpawnerState.m_Ptr;
+        }
     }
 }

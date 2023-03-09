@@ -202,5 +202,9 @@ namespace UnityEditor.AssetImporters
             AddImportLog(msg, file, line, ImportLogFlags.Warning, obj);
         }
 
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(AssetImportContext ctx) => ctx.m_Self;
+        }
     }
 }

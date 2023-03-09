@@ -16,7 +16,7 @@ namespace UnityEngine.Networking
         [System.NonSerialized]
         internal IntPtr m_Ptr;
 
-        extern private static IntPtr Create(CertificateHandler obj);
+        extern private static IntPtr Create([Unmarshalled] CertificateHandler obj);
 
         [NativeMethod(IsThreadSafe = true)]
         extern private void Release();
@@ -49,6 +49,11 @@ namespace UnityEngine.Networking
                 Release();
                 m_Ptr = IntPtr.Zero;
             }
+        }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(CertificateHandler handler) => handler.m_Ptr;
         }
 
     }

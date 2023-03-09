@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -37,28 +37,5 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The port connected to the other side of the wire.</returns>
         public static PortModel GetOtherPort(this WireModel wireModel, WireSide otherSide) =>
             wireModel.GetPort(otherSide.GetOtherSide());
-
-        /// <summary>
-        /// Gets the port of a wire on a specific side.
-        /// </summary>
-        /// <param name="wireModel">The wire to set the port on.</param>
-        /// <param name="side">The side of the wire on which to set the port.</param>
-        /// <param name="value">The new port the wire should have.</param>
-        public static void SetPort(this WireModel wireModel, WireSide side, PortModel value)
-        {
-            if (side == WireSide.From)
-                wireModel.FromPort = value;
-            else
-                wireModel.ToPort = value;
-        }
-
-        /// <summary>
-        /// Sets the other side port of a wire.
-        /// </summary>
-        /// <param name="wireModel">The wire to set the port on.</param>
-        /// <param name="otherSide">The other side of the wire on which to set the port.</param>
-        /// <param name="value">The new port the wire should have on the other side.</param>
-        public static void SetOtherPort(this WireModel wireModel, WireSide otherSide, PortModel value) =>
-            wireModel.SetPort(otherSide.GetOtherSide(), value);
     }
 }

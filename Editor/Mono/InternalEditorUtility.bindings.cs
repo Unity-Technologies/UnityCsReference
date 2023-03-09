@@ -60,6 +60,16 @@ namespace UnityEditorInternal
             [NativeMethod("GetRequestedObject")]
             get;
         }
+
+        public LoadFileAndForgetOperation() { }
+
+        private LoadFileAndForgetOperation(IntPtr ptr) : base(ptr) { }
+
+        new internal static class BindingsMarshaller
+        {
+            public static LoadFileAndForgetOperation ConvertToManaged(IntPtr ptr) => new LoadFileAndForgetOperation(ptr);
+            public static IntPtr ConvertToNative(LoadFileAndForgetOperation asyncOperation) => asyncOperation.m_Ptr;
+        }
     }
 
     [NativeHeader("Editor/Src/InternalEditorUtility.bindings.h")]
@@ -149,7 +159,7 @@ namespace UnityEditorInternal
         public extern static bool PerformUnmarkedBumpMapTexturesFixing();
 
         [FreeFunction("InternalEditorUtilityBindings::BumpMapTextureNeedsFixingInternal")]
-        public extern static bool BumpMapTextureNeedsFixingInternal([NotNull("NullExceptionObject")] Material material, string propName, bool flaggedAsNormal);
+        public extern static bool BumpMapTextureNeedsFixingInternal([NotNull] Material material, string propName, bool flaggedAsNormal);
 
         internal static bool BumpMapTextureNeedsFixing(MaterialProperty prop)
         {
@@ -276,10 +286,10 @@ namespace UnityEditorInternal
         extern public static LoadFileAndForgetOperation LoadSerializedFileAndForgetAsync(string path, long localIdentifierInFile, ulong offsetInFile=0, long fileSize=-1);
 
         [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
-        extern public static DragAndDropVisualMode ProjectWindowDrag(HierarchyProperty property, bool perform);
+        extern public static DragAndDropVisualMode ProjectWindowDrag([Unmarshalled] HierarchyProperty property, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
-        extern public static DragAndDropVisualMode HierarchyWindowDrag(HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        extern public static DragAndDropVisualMode HierarchyWindowDrag([Unmarshalled] HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
         extern public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
@@ -415,7 +425,7 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetSpriteOuterUV")]
         extern public static Vector4 GetSpriteOuterUV([NotNull] Sprite sprite, bool getAtlasData);
 
-        [FreeFunction("PPtr<Object>")]
+        [FreeFunction("PPtr<Object>::FromInstanceID")]
         extern public static Object GetObjectFromInstanceID(int instanceID);
 
         [FreeFunction("GetTypeWithoutLoadingObject")]

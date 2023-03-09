@@ -20,6 +20,22 @@ namespace Unity.GraphToolsFoundation.Editor
     class ModelInspectorView : RootView, IMultipleModelPartContainer
     {
         /// <summary>
+        /// Determines if a field should be displayed in the node options section of a node.
+        /// </summary>
+        /// <param name="f">The field to inspect.</param>
+        /// <returns>True if a field should be displayed in the node options section of a node. False otherwise.</returns>
+        public static bool NodeOptionsFilterForNode(FieldInfo f)
+        {
+            if (NodeOptionsFilter(f))
+            {
+                var nodeOption = f.GetCustomAttribute<NodeOptionAttribute>();
+                return nodeOption != null && !nodeOption.ShowInInspectorOnly;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Determines if a field should be displayed in the node options section of the inspector.
         /// </summary>
         /// <param name="f">The field to inspect.</param>

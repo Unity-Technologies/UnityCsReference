@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
-            m_PageManager.GetPage().RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
+            m_PageManager.activePage.RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
             if (!string.IsNullOrEmpty(m_AnalyticsEventName))
                 PackageManagerWindowAnalytics.SendEvent(m_AnalyticsEventName, packageIds: versions.Select(v => v.package.uniqueId));
             return true;
@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            m_PageManager.GetPage().RemoveSelection(new[] { new PackageAndVersionIdPair(version.package.uniqueId, version.uniqueId) });
+            m_PageManager.activePage.RemoveSelection(new[] { new PackageAndVersionIdPair(version.package.uniqueId, version.uniqueId) });
             return true;
         }
 

@@ -44,6 +44,11 @@ namespace UnityEngineInternal.Video
         extern public void Update();
 
         extern static internal void ProcessOSMainLoopMessagesForTesting();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(VideoPlaybackMgr videoPlaybackMgr) => videoPlaybackMgr.m_Ptr;
+        }
     }
 }
 

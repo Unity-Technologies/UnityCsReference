@@ -103,7 +103,7 @@ namespace UnityEditor.Profiling
         }
 
         [NativeMethod(Name = "GetSampleCallstack", IsThreadSafe = true, ThrowsException = true)]
-        extern void GetSampleCallstackInternal(int sampleIndex, List<ulong> outCallstack);
+        extern void GetSampleCallstackInternal(int sampleIndex, [NotNull] List<ulong> outCallstack);
 
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]
@@ -115,16 +115,16 @@ namespace UnityEditor.Profiling
         }
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern void GetSampleFlowEvents(int sampleIndex, List<FlowEvent> outFlowEvents);
+        public extern void GetSampleFlowEvents(int sampleIndex, [NotNull] List<FlowEvent> outFlowEvents);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern void GetFlowEvents(List<FlowEvent> outFlowEvents);
+        public extern void GetFlowEvents([NotNull] List<FlowEvent> outFlowEvents);
 
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        internal extern void GetSamplesStartedInPreviousFrame(List<int> outSampleIndexList);
+        [NativeMethod(IsThreadSafe = true)]
+        internal extern void GetSamplesStartedInPreviousFrame([NotNull] List<int> outSampleIndexList);
 
-        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        internal extern void GetSamplesContinuedInNextFrame(List<int> outSampleIndexList);
+        [NativeMethod(IsThreadSafe = true)]
+        internal extern void GetSamplesContinuedInNextFrame([NotNull] List<int> outSampleIndexList);
 
         public override bool Equals(object obj)
         {
@@ -145,6 +145,11 @@ namespace UnityEditor.Profiling
         {
             return frameIndex.GetHashCode() ^
                 (threadIndex.GetHashCode() << 8);
+        }
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(RawFrameDataView frameDataView) => frameDataView.m_Ptr;
         }
     }
 }

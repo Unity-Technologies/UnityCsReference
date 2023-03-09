@@ -225,5 +225,10 @@ namespace UnityEditorInternal
         {
             FreeNativeResources();
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(ProfilerProperty prop) => prop.m_Ptr;
+        }
     }
 }

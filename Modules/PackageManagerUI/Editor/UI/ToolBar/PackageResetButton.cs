@@ -45,7 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!m_Application.DisplayDialog("resetPackage", title, message, L10n.Tr("Continue"), L10n.Tr("Cancel")))
                 return false;
 
-            m_PageManager.GetPage().SetPackagesUserUnlockedState(packagesToUninstall.Select(p => p.uniqueId), false);
+            m_PageManager.activePage.SetPackagesUserUnlockedState(packagesToUninstall.Select(p => p.uniqueId), false);
             m_OperationDispatcher.ResetDependencies(version, packagesToUninstall);
 
             PackageManagerWindowAnalytics.SendEvent("reset", version?.uniqueId);

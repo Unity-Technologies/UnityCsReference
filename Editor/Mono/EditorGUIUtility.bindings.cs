@@ -208,6 +208,7 @@ namespace UnityEditor
         public static extern void EraseVector3(string key);
         public static extern void EraseIntArray(string key);
         public static extern void SetIntArray(string key, int[] value);
+        [return:Unmarshalled]
         public static extern int[] GetIntArray(string key, [Unmarshalled]int[] defaultValue);
     }
 }

@@ -54,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void ExtraFetch(long productId)
         {
-            FetchPurchaseInfoWithRetry(productId);
+            FetchPurchaseInfos(new[] { productId });
 
             FetchProductInfo(productId, () =>
             {
@@ -70,32 +70,48 @@ namespace UnityEditor.PackageManager.UI.Internal
                 FetchUpdateInfos(new[] { productId });
         }
 
-        public void FetchPurchaseInfoWithRetry(long productId, bool checkHiddenPurchases = false)
+        public virtual void FetchPurchaseInfos(IEnumerable<long> productIds, Action doneCallback = null)
         {
-            if (m_AssetStoreCache.GetPurchaseInfo(productId) != null)
+            FetchPurchaseInfosWithRetry(productIds, false, doneCallback);
+        }
+
+        private void FetchPurchaseInfosWithRetry(IEnumerable<long> productIds, bool checkHiddenPurchases, Action doneCallback)
+        {
+            var productIdsWithoutPurchaseInfo = productIds?.Where(id => m_AssetStoreCache.GetPurchaseInfo(id) == null).ToList() ?? new List<long>();
+            if (!productIdsWithoutPurchaseInfo.Any())
                 return;
 
             if (m_ListOperation?.isInProgress == true)
             {
-                m_ListOperation.onOperationFinalized += op => FetchPurchaseInfoWithRetry(productId, checkHiddenPurchases);
+                m_ListOperation.onOperationFinalized += op => FetchPurchaseInfosWithRetry(productIdsWithoutPurchaseInfo, checkHiddenPurchases, doneCallback);
                 return;
             }
 
             // when the purchase info is not available for a package (either it's not fetched yet or just not available altogether)
             // we'll try to fetch the purchase info first and then call the `FetchInternal`.
             // In the case where a package not purchased, `purchaseInfo` will still be null,
-            // but the generated `AssetStorePackage` in the end will contain an error.
+            // but the generated `Package` in the end will not contain an error.
             var fetchOperation = new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
-            var queryArgs = new PurchasesQueryArgs { productIds = new List<long> { productId }, status = checkHiddenPurchases ? "hidden" : string.Empty};
+            var queryArgs = new PurchasesQueryArgs { productIds = productIdsWithoutPurchaseInfo, status = checkHiddenPurchases ? PageFilters.Status.Hidden : PageFilters.Status.None };
+            var fetchHiddenProductsRequired = false;
             fetchOperation.onOperationSuccess += op =>
             {
-                var purchaseInfo = fetchOperation.result.list.FirstOrDefault();
-                if (purchaseInfo != null)
-                    m_AssetStoreCache.SetPurchaseInfos(new[] { purchaseInfo });
-                // If we can't find the purchase info the first time, it could be be that the asset is hidden we'll do another check
-                else if (!checkHiddenPurchases)
-                    FetchPurchaseInfoWithRetry(productId, true);
+                if (fetchOperation.result.list.Any())
+                    m_AssetStoreCache.SetPurchaseInfos(fetchOperation.result.list);
 
+                // If we can't find the all the purchase infos the first time, it could be be that the asset is hidden we'll do another check
+                if (fetchOperation.result.list.Count < productIdsWithoutPurchaseInfo.Count && !checkHiddenPurchases)
+                {
+                    fetchHiddenProductsRequired = true;
+                    var productIdsFound = fetchOperation.result.list.Select(info => info.productId).ToHashSet();
+                    var potentiallyHiddenProductIds = productIdsWithoutPurchaseInfo.Where(id => !productIdsFound.Contains(id));
+                    FetchPurchaseInfosWithRetry(potentiallyHiddenProductIds, true, doneCallback);
+                }
+            };
+            fetchOperation.onOperationFinalized += op =>
+            {
+                if (!fetchHiddenProductsRequired)
+                    doneCallback?.Invoke();
             };
             fetchOperation.Start(queryArgs);
         }

@@ -33,7 +33,6 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string resizerPartName = "resizer";
 
         protected internal static readonly float k_Bounds_Internal = 9.0f;
-        protected internal static readonly float k_BoundTop_Internal = 64.0f; // Current height of Title
 
         // The next two values need to be the same as USS... however, we can't get the values from there as we need them in a static
         // methods used to create new placemats
@@ -398,11 +397,11 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             var width = maxX - minX + k_Bounds_Internal * 2.0f;
-            var height = maxY - minY + k_Bounds_Internal * 2.0f + k_BoundTop_Internal;
+            var height = maxY - minY + k_Bounds_Internal * 2.0f;
 
             pos = new Rect(
                 minX - k_Bounds_Internal,
-                minY - (k_BoundTop_Internal + k_Bounds_Internal),
+                minY - k_Bounds_Internal,
                 width,
                 height);
 

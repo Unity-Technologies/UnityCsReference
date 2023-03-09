@@ -491,7 +491,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var startWirePortalModel = startPortModel.NodeModel as WirePortalModel;
 
-            if ((startPortModel.PortDataType == typeof(ExecutionFlow)) != (compatiblePortModel.PortDataType == typeof(ExecutionFlow)))
+            if (startPortModel.PortDataType == typeof(ExecutionFlow) != (compatiblePortModel.PortDataType == typeof(ExecutionFlow)))
+                return false;
+
+            if (startPortModel.PortType == PortType.MissingPort || compatiblePortModel.PortType == PortType.MissingPort)
                 return false;
 
             // No good if ports belong to same node that does not allow self connect
@@ -837,6 +840,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 CurrentGraphChangeDescription?.AddDeletedModels(wireModel);
             }
             m_PortWireIndex.RemoveWire(wireModel);
+
+            // Remove missing port with no connections.
+            if (wireModel.ToPort?.PortType == PortType.MissingPort && (!wireModel.ToPort?.GetConnectedWires().Any() ?? false))
+                wireModel.ToPort?.NodeModel?.RemoveUnusedMissingPort(wireModel.ToPort);
+
+            if (wireModel.FromPort?.PortType == PortType.MissingPort && (!wireModel.FromPort?.GetConnectedWires().Any() ?? false))
+                wireModel.FromPort?.NodeModel?.RemoveUnusedMissingPort(wireModel.FromPort);
         }
 
         /// <summary>
@@ -1153,7 +1163,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 var constantNodeModel = model as ConstantNodeModel;
                 Debug.Assert(constantNodeModel != null);
-                constantNodeModel.Initialize(constantTypeHandle);
+                constantNodeModel.Value.Initialize(constantTypeHandle);
                 initializationCallback?.Invoke(constantNodeModel);
             }
 
@@ -1398,15 +1408,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     CurrentGraphChangeDescription?.AddChangedModel(wireModel.ToPort, ChangeHint.GraphTopology);
                     CurrentGraphChangeDescription?.AddChangedModel(wireModel.FromPort, ChangeHint.GraphTopology);
 
-                    if (wireModel.ToPort?.PortType == PortType.MissingPort && (!wireModel.ToPort?.GetConnectedWires().Any() ?? false))
-                    {
-                        wireModel.ToPort?.NodeModel.RemoveUnusedMissingPort(wireModel.ToPort);
-                    }
-                    if (wireModel.FromPort?.PortType == PortType.MissingPort && (!wireModel.FromPort?.GetConnectedWires().Any() ?? false))
-                    {
-                        wireModel.FromPort?.NodeModel.RemoveUnusedMissingPort(wireModel.FromPort);
-                    }
-
                     RemoveWire(wireModel);
                 }
             }
@@ -1598,7 +1599,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="initializationCallback">An initialization method to be called right after the variable declaration is created.</param>
         /// <param name="spawnFlags">The flags specifying how the variable declaration is to be spawned.</param>
         /// <returns>The newly created variable declaration.</returns>
-        public virtual VariableDeclarationModel CreateGraphVariableDeclaration(Type variableTypeToCreate, TypeHandle variableDataType, string variableName, ModifierFlags modifierFlags, bool isExposed, GroupModel group = null, int indexInGroup = Int32.MaxValue, Constant initializationModel = null, SerializableGUID guid = default, Action<VariableDeclarationModel, Constant> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.None)
+        public virtual VariableDeclarationModel CreateGraphVariableDeclaration(Type variableTypeToCreate,
+            TypeHandle variableDataType, string variableName, ModifierFlags modifierFlags, bool isExposed,
+            GroupModel group = null, int indexInGroup = Int32.MaxValue, Constant initializationModel = null,
+            SerializableGUID guid = default, Action<VariableDeclarationModel, Constant> initializationCallback = null,
+            SpawnFlags spawnFlags = SpawnFlags.None)
         {
             var variableDeclaration = InstantiateVariableDeclaration(variableTypeToCreate, variableDataType,
                 variableName, modifierFlags, isExposed, initializationModel, guid, initializationCallback);
@@ -1738,11 +1743,6 @@ namespace Unity.GraphToolsFoundation.Editor
             if (keepGuid)
                 copy.SetGuid(sourceModel.Guid);
             copy.Title = GenerateGraphVariableDeclarationUniqueName(uniqueName);
-            if (copy.InitializationModel != null)
-            {
-                copy.CreateInitializationValue();
-                copy.InitializationModel.ObjectValue = sourceModel.InitializationModel.ObjectValue;
-            }
 
             AddVariableDeclaration(copy);
 

@@ -52,7 +52,7 @@ namespace UnityEditor.Toolbars
         static void OpenServicesDiscoveryWindow(Action analyticTrackingAction = null)
         {
             analyticTrackingAction?.Invoke();
-            PackageManagerWindow.OpenPackageManagerOnFilter(ServicesConstants.ExploreServicesPackageManagerFilter);
+            PackageManagerWindow.OpenPackageManagerOnPage(ServicesConstants.ExploreServicesPackageManagerPageId);
         }
     }
 }

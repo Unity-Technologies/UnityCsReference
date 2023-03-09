@@ -296,5 +296,17 @@ namespace UnityEngine
 
         internal static extern void LogSticky(int identifier, LogType logType, LogOption logOptions, string message, Object context = null);
         internal static extern void RemoveLogEntriesByIdentifier(int identifier);
+
+        [NativeHeader("Runtime/Export/Debug/LogCapture.bindings.h")]
+        [StructLayout(LayoutKind.Sequential)]
+        public struct StartupLog
+        {
+            public long timestamp;
+            public LogType logType;
+            public string message;
+        }
+        
+        [FreeFunction("RetrieveStartupLogs")]
+        extern public static StartupLog[] RetrieveStartupLogs();
     }
 }

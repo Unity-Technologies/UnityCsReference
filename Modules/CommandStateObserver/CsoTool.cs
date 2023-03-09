@@ -28,7 +28,7 @@ namespace Unity.CommandStateObserver
         /// <summary>
         /// The command dispatcher.
         /// </summary>
-        public Dispatcher Dispatcher { get; protected set; }
+        protected Dispatcher Dispatcher { get; set; }
 
         /// <summary>
         /// The observer manager.

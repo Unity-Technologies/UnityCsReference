@@ -462,4 +462,60 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
     }
+
+    /// <summary>
+    /// Command to change the mode of a node.
+    /// </summary>
+    class ChangeNodeModeCommand : UndoableCommand
+    {
+        /// <summary>
+        /// The node whose mode is changed.
+        /// </summary>
+        public NodeModel NodeModel;
+
+        /// <summary>
+        /// The new mode index.
+        /// </summary>
+        public int NewNodeModeIndex;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChangeNodeModeCommand"/> class.
+        /// </summary>
+        public ChangeNodeModeCommand()
+        {
+            UndoString = "Change Node Mode";
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ChangeNodeModeCommand"/> class.
+        /// </summary>
+        /// <param name="nodeModel">The node model to change.</param>
+        /// <param name="newNodeModeIndex">The node mode index to change to.</param>
+        public ChangeNodeModeCommand(NodeModel nodeModel, int newNodeModeIndex) : this()
+        {
+            NodeModel = nodeModel;
+            NewNodeModeIndex = newNodeModeIndex;
+        }
+
+        /// <summary>
+        /// Default command handler.
+        /// </summary>
+        /// <param name="undoState">The undo state component.</param>
+        /// <param name="graphModelState">The graph model state component.</param>
+        /// <param name="command">The command.</param>
+        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, ChangeNodeModeCommand command)
+        {
+            using (var undoStateUpdater = undoState.UpdateScope)
+            {
+                undoStateUpdater.SaveState(graphModelState);
+            }
+
+            using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
+            {
+                command.NodeModel.ChangeMode(command.NewNodeModeIndex);
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
+            }
+        }
+    }
 }

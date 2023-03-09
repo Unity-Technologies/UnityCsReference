@@ -54,9 +54,9 @@ namespace UnityEditor.ShaderFoundry
         {
             // The type relations must be explicitly recorded.
             m_Instance = new DataTypeStatic();
-            m_Instance.Register<ShaderAttributeParamInternal, ShaderAttributeParam>(DataType.ShaderAttributeParam);
+            m_Instance.Register<ShaderAttributeParameterInternal, ShaderAttributeParameter>(DataType.ShaderAttributeParameter);
             m_Instance.Register<ShaderAttributeInternal, ShaderAttribute>(DataType.ShaderAttribute);
-            m_Instance.Register<CommandDescriptorInternal, CommandDescriptor>(DataType.CommandDescriptor);
+            m_Instance.Register<RenderStateDescriptorInternal, RenderStateDescriptor>(DataType.RenderStateDescriptor);
             m_Instance.Register<DefineDescriptorInternal, DefineDescriptor>(DataType.DefineDescriptor);
             m_Instance.Register<IncludeDescriptorInternal, IncludeDescriptor>(DataType.IncludeDescriptor);
             m_Instance.Register<KeywordDescriptorInternal, KeywordDescriptor>(DataType.KeywordDescriptor);

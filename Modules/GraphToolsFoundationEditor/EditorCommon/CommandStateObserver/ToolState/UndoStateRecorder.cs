@@ -15,7 +15,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// Class used to serialize and deserialize state components for undo operations and keep track of changesets associated with them.
     /// </summary>
     [Serializable]
-    class UndoStateRecorder : ScriptableObject, ISerializationCallbackReceiver
+    class UndoStateRecorder : ScriptableObject, ISerializationCallbackReceiver, IUndoableCommandMerger
     {
         class SerializedChangeset
         {
@@ -113,9 +113,15 @@ namespace Unity.GraphToolsFoundation.Editor
 
         bool m_DontSerialize;
         bool m_NeedToRestore;
+        bool m_MergingCommands;
+        bool m_StartOfMerge;
+        bool m_StartOfRecording;
+        bool m_HasRecordedComponentsInScope;
 
+        int m_StartMergeGroup;
         int m_UndoGroup;
         string m_UndoString;
+        string m_LastUndoString;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UndoStateRecorder"/> class.
@@ -148,7 +154,16 @@ namespace Unity.GraphToolsFoundation.Editor
                 Debug.LogError("Unbalanced UndoData usage.");
             }
 
-            Clear();
+            // If we are merging commands, we should not clear the state of the recorder
+            // for each command. Only at the start of the merging process.
+            if (!m_MergingCommands || m_StartOfMerge)
+            {
+                Clear();
+                if (m_MergingCommands)
+                    m_StartOfMerge = false;
+            }
+
+            m_StartOfRecording = true;
 
             // When an operation is done after one or more undos, remove operations that will be pruned.
             if (m_OperationId < s_LastOperationId)
@@ -162,6 +177,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             m_OperationId = ++s_LastOperationId;
             m_UndoString = undoString;
+            m_HasRecordedComponentsInScope = false;
         }
 
         /// <summary>
@@ -173,8 +189,10 @@ namespace Unity.GraphToolsFoundation.Editor
             if (stateComponent == null)
                 return;
 
-            if (m_StateComponents.Count == 0)
+            // Increment the undo group when recording the first component of a command.
+            if (m_StartOfRecording)
             {
+                m_StartOfRecording = false;
                 Undo.IncrementCurrentGroup();
                 m_UndoGroup = Undo.GetCurrentGroup();
             }
@@ -192,6 +210,15 @@ namespace Unity.GraphToolsFoundation.Editor
                 var data = JsonUtility.ToJson(stateComponent);
                 m_SerializedState.Add(data);
             }
+            else if (m_MergingCommands)
+            {
+                // When merging commands, even though we only serialize the state once,
+                // we still need to push it on the undo stack. Otherwise some SerializedReferences
+                // won't be serialized/deserialized correctly.
+                stateComponent.WillPushOnUndoStack(m_UndoString);
+            }
+
+            m_HasRecordedComponentsInScope = true;
         }
 
         /// <summary>
@@ -212,7 +239,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="stateComponents">Additional state components to record; they will be recorded only if there already was other recorded state components.</param>
         public void EndRecording(params IUndoableStateComponent[] stateComponents)
         {
-            if (m_StateComponents.Count > 0)
+            // Only if components were recorded during this BeginRecording/EndRecording scope.
+            if (m_HasRecordedComponentsInScope)
             {
                 if (stateComponents != null)
                 {
@@ -225,7 +253,10 @@ namespace Unity.GraphToolsFoundation.Editor
                     var component = m_StateComponents[i];
                     var changeset = component.ChangesetManager?.GetAggregatedChangeset(m_StateComponentVersions[i], component.CurrentVersion);
                     var serializedChangeset = new SerializedChangeset(changeset);
-                    s_ToNextVersionChangesets.TryAdd((component.Guid, m_StateComponentVersions[i]), serializedChangeset);
+
+                    // When merging multiple commands, the starting component version doesn't change.
+                    // We must therefore update the serialized changeset.
+                    s_ToNextVersionChangesets[(component.Guid, m_StateComponentVersions[i])] = serializedChangeset;
                     s_FromPreviousVersionChangesets.TryAdd((component.Guid, component.CurrentVersion), serializedChangeset);
 
                     operation.ToNextChangesets.Add((component.Guid, m_StateComponentVersions[i]));
@@ -241,9 +272,15 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 // Although we want to serialize state components in the AddComponent call,
                 // we want to call RegisterCompleteObjectUndo() only now because at this point we know
-                // that AddComponent will not be called again.
-                Undo.RegisterCompleteObjectUndo(this, m_UndoString);
+                // that AddComponent will not be called again. But only do so if we are not merging commands.
+                // In that case, we must delay the call until all commands are done, otherwise only the changesets
+                // of the first command will be restored on an Undo operation, and the changesets of the last command
+                // on a Redo operation.
+                if (!m_MergingCommands)
+                    Undo.RegisterCompleteObjectUndo(this, m_UndoString);
                 Undo.CollapseUndoOperations(m_UndoGroup);
+
+                m_LastUndoString = m_UndoString;
             }
 
             m_UndoString = null;
@@ -343,6 +380,30 @@ namespace Unity.GraphToolsFoundation.Editor
             m_SerializedState.Clear();
             m_StateComponentTypeNames.Clear();
             m_NeedToRestore = false;
+        }
+
+        /// <inheritdoc />
+        public void StartMergingUndoableCommands()
+        {
+            m_StartMergeGroup = Undo.GetCurrentGroup();
+            m_MergingCommands = true;
+            m_StartOfMerge = true;
+        }
+
+        /// <inheritdoc />
+        public void StopMergingUndoableCommands()
+        {
+            m_MergingCommands = false;
+
+            // Only register the undo if there were any component modified. Otherwise
+            // we end up with empty undos on the undo stack.
+            if (m_StateComponents.Count > 0)
+            {
+                m_DontSerialize = true;
+                Undo.RegisterCompleteObjectUndo(this, m_LastUndoString);
+            }
+
+            Undo.CollapseUndoOperations(m_StartMergeGroup);
         }
     }
 }

@@ -22,6 +22,7 @@ namespace UnityEditor
             private SerializedObject m_SerializedObject;
 
             public SerializedProperty lightType { get; private set; }
+            [Obsolete("The lightShape property has been deprecated in favor of the lightType property.")]
             public SerializedProperty lightShape { get; private set; }
             public SerializedProperty range { get; private set; }
             public SerializedProperty spotAngle { get; private set; }
@@ -199,7 +200,6 @@ namespace UnityEditor
             public void OnEnable()
             {
                 lightType = m_SerializedObject.FindProperty("m_Type");
-                lightShape = m_SerializedObject.FindProperty("m_Shape");
                 range = m_SerializedObject.FindProperty("m_Range");
                 spotAngle = m_SerializedObject.FindProperty("m_SpotAngle");
                 innerSpotAngle = m_SerializedObject.FindProperty("m_InnerSpotAngle");
@@ -280,21 +280,28 @@ namespace UnityEditor
                 int selectedLightType = lightType.intValue;
                 int selectedShape = isAreaLightType ? lightType.intValue : (int)AreaLightShape.None;
 
-                // Handle all lights that are not in the default set
-                if (!Styles.LightTypeValues.Contains(lightType.intValue))
-                {
-                    if (lightType.intValue == (int)LightType.Disc)
-                    {
-                        selectedLightType = (int)LightType.Rectangle;
-                        selectedShape = (int)AreaLightShape.Disc;
-                    }
-                }
-
                 var lightTypeRect = EditorGUILayout.GetControlRect();
                 EditorGUI.BeginProperty(lightTypeRect, Styles.Type, lightType);
                 EditorGUI.BeginChangeCheck();
 
-                int type = EditorGUI.IntPopup(lightTypeRect, Styles.Type, selectedLightType, Styles.LightTypeTitles, Styles.LightTypeValues);
+                int type;
+                if (Styles.LightTypeValues.Contains(lightType.intValue))
+                {
+                    // ^ The currently selected light type is supported in the
+                    // current pipeline.
+                    type = EditorGUI.IntPopup(lightTypeRect, Styles.Type, selectedLightType, Styles.LightTypeTitles, Styles.LightTypeValues);
+                }
+                else
+                {
+                    // ^ The currently selected light type is not supported in
+                    // the current pipeline. Add it to the dropdown, since it
+                    // would show up as a blank entry.
+                    string currentTitle = ((LightType)lightType.intValue).ToString();
+                    GUIContent[] titles = Styles.LightTypeTitles.Append(EditorGUIUtility.TrTextContent(currentTitle)).ToArray();
+                    int[] values = Styles.LightTypeValues.Append(lightType.intValue).ToArray();
+                    type = EditorGUI.IntPopup(lightTypeRect, Styles.Type, selectedLightType, titles, values);
+                }
+
 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -302,6 +309,14 @@ namespace UnityEditor
                     lightType.intValue = type;
                 }
                 EditorGUI.EndProperty();
+
+                if (!Styles.LightTypeValues.Contains(lightType.intValue))
+                {
+                    EditorGUILayout.HelpBox(
+                        "This light type is not supported in the current active render pipeline. Change the light type or the active Render Pipeline to use this light.",
+                        MessageType.Info
+                    );
+                }
 
                 if (isAreaLightType && selectedShape != (int)AreaLightShape.None)
                 {

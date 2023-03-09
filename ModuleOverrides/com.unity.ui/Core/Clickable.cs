@@ -17,10 +17,32 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Callback triggered when the target element is clicked, including event data.
         /// </summary>
+        /// <remarks>
+        /// Encapsulates a method that has an <see cref="EventBase"/> parameter and does not return a value.
+        /// </remarks>
         public event System.Action<EventBase> clickedWithEventInfo;
+
         /// <summary>
         /// Callback triggered when the target element is clicked.
         /// </summary>
+        /// <remarks>
+        /// Encapsulates a method that has no parameters and does not return a value.
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// public VisualElement CreateButton()
+        /// {
+        ///     var button = new Button { text = "Press Me" };
+        ///     button.clicked += () =>
+        ///     {
+        ///         Debug.Log("Button was pressed!");
+        ///     };
+        ///     return button;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
         public event System.Action clicked;
 
         private readonly long m_Delay; // in milliseconds
@@ -61,8 +83,8 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="delay">Determines when the event begins. Applies if delay > 0.</param>
-        /// <param name="interval">Determines the time delta between event repetition. Applies if interval > 0.</param>
+        /// <param name="delay">Determines when the event begins. Value is defined in milliseconds. Applies if delay > 0.</param>
+        /// <param name="interval">Determines the time delta between event repetition. Value is defined in milliseconds. Applies if interval > 0.</param>
         public Clickable(System.Action handler, long delay, long interval) : this(handler)
         {
             m_Delay = delay;
@@ -96,7 +118,7 @@ namespace UnityEngine.UIElements
         {
             if ((clicked != null || clickedWithEventInfo != null) && IsRepeatable())
             {
-                if (ContainsPointer(m_ActivePointerId))
+                if (ContainsPointer(m_ActivePointerId) && (target.enabledInHierarchy || acceptClicksIfDisabled))
                 {
                     Invoke(null);
                     target.pseudoStates |= PseudoStates.Active;
@@ -310,7 +332,7 @@ namespace UnityEngine.UIElements
             if (IsRepeatable())
             {
                 // Repeatable button clicks are performed on the MouseDown and at timer events
-                if (ContainsPointer(pointerId))
+                if (ContainsPointer(pointerId) && (target.enabledInHierarchy || acceptClicksIfDisabled))
                 {
                     Invoke(evt);
                 }
@@ -370,7 +392,7 @@ namespace UnityEngine.UIElements
             else
             {
                 // Non repeatable button clicks are performed on the MouseUp
-                if (ContainsPointer(pointerId) && target.enabledInHierarchy)
+                if (ContainsPointer(pointerId) && (target.enabledInHierarchy || acceptClicksIfDisabled))
                 {
                     Invoke(evt);
                 }

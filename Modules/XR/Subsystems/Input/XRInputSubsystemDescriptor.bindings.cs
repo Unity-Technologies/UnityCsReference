@@ -19,5 +19,10 @@ namespace UnityEngine.XR
     {
         [NativeConditional("ENABLE_XR")]
         public extern bool disablesLegacyInput { get; }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(XRInputSubsystemDescriptor descriptor) => descriptor.m_Ptr;
+        }
     }
 }

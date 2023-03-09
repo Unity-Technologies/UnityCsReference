@@ -9,27 +9,27 @@ namespace UnityEditor.Snap
 {
     static class Shortcuts
     {
-        [Shortcut("Snap/Toggle Grid Snap", typeof(SceneView), KeyCode.Backslash)]
+        [Shortcut("Grid and Snap/Toggle Snapping", typeof(SceneView), KeyCode.Backslash)]
         internal static void ToggleGridSnap()
         {
-            EditorSnapSettings.gridSnapEnabled = !EditorSnapSettings.gridSnapEnabled;
+            EditorSnapSettings.snapEnabled = !EditorSnapSettings.snapEnabled;
         }
 
-        [Shortcut("Grid/Increase Grid Size", typeof(SceneView), KeyCode.RightBracket, ShortcutModifiers.Action)]
+        [Shortcut("Grid and Snap/Increase Grid Size", typeof(SceneView), KeyCode.RightBracket, ShortcutModifiers.Action)]
         internal static void IncreaseGridSize()
         {
             GridSettings.sizeMultiplier++;
             SceneView.RepaintAll();
         }
 
-        [Shortcut("Grid/Decrease Grid Size", typeof(SceneView), KeyCode.LeftBracket, ShortcutModifiers.Action)]
+        [Shortcut("Grid and Snap/Decrease Grid Size", typeof(SceneView), KeyCode.LeftBracket, ShortcutModifiers.Action)]
         internal static void DecreaseGridSize()
         {
             GridSettings.sizeMultiplier--;
             SceneView.RepaintAll();
         }
 
-        [Shortcut("Grid/Reset Grid", typeof(SceneView))]
+        [Shortcut("Grid and Snap/Reset Grid", typeof(SceneView))]
         internal static void ResetGrid()
         {
             MenuNudgePerspectiveReset();
@@ -37,7 +37,7 @@ namespace UnityEditor.Snap
             SceneView.RepaintAll();
         }
 
-        [Shortcut("Grid/Nudge Grid Backward", typeof(SceneView))]
+        [Shortcut("Grid and Snap/Nudge Grid Backward", typeof(SceneView))]
         internal static void MenuNudgePerspectiveBackward()
         {
             SceneView sv = SceneView.lastActiveSceneView;
@@ -62,7 +62,7 @@ namespace UnityEditor.Snap
             sv.Repaint();
         }
 
-        [Shortcut("Grid/Nudge Grid Forward", typeof(SceneView))]
+        [Shortcut("Grid and Snap/Nudge Grid Forward", typeof(SceneView))]
         internal static void MenuNudgePerspectiveForward()
         {
             SceneView sv = SceneView.lastActiveSceneView;
@@ -85,6 +85,12 @@ namespace UnityEditor.Snap
 
             sv.sceneViewGrids.SetPivot(axis, v);
             sv.Repaint();
+        }
+
+        [Shortcut("Grid and Snap/Push To Grid", typeof(SceneView), KeyCode.Backslash, ShortcutModifiers.Action)]
+        internal static void PushToGrid()
+        {
+            GridSnapping.SnapSelectionToGrid();
         }
 
         internal static void MenuNudgePerspectiveReset()

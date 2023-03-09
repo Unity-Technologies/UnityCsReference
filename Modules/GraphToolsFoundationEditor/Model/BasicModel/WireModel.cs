@@ -78,6 +78,7 @@ namespace Unity.GraphToolsFoundation.Editor
             set
             {
                 var oldPort = FromPort;
+                oldPort?.NodeModel.RemoveUnusedMissingPort(oldPort);
                 m_FromPortReference.Assign(value);
                 m_FromPortModelCache = value;
                 OnPortChanged(oldPort, value);
@@ -93,6 +94,7 @@ namespace Unity.GraphToolsFoundation.Editor
             set
             {
                 var oldPort = ToPort;
+                oldPort?.NodeModel.RemoveUnusedMissingPort(oldPort);
                 m_ToPortReference.Assign(value);
                 m_ToPortModelCache = value;
                 OnPortChanged(oldPort, value);
@@ -178,12 +180,87 @@ namespace Unity.GraphToolsFoundation.Editor
             Assert.IsNotNull(fromPortModel);
             Assert.IsNotNull(fromPortModel.NodeModel);
 
+            var oldFromPort = FromPort;
+            var oldToPort = ToPort;
+
             FromPort = fromPortModel;
             ToPort = toPortModel;
 
-            toPortModel.NodeModel.OnConnection(toPortModel, fromPortModel);
-            fromPortModel.NodeModel.OnConnection(fromPortModel, toPortModel);
+            var fromIsDifferent = oldFromPort != fromPortModel;
+            var toIsDifferent = oldToPort != toPortModel;
+            var needOnConnection = fromIsDifferent || toIsDifferent;
+
+            if (oldFromPort != null && oldToPort != null)
+            {
+                if (fromIsDifferent)
+                {
+                    oldFromPort.NodeModel.OnDisconnection(oldFromPort, oldToPort);
+                }
+
+                if (toIsDifferent)
+                {
+                    oldToPort.NodeModel.OnDisconnection(oldToPort, oldFromPort);
+                }
+            }
+
+            // If either ports have changed, both end need to know about the new connection.
+            if (needOnConnection)
+            {
+                toPortModel.NodeModel.OnConnection(toPortModel, fromPortModel);
+                fromPortModel.NodeModel.OnConnection(fromPortModel, toPortModel);
+            }
         }
+
+        /// <summary>
+        /// Sets the port of the wire on a specific side.
+        /// </summary>
+        /// <param name="side">The side of the wire on which to set the port.</param>
+        /// <param name="value">The new port the wire should have.</param>
+        public virtual void SetPort(WireSide side, PortModel value)
+        {
+            PortModel oldPort;
+            PortModel otherPort;
+            if (side == WireSide.From)
+            {
+                if (value == FromPort)
+                    return;
+                oldPort = FromPort;
+                otherPort = ToPort;
+                FromPort = value;
+            }
+            else
+            {
+                if (value == ToPort)
+                    return;
+                oldPort = ToPort;
+                otherPort = FromPort;
+                ToPort = value;
+            }
+
+            // All ports must not be null to call OnConnection/OnDisconnection
+            if (otherPort == null)
+                return;
+
+            if (oldPort != null)
+            {
+                oldPort.NodeModel.OnDisconnection(oldPort, otherPort);
+            }
+
+            if (value != null)
+            {
+                // Both end of the wire need to know about the new connection.
+                value.NodeModel.OnConnection(value, otherPort);
+                otherPort.NodeModel.OnConnection(otherPort, value);
+            }
+        }
+
+        /// <summary>
+        /// Sets the other side port of the wire.
+        /// </summary>
+        /// <param name="otherSide">The other side of the wire on which to set the port.</param>
+        /// <param name="value">The new port the wire should have on the other side.</param>
+        public virtual void SetOtherPort(WireSide otherSide, PortModel value) =>
+            SetPort(otherSide.GetOtherSide(), value);
 
         /// <inheritdoc />
         public override string ToString()

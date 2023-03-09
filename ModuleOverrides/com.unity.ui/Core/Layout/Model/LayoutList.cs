@@ -48,7 +48,6 @@ unsafe struct LayoutList<T> : IDisposable
         m_Data = (Data*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<Data>(), UnsafeUtility.AlignOf<Data>(), allocator);
         Assert.IsTrue(m_Data != null);
         UnsafeUtility.MemClear(m_Data, UnsafeUtility.SizeOf<Data>());
-        m_Data->Count = 0;
         ResizeCapacity(initialCapacity);
     }
 
@@ -56,6 +55,9 @@ unsafe struct LayoutList<T> : IDisposable
     {
         if (null == m_Data)
             return;
+
+        if (m_Data->Values != null)
+            UnsafeUtility.Free(m_Data->Values, m_Allocator);
 
         UnsafeUtility.Free(m_Data, m_Allocator);
         m_Data = null;
@@ -72,7 +74,7 @@ unsafe struct LayoutList<T> : IDisposable
         if (index < m_Data->Count)
         {
             // Shift elements to make space.
-            UnsafeUtility.MemCpy(m_Data->Values + index + 1, m_Data->Values + index, UnsafeUtility.SizeOf<T>() * (m_Data->Count - index));
+            UnsafeUtility.MemMove(m_Data->Values + index + 1, m_Data->Values + index, UnsafeUtility.SizeOf<T>() * (m_Data->Count - index));
         }
 
         m_Data->Values[index] = value;
@@ -103,7 +105,7 @@ unsafe struct LayoutList<T> : IDisposable
 
         m_Data->Count--;
 
-        UnsafeUtility.MemCpy(m_Data->Values + index, m_Data->Values + index + 1, UnsafeUtility.SizeOf<T>() * (m_Data->Count - index));
+        UnsafeUtility.MemMove(m_Data->Values + index, m_Data->Values + index + 1, UnsafeUtility.SizeOf<T>() * (m_Data->Count - index));
         m_Data->Values[m_Data->Count] = default;
     }
 

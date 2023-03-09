@@ -43,7 +43,5 @@ namespace UnityEditor.PackageManager.UI.Internal
         string deprecationMessage { get; }
 
         bool isDeprecated { get; }
-
-        bool IsInTab(PackageFilterTab tab);
     }
 }

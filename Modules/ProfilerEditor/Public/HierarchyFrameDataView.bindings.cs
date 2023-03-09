@@ -76,14 +76,11 @@ namespace UnityEditor.Profiling
 
         internal extern int GetItemChildrenCount(int id);
 
-        [NativeThrows]
-        public extern void GetItemChildren(int id, List<int> outChildren);
+        public extern void GetItemChildren(int id, [NotNull] List<int> outChildren);
 
-        [NativeThrows]
-        public extern void GetItemAncestors(int id, List<int> outAncestors);
+        public extern void GetItemAncestors(int id, [NotNull] List<int> outAncestors);
 
-        [NativeThrows]
-        public extern void GetItemDescendantsThatHaveChildren(int id, List<int> outChildren);
+        public extern void GetItemDescendantsThatHaveChildren(int id, [NotNull] List<int> outChildren);
 
         [ThreadSafe]
         public extern string GetItemName(int id);
@@ -142,7 +139,7 @@ namespace UnityEditor.Profiling
         public extern int GetItemMergedSamplesCount(int id);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern void GetItemRawFrameDataViewIndices(int id, List<int> outSampleIndices);
+        public extern void GetItemRawFrameDataViewIndices(int id, [NotNull] List<int> outSampleIndices);
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool ItemContainsRawFrameDataViewIndex(int id, int sampleIndex);
@@ -259,6 +256,11 @@ namespace UnityEditor.Profiling
             return frameIndex.GetHashCode() ^
                 (threadIndex.GetHashCode() << 8) ^
                 (viewMode.GetHashCode() << 24);
+        }
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(HierarchyFrameDataView frameDataView) => frameDataView.m_Ptr;
         }
     }
 }

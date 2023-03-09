@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageSimpleTagLabel(PackageTag tag, string text)
         {
             m_Tag = tag;
-            name = "tag" + tag.ToString();
+            name = "tag" + tag;
             this.text = text;
         }
 

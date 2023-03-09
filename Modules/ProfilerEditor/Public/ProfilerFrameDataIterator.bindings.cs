@@ -131,5 +131,10 @@ namespace UnityEditorInternal
 
         [ThreadSafe]
         private static extern void Internal_Destroy(IntPtr ptr);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(ProfilerFrameDataIterator iter) => iter.m_Ptr;
+        }
     }
 }

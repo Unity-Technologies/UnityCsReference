@@ -134,7 +134,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     if (graphModel.Stencil.GetConstantType(variableModel.GetDataType()) == null)
                         continue;
                     var constantModel = graphModel.CreateConstantNode(variableModel.GetDataType(), variableModel.Title, variableModel.Position);
-                    constantModel.ObjectValue = variableModel.VariableDeclarationModel?.InitializationModel?.ObjectValue;
+                    constantModel.Value.ObjectValue = variableModel.VariableDeclarationModel?.InitializationModel?.ObjectValue;
                     constantModel.State = variableModel.State;
                     if (variableModel.HasUserColor)
                         constantModel.Color = variableModel.Color;

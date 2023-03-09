@@ -15,8 +15,8 @@ namespace UnityEditor
     [StaticAccessor("MeshUtility", StaticAccessorType.DoubleColon)]
     public class MeshUtility
     {
-        [FreeFunction] extern private static void OptimizeIndexBuffers([NotNull("NullExceptionObject")] Mesh mesh);
-        [FreeFunction] extern private static void OptimizeReorderVertexBuffer([NotNull("NullExceptionObject")] Mesh mesh);
+        [FreeFunction] extern private static void OptimizeIndexBuffers([NotNull] Mesh mesh);
+        [FreeFunction] extern private static void OptimizeReorderVertexBuffer([NotNull] Mesh mesh);
 
         public static void Optimize(Mesh mesh)
         {

@@ -13,5 +13,27 @@ namespace Unity.GraphToolsFoundation.Editor
     [AttributeUsage(AttributeTargets.Field)]
     class NodeOptionAttribute : Attribute
     {
+        /// <summary>
+        /// Whether the node option should only be shown in the inspector.
+        /// </summary>
+        /// <remarks>All node options should show up in the inspector, but not all node options should show up on the node.</remarks>
+        public bool ShowInInspectorOnly { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NodeOptionAttribute"/> class.
+        /// </summary>
+        public NodeOptionAttribute()
+        {
+            ShowInInspectorOnly = false;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NodeOptionAttribute"/> class.
+        /// </summary>
+        /// <param name="showInInspectorOnly">Whether the node option should only be shown in the inspector.</param>
+        public NodeOptionAttribute(bool showInInspectorOnly)
+        {
+            ShowInInspectorOnly = showInInspectorOnly;
+        }
     }
 }

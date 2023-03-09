@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.ShortcutManagement;
+using UnityEditor.UIElements.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -266,6 +267,7 @@ namespace UnityEditor.UIElements.Debugger
         private ToolbarToggle m_ShowDrawStatsToggle;
         private ToolbarToggle m_BreakBatchesToggle;
         private ToolbarToggle m_ShowWireframeToggle;
+        private EnumField m_ShowTextMetrics;
 
         private DebuggerTreeView m_TreeViewContainer;
         private StylesDebugger m_StylesDebuggerContainer;
@@ -275,6 +277,7 @@ namespace UnityEditor.UIElements.Debugger
         private HighlightOverlayPainter m_PickOverlay;
         private LayoutOverlayPainter m_LayoutOverlay;
         private WireframeOverlayPainter m_WireframeOverlay;
+        private TextInfoOverlay m_TextInfoOverlay;
 
         public void Initialize(EditorWindow debuggerWindow, VisualElement root, DebuggerContext context)
         {
@@ -344,6 +347,25 @@ namespace UnityEditor.UIElements.Debugger
                 m_ShowWireframeToggle.text = "Show Wireframe";
                 m_ShowWireframeToggle.RegisterValueChangedCallback((e) => { m_Context.showWireframe = e.newValue; });
                 m_Toolbar.Add(m_ShowWireframeToggle);
+
+                m_ShowTextMetrics = new EnumField() { name = "showTextMetrics" };
+                m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
+
+                // Update USS classes so it looks like other ToolbarToggles
+                m_ShowTextMetrics.AddToClassList(ToolbarToggle.ussClassName);
+                m_ShowTextMetrics.Q<VisualElement>(classes: EnumField.inputUssClassName).AddToClassList(Toggle.inputUssClassName);
+                m_ShowTextMetrics.Q<VisualElement>(classes: EnumField.inputUssClassName).RemoveFromClassList(EnumField.inputUssClassName);
+                m_ShowTextMetrics.Q<TextElement>().RemoveFromClassList(EnumField.textUssClassName);
+                m_ShowTextMetrics.Q<TextElement>().AddToClassList(Toggle.textUssClassName);
+                m_ShowTextMetrics.Init(TextInfoOverlay.DisplayOption.None);
+                m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
+
+                m_ShowTextMetrics.RegisterValueChangedCallback((e) =>
+                {
+                    m_TextInfoOverlay.displayOption = (TextInfoOverlay.DisplayOption)e.newValue;
+                    m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
+                });
+                m_Toolbar.Add(m_ShowTextMetrics);
             }
 
             var splitter = new DebuggerSplitter();
@@ -362,6 +384,7 @@ namespace UnityEditor.UIElements.Debugger
             m_PickOverlay = new HighlightOverlayPainter();
             m_LayoutOverlay = new LayoutOverlayPainter();
             m_WireframeOverlay = new WireframeOverlayPainter();
+            m_TextInfoOverlay = new TextInfoOverlay(m_Context.selection);
 
             OnContextChange();
 

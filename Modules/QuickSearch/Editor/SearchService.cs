@@ -337,7 +337,7 @@ namespace UnityEditor.Search
 
             // Transfer all options from options to context.options
             context.options |= options;
-            
+
             int fetchProviderCount = 0;
             var allItems = new List<SearchItem>(3);
 
@@ -384,6 +384,10 @@ namespace UnityEditor.Search
         {
             if (iterator != null && context.options.HasAny(SearchFlags.Synchronous))
             {
+                var session = context.sessions.GetProviderSession(provider);
+                session.Reset(context.sessions.currentSessionContext, iterator, k_MaxFetchTimeMs, k_MaxSessionTimeMs);
+                session.Start();
+
                 using (var stackedEnumerator = new SearchEnumerator<SearchItem>(iterator))
                 {
                     while (stackedEnumerator.MoveNext())
@@ -392,6 +396,8 @@ namespace UnityEditor.Search
                             allItems.Add(stackedEnumerator.Current);
                     }
                 }
+
+                session.Stop();
             }
             else
             {
@@ -789,7 +795,7 @@ namespace UnityEditor.Search
             if (options.HasNone(IndexingOptions.Temporary))
             {
                 indexName = System.IO.Path.GetFileNameWithoutExtension(indexPath);
-                if (!AssetDatabase.GetAssetFolderInfo(indexPath, out var rootFolder, out var immutable) || immutable)
+                if (!AssetDatabase.TryGetAssetFolderInfo(indexPath, out var rootFolder, out var immutable) || immutable)
                     indexPath = AssetDatabase.GenerateUniqueAssetPath($"Assets/{indexName}.index");
             }
             else

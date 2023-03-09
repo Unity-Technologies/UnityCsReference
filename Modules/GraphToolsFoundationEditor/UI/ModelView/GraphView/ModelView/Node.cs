@@ -30,6 +30,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string nodeOptionsContainerPartName = "node-options";
         [Obsolete("nodeSettingsContainerPartName has been deprecated. Use nodeOptionsContainerPartName instead.")]
         public static readonly string nodeSettingsContainerPartName = "node-options";
+        public static readonly string nodeModeDropDownPartName = "node-mode-drop-down";
 
         /// <summary>
         /// The name of the port container part.
@@ -51,7 +52,8 @@ namespace Unity.GraphToolsFoundation.Editor
         protected override void BuildPartList()
         {
             PartList.AppendPart(EditableTitlePart.Create(titleContainerPartName, Model, this, ussClassName));
-            PartList.AppendPart(SerializedFieldsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.NodeOptionsFilter));
+            PartList.AppendPart(NodeModeDropDownPart.Create(nodeModeDropDownPartName, Model, this, ussClassName));
+            PartList.AppendPart(SerializedFieldsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.NodeOptionsFilterForNode));
             PartList.AppendPart(PortContainerPart.Create(portContainerPartName, Model, this, ussClassName));
         }
 

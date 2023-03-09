@@ -1212,7 +1212,6 @@ namespace UnityEditor
         // Attempts to load a layout. If unsuccessful, restores the previous layout.
         public static bool TryLoadWindowLayout(string path, bool newProjectLayoutWasCreated)
         {
-            SaveDefaultWindowPreferences();
             if (LoadWindowLayout(path, newProjectLayoutWasCreated, true, false, true))
                 return true;
             LoadCurrentModeLayout(FindMainWindow());
@@ -1397,6 +1396,8 @@ namespace UnityEditor
                 else
                     Toolbar.lastLoadedLayoutName = null;
             }
+
+            SaveDefaultWindowPreferences();
 
             return true;
         }
@@ -1613,6 +1614,7 @@ namespace UnityEditor
         {
             SaveWindowLayout w = GetWindowDontShow<SaveWindowLayout>();
             w.minSize = w.maxSize = new Vector2(k_Width, k_Height);
+            w.m_Pos = new Rect(0, 0,k_Width, k_Height);
             w.ShowAuxWindow();
             return w;
         }

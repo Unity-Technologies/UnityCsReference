@@ -4,6 +4,7 @@
 
 using UnityEngine.Bindings;
 using MinMaxCurve = UnityEngine.ParticleSystem.MinMaxCurve;
+using MinMaxCurveBlittable = UnityEngine.ParticleSystem.MinMaxCurveBlittable;
 
 namespace UnityEngine
 {
@@ -25,15 +26,33 @@ namespace UnityEngine
         extern public bool multiplyDragByParticleSize { get; set; }
         extern public bool multiplyDragByParticleVelocity { get; set; }
         extern public Texture3D vectorField { get; set; }
-        extern public MinMaxCurve directionX { get; set; }
-        extern public MinMaxCurve directionY { get; set; }
-        extern public MinMaxCurve directionZ { get; set; }
-        extern public MinMaxCurve gravity { get; set; }
-        extern public MinMaxCurve rotationSpeed { get; set; }
-        extern public MinMaxCurve rotationAttraction { get; set; }
-        extern public MinMaxCurve drag { get; set; }
-        extern public MinMaxCurve vectorFieldSpeed { get; set; }
-        extern public MinMaxCurve vectorFieldAttraction { get; set; }
+
+        public MinMaxCurve directionX { get => directionXBlittable; set => directionXBlittable = value; }
+        [NativeName("DirectionX")] private extern MinMaxCurveBlittable directionXBlittable { get; set; }
+
+        public MinMaxCurve directionY { get => directionYBlittable; set => directionYBlittable = value; }
+        [NativeName("DirectionY")] private extern MinMaxCurveBlittable directionYBlittable { get; set; }
+
+        public MinMaxCurve directionZ { get => directionZBlittable; set => directionZBlittable = value; }
+        [NativeName("DirectionZ")] private extern MinMaxCurveBlittable directionZBlittable { get; set; }
+
+        public MinMaxCurve gravity { get => gravityBlittable; set => gravityBlittable = value; }
+        [NativeName("Gravity")] private extern MinMaxCurveBlittable gravityBlittable { get; set; }
+
+        public MinMaxCurve rotationSpeed { get => rotationSpeedBlittable; set => rotationSpeedBlittable = value; }
+        [NativeName("RotationSpeed")] private extern MinMaxCurveBlittable rotationSpeedBlittable { get; set; }
+
+        public MinMaxCurve rotationAttraction { get => rotationAttractionBlittable; set => rotationAttractionBlittable = value; }
+        [NativeName("RotationAttraction")] private extern MinMaxCurveBlittable rotationAttractionBlittable { get; set; }
+
+        public MinMaxCurve drag { get => dragBlittable; set => dragBlittable = value; }
+        [NativeName("Drag")] private extern MinMaxCurveBlittable dragBlittable { get; set; }
+
+        public MinMaxCurve vectorFieldSpeed { get => vectorFieldSpeedBlittable; set => vectorFieldSpeedBlittable = value; }
+        [NativeName("VectorFieldSpeed")] private extern MinMaxCurveBlittable vectorFieldSpeedBlittable { get; set; }
+
+        public MinMaxCurve vectorFieldAttraction { get => vectorFieldAttractionBlittable; set => vectorFieldAttractionBlittable = value; }
+        [NativeName("VectorFieldAttraction")] private extern MinMaxCurveBlittable vectorFieldAttractionBlittable { get; set; }
 
         [StaticAccessor("GetParticleSystemForceFieldManager()", StaticAccessorType.Dot)]
         [NativeMethod("GetForceFields")]

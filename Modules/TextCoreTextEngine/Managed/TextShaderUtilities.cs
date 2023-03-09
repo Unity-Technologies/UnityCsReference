@@ -414,7 +414,7 @@ namespace UnityEngine.TextCore.Text
             return Vector4.zero;
 
             /*
-            if (material == null || !material.HasProperty(ShaderUtilities.ID_GradientScale))
+            if (material == null || !material.HasProperty(TextShaderUtilities.ID_GradientScale))
                 return Vector4.zero;   // We are using an non SDF Shader.
 
             float scaleRatioA = material.GetFloat(ID_ScaleRatio_A);

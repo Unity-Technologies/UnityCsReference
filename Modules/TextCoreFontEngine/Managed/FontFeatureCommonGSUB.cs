@@ -109,7 +109,7 @@ namespace UnityEngine.TextCore.LowLevel
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    internal struct LigatureSubstitutionRecord
+    internal struct LigatureSubstitutionRecord : IEquatable<LigatureSubstitutionRecord>
     {
         /// <summary>
         /// Array that contains the index of the glyphs being substituted.
@@ -132,6 +132,51 @@ namespace UnityEngine.TextCore.LowLevel
         [SerializeField]
         [NativeName("ligatureGlyph")]
         private uint m_LigatureGlyphID;
+
+        // =============================================
+        // Operator overrides
+        // =============================================
+
+        public bool Equals(LigatureSubstitutionRecord other)
+        {
+            return this == other;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is LigatureSubstitutionRecord other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return m_ComponentGlyphIDs.GetHashCode();
+        }
+
+        public static bool operator==(LigatureSubstitutionRecord lhs, LigatureSubstitutionRecord rhs)
+        {
+            if (lhs.componentGlyphIDs != null && rhs.componentGlyphIDs != null)
+            {
+                int lhsComponentCount = lhs.m_ComponentGlyphIDs.Length;
+
+                if (lhsComponentCount != rhs.m_ComponentGlyphIDs.Length)
+                    return false;
+
+                for (int i = 0; i < lhsComponentCount; i++)
+                {
+                    if (lhs.m_ComponentGlyphIDs[i] != rhs.m_ComponentGlyphIDs[i])
+                        return false;
+                }
+            }
+            else if (lhs.componentGlyphIDs != null || rhs.componentGlyphIDs != null)
+                return false;
+
+            return lhs.ligatureGlyphID == rhs.m_LigatureGlyphID;
+        }
+
+        public static bool operator!=(LigatureSubstitutionRecord lhs, LigatureSubstitutionRecord rhs)
+        {
+            return !(lhs == rhs);
+        }
     }
 
     /// <summary>

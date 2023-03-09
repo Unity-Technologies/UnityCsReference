@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngineInternal;
 
@@ -30,6 +31,17 @@ namespace UnityEngine
         internal void DisableCompatibilityChecks()
         {
             SetEnableCompatibilityChecks(false);
+        }
+
+        public AssetBundleCreateRequest() { }
+
+        private AssetBundleCreateRequest(IntPtr ptr) : base(ptr)
+        { }
+
+        new internal static class BindingsMarshaller
+        {
+            public static AssetBundleCreateRequest ConvertToManaged(IntPtr ptr) => new AssetBundleCreateRequest(ptr);
+            public static IntPtr ConvertToNative(AssetBundleCreateRequest assetBundleCreateRequest) => assetBundleCreateRequest.m_Ptr;
         }
     }
 }

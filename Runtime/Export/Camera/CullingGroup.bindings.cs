@@ -164,5 +164,10 @@ namespace UnityEngine
 
         [FreeFunction("CullingGroup_Bindings::FinalizerFailure", HasExplicitThis = true, IsThreadSafe = true)]
         extern private void FinalizerFailure();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(CullingGroup cullingGroup) => cullingGroup.m_Ptr;
+        }
     }
 }

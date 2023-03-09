@@ -1099,6 +1099,18 @@ namespace UnityEditor
             return GetDefaultScriptingBackendForGroup(buildTarget.ToBuildTargetGroup());
         }
 
+        [NativeThrows]
+        [NativeMethod("GetCaptureStartupLogs")]
+        private static extern bool GetCaptureStartupLogsInternal(string buildTargetName);
+        public static bool GetCaptureStartupLogs(NamedBuildTarget buildTarget) =>
+            GetCaptureStartupLogsInternal(buildTarget.TargetName);
+
+        [NativeThrows]
+        [NativeMethod("SetCaptureStartupLogs")]
+        private static extern void SetCaptureStartupLogsInternal(string buildTargetName, bool enable);
+        public static void SetCaptureStartupLogs(NamedBuildTarget buildTarget, bool enable) =>
+            SetCaptureStartupLogsInternal(buildTarget.TargetName, enable);
+        
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         internal static extern bool IsApplicationIdentifierValid(string name, BuildTargetGroup targetGroup);
 

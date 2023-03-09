@@ -620,6 +620,10 @@ namespace UnityEditor
             [NativeProperty("switchPlayerConnectionEnabled", TargetType.Field)]
             extern public static bool playerConnectionEnabled { get; set; }
 
+            // HTCS for player connection
+            [NativeProperty("switchDisableHTCSPlayerConnection", TargetType.Field)]
+            extern public static bool disableHTCSPlayerConnection { get; set; }
+
             // Using the new path style system
             [NativeProperty("switchUseNewStyleFilepaths", TargetType.Field)]
             extern public static bool useNewStyleFilepaths { get; set; }

@@ -48,9 +48,12 @@ namespace UnityEngine.Rendering
     [UsedByNativeCode]
     public partial class GraphicsTexture : IDisposable
     {
-#pragma warning disable 414
         internal IntPtr m_Ptr;
-#pragma warning restore 414
+
+        private GraphicsTexture(IntPtr ptr)
+        {
+            m_Ptr = ptr;
+        }
 
         // --------------------------------------------------------------------
         // IDisposable implementation
@@ -103,5 +106,11 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("GraphicsTexture_Bindings::ReleaseBuffer", HasExplicitThis = true, IsThreadSafe = true)]
         extern private void ReleaseBuffer();
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(GraphicsTexture graphicsTexture) => graphicsTexture.m_Ptr;
+            public static GraphicsTexture ConvertToManaged(IntPtr ptr) => new GraphicsTexture(ptr);
+        }
     }
 }

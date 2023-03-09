@@ -63,7 +63,7 @@ namespace UnityEditor.Search
         {
             var menu = new GenericMenu();
             menu.AddItem(EditorGUIUtility.TrTextContent("Asset Store Web"), false, () => CommandService.Execute(k_OpenAssetStoreCommand));
-            menu.AddItem(EditorGUIUtility.TrTextContent("My Assets"), false, () => PackageManager.UI.PackageManagerWindow.SelectPackageAndFilterStatic("", PackageManager.UI.Internal.PackageFilterTab.AssetStore));
+            menu.AddItem(EditorGUIUtility.TrTextContent("My Assets"), false, () => PackageManager.UI.PackageManagerWindow.SelectPackageAndPageStatic(pageId: PackageManager.UI.Internal.MyAssetsPage.k_Id));
 
             menu.DropDown(worldBound, true);
         }

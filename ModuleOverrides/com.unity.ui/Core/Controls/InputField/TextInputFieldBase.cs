@@ -29,6 +29,7 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty maxLengthProperty = nameof(maxLength);
         internal static readonly DataBindingProperty doubleClickSelectsWordProperty = nameof(doubleClickSelectsWord);
         internal static readonly DataBindingProperty tripleClickSelectsLineProperty = nameof(tripleClickSelectsLine);
+        internal static readonly DataBindingProperty emojiFallbackSupportProperty = nameof(emojiFallbackSupport);
         internal static readonly DataBindingProperty isDelayedProperty = nameof(isDelayed);
         internal static readonly DataBindingProperty maskCharProperty = nameof(maskChar);
         internal static readonly DataBindingProperty verticalScrollerVisibilityProperty = nameof(verticalScrollerVisibility);
@@ -58,7 +59,8 @@ namespace UnityEngine.UIElements
             UxmlBoolAttributeDescription m_SelectAllOnFocus = new UxmlBoolAttributeDescription { name = "select-all-on-focus", defaultValue = true};
             UxmlBoolAttributeDescription m_SelectWordByDoubleClick = new UxmlBoolAttributeDescription { name = "select-word-by-double-click", defaultValue = true };
             UxmlBoolAttributeDescription m_SelectLineByTripleClick = new UxmlBoolAttributeDescription { name = "select-line-by-triple-click", defaultValue = true };
-			UxmlBoolAttributeDescription m_HideMobileInput = new UxmlBoolAttributeDescription { name = "hide-mobile-input" };
+            UxmlBoolAttributeDescription m_EmojiFallbackSupport = new UxmlBoolAttributeDescription { name = "emoji-fallback-support", defaultValue = true };
+            UxmlBoolAttributeDescription m_HideMobileInput = new UxmlBoolAttributeDescription { name = "hide-mobile-input" };
             UxmlEnumAttributeDescription<TouchScreenKeyboardType> m_KeyboardType = new UxmlEnumAttributeDescription<TouchScreenKeyboardType> { name = "keyboard-type" };
             UxmlBoolAttributeDescription m_AutoCorrection = new UxmlBoolAttributeDescription { name = "auto-correction" };
 
@@ -79,15 +81,16 @@ namespace UnityEngine.UIElements
                 field.readOnly = m_IsReadOnly.GetValueFromBag(bag, cc);
                 field.isDelayed = m_IsDelayed.GetValueFromBag(bag, cc);
                 field.textSelection.selectAllOnFocus = m_SelectAllOnFocus.GetValueFromBag(bag, cc);
-				field.textSelection.selectAllOnMouseUp = m_SelectAllOnMouseUp.GetValueFromBag(bag, cc);
+                field.textSelection.selectAllOnMouseUp = m_SelectAllOnMouseUp.GetValueFromBag(bag, cc);
                 field.doubleClickSelectsWord = m_SelectWordByDoubleClick.GetValueFromBag(bag, cc);
                 field.tripleClickSelectsLine = m_SelectLineByTripleClick.GetValueFromBag(bag, cc);
+                field.emojiFallbackSupport = m_EmojiFallbackSupport.GetValueFromBag(bag, cc);
 
                 var verticalScrollerVisibility = ScrollerVisibility.Hidden;
                 m_VerticalScrollerVisibility.TryGetValueFromBag(bag, cc, ref verticalScrollerVisibility);
                 field.verticalScrollerVisibility = verticalScrollerVisibility;
 
-				field.hideMobileInput = m_HideMobileInput.GetValueFromBag(bag, cc);
+                field.hideMobileInput = m_HideMobileInput.GetValueFromBag(bag, cc);
                 field.keyboardType = m_KeyboardType.GetValueFromBag(bag, cc);
                 field.autoCorrection = m_AutoCorrection.GetValueFromBag(bag, cc);
 
@@ -222,7 +225,7 @@ namespace UnityEngine.UIElements
             m_TextInputBase.textEdition.maskChar = maskChar;
 
             RegisterCallback<CustomStyleResolvedEvent>(OnFieldCustomStyleResolved);
-			textInputBase.textElement.OnPlaceholderChanged += OnPlaceholderChanged;
+            textInputBase.textElement.OnPlaceholderChanged += OnPlaceholderChanged;
         }
 
         TextInputBase m_TextInputBase;
@@ -551,6 +554,24 @@ namespace UnityEngine.UIElements
         {
             get => m_TextInputBase.text;
             protected set => m_TextInputBase.text = value;
+        }
+
+        /// <summary>
+        /// Specifies the order in which the system should look for Emoji characters when rendering text.
+        /// If this setting is enabled, the global Emoji Fallback list will be searched first for characters defined as
+        /// Emoji in the Unicode 14.0 standard.
+        /// </summary>
+        [CreateProperty]
+        public bool emojiFallbackSupport
+        {
+            get => m_TextInputBase.textElement.emojiFallbackSupport;
+            set
+            {
+                if (m_TextInputBase.textElement.emojiFallbackSupport == value)
+                    return;
+                m_TextInputBase.textElement.emojiFallbackSupport = value;
+                NotifyPropertyChanged(emojiFallbackSupportProperty);
+            }
         }
 
         /// <summary>

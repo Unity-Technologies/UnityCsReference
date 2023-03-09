@@ -11,6 +11,7 @@ namespace UnityEditorInternal
     [StaticAccessor("AssetStoreScriptBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class AssetStoreToolUtils
     {
+        [System.Obsolete("BuildAssetStoreAssetBundle has been made obsolete. Please use BuildPipeline.BuildAssetBundles() or Addressables.", true)]
         extern public static bool BuildAssetStoreAssetBundle(Object targetObject, string targetPath);
     }
 }

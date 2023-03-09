@@ -93,6 +93,9 @@ namespace UnityEditor.TextCore.Text
             {
                 EditorGUI.LabelField(rect, new GUIContent("Fallback Sprite Asset List", "Select the Sprite Assets that will be searched and used as fallback when a given sprite is missing from this sprite asset."));
             };
+
+            // Clear glyph proxy lookups
+            TextCorePropertyDrawerUtilities.ClearGlyphProxyLookups();
         }
 
         public override void OnInspectorGUI()
@@ -644,7 +647,10 @@ namespace UnityEditor.TextCore.Text
             if (serializedObject.ApplyModifiedProperties() || evt_cmd == k_UndoRedo || isAssetDirty)
             {
                 if (m_SpriteAsset.m_IsSpriteAssetLookupTablesDirty || evt_cmd == k_UndoRedo)
+                {
                     m_SpriteAsset.UpdateLookupTables();
+                    TextResourceManager.RebuildFontAssetCache();
+                }
 
                 TextEventManager.ON_SPRITE_ASSET_PROPERTY_CHANGED(true, m_SpriteAsset);
 

@@ -57,9 +57,9 @@ namespace UnityEditor.TextCore.Text
             public static bool fontWeightPanel = true;
             public static bool fallbackFontAssetPanel = true;
             public static bool glyphTablePanel = false;
-            public static bool ligatureSubstitutionTablePanel = false;
             public static bool characterTablePanel = false;
-            public static bool fontFeatureTablePanel = false;
+            public static bool LigatureSubstitutionTablePanel;
+            public static bool PairAdjustmentTablePanel = false;
             public static bool MarkToBaseTablePanel = false;
             public static bool MarkToMarkTablePanel = false;
         }
@@ -75,7 +75,70 @@ namespace UnityEditor.TextCore.Text
             public int atlasHeight;
         }
 
+        /// <summary>
+        /// Material used to display SDF glyphs in the Character and Glyph tables.
+        /// </summary>
+        internal static Material internalSDFMaterial
+        {
+            get
+            {
+                if (s_InternalSDFMaterial == null)
+                {
+                    Shader shader = TextShaderUtilities.ShaderRef_MobileSDF;
+
+                    if (shader != null)
+                        s_InternalSDFMaterial = new Material(shader);
+                }
+
+                return s_InternalSDFMaterial;
+            }
+        }
+        static Material s_InternalSDFMaterial;
+
+        /// <summary>
+        /// Material used to display Bitmap glyphs in the Character and Glyph tables.
+        /// </summary>
+        internal static Material internalBitmapMaterial
+        {
+            get
+            {
+                if (s_InternalBitmapMaterial == null)
+                {
+                    Shader shader = Shader.Find("Hidden/Internal-GUITextureClipText");
+
+                    if (shader != null)
+                        s_InternalBitmapMaterial = new Material(shader);
+                }
+
+                return s_InternalBitmapMaterial;
+            }
+        }
+        static Material s_InternalBitmapMaterial;
+
+        /// <summary>
+        /// Material used to display color glyphs in the Character and Glyph tables.
+        /// </summary>
+        internal static Material internalRGBABitmapMaterial
+        {
+            get
+            {
+                if (s_Internal_Bitmap_RGBA_Material == null)
+                {
+                    Shader shader = Shader.Find("Hidden/Internal-GUITextureClip");
+
+                    if (shader != null)
+                        s_Internal_Bitmap_RGBA_Material = new Material(shader);
+                }
+
+                return s_Internal_Bitmap_RGBA_Material;
+            }
+        }
+        static Material s_Internal_Bitmap_RGBA_Material;
+
+
+
         private static string[] s_UiStateLabel = new string[] { "<i>(Click to collapse)</i> ", "<i>(Click to expand)</i> " };
+        public static readonly GUIContent getFontFeaturesLabel = new GUIContent("Get Font Features", "Determines if OpenType font features should be retrieved from the source font file as new characters and glyphs are added to the font asset.");
         private GUIContent[] m_AtlasResolutionLabels = { new GUIContent("8"), new GUIContent("16"), new GUIContent("32"), new GUIContent("64"), new GUIContent("128"), new GUIContent("256"), new GUIContent("512"), new GUIContent("1024"), new GUIContent("2048"), new GUIContent("4096"), new GUIContent("8192") };
         private int[] m_AtlasResolutions = { 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192 };
 
@@ -88,7 +151,7 @@ namespace UnityEditor.TextCore.Text
         private int m_CurrentGlyphPage = 0;
         private int m_CurrentCharacterPage = 0;
         private int m_CurrentLigaturePage = 0;
-        private int m_CurrentKerningPage = 0;
+        private int m_CurrentAdjustmentPairPage = 0;
         private int m_CurrentMarkToBasePage = 0;
         private int m_CurrentMarkToMarkPage = 0;
 
@@ -136,6 +199,7 @@ namespace UnityEditor.TextCore.Text
         private string m_MarkToMarkTableSearchPattern;
         private List<int> m_MarkToMarkTableSearchList;
 
+        private HashSet<uint> m_GlyphsToAdd;
 
         private bool m_isSearchDirty;
 
@@ -153,11 +217,12 @@ namespace UnityEditor.TextCore.Text
         private SerializedProperty m_AtlasHeight_prop;
         private SerializedProperty m_IsMultiAtlasTexturesEnabled_prop;
         private SerializedProperty m_ClearDynamicDataOnBuild_prop;
+        private SerializedProperty m_GetFontFeatures_prop;
 
         private SerializedProperty fontWeights_prop;
 
         //private SerializedProperty fallbackFontAssets_prop;
-        private ReorderableList m_list;
+        private ReorderableList m_FallbackFontAssetList;
 
         private SerializedProperty font_normalStyle_prop;
         private SerializedProperty font_normalSpacing_prop;
@@ -181,6 +246,12 @@ namespace UnityEditor.TextCore.Text
 
         private SerializedPropertyHolder m_SerializedPropertyHolder;
         private SerializedProperty m_EmptyGlyphPairAdjustmentRecord_prop;
+        private SerializedProperty m_FirstCharacterUnicode_prop;
+        private SerializedProperty m_SecondCharacterUnicode_prop;
+
+
+        // private string m_SecondCharacter;
+        // private uint m_SecondGlyphIndex;
 
         private FontAsset m_fontAsset;
 
@@ -196,8 +267,6 @@ namespace UnityEditor.TextCore.Text
 
         public void OnEnable()
         {
-            TM_EditorStyles.RefreshEditorStyles();
-
             m_FaceInfo_prop = serializedObject.FindProperty("m_FaceInfo");
 
             font_atlas_prop = serializedObject.FindProperty("m_AtlasTextures").GetArrayElementAtIndex(0);
@@ -212,27 +281,11 @@ namespace UnityEditor.TextCore.Text
             m_AtlasHeight_prop = serializedObject.FindProperty("m_AtlasHeight");
             m_IsMultiAtlasTexturesEnabled_prop = serializedObject.FindProperty("m_IsMultiAtlasTexturesEnabled");
             m_ClearDynamicDataOnBuild_prop = serializedObject.FindProperty("m_ClearDynamicDataOnBuild");
+            m_GetFontFeatures_prop = serializedObject.FindProperty("m_GetFontFeatures");
 
             fontWeights_prop = serializedObject.FindProperty("m_FontWeightTable");
 
-            m_list = new ReorderableList(serializedObject, serializedObject.FindProperty("m_FallbackFontAssetTable"), true, true, true, true);
-
-            m_list.drawElementCallback = (Rect rect, int index, bool isActive, bool isFocused) =>
-            {
-                var element = m_list.serializedProperty.GetArrayElementAtIndex(index);
-                rect.y += 2;
-                EditorGUI.PropertyField(new Rect(rect.x, rect.y, rect.width, EditorGUIUtility.singleLineHeight), element, GUIContent.none);
-            };
-
-            m_list.drawHeaderCallback = rect =>
-            {
-                EditorGUI.LabelField(rect, "Fallback List");
-            };
-
-            m_list.onReorderCallback = itemList =>
-            {
-                m_IsFallbackGlyphCacheDirty = true;
-            };
+            m_FallbackFontAssetList = PrepareReorderableList(serializedObject.FindProperty("m_FallbackFontAssetTable"), "Fallback Font Assets");
 
             // Clean up fallback list in the event if contains null elements.
             CleanFallbackFontAssetTable();
@@ -250,8 +303,8 @@ namespace UnityEditor.TextCore.Text
             m_GlyphTable_prop = serializedObject.FindProperty("m_GlyphTable");
 
             m_FontFeatureTable_prop = serializedObject.FindProperty("m_FontFeatureTable");
-            m_GlyphPairAdjustmentRecords_prop = m_FontFeatureTable_prop.FindPropertyRelative("m_GlyphPairAdjustmentRecords");
             m_LigatureSubstitutionRecords_prop = m_FontFeatureTable_prop.FindPropertyRelative("m_LigatureSubstitutionRecords");
+            m_GlyphPairAdjustmentRecords_prop = m_FontFeatureTable_prop.FindPropertyRelative("m_GlyphPairAdjustmentRecords");
             m_MarkToBaseAdjustmentRecords_prop = m_FontFeatureTable_prop.FindPropertyRelative("m_MarkToBaseAdjustmentRecords");
             m_MarkToMarkAdjustmentRecords_prop = m_FontFeatureTable_prop.FindPropertyRelative("m_MarkToMarkAdjustmentRecords");
 
@@ -265,6 +318,8 @@ namespace UnityEditor.TextCore.Text
             m_SerializedPropertyHolder = CreateInstance<SerializedPropertyHolder>();
             m_SerializedPropertyHolder.fontAsset = m_fontAsset;
             SerializedObject internalSerializedObject = new SerializedObject(m_SerializedPropertyHolder);
+            m_FirstCharacterUnicode_prop = internalSerializedObject.FindProperty("firstCharacter");
+            m_SecondCharacterUnicode_prop = internalSerializedObject.FindProperty("secondCharacter");
             m_EmptyGlyphPairAdjustmentRecord_prop = internalSerializedObject.FindProperty("glyphPairAdjustmentRecord");
 
             m_materialPresets = TextCoreEditorUtilities.FindMaterialReferences(m_fontAsset);
@@ -274,7 +329,34 @@ namespace UnityEditor.TextCore.Text
 
             // Sort Font Asset Tables
             m_fontAsset.SortAllTables();
+
+            // Clear glyph proxy lookups
+            TextCorePropertyDrawerUtilities.ClearGlyphProxyLookups();
         }
+
+        private ReorderableList PrepareReorderableList(SerializedProperty property, string label)
+        {
+            SerializedObject so = property.serializedObject;
+
+            ReorderableList list = new ReorderableList(so, property, true, true, true, true);
+
+            list.drawHeaderCallback = rect =>
+            {
+                EditorGUI.LabelField(rect, label);
+            };
+
+            list.drawElementCallback = (rect, index, isActive, isFocused) =>
+            {
+                var element = list.serializedProperty.GetArrayElementAtIndex(index);
+                rect.y += 2;
+                EditorGUI.PropertyField(new Rect(rect.x, rect.y, rect.width, EditorGUIUtility.singleLineHeight), element, GUIContent.none);
+            };
+
+            list.onChangedCallback = itemList => { };
+
+            return list;
+        }
+
 
         public void OnDisable()
         {
@@ -465,17 +547,22 @@ namespace UnityEditor.TextCore.Text
                         // Changes to these properties require updating Material Presets for this font asset.
                         EditorGUI.BeginChangeCheck();
                         EditorGUILayout.PropertyField(m_AtlasPadding_prop, new GUIContent("Padding"));
-                        m_AtlasPadding_prop.intValue = Mathf.Max(m_AtlasPadding_prop.intValue, 0);
-
                         EditorGUILayout.IntPopup(m_AtlasWidth_prop, m_AtlasResolutionLabels, m_AtlasResolutions, new GUIContent("Atlas Width"));
                         EditorGUILayout.IntPopup(m_AtlasHeight_prop, m_AtlasResolutionLabels, m_AtlasResolutions, new GUIContent("Atlas Height"));
                         EditorGUILayout.PropertyField(m_IsMultiAtlasTexturesEnabled_prop, new GUIContent("Multi Atlas Textures", "Determines if the font asset will store glyphs in multiple atlas textures."));
-                        EditorGUILayout.PropertyField(m_ClearDynamicDataOnBuild_prop, new GUIContent("Clear Dynamic Data On Build", "Clears all dynamic data restoring the font asset back to its default creation and empty state."));
                         if (EditorGUI.EndChangeCheck())
                         {
+                            if (m_AtlasPadding_prop.intValue < 0)
+                            {
+                                m_AtlasPadding_prop.intValue = 0;
+                                serializedObject.ApplyModifiedProperties();
+                            }
+
                             m_MaterialPresetsRequireUpdate = true;
                             m_DisplayDestructiveChangeWarning = true;
                         }
+                        EditorGUILayout.PropertyField(m_ClearDynamicDataOnBuild_prop, new GUIContent("Clear Dynamic Data On Build", "Clears all dynamic data restoring the font asset back to its default creation and empty state."));
+                        EditorGUILayout.PropertyField(m_GetFontFeatures_prop, getFontFeaturesLabel);
 
                         EditorGUILayout.Space();
 
@@ -691,7 +778,12 @@ namespace UnityEditor.TextCore.Text
             {
                 EditorGUIUtility.labelWidth = 120;
                 EditorGUI.indentLevel = 0;
-                m_list.DoLayoutList();
+                EditorGUI.BeginChangeCheck();
+                m_FallbackFontAssetList.DoLayoutList();
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_IsFallbackGlyphCacheDirty = true;
+                }
                 EditorGUILayout.Space();
             }
             #endregion
@@ -1090,12 +1182,17 @@ namespace UnityEditor.TextCore.Text
                     }
                 }
 
+                //DisplayAddRemoveButtons(m_GlyphTable_prop, m_SelectedGlyphRecord, glyphRecordCount);
+
                 DisplayPageNavigation(ref m_CurrentGlyphPage, arraySize, itemsPerPage);
 
                 EditorGUILayout.Space();
             }
             #endregion
 
+            // FONT FEATURE TABLES
+
+            // LIGATURE SUBSTITUTION TABLE
             #region LIGATURE
             EditorGUIUtility.labelWidth = labelWidth;
             EditorGUIUtility.fieldWidth = fieldWidth;
@@ -1105,11 +1202,11 @@ namespace UnityEditor.TextCore.Text
             int ligatureSubstitutionRecordCount = m_fontAsset.fontFeatureTable.ligatureRecords.Count;
 
             if (GUI.Button(rect, new GUIContent("<b>Ligature Table</b>   [" + ligatureSubstitutionRecordCount + "]" + (rect.width > 340 ? " Records" : ""), "List of Ligature substitution records."), TM_EditorStyles.sectionHeader))
-                UI_PanelState.ligatureSubstitutionTablePanel = !UI_PanelState.ligatureSubstitutionTablePanel;
+                UI_PanelState.LigatureSubstitutionTablePanel = !UI_PanelState.LigatureSubstitutionTablePanel;
 
-            GUI.Label(rect, (UI_PanelState.ligatureSubstitutionTablePanel ? "" : s_UiStateLabel[1]), TM_EditorStyles.rightLabel);
+            GUI.Label(rect, (UI_PanelState.LigatureSubstitutionTablePanel ? "" : s_UiStateLabel[1]), TM_EditorStyles.rightLabel);
 
-            if (UI_PanelState.ligatureSubstitutionTablePanel)
+            if (UI_PanelState.LigatureSubstitutionTablePanel)
             {
                 int arraySize = m_LigatureSubstitutionRecords_prop.arraySize;
                 int itemsPerPage = 20;
@@ -1271,8 +1368,8 @@ namespace UnityEditor.TextCore.Text
             }
             #endregion
 
-            // FONT FEATURE TABLE
-            #region Font Feature Table
+            // PAIR ADJUSTMENT TABLE
+            #region Pair Adjustment Table
             EditorGUIUtility.labelWidth = labelWidth;
             EditorGUIUtility.fieldWidth = fieldWidth;
             EditorGUI.indentLevel = 0;
@@ -1281,11 +1378,11 @@ namespace UnityEditor.TextCore.Text
             int adjustmentPairCount = m_fontAsset.fontFeatureTable.glyphPairAdjustmentRecords.Count;
 
             if (GUI.Button(rect, new GUIContent("<b>Glyph Adjustment Table</b>   [" + adjustmentPairCount + "]" + (rect.width > 340 ? " Records" : ""), "List of glyph adjustment / advanced kerning pairs."), TM_EditorStyles.sectionHeader))
-                UI_PanelState.fontFeatureTablePanel = !UI_PanelState.fontFeatureTablePanel;
+                UI_PanelState.PairAdjustmentTablePanel = !UI_PanelState.PairAdjustmentTablePanel;
 
-            GUI.Label(rect, (UI_PanelState.fontFeatureTablePanel ? "" : s_UiStateLabel[1]), TM_EditorStyles.rightLabel);
+            GUI.Label(rect, (UI_PanelState.PairAdjustmentTablePanel ? "" : s_UiStateLabel[1]), TM_EditorStyles.rightLabel);
 
-            if (UI_PanelState.fontFeatureTablePanel)
+            if (UI_PanelState.PairAdjustmentTablePanel)
             {
                 int arraySize = m_GlyphPairAdjustmentRecords_prop.arraySize;
                 int itemsPerPage = 20;
@@ -1329,14 +1426,14 @@ namespace UnityEditor.TextCore.Text
                     if (!string.IsNullOrEmpty(m_KerningTableSearchPattern))
                         arraySize = m_KerningTableSearchList.Count;
 
-                    DisplayPageNavigation(ref m_CurrentKerningPage, arraySize, itemsPerPage);
+                    DisplayPageNavigation(ref m_CurrentAdjustmentPairPage, arraySize, itemsPerPage);
                 }
                 EditorGUILayout.EndVertical();
 
                 if (arraySize > 0)
                 {
                     // Display each GlyphInfo entry using the GlyphInfo property drawer.
-                    for (int i = itemsPerPage * m_CurrentKerningPage; i < arraySize && i < itemsPerPage * (m_CurrentKerningPage + 1); i++)
+                    for (int i = itemsPerPage * m_CurrentAdjustmentPairPage; i < arraySize && i < itemsPerPage * (m_CurrentAdjustmentPairPage + 1); i++)
                     {
                         // Define the start of the selection region of the element.
                         Rect elementStartRegion = GUILayoutUtility.GetRect(0f, 0f, GUILayout.ExpandWidth(true));
@@ -1400,7 +1497,7 @@ namespace UnityEditor.TextCore.Text
                             {
                                 GUIUtility.keyboardControl = 0;
 
-                                RemoveAdjustmentPairFromList(i);
+                                RemoveRecord(m_GlyphPairAdjustmentRecords_prop, i);
 
                                 isAssetDirty = true;
                                 m_SelectedAdjustmentRecord = -1;
@@ -1411,14 +1508,19 @@ namespace UnityEditor.TextCore.Text
                     }
                 }
 
-                DisplayPageNavigation(ref m_CurrentKerningPage, arraySize, itemsPerPage);
+                DisplayPageNavigation(ref m_CurrentAdjustmentPairPage, arraySize, itemsPerPage);
 
                 GUILayout.Space(5);
 
                 // Add new kerning pair
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 {
+                    EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(m_EmptyGlyphPairAdjustmentRecord_prop);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        SetPropertyHolderGlyphIndexes();
+                    }
                 }
                 EditorGUILayout.EndVertical();
 
@@ -1543,7 +1645,7 @@ namespace UnityEditor.TextCore.Text
                     if (!string.IsNullOrEmpty(m_MarkToBaseTableSearchPattern))
                         arraySize = m_MarkToBaseTableSearchList.Count;
 
-                    DisplayPageNavigation(ref m_CurrentKerningPage, arraySize, itemsPerPage);
+                    DisplayPageNavigation(ref m_CurrentMarkToBasePage, arraySize, itemsPerPage);
                 }
                 EditorGUILayout.EndVertical();
 
@@ -1615,7 +1717,7 @@ namespace UnityEditor.TextCore.Text
                             {
                                 GUIUtility.keyboardControl = 0;
 
-                                RemoveAdjustmentRecord(m_MarkToBaseAdjustmentRecords_prop, i);
+                                RemoveRecord(m_MarkToBaseAdjustmentRecords_prop, i);
 
                                 isAssetDirty = true;
                                 m_SelectedMarkToBaseRecord = -1;
@@ -1764,7 +1866,7 @@ namespace UnityEditor.TextCore.Text
                             {
                                 GUIUtility.keyboardControl = 0;
 
-                                RemoveAdjustmentRecord(m_MarkToMarkAdjustmentRecords_prop, i);
+                                RemoveRecord(m_MarkToMarkAdjustmentRecords_prop, i);
 
                                 isAssetDirty = true;
                                 m_SelectedMarkToMarkRecord = -1;
@@ -2194,6 +2296,39 @@ namespace UnityEditor.TextCore.Text
             m_fontAsset.ReadFontAssetDefinition();
         }
 
+        void AddNewGlyphsFromProperty(SerializedProperty property)
+        {
+            if (m_GlyphsToAdd == null)
+                m_GlyphsToAdd = new HashSet<uint>();
+            else
+                m_GlyphsToAdd.Clear();
+
+            string propertyType = property.type;
+
+            switch (propertyType)
+            {
+                case "LigatureSubstitutionRecord":
+                    int componentCount = property.FindPropertyRelative("m_ComponentGlyphIDs").arraySize;
+                    for (int i = 0; i < componentCount; i++)
+                    {
+                        uint glyphIndex = (uint)property.FindPropertyRelative("m_ComponentGlyphIDs").GetArrayElementAtIndex(i).intValue;
+                        m_GlyphsToAdd.Add(glyphIndex);
+                    }
+
+                    m_GlyphsToAdd.Add((uint)property.FindPropertyRelative("m_LigatureGlyphID").intValue);
+
+                    foreach (uint glyphIndex in m_GlyphsToAdd)
+                    {
+                        if (glyphIndex != 0)
+                            m_fontAsset.AddGlyphInternal(glyphIndex);
+                    }
+
+                    break;
+            }
+
+        }
+
+
         // Check if any of the Style elements were clicked on.
         private bool DoSelectionCheck(Rect selectionArea)
         {
@@ -2217,16 +2352,28 @@ namespace UnityEditor.TextCore.Text
         private void UpdateLigatureSubstitutionRecordLookup(SerializedProperty property)
         {
             serializedObject.ApplyModifiedProperties();
+            AddNewGlyphsFromProperty(property);
             m_fontAsset.InitializeLigatureSubstitutionLookupDictionary();
             isAssetDirty = true;
+        }
 
-            /*LigatureSubstitutionRecord record = GetLigatureSubstitutionRecord(property);
+        void SetPropertyHolderGlyphIndexes()
+        {
+            uint firstCharacterUnicode = (uint)m_FirstCharacterUnicode_prop.intValue;
+            if (firstCharacterUnicode != 0)
+            {
+                uint glyphIndex = m_fontAsset.GetGlyphIndex(firstCharacterUnicode);
+                if (glyphIndex != 0)
+                    m_EmptyGlyphPairAdjustmentRecord_prop.FindPropertyRelative("m_FirstAdjustmentRecord").FindPropertyRelative("m_GlyphIndex").intValue = (int)glyphIndex;
+            }
 
-            uint firstComponentGlyphIndex = record.componentGlyphIDs[0];
-
-            // Lookup dictionary entry and update it
-            if (m_FontFeatureTable.m_LigatureSubstitutionRecordLookup.ContainsKey(firstComponentGlyphIndex))
-                m_FontFeatureTable.m_LigatureSubstitutionRecordLookup[firstComponentGlyphIndex] = record;*/
+            uint secondCharacterUnicode = (uint)m_SecondCharacterUnicode_prop.intValue;
+            if (secondCharacterUnicode != 0)
+            {
+                uint glyphIndex = m_fontAsset.GetGlyphIndex(secondCharacterUnicode);
+                if (glyphIndex != 0)
+                    m_EmptyGlyphPairAdjustmentRecord_prop.FindPropertyRelative("m_SecondAdjustmentRecord").FindPropertyRelative("m_GlyphIndex").intValue = (int)glyphIndex;
+            }
         }
 
         private void UpdatePairAdjustmentRecordLookup(SerializedProperty property)
@@ -2292,18 +2439,6 @@ namespace UnityEditor.TextCore.Text
             record.yAdvance = property.FindPropertyRelative("m_YAdvance").floatValue;
 
             return record;
-        }
-
-        void RemoveAdjustmentPairFromList(int index)
-        {
-            if (index > m_GlyphPairAdjustmentRecords_prop.arraySize)
-                return;
-
-            m_GlyphPairAdjustmentRecords_prop.DeleteArrayElementAtIndex(index);
-
-            serializedObject.ApplyModifiedProperties();
-
-            m_fontAsset.ReadFontAssetDefinition();
         }
 
         private void UpdateMarkToBaseAdjustmentRecordLookup(SerializedProperty property)
@@ -2379,19 +2514,6 @@ namespace UnityEditor.TextCore.Text
 
             return adjustmentRecord;
         }
-
-        void RemoveAdjustmentRecord(SerializedProperty property, int index)
-        {
-            if (index > property.arraySize)
-                return;
-
-            property.DeleteArrayElementAtIndex(index);
-
-            serializedObject.ApplyModifiedProperties();
-
-            m_fontAsset.ReadFontAssetDefinition();
-        }
-
 
         /// <summary>
         ///
@@ -2700,12 +2822,16 @@ namespace UnityEditor.TextCore.Text
 
             DrawAnchorPoint(baseAnchorPosition, Color.green);
 
-            Glyph markGlyph = m_fontAsset.glyphLookupTable[markGlyphIndex];
+            // Draw Mark
+            if (m_fontAsset.glyphLookupTable.ContainsKey(markGlyphIndex))
+            {
+                Glyph markGlyph = m_fontAsset.glyphLookupTable[markGlyphIndex];
 
-            Rect markGlyphPosition = new Rect(baseAnchorPosition.x + (markGlyph.metrics.horizontalBearingX - adjustmentRecord.markPositionAdjustment.xPositionAdjustment) * scale, baseAnchorPosition.y + (adjustmentRecord.markPositionAdjustment.yPositionAdjustment - markGlyph.metrics.horizontalBearingY) * scale, markGlyph.metrics.width, markGlyph.metrics.height);
+                Rect markGlyphPosition = new Rect(baseAnchorPosition.x + (markGlyph.metrics.horizontalBearingX - adjustmentRecord.markPositionAdjustment.xPositionAdjustment) * scale, baseAnchorPosition.y + (adjustmentRecord.markPositionAdjustment.yPositionAdjustment - markGlyph.metrics.horizontalBearingY) * scale, markGlyph.metrics.width, markGlyph.metrics.height);
 
-            // Draw Mark Origin
-            DrawGlyph(markGlyph, markGlyphPosition, scale);
+                // Draw Mark Origin
+                DrawGlyph(markGlyph, markGlyphPosition, scale);
+            }
         }
 
         void DrawMarkToMarkPreview(int selectedRecord, Rect rect)
@@ -2748,11 +2874,15 @@ namespace UnityEditor.TextCore.Text
 
             DrawAnchorPoint(baseAnchorPosition, Color.green);
 
-            Glyph markGlyph = m_fontAsset.glyphLookupTable[markGlyphIndex];
+            // Draw Mark Glyph
+            if (m_fontAsset.glyphLookupTable.ContainsKey(markGlyphIndex))
+            {
+                Glyph markGlyph = m_fontAsset.glyphLookupTable[markGlyphIndex];
 
-            Rect markGlyphPosition = new Rect(baseAnchorPosition.x + (markGlyph.metrics.horizontalBearingX - adjustmentRecord.combiningMarkPositionAdjustment.xPositionAdjustment) * scale, baseAnchorPosition.y + (adjustmentRecord.combiningMarkPositionAdjustment.yPositionAdjustment - markGlyph.metrics.horizontalBearingY) * scale, markGlyph.metrics.width, markGlyph.metrics.height);
+                Rect markGlyphPosition = new Rect(baseAnchorPosition.x + (markGlyph.metrics.horizontalBearingX - adjustmentRecord.combiningMarkPositionAdjustment.xPositionAdjustment) * scale, baseAnchorPosition.y + (adjustmentRecord.combiningMarkPositionAdjustment.yPositionAdjustment - markGlyph.metrics.horizontalBearingY) * scale, markGlyph.metrics.width, markGlyph.metrics.height);
 
-            DrawGlyph(markGlyph, markGlyphPosition, scale);
+                DrawGlyph(markGlyph, markGlyphPosition, scale);
+            }
         }
 
         void DrawBaseline(Vector2 position, float width, Color color)
@@ -2786,7 +2916,10 @@ namespace UnityEditor.TextCore.Text
             Material mat;
             if (((GlyphRasterModes)m_fontAsset.atlasRenderMode & GlyphRasterModes.RASTER_MODE_BITMAP) == GlyphRasterModes.RASTER_MODE_BITMAP)
             {
-                mat = EditorShaderUtilities.internalBitmapMaterial;
+                if (m_fontAsset.atlasRenderMode == GlyphRenderMode.COLOR || m_fontAsset.atlasRenderMode == GlyphRenderMode.COLOR_HINTED)
+                    mat = internalRGBABitmapMaterial;
+                else
+                    mat = internalBitmapMaterial;
 
                 if (mat == null)
                     return;

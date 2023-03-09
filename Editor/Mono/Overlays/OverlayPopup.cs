@@ -41,6 +41,7 @@ namespace UnityEditor.Overlays
             {
                 var proposed = overlay.collapsedButtonRect;
                 proposed.size = evt.newRect.size;
+
                 var placement = OverlayCanvas.ClampRectToBounds(overlay.canvas.windowRoot.worldBound, proposed);
 
                 if (!Mathf.Approximately(proposed.position.x, placement.position.x))
@@ -62,60 +63,55 @@ namespace UnityEditor.Overlays
                 var rightSideSpace = canvasWorld.xMax - rightPlacement;
 
                 var xAdjusted = placement.position.x;
+                var maxWidth = placement.width;
                 if (rightSideSpace >= placement.width)
+                {
                     xAdjusted = rightPlacement;
+                }
                 else
                 {
                     var leftSideSpace = placement.x - overlay.canvas.rootVisualElement.worldBound.x;
                     if (leftSideSpace >= placement.width)
+                    {
                         xAdjusted = overlayWorldBound.x - placement.width;
+                    }
                     else // If neither side has enough space, show the popup on the widest one
                     {
                         if (rightSideSpace > leftSideSpace)
                             xAdjusted = overlayWorldBound.x + overlayWorldBound.width;
                         else
                             xAdjusted = overlayWorldBound.x - placement.width;
+
+                        maxWidth = canvasWorld.xMax - xAdjusted;
                     }
                 }
 
                 var yAdjusted = placement.position.y;
-                var upPlacement = overlayWorldBound.y + overlayWorldBound.height - placement.height;
-                var upSpace = canvasWorld.yMax - upPlacement;
+                var bottomSpace = canvasWorld.yMax - yAdjusted;
 
-                if (overlay.dockPosition.Equals(DockPosition.Bottom))
+                var maxHeight = placement.height;
+                if (bottomSpace < placement.height)
                 {
-                    if (upSpace >= placement.height && upPlacement >= canvasWorld.y)
-                        yAdjusted = upPlacement;
-                }
-                else
-                {
-                    var bottomPlacement = overlayWorldBound.y + 2;
-                    var bottomSpace = canvasWorld.yMax - bottomPlacement;
-
-                    if (bottomSpace >= placement.height)
+                    var upPlacement = overlayWorldBound.y + overlayWorldBound.height;
+                    var upSpace = upPlacement - canvasWorld.y;
+                    if (upSpace >= placement.height)
                     {
-                        yAdjusted = bottomPlacement;
+                        yAdjusted = upPlacement - placement.height;
                     }
-                    else
+                    else // If neither side has enough space, show the popup on the widest one
                     {
-                        if (upSpace >= placement.height && upPlacement >= canvasWorld.y)
-                        {
-                            yAdjusted = upPlacement;
-                        }
-                        else // If neither side has enough space, show the popup on the widest one
-                        {
-                            if (bottomSpace > upSpace)
-                                yAdjusted = overlayWorldBound.y + overlayWorldBound.height;
-                            else
-                                yAdjusted = overlayWorldBound.y - placement.height;
-                        }
+                        if (bottomSpace <= upSpace)
+                            yAdjusted = upPlacement - placement.height;
+
+                        maxHeight = canvasWorld.yMax - yAdjusted;
                     }
                 }
 
                 placement.position = new Vector2(xAdjusted, yAdjusted);
 
-                style.maxWidth = canvasWorld.xMax - placement.position.x;
-                style.maxHeight = canvasWorld.yMax - placement.position.y;
+                style.maxHeight = maxHeight;
+                style.maxWidth = maxWidth;
+
                 transform.position = placement.position - canvasWorld.position;
             });
         }

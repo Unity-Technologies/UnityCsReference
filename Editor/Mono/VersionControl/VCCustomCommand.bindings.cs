@@ -48,5 +48,10 @@ namespace UnityEditor.VersionControl
 
         [NativeMethod(IsThreadSafe = true)]
         public extern CommandContext context { get; }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(CustomCommand customCommand) => customCommand.m_Self;
+        }
     }
 }

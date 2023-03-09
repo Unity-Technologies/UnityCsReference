@@ -256,6 +256,10 @@ namespace UnityEditor.Modules
         bool SupportsFrameTimingStatistics();
 
         void SerializedObjectUpdated();
+
+        bool HasDedicatedServerSections();
+
+        void DedicatedServerSectionsGUI(ref int nextIndex);
     }
 
 

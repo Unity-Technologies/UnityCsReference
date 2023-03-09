@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using UnityEditor.TextCore.LowLevel;
 using UnityEngine.TextCore.Text;
 using UnityEngine;
-
+using UnityEngine.Rendering;
 
 namespace UnityEditor.TextCore.Text
 {
@@ -35,7 +35,10 @@ namespace UnityEditor.TextCore.Text
                     FontAsset fontAsset = AssetDatabase.LoadAssetAtPath<FontAsset>(fontAssetPath);
 
                     if (fontAsset != null && (fontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || fontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS) && fontAsset.clearDynamicDataOnBuild && fontAsset.atlasTexture.width != 0)
-                        fontAsset.ClearFontAssetDataInternal();
+                    {
+                        Debug.Log("Clearing [" + fontAsset.name + "] dynamic font asset data.");
+                        fontAsset.ClearCharacterAndGlyphTablesInternal();
+                    }
                 }
             };
         }
@@ -73,7 +76,12 @@ namespace UnityEditor.TextCore.Text
         /// </summary>
         private TextEditorResourceManager()
         {
-            Camera.onPostRender += OnCameraPostRender;
+            // Register to the appropriate callback for the given render pipeline.
+            if (RenderPipelineManager.currentPipeline == null)
+                Camera.onPostRender += OnCameraPostRender;
+            else
+                RenderPipelineManager.endFrameRendering += OnEndOfFrame;
+
             Canvas.willRenderCanvases += OnPreRenderCanvases;
         }
 
@@ -89,6 +97,11 @@ namespace UnityEditor.TextCore.Text
         void OnPreRenderCanvases()
         {
             DoPreRenderUpdates();
+        }
+
+        void OnEndOfFrame(ScriptableRenderContext renderContext, Camera[] cameras)
+        {
+            DoPostRenderUpdates();
         }
 
         /// <summary>
@@ -194,13 +207,14 @@ namespace UnityEditor.TextCore.Text
 
             for (int i = 0; i < objUpdateCount; i++)
             {
+                TextCorePropertyDrawerUtilities.s_RefreshGlyphProxyLookup = true;
+                UnityEditor.TextCore.Text.TextCorePropertyDrawerUtilities.s_RefreshGlyphProxyLookup = true;
+
                 Object obj = m_ObjectUpdateQueue[i];
                 if (obj != null)
                 {
-                    EditorUtility.SetDirty(obj);
+                    //EditorUtility.SetDirty(obj);
                 }
-
-                TextCorePropertyDrawerUtilities.s_RefreshGlyphProxyLookup = true;
             }
 
             if (objUpdateCount > 0)

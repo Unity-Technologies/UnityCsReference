@@ -336,26 +336,6 @@ namespace UnityEditor
             return totalLocksText;
         }
 
-        // When the given 'text' exceeds the given 'width', out-of-bound characters
-        // are removed as well as a few more to display a trailing ellipsis.
-        // If 'text' does not exceed width, text is returned.
-        private string FitTextToWidth(string text, float width, GUIStyle style)
-        {
-            int characterCountVisible = style.GetNumCharactersThatFitWithinWidth(text, width);
-            if (characterCountVisible > 1 && characterCountVisible != text.Length)
-            {
-                string ellipsedText;
-                int characterLength = (characterCountVisible - 1);
-                if (!Instance.m_Cache.TryGetEllipsedNames(text, characterLength, out ellipsedText))
-                {
-                    ellipsedText = text.Substring(0, characterLength) + (" \u2026");    // 'horizontal ellipsis' (U+2026) is: ...
-                    Instance.m_Cache.StoreEllipsedNames(text, ellipsedText, characterLength);
-                }
-                return ellipsedText;
-            }
-            return text;
-        }
-
         #endregion
         #region GUI Content
 

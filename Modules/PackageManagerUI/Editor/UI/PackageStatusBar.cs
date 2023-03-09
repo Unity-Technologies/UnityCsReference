@@ -18,19 +18,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ResourceLoader m_ResourceLoader;
         private ApplicationProxy m_Application;
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        private PageManager m_PageManager;
-        private AssetStoreCallQueue m_AssetStoreCallQueue;
+        private BackgroundFetchHandler m_BackgroundFetchHandler;
         private PageRefreshHandler m_PageRefreshHandler;
+        private PageManager m_PageManager;
+        private UnityConnectProxy m_UnityConnect;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
             m_ResourceLoader = container.Resolve<ResourceLoader>();
             m_Application = container.Resolve<ApplicationProxy>();
-            m_PackageManagerPrefs = container.Resolve<PackageManagerPrefs>();
-            m_PageManager = container.Resolve<PageManager>();
-            m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
+            m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
             m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
+            m_PageManager = container.Resolve<PageManager>();
+            m_UnityConnect = container.Resolve<UnityConnectProxy>();
         }
 
         public PackageStatusBar()
@@ -50,26 +50,25 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnEnable()
         {
-            UpdateStatusMessage();
-
             m_PageRefreshHandler.onRefreshOperationStart += UpdateStatusMessage;
             m_PageRefreshHandler.onRefreshOperationFinish += UpdateStatusMessage;
             m_PageRefreshHandler.onRefreshOperationError += OnRefreshOperationError;
 
-            m_PackageManagerPrefs.onFilterTabChanged += OnFilterTabChanged;
+            m_PageManager.onActivePageChanged += OnActivePageChanged;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
+            m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
 
-            m_AssetStoreCallQueue.onCheckUpdateProgress += OnCheckUpdateProgress;
+            m_BackgroundFetchHandler.onCheckUpdateProgress += OnCheckUpdateProgress;
 
             refreshButton.SetIcon("refresh");
             refreshButton.iconTooltip = L10n.Tr("Refresh list");
             refreshButton.clicked += () =>
             {
-                m_PageRefreshHandler.Refresh(m_PackageManagerPrefs.currentFilterTab);
+                m_PageRefreshHandler.Refresh(m_PageManager.activePage);
             };
             refreshButton.SetEnabled(true);
 
-            RefreshCheckUpdateMenuOption(m_PackageManagerPrefs.currentFilterTab);
+            Refresh(m_PageManager.activePage, m_UnityConnect.isUserLoggedIn);
         }
 
         public void OnDisable()
@@ -78,10 +77,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageRefreshHandler.onRefreshOperationFinish -= UpdateStatusMessage;
             m_PageRefreshHandler.onRefreshOperationError -= OnRefreshOperationError;
 
-            m_PackageManagerPrefs.onFilterTabChanged -= OnFilterTabChanged;
+            m_PageManager.onActivePageChanged -= OnActivePageChanged;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
+            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
 
-            m_AssetStoreCallQueue.onCheckUpdateProgress -= OnCheckUpdateProgress;
+            m_BackgroundFetchHandler.onCheckUpdateProgress -= OnCheckUpdateProgress;
         }
 
         public void DisableRefresh()
@@ -95,10 +95,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpdateStatusMessage();
         }
 
-        private void OnFilterTabChanged(PackageFilterTab tab)
+        private void OnActivePageChanged(IPage page)
         {
-            RefreshCheckUpdateMenuOption(tab);
-            UpdateStatusMessage();
+            Refresh(page, m_UnityConnect.isUserLoggedIn);
+        }
+
+        private void OnUserLoginStateChange(bool isUserInfoReady, bool isUserLoggedIn)
+        {
+            Refresh(m_PageManager.activePage, isUserLoggedIn);
         }
 
         private void OnRefreshOperationError(UIError error)
@@ -106,35 +110,49 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpdateStatusMessage();
         }
 
+        private bool IsVisible(IPage page, bool isUserLoggedIn)
+        {
+            return page.id != MyAssetsPage.k_Id || isUserLoggedIn;
+        }
+
+        private void Refresh(IPage page, bool isUserLoggedIn)
+        {
+            var visibility = IsVisible(page, isUserLoggedIn);
+            UIUtils.SetElementDisplay(this, visibility);
+
+            if (!visibility)
+                return;
+
+            RefreshCheckUpdateMenuOption(page);
+            UpdateStatusMessage();
+        }
+
         private void UpdateStatusMessage()
         {
-            var tab = m_PackageManagerPrefs.currentFilterTab;
-
-            var contentType = m_PageManager.GetPage().contentType ?? L10n.Tr("packages");
-
-            if (m_PageRefreshHandler.IsRefreshInProgress(tab))
+            var page = m_PageManager.activePage;
+            if (m_PageRefreshHandler.IsRefreshInProgress(page))
             {
-                SetStatusMessage(StatusType.Loading, string.Format(L10n.Tr("Refreshing {0}..."), contentType));
+                SetStatusMessage(StatusType.Loading, L10n.Tr("Refreshing list..."));
                 return;
             }
 
-            if (tab == PackageFilterTab.AssetStore && m_AssetStoreCallQueue.isCheckUpdateInProgress)
+            if (page.id == MyAssetsPage.k_Id && m_BackgroundFetchHandler.isCheckUpdateInProgress)
             {
                 SetStatusMessage(StatusType.Loading, L10n.Tr("Checking for updates..."));
                 return;
             }
 
             var errorMessage = string.Empty;
-            var refreshError = m_PageRefreshHandler.GetRefreshError(tab);
+            var refreshError = m_PageRefreshHandler.GetRefreshError(page);
 
             if (!m_Application.isInternetReachable)
                 errorMessage = k_OfflineErrorMessage;
             else if (refreshError != null)
             {
                 var seeDetailInConsole = (UIError.Attribute.IsDetailInConsole & refreshError.attribute) != 0;
-                errorMessage = seeDetailInConsole ?
-                    string.Format(L10n.Tr("Error refreshing {0}, see console"), contentType) :
-                    string.Format(L10n.Tr("Error refreshing {0}"), contentType);
+                errorMessage = seeDetailInConsole
+                    ? L10n.Tr("Refresh error, see Console window")
+                    : L10n.Tr("Refresh error");
             }
 
             if (!string.IsNullOrEmpty(errorMessage))
@@ -165,8 +183,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetLastUpdateStatusMessage()
         {
-            var tab = m_PackageManagerPrefs.currentFilterTab;
-            var timestamp = m_PageRefreshHandler.GetRefreshTimestamp(tab);
+            var page = m_PageManager.activePage;
+            var timestamp = m_PageRefreshHandler.GetRefreshTimestamp(page);
             var dt = new DateTime(timestamp);
             var dateAndTime = dt.ToString("MMM d, HH:mm", CultureInfo.CreateSpecificCulture("en-US"));
             var label = timestamp == 0 ? string.Empty : string.Format(L10n.Tr("Last update {0}"), dateAndTime);
@@ -175,21 +193,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal void OnCheckUpdateProgress()
         {
-            if (m_PackageManagerPrefs.currentFilterTab != PackageFilterTab.AssetStore)
+            if (m_PageManager.activePage.id != MyAssetsPage.k_Id)
                 return;
 
             UpdateStatusMessage();
         }
 
-        private void RefreshCheckUpdateMenuOption(PackageFilterTab tab)
+        private void RefreshCheckUpdateMenuOption(IPage page)
         {
-            if (tab == PackageFilterTab.AssetStore)
+            if (page.id == MyAssetsPage.k_Id)
             {
                 var menu = new DropdownMenu();
-                menu.AppendAction(L10n.Tr("Check for updates"), a =>
-                {
-                    m_AssetStoreCallQueue.ForceCheckUpdateForAllLocalInfos();
-                },action => m_AssetStoreCallQueue.isCheckUpdateInProgress ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+                menu.AppendAction(L10n.Tr("Check for updates"),
+                    _ =>m_BackgroundFetchHandler.ForceCheckUpdateForAllLocalInfos(),
+                    _ => m_BackgroundFetchHandler.isCheckUpdateInProgress ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
                 refreshButton.menu = menu;
             }
             else
@@ -198,10 +215,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { get; set; }
 
-        private LoadingSpinner loadingSpinner { get { return cache.Get<LoadingSpinner>("loadingSpinner"); }}
-        private Label errorIcon { get { return cache.Get<Label>("errorIcon"); }}
-        private Label statusLabel { get { return cache.Get<Label>("statusLabel"); }}
-        private VisualElement refreshButtonContainer { get { return cache.Get<VisualElement>("refreshButtonContainer"); } }
-        private DropdownButton refreshButton { get { return cache.Get<DropdownButton>("refreshButton"); } }
+        private LoadingSpinner loadingSpinner => cache.Get<LoadingSpinner>("loadingSpinner");
+        private Label errorIcon => cache.Get<Label>("errorIcon");
+        private Label statusLabel => cache.Get<Label>("statusLabel");
+        private VisualElement refreshButtonContainer => cache.Get<VisualElement>("refreshButtonContainer");
+        private DropdownButton refreshButton => cache.Get<DropdownButton>("refreshButton");
     }
 }

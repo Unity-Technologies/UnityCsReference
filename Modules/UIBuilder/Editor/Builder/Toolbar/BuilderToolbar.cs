@@ -41,7 +41,7 @@ namespace Unity.UI.Builder
         ThemeStyleSheetManager m_ThemeManager;
         ThemeStyleSheet m_LastCustomTheme;
 
-        string m_LastSavePath = "Assets";
+        string m_LastSavePath = "Assets/";
 
         public BuilderDocument document
         {
@@ -344,30 +344,6 @@ namespace Unity.UI.Builder
             return true;
         }
 
-        void NewTestDocument()
-        {
-            if (!document.CheckForUnsavedChanges())
-                return;
-
-            var testAsset =
-                BuilderConstants.UIBuilderPackagePath +
-                "/SampleDocument/BuilderSampleCanvas.uxml";
-            var originalAsset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(testAsset);
-            LoadDocument(originalAsset, testAsset);
-        }
-
-        void NewTestVariablesDocument()
-        {
-            if (!document.CheckForUnsavedChanges())
-                return;
-
-            var testAsset =
-                BuilderConstants.UIBuilderPackagePath +
-                "/SampleDocument/BuilderVariableSampleCanvas.uxml";
-            var originalAsset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(testAsset);
-            LoadDocument(originalAsset, testAsset);
-        }
-
         internal void SaveDocument(bool isSaveAs)
         {
             var viewportWindow = m_PaneWindow as IBuilderViewportWindow;
@@ -465,19 +441,6 @@ namespace Unity.UI.Builder
             {
                 NewDocument();
             });
-
-            if (Unsupported.IsDeveloperMode())
-            {
-                m_FileMenu.menu.AppendAction("New (Test)", a =>
-                {
-                    NewTestDocument();
-                });
-
-                m_FileMenu.menu.AppendAction("New (Test Variables)", a =>
-                {
-                    NewTestVariablesDocument();
-                });
-            }
 
             m_FileMenu.menu.AppendAction("Open...", a =>
             {

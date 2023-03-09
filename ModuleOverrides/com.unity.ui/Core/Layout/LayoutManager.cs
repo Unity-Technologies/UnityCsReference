@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -30,6 +30,7 @@ enum LayoutConfigDataType
 }
 
 delegate void LayoutMeasureFunction(
+    VisualElement ve,
     ref LayoutNode node,
     float width,
     LayoutMeasureMode widthMode,
@@ -192,6 +193,7 @@ internal class LayoutManager : IDisposable
 
     readonly ManagedObjectStore<LayoutMeasureFunction> m_ManagedMeasureFunctions = new();
     readonly ManagedObjectStore<LayoutBaselineFunction> m_ManagedBaselineFunctions = new();
+    readonly ManagedObjectStore<WeakReference<VisualElement>> m_ManagedOwners = new();
 
     int m_HighMark;
 
@@ -362,6 +364,7 @@ internal class LayoutManager : IDisposable
         ref var data = ref GetAccess().GetNodeData(handle);
         m_ManagedMeasureFunctions.UpdateValue(ref data.ManagedMeasureFunctionIndex, null);
         m_ManagedBaselineFunctions.UpdateValue(ref data.ManagedBaselineFunctionIndex, null);
+        m_ManagedOwners.UpdateValue(ref data.ManagedOwnerIndex, null);
         m_Nodes.Free(handle);
     }
 
@@ -379,17 +382,42 @@ internal class LayoutManager : IDisposable
 
     public void SetMeasureFunction(LayoutHandle handle, LayoutMeasureFunction value)
     {
+        if (GetAccess().GetNodeData(handle).ManagedOwnerIndex == 0) Debug.LogWarning("Settomg Measure method on a node with no Owner");
         ref var index = ref GetAccess().GetNodeData(handle).ManagedMeasureFunctionIndex;
         m_ManagedMeasureFunctions.UpdateValue(ref index, value);
     }
 
+    public VisualElement GetOwner(LayoutHandle handle)
+    {
+        //This assumes an internal behavior of the managed object store... invalid could be -1 instead
+        if (GetAccess().GetNodeData(handle).ManagedOwnerIndex == 0)
+            return null;
+
+        // Will throw if the weak referenc is not in the list
+        m_ManagedOwners.GetValue(GetAccess().GetNodeData(handle).ManagedOwnerIndex).TryGetTarget(out var ve);
+        return ve;
+    }
+
+    public void SetOwner(LayoutHandle handle, VisualElement value)
+    {
+        if (value == null)
+        {
+            if (GetAccess().GetNodeData(handle).ManagedMeasureFunctionIndex != 0) Debug.LogWarning("Node with no owner has a Measure method");
+            if (GetAccess().GetNodeData(handle).ManagedBaselineFunctionIndex != 0) Debug.LogWarning("Node with no owner has a baseline method");
+        }
+        ref var index = ref GetAccess().GetNodeData(handle).ManagedOwnerIndex;
+        m_ManagedOwners.UpdateValue(ref index, new(value));
+    }
+
+
     public LayoutBaselineFunction GetBaselineFunction(LayoutHandle handle)
     {
-        return m_ManagedBaselineFunctions.GetValue(GetAccess().GetNodeData(handle).ManagedBaselineFunctionIndex);
+        return m_ManagedBaselineFunctions.GetValue(GetAccess().GetNodeData(handle).ManagedMeasureFunctionIndex);
     }
 
     public void SetBaselineFunction(LayoutHandle handle, LayoutBaselineFunction value)
     {
+        if (GetAccess().GetNodeData(handle).ManagedOwnerIndex == 0) Debug.LogWarning("Setting Baseline method on a node with no Owner");
         ref var index = ref GetAccess().GetNodeData(handle).ManagedBaselineFunctionIndex;
         m_ManagedBaselineFunctions.UpdateValue(ref index, value);
     }

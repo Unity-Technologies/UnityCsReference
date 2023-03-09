@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEditor.UIElements;
+
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.ShortcutManagement;
 using UnityEditor.Overlays;
 
 namespace UnityEditor.Snap
@@ -37,20 +35,14 @@ namespace UnityEditor.Snap
     {
         LinkedVector3Field m_GridSize;
 
-        [Shortcut("Grid/Push To Grid", typeof(SceneView), KeyCode.Backslash, ShortcutModifiers.Action)]
-        internal static void PushToGrid()
-        {
-            SnapSelectionToGrid();
-        }
-
         protected override void OnEnable()
         {
             base.OnEnable();
 
             rootVisualElement.styleSheets.Add((StyleSheet)EditorGUIUtility.Load("StyleSheets/SceneViewToolbarElements/SnapWindowsCommon.uss"));
+            rootVisualElement.Add(new SnapSettingsHeader(L10n.Tr("Snapping"), ResetValues));
 
-            rootVisualElement.Add(new SnapSettingsHeader(L10n.Tr("Grid Snapping"), ResetValues));
-
+            // Grid size == Increment snap
             m_GridSize = new LinkedVector3Field(L10n.Tr("Grid Size")) { name = "GridSize" };
             m_GridSize.value = GridSettings.size;
             m_GridSize.linked = Mathf.Approximately(m_GridSize.value.x, m_GridSize.value.y) && Mathf.Approximately(m_GridSize.value.x, m_GridSize.value.z);
@@ -58,89 +50,13 @@ namespace UnityEditor.Snap
             m_GridSize.RegisterValueChangedCallback(OnGridSizeChanged);
             rootVisualElement.Add(m_GridSize);
 
-            // Align Selected
-            var alignSelected = new VisualElement() { name = "AlignSelected" };
-            alignSelected.style.flexDirection = FlexDirection.Row;
-
-            alignSelected.Add(new Label(L10n.Tr("Align Selected")));
-
-            var allAxis = new Button() { name = "AllAxes", text = L10n.Tr("All Axes") };
-            allAxis.clicked += () =>
-            {
-                SnapSelectionToGrid();
-            };
-
-            var x = new Button() { name = "X", text = L10n.Tr("X") };
-            x.clicked += () =>
-            {
-                SnapSelectionToGrid(SnapAxis.X);
-            };
-
-            var y = new Button() { name = "Y", text = L10n.Tr("Y") };
-            y.clicked += () =>
-            {
-                SnapSelectionToGrid(SnapAxis.Y);
-            };
-
-            var z = new Button() { name = "Z", text = L10n.Tr("Z") };
-            z.clicked += () =>
-            {
-                SnapSelectionToGrid(SnapAxis.Z);
-            };
-
-            alignSelected.Add(allAxis);
-            alignSelected.Add(x);
-            alignSelected.Add(y);
-            alignSelected.Add(z);
-            rootVisualElement.Add(alignSelected);
-        }
-
-        void ResetValues()
-        {
-            GridSettings.size = Vector3.one * GridSettings.defaultGridSize;
-            m_GridSize.linked = true;
-        }
-
-        void OnGridSizeChanged(ChangeEvent<Vector3> evt)
-        {
-            var value = evt.newValue;
-            if (m_GridSize.linked)
-                value = evt.newValue.x * Vector3.one;
-
-            GridSettings.size = value;
-        }
-
-        static void SnapSelectionToGrid(SnapAxis axis = SnapAxis.All)
-        {
-            var selections = Selection.transforms;
-            if (selections != null && selections.Length > 0)
-            {
-                Undo.RecordObjects(selections, L10n.Tr("Snap to Grid"));
-                Handles.SnapToGrid(selections, axis);
-            }
-        }
-    }
-
-    sealed class SnapIncrementSettingsWindow : OverlayPopupWindow
-    {
-        LinkedVector3Field m_MoveLinkedField;
-
-        protected override void OnEnable()
-        {
-            base.OnEnable();
-
-            rootVisualElement.styleSheets.Add((StyleSheet)EditorGUIUtility.Load("StyleSheets/SceneViewToolbarElements/SnapWindowsCommon.uss"));
-            rootVisualElement.Add(new SnapSettingsHeader(L10n.Tr("Increment Snapping"), ResetValues));
-
-            // Move
-            m_MoveLinkedField = new LinkedVector3Field(L10n.Tr("Move")) { name = "Move" };
-            m_MoveLinkedField.value = EditorSnapSettings.move;
-            m_MoveLinkedField.linked = Mathf.Approximately(m_MoveLinkedField.value.x, m_MoveLinkedField.value.y)
-                && Mathf.Approximately(m_MoveLinkedField.value.x, m_MoveLinkedField.value.z);
-            rootVisualElement.Add(m_MoveLinkedField);
-
-            EditorSnapSettings.moveChanged += (value) => m_MoveLinkedField.SetValueWithoutNotify(value);
-            m_MoveLinkedField.RegisterValueChangedCallback(OnMoveValueChanged);
+            var gridSnap = new Toggle("Snap to Grid") { tooltip = "Enable snapping objects to the absolute position on " +
+                                                                  "the grid. This option is only available when handle " +
+                                                                  "rotation is set to Global." };
+            gridSnap.SetValueWithoutNotify(EditorSnapSettings.gridSnapEnabled);
+            EditorSnapSettings.gridSnapEnabledChanged += () => gridSnap.SetValueWithoutNotify(EditorSnapSettings.gridSnapEnabled);
+            gridSnap.RegisterValueChangedCallback(evt => EditorSnapSettings.gridSnapEnabled = evt.newValue);
+            rootVisualElement.Add(gridSnap);
 
             // Rotate
             var rotate = new FloatField(L10n.Tr("Rotate")) { name = "Rotate" };
@@ -165,24 +81,46 @@ namespace UnityEditor.Snap
                 EditorSnapSettings.scale = evt.newValue;
                 EditorSnapSettings.Save();
             });
-        }
 
-        void OnMoveValueChanged(ChangeEvent<Vector3> evt)
-        {
-            var value = evt.newValue;
-            if (m_MoveLinkedField.linked)
-                value = evt.newValue.x * Vector3.one;
+            // Align Selected
+            var alignSelected = new VisualElement() { name = "AlignSelected" };
+            alignSelected.Add(new Label(L10n.Tr("Align Selected")) { name = "AlignSelectedLabel" });
 
-            EditorSnapSettings.move = value;
-            EditorSnapSettings.Save();
+            var allAxis = new Button() { name = "AllAxes", text = L10n.Tr("All Axes") };
+            allAxis.clicked += () => GridSnapping.SnapSelectionToGrid();
+
+            var x = new Button() { name = "X", text = L10n.Tr("X") };
+            x.clicked += () => GridSnapping.SnapSelectionToGrid(SnapAxis.X);
+
+            var y = new Button() { name = "Y", text = L10n.Tr("Y") };
+            y.clicked += () => GridSnapping.SnapSelectionToGrid(SnapAxis.Y);
+
+            var z = new Button() { name = "Z", text = L10n.Tr("Z") };
+            z.clicked += () => GridSnapping.SnapSelectionToGrid(SnapAxis.Z);
+
+            alignSelected.Add(allAxis);
+            alignSelected.Add(x);
+            alignSelected.Add(y);
+            alignSelected.Add(z);
+
+            rootVisualElement.Add(alignSelected);
         }
 
         void ResetValues()
         {
-            EditorSnapSettings.move = SnapSettings.defaultMove;
-            m_MoveLinkedField.linked = true;
+            GridSettings.size = Vector3.one * GridSettings.defaultGridSize;
+            m_GridSize.linked = true;
+            EditorSnapSettings.gridSnapEnabled = SnapSettings.defaultGridSnapEnabled;
             EditorSnapSettings.rotate = SnapSettings.defaultRotation;
             EditorSnapSettings.scale = SnapSettings.defaultScale;
+        }
+
+        void OnGridSizeChanged(ChangeEvent<Vector3> evt)
+        {
+            var value = evt.newValue;
+            if (m_GridSize.linked)
+                value = evt.newValue.x * Vector3.one;
+            GridSettings.size = value;
         }
     }
 }

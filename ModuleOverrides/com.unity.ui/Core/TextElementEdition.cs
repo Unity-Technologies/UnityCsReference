@@ -379,6 +379,9 @@ namespace UnityEngine.UIElements
             get => m_PlaceholderText;
             set
             {
+                if (value == m_PlaceholderText)
+                    return;
+
                 //this approach results not showing leading 0s when input fields are updated from the UI Builder if there is a placeholder text
                 //however since this does not occur at run-time and inputfields are generally empty when placeholder text is set this should be ok
                 //if we want to fix this down the line then defaultValue needs to return null so we could differentiate an empty field vs. one with "0"
@@ -387,7 +390,7 @@ namespace UnityEngine.UIElements
 
                 m_PlaceholderText = value;
                 OnPlaceholderChanged?.Invoke();
-
+                MarkDirtyRepaint();
             }
         }
 

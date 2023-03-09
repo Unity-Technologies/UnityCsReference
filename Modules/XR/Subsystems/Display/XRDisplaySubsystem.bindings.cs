@@ -284,5 +284,10 @@ namespace UnityEngine.XR
         [NativeHeader("Runtime/Graphics/CommandBuffer/RenderingCommandBuffer.h")]
         [NativeConditional("ENABLE_XR")]
         extern public bool AddGraphicsThreadMirrorViewBlit(CommandBuffer cmd, bool allowGraphicsStateInvalidate, int mode);
+
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(XRDisplaySubsystem xrDisplaySubsystem) => xrDisplaySubsystem.m_Ptr;
+        }
     }
 }

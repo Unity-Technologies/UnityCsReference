@@ -17,7 +17,7 @@ namespace UnityEngine.Networking
         private NativeArray<byte> m_NativeData;
         private bool mNonReadable;
 
-        private static extern IntPtr Create(DownloadHandlerTexture obj, bool readable);
+        private static extern IntPtr Create([Unmarshalled] DownloadHandlerTexture obj, bool readable);
 
         private void InternalCreateTexture(bool readable)
         {
@@ -57,6 +57,10 @@ namespace UnityEngine.Networking
         public static Texture2D GetContent(UnityWebRequest www)
         {
             return GetCheckedDownloader<DownloadHandlerTexture>(www).texture;
+        }
+        new internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(DownloadHandlerTexture handler) => handler.m_Ptr;
         }
 
     }

@@ -13,7 +13,7 @@ namespace UnityEditor
     {
         public static extern bool silentMode { get; set; }
 
-        public static extern void PerformBumpMapCheck([NotNull("NullExceptionObject")] Material material);
+        public static extern void PerformBumpMapCheck([NotNull] Material material);
     }
 
     public static class MaterialEditorExtensions

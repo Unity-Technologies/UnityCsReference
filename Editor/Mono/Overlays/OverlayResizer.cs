@@ -76,11 +76,18 @@ namespace UnityEditor.Overlays
 
             void OnMouseDown(MouseDownEvent evt)
             {
+                var container = m_Overlay.rootVisualElement.GetFirstAncestorOfType<OverlayContainer>();
+
+
+                var overlayPosition = m_Overlay.rootVisualElement.layout.position;
+                if (container != null)
+                    overlayPosition = m_Overlay.rootVisualElement.parent.ChangeCoordinatesTo(container, overlayPosition);
+
                 m_OriginalRect = new Rect(
-                    m_Overlay.floating ?  m_Overlay.floatingPosition : m_Overlay.rootVisualElement.layout.position,
+                    m_Overlay.floating ?  m_Overlay.floatingPosition : overlayPosition,
                     m_Overlay.size);
 
-                m_ContainerRect = m_Overlay.rootVisualElement.parent.rect;
+                m_ContainerRect = container?.rect ?? new Rect(float.NegativeInfinity,float.NegativeInfinity,float.PositiveInfinity,float.PositiveInfinity);
                 m_OriginalMousePosition = evt.mousePosition;
                 m_MaxSize = m_Overlay.maxSize;
                 m_MinSize = m_Overlay.minSize;
@@ -298,7 +305,7 @@ namespace UnityEditor.Overlays
                     if (resizer.HasDirection(Direction.Bottom))
                         hide |= overlayRect.yMax >= canvasRect.yMax - k_MinDistanceFromEdge;
                 }
-                
+
 
                 resizer.style.display = hide ? DisplayStyle.None : DisplayStyle.Flex;
             }

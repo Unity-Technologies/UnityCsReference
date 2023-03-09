@@ -14,6 +14,6 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/Animation/AvatarUtility.h")]
     internal class AvatarUtility
     {
-        extern static internal void SetHumanPose([NotNull("NullExceptionObject")] Animator animator, float[] dof);
+        extern static internal void SetHumanPose([NotNull] Animator animator, float[] dof);
     }
 }

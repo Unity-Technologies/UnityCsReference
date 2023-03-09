@@ -387,15 +387,15 @@ namespace UnityEngine
 
         public extern int GetSiblingIndex();
 
-        [FreeFunction]
-        private static extern Transform FindRelativeTransformWithPath([NotNull("NullExceptionObject")] Transform transform, string path, [UnityEngine.Internal.DefaultValue("false")] bool isActiveOnly);
+        [FreeFunction(HasExplicitThis = true)]
+        private extern Transform FindRelativeTransformWithPath(string path, [UnityEngine.Internal.DefaultValue("false")] bool isActiveOnly);
 
         // Finds a child by /name/ and returns it.
         public Transform Find(string n)
         {
             if (n == null)
                 throw new ArgumentNullException("Name cannot be null");
-            return FindRelativeTransformWithPath(this, n, false);
+            return FindRelativeTransformWithPath(n, false);
         }
 
         //*undocumented

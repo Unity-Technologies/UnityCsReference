@@ -47,5 +47,10 @@ namespace UnityEngine
                 throw new ArgumentException("native handle can not be null");
             m_Ptr = nativeHandle;
         }
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(BootConfigData bootConfig) => bootConfig.m_Ptr;
+        }
     }
 }

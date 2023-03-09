@@ -780,6 +780,11 @@ namespace UnityEditor.TextCore.Text
                             ? glyphLoadFlags | GlyphLoadFlags.LOAD_MONOCHROME
                             : glyphLoadFlags;
 
+                        glyphLoadFlags = ((GlyphRasterModes)m_GlyphRenderMode & GlyphRasterModes.RASTER_MODE_COLOR) == GlyphRasterModes.RASTER_MODE_COLOR
+                            ? glyphLoadFlags | GlyphLoadFlags.LOAD_COLOR
+                            : glyphLoadFlags;
+
+
                         //
                         AutoResetEvent autoEvent = new AutoResetEvent(false);
 
@@ -1060,7 +1065,12 @@ namespace UnityEditor.TextCore.Text
                                 m_IsRenderingDone = false;
 
                                 // Allocate texture data
-                                m_AtlasTextureBuffer = new byte[m_AtlasWidth * m_AtlasHeight];
+
+                                if (m_GlyphRenderMode == GlyphRenderMode.COLOR || m_GlyphRenderMode == GlyphRenderMode.COLOR_HINTED)
+                                    m_AtlasTextureBuffer = new byte[m_AtlasWidth * m_AtlasHeight * 4];
+                                else
+                                    m_AtlasTextureBuffer = new byte[m_AtlasWidth * m_AtlasHeight];
+
 
                                 m_AtlasGenerationProgressLabel = "Rendering glyphs...";
 
@@ -1305,14 +1315,34 @@ namespace UnityEditor.TextCore.Text
             if (m_FontAtlasTexture != null)
                 DestroyImmediate(m_FontAtlasTexture);
 
-            m_FontAtlasTexture = new Texture2D(m_AtlasWidth, m_AtlasHeight, TextureFormat.Alpha8, false, true);
-
             Color32[] colors = new Color32[m_AtlasWidth * m_AtlasHeight];
 
-            for (int i = 0; i < colors.Length; i++)
+
+            switch (m_GlyphRenderMode)
             {
-                byte c = m_AtlasTextureBuffer[i];
-                colors[i] = new Color32(c, c, c, c);
+                case GlyphRenderMode.COLOR:
+                case GlyphRenderMode.COLOR_HINTED:
+                    m_FontAtlasTexture = new Texture2D(m_AtlasWidth, m_AtlasHeight, TextureFormat.RGBA32, false, true);
+
+                    for (int i = 0; i < colors.Length; i++)
+                    {
+                        int readIndex = i * 4;
+                        byte r = m_AtlasTextureBuffer[readIndex + 0];
+                        byte g = m_AtlasTextureBuffer[readIndex + 1];
+                        byte b = m_AtlasTextureBuffer[readIndex + 2];
+                        byte a = m_AtlasTextureBuffer[readIndex + 3];
+                        colors[i] = new Color32(r, g, b, a);
+                    }
+                    break;
+                default:
+                    m_FontAtlasTexture = new Texture2D(m_AtlasWidth, m_AtlasHeight, TextureFormat.Alpha8, false, true);
+
+                    for (int i = 0; i < colors.Length; i++)
+                    {
+                        byte c = m_AtlasTextureBuffer[i];
+                        colors[i] = new Color32(c, c, c, c);
+                    }
+                    break;
             }
 
             // Clear allocation of
@@ -1523,14 +1553,14 @@ namespace UnityEditor.TextCore.Text
                 // Update the Texture reference on the Material
                 //for (int i = 0; i < material_references.Length; i++)
                 //{
-                //    material_references[i].SetFloat(ShaderUtilities.ID_TextureWidth, tex.width);
-                //    material_references[i].SetFloat(ShaderUtilities.ID_TextureHeight, tex.height);
+                //    material_references[i].SetFloat(TextShaderUtilities.ID_TextureWidth, tex.width);
+                //    material_references[i].SetFloat(TextShaderUtilities.ID_TextureHeight, tex.height);
 
                 //    int spread = m_Padding;
-                //    material_references[i].SetFloat(ShaderUtilities.ID_GradientScale, spread);
+                //    material_references[i].SetFloat(TextShaderUtilities.ID_GradientScale, spread);
 
-                //    material_references[i].SetFloat(ShaderUtilities.ID_WeightNormal, fontAsset.normalStyle);
-                //    material_references[i].SetFloat(ShaderUtilities.ID_WeightBold, fontAsset.boldStyle);
+                //    material_references[i].SetFloat(TextShaderUtilities.ID_WeightNormal, fontAsset.normalStyle);
+                //    material_references[i].SetFloat(TextShaderUtilities.ID_WeightBold, fontAsset.boldStyle);
                 //}
             }
 
@@ -1863,7 +1893,10 @@ namespace UnityEditor.TextCore.Text
 
             if (m_FontAtlasTexture != null)
             {
-                EditorGUI.DrawTextureAlpha(pixelRect, m_FontAtlasTexture, ScaleMode.StretchToFill);
+                if (m_FontAtlasTexture.format == TextureFormat.Alpha8)
+                    EditorGUI.DrawTextureAlpha(pixelRect, m_FontAtlasTexture, ScaleMode.StretchToFill);
+                else
+                    EditorGUI.DrawPreviewTexture(pixelRect, m_FontAtlasTexture, null, ScaleMode.StretchToFill);
 
                 // Destroy GlyphRect preview texture
                 if (m_GlyphRectPreviewTexture != null)
@@ -1920,28 +1953,129 @@ namespace UnityEditor.TextCore.Text
             FontFeatureTable fontFeatureTable = new FontFeatureTable();
 
             PopulateGlyphAdjustmentTable(fontFeatureTable);
-
+            PopulateLigatureTable(fontFeatureTable);
+            PopulateDiacriticalMarkAdjustmentTables(fontFeatureTable);
 
             return fontFeatureTable;
         }
 
-        // Get Kerning Pairs
         void PopulateGlyphAdjustmentTable(FontFeatureTable fontFeatureTable)
         {
-            GlyphPairAdjustmentRecord[] adjustmentRecords = FontEngine.GetGlyphPairAdjustmentTable(m_AvailableGlyphsToAdd.ToArray());
+            GlyphPairAdjustmentRecord[] adjustmentRecords = FontEngine.GetPairAdjustmentRecords(m_AvailableGlyphsToAdd);
 
             if (adjustmentRecords == null)
                 return;
 
-            // FontFeatureTable fontFeatureTable = new FontFeatureTable();
+            float emScale = (float)m_FaceInfo.pointSize / m_FaceInfo.unitsPerEM;
 
             for (int i = 0; i < adjustmentRecords.Length && adjustmentRecords[i].firstAdjustmentRecord.glyphIndex != 0; i++)
             {
-                fontFeatureTable.glyphPairAdjustmentRecords.Add(adjustmentRecords[i]);
+                GlyphPairAdjustmentRecord record = adjustmentRecords[i];
+
+                // Adjust values currently in Units per EM to make them relative to Sampling Point Size.
+                GlyphValueRecord valueRecord = record.firstAdjustmentRecord.glyphValueRecord;
+                valueRecord.xAdvance *= emScale;
+
+                GlyphPairAdjustmentRecord newRecord = new GlyphPairAdjustmentRecord { firstAdjustmentRecord = new GlyphAdjustmentRecord { glyphIndex = record.firstAdjustmentRecord.glyphIndex, glyphValueRecord = valueRecord }, secondAdjustmentRecord = record.secondAdjustmentRecord };
+
+                fontFeatureTable.glyphPairAdjustmentRecords.Add(newRecord);
             }
 
             fontFeatureTable.SortGlyphPairAdjustmentRecords();
         }
 
+        void PopulateLigatureTable(FontFeatureTable fontFeatureTable)
+        {
+            UnityEngine.TextCore.LowLevel.LigatureSubstitutionRecord[] ligatureRecords = FontEngine.GetLigatureSubstitutionRecords(m_AvailableGlyphsToAdd);
+            if (ligatureRecords != null)
+                AddLigatureRecords(fontFeatureTable, ligatureRecords);
+        }
+
+        void AddLigatureRecords(FontFeatureTable fontFeatureTable, LigatureSubstitutionRecord[] records)
+        {
+            for (int i = 0; i < records.Length; i++)
+            {
+                LigatureSubstitutionRecord record = records[i];
+
+                if (records[i].componentGlyphIDs == null || records[i].ligatureGlyphID == 0)
+                    return;
+
+                uint firstComponentGlyphIndex = record.componentGlyphIDs[0];
+
+                LigatureSubstitutionRecord newRecord = new LigatureSubstitutionRecord() { componentGlyphIDs = record.componentGlyphIDs, ligatureGlyphID = record.ligatureGlyphID };
+
+                // Add new record to lookup
+                if (!fontFeatureTable.m_LigatureSubstitutionRecordLookup.ContainsKey(firstComponentGlyphIndex))
+                {
+                    fontFeatureTable.m_LigatureSubstitutionRecordLookup.Add(firstComponentGlyphIndex, new List<LigatureSubstitutionRecord> { newRecord });
+                }
+                else
+                {
+                    fontFeatureTable.m_LigatureSubstitutionRecordLookup[firstComponentGlyphIndex].Add(newRecord);
+                }
+
+                fontFeatureTable.m_LigatureSubstitutionRecords.Add(newRecord);
+            }
+        }
+
+        void PopulateDiacriticalMarkAdjustmentTables(FontFeatureTable fontFeatureTable)
+        {
+            MarkToBaseAdjustmentRecord[] markToBaseRecords = FontEngine.GetMarkToBaseAdjustmentRecords(m_AvailableGlyphsToAdd);
+            if (markToBaseRecords != null)
+                AddMarkToBaseAdjustmentRecords(fontFeatureTable, markToBaseRecords);
+
+            MarkToMarkAdjustmentRecord[] markToMarkRecords = FontEngine.GetMarkToMarkAdjustmentRecords(m_AvailableGlyphsToAdd);
+            if (markToMarkRecords != null)
+                AddMarkToMarkAdjustmentRecords(fontFeatureTable, markToMarkRecords);
+
+        }
+
+        void AddMarkToBaseAdjustmentRecords(FontFeatureTable fontFeatureTable, MarkToBaseAdjustmentRecord[] records)
+        {
+            float emScale = (float)m_FaceInfo.pointSize / m_FaceInfo.unitsPerEM;
+
+            for (int i = 0; i < records.Length; i++)
+            {
+                MarkToBaseAdjustmentRecord record = records[i];
+
+                uint key = record.markGlyphID << 16 | record.baseGlyphID;
+
+                if (fontFeatureTable.m_MarkToBaseAdjustmentRecordLookup.ContainsKey(key))
+                    continue;
+
+                MarkToBaseAdjustmentRecord newRecord = new MarkToBaseAdjustmentRecord {
+                    baseGlyphID = record.baseGlyphID,
+                    baseGlyphAnchorPoint = new GlyphAnchorPoint { xCoordinate = record.baseGlyphAnchorPoint.xCoordinate * emScale, yCoordinate = record.baseGlyphAnchorPoint.yCoordinate * emScale },
+                    markGlyphID = record.markGlyphID,
+                    markPositionAdjustment = new MarkPositionAdjustment { xPositionAdjustment = record.markPositionAdjustment.xPositionAdjustment * emScale, yPositionAdjustment = record.markPositionAdjustment.yPositionAdjustment * emScale } };
+
+                fontFeatureTable.MarkToBaseAdjustmentRecords.Add(newRecord);
+                fontFeatureTable.m_MarkToBaseAdjustmentRecordLookup.Add(key, newRecord);
+            }
+        }
+
+        void AddMarkToMarkAdjustmentRecords(FontFeatureTable fontFeatureTable, MarkToMarkAdjustmentRecord[] records)
+        {
+            float emScale = (float)m_FaceInfo.pointSize / m_FaceInfo.unitsPerEM;
+
+            for (int i = 0; i < records.Length; i++)
+            {
+                MarkToMarkAdjustmentRecord record = records[i];
+
+                uint key = record.combiningMarkGlyphID << 16 | record.baseMarkGlyphID;
+
+                if (fontFeatureTable.m_MarkToMarkAdjustmentRecordLookup.ContainsKey(key))
+                    continue;
+
+                MarkToMarkAdjustmentRecord newRecord = new MarkToMarkAdjustmentRecord {
+                    baseMarkGlyphID = record.baseMarkGlyphID,
+                    baseMarkGlyphAnchorPoint = new GlyphAnchorPoint { xCoordinate = record.baseMarkGlyphAnchorPoint.xCoordinate * emScale, yCoordinate = record.baseMarkGlyphAnchorPoint.yCoordinate * emScale},
+                    combiningMarkGlyphID = record.combiningMarkGlyphID,
+                    combiningMarkPositionAdjustment = new MarkPositionAdjustment { xPositionAdjustment = record.combiningMarkPositionAdjustment.xPositionAdjustment * emScale, yPositionAdjustment = record.combiningMarkPositionAdjustment.yPositionAdjustment * emScale } };
+
+                fontFeatureTable.MarkToMarkAdjustmentRecords.Add(newRecord);
+                fontFeatureTable.m_MarkToMarkAdjustmentRecordLookup.Add(key, newRecord);
+            }
+        }
     }
 }

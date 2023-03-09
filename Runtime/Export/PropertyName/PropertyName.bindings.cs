@@ -9,8 +9,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Utilities/PropertyName.h")]
     class PropertyNameUtils
     {
-        [FreeFunction(IsThreadSafe = true)]
-        public extern static PropertyName PropertyNameFromString([Unmarshalled] string name);
+        [FreeFunction("PropertyNameFromStringICall", IsThreadSafe = true)]
+        public extern static PropertyName PropertyNameFromString(string name);
         [FreeFunction(IsThreadSafe = true)]
         public extern static string StringFromPropertyName(PropertyName propertyName);
         /// <summary>

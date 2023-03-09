@@ -25,5 +25,10 @@ namespace UnityEngine
 
         [FreeFunction("Coroutine::CleanupCoroutineGC", true)]
         extern static void ReleaseCoroutine(IntPtr ptr);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(Coroutine coroutine) => coroutine.m_Ptr;
+        }
     }
 }

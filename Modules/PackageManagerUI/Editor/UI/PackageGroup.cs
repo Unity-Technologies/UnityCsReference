@@ -13,24 +13,20 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public event Action<bool> onGroupToggle = delegate {};
 
-        public bool expanded => headerCaret.value;
-
         public bool isHidden { get; }
 
         public IEnumerable<PackageItem> packageItems => groupContainer.Children().Cast<PackageItem>();
 
-        private readonly ResourceLoader m_ResourceLoader;
         private readonly PageManager m_PageManager;
         private readonly PackageDatabase m_PackageDatabase;
 
-        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, PackageDatabase packageDatabase, string groupName, string displayName, bool expanded = true, bool hidden = false)
+        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, PackageDatabase packageDatabase, string groupName, bool expanded = true, bool hidden = false)
         {
-            m_ResourceLoader = resourceLoader;
             m_PageManager = pageManager;
             m_PackageDatabase = packageDatabase;
 
             name = groupName;
-            var root = m_ResourceLoader.GetTemplate("PackageGroup.uxml");
+            var root = resourceLoader.GetTemplate("PackageGroup.uxml");
             Add(root);
             m_Cache = new VisualElementCache(root);
 
@@ -38,13 +34,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             EnableInClassList("collapsed", !expanded);
             headerCaret.RegisterValueChangedCallback((evt) =>
             {
-                m_PageManager.GetPage().SetGroupExpanded(groupName, evt.newValue);
+                m_PageManager.activePage.SetGroupExpanded(groupName, evt.newValue);
                 EnableInClassList("collapsed", !evt.newValue);
                 EditorApplication.delayCall += () => onGroupToggle?.Invoke(evt.newValue);
             });
 
             headerTag.pickingMode = PickingMode.Ignore;
-            headerCaret.text = displayName;
+            headerCaret.text = groupName;
 
             isHidden = hidden;
             if (isHidden)
@@ -88,7 +84,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly VisualElementCache m_Cache;
 
         public VisualElement groupContainer => m_Cache.Get<VisualElement>("groupContainer");
-        public VisualElement headerContainer => m_Cache.Get<VisualElement>("headerContainer");
         private Toggle headerCaret => m_Cache.Get<Toggle>("headerCaret");
         private Label headerTag => m_Cache.Get<Label>("headerTag");
     }

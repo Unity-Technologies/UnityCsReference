@@ -133,7 +133,7 @@ namespace UnityEditor.Toolbars
 
             menu.AddItem(EditorGUIUtility.TrTextContent("Show Experimental Packages..."), false, () =>
             {
-                PackageManagerWindow.SelectPackageAndFilterStatic(string.Empty, PackageFilterTab.InProject, true, "experimental");
+                PackageManagerWindow.SelectPackageAndPageStatic(string.Empty, InProjectPage.k_Id, true, "experimental");
             });
             menu.AddSeparator("");
 

@@ -113,7 +113,7 @@ namespace UnityEditor
         }
 
         [FreeFunction("SetTransformParentUndo")]
-        public static extern void SetTransformParent([NotNull("NullExceptionObject")] Transform transform, Transform newParent, bool worldPositionStays, string name);
+        public static extern void SetTransformParent([NotNull] Transform transform, Transform newParent, bool worldPositionStays, string name);
 
         [NativeThrows]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]

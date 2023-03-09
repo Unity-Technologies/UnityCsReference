@@ -46,5 +46,10 @@ namespace UnityEditor.Build.Content
 
         [NativeMethod(IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);
+
+        internal static class BindingsMarshaller
+        {
+            public static IntPtr ConvertToNative(BuildUsageCache buildUsageCache) => buildUsageCache.m_Ptr;
+        }
     }
 }

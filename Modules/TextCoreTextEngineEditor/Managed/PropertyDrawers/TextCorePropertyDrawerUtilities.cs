@@ -149,6 +149,7 @@ namespace UnityEditor.TextCore.Text
                     return false;
 
                 mat.mainTexture = texture;
+                mat.color = Color.white;
             }
             else
             {

@@ -20,7 +20,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual event Action<IOperation> onListOperation = delegate {};
         public virtual event Action<IOperation> onSearchAllOperation = delegate {};
-        public virtual event Action<IOperation> onExtraFetchOperation = delegate {};
         public virtual event Action<IOperation> onAddOperation = delegate {};
 
         [SerializeField]
@@ -55,9 +54,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string[] m_SerializedRegistryUrlsKeys;
 
         [SerializeField]
-        private bool[] m_SerializedRegistryUrlsValues;
+        private RegistryType[] m_SerializedRegistryUrlsValues;
 
-        internal Dictionary<string, bool> m_RegistryUrls = new Dictionary<string, bool>();
+        internal Dictionary<string, RegistryType> m_RegistryUrls = new Dictionary<string, RegistryType>();
 
         [NonSerialized]
         private UpmCache m_UpmCache;
@@ -99,7 +98,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnBeforeSerialize()
         {
             m_SerializedRegistryUrlsKeys = m_RegistryUrls?.Keys.ToArray() ?? new string[0];
-            m_SerializedRegistryUrlsValues = m_RegistryUrls?.Values.ToArray() ?? new bool[0];
+            m_SerializedRegistryUrlsValues = m_RegistryUrls?.Values.ToArray() ?? new RegistryType[0];
 
             m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations?.Values.Where(i => i.isInProgress).ToArray() ?? new UpmSearchOperation[0];
         }
@@ -406,35 +405,35 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.SetSearchPackageInfos(request.Result, searchOperation.lastSuccessTimestamp);
         }
 
-        public virtual void ExtraFetch(string packageId)
+        public virtual void ExtraFetchPackageInfo(string packageIdOrName, long productId = 0, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null)
         {
-            ExtraFetchInternal(packageId);
-        }
-
-        private UpmSearchOperation ExtraFetchInternal(string packageIdOrName, long productId = 0)
-        {
-            if (m_ExtraFetchOperations.ContainsKey(packageIdOrName))
-                return null;
-            var operation = new UpmSearchOperation();
-            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
-            operation.Search(packageIdOrName, productId);
-            operation.onProcessResult += (requst) => OnProcessExtraFetchResult(requst, productId);
-            operation.onOperationFinalized += (op) => m_ExtraFetchOperations.Remove(packageIdOrName);
-            m_ExtraFetchOperations[packageIdOrName] = operation;
-
-            if (productId > 0)
+            if (!m_ExtraFetchOperations.TryGetValue(packageIdOrName, out var operation))
             {
-                operation.onOperationError += (op, error) => m_FetchStatusTracker.SetFetchError(productId, FetchType.ProductSearchInfo, error);
-                m_FetchStatusTracker.SetFetchInProgress(productId, FetchType.ProductSearchInfo);
+                operation = new UpmSearchOperation();
+                operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+                operation.Search(packageIdOrName, productId);
+                operation.onProcessResult += (request) => OnProcessExtraFetchResult(request, productId);
+                operation.onOperationFinalized += (op) => m_ExtraFetchOperations.Remove(packageIdOrName);
+                m_ExtraFetchOperations[packageIdOrName] = operation;
+
+                if (productId > 0)
+                {
+                    operation.onOperationError += (op, error) => m_FetchStatusTracker.SetFetchError(productId, FetchType.ProductSearchInfo, error);
+                    m_FetchStatusTracker.SetFetchInProgress(productId, FetchType.ProductSearchInfo);
+                }
             }
-            onExtraFetchOperation?.Invoke(operation);
-            return operation;
+
+            if (successCallback != null)
+                operation.onProcessResult += (request) => successCallback.Invoke(request.Result.FirstOrDefault());
+            if (errorCallback != null)
+                operation.onOperationError += (op, error) => errorCallback.Invoke(error);
+            if (doneCallback != null)
+                operation.onOperationFinalized += (op) => doneCallback.Invoke();
         }
 
         private void OnProcessExtraFetchResult(SearchRequest request, long productId = 0)
         {
             var packageInfo = request.Result.FirstOrDefault();
-
             if (productId > 0)
             {
                 // This is not really supposed to happen - this happening would mean there's an issue with data from the backend
@@ -451,11 +450,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
                 m_UpmCache.AddExtraPackageInfo(packageInfo);
-        }
-
-        public virtual void SearchPackageInfoForProduct(long productId, string packageName)
-        {
-            ExtraFetchInternal(packageName, productId);
         }
 
         // Restore operations that's interrupted by domain reloads
@@ -489,7 +483,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SearchAll();
 
             foreach (var operation in m_SerializedInProgressExtraFetchOperations)
-                ExtraFetchInternal(operation.packageIdOrName, operation.productId);
+                ExtraFetchPackageInfo(operation.packageIdOrName, operation.productId);
         }
 
         public void OnEnable()
@@ -504,7 +498,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual void ClearCache()
         {
             m_ExtraFetchOperations.Clear();
-
             m_UpmCache.ClearCache();
         }
 
@@ -513,25 +506,30 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ClientProxy.Resolve();
         }
 
+        public virtual RegistryType GetAvailableRegistryType(PackageInfo packageInfo)
+        {
+            // Special handling for packages that's built in/bundled with unity, we always consider them from the Unity registry
+            if (packageInfo?.source == PackageSource.BuiltIn)
+                return RegistryType.UnityRegistry;
+
+            if (string.IsNullOrEmpty(packageInfo?.registry?.url))
+                return RegistryType.None;
+
+            if (packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
+                return RegistryType.AssetStore;
+
+            if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var result))
+                return result;
+
+            result = packageInfo.registry.isDefault && IsUnityUrl(packageInfo.registry.url) ? RegistryType.UnityRegistry : RegistryType.MyRegistries;
+            m_RegistryUrls[packageInfo.registry.url] = result;
+            return result;
+        }
+
         public virtual bool IsUnityPackage(PackageInfo packageInfo)
         {
-            if (packageInfo?.source == PackageSource.BuiltIn)
-                return true;
-
-            if (packageInfo == null
-                || packageInfo.source != PackageSource.Registry
-                || packageInfo.registry?.isDefault != true
-                || string.IsNullOrEmpty(packageInfo.registry?.url)
-                || !packageInfo.versions.all.Any()
-                || packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
-                return false;
-
-            if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var isUnityRegistry))
-                return isUnityRegistry;
-
-            isUnityRegistry = IsUnityUrl(packageInfo.registry.url);
-            m_RegistryUrls[packageInfo.registry.url] = isUnityRegistry;
-            return isUnityRegistry;
+            return packageInfo is { source: PackageSource.BuiltIn or PackageSource.Registry } &&
+                   GetAvailableRegistryType(packageInfo) == RegistryType.UnityRegistry;
         }
 
         public static bool IsUnityUrl(string url)

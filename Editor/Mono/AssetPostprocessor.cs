@@ -466,16 +466,14 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void InitPostprocessors(AssetImportContext context, string pathName)
+        static void InitPostprocessors(AssetImportContext context, string pathName, Type importerType, double importStartTime)
         {
-            var importer = AssetImporter.GetAtPath(pathName);
-
             var analyticsEvent = new AssetPostProcessorAnalyticsData();
-            analyticsEvent.importActionId = ((int)Math.Floor(importer.GetImportStartTime() * 1000)).ToString();
+            analyticsEvent.importActionId = ((int)Math.Floor(importStartTime * 1000)).ToString();
             s_AnalyticsEventsStack.Push(analyticsEvent);
 
             m_ImportProcessors = new SortedSet<AssetPostprocessor>(new CompareAssetImportPriority());
-            foreach (var postprocessorInfo in GetSortedStaticPostprocessorTypes(importer.GetType()))
+            foreach (var postprocessorInfo in GetSortedStaticPostprocessorTypes(importerType))
             {
                 var assetPostprocessor = (AssetPostprocessor)Activator.CreateInstance(postprocessorInfo.Type);
                 assetPostprocessor.assetPath = pathName;
@@ -483,7 +481,7 @@ namespace UnityEditor
                 m_ImportProcessors.Add(assetPostprocessor);
             }
 
-            foreach (var postprocessorInfo in GetSortedDynamicPostprocessorTypes(importer.GetType()))
+            foreach (var postprocessorInfo in GetSortedDynamicPostprocessorTypes(importerType))
             {
                 var assetPostprocessor = (AssetPostprocessor)Activator.CreateInstance(postprocessorInfo.Type);
                 assetPostprocessor.assetPath = pathName;

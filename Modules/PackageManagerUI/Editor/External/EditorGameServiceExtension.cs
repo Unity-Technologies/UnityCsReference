@@ -35,9 +35,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         const string k_OrganizationKeyAndProjectGuid = "OrganizationKeyAndProjectGuid";
         const string k_OrganizationKey = "OrganizationKey";
         const string k_ProjectGuid = "ProjectGuid";
-        const string k_PageContentType = "packages and features";
         internal const string k_ServicesConfigPath = "Resources/services.json";
         internal const int k_ServicesPriority = 200;
+        internal const string k_ServicesExtensionPageName = "services";
 
         internal static Dictionary<string, int> groupIndexes = new Dictionary<string, int>();
         internal static Dictionary<string, string> groupNames = new Dictionary<string, string>();
@@ -122,10 +122,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             LoadServicesConfig(configPath);
 
             var pageManager = ServicesContainer.instance.Resolve<PageManager>();
-
-            pageManager.GetPage(PackageFilterTab.UnityRegistry).AddSubPage(new SubPage(PackageFilterTab.UnityRegistry, "services", L10n.Tr("Services"), L10n.Tr(k_PageContentType), k_ServicesPriority,  FilterServicesPackage, GetServicesPackageGroupName, CompareGroup));
-            pageManager.GetPage(PackageFilterTab.InProject).AddSubPage(new SubPage(PackageFilterTab.InProject, "services", L10n.Tr("Services"), L10n.Tr(k_PageContentType), k_ServicesPriority, FilterServicesPackage, GetServicesPackageGroupName, CompareGroup));
-
+            pageManager.AddExtensionPage(new ExtensionPageArgs
+            {
+                name = k_ServicesExtensionPageName,
+                displayName = L10n.Tr("Services"),
+                priority = k_ServicesPriority,
+                filter = FilterServicesPackage,
+                getGroupName = GetServicesPackageGroupName,
+                compareGroup = CompareGroup,
+                supportedSortOptions = SimplePage.k_DefaultSupportedSortOptions,
+                supportedStatusFilters = SimplePage.k_DefaultSupportedStatusFilters,
+                capability = PageCapability.SupportLocalReordering,
+                refreshOptions = RefreshOptions.UpmList | RefreshOptions.UpmSearch
+            });
             m_ConfigureButton = args.window.AddPackageActionButton();
             m_ConfigureButton.text = L10n.Tr("Configure");
             m_ConfigureButton.action += OnConfigureClicked;

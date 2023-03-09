@@ -32,7 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                if (package != null && m_PageManager.GetPage().GetSelection().TryGetValue(package.uniqueId, out var selection))
+                if (package != null && m_PageManager.activePage.GetSelection().TryGetValue(package.uniqueId, out var selection))
                 {
                     if (string.IsNullOrEmpty(selection.versionUniqueId))
                         return package.versions.primary;
@@ -41,9 +41,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return null;
             }
         }
-
-        internal bool isLocked => m_LockedIcon?.visible ?? false;
-        internal bool isDependency => !package?.versions.installed?.isDirectDependency ?? false;
 
         private readonly PageManager m_PageManager;
         private readonly PackageDatabase m_PackageDatabase;
@@ -274,12 +271,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SelectMainItem()
         {
-            m_PageManager.GetPage().SetNewSelection(package, null, true);
+            m_PageManager.activePage.SetNewSelection(package, null, true);
         }
 
         public void ToggleSelectMainItem()
         {
-            m_PageManager.GetPage().ToggleSelection(package?.uniqueId, true);
+            m_PageManager.activePage.ToggleSelection(package?.uniqueId, true);
         }
 
         private void StartSpinner()

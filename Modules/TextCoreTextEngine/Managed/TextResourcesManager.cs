@@ -173,6 +173,14 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
+        /// Clear all font asset glyph lookup cache.
+        /// </summary>
+        public static void ClearFontAssetGlyphCache()
+        {
+            RebuildFontAssetCache();
+        }
+
+        /// <summary>
         ///
         /// </summary>
         internal static void RebuildFontAssetCache()

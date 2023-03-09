@@ -11,13 +11,13 @@ using System.Linq;
 
 namespace UnityEditor.ShaderFoundry
 {
-    [NativeHeader("Modules/ShaderFoundry/Public/ShaderAttributeParam.h")]
-    internal struct ShaderAttributeParamInternal : IInternalType<ShaderAttributeParamInternal>
+    [NativeHeader("Modules/ShaderFoundry/Public/ShaderAttributeParameter.h")]
+    internal struct ShaderAttributeParameterInternal : IInternalType<ShaderAttributeParameterInternal>
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_ValueHandle;
 
-        internal extern static ShaderAttributeParamInternal Invalid();
+        internal extern static ShaderAttributeParameterInternal Invalid();
 
         internal extern void Setup(ShaderContainer container, string name, string value);
 
@@ -31,23 +31,23 @@ namespace UnityEditor.ShaderFoundry
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
 
         // IInternalType
-        ShaderAttributeParamInternal IInternalType<ShaderAttributeParamInternal>.ConstructInvalid() => Invalid();
+        ShaderAttributeParameterInternal IInternalType<ShaderAttributeParameterInternal>.ConstructInvalid() => Invalid();
     }
 
     [FoundryAPI]
-    internal readonly struct ShaderAttributeParam : IEquatable<ShaderAttributeParam>, IPublicType<ShaderAttributeParam>
+    internal readonly struct ShaderAttributeParameter : IEquatable<ShaderAttributeParameter>, IPublicType<ShaderAttributeParameter>
     {
         readonly ShaderContainer container;
         readonly internal FoundryHandle handle;
-        readonly ShaderAttributeParamInternal param;
+        readonly ShaderAttributeParameterInternal param;
 
         // IPublicType
         ShaderContainer IPublicType.Container => Container;
         bool IPublicType.IsValid => IsValid;
         FoundryHandle IPublicType.Handle => handle;
-        ShaderAttributeParam IPublicType<ShaderAttributeParam>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new ShaderAttributeParam(container, handle);
+        ShaderAttributeParameter IPublicType<ShaderAttributeParameter>.ConstructFromHandle(ShaderContainer container, FoundryHandle handle) => new ShaderAttributeParameter(container, handle);
 
-        internal ShaderAttributeParam(ShaderContainer container, FoundryHandle handle)
+        internal ShaderAttributeParameter(ShaderContainer container, FoundryHandle handle)
         {
             this.container = container;
             this.handle = handle;
@@ -62,38 +62,38 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 if (container == null || !ValueIsString)
-                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParam.Value'. Value is not a string. Check ValueIsString before calling.");
+                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParameter.Value'. Value is not a string. Check ValueIsString before calling.");
                 return container.GetString(param.m_ValueHandle);
             }
         }
-        public IEnumerable<ShaderAttributeParam> Values
+        public IEnumerable<ShaderAttributeParameter> Values
         {
             get
             {
                 if (container == null || !ValueIsArray)
-                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParam.Values'. Values is not a List. Check ValueIsArray before calling.");
+                    throw new InvalidOperationException("Invalid call to 'ShaderAttributeParameter.Values'. Values is not a List. Check ValueIsArray before calling.");
 
                 var handleType = container.GetDataTypeFromHandle(param.m_ValueHandle);
                 var localContainer = Container;
                 var list = new FixedHandleListInternal(param.m_ValueHandle);
-                return list.Select<ShaderAttributeParam>(localContainer, (handle) => (new ShaderAttributeParam(localContainer, handle)));
+                return list.Select<ShaderAttributeParameter>(localContainer, (handle) => (new ShaderAttributeParameter(localContainer, handle)));
             }
         }
         public bool ValueIsString => param.ValueIsString(container);
         // The value is an array of sub attributes. This is equivalent to "param = [value, value]".
         public bool ValueIsArray => param.ValueIsArray(container);
-        public static ShaderAttributeParam Invalid => new ShaderAttributeParam(null, FoundryHandle.Invalid());
+        public static ShaderAttributeParameter Invalid => new ShaderAttributeParameter(null, FoundryHandle.Invalid());
 
         // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
-        public override bool Equals(object obj) => obj is ShaderAttributeParam other && this.Equals(other);
-        public bool Equals(ShaderAttributeParam other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
+        public override bool Equals(object obj) => obj is ShaderAttributeParameter other && this.Equals(other);
+        public bool Equals(ShaderAttributeParameter other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
-        public static bool operator==(ShaderAttributeParam lhs, ShaderAttributeParam rhs) => lhs.Equals(rhs);
-        public static bool operator!=(ShaderAttributeParam lhs, ShaderAttributeParam rhs) => !lhs.Equals(rhs);
+        public static bool operator==(ShaderAttributeParameter lhs, ShaderAttributeParameter rhs) => lhs.Equals(rhs);
+        public static bool operator!=(ShaderAttributeParameter lhs, ShaderAttributeParameter rhs) => !lhs.Equals(rhs);
 
-        public bool ValueEquals(in ShaderAttributeParam other)
+        public bool ValueEquals(in ShaderAttributeParameter other)
         {
-            return ShaderAttributeParamInternal.ValueEquals(container, handle, other.container, other.handle);
+            return ShaderAttributeParameterInternal.ValueEquals(container, handle, other.container, other.handle);
         }
 
         public class Builder
@@ -101,7 +101,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             internal string m_Name;
             internal string m_Value;
-            internal List<ShaderAttributeParam> m_Values;
+            internal List<ShaderAttributeParameter> m_Values;
 
             public ShaderContainer Container => container;
 
@@ -113,7 +113,7 @@ namespace UnityEditor.ShaderFoundry
                 m_Values = null;
             }
 
-            public Builder(ShaderContainer container, string name, List<ShaderAttributeParam> values)
+            public Builder(ShaderContainer container, string name, List<ShaderAttributeParameter> values)
             {
                 this.container = container;
                 m_Name = name;
@@ -121,9 +121,9 @@ namespace UnityEditor.ShaderFoundry
                 m_Values = values;
             }
 
-            public ShaderAttributeParam Build()
+            public ShaderAttributeParameter Build()
             {
-                var paramInternal = new ShaderAttributeParamInternal();
+                var paramInternal = new ShaderAttributeParameterInternal();
                 if (m_Values == null)
                     paramInternal.Setup(container, m_Name, m_Value);
                 else
@@ -133,7 +133,7 @@ namespace UnityEditor.ShaderFoundry
                 }
 
                 var returnHandle = container.Add(paramInternal);
-                return new ShaderAttributeParam(container, returnHandle);
+                return new ShaderAttributeParameter(container, returnHandle);
             }
         }
     }
@@ -189,13 +189,13 @@ namespace UnityEditor.ShaderFoundry
             return ShaderAttributeInternal.ValueEquals(container, handle, other.container, other.handle);
         }
 
-        public IEnumerable<ShaderAttributeParam> Parameters
+        public IEnumerable<ShaderAttributeParameter> Parameters
         {
             get
             {
                 var localContainer = Container;
                 var list = new FixedHandleListInternal(attr.m_ParameterListHandle);
-                return list.Select<ShaderAttributeParam>(localContainer, (handle) => (new ShaderAttributeParam(localContainer, handle)));
+                return list.Select<ShaderAttributeParameter>(localContainer, (handle) => (new ShaderAttributeParameter(localContainer, handle)));
             }
         }
 
@@ -210,7 +210,7 @@ namespace UnityEditor.ShaderFoundry
         {
             ShaderContainer container;
             internal string name;
-            internal List<ShaderAttributeParam> parameters;
+            internal List<ShaderAttributeParameter> parameters;
 
             public ShaderContainer Container => container;
 
@@ -221,23 +221,23 @@ namespace UnityEditor.ShaderFoundry
                 this.parameters = null;
             }
 
-            public Builder Param(ShaderAttributeParam attribute)
+            public Builder Parameter(ShaderAttributeParameter attribute)
             {
                 if (parameters == null)
-                    parameters = new List<ShaderAttributeParam>();
+                    parameters = new List<ShaderAttributeParameter>();
                 parameters.Add(attribute);
                 return this;
             }
 
-            public Builder Param(string value)
+            public Builder Parameter(string value)
             {
-                return Param(null, value);
+                return Parameter(null, value);
             }
 
-            public Builder Param(string name, string value)
+            public Builder Parameter(string name, string value)
             {
-                var paramBuilder = new ShaderAttributeParam.Builder(container, name, value);
-                return Param(paramBuilder.Build());
+                var paramBuilder = new ShaderAttributeParameter.Builder(container, name, value);
+                return Parameter(paramBuilder.Build());
             }
 
             public ShaderAttribute Build()

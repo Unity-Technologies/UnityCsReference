@@ -124,6 +124,16 @@ namespace UnityEditor.ShaderFoundry
             readonly ShaderContainer container;
             public ShaderContainer Container => container;
 
+            public Builder(ShaderContainer container, string name)
+            {
+                if (container == null)
+                    throw new Exception("A valid ShaderContainer must be provided to create a Template Builder.");
+
+                this.container = container;
+                this.Name = name;
+                this.linker = null;
+            }
+
             public Builder(ShaderContainer container, string name, ITemplateLinker linker)
             {
                 if (container == null || linker == null)

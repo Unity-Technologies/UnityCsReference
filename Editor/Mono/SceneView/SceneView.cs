@@ -151,10 +151,13 @@ namespace UnityEditor
         public static Color selectedOutlineColor => kSceneViewSelectedOutline.Color;
         public bool isUsingSceneFiltering => UseSceneFiltering();
 
+        internal static SavedBool s_PreferenceIgnoreAlwaysRefreshWhenNotFocused = new SavedBool("SceneView.ignoreAlwaysRefreshWhenNotFocused", false);
         internal static SavedBool s_PreferenceEnableFilteringWhileSearching = new SavedBool("SceneView.enableFilteringWhileSearching", true);
         internal static SavedBool s_PreferenceEnableFilteringWhileLodGroupEditing = new SavedBool("SceneView.enableFilteringWhileLodGroupEditing", true);
 
         internal static SavedFloat s_DrawModeExposure = new SavedFloat("SceneView.drawModeExposure", 0.0f);
+        private static SavedBool s_DrawBackfaceHighlights = new SavedBool("SceneView.drawBackfaceHighlights", false);
+        internal static event Action<bool> onDrawBackfaceHighlightsChanged;
 
         [RequiredByNativeCode]
         internal static float GetDrawModeExposure()
@@ -162,9 +165,45 @@ namespace UnityEditor
             return SceneView.s_DrawModeExposure;
         }
 
-        internal bool showExposureSettings =>
-            (this.cameraMode.drawMode == DrawCameraMode.BakedEmissive || this.cameraMode.drawMode == DrawCameraMode.BakedLightmap ||
-                this.cameraMode.drawMode == DrawCameraMode.RealtimeEmissive || this.cameraMode.drawMode == DrawCameraMode.RealtimeIndirect || this.cameraMode.drawMode == DrawCameraMode.LitClustering);
+        [RequiredByNativeCode]
+        internal static bool GetDrawBackfaceHighlights()
+        {
+            return SceneView.s_DrawBackfaceHighlights;
+        }
+
+        internal static void SetDrawBackfaceHighlights(bool value)
+        {
+            if (value != SceneView.s_DrawBackfaceHighlights.value)
+            {
+                SceneView.s_DrawBackfaceHighlights.value = value;
+                onDrawBackfaceHighlightsChanged?.Invoke(value);
+            }
+        }
+
+        static readonly HashSet<DrawCameraMode> s_ShowExposureDrawCameraModes = new HashSet<DrawCameraMode>()
+        {
+            DrawCameraMode.BakedEmissive, DrawCameraMode.BakedLightmap,
+            DrawCameraMode.RealtimeEmissive, DrawCameraMode.RealtimeIndirect
+        };
+        internal bool showExposureSettings => s_ShowExposureDrawCameraModes.Contains(this.cameraMode.drawMode);
+
+        static readonly HashSet<DrawCameraMode> s_ShowLightmapResolutionDrawCameraModes = new HashSet<DrawCameraMode>()
+        {
+            DrawCameraMode.BakedEmissive, DrawCameraMode.RealtimeEmissive,
+            DrawCameraMode.BakedLightmap,  DrawCameraMode.RealtimeIndirect,
+            DrawCameraMode.BakedDirectionality, DrawCameraMode.RealtimeDirectionality,
+            DrawCameraMode.BakedAlbedo, DrawCameraMode.RealtimeAlbedo,
+            DrawCameraMode.BakedCharting, DrawCameraMode.RealtimeCharting,
+            DrawCameraMode.BakedTexelValidity, DrawCameraMode.BakedUVOverlap,
+            DrawCameraMode.ShadowMasks, DrawCameraMode.Systems,
+            DrawCameraMode.GIContributorsReceivers, DrawCameraMode.BakedLightmapCulling,
+            DrawCameraMode.BakedIndices, DrawCameraMode.LightOverlap,
+        };
+        internal bool showLightmapResolutionToggle => s_ShowLightmapResolutionDrawCameraModes.Contains(this.cameraMode.drawMode);
+
+        internal bool showBackfaceHighlightsToggle => this.showLightmapResolutionToggle;
+
+        internal bool showLightingVisualizationPanel => this.showExposureSettings || this.showBackfaceHighlightsToggle || this.showLightmapResolutionToggle;
 
         internal static Transform GetDefaultParentObjectIfSet()
         {
@@ -661,6 +700,9 @@ namespace UnityEditor
 
         [NonSerialized]
         Camera m_Camera;
+
+        [NonSerialized]
+        bool m_EditorApplicationHasFocus = true;
 
         VisualElement m_CameraViewVisualElement;
 
@@ -3117,16 +3159,28 @@ namespace UnityEditor
         void OnBecameVisible()
         {
             EditorApplication.update += UpdateAnimatedMaterials;
+            EditorApplication.focusChanged += OnEditorApplicationFocusChanged;
         }
 
         void OnBecameInvisible()
         {
             EditorApplication.update -= UpdateAnimatedMaterials;
+            EditorApplication.focusChanged -= OnEditorApplicationFocusChanged;
+        }
+
+        void OnEditorApplicationFocusChanged(bool hasFocus)
+        {
+            m_EditorApplicationHasFocus = hasFocus;
         }
 
         void UpdateAnimatedMaterials()
         {
             var repaint = false;
+
+            // Ensure that we in fact do want to paint when not in focus.
+            if (!m_EditorApplicationHasFocus && s_PreferenceIgnoreAlwaysRefreshWhenNotFocused.value)
+                return;
+
             if (m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
                 repaint = sceneViewState.alwaysRefreshEnabled;
             repaint |= LODUtility.IsLODAnimating(m_Camera);
