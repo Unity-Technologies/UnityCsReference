@@ -16,7 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private List<AssetStorePackageVersion> m_Versions;
 
-        public IEnumerable<IPackageVersion> key => m_Versions.Cast<IPackageVersion>();
+        public IEnumerable<IPackageVersion> key => m_Versions;
 
         public IPackageVersion installed => null;
 

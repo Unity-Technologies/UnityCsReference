@@ -1230,6 +1230,13 @@ namespace UnityEditor
             SaveViewDataToDisk();
         }
 
+        internal void ReleaseViewData()
+        {
+            SaveViewDataToDisk();
+            DestroyImmediate(m_ViewDataDictionary);
+            m_ViewDataDictionary = null;
+        }
+
         // Internal stuff:
         // Helper to show this EditorWindow
         internal static void CreateNewWindowForEditorWindow(EditorWindow window, bool loadPosition, bool showImmediately, bool setFocus = true)

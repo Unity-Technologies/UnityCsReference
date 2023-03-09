@@ -292,7 +292,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var scopedRegistryTagLabel = GetTagLabel("ScopedRegistry");
-            if ((m_Version as UpmPackageVersion)?.isUnityPackage == false && !string.IsNullOrEmpty(m_Version.version?.Prerelease))
+            if ((m_Version as UpmPackageVersion)?.availableRegistry != RegistryType.UnityRegistry && !string.IsNullOrEmpty(m_Version.version?.Prerelease))
             {
                 scopedRegistryTagLabel.tooltip = m_Version.version?.Prerelease;
                 scopedRegistryTagLabel.text = m_Version.version?.Prerelease;
@@ -358,7 +358,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // In Lifecycle V2, if a Unity package doesn't have a lifecycle version (listed in the editor manifest),
             // then that package is not considered part of the Unity Editor "product" and we need to let users know.
             var unityVersionString = m_Application.unityVersion;
-            if (!m_Package.versions.hasLifecycleVersion && m_Package.Is(PackageType.Unity) && !m_Package.Is(PackageType.BuiltIn))
+            if (!m_Package.versions.hasLifecycleVersion && m_Package.versions.All(v => v.availableRegistry == RegistryType.UnityRegistry) && !m_Package.Is(PackageType.BuiltIn))
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
                 versionInfoIcon.tooltip = string.Format(L10n.Tr("This package is not officially supported for Unity {0}."), unityVersionString);
@@ -373,7 +373,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var recommended = m_Package.versions.recommended;
             if (m_Version.isInstalled
                 && m_Package.state != PackageState.InstalledAsDependency
-                && m_Package.Is(PackageType.Unity)
+                && m_Package.versions.All(v => v.availableRegistry == RegistryType.UnityRegistry)
                 && recommended != null
                 && installed.version?.IsEqualOrPatchOf(recommended.version) != true)
             {
@@ -442,13 +442,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnInfoBoxClickMore()
         {
-            if (m_Version.HasTag(PackageTag.PreRelease))
-                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.PreRelease]}");
-            else if (m_Version.HasTag(PackageTag.Experimental))
+            if (m_Version.HasTag(PackageTag.Experimental))
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.Experimental]}");
+            else if (m_Version.HasTag(PackageTag.PreRelease))
+                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.PreRelease]}");
             else if (m_Version.HasTag(PackageTag.ReleaseCandidate))
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ReleaseCandidate]}");
-            else if (m_Package.Is(PackageType.ScopedRegistry))
+            else
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ScopedRegistry]}");
         }
 

@@ -189,6 +189,8 @@ namespace Unity.UI.Builder
                     else
                         categoryStack.Last().AddChild(newItem);
                 }
+
+                vta.Destroy();
             }
 
             sourceCategory.AddChildren(emptyNamespaceControls);
@@ -205,7 +207,11 @@ namespace Unity.UI.Builder
             for (int i = 0; i < split.Length; ++i)
             {
                 var part = split[i];
-                fullName += part;
+                if (string.IsNullOrWhiteSpace(fullName))
+                    fullName += part;
+                else
+                    fullName += "." + part;
+                
                 if (categoryStack.Count > i)
                 {
                     var data = categoryStack[i].data;

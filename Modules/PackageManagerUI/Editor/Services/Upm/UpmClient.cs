@@ -57,9 +57,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string[] m_SerializedRegistryUrlsKeys;
 
         [SerializeField]
-        private bool[] m_SerializedRegistryUrlsValues;
+        private RegistryType[] m_SerializedRegistryUrlsValues;
 
-        internal Dictionary<string, bool> m_RegistryUrls = new Dictionary<string, bool>();
+        internal Dictionary<string, RegistryType> m_RegistryUrls = new Dictionary<string, RegistryType>();
 
         // a list of unique ids (could be specialUniqueId or packageId)
         [SerializeField]
@@ -111,7 +111,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnBeforeSerialize()
         {
             m_SerializedRegistryUrlsKeys = m_RegistryUrls?.Keys.ToArray() ?? new string[0];
-            m_SerializedRegistryUrlsValues = m_RegistryUrls?.Values.ToArray() ?? new bool[0];
+            m_SerializedRegistryUrlsValues = m_RegistryUrls?.Values.ToArray() ?? new RegistryType[0];
         }
 
         public void OnAfterDeserialize()
@@ -519,31 +519,36 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ClientProxy.Resolve();
         }
 
+        public virtual RegistryType GetAvailableRegistryType(PackageInfo packageInfo)
+        {
+            // Special handling for packages that's built in/bundled with unity, we always consider them from the Unity registry
+            if (packageInfo?.source == PackageSource.BuiltIn)
+                return RegistryType.UnityRegistry;
+
+            if (string.IsNullOrEmpty(packageInfo?.registry?.url))
+                return RegistryType.None;
+
+#pragma warning disable 618
+            // Ideally we should be only using `packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore` here
+            // because `packageInfo.isAssetStorePackage` is marked as Obsolete. However there's currently a serialization issue (PAK-3869) with
+            // packageInfo.entitlements that sometimes licensingModel is set to None when it should be EntitlementLicensingModel.AssetStore
+            // As a result, we will use the deprecated packageInfo.isAssetStorePackage until the PAK-3869 is fixed.
+            if (packageInfo.isAssetStorePackage || packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
+#pragma warning restore 0618
+                return RegistryType.AssetStore;
+
+            if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var result))
+                return result;
+
+            result = packageInfo.registry.isDefault && IsUnityUrl(packageInfo.registry.url) ? RegistryType.UnityRegistry : RegistryType.MyRegistries;
+            m_RegistryUrls[packageInfo.registry.url] = result;
+            return result;
+        }
+
         public virtual bool IsUnityPackage(PackageInfo packageInfo)
         {
-            if (packageInfo?.source == PackageSource.BuiltIn)
-                return true;
-
-            if (packageInfo == null
-                || packageInfo.source != PackageSource.Registry
-                || packageInfo.registry?.isDefault != true
-                || string.IsNullOrEmpty(packageInfo.registry?.url)
-                || !packageInfo.versions.all.Any()
-#pragma warning disable 618
-                // Ideally we should be using `packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore` here
-                // because `packageInfo.isAssetStorePackage` is marked as Obsolete. However there's currently a serialization issue (PAK-3869) with
-                // packageInfo.entitlements that sometimes licensingModel is set to None when it should be EntitlementLicensingModel.AssetStore
-                // As a result, we will use the deprecated packageInfo.isAssetStorePackage until the PAK-3869 is fixed.
-                || packageInfo.isAssetStorePackage)
-#pragma warning restore 0618
-                return false;
-
-            if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var isUnityRegistry))
-                return isUnityRegistry;
-
-            isUnityRegistry = IsUnityUrl(packageInfo.registry.url);
-            m_RegistryUrls[packageInfo.registry.url] = isUnityRegistry;
-            return isUnityRegistry;
+            return packageInfo is { source: PackageSource.BuiltIn or PackageSource.Registry } &&
+                   GetAvailableRegistryType(packageInfo) == RegistryType.UnityRegistry;
         }
 
         public static bool IsUnityUrl(string url)
@@ -635,9 +640,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                         updatedPackages.Add(new UpmPackage(packageName, false, new UpmVersionList()));
                     else
                     {
-                        var isUnityPackage = m_UpmClient.IsUnityPackage(searchInfo ?? installedInfo);
+                        var availableRegistry = m_UpmClient.GetAvailableRegistryType(searchInfo ?? installedInfo);
                         var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
-                        var versionList = new UpmVersionList(searchInfo, installedInfo, isUnityPackage, extraVersions);
+                        var versionList = new UpmVersionList(searchInfo, installedInfo, availableRegistry, extraVersions);
                         versionList = VersionsFilter.GetFilteredVersionList(versionList, seeAllVersions, showPreRelease);
                         versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(packageName));
                         updatedPackages.Add(new UpmPackage(packageName, searchInfo != null, versionList));

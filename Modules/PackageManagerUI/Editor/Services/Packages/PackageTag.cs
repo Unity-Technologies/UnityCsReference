@@ -16,10 +16,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         Custom              = 1 << 0,
         Local               = 1 << 1,
         Git                 = 1 << 2,
-        Bundled             = 1 << 3,
-        BuiltIn             = 1 << 4,
-        Feature             = 1 << 5,
-        Placeholder         = 1 << 6,
+        BuiltIn             = 1 << 3,
+        Feature             = 1 << 4,
+        Placeholder         = 1 << 5,
+        Unity               = 1 << 6,
 
         // attributes
         VersionLocked       = 1 << 8,

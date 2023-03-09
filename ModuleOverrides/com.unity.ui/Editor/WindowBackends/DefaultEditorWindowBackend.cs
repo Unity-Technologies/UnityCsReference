@@ -154,6 +154,8 @@ namespace UnityEditor.UIElements
                 m_Panel.saveViewData = null;
             }
 
+            editorWindowModel.window.ReleaseViewData();
+
             m_NotificationContainer.onGUIHandler = null;
             m_OverlayContainer.onGUIHandler = null;
             m_WindowRegistered = false;

@@ -107,9 +107,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     yield return versionError;
         }
 
-        public bool hasEntitlements => Is(PackageType.Unity) && versions.Any(version => version.hasEntitlements);
+        public bool hasEntitlements => versions.Any(v => v.HasTag(PackageTag.Unity) && v.hasEntitlements);
 
-        public bool hasEntitlementsError => m_Errors.Any(error => error.errorCode == UIErrorCode.UpmError_Forbidden) || versions.Any(version => version.hasEntitlementsError);
+        public bool hasEntitlementsError => m_Errors.Any(e => e.errorCode == UIErrorCode.UpmError_Forbidden) || versions.Any(v => v.hasEntitlementsError);
 
         public void AddError(UIError error)
         {
@@ -169,29 +169,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected void RefreshPackageTypeFromVersions()
         {
-            var primaryVesion = versions?.primary;
-            if (primaryVesion == null)
+            var primaryVersion = versions?.primary;
+            if (primaryVersion == null)
                 return;
-            if (primaryVesion.HasTag(PackageTag.BuiltIn))
+            if (primaryVersion.HasTag(PackageTag.BuiltIn))
                 m_Type |= PackageType.BuiltIn;
-            else if (primaryVesion.HasTag(PackageTag.Feature))
+            else if (primaryVersion.HasTag(PackageTag.Feature))
                 m_Type |= PackageType.Feature;
-            if (primaryVesion.isUnityPackage)
-                m_Type |= PackageType.Unity;
-
-            // The rest of the check is to do with registries, a package hosted on AssetStore does not need to worry about this
-            if (Is(PackageType.AssetStore))
-                return;
-
-            if (primaryVesion.isFromScopedRegistry)
-                m_Type |= PackageType.ScopedRegistry;
-            if (primaryVesion.isRegistryPackage)
-            {
-                if (primaryVesion.isUnityPackage)
-                    m_Type &= ~PackageType.ScopedRegistry;
-                else
-                    m_Type |= PackageType.MainNotUnity;
-            }
         }
     }
 }

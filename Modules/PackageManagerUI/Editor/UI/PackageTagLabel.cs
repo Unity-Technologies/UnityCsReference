@@ -30,6 +30,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                     text = L10n.Tr("Custom");
                     m_Tag = PackageTag.Custom;
                 }
+                else if (version.HasTag(PackageTag.Local))
+                {
+                    text = L10n.Tr("Local");
+                    m_Tag = PackageTag.Local;
+                }
+                else if (version.HasTag(PackageTag.Git))
+                {
+                    text = L10n.Tr("Git");
+                    m_Tag = PackageTag.Git;
+                }
                 else if (version.HasTag(PackageTag.PreRelease))
                 {
                     text = L10n.Tr("Pre");

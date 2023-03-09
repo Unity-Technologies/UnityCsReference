@@ -14,10 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         Upm             = 1 << 0,
         BuiltIn         = 1 << 1,
         AssetStore      = 1 << 2,
-        Unity           = 1 << 3,
-        ScopedRegistry  = 1 << 4,
-        MainNotUnity    = 1 << 5,
-        Feature         = 1 << 6,
-        Placeholder     = 1 << 7
+        Feature         = 1 << 3,
+        Placeholder     = 1 << 4
     }
 }

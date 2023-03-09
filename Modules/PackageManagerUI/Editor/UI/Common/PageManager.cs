@@ -478,7 +478,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageVersions.All(v => v.package.versions.installed != null || (v.package.progress == PackageProgress.Installing && v.package is PlaceholderPackage)))
                 return PackageFilterTab.InProject;
 
-            if (packageVersions.All(v => v.package.Is(PackageType.Unity)))
+            if (packageVersions.All(v => v.HasTag(PackageTag.Unity)))
                 return PackageFilterTab.UnityRegistry;
 
             if (packageVersions.All(v => v.package.Is(PackageType.AssetStore)))
@@ -788,7 +788,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             static string GroupPackagesWithAuthorAndFeatures(IPackage package)
             {
-                if (package?.Is(PackageType.Feature) == true && package.Is(PackageType.Unity)) return L10n.Tr("Features");
+                if (package?.Is(PackageType.Feature) == true && package.versions.All(v => v.HasTag(PackageTag.Unity))) return L10n.Tr("Features");
                 return string.Format(L10n.Tr("Packages - {0}"), BasePage.GetDefaultGroupName(PackageFilterTab.InProject, package));
             }
 
