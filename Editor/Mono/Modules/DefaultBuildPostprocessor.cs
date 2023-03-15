@@ -16,6 +16,8 @@ namespace UnityEditor.Modules
     internal abstract class DefaultBuildPostprocessor
         : IBuildPostprocessor
     {
+        public static readonly string kBackupFolderPostfix = "_BackUpThisFolder_ButDontShipItWithYourGame";
+
         static readonly string kXrBootSettingsKey = "xr-boot-settings";
         public virtual void LaunchPlayer(BuildLaunchPlayerArgs args)
         {
@@ -112,7 +114,7 @@ namespace UnityEditor.Modules
 
         protected virtual string GetIl2CppDataBackupFolderName(BuildPostProcessArgs args)
         {
-            return $"{args.installPath.ToNPath().FileNameWithoutExtension}_BackUpThisFolder_ButDontShipItWithYourGame";
+            return $"{args.installPath.ToNPath().FileNameWithoutExtension}{kBackupFolderPostfix}";
         }
 
         public virtual string GetExtension(BuildTarget target, int subtarget, BuildOptions options)

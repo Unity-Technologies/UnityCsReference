@@ -221,7 +221,7 @@ namespace UnityEngine.UIElements
 
 
     /// <summary>
-    /// Specifies whether or not a VisualElement is visible.
+    /// Style value that specifies whether or not a VisualElement is visible.
     /// </summary>
     public enum Visibility
     {
@@ -230,7 +230,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         Visible = 0,
         /// <summary>
-        /// The VisualElement is hidden. Hidden VisualElements will take up space in their parent layout if their positionType is set to PositionType.Relative. Use the display property to both hide and remove a VisualElement from the parent VisualElement layout.
+        /// The VisualElement is hidden. Hidden VisualElements will take up space in their parent layout if their positionType is set to PositionType.Relative. Use the <see cref="DisplayStyle"/> style property to both hide and remove a VisualElement from the parent VisualElement layout. Note, this is the enum value used when setting styles via VisualElement.style.visibility. In C#, you can just use VisualElement.visible = false.
         /// </summary>
         Hidden = 1
     }

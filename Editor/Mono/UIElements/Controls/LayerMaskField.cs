@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Make a field for layer as masks.
+    /// A LayerMaskField editor.
     /// </summary>
     public class LayerMaskField : MaskField
     {

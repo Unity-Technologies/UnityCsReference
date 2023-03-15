@@ -119,7 +119,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Callback triggered when the user acts on a selection of one or more items, for example by double-clicking or pressing Enter.
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.itemsChosen"/> instead.
         /// </summary>
         /// <remarks>
         /// This callback receives an enumerable that contains the item or items chosen.
@@ -140,7 +140,7 @@ namespace UnityEngine.UIElements
         public event Action<IEnumerable<object>> itemsChosen;
 
         /// <summary>
-        /// Callback triggered when the selection changes.
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.selectionChanged"/> instead.
         /// </summary>
         /// <remarks>
         /// This callback receives an enumerable that contains the item or items selected.
@@ -161,7 +161,7 @@ namespace UnityEngine.UIElements
         public event Action<IEnumerable<object>> selectionChanged;
 
         /// <summary>
-        /// Callback triggered when the selection changes.
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.selectedIndicesChanged"/> instead.
         /// </summary>
         /// <remarks>
         /// This callback receives an enumerable that contains the item index or item indices selected.
@@ -212,7 +212,7 @@ namespace UnityEngine.UIElements
         internal virtual bool sourceIncludesArraySize => false;
 
         /// <summary>
-        /// Callback for constructing the VisualElement that is the template for each recycled and re-bound element in the list.
+        /// Obsolete. Use <see cref="ListView.makeItem"> or <see cref="TreeView.makeItem"/> instead.
         /// </summary>
         [Obsolete("makeItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Func<VisualElement> makeItem
@@ -222,7 +222,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Callback for binding a data item to the visual element.
+        /// Obsolete. Use <see cref="ListView.bindItem"> or <see cref="TreeView.bindItem"/> instead.
         /// </summary>
         [Obsolete("bindItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Action<VisualElement, int> bindItem
@@ -232,7 +232,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Callback for unbinding a data item from the VisualElement.
+        /// Obsolete. Use <see cref="ListView.unbindItem"> or <see cref="TreeView.unbindItem"/> instead.
         /// </summary>
         [Obsolete("unbindItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Action<VisualElement, int> unbindItem
@@ -242,7 +242,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Callback invoked when a <see cref="VisualElement"/> created via <see cref="makeItem"/> is no longer needed and will be destroyed.
+        /// Obsolete. Use <see cref="ListView.destroyItem"> or <see cref="TreeView.destroyItem"/> instead.
         /// </summary>
         [Obsolete("destroyItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Action<VisualElement> destroyItem
@@ -327,7 +327,7 @@ namespace UnityEngine.UIElements
         public CollectionViewController viewController => m_ViewController;
 
         /// <summary>
-        /// The computed pixel-aligned height for the list elements.
+        /// Obsolete, will be removed from the API.
         /// </summary>
         /// <remarks>
         /// This value changes depending on the current panel's DPI scaling.
@@ -462,7 +462,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The height of a single item in the list, in pixels.
+        /// Obsolete.  Use <see cref="BaseVerticalCollectionView.fixedItemHeight"> instead.
         /// </summary>
         /// <remarks>
         /// This property must be set when using the <see cref="virtualizationMethod"/> is set to <c>FixedHeight</c>, for the collection view to function.
@@ -756,7 +756,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Constructs a <see cref="BaseVerticalCollectionView"/>, with all required properties provided.
+        /// Obsolete.  Use <see cref="ListView"> or <see cref="TreeView"> constructor directly.
         /// </summary>
         /// <param name="itemsSource">The list of items to use as a data source.</param>
         /// <param name="itemHeight">The height of each item, in pixels. For <c>FixedHeight</c> virtualization only.</param>
@@ -856,6 +856,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.Rebuild"> instead.
+        /// </summary>
         [Obsolete("Refresh() has been deprecated. Use Rebuild() instead. (UnityUpgradable) -> Rebuild()", false)]
         public void Refresh()
         {
@@ -940,7 +943,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Scrolls to a specific item id and makes it visible.
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.ScrollToItemById"> instead.
         /// </summary>
         /// <param name="id">Item id to scroll to.</param>
         [Obsolete("ScrollToId() has been deprecated. Use ScrollToItemById() instead. (UnityUpgradable) -> ScrollToItemById(*)", false)]
