@@ -27,14 +27,14 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerAction(IList<IPackageVersion> versions)
         {
             m_OperationDispatcher.AbortDownload(versions.Select(v => v.package));
-            PackageManagerWindowAnalytics.SendEvent("abortDownload", packageIds: versions.Select(v => v.package.uniqueId));
+            PackageManagerWindowAnalytics.SendEvent("abortDownload", versions);
             return true;
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
             m_OperationDispatcher.AbortDownload(version.package);
-            PackageManagerWindowAnalytics.SendEvent("abortDownload", version.package.uniqueId);
+            PackageManagerWindowAnalytics.SendEvent("abortDownload", version);
             return true;
         }
 

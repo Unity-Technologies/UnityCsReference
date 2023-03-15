@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_OperationDispatcher.Install(versions.Select(v => v?.package?.versions.GetUpdateTarget(v)));
             // The current multi-select UI does not allow users to install non-recommended versions
             // Should this change in the future, we'll need to update the analytics event accordingly.
-            PackageManagerWindowAnalytics.SendEvent("installUpdateRecommended", packageIds: versions.Select(v => v.uniqueId));
+            PackageManagerWindowAnalytics.SendEvent("installUpdateRecommended", versions);
             return true;
         }
 
@@ -96,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageToUninstall?.Any() == true)
             {
                 m_OperationDispatcher.InstallAndResetDependencies(targetVersion, packageToUninstall);
-                PackageManagerWindowAnalytics.SendEvent("installAndReset", targetVersion?.uniqueId);
+                PackageManagerWindowAnalytics.SendEvent("installAndReset", targetVersion);
             }
             else
             {
@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 var installRecommended = version.package.versions.recommended == targetVersion ? "Recommended" : "NonRecommended";
                 var eventName = $"installUpdate{installRecommended}";
-                PackageManagerWindowAnalytics.SendEvent(eventName, targetVersion?.uniqueId);
+                PackageManagerWindowAnalytics.SendEvent(eventName, targetVersion);
             }
             return true;
         }

@@ -63,6 +63,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             return (m_Tag & tag) != 0;
         }
 
+        // Analytics tags are different from the package tags we use.
+        // We need them to identify different situations that we don't necessarily have tags for
+        public string GetAnalyticsTags()
+        {
+            var tags = new List<string>();
+            if (m_Tag != PackageTag.None)
+                tags.Add(m_Tag.ToString());
+            if (m_Package.isDeprecated)
+                tags.Add("PackageDeprecation");
+            return string.Join(", ", tags);
+        }
+
         public virtual RegistryType availableRegistry => RegistryType.None;
 
         // Currently we don't consider Upm Packages with EntitlementLicensingModel.AssetStore as having entitlements

@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             "Templates",
             "Tools",
             "VFX",
-            "Web3"
+            "Decentralization"
         };
 
         private string m_Host;

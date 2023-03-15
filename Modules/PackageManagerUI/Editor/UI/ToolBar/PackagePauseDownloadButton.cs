@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerAction(IPackageVersion version)
         {
             m_OperationDispatcher.PauseDownload(version.package);
-            PackageManagerWindowAnalytics.SendEvent("pauseDownload", version.package.uniqueId);
+            PackageManagerWindowAnalytics.SendEvent("pauseDownload", version);
             return true;
         }
 

@@ -11,6 +11,8 @@ namespace UnityEngine.UIElements
 {
     /// <summary>
     /// A <see cref="VisualElement"/> representing a source texture.
+    ///
+    /// **Note**: This is not related to the `UnityEngine.UI.Image` uGUI control. This is the Image control for the UI Toolkit framework.
     /// </summary>
     public class Image : VisualElement
     {
@@ -53,7 +55,7 @@ namespace UnityEngine.UIElements
         private bool m_TintColorIsInline;
 
         /// <summary>
-        /// The texture to display in this image.
+        /// The texture to display in this image. If you assign a `Texture` or `Texture2D`, the Image element will resize and show the assigned texture.
         /// </summary>
         [CreateProperty]
         public Texture image

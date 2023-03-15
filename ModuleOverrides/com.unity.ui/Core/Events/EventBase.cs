@@ -62,8 +62,11 @@ namespace UnityEngine.UIElements
 
         // Read-only state
         /// <summary>
-        /// The time when the event was created.
+        /// The time when the event was created, in milliseconds.
         /// </summary>
+        /// <remarks>
+        /// This value is relative to the start time of the current application.
+        /// </remarks>
         public long timestamp { get; private set; }
 
         internal ulong eventId { get; private set; }
@@ -289,7 +292,7 @@ namespace UnityEngine.UIElements
 
         // Propagation state
         /// <summary>
-        /// The current propagation phase.
+        /// The current propagation phase for this event. 
         /// </summary>
         public PropagationPhase propagationPhase { get; internal set; }
 

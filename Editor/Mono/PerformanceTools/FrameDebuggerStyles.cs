@@ -225,6 +225,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             internal const string k_WarningMultiThreadedMsg = "The Frame Debugger requires multi-threaded renderer. If this error persists, try starting the Editor with -force-gfx-mt command line argument.";
             internal const string k_WarningLinuxOpenGLMsg = k_WarningMultiThreadedMsg + " On Linux, the editor does not support a multi-threaded renderer when using OpenGL.";
             internal const string k_DescriptionString = "Frame Debugger lets you step through draw calls and see how exactly frame is rendered. Click Enable!";
+            internal const string k_TabbedWithPlaymodeErrorString = "Frame Debugger can not be docked with the Game Window when trying to debug the editor.";
             internal static readonly GUIContent s_RenderTargetText = EditorGUIUtility.TrTextContent("RenderTarget");
             internal static readonly GUIContent s_CopyEventText = EditorGUIUtility.TrTextContent("Copy Event Info");
             internal static readonly GUIContent s_CopyPropertyText = EditorGUIUtility.TrTextContent("Copy Property");

@@ -23,7 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var canDownload = m_OperationDispatcher.Download(versions.Select(v => v.package));
             if (canDownload)
-                PackageManagerWindowAnalytics.SendEvent("startDownloadUpdate", packageIds: versions.Select(v => v.package.uniqueId));
+                PackageManagerWindowAnalytics.SendEvent("startDownloadUpdate", versions);
             return true;
         }
 
@@ -31,7 +31,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var canDownload = m_OperationDispatcher.Download(version.package);
             if (canDownload)
-                PackageManagerWindowAnalytics.SendEvent("startDownloadUpdate", version.package.uniqueId);
+                PackageManagerWindowAnalytics.SendEvent("startDownloadUpdate", version);
             return canDownload;
         }
 

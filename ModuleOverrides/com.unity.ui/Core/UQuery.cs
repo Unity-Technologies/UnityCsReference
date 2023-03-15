@@ -710,7 +710,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Selects all elements that are not visible.
+        /// Selects all elements that are visible.
         /// </summary>
         public UQueryBuilder<T> Visible()
         {
@@ -750,7 +750,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Selects all elements that npot checked.
+        /// Selects all elements that not checked.
         /// </summary>
         public UQueryBuilder<T> NotChecked()
         {
@@ -792,7 +792,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Selects all elements that are enabled.
+        /// Selects all elements that are focused.
         /// </summary>
         public UQueryBuilder<T> Focused()
         {
