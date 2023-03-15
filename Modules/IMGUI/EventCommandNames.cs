@@ -10,7 +10,8 @@ namespace UnityEngine
 {
     internal static class EventCommandNames
     {
-        //Some of these strings are also hardcoded on the native side. Change them at your own risk!
+        // Some of these strings are also hardcoded on the native side. Change them at your own risk!
+        // For end users, please document relevant commands in UIE-Command-Events.md.
         public const string Cut = "Cut";
         public const string Copy = "Copy";
         public const string Paste = "Paste";
@@ -28,11 +29,11 @@ namespace UnityEngine
         public const string UndoRedoPerformed = "UndoRedoPerformed";
         public const string OnLostFocus = "OnLostFocus";
 
-        //Used by IMGUIContainer to force editing textfield when focus is changed with tab
+        // Used by IMGUIContainer to force editing textfield when focus is changed with tab
         public const string NewKeyboardFocus = "NewKeyboardFocus";
         public const string ModifierKeysChanged = "ModifierKeysChanged";
 
-        //Used by ColorPicker
+        // Used by ColorPicker
         public const string EyeDropperUpdate = "EyeDropperUpdate";
         public const string EyeDropperClicked = "EyeDropperClicked";
         public const string EyeDropperCancelled = "EyeDropperCancelled";
@@ -41,13 +42,5 @@ namespace UnityEngine
 
         public const string FrameSelected = "FrameSelected";
         public const string FrameSelectedWithLock = "FrameSelectedWithLock";
-
-
-        /*
-                 public const string  = "";
-                 public const string  = "";
-                 public const string  = "";
-                 public const string  = "";
-*/
     }
 }

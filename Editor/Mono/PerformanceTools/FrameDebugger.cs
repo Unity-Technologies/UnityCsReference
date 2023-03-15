@@ -27,6 +27,8 @@ namespace UnityEditor
         private int m_EnablingWaitCounter = 0;
         private int m_RepaintFrames = k_NeedToRepaintFrames;
         private int m_FrameEventsHash;
+        private bool m_ShowTabbedErrorBox;
+        private bool m_HasOpenedPlaymodeView;
         private Rect m_SearchRect;
         private string m_SearchString = String.Empty;
         private IConnectionState m_AttachToPlayerState;
@@ -101,6 +103,12 @@ namespace UnityEditor
             FrameDebuggerUtility.limit = newLimit;
             m_EventDetailsView?.OnNewFrameEventSelected();
             m_TreeView?.SelectFrameEventIndex(newLimit);
+        }
+
+        internal void OnConnectedProfilerChange()
+        {
+            DisableFrameDebugger();
+            EnableFrameDebugger();
         }
 
         internal static void RepaintAll()
@@ -186,10 +194,17 @@ namespace UnityEditor
             }
 
             EditorGUILayout.HelpBox(FrameDebuggerStyles.EventDetails.k_DescriptionString, MessageType.Info, true);
+
+            if (m_ShowTabbedErrorBox)
+                EditorGUILayout.HelpBox(FrameDebuggerStyles.EventDetails.k_TabbedWithPlaymodeErrorString, MessageType.Error, true);
         }
 
         private void HandleEnablingFrameDebugger()
         {
+            // Make sure the PlayMode window is enabled and shown...
+            if (!OpenPlayModeView())
+                return;
+
             if (Event.current.type != EventType.Repaint)
                 return;
 
@@ -203,18 +218,73 @@ namespace UnityEditor
             }
         }
 
+        private bool CheckIfFDIsDockedWithGameWindow(DockArea da, PlayModeView gameWindow)
+        {
+            for (int i = 0; i < da.m_Panes.Count; i++)
+                if (gameWindow == da.m_Panes[i])
+                    return true;
+            return false;
+        }
+
+        private bool OpenPlayModeView()
+        {
+            if (m_HasOpenedPlaymodeView)
+                return true;
+
+            // When debugging remote players, we can ignore this check as it doesn't render to the Game Window.
+            if (!FrameDebugger.IsLocalEnabled() && m_AttachToPlayerState.connectedToTarget != ConnectionTarget.Editor)
+                return true;
+
+            PlayModeView mainGameWindow = PlayModeView.GetMainPlayModeView();
+            List<PlayModeView> allGameWindows = PlayModeView.GetAllPlayModeViewWindows();
+            if (mainGameWindow || allGameWindows.Count > 0)
+            {
+                PlayModeView gameWindowToUse = mainGameWindow;
+
+                // The Frame Debugger and Game Window can not be docked together in
+                // the panes list (tabs) as both need to be shown in the Editor.
+                bool isFDInTheSamePaneAsGameWindow = false;
+                DockArea da = m_Parent as DockArea;
+                if (da)
+                    isFDInTheSamePaneAsGameWindow |= CheckIfFDIsDockedWithGameWindow(da, mainGameWindow);
+
+                // If it's docked, check if there are other game windows available to use
+                if (isFDInTheSamePaneAsGameWindow && allGameWindows.Count > 1)
+                {
+                    for (int i = 0; i < allGameWindows.Count; i++)
+                    {
+                        if (CheckIfFDIsDockedWithGameWindow(da, allGameWindows[i]))
+                            continue;
+
+                        isFDInTheSamePaneAsGameWindow = false;
+                        gameWindowToUse = allGameWindows[i];
+                        break;
+                    }
+                }
+
+                // When we can't enable the FD debugger, we display an error box informing the
+                // user to undock the Frame Debugger Window so it's not tabbed with the Game Window.
+                if (isFDInTheSamePaneAsGameWindow)
+                {
+                    m_ShowTabbedErrorBox = true;
+                    return false;
+                }
+                // Otherwise we show the Game Window
+                else
+                {
+                    gameWindowToUse.ShowTab();
+                    m_HasOpenedPlaymodeView = true;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void DrawEnabledFrameDebugger(bool repaint)
         {
             int oldLimit = FrameDebuggerUtility.limit;
             FrameDebuggerEvent[] descs = FrameDebuggerUtility.GetFrameEvents();
-
-            // Make sure the PlayMode window is enabled and shown...
-            if (FrameDebugger.IsLocalEnabled())
-            {
-                PlayModeView playModeView = PlayModeView.GetMainPlayModeView();
-                if (playModeView)
-                    playModeView.ShowTab();
-            }
 
             // captured frame event contents have changed, rebuild the tree data
             if (HasEventHashChanged)
@@ -319,13 +389,10 @@ namespace UnityEditor
             if (enablingLocally && !FrameDebuggerUtility.locallySupported)
                 return;
 
-            // Make sure game view is visible when enabling frame debugger locally
-            if (FrameDebugger.IsLocalEnabled())
-            {
-                PlayModeView playModeView = PlayModeView.GetMainPlayModeView();
-                if (playModeView)
-                    playModeView.ShowTab();
-            }
+            m_ShowTabbedErrorBox = false;
+            m_HasOpenedPlaymodeView = false;
+            if (!OpenPlayModeView())
+                return;
 
             // pause play mode if needed
             if (enablingLocally)
@@ -342,7 +409,6 @@ namespace UnityEditor
 
             m_EnablingWaitCounter = 0;
             m_EventDetailsView.Reset();
-
             RepaintOnLimitChange();
         }
 
@@ -363,6 +429,7 @@ namespace UnityEditor
                 m_EventDetailsView = null;
             }
 
+            m_HasOpenedPlaymodeView = false;
             FrameDebuggerStyles.OnDisable();
             m_TreeViewState = null;
             m_TreeView = null;

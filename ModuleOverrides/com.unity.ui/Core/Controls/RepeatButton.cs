@@ -58,8 +58,8 @@ namespace UnityEngine.UIElements
         /// Constructor.
         /// </summary>
         /// <param name="clickEvent">The action to execute when the button is pressed.</param>
-        /// <param name="delay">The initial delay before the action is executed for the first time.</param>
-        /// <param name="interval">The interval between each execution of the action.</param>
+        /// <param name="delay">The initial delay before the action is executed for the first time. Value is defined in milliseconds.</param>
+        /// <param name="interval">The interval between each execution of the action. Value is defined in milliseconds.</param>
         public RepeatButton(System.Action clickEvent, long delay, long interval) : this()
         {
             SetAction(clickEvent, delay, interval);
@@ -69,8 +69,8 @@ namespace UnityEngine.UIElements
         /// Set the action that should be executed when the button is pressed.
         /// </summary>
         /// <param name="clickEvent">The action to execute.</param>
-        /// <param name="delay">The initial delay before the action is executed for the first time.</param>
-        /// <param name="interval">The interval between each execution of the action.</param>
+        /// <param name="delay">The initial delay before the action is executed for the first time. Value is defined in milliseconds.</param>
+        /// <param name="interval">The interval between each execution of the action. Value is defined in milliseconds.</param>
         public void SetAction(System.Action clickEvent, long delay, long interval)
         {
             this.RemoveManipulator(m_Clickable);

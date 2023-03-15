@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_PageManager.GetPage().RemoveSelection(versions.Select(v => new PackageAndVersionIdPair(v.package.uniqueId, v.uniqueId)));
             if (!string.IsNullOrEmpty(m_AnalyticsEventName))
-                PackageManagerWindowAnalytics.SendEvent(m_AnalyticsEventName, packageIds: versions.Select(v => v.package.uniqueId));
+                PackageManagerWindowAnalytics.SendEvent(m_AnalyticsEventName, versions);
             return true;
         }
 

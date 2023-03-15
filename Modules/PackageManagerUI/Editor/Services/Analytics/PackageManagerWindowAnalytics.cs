@@ -16,13 +16,32 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public string action;
         public string package_id;
+        public string package_tag;
         public string[] package_ids;
+        public string[] package_tags;
         public string search_text;
         public string filter_name;
         public string details_tab;
         public bool window_docked;
         public bool dependencies_visible;
         public bool preview_visible;
+
+        public static void SendEvent(string action, IPackageVersion version)
+        {
+            SendEvent(action, GetAnalyticsPackageId(version), packageTag: version?.GetAnalyticsTags());
+        }
+
+        public static void SendEvent(string action, IEnumerable<IPackageVersion> versions)
+        {
+            SendEvent(action, packageIds: versions?.Select(GetAnalyticsPackageId), packageTags: versions?.Select(v => v.GetAnalyticsTags()));
+        }
+
+        // Our current analytics backend expects package_id to match product id for legacy asset store packages.
+        // Hence we are doing the special handling here. If we want to change this in the future, we need to also make changes in the backend accordingly.
+        private static string GetAnalyticsPackageId(IPackageVersion version)
+        {
+            return version?.HasTag(PackageTag.LegacyFormat) == true ? version.package.uniqueId : version?.uniqueId;
+        }
 
         public static string GetFilterNameWithSubPage(PackageManagerPrefs packageManagerPrefs, PageManager pageManager)
         {
@@ -35,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return filterName;
         }
 
-        public static void SendEvent(string action, string packageId = null, IEnumerable<string> packageIds = null)
+        public static void SendEvent(string action, string packageId = null, IEnumerable<string> packageIds = null, string packageTag = null, IEnumerable<string> packageTags = null)
         {
             var servicesContainer = ServicesContainer.instance;
             var editorAnalyticsProxy = servicesContainer.Resolve<EditorAnalyticsProxy>();
@@ -54,7 +73,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 action = action,
                 package_id = packageId ?? string.Empty,
+                package_tag = packageTag ?? string.Empty,
                 package_ids = packageIds?.ToArray() ?? new string[0],
+                package_tags = packageTags?.ToArray() ?? new string[0],
                 search_text = packageManagerPrefs.searchText,
                 filter_name = filterName,
                 details_tab = packageManagerPrefs.selectedPackageDetailsTabIdentifier ?? string.Empty,

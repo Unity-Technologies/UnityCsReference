@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
     {
         string m_CommandName;
         /// <summary>
-        /// Name of the command.
+        /// The command to validate or execute.
         /// </summary>
         public string commandName
         {
@@ -91,8 +91,11 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// The event sent to probe which elements accepts a command.
+    /// This event is sent by the Editor while it determines whether the command will be handled by an element in the panel.
     /// </summary>
+    /// <remarks>
+    /// See also: [[wiki:UIE-Command-Events|Command Events]].
+    /// </remarks>
     public class ValidateCommandEvent : CommandEventBase<ValidateCommandEvent>
     {
         static ValidateCommandEvent()
@@ -102,8 +105,11 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// The event sent when an element should execute a command.
+    /// This event is sent by the Editor when an element in the panel should execute a command.
     /// </summary>
+    /// <remarks>
+    /// See also: [[wiki:UIE-Command-Events|Command Events]].
+    /// </remarks>
     public class ExecuteCommandEvent : CommandEventBase<ExecuteCommandEvent>
     {
         static ExecuteCommandEvent()
