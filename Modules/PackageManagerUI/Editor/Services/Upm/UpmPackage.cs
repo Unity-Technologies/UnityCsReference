@@ -42,26 +42,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_VersionList = new UpmVersionList();
             m_Errors = new List<UIError>();
             m_Type = type;
-            RefreshUnityType();
         }
 
-        public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable, bool isUnityPackage)
+        public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable, RegistryType availableRegistry)
         {
             m_Progress = PackageProgress.None;
             m_Name = info.name;
             m_Errors = new List<UIError>();
             m_IsDiscoverable = isDiscoverable;
-            m_VersionList = new UpmVersionList(info, isInstalled, isUnityPackage);
+            m_VersionList = new UpmVersionList(info, isInstalled, availableRegistry);
             m_Type = versions.primary.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;
             _ = info.type == "feature" ? m_Type |= PackageType.Feature : m_Type &= ~PackageType.Feature;
-
-            RefreshUnityType();
         }
 
         internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions, int numUnloadedVersions)
         {
             m_VersionList = new UpmVersionList(updatedVersions, m_VersionList.lifecycleVersionString, m_VersionList.lifecycleNextVersion, numUnloadedVersions);
-            RefreshUnityType();
             ClearErrors();
         }
 
@@ -69,16 +65,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void AddInstalledVersion(UpmPackageVersion newVersion)
         {
             m_VersionList.AddInstalledVersion(newVersion);
-            RefreshUnityType();
-        }
-
-        private void RefreshUnityType()
-        {
-            var primaryUpmVersion = versions?.primary as UpmPackageVersion;
-            _ = primaryUpmVersion?.isUnityPackage ?? false ? m_Type |= PackageType.Unity : m_Type &= ~PackageType.Unity;
-            _ = primaryUpmVersion?.isFromScopedRegistry ?? false ? m_Type |= PackageType.ScopedRegistry : m_Type &= ~PackageType.ScopedRegistry;
-            _ = primaryUpmVersion?.isRegistryPackage ?? false ? (!primaryUpmVersion?.isUnityPackage ?? false ?
-                m_Type |= PackageType.MainNotUnity : m_Type &= ~PackageType.ScopedRegistry) : m_Type &= ~PackageType.MainNotUnity;
         }
 
         public override IPackage Clone()

@@ -568,7 +568,8 @@ namespace UnityEditor
                         Vector3 axis;
                         delta.ToAngleAxis(out angle, out axis);
                         axis = rectRotation * axis;
-
+                        // The rotation method converts euler angles, which makes us lose precision. This will make sure we don't accumulate small imprecision while rotating (case 1417850)
+                        axis = new Vector3((float)Math.Round(axis.x, 4), (float)Math.Round(axis.y, 4), (float)Math.Round(axis.z, 4));
                         Undo.RecordObjects(Selection.transforms, "Rotate");
                         foreach (Transform t in Selection.transforms)
                         {

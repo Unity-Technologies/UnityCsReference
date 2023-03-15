@@ -79,7 +79,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public bool hasEntitlements => Is(PackageType.Unity) && versions.Any(version => version.hasEntitlements);
+        public bool hasEntitlements => versions.Any(v => v.availableRegistry == RegistryType.UnityRegistry && v.hasEntitlements);
 
         public bool hasEntitlementsError => m_Errors.Any(error => error.errorCode == UIErrorCode.Forbidden) || versions.Any(version => version.hasEntitlementsError);
 

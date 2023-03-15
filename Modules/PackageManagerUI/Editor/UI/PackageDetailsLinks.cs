@@ -123,7 +123,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // With the current `UpmPackageDocs.GetDocumentationUrl` implementation,
                 // We'll get invalid url links for non-unity packages on unity3d.com
                 // We want to avoiding opening these kinds of links to avoid confusion.
-                if (!UpmClient.IsUnityUrl(onlineUrl) || m_Package.Is(PackageType.Unity) || m_Version.packageUniqueId.StartsWith("com.unity."))
+                if (!UpmClient.IsUnityUrl(onlineUrl) || m_Version.HasTag(PackageTag.Unity) || m_Version.packageUniqueId.StartsWith("com.unity."))
                 {
                     m_Application.OpenURL(onlineUrl);
 
@@ -204,21 +204,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ViewDocClick()
         {
-            var isUnityPackage = (m_Version as UpmPackageVersion)?.isUnityPackage ?? true;
+            var isUnityPackage = m_Version.HasTag(PackageTag.Unity);
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
             ViewUrl(UpmPackageDocs.GetDocumentationUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineDocumentation(m_IOProxy, packageInfo), L10n.Tr("documentation"), "viewDocs", isUnityPackage);
         }
 
         private void ViewChangelogClick()
         {
-            var isUnityPackage = (m_Version as UpmPackageVersion)?.isUnityPackage ?? true;
+            var isUnityPackage = m_Version.HasTag(PackageTag.Unity);
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
             ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", isUnityPackage);
         }
 
         private void ViewLicensesClick()
         {
-            var isUnityPackage = (m_Version as UpmPackageVersion)?.isUnityPackage ?? true;
+            var isUnityPackage = m_Version.HasTag(PackageTag.Unity);
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
             ViewUrl(UpmPackageDocs.GetLicensesUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineLicenses(m_IOProxy, packageInfo), L10n.Tr("license documentation"), "viewLicense", isUnityPackage);
         }

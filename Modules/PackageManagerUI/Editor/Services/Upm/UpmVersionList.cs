@@ -149,7 +149,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SemVersionParser.TryParse(m_LifecycleNextVersionString, out m_LifecycleNextVersion);
         }
 
-        private bool isUnityPackage => m_Versions.All(v => v.isUnityPackage);
+        private bool isUnityPackage => m_Versions.All(v => v.HasTag(PackageTag.Unity));
 
         public IPackageVersion latest => m_Versions.LastOrDefault();
 
@@ -261,7 +261,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 SemVersionParser.TryParse(m_LifecycleNextVersionString, out m_LifecycleNextVersion);
         }
 
-        public UpmVersionList(PackageInfo info, bool isInstalled, bool isUnityPackage)
+        public UpmVersionList(PackageInfo info, bool isInstalled, RegistryType availableRegistry)
         {
             // Note: Using `versions.verified` as it is computed by UPM from the
             // "version" and "recommendedVersion" values in the editor manifest.
@@ -275,12 +275,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_LifecycleNextVersionString != null)
                 SemVersionParser.TryParse(m_LifecycleNextVersionString, out m_LifecycleNextVersion);
 
-            var mainVersion = new UpmPackageVersion(info, isInstalled, isUnityPackage);
+            var mainVersion = new UpmPackageVersion(info, isInstalled, availableRegistry);
             m_Versions = info.versions.compatible.Select(v =>
             {
                 SemVersion? version;
                 SemVersionParser.TryParse(v, out version);
-                return new UpmPackageVersion(info, false, version, mainVersion.displayName, isUnityPackage);
+                return new UpmPackageVersion(info, false, version, mainVersion.displayName, availableRegistry);
             }).ToList();
 
             AddToSortedVersions(m_Versions, mainVersion);

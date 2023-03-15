@@ -6,14 +6,10 @@ using System;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    [Flags]
-    internal enum PackageType
+    internal enum RegistryType
     {
-        None            = 0,
-
-        Installable     = 1 << 0,
-        BuiltIn         = 1 << 1,
-        AssetStore      = 1 << 2,
-        Feature         = 1 << 3
+        None,
+        UnityRegistry,
+        MyRegistries,
     }
 }

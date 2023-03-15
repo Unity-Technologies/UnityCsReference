@@ -7,7 +7,7 @@ using UnityEngine.Yoga;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Defaines how the position values are interpreted by the layout engine.
+    /// Defines how the position values are interpreted by the layout engine.
     /// </summary>
     public enum Position
     {
@@ -16,18 +16,18 @@ namespace UnityEngine.UIElements
         /// </summary>
         Relative = YogaPositionType.Relative,
         /// <summary>
-        /// The element is positioned in relation to its parent box and does not contribute to the layout anymore.
+        /// The element is positioned in relation to its parent box and doesn't contribute to the layout anymore.
         /// </summary>
         Absolute = YogaPositionType.Absolute,
     }
 
     /// <summary>
-    /// Defines what should happend if content overflows an element bounds.
+    /// Defines what should happened if content overflows an element bounds.
     /// </summary>
     public enum Overflow
     {
         /// <summary>
-        /// The overflow is not clipped. It renders outside the element's box. Default Value.
+        /// The overflow isn't clipped. It renders outside the element's box. Default Value.
         /// </summary>
         Visible = YogaOverflow.Visible,
         /// <summary>
@@ -101,7 +101,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Defines the alignement behavior along an axis.
+    /// Defines the alignment behavior along an axis.
     /// </summary>
     public enum Align
     {
@@ -194,7 +194,7 @@ namespace UnityEngine.UIElements
     public enum TransformOriginOffset
     {
         /// <summary>
-        /// The origin of the transform operation is is set to the left of the element.
+        /// The origin of the transform operation is set to the left of the element.
         /// </summary>
         Left = 1,
 
@@ -221,7 +221,7 @@ namespace UnityEngine.UIElements
 
 
     /// <summary>
-    /// Specifies whether or not a VisualElement is visible.
+    /// Style value that specifies whether or not a VisualElement is visible.
     /// </summary>
     public enum Visibility
     {
@@ -230,7 +230,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         Visible = 0,
         /// <summary>
-        /// The VisualElement is hidden. Hidden VisualElements will take up space in their parent layout if their positionType is set to PositionType.Relative. Use the display property to both hide and remove a VisualElement from the parent VisualElement layout.
+        /// The VisualElement is hidden. Hidden VisualElements will take up space in their parent layout if their positionType is set to PositionType.Relative. Use the <see cref="DisplayStyle"/> style property to both hide and remove a VisualElement from the parent VisualElement layout. Note, this is the enum value used when setting styles via VisualElement.style.visibility. In C#, you can just use VisualElement.visible = false.
         /// </summary>
         Hidden = 1
     }
@@ -261,7 +261,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         Flex = YogaDisplay.Flex,
         /// <summary>
-        /// The element is not visible and absent from the layout.
+        /// The element isn't visible and absent from the layout.
         /// </summary>
         None = YogaDisplay.None
     }

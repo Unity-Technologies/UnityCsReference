@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEditor.Profiling;
+using UnityEditor.Profiling.Analytics;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
@@ -183,7 +184,6 @@ namespace UnityEditorInternal
 
             set
             {
-                ProfilerWindowAnalytics.ProfilingStateChange(value);
                 SetProfilingEnabled(value);
             }
         }
@@ -393,11 +393,12 @@ namespace UnityEditorInternal
             profilerConnected?.Invoke(data);
         }
 
-        internal static event Action<bool> profilingStateChange;
+        internal static event Action profilerCaptureStarted;
+
         [RequiredByNativeCode]
-        static void InvokeProfilingStateChange(bool state)
+        static void InvokeProfilerCaptureStarted()
         {
-            profilingStateChange?.Invoke(state);
+            profilerCaptureStarted?.Invoke();
         }
 
         [Obsolete("ResetHistory is deprecated, use ClearAllFrames instead.")]

@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected long m_PublishedDateTicks;
-        public DateTime? publishedDate => m_PublishedDateTicks == 0 ? null : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
+        public DateTime? publishedDate => m_PublishedDateTicks == 0 ? (DateTime?)null : new DateTime(m_PublishedDateTicks, DateTimeKind.Utc);
 
         [SerializeField]
         protected string m_PublishNotes;
@@ -57,6 +57,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return (m_Tag & tag) != 0;
         }
+
+        public virtual RegistryType availableRegistry => RegistryType.None;
 
         public bool hasEntitlements => entitlements != null && (entitlements.licenseType != EntitlementLicenseType.Public || entitlements.status == EntitlementStatus.NotGranted || entitlements.status == EntitlementStatus.Granted);
 

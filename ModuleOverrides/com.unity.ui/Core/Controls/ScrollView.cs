@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Displays its contents inside a scrollable frame.
+    /// Displays its contents inside a scrollable frame. For more information, see [[wiki:UIE-uxml-element-ScrollView|ScrollView]]. 
     /// </summary>
     public class ScrollView : VisualElement
     {

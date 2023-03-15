@@ -59,12 +59,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly Dictionary<string, UpmSearchOperation> m_ExtraFetchOperations = new Dictionary<string, UpmSearchOperation>();
 
         [SerializeField]
-        private string[] m_SerializedPRegistriesUrlKeys;
+        private string[] m_SerializedRegistryUrlsKeys;
 
         [SerializeField]
-        private bool[] m_SerializedRegistriesUrlValues;
+        private RegistryType[] m_SerializedRegistryUrlsValues;
 
-        internal Dictionary<string, bool> m_RegistriesUrl = new Dictionary<string, bool>();
+        internal Dictionary<string, RegistryType> m_RegistryUrls = new Dictionary<string, RegistryType>();
 
         // a list of unique ids (could be specialUniqueId or packageId)
         [SerializeField]
@@ -110,14 +110,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            m_SerializedPRegistriesUrlKeys = m_RegistriesUrl?.Keys.ToArray() ?? new string[0];
-            m_SerializedRegistriesUrlValues = m_RegistriesUrl?.Values.ToArray() ?? new bool[0];
+            m_SerializedRegistryUrlsKeys = m_RegistryUrls?.Keys.ToArray() ?? new string[0];
+            m_SerializedRegistryUrlsValues = m_RegistryUrls?.Values.ToArray() ?? new RegistryType[0];
         }
 
         public void OnAfterDeserialize()
         {
-            for (var i = 0; i < m_SerializedPRegistriesUrlKeys.Length; i++)
-                m_RegistriesUrl[m_SerializedPRegistriesUrlKeys[i]] = m_SerializedRegistriesUrlValues[i];
+            for (var i = 0; i < m_SerializedRegistryUrlsKeys.Length; i++)
+                m_RegistryUrls[m_SerializedRegistryUrlsKeys[i]] = m_SerializedRegistryUrlsValues[i];
         }
 
         public virtual bool isAddRemoveOrEmbedInProgress
@@ -139,7 +139,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual bool IsAddInProgress(string packageId)
         {
             return (addOperation.isInProgress && addOperation.packageId == packageId)
-                || (addAndRemoveOperation.isInProgress && addAndRemoveOperation.packageIdsToAdd.Contains(packageId));;
+                || (addAndRemoveOperation.isInProgress && addAndRemoveOperation.packageIdsToAdd.Contains(packageId));
         }
 
         public virtual void AddById(string packageId)
@@ -425,10 +425,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     productId = m_UpmCache.GetProductId(packageInfo.name);
                     if (string.IsNullOrEmpty(productId))
                     {
-                        onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false, IsUnityPackage(packageInfo)));
+                        onPackageVersionUpdated?.Invoke(packageInfo.name, new UpmPackageVersion(packageInfo, false, GetAvailableRegistryType(packageInfo)));
                     }
                     else
-                        onProductPackageVersionUpdated?.Invoke(productId, new UpmPackageVersion(packageInfo, false, false));
+                        onProductPackageVersionUpdated?.Invoke(productId, new UpmPackageVersion(packageInfo, false, RegistryType.None));
                 }
             }
         }
@@ -473,7 +473,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 // only filter on Lifecycle tags if is a Unity package
                 if (!seeAllVersions &&
                     HasHidableVersions(package) &&
-                    (package.versions.primary as UpmPackageVersion)?.isUnityPackage == true)
+                    package.versions.primary.HasTag(PackageTag.Unity))
                 {
                     FilterVersions(package, showPreRelease);
                 }
@@ -528,7 +528,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var package in updatedUpmPackages.Concat(updatedProductPackages))
             {
                 // only filter on Lifecycle tags if is a Unity package
-                if (!seeAllVersions && (package.versions.primary as UpmPackageVersion)?.isUnityPackage == true)
+                if (!seeAllVersions && package.versions.primary.HasTag(PackageTag.Unity))
                 {
                     FilterVersions(package, showPreRelease);
                 }
@@ -553,7 +553,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var showPreRelease = m_SettingsProxy.enablePreReleasePackages;
             var seeAllVersions = m_SettingsProxy.seeAllPackageVersions;
             // only filter on Lifecycle tags if is a Unity package
-            if (!seeAllVersions && (package.versions.primary as UpmPackageVersion)?.isUnityPackage == true)
+            if (!seeAllVersions && package.versions.primary.HasTag(PackageTag.Unity))
             {
                 FilterVersions(package, showPreRelease);
             }
@@ -574,14 +574,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpmPackage result;
             if (searchInfo == null)
             {
-                result = new UpmPackage(installedInfo, true, false, IsUnityPackage(installedInfo));
+                result = new UpmPackage(installedInfo, true, false, GetAvailableRegistryType(installedInfo));
             }
             else
             {
-                var isUnityPackage = IsUnityPackage(searchInfo);
-                result = new UpmPackage(searchInfo, false, true, isUnityPackage);
+                var availableRegistry = GetAvailableRegistryType(searchInfo);
+                result = new UpmPackage(searchInfo, false, true, availableRegistry);
                 if (installedInfo != null)
-                    result.AddInstalledVersion(new UpmPackageVersion(installedInfo, true, isUnityPackage));
+                    result.AddInstalledVersion(new UpmPackageVersion(installedInfo, true, availableRegistry));
             }
             return result;
         }
@@ -600,7 +600,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         continue;
                     PackageInfo info;
                     if (extraVersions.TryGetValue(version.version.ToString(), out info))
-                        version.UpdatePackageInfo(info, IsUnityPackage(info));
+                        version.UpdatePackageInfo(info, GetAvailableRegistryType(info));
                 }
             }
 
@@ -703,17 +703,27 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ClientProxy.Resolve();
         }
 
+        public virtual RegistryType GetAvailableRegistryType(PackageInfo packageInfo)
+        {
+            // Special handling for packages that's built in/bundled with unity, we always consider them from the Unity registry
+            if (packageInfo?.source == PackageSource.BuiltIn)
+                return RegistryType.UnityRegistry;
+
+            if (string.IsNullOrEmpty(packageInfo?.registry?.url))
+                return RegistryType.None;
+
+            if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var result))
+                return result;
+
+            result = packageInfo.registry.isDefault && IsUnityUrl(packageInfo.registry.url) ? RegistryType.UnityRegistry : RegistryType.MyRegistries;
+            m_RegistryUrls[packageInfo.registry.url] = result;
+            return result;
+        }
+
         public virtual bool IsUnityPackage(PackageInfo packageInfo)
         {
-            if (!(packageInfo?.registry?.isDefault ?? false) || string.IsNullOrEmpty(packageInfo.registry?.url))
-                return false;
-
-            if (m_RegistriesUrl.TryGetValue(packageInfo.registry.url, out var isUnityRegistry))
-                return isUnityRegistry;
-
-            isUnityRegistry = IsUnityUrl(packageInfo.registry.url);
-            m_RegistriesUrl[packageInfo.registry.url] = isUnityRegistry;
-            return isUnityRegistry;
+            return packageInfo != null && (packageInfo.source == PackageSource.BuiltIn || packageInfo.source == PackageSource.Registry) &&
+                   GetAvailableRegistryType(packageInfo) == RegistryType.UnityRegistry;
         }
 
         public static bool IsUnityUrl(string url)

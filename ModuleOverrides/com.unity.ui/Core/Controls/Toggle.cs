@@ -7,7 +7,7 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A <see cref="Toggle"/> is a clickable element that represents a boolean value.
+    /// A Toggle is a clickable element that represents a boolean value.
     /// </summary>
     /// <remarks>
     /// A Toggle control consists of a label and an input field. The input field contains a sprite for the control. By default,

@@ -9,7 +9,9 @@ using UnityEngine.Assertions;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// An instance of this class holds a tree of `VisualElementAsset`s, created from a UXML file. Each node in the file corresponds to a `VisualElementAsset`. You can clone a `VisualTreeAsset` to yield a tree of `VisualElement`s.
+    /// An instance of this class holds a tree of `VisualElementAsset`s, created from a UXML file. Each node in the file corresponds to a `VisualElementAsset`. You can clone a `VisualTreeAsset` to create a tree of `VisualElement`s.
+    ///
+    /// **Note**: You can't generate a `VisualTreeAsset` from raw UXML at runtime.
     /// </summary>
     [Serializable]
     public class VisualTreeAsset : ScriptableObject
