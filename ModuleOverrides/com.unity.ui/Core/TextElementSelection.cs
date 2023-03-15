@@ -109,7 +109,7 @@ namespace UnityEngine.UIElements
             get => m_IsSelectable && focusable;
             set
             {
-                if (value == m_IsSelectable && value == focusable)
+                if (value == m_IsSelectable)
                     return;
 
                 focusable = value;

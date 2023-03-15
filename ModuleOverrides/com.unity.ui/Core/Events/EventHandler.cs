@@ -113,7 +113,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Remove callback from the instance.
         /// </summary>
-        /// <param name="callback">The callback to remove.</param>
+        /// <param name="callback">The callback to remove. If this callback was never registered, nothing happens.</param>
         /// <param name="useTrickleDown">Set this parameter to true to remove the callback from the TrickleDown phase. Set this parameter to false to remove the callback from the BubbleUp phase.</param>
         public void UnregisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
@@ -128,7 +128,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Remove callback from the instance.
         /// </summary>
-        /// <param name="callback">The callback to remove.</param>
+        /// <param name="callback">The callback to remove. If this callback was never registered, nothing happens.</param>
         /// <param name="useTrickleDown">Set this parameter to true to remove the callback from the TrickleDown phase. Set this parameter to false to remove the callback from the BubbleUp phase.</param>
         public void UnregisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {

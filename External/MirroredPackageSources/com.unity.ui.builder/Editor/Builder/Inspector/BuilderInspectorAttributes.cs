@@ -45,6 +45,8 @@ namespace Unity.UI.Builder
         BuilderSelection m_Selection;
         PersistedFoldout m_AttributesSection;
 
+        private string m_PreviousMultilineValue;
+
         VisualElement currentVisualElement => m_Inspector.currentVisualElement;
 
         public VisualElement root => m_AttributesSection;
@@ -55,6 +57,7 @@ namespace Unity.UI.Builder
             m_Selection = inspector.selection;
 
             m_AttributesSection = m_Inspector.Q<PersistedFoldout>("inspector-attributes-foldout");
+            m_PreviousMultilineValue = string.Empty;
         }
 
         public void Refresh()
@@ -157,6 +160,14 @@ namespace Unity.UI.Builder
                         PostAttributeValueChange(uiField, uiField.value.ToString()));
                     fieldElement = uiField;
                 }
+                else if (attribute.name.Equals("value") && currentVisualElement is TextField { multiline: true })
+                {
+                    var uiField = new TextField("Value");
+                    uiField.RegisterValueChangedCallback(OnAttributeValueChange);
+                    uiField.multiline = true;
+                    uiField.AddToClassList(BuilderConstants.InspectorMultiLineTextFieldClassName);
+                    fieldElement = uiField;
+                }
                 else
                 {
                     var uiField = new TextField(fieldLabel);
@@ -215,6 +226,16 @@ namespace Unity.UI.Builder
                     uiField.RegisterValueChangedCallback(OnAttributeValueChange);
                     fieldElement = uiField;
                 }
+                else if (attribute.name.Equals("fixed-item-height") &&
+                         currentVisualElement is BaseVerticalCollectionView)
+                {
+                    var uiField = new IntegerField(fieldLabel);
+                    uiField.isDelayed = true;
+                    uiField.RegisterValueChangedCallback(OnFixedItemHeightValueChanged);
+                    uiField.RegisterCallback<InputEvent>(OnFixedHeightValueChangedImmediately);
+                    uiField.labelElement.RegisterCallback<PointerMoveEvent>(OnFixedHeightValueChangedImmediately2);
+                    fieldElement = uiField;
+                }
                 else
                 {
                     var uiField = new IntegerField(fieldLabel);
@@ -231,7 +252,14 @@ namespace Unity.UI.Builder
             else if (attribute is UxmlBoolAttributeDescription)
             {
                 var uiField = new Toggle(fieldLabel);
-                uiField.RegisterValueChangedCallback(OnAttributeValueChange);
+                if (attribute.name.Equals("multiline") && currentVisualElement is TextField)
+                {
+                    uiField.RegisterValueChangedCallback(OnMultilineToggleValueChange);
+                }
+                else
+                {
+                    uiField.RegisterValueChangedCallback(OnAttributeValueChange);
+                }
                 fieldElement = uiField;
             }
             else if (attribute is UxmlColorAttributeDescription)
@@ -1113,6 +1141,103 @@ namespace Unity.UI.Builder
             PostAttributeValueChange(field, evt.newValue.ToString());
         }
 
+        void OnMultilineToggleValueChange(ChangeEvent<bool> evt)
+        {
+            if (evt.target is not Toggle target)
+                return;
+
+            var valueFieldInInspector = target?.GetFirstAncestorOfType<BuilderInspector>().Query<TextField>().Where(x => x.bindingPath is "value").First();
+            if (valueFieldInInspector == null)
+                return;
+
+            var textfield = currentVisualElement as TextField;
+            if (evt.newValue)
+            {
+                valueFieldInInspector.multiline = true;
+                if (m_PreviousMultilineValue.Replace("\n", "").Equals(textfield.value))
+                {
+                    valueFieldInInspector.SetValueWithoutNotify(m_PreviousMultilineValue);
+                    textfield.SetValueWithoutNotify(m_PreviousMultilineValue);
+                    PostAttributeValueChange(valueFieldInInspector, m_PreviousMultilineValue);
+                }
+                valueFieldInInspector.AddToClassList(BuilderConstants.InspectorMultiLineTextFieldClassName);
+            }
+            else
+            {
+                if (textfield.value.Contains("\n"))
+                    m_PreviousMultilineValue = textfield.value;
+                valueFieldInInspector.multiline = false;
+                valueFieldInInspector.RemoveFromClassList(BuilderConstants.InspectorMultiLineTextFieldClassName);
+            }
+
+            PostAttributeValueChange(target, evt.newValue.ToString().ToLower());
+        }
+
+        void OnFixedItemHeightValueChanged(ChangeEvent<int> evt)
+        {
+            var field = evt.target as BaseField<int>;
+            if (evt.newValue < 1)
+            {
+                ToggleNegativeFixedItemHeightHelpBox(true, field);
+                field.SetValueWithoutNotify(1);
+                PostAttributeValueChange(field, field.value.ToString());
+                return;
+            }
+
+            PostAttributeValueChange(field, evt.newValue.ToString());
+        }
+
+        void OnFixedHeightValueChangedImmediately(InputEvent evt)
+        {
+            var field = evt.target as BaseField<int>;
+            if (field == null)
+                return;
+
+            var newValue = evt.newData;
+            var valueResolved = UINumericFieldsUtils.StringToLong(newValue, out var v);
+            var resolvedValue = valueResolved ? Mathf.ClampToInt(v) : field.value;
+
+            ToggleNegativeFixedItemHeightHelpBox((newValue.Length != 0 && (resolvedValue < 1 || newValue.Equals("-"))), field);
+        }
+        void OnFixedHeightValueChangedImmediately2(PointerMoveEvent evt)
+        {
+            if (evt.target is not Label labelElement)
+                return;
+
+            var field = labelElement.parent as TextInputBaseField<int>;
+            if (field == null)
+                return;
+
+            var valueResolved = UINumericFieldsUtils.StringToLong(field.text, out var v);
+            var resolvedValue = valueResolved ? Mathf.ClampToInt(v) : field.value;
+
+            ToggleNegativeFixedItemHeightHelpBox((resolvedValue < 1 || field.text.ToCharArray()[0].Equals('-')), field);
+        }
+        void ToggleNegativeFixedItemHeightHelpBox(bool enabled, BaseField<int> field)
+        {
+            var negativeWarningHelpBox = field.parent.Q<UnityEngine.UIElements.HelpBox>();
+            if (enabled)
+            {
+                if (negativeWarningHelpBox == null)
+                {
+                    negativeWarningHelpBox = new UnityEngine.UIElements.HelpBox(
+                        L10n.Tr(BuilderConstants.HeightIntFieldValueCannotBeNegativeMessage), HelpBoxMessageType.Warning);
+                    field.parent.Add(negativeWarningHelpBox);
+                    negativeWarningHelpBox.AddToClassList(BuilderConstants.InspectorShownNegativeWarningMessageClassName);
+                }
+                else
+                {
+                    negativeWarningHelpBox.AddToClassList(BuilderConstants.InspectorShownNegativeWarningMessageClassName);
+                    negativeWarningHelpBox.RemoveFromClassList(BuilderConstants.InspectorHiddenNegativeWarningMessageClassName);
+                }
+                return;
+            }
+
+            if (negativeWarningHelpBox == null)
+                return;
+            negativeWarningHelpBox.AddToClassList(BuilderConstants.InspectorHiddenNegativeWarningMessageClassName);
+            negativeWarningHelpBox.RemoveFromClassList(BuilderConstants.InspectorShownNegativeWarningMessageClassName);
+        }
         void PostAttributeValueChange(BindableElement field, string value)
         {
             // Undo/Redo

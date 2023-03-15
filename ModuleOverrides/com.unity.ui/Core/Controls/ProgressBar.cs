@@ -213,10 +213,32 @@ namespace UnityEngine.UIElements
         }
     }
 
-
     /// <summary>
     /// A control that displays the progress between a lower and upper bound value.
     /// </summary>
+    /// <example>
+    /// <code>
+    /// <![CDATA[
+    /// public ProgressBar CreateProgressBar()
+    /// {
+    ///     var progressBar = new ProgressBar
+    ///     {
+    ///         title = "Progress",
+    ///         lowValue = 0f,
+    ///         highValue = 100f,
+    ///         value = 0f
+    ///     };
+    ///
+    ///     progressBar.schedule.Execute(() =>
+    ///     {
+    ///         progressBar.value += 2f;
+    ///     }).Every(75).Until(() => progressBar.value >= 100f);
+    ///
+    ///     return progressBar;
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class ProgressBar : AbstractProgressBar
     {
