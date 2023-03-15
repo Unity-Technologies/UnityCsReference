@@ -360,7 +360,7 @@ namespace UnityEngine.UIElements
             {
                 // Filter on EventCategory.StyleTransition directly. For internal state maintenance, we need to send
                 // all the transition events, or none of them.
-                if (!ve.HasParentEventCallbacksOrDefaultActions(EventCategory.StyleTransition))
+                if (!ve.HasParentEventInterests(EventCategory.StyleTransition))
                     return;
 
                 var stylePropertyId = running.properties[runningIndex];
@@ -382,7 +382,7 @@ namespace UnityEngine.UIElements
             {
                 // Filter on EventCategory.StyleTransition directly. For internal state maintenance, we need to send
                 // all the transition events, or none of them.
-                if (!ve.HasParentEventCallbacksOrDefaultActions(EventCategory.StyleTransition))
+                if (!ve.HasParentEventInterests(EventCategory.StyleTransition))
                     return;
 
                 var stylePropertyId = running.properties[runningIndex];
@@ -404,7 +404,7 @@ namespace UnityEngine.UIElements
             {
                 // Filter on EventCategory.StyleTransition directly. For internal state maintenance, we need to send
                 // all the transition events, or none of them.
-                if (!ve.HasParentEventCallbacksOrDefaultActions(EventCategory.StyleTransition))
+                if (!ve.HasParentEventInterests(EventCategory.StyleTransition))
                     return;
 
                 var stylePropertyId = running.properties[runningIndex];
@@ -425,7 +425,7 @@ namespace UnityEngine.UIElements
             {
                 // Filter on EventCategory.StyleTransition directly. For internal state maintenance, we need to send
                 // all the transition events, or none of them.
-                if (!ve.HasParentEventCallbacksOrDefaultActions(EventCategory.StyleTransition))
+                if (!ve.HasParentEventInterests(EventCategory.StyleTransition))
                     return;
 
                 var stylePropertyId = running.properties[runningIndex];
@@ -478,7 +478,7 @@ namespace UnityEngine.UIElements
             {
                 // Don't send event if there are no callbacks. Note that this method doesn't do any manipulations on
                 // the event queue state, so it's safe to just skip the entire method.
-                if (!ve.HasParentEventCallbacksOrDefaultActions(TransitionCancelEvent.EventCategory))
+                if (!ve.HasParentEventInterests(TransitionCancelEvent.EventCategory))
                     return;
 
                 ref var timingData = ref running.timing[runningIndex];

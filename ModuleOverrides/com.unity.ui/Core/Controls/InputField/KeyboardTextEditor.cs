@@ -22,20 +22,12 @@ namespace UnityEngine.UIElements
             editingUtilities.multiline = textElement.edition.multiline;
         }
 
-        public override void ExecuteDefaultActionAtTarget(EventBase evt)
+        public override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
+            base.HandleEventBubbleUp(evt);
 
             switch (evt)
             {
-                case FocusEvent fe:
-                    OnFocus(fe);
-                    break;
-
-                case BlurEvent be:
-                    OnBlur(be);
-                    break;
-
                 case KeyDownEvent kde:
                     OnKeyDown(kde);
                     break;
@@ -46,6 +38,14 @@ namespace UnityEngine.UIElements
 
                 case ExecuteCommandEvent ece:
                     OnExecuteCommandEvent(ece);
+                    break;
+
+                case FocusEvent fe:
+                    OnFocus(fe);
+                    break;
+
+                case BlurEvent be:
+                    OnBlur(be);
                     break;
 
                 case NavigationMoveEvent ne:
@@ -107,7 +107,7 @@ namespace UnityEngine.UIElements
                         if (evt.ShouldSendNavigationMoveEvent())
                         {
                             // Do the navigation manually since NavigationTabEvent doesn't pass through
-                            textElement.focusController.FocusNextInDirection(evt.shiftKey
+                            textElement.focusController.FocusNextInDirection(textElement, evt.shiftKey
                                 ? VisualElementFocusChangeDirection.left
                                 : VisualElementFocusChangeDirection.right);
 
@@ -280,9 +280,8 @@ namespace UnityEngine.UIElements
             if (evt.deviceType == NavigationDeviceType.Keyboard || evt.deviceType == NavigationDeviceType.Unknown)
             {
                 evt.StopPropagation();
-                evt.PreventDefault();
+                textElement.focusController.IgnoreEvent(evt);
             }
         }
-
     }
 }

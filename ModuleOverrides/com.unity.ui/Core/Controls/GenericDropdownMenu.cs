@@ -159,7 +159,6 @@ namespace UnityEngine.UIElements
             if (Apply(op))
             {
                 sourceEvent.StopPropagation();
-                sourceEvent.PreventDefault();
             }
         }
 
@@ -235,12 +234,6 @@ namespace UnityEngine.UIElements
         {
             m_MousePosition = m_ScrollView.WorldToLocal(evt.position);
             UpdateSelection(evt.elementTarget);
-
-            if (evt.pointerId != PointerId.mousePointerId)
-            {
-                m_MenuContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
-            }
-
             evt.StopPropagation();
         }
 
@@ -248,12 +241,6 @@ namespace UnityEngine.UIElements
         {
             m_MousePosition = m_ScrollView.WorldToLocal(evt.position);
             UpdateSelection(evt.elementTarget);
-
-            if (evt.pointerId != PointerId.mousePointerId)
-            {
-                m_MenuContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
-            }
-
             evt.StopPropagation();
         }
 
@@ -270,11 +257,6 @@ namespace UnityEngine.UIElements
                 {
                     Hide(true);
                 }
-            }
-
-            if (evt.pointerId != PointerId.mousePointerId)
-            {
-                m_MenuContainer.panel.PreventCompatibilityMouseEvents(evt.pointerId);
             }
 
             evt.StopPropagation();

@@ -32,7 +32,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         int clickCount { get; }
         /// <summary>
-        /// Integer that indicates which mouse button is pressed: 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// A value that indicates which mouse button was pressed or released (if any) to cause this event:
+        /// 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// A negative value indicates that no mouse button changed state during this event.
         /// </summary>
         int button { get; }
         /// <summary>
@@ -98,7 +100,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public int clickCount { get; protected set; }
         /// <summary>
-        /// Integer that indicates which mouse button is pressed: 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// A value that indicates which mouse button was pressed or released (if any) to cause this event:
+        /// 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// A negative value indicates that no mouse button changed state during this event.
         /// </summary>
         public int button { get; protected set; }
         /// <summary>
@@ -174,7 +178,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
             modifiers = EventModifiers.None;
             mousePosition = Vector2.zero;
             localMousePosition = Vector2.zero;
@@ -223,8 +227,8 @@ namespace UnityEngine.UIElements
             EventBase pointerEvent = ((IMouseEventInternal)this).sourcePointerEvent as EventBase;
             if (pointerEvent != null)
             {
-                // pointerEvent processing should be done and it should not have returned to the pool.
-                Debug.Assert(pointerEvent.processed);
+                // pointerEvent processing should not be done and it should not have returned to the pool.
+                Debug.Assert(!pointerEvent.processed, "!pointerEvent.processed");
 
                 (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
 
@@ -236,10 +240,6 @@ namespace UnityEngine.UIElements
                 if (isImmediatePropagationStopped)
                 {
                     pointerEvent.StopImmediatePropagation();
-                }
-                if (isDefaultPrevented)
-                {
-                    pointerEvent.PreventDefault();
                 }
                 pointerEvent.processedByFocusController |= processedByFocusController;
             }
@@ -398,6 +398,7 @@ namespace UnityEngine.UIElements
     /// and can be cancelled.
     /// Disabled elements won't receive this event by default.
     /// </remarks>
+    [EventCategory(EventCategory.PointerDown)]
     public class MouseDownEvent : MouseEventBase<MouseDownEvent>
     {
         static MouseDownEvent()
@@ -416,7 +417,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
         }
 
@@ -489,7 +490,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
         }
 
@@ -574,7 +575,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             // Trickles down, bubbles up and can be cancelled. Disabled elements receive this event by default.
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
         }
 
         /// <summary>
@@ -685,8 +686,8 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
-                EventPropagation.SkipDisabledElements;
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
+                          EventPropagation.SkipDisabledElements;
             delta = Vector3.zero;
         }
 
@@ -707,7 +708,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// Event sent when the mouse pointer enters an element or one of its descendent elements.
-    /// The event is cancellable, it trickles down, and it does not bubble up.
+    /// The event trickles down but does not bubble up.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public class MouseEnterEvent : MouseEventBase<MouseEnterEvent>
@@ -728,7 +729,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown | EventPropagation.Cancellable | EventPropagation.IgnoreCompositeRoots;
+            propagation = EventPropagation.TricklesDown;
         }
 
         /// <summary>
@@ -747,7 +748,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// Event sent when the mouse pointer exits an element and all its descendent elements.
-    /// The event is cancellable, it trickles down, and it does not bubble up.
+    /// The event trickles down but does not bubble up.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public class MouseLeaveEvent : MouseEventBase<MouseLeaveEvent>
@@ -768,7 +769,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown | EventPropagation.Cancellable | EventPropagation.IgnoreCompositeRoots;
+            propagation = EventPropagation.TricklesDown;
         }
 
         /// <summary>
@@ -787,7 +788,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// Event sent when the mouse pointer enters an element.
-    /// The event trickles down, it bubbles up, and it is cancellable.
+    /// The event trickles down and bubbles up.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public class MouseOverEvent : MouseEventBase<MouseOverEvent>
@@ -801,11 +802,20 @@ namespace UnityEngine.UIElements
         {
             EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
         }
+
+        protected internal override void PreDispatch(IPanel panel)
+        {
+            base.PreDispatch(panel);
+
+            // Updating cursor has to happen on MouseOver/Out because exiting a child does not send a mouse enter to the parent.
+            // We can use MouseEvents instead of PointerEvents since only the mouse has a displayed cursor.
+            elementTarget.UpdateCursorStyle(eventTypeId);
+        }
     }
 
     /// <summary>
     /// Event sent when the mouse pointer exits an element.
-    /// The event trickles down, it bubbles up, and it is cancellable.
+    /// The event trickles down and bubbles up.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public class MouseOutEvent : MouseEventBase<MouseOutEvent>
@@ -819,11 +829,20 @@ namespace UnityEngine.UIElements
         {
             EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
         }
+
+        protected internal override void PreDispatch(IPanel panel)
+        {
+            base.PreDispatch(panel);
+
+            // Updating cursor has to happen on MouseOver/Out because exiting a child does not send a mouse enter to the parent.
+            // We can use MouseEvents instead of PointerEvents since only the mouse has a displayed cursor.
+            elementTarget.UpdateCursorStyle(eventTypeId);
+        }
     }
 
     /// <summary>
     /// Event sent when the mouse pointer enters a window.
-    /// The event is cancellable, it does not trickle down, and it bubbles up.
+    /// The event bubbles up but does not trickle down.
     /// </summary>
     [EventCategory(EventCategory.EnterLeaveWindow)]
     public class MouseEnterWindowEvent : MouseEventBase<MouseEnterWindowEvent>
@@ -844,7 +863,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Cancellable | EventPropagation.Bubbles;
+            propagation = EventPropagation.Bubbles;
         }
 
         /// <summary>
@@ -876,7 +895,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// Event sent when the mouse pointer exits a window.
-    /// The event is cancellable, it does not trickle down, and it bubbles up.
+    /// The event bubbles up but does not trickle down.
     /// </summary>
     [EventCategory(EventCategory.EnterLeaveWindow)]
     public class MouseLeaveWindowEvent : MouseEventBase<MouseLeaveWindowEvent>
@@ -897,7 +916,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Cancellable | EventPropagation.Bubbles;
+            propagation = EventPropagation.Bubbles;
         }
 
         /// <summary>
@@ -951,7 +970,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// The event sent when a contextual menu requires menu items.
-    /// The event trickles down, it bubbles up, and it is cancellable.
+    /// The event trickles down and bubbles up.
     /// </summary>
     public class ContextualMenuPopulateEvent : MouseEventBase<ContextualMenuPopulateEvent>
     {
@@ -987,8 +1006,7 @@ namespace UnityEngine.UIElements
                 triggerEvent.Acquire();
                 e.triggerEvent = triggerEvent;
 
-                IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
-                if (mouseEvent != null)
+                if (triggerEvent is IMouseEvent mouseEvent)
                 {
                     e.modifiers = mouseEvent.modifiers;
                     e.mousePosition = mouseEvent.mousePosition;
@@ -997,32 +1015,23 @@ namespace UnityEngine.UIElements
                     e.button = mouseEvent.button;
                     e.clickCount = mouseEvent.clickCount;
                 }
-                else
+                else if (triggerEvent is IPointerEvent pointerEvent)
                 {
-                    IPointerEvent pointerEvent = triggerEvent as IPointerEvent;
-                    if (pointerEvent != null)
-                    {
-                        e.modifiers = pointerEvent.modifiers;
-                        e.mousePosition = pointerEvent.position;
-                        e.localMousePosition = pointerEvent.position;
-                        e.mouseDelta = pointerEvent.deltaPosition;
-                        e.button = pointerEvent.button;
-                        e.clickCount = pointerEvent.clickCount;
-                    }
+                    e.modifiers = pointerEvent.modifiers;
+                    e.mousePosition = pointerEvent.position;
+                    e.localMousePosition = pointerEvent.position;
+                    e.mouseDelta = pointerEvent.deltaPosition;
+                    e.button = pointerEvent.button;
+                    e.clickCount = pointerEvent.clickCount;
                 }
 
-                IMouseEventInternal mouseEventInternal = triggerEvent as IMouseEventInternal;
-                if (mouseEventInternal != null)
+                if (triggerEvent is IMouseEventInternal mouseEventInternal)
                 {
                     ((IMouseEventInternal)e).triggeredByOS = mouseEventInternal.triggeredByOS;
                 }
-                else
+                else if (triggerEvent is IPointerEventInternal pointerEventInternal)
                 {
-                    IPointerEventInternal pointerEventInternal = triggerEvent as IPointerEventInternal;
-                    if (pointerEventInternal != null)
-                    {
-                        ((IMouseEventInternal)e).triggeredByOS = pointerEventInternal.triggeredByOS;
-                    }
+                    ((IMouseEventInternal) e).triggeredByOS = pointerEventInternal.triggeredByOS;
                 }
             }
 
@@ -1064,7 +1073,9 @@ namespace UnityEngine.UIElements
 
         protected internal override void PostDispatch(IPanel panel)
         {
-            if (!isDefaultPrevented && m_ContextualMenuManager != null)
+            // StopPropagation will prevent more items from being added to the menu but will not to prevent the menu
+            // from showing. To achieve that result, call menu.Clear() and then StopImmediatePropagation().
+            if (menu.Count > 0 && m_ContextualMenuManager != null)
             {
                 menu.PrepareForDisplay(triggerEvent);
                 m_ContextualMenuManager.DoDisplayMenu(menu, triggerEvent);

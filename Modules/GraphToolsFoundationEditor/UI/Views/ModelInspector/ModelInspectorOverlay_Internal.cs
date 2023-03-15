@@ -17,6 +17,8 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         public const string idValue = "gtf-inspector";
 
+        ModelInspectorView m_ModelInspectorView;
+
         public ModelInspectorOverlay_Internal()
         {
             minSize = new Vector2(100, 100);
@@ -29,12 +31,13 @@ namespace Unity.GraphToolsFoundation.Editor
             var window = containerWindow as GraphViewEditorWindow;
             if (window != null)
             {
-                var content = window.CreateModelInspectorView();
-                if (content != null)
+                m_ModelInspectorView?.Dispose();
+                m_ModelInspectorView = window.CreateModelInspectorView();
+                if (m_ModelInspectorView != null)
                 {
-                    content.AddToClassList("unity-theme-env-variables");
-                    content.RegisterCallback<TooltipEvent>((e) => e.StopPropagation());
-                    return content;
+                    m_ModelInspectorView.AddToClassList("unity-theme-env-variables");
+                    m_ModelInspectorView.RegisterCallback<TooltipEvent>((e) => e.StopPropagation());
+                    return m_ModelInspectorView;
                 }
             }
 
@@ -42,6 +45,14 @@ namespace Unity.GraphToolsFoundation.Editor
             placeholder.AddToClassList(ModelInspectorView.ussClassName);
             placeholder.AddStylesheet_Internal("ModelInspector.uss");
             return placeholder;
+        }
+
+        /// <inheritdoc />
+        public override void OnWillBeDestroyed()
+        {
+            base.OnWillBeDestroyed();
+            m_ModelInspectorView?.Dispose();
+            m_ModelInspectorView = null;
         }
     }
 }

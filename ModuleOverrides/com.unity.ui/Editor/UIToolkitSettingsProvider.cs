@@ -12,6 +12,7 @@ namespace UnityEditor.UIElements
         const string k_DisableMouseWheelZoomingToggleName = "disable-mouse-wheel-zooming";
         const string k_EnableAbsolutePositionPlacementToggleName = "enable-absolute-position-placement";
         const string k_EnableEventDebugger = "enable-event-debugger";
+        const string k_EnableLayoutDebugger = "enable-layout-debugger";
 
         private VisualElement m_HelpVisualTree;
         private VisualTreeAsset m_UIToolkitTemplate;
@@ -90,6 +91,13 @@ namespace UnityEditor.UIElements
             eventDebuggerToggle.RegisterValueChangedCallback(e =>
             {
                 UIToolkitProjectSettings.enableEventDebugger = e.newValue;
+            });
+
+            var layoutDebuggerToggle = rootElement.Q<Toggle>(k_EnableLayoutDebugger);
+            layoutDebuggerToggle.SetValueWithoutNotify(UIToolkitProjectSettings.enableLayoutDebugger);
+            layoutDebuggerToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.enableLayoutDebugger = e.newValue;
             });
 
             base.OnActivate(searchContext, rootElement);

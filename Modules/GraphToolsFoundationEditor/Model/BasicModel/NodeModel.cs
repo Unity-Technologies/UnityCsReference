@@ -147,7 +147,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Changes the node mode.
         /// </summary>
         /// <param name="newModeIndex">The index of the mode to change to.</param>
-        public void ChangeMode(int newModeIndex)
+        public virtual void ChangeMode(int newModeIndex)
         {
             if (Modes.ElementAtOrDefault(newModeIndex) == null)
                 return;
@@ -240,6 +240,9 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             OnPreDefineNode();
 
+            m_NodeOptions.Clear();
+            DefineNodeOptions();
+
             m_PreviousInputs = m_InputsById;
             m_PreviousOutputs = m_OutputsById;
             m_InputsById = new OrderedPorts(m_InputsById?.Count ?? 0);
@@ -267,6 +270,13 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             base.OnCreateNode();
             DefineNode();
+        }
+
+        /// <summary>
+        /// Called by <see cref="DefineNode"/>. Override this function to add node options by using <see cref="InputOutputPortsNodeModel.AddNodeOption"/>.
+        /// </summary>
+        protected virtual void DefineNodeOptions()
+        {
         }
 
         /// <inheritdoc />
@@ -317,7 +327,7 @@ namespace Unity.GraphToolsFoundation.Editor
             // remove input constants that aren't used
             var idsToDeletes = m_InputConstantsById
                 .Select(kv => kv.Key)
-                .Where(id => !m_InputsById.ContainsKey(id)).ToList();
+                .Where(id => !m_InputsById.ContainsKey(id) && m_NodeOptions.All(o => o.PortModel.UniqueName != id)).ToList();
             foreach (var id in idsToDeletes)
             {
                 m_InputConstantsById.Remove(id);
@@ -327,7 +337,9 @@ namespace Unity.GraphToolsFoundation.Editor
         PortModel ReuseOrCreatePortModel(PortModel model, IReadOnlyDictionary<string, PortModel> previousPorts, OrderedPorts newPorts)
         {
             // reuse existing ports when ids match, otherwise add port
-            if (previousPorts != null && previousPorts.TryGetValue(model.UniqueName, out var portModelToAdd))
+            PortModel portModelToAdd;
+            if (previousPorts != null && previousPorts.TryGetValue(model.UniqueName, out portModelToAdd)
+                || GraphModel != null && GraphModel.TryGetModelFromGuid(model.Guid, out portModelToAdd))
             {
                 if (portModelToAdd is IHasTitle toAddHasTitle && model is IHasTitle hasTitle)
                 {
@@ -359,11 +371,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="dataType">The type of data the new port to create handles.</param>
         /// <param name="portId">The ID of the port to create.</param>
         /// <param name="options">The options of the port model to create.</param>
+        /// <param name="attributes">The attributes used to convey information about the port, if any.</param>
         /// <returns>The newly created port model.</returns>
         protected virtual PortModel CreatePort(PortDirection direction, PortOrientation orientation, string portName, PortType portType,
-            TypeHandle dataType, string portId, PortModelOptions options)
+            TypeHandle dataType, string portId, PortModelOptions options, Attribute[] attributes)
         {
-            return new PortModel(this, direction, orientation, portName, portType, dataType, portId, options);
+            return new PortModel(this, direction, orientation, portName, portType, dataType, portId, options, attributes);
         }
 
         /// <summary>
@@ -382,21 +395,50 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         public override PortModel AddInputPort(string portName, PortType portType, TypeHandle dataType,
             string portId = null, PortOrientation orientation = PortOrientation.Horizontal,
-            PortModelOptions options = PortModelOptions.Default, Action<Constant> initializationCallback = null)
+            PortModelOptions options = PortModelOptions.Default, Action<Constant> initializationCallback = null,
+            Attribute[] attributes = null)
         {
-            var portModel = CreatePort(PortDirection.Input, orientation, portName, portType, dataType, portId, options);
+            var portModel = CreatePort(PortDirection.Input, orientation, portName, portType, dataType, portId, options, attributes);
             portModel = ReuseOrCreatePortModel(portModel, m_PreviousInputs, m_InputsById);
             UpdateConstantForInput(portModel, initializationCallback);
             return portModel;
         }
 
         /// <inheritdoc />
+        public override PortModel AddNoConnectorInputPort(string portName, PortType portType, TypeHandle dataType,
+            string portId = null, PortOrientation orientation = PortOrientation.Horizontal,
+            PortModelOptions options = PortModelOptions.Default, Action<Constant> initializationCallback = null,
+            Attribute[] attributes = null)
+        {
+            var portModel = AddInputPort(portName, portType, dataType, portId, orientation, options, initializationCallback, attributes);
+            portModel.Capacity = PortCapacity.None;
+            return portModel;
+        }
+
+        /// <inheritdoc />
         public override PortModel AddOutputPort(string portName, PortType portType, TypeHandle dataType,
             string portId = null, PortOrientation orientation = PortOrientation.Horizontal,
-            PortModelOptions options = PortModelOptions.Default)
+            PortModelOptions options = PortModelOptions.Default, Attribute[] attributes = null)
         {
-            var portModel = CreatePort(PortDirection.Output, orientation, portName, portType, dataType, portId, options);
+            var portModel = CreatePort(PortDirection.Output, orientation, portName, portType, dataType, portId, options, attributes);
             return ReuseOrCreatePortModel(portModel, m_PreviousOutputs, m_OutputsById);
+        }
+
+        /// <inheritdoc />
+        public override void OnPortUniqueNameChanged(string oldUniqueName, string newUniqueName)
+        {
+            if (!m_InputConstantsById.TryGetValue(oldUniqueName, out var constant) || !m_InputsById.TryGetValue(oldUniqueName, out var portModel))
+                return;
+
+            m_InputsById.Remove(oldUniqueName);
+            m_InputsById.Add(portModel);
+
+            m_InputConstantsById.Remove(oldUniqueName);
+
+            if (!m_InputConstantsById.ContainsKey(newUniqueName))
+                m_InputConstantsById.Add(newUniqueName, constant);
+
+            GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Unspecified);
         }
 
         /// <summary>

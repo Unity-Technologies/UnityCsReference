@@ -467,7 +467,6 @@ namespace Unity.UI.Builder
                 }
 
                 e.StopImmediatePropagation();
-                e.PreventDefault();
             }
             else if (!IsNavigationEvent(e))
             {
@@ -519,10 +518,9 @@ namespace Unity.UI.Builder
             });
             listView.focusable = false;
             listView.delegatesFocus = false;
-            this.RegisterCallback<PointerDownEvent>(e =>
+            RegisterCallback<PointerDownEvent>(e =>
             {
                 e.StopImmediatePropagation();
-                e.PreventDefault();
             });
             style.minHeight = 0;
         }

@@ -6,7 +6,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NAVIGATION_HEIGHTMESH_RUNTIME_SUPPORT;ENABLE_NAVIGATION_PACKAGE_DEBUG_VISUALIZATION;ENABLE_NAVIGATION_UI_REQUIRES_PACKAGE;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API;USE_ITEM_LIBRARY_MODULE;USE_PROPERTY_DATABASE;USE_QUERY_BUILDER;USE_SEARCH_ENGINE_API;USE_SEARCH_MODULE</DefineConstants>
+    <DefineConstants>$(DefineConstants);COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ACCELERATOR_CLIENT_DEBUGGING;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CLUSTERINPUT;ENABLE_CLUSTER_SYNC;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_EDITOR_GAME_SERVICES;ENABLE_EDITOR_HUB_LICENSE;ENABLE_ETC_COMPRESSION;ENABLE_EVENT_QUEUE;ENABLE_GAMECENTER_API;ENABLE_GENERATE_NATIVE_PLUGINS_FOR_ASSEMBLIES_API;ENABLE_HOLOLENS_MODULE_API;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_AUDIO_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MANAGED_UNITYTLS;ENABLE_MARSHALLING_TESTS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_NVIDIA;ENABLE_PHYSICS;ENABLE_RUNTIME_GI;ENABLE_SCRIPTING_GC_WBARRIERS;ENABLE_TEXTURE_STREAMING;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITY_COLLECTIONS_CHECKS;ENABLE_UNITY_GAME_SERVICES_ANALYTICS_SUPPORT;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIRTUALTEXTURING;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WEBSOCKET_HOST;ENABLE_WWW;INCLUDE_DYNAMIC_GI;PLATFORM_SUPPORTS_GAMEPAD_AUDIO;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TEXTCORE_1_0_OR_NEWER;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_CAN_SHOW_SPLASH_SCREEN;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_EDITOR_LINUX;UNITY_GAMECORE_API;UNITY_GAMECORE_SCARLETT_API;UNITY_GAMECORE_XBOXONE_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS5_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_TINYPROFILING_INTERNAL;UNITY_TVOS_API;UNITY_UNITYADS_API;UNITY_WEBGL_API;USE_ITEM_LIBRARY_MODULE;USE_PROPERTY_DATABASE;USE_QUERY_BUILDER;USE_SEARCH_ENGINE_API;USE_SEARCH_MODULE</DefineConstants>
     <LangVersion>latest</LangVersion>
     <NoWarn>1701;0169;0649;0626</NoWarn>
   </PropertyGroup>
@@ -3989,6 +3989,15 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\LayoutPanelDebuggerImpl.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\LayoutPanelDebuggerImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebugger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebuggerWindow.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebuggerWindow.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\OverlayPainter.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\OverlayPainter.cs</Link>
     </Compile>
@@ -4748,6 +4757,9 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Algorithms\NodeWireDiff.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\Algorithms\NodeWireDiff.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Attributes\EnumAttribute.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\Attributes\EnumAttribute.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Attributes\InspectorUsePropertyAttribute.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\Attributes\InspectorUsePropertyAttribute.cs</Link>
     </Compile>
@@ -4787,6 +4799,9 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\ConstantNodeModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\ConstantNodeModel.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\AnimationCurveConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\AnimationCurveConstant.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\AnyConstant.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\AnyConstant.cs</Link>
     </Compile>
@@ -4810,6 +4825,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\FloatConstant.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\FloatConstant.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\GradientConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\GradientConstant.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\IntConstant.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\IntConstant.cs</Link>
@@ -4882,6 +4900,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\NodeModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\NodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\NodeOption.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\NodeOption.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\OrderedPorts.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\OrderedPorts.cs</Link>
@@ -5456,6 +5477,9 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeModeDropDownPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeModeDropDownPart.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeTitlePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeTitlePart.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PlacematTitlePart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PlacematTitlePart.cs</Link>
     </Compile>
@@ -5587,6 +5611,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\ModelInspector.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\ModelInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\NodeOptionsInspector.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\NodeOptionsInspector.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\NodePortsInspector.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Inspector\NodePortsInspector.cs</Link>
@@ -6998,9 +7025,6 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\CacheRootConfig.cs">
       <Link>Modules\PackageManager\Editor\Managed\CacheRootConfig.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\CachedPackageInfo.cs">
-      <Link>Modules\PackageManager\Editor\Managed\CachedPackageInfo.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Client.cs">
       <Link>Modules\PackageManager\Editor\Managed\Client.cs</Link>
     </Compile>
@@ -7108,9 +7132,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetCacheRootRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\GetCacheRootRequest.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetCachedPackagesRequest.cs">
-      <Link>Modules\PackageManager\Editor\Managed\Requests\GetCachedPackagesRequest.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs</Link>
@@ -8516,26 +8537,26 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\AssemblyInfo.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\AssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\Block.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\Block.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\Block.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\Block.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockLinkOverride.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\BlockLinkOverride.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockLinkOverride.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\BlockLinkOverride.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockSequenceElement.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\BlockSequenceElement.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockSequenceElement.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\BlockSequenceElement.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockShader.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\BlockShader.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockShader.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\BlockShader.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockShaderInterface.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\BlockShaderInterface.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockShaderInterface.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\BlockShaderInterface.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockVariable.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\BlockVariable.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockVariable.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\BlockVariable.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CopyRule.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\CopyRule.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CopyRule.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\CopyRule.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CustomizationPoint.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\CustomizationPoint.bindings.cs</Link>
@@ -8543,8 +8564,8 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CustomizationPointImplementation.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\CustomizationPointImplementation.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DataType.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\DataType.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DataType.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\DataType.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DataTypeStatic.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\DataTypeStatic.cs</Link>
@@ -8552,8 +8573,8 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DefaultContainer.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\DefaultContainer.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DefineDescriptor.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\DefineDescriptor.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DefineDescriptor.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\DefineDescriptor.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\EqualityChecks.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\EqualityChecks.cs</Link>
@@ -8576,35 +8597,35 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ITemplateProvider.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ITemplateProvider.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\IncludeDescriptor.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\IncludeDescriptor.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\IncludeDescriptor.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\IncludeDescriptor.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\InterfaceRegistrationStatement.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\InterfaceRegistrationStatement.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\InterfaceRegistrationStatement.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\InterfaceRegistrationStatement.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\InternalType.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\InternalType.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\KeywordDescriptor.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\KeywordDescriptor.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\KeywordDescriptor.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\KeywordDescriptor.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PackageRequirement.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\PackageRequirement.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PackageRequirement.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\PackageRequirement.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PassStageType.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\PassStageType.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PassStageType.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\PassStageType.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PragmaDescriptor.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\PragmaDescriptor.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PragmaDescriptor.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\PragmaDescriptor.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PublicType.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\PublicType.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\RegisterTemplatesWithInterface.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\RegisterTemplatesWithInterface.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\RegisterTemplatesWithInterface.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\RegisterTemplatesWithInterface.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\RenderStateDescriptor.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\RenderStateDescriptor.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\RenderStateDescriptor.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\RenderStateDescriptor.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderAttribute.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ShaderAttribute.bindings.cs</Link>
@@ -8615,11 +8636,11 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderContainer.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ShaderContainer.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderCustomEditor.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\ShaderCustomEditor.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderCustomEditor.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\ShaderCustomEditor.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderDependency.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\ShaderDependency.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderDependency.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\ShaderDependency.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderFunction.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ShaderFunction.bindings.cs</Link>
@@ -8627,23 +8648,23 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderType.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ShaderType.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\StageDescription.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\StageDescription.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\StageDescription.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\StageDescription.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\StructField.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\StructField.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\TagDescriptor.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\TagDescriptor.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\TagDescriptor.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\TagDescriptor.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\Template.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\Template.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\Template.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\Template.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\TemplateInstance.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\TemplateInstance.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\TemplatePass.binding.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\TemplatePass.binding.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\TemplatePass.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\TemplatePass.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\Utilities.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\Utilities.cs</Link>

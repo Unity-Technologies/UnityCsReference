@@ -206,7 +206,6 @@ namespace UnityEditor.Search
 
             m_GridView.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove);
             evt.StopImmediatePropagation();
-            evt.PreventDefault();
         }
 
         private void WrapNextSelectedItem(int currentIndex, int itemCount, ref int nextSelectedIndex)

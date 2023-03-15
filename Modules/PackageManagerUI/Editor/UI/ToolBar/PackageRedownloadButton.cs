@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var canDownload = m_OperationDispatcher.Download(version.package);
             if (canDownload)
-                PackageManagerWindowAnalytics.SendEvent("startReDownload", version.package.uniqueId);
+                PackageManagerWindowAnalytics.SendEvent("startReDownload", version);
             return canDownload;
         }
 

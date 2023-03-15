@@ -269,6 +269,9 @@ namespace UnityEditor
         public static GUIStyle helpBox { get { return s_Current.m_HelpBox; } }
         private GUIStyle m_HelpBox;
 
+        internal static GUIStyle helpBoxLabel { get { return s_Current.m_HelpBoxLabel; } }
+        private GUIStyle m_HelpBoxLabel;
+
         public static GUIStyle toolbarSearchField { get { return s_Current.m_ToolbarSearchField; } }
         private GUIStyle m_ToolbarSearchField;
 
@@ -567,6 +570,20 @@ namespace UnityEditor
                 hover = { textColor = Color.grey },
                 active = { textColor = Color.grey},
                 focused = { textColor = Color.grey }
+            };
+
+            m_HelpBoxLabel = new GUIStyle(m_HelpBox)
+            {
+                name = "HelpBoxLabel",
+                normal = { background = null },
+                hover = { background = null },
+                active = { background = null },
+                focused = { background = null },
+
+                onNormal = { background = null },
+                onHover = { background = null },
+                onActive = { background = null },
+                onFocused = { background = null }
             };
         }
 

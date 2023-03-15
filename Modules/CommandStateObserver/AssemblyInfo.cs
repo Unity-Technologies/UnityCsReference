@@ -16,6 +16,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("SimpleMathBook")]
 [assembly: InternalsVisibleTo("VerticalFlow")]
 [assembly: InternalsVisibleTo("TestSample")]
+[assembly: InternalsVisibleTo("SharedSample")]
 
 // Animation (@francisb)
 [assembly: InternalsVisibleTo("Unity.Animation.StateMachine.Tests")]

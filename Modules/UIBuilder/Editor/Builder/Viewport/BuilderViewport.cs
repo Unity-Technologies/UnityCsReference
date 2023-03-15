@@ -238,9 +238,9 @@ namespace Unity.UI.Builder
         }
 
         [EventInterest(EventInterestOptions.Inherit)]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (pane == null)
                 return;
@@ -300,7 +300,7 @@ namespace Unity.UI.Builder
         void OnPick(MouseDownEvent evt)
         {
             // Do not prevent zoom and pan
-            if (evt.button == 2 || (evt.ctrlKey && evt.altKey || (evt.button == (int)MouseButton.RightMouse && evt.altKey)))
+            if (evt.button == 2 || (evt.actionKey && evt.altKey || (evt.button == (int)MouseButton.RightMouse && evt.altKey)))
                 return;
 
             m_PickedElements.Clear();

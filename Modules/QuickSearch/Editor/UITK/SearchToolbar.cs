@@ -332,9 +332,6 @@ namespace UnityEditor.Search
 
         private void OnQueryChanged(ChangeEvent<string> evt)
         {
-            if (m_SearchTextInput != evt.target)
-                return;
-
             m_ViewModel.SetSearchText(evt.newValue, TextCursorPlacement.None);
             m_ViewModel.SetSelection();
             UpdatePlaceholders();
@@ -462,7 +459,7 @@ namespace UnityEditor.Search
 
             te.selection.selectAllOnFocus = false;
             te.focusController.DoFocusChange(tef);
-            te.editingManipulator.ExecuteDefaultActionAtTarget(evt);
+            te.editingManipulator.HandleEventBubbleUp(evt);
             return evt.isPropagationStopped;
         }
 
@@ -475,7 +472,6 @@ namespace UnityEditor.Search
                 UpdateInternalTextData();
                 selectingUtilities.MoveRight();
                 evt.StopPropagation();
-                evt.PreventDefault();
             }
         }
 
@@ -485,7 +481,6 @@ namespace UnityEditor.Search
             {
                 UpdateSearchText(undoText, cursorPos);
                 evt.StopImmediatePropagation();
-                evt.PreventDefault();
             }
         }
 

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 
@@ -137,8 +138,9 @@ namespace UnityEngine.UIElements
         /// </remarks>
         bool isPrimary { get; }
         /// <summary>
-        /// Gets a value that indicates which mouse button was pressed: 0 is the left button, 1 is the right button, 2 is the
-        /// middle button.
+        /// Gets a value that indicates which mouse button was pressed or released (if any) to cause this event:
+        /// 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// A negative value indicates that no mouse button changed state during this event.
         /// </summary>
         int button { get; }
         /// <summary>
@@ -262,6 +264,7 @@ namespace UnityEngine.UIElements
     internal interface IPointerEventInternal
     {
         bool triggeredByOS { get; set; }
+        IMouseEvent compatibilityMouseEvent { get; set; }
     }
 
     internal static class PointerEventHelper
@@ -275,6 +278,12 @@ namespace UnityEngine.UIElements
                 return PointerUpEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers);
             return PointerMoveEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers);
         }
+
+        public static bool DiscardMouseEventsOnMobile<TEvent>(this PointerEventBase<TEvent> evt)
+            where TEvent : PointerEventBase<TEvent>, new()
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -284,7 +293,7 @@ namespace UnityEngine.UIElements
     /// Pointer events are sent by the mouse, touchscreen, or digital pens.
     ///
     /// By default, pointer events trickle down the hierarchy of VisualElements, and then bubble up
-    /// back to the root. They are cancellable at any stage of the propagation.
+    /// back to the root.
     ///
     /// A cycle of pointer events occurs as follows:
     ///   - The user presses a mouse button, touches the screen, or otherwise causes a <see cref="PointerDownEvent"/> to be sent.
@@ -336,7 +345,9 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public bool isPrimary { get; protected set; }
         /// <summary>
-        /// Gets a value that indicates which mouse button was pressed: 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// Gets a value that indicates which mouse button was pressed or released (if any) to cause this event:
+        /// 0 is the left button, 1 is the right button, 2 is the middle button.
+        /// A negative value indicates that no mouse button changed state during this event.
         /// </summary>
         public int button { get; protected set; }
         /// <summary>
@@ -541,6 +552,7 @@ namespace UnityEngine.UIElements
         }
 
         bool IPointerEventInternal.triggeredByOS { get; set; }
+        IMouseEvent IPointerEventInternal.compatibilityMouseEvent { get; set; }
 
         /// <summary>
         /// Resets the event members to their initial values.
@@ -553,7 +565,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
 
             pointerId = 0;
             pointerType = PointerType.unknown;
@@ -579,6 +591,12 @@ namespace UnityEngine.UIElements
             modifiers = EventModifiers.None;
 
             ((IPointerEventInternal)this).triggeredByOS = false;
+
+            if (((IPointerEventInternal) this).compatibilityMouseEvent != null)
+            {
+                ((IDisposable) ((IPointerEventInternal) this).compatibilityMouseEvent).Dispose();
+                ((IPointerEventInternal) this).compatibilityMouseEvent = null;
+            }
         }
 
         /// <summary>
@@ -1003,6 +1021,8 @@ namespace UnityEngine.UIElements
             {
                 PointerDeviceState.SavePointerPosition(pointerId, position, panel, panel.contextType);
             }
+
+            ((EventBase) ((IPointerEventInternal) this).compatibilityMouseEvent)?.PreDispatch(panel);
         }
 
         protected internal override void PostDispatch(IPanel panel)
@@ -1017,6 +1037,8 @@ namespace UnityEngine.UIElements
             {
                 (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
             }
+
+            ((EventBase) ((IPointerEventInternal) this).compatibilityMouseEvent)?.PostDispatch(panel);
 
             panel.dispatcher.m_ClickDetector.ProcessEvent(this);
 
@@ -1047,8 +1069,11 @@ namespace UnityEngine.UIElements
     ///
     /// See <see cref="UIElements.PointerEventBase{T}"/> to see how PointerDownEvent relates to other pointer events.
     /// </remarks>
+    [EventCategory(EventCategory.PointerDown)]
     public sealed class PointerDownEvent : PointerEventBase<PointerDownEvent>
     {
+        private bool m_PreventCompatibilityMouseEventsOnPropagationStopped = true;
+
         static PointerDownEvent()
         {
             SetCreateFunction(() => new PointerDownEvent());
@@ -1065,9 +1090,10 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
-                EventPropagation.SkipDisabledElements;
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
+                          EventPropagation.SkipDisabledElements;
             ((IPointerEventInternal)this).triggeredByOS = true;
+            m_PreventCompatibilityMouseEventsOnPropagationStopped = true;
         }
 
         /// <summary>
@@ -1078,25 +1104,31 @@ namespace UnityEngine.UIElements
             LocalInit();
         }
 
+        protected internal override void PreDispatch(IPanel panel)
+        {
+            base.PreDispatch(panel);
+
+            if (panel.ShouldSendCompatibilityMouseEvents(this))
+            {
+                ((IPointerEventInternal) this).compatibilityMouseEvent = MouseDownEvent.GetPooled(this);
+            }
+        }
+
         protected internal override void PostDispatch(IPanel panel)
         {
-            if (!isDefaultPrevented)
-            {
-                if (panel.ShouldSendCompatibilityMouseEvents(this))
-                {
-                    using (var evt = MouseDownEvent.GetPooled(this))
-                    {
-                        evt.elementTarget = elementTarget;
-                        elementTarget.SendEvent(evt);
-                    }
-                }
-            }
-            else
+            if (m_PreventCompatibilityMouseEventsOnPropagationStopped && isPropagationStopped)
             {
                 panel.PreventCompatibilityMouseEvents(pointerId);
             }
 
+            panel.focusController.SwitchFocusOnEvent(panel.focusController.GetLeafFocusedElement(), this);
+
             base.PostDispatch(panel);
+        }
+
+        internal void DontPreventCompatibilityMouseEventsOnPropagationStopped()
+        {
+            m_PreventCompatibilityMouseEventsOnPropagationStopped = false;
         }
     }
 
@@ -1126,6 +1158,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal bool isHandledByDraggable { get; set; }
 
+        internal bool isPointerUpDown => button >= 0;
+        internal bool isPointerDown => button >= 0 && 0 != (pressedButtons & (1 << button));
+        internal bool isPointerUp => button >= 0 && 0 == (pressedButtons & (1 << button));
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -1137,7 +1173,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
             ((IPointerEventInternal)this).triggeredByOS = true;
             isHandledByDraggable = false;
         }
@@ -1150,37 +1186,25 @@ namespace UnityEngine.UIElements
             LocalInit();
         }
 
-        protected internal override void PostDispatch(IPanel panel)
+        protected internal override void PreDispatch(IPanel panel)
         {
+            base.PreDispatch(panel);
+
             if (panel.ShouldSendCompatibilityMouseEvents(this))
             {
                 if (imguiEvent != null && imguiEvent.rawType == EventType.MouseDown)
                 {
-                    using (var evt = MouseDownEvent.GetPooled(this))
-                    {
-                        evt.elementTarget = elementTarget;
-                        elementTarget.SendEvent(evt);
-                    }
+                    ((IPointerEventInternal) this).compatibilityMouseEvent = MouseDownEvent.GetPooled(this);
                 }
                 else if (imguiEvent != null && imguiEvent.rawType == EventType.MouseUp)
                 {
-                    using (var evt = MouseUpEvent.GetPooled(this))
-                    {
-                        evt.elementTarget = elementTarget;
-                        elementTarget.SendEvent(evt);
-                    }
+                    ((IPointerEventInternal) this).compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
                 }
                 else
                 {
-                    using (var evt = MouseMoveEvent.GetPooled(this))
-                    {
-                        evt.elementTarget = elementTarget;
-                        elementTarget.SendEvent(evt);
-                    }
+                    ((IPointerEventInternal) this).compatibilityMouseEvent = MouseMoveEvent.GetPooled(this);
                 }
             }
-
-            base.PostDispatch(panel);
         }
     }
 
@@ -1215,7 +1239,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
             ((IPointerEventInternal)this).triggeredByOS = true;
         }
 
@@ -1258,7 +1282,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
             ((IPointerEventInternal)this).triggeredByOS = true;
         }
@@ -1271,6 +1295,16 @@ namespace UnityEngine.UIElements
             LocalInit();
         }
 
+        protected internal override void PreDispatch(IPanel panel)
+        {
+            base.PreDispatch(panel);
+
+            if (panel.ShouldSendCompatibilityMouseEvents(this))
+            {
+                ((IPointerEventInternal) this).compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
+            }
+        }
+
         protected internal override void PostDispatch(IPanel panel)
         {
             if (PointerType.IsDirectManipulationDevice(pointerType))
@@ -1278,15 +1312,6 @@ namespace UnityEngine.UIElements
                 panel.ReleasePointer(pointerId);
                 BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
                 basePanel?.ClearCachedElementUnderPointer(pointerId, this);
-            }
-
-            if (panel.ShouldSendCompatibilityMouseEvents(this))
-            {
-                using (var evt = MouseUpEvent.GetPooled(this))
-                {
-                    evt.elementTarget = elementTarget;
-                    elementTarget.SendEvent(evt);
-                }
             }
 
             base.PostDispatch(panel);
@@ -1335,6 +1360,17 @@ namespace UnityEngine.UIElements
             LocalInit();
         }
 
+
+        protected internal override void PreDispatch(IPanel panel)
+        {
+            base.PreDispatch(panel);
+
+            if (panel.ShouldSendCompatibilityMouseEvents(this))
+            {
+                ((IPointerEventInternal) this).compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
+            }
+        }
+
         protected internal override void PostDispatch(IPanel panel)
         {
             if (PointerType.IsDirectManipulationDevice(pointerType))
@@ -1342,15 +1378,6 @@ namespace UnityEngine.UIElements
                 panel.ReleasePointer(pointerId);
                 BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
                 basePanel?.ClearCachedElementUnderPointer(pointerId, this);
-            }
-
-            if (panel.ShouldSendCompatibilityMouseEvents(this))
-            {
-                using (var evt = MouseUpEvent.GetPooled(this))
-                {
-                    evt.elementTarget = elementTarget;
-                    elementTarget.SendEvent(evt);
-                }
             }
 
             base.PostDispatch(panel);
@@ -1392,7 +1419,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
         }
 
@@ -1417,7 +1444,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// This event is sent when a pointer enters a VisualElement or one of its descendants.
-    /// The event is cancellable, it does not trickle down, and it does not bubble up.
+    /// The event does not trickle down and does not bubble up.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerEnterEvent : PointerEventBase<PointerEnterEvent>
@@ -1438,7 +1465,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown | EventPropagation.IgnoreCompositeRoots;
+            propagation = EventPropagation.TricklesDown;
         }
 
         /// <summary>
@@ -1453,11 +1480,19 @@ namespace UnityEngine.UIElements
         {
             EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
         }
+
+        protected internal override void PreDispatch(IPanel panel)
+        {
+            base.PreDispatch(panel);
+
+            elementTarget.containedPointerIds |= 1 << pointerId;
+            elementTarget.UpdateHoverPseudoState();
+        }
     }
 
     /// <summary>
     /// This event is sent when a pointer exits an element and all of its descendants.
-    /// The event is cancellable, it does not trickle down, and it does not bubble up.
+    /// The event does not trickle down and does not bubble up.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerLeaveEvent : PointerEventBase<PointerLeaveEvent>
@@ -1478,7 +1513,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown | EventPropagation.IgnoreCompositeRoots;
+            propagation = EventPropagation.TricklesDown;
         }
 
         /// <summary>
@@ -1493,11 +1528,19 @@ namespace UnityEngine.UIElements
         {
             EventDispatchUtilities.DispatchToAssignedTarget(this, panel);
         }
+
+        protected internal override void PreDispatch(IPanel panel)
+        {
+            base.PreDispatch(panel);
+
+            elementTarget.containedPointerIds &= ~(1 << pointerId);
+            elementTarget.UpdateHoverPseudoState();
+        }
     }
 
     /// <summary>
     /// This event is sent when a pointer enters an element.
-    /// The event trickles down, it bubbles up, and it is cancellable.
+    /// The event trickles down and bubbles up.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerOverEvent : PointerEventBase<PointerOverEvent>
@@ -1515,7 +1558,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// This event is sent when a pointer exits an element.
-    /// The event trickles down, it bubbles up, and it is cancellable.
+    /// The event trickles down and bubbles up.
     /// </summary>
     [EventCategory(EventCategory.EnterLeave)]
     public sealed class PointerOutEvent : PointerEventBase<PointerOutEvent>

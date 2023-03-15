@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override bool TriggerAction(IPackageVersion version)
         {
             m_OperationDispatcher.ResumeDownload(version.package);
-            PackageManagerWindowAnalytics.SendEvent("resumeDownload", version.package.uniqueId);
+            PackageManagerWindowAnalytics.SendEvent("resumeDownload", version);
             return true;
         }
 

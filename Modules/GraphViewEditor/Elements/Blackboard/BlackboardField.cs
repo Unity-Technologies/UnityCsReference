@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
@@ -73,7 +74,7 @@ namespace UnityEditor.Experimental.GraphView
 
             Add(mainContainer);
 
-            RegisterCallback<MouseDownEvent>(OnMouseDownEvent);
+            RegisterCallback<MouseDownEvent>(OnMouseDownEvent, TrickleDown.TrickleDown);
 
             capabilities |= Capabilities.Selectable | Capabilities.Droppable | Capabilities.Deletable | Capabilities.Renamable;
 
@@ -89,9 +90,9 @@ namespace UnityEditor.Experimental.GraphView
         }
 
         [EventInterest(typeof(AttachToPanelEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (evt.eventTypeId == AttachToPanelEvent.TypeId())
             {
@@ -99,6 +100,12 @@ namespace UnityEditor.Experimental.GraphView
                 if (graphView != null)
                     graphView.RestorePersitentSelectionForElement(this);
             }
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultAction override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
         }
 
         private void OnEditTextFinished()
@@ -124,7 +131,8 @@ namespace UnityEditor.Experimental.GraphView
             if ((e.clickCount == 2) && e.button == (int)MouseButton.LeftMouse && IsRenamable())
             {
                 OpenTextEditor();
-                e.PreventDefault();
+                focusController.IgnoreEvent(e);
+                e.StopPropagation();
             }
         }
 

@@ -4090,7 +4090,8 @@ namespace UnityEditor
             m_CameraSettings = new CameraSettings(lastActiveSceneView.m_CameraSettings);
             m_2DMode = view.m_2DMode;
             pivot = view.pivot;
-            rotation = view.rotation;
+            if(!m_2DMode)
+                rotation = view.rotation;
             size = view.size;
             m_Ortho.value = view.orthographic;
             if (m_Grid == null)

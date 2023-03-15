@@ -11,16 +11,12 @@ namespace UnityEditor.UIElements
     {
         public override void DisplayMenuIfEventMatches(EventBase evt, IEventHandler eventHandler)
         {
-            if (evt == null)
+            if (UIElementsUtility.isOSXContextualMenuPlatform)
             {
-                return;
-            }
-
-            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
-            {
-                if (evt.eventTypeId == MouseDownEvent.TypeId())
+                if (evt.eventTypeId == PointerDownEvent.TypeId() ||
+                    evt.eventTypeId == PointerMoveEvent.TypeId() && ((PointerMoveEvent)evt).isPointerDown)
                 {
-                    MouseDownEvent e = evt as MouseDownEvent;
+                    IPointerEvent e = (IPointerEvent) evt;
 
                     if (e.button == (int)MouseButton.RightMouse ||
                         (e.button == (int)MouseButton.LeftMouse && e.modifiers == EventModifiers.Control))
@@ -33,9 +29,10 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                if (evt.eventTypeId == MouseUpEvent.TypeId())
+                if (evt.eventTypeId == PointerUpEvent.TypeId() ||
+                    evt.eventTypeId == PointerMoveEvent.TypeId() && ((PointerMoveEvent)evt).isPointerUp)
                 {
-                    MouseUpEvent e = evt as MouseUpEvent;
+                    IPointerEvent e = (IPointerEvent) evt;
                     if (e.button == (int)MouseButton.RightMouse)
                     {
                         DisplayMenu(evt, eventHandler);

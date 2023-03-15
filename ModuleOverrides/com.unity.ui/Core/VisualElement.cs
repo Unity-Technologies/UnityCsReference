@@ -43,7 +43,7 @@ namespace UnityEngine.UIElements
         // Need to compute world bounding box
         WorldBoundingBoxDirty = 1 << 4,
         // Need to compute world bounding box
-        EventCallbackParentCategoriesDirty = 1 << 5,
+        EventInterestParentCategoriesDirty = 1 << 5,
         // Element layout is manually set
         LayoutManual = 1 << 6,
         // Element is a root for composite controls
@@ -65,7 +65,7 @@ namespace UnityEngine.UIElements
         DisableRendering = 1 << 14,
 
         // Element initial flags
-        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventCallbackParentCategoriesDirty | HierarchyDisplayed
+        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | HierarchyDisplayed
     }
 
     /// <summary>
@@ -230,15 +230,7 @@ namespace UnityEngine.UIElements
         internal bool isCompositeRoot
         {
             get => (m_Flags & VisualElementFlags.CompositeRoot) == VisualElementFlags.CompositeRoot;
-            set
-            {
-                m_Flags = value ? m_Flags | VisualElementFlags.CompositeRoot : m_Flags & ~VisualElementFlags.CompositeRoot;
-
-                // For purposes of nextParentWithEventCallback calculation, compositeRoot elements need to be included
-                // because they too can receive events without being a leaf target.
-                if (value)
-                    SetAsNextParentWithEventCallback();
-            }
+            set => m_Flags = value ? m_Flags | VisualElementFlags.CompositeRoot : m_Flags & ~VisualElementFlags.CompositeRoot;
         }
 
         // areAncestorsAndSelfDisplayed is a combination of the inherited display state and our own display state.
@@ -1033,9 +1025,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal int containedPointerIds { get; private set; }
+        internal int containedPointerIds { get; set; }
 
-        void UpdateHoverPseudoState()
+        internal void UpdateHoverPseudoState()
         {
             // An element has the hover pseudoState if and only if it has at least one contained pointer which is
             // captured by itself, one if its descendents or no element.
@@ -1081,6 +1073,21 @@ namespace UnityEngine.UIElements
 
             // Check if captured element is descendant of self.
             return self.Contains(capturingElement as VisualElement);
+        }
+
+        internal void UpdateHoverPseudoStateAfterCaptureChange(int pointerId)
+        {
+            // Pointer capture changes can influence if an element is hovered or not.
+            // Update the entire ancestor chain.
+            for (var ve = this; ve != null; ve = ve.parent)
+                ve.UpdateHoverPseudoState();
+
+            // Make sure to also reevaluate the hover state of the elements under pointer.
+            var elementUnderPointer = elementPanel?.GetTopElementUnderPointer(pointerId);
+            for (var ve = elementUnderPointer; ve != null && ve != this; ve = ve.parent)
+            {
+                ve.UpdateHoverPseudoState();
+            }
         }
 
         private PickingMode m_PickingMode;
@@ -1217,8 +1224,17 @@ namespace UnityEngine.UIElements
 
             renderHints = RenderHints.None;
 
-            EventInterestReflectionUtils.GetDefaultEventInterests(GetType(), out m_DefaultActionEventCategories,
-                out m_DefaultActionAtTargetEventCategories);
+            EventInterestReflectionUtils.GetDefaultEventInterests(GetType(),
+                out var defaultActionCategories, out var defaultActionAtTargetCategories,
+                out var handleEventTrickleDownCategories, out var handleEventBubbleUpCategories);
+
+            m_TrickleDownHandleEventCategories = handleEventTrickleDownCategories;
+
+            // Combine the obsolete default actions into the BubbleUp categories
+            m_BubbleUpHandleEventCategories = handleEventBubbleUpCategories |
+                                              defaultActionAtTargetCategories | defaultActionCategories;
+
+            UpdateEventInterestSelfCategories();
         }
 
         ~VisualElement()
@@ -1226,70 +1242,12 @@ namespace UnityEngine.UIElements
             LayoutManager.SharedManager.DestroyNode(ref m_LayoutNode);
         }
 
-        [EventInterest(typeof(MouseOverEvent), typeof(MouseOutEvent), typeof(MouseCaptureOutEvent), typeof(PointerEnterEvent),
-            typeof(PointerLeaveEvent), typeof(PointerCaptureEvent), typeof(PointerCaptureOutEvent),
-            typeof(BlurEvent), typeof(FocusEvent), typeof(TooltipEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-            if (evt == null)
-            {
-                return;
-            }
-
-            if (evt.eventTypeId == MouseOverEvent.TypeId() || evt.eventTypeId == MouseOutEvent.TypeId() || evt.eventTypeId == MouseCaptureOutEvent.TypeId())
-            {
-                // Updating cursor has to happen on MouseOver/Out because exiting a child does not send a mouse enter to the parent.
-                // We can use MouseEvents instead of PointerEvents since only the mouse has a displayed cursor.
-                UpdateCursorStyle(evt.eventTypeId);
-            }
-            else if (evt.eventTypeId == PointerEnterEvent.TypeId())
-            {
-                containedPointerIds |= (1 << ((IPointerEvent)evt).pointerId);
-                UpdateHoverPseudoState();
-            }
-            else if (evt.eventTypeId == PointerLeaveEvent.TypeId())
-            {
-                containedPointerIds &= ~(1 << ((IPointerEvent)evt).pointerId);
-                UpdateHoverPseudoState();
-            }
-            else if (evt.eventTypeId == PointerCaptureEvent.TypeId() ||
-                     evt.eventTypeId == PointerCaptureOutEvent.TypeId())
-            {
-                // Pointer capture changes can influence if an element is hovered or not.
-                // Update the entire ancestor chain.
-                for (var ve = this; ve != null; ve = ve.parent)
-                    ve.UpdateHoverPseudoState();
-
-                // Make sure to also reevaluate the hover state of the elements under pointer.
-                var elementUnderPointer =
-                    elementPanel?.GetTopElementUnderPointer(((IPointerCaptureEventInternal) evt).pointerId);
-                for (var ve = elementUnderPointer; ve != null && ve != this; ve = ve.parent)
-                {
-                    ve.UpdateHoverPseudoState();
-                }
-            }
-            else if (evt.eventTypeId == BlurEvent.TypeId())
-            {
-                pseudoStates = pseudoStates & ~PseudoStates.Focus;
-            }
-            else if (evt.eventTypeId == FocusEvent.TypeId())
-            {
-                pseudoStates = pseudoStates | PseudoStates.Focus;
-            }
-            else if (evt.eventTypeId == TooltipEvent.TypeId())
-            {
-                // Allow child elements to set their own tooltip
-                SetTooltip((TooltipEvent)evt);
-            }
-        }
-
         internal virtual Rect GetTooltipRect()
         {
             return this.worldBound;
         }
 
-        void SetTooltip(TooltipEvent e)
+        internal void SetTooltip(TooltipEvent e)
         {
             if (e.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
             {
@@ -1362,7 +1320,7 @@ namespace UnityEngine.UIElements
                     {
                         e.elementPanel = p;
                         e.m_Flags |= flagToAdd;
-                        e.m_CachedNextParentWithEventCallback = null;
+                        e.m_CachedNextParentWithEventInterests = null;
                     }
 
                     foreach (var e in elements)
@@ -1385,7 +1343,7 @@ namespace UnityEngine.UIElements
                 // Only send this event if the element isn't waiting for an attach event already
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0)
                 {
-                    if (HasEventCallbacksOrDefaultActions(DetachFromPanelEvent.EventCategory))
+                    if (HasSelfEventInterests(DetachFromPanelEvent.EventCategory))
                     {
                         using (var e = DetachFromPanelEvent.GetPooled(elementPanel, destinationPanel))
                         {
@@ -1414,7 +1372,7 @@ namespace UnityEngine.UIElements
                 // Only send this event if the element hasn't received it yet
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == VisualElementFlags.NeedsAttachToPanelEvent)
                 {
-                    if (HasEventCallbacksOrDefaultActions(AttachToPanelEvent.EventCategory))
+                    if (HasSelfEventInterests(AttachToPanelEvent.EventCategory))
                     {
                         using (var e = AttachToPanelEvent.GetPooled(prevPanel, elementPanel))
                         {
@@ -2201,7 +2159,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void UpdateCursorStyle(long eventType)
+        internal void UpdateCursorStyle(long eventType)
         {
             if (elementPanel == null)
                 return;

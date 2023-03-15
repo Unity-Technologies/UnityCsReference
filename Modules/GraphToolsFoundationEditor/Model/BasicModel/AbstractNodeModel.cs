@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.Search;
 using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -59,6 +60,11 @@ namespace Unity.GraphToolsFoundation.Editor
 
         /// <inheritdoc />
         public virtual string DisplayTitle => Title.Nicify();
+
+        /// <summary>
+        /// The Subtitle of the node.
+        /// </summary>
+        public virtual string Subtitle => GetType().GetAttribute<LibraryItemAttribute>()?.Subtitle;
 
         /// <summary>
         /// Tooltip to display.

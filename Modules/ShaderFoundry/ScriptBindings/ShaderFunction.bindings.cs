@@ -23,6 +23,8 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static ShaderFunctionInternal Invalid();
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
+        internal extern string GetName(ShaderContainer container);
+        internal extern string GetBody(ShaderContainer container);
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
 
@@ -51,8 +53,8 @@ namespace UnityEditor.ShaderFoundry
         public bool Exists => (container != null) && handle.IsValid;
         public bool IsValid => Exists && function.IsValid;
 
-        public string Name => container?.GetString(function.m_NameHandle) ?? String.Empty;
-        public string Body => container?.GetString(function.m_BodyHandle) ?? String.Empty;
+        public string Name => function.GetName(container);
+        public string Body => function.GetBody(container);
         public ShaderType ReturnType => new ShaderType(container, function.m_ReturnTypeHandle);
         public IEnumerable<FunctionParameter> Parameters
         {

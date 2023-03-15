@@ -98,10 +98,6 @@ class JobsMenu
         {
             case NativeLeakDetectionMode.Disabled:
                 {
-                    // In the case where someone enables, disables, then re-enables leak checking, we might miss some frees
-                    // while disabled. So to avoid spurious leak warnings, just forgive the leaks every time someone disables
-                    // leak checking through the menu.
-                    UnsafeUtility.ForgiveLeaks();
                     Debug.LogWarning("Leak detection has been disabled. Leak warnings will not be generated, and all leaks up to now are forgotten.");
                     break;
                 }

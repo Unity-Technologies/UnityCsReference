@@ -157,6 +157,9 @@ namespace UnityEngine
         [FreeFunction("AnimationCurveBindings::Internal_Equals", HasExplicitThis = true, IsThreadSafe = true)]
         extern private bool Internal_Equals(IntPtr other);
 
+        [FreeFunction("AnimationCurveBindings::Internal_CopyFrom", HasExplicitThis = true, IsThreadSafe = true)]
+        extern private void Internal_CopyFrom(IntPtr other);
+
         ~AnimationCurve()
         {
             if (m_RequiresNativeCleanup)
@@ -184,6 +187,9 @@ namespace UnityEngine
         [NativeThrows]
         [FreeFunction("AnimationCurveBindings::MoveKey", HasExplicitThis = true, IsThreadSafe = true)]
         extern public int MoveKey(int index, Keyframe key);
+
+        [FreeFunction("AnimationCurveBindings::ClearKeys", HasExplicitThis = true, IsThreadSafe = true)]
+        extern public void ClearKeys();
 
         // Removes a key
         [NativeThrows]
@@ -303,11 +309,7 @@ namespace UnityEngine
                 return true;
             }
 
-            if (o.GetType() != this.GetType())
-            {
-                return false;
-            }
-            return Equals((AnimationCurve)o);
+            return o.GetType() == this.GetType() && Equals((AnimationCurve)o);
         }
 
         public bool Equals(AnimationCurve other)
@@ -322,17 +324,17 @@ namespace UnityEngine
                 return true;
             }
 
-            if (m_Ptr.Equals(other.m_Ptr))
-            {
-                return true;
-            }
-
-            return Internal_Equals(other.m_Ptr);
+            return m_Ptr.Equals(other.m_Ptr) || Internal_Equals(other.m_Ptr);
         }
 
         public override int GetHashCode()
         {
             return m_Ptr.GetHashCode();
+        }
+
+        public void CopyFrom(AnimationCurve other)
+        {
+            Internal_CopyFrom(other.m_Ptr);
         }
 
         internal static class BindingsMarshaller

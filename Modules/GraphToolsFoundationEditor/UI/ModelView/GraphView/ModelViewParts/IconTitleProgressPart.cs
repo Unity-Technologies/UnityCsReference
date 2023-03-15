@@ -17,6 +17,7 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         public static new readonly string ussClassName = "ge-icon-title-progress";
         public static readonly string collapseButtonPartName = "collapse-button";
+        public static readonly string missingWarningIconName = "missing-graph-icon";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IconTitleProgressPart"/> class.
@@ -96,10 +97,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (nodeModel is IPlaceholder || nodeModel is IHasDeclarationModel hasDeclarationModel && hasDeclarationModel.DeclarationModel is IPlaceholder)
             {
-                var warningIcon = new Image { name = "missing-graph-icon" };
-                warningIcon.AddToClassList(ussClassName.WithUssElement("icon"));
-                warningIcon.AddToClassList(ussClassName.WithUssElement("missing-graph-icon"));
-                TitleContainer.Add(warningIcon);
+                TitleContainer.Add(CreateMissingWarningIcon());
             }
 
             CreateTitleLabel();
@@ -147,6 +145,14 @@ namespace Unity.GraphToolsFoundation.Editor
                     m_ColorLine.style.backgroundColor = StyleKeyword.Null;
                 }
             }
+        }
+
+        public static Image CreateMissingWarningIcon()
+        {
+            var warningIcon = new Image { name = missingWarningIconName };
+            warningIcon.AddToClassList(ussClassName.WithUssElement("icon"));
+            warningIcon.AddToClassList(ussClassName.WithUssElement(missingWarningIconName));
+            return warningIcon;
         }
     }
 }

@@ -142,7 +142,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal ITextEdition edition => this;
 
-        internal TextEditingManipulator editingManipulator;
+        internal TextEditingManipulator editingManipulator { get; private set; }
 
         bool m_Multiline;
 
@@ -241,6 +241,7 @@ namespace UnityEngine.UIElements
                 if (value == m_IsReadOnly)
                     return;
 
+                editingManipulator?.Reset();
                 editingManipulator = value ? null : new TextEditingManipulator(this);
                 m_IsReadOnly = value;
                 onIsReadOnlyChanged?.Invoke(value);
@@ -319,22 +320,25 @@ namespace UnityEngine.UIElements
                 : DropdownMenuAction.Status.Hidden;
         }
 
-        // From SelectingManipulator.ExecuteDefaultActionAtTarget, EditingManipulator.ExecuteDefaultActionAtTarget
-        [EventInterest(typeof(ContextualMenuPopulateEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
-            typeof(KeyDownEvent), typeof(KeyUpEvent), typeof(FocusEvent), typeof(BlurEvent),
+        // From SelectingManipulator.HandleEventBubbleUp, EditingManipulator.HandleEventBubbleUp
+        [EventInterest(typeof(ContextualMenuPopulateEvent), typeof(KeyDownEvent), typeof(KeyUpEvent),
             typeof(ValidateCommandEvent), typeof(ExecuteCommandEvent),
+            typeof(FocusEvent), typeof(BlurEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
             typeof(PointerDownEvent), typeof(PointerUpEvent), typeof(PointerMoveEvent),
             typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
+            base.HandleEventBubbleUp(evt);
+
             if (selection.isSelectable)
             {
                 var useTouchScreenKeyboard = editingManipulator?.editingUtilities.TouchScreenKeyboardShouldBeUsed() ?? false;
 
-                if (!useTouchScreenKeyboard || useTouchScreenKeyboard && edition.hideMobileInput)
-                    selectingManipulator?.ExecuteDefaultActionAtTarget(evt);
+                if (!useTouchScreenKeyboard || edition.hideMobileInput)
+                    selectingManipulator?.HandleEventBubbleUp(evt);
                 if (!edition.isReadOnly)
-                    editingManipulator?.ExecuteDefaultActionAtTarget(evt);
+                    editingManipulator?.HandleEventBubbleUp(evt);
+
                 elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
 
                 if (evt?.eventTypeId == ContextualMenuPopulateEvent.TypeId())

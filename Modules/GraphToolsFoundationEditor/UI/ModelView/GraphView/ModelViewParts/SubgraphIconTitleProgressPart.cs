@@ -50,11 +50,34 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 if (subgraphNodeModel.SubgraphModel == null)
                 {
-                    var warningIcon = new Image { name = "missing-graph-icon" };
-                    warningIcon.AddToClassList(ussClassName.WithUssElement("icon"));
-                    warningIcon.AddToClassList(ussClassName.WithUssElement("missing-graph-icon"));
-                    TitleContainer.Add(warningIcon);
+                    TitleContainer.Add(CreateMissingWarningIcon());
                     TitleContainer.Add(TitleLabel);
+                }
+            }
+        }
+
+        protected override void UpdatePartFromModel()
+        {
+            if (m_Model is SubgraphNodeModel subgraphNodeModel)
+            {
+                base.UpdatePartFromModel();
+
+                var warningIcon = TitleContainer.SafeQ<Image>(name: missingWarningIconName);
+                if (subgraphNodeModel.SubgraphModel == null)
+                {
+                    if (warningIcon == null)
+                    {
+                        TitleContainer.Add(CreateMissingWarningIcon());
+                        TitleContainer.Add(TitleLabel);
+                    }
+                }
+                else
+                {
+                    if (warningIcon != null)
+                    {
+                        TitleContainer.Remove(warningIcon);
+                        TitleContainer.Remove(TitleLabel);
+                    }
                 }
             }
         }

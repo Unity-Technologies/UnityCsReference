@@ -29,12 +29,31 @@ namespace Unity.GraphToolsFoundation.Editor
             return null;
         }
 
-        NodeLodCachePart(string name, Model model, ModelView ownerElement, string parentClassName)
+        /// <summary>
+        /// Creates a new instance of the <see cref="NodeLodCachePart"/> class.
+        /// </summary>
+        /// <param name="name">The name of the part.</param>
+        /// <param name="model">The model displayed in this part.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
+        /// <param name="parentClassName">The class name of the parent.</param>
+        /// <returns>A new instance of <see cref="NodeLodCachePart"/>.</returns>
+        protected NodeLodCachePart(string name, Model model, ModelView ownerElement, string parentClassName)
             : base(name, model, ownerElement, parentClassName) { }
 
-        Label m_Label;
-        VisualElement m_ColorLine;
-        VisualElement m_Root;
+        /// <summary>
+        /// The label containing the title;
+        /// </summary>
+        protected Label m_Label;
+
+        /// <summary>
+        /// The element filled with the node color.
+        /// </summary>
+        protected VisualElement m_ColorLine;
+
+        /// <summary>
+        /// The root element of the cache.
+        /// </summary>
+        protected VisualElement m_Root;
 
         /// <inheritdoc />
         public override VisualElement Root => m_Root;

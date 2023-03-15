@@ -10,50 +10,13 @@ using UnityEngine;
 
 namespace Unity.Collections
 {
-    public enum NativeLeakDetectionMode
-    {
-        Disabled = 1,
-        Enabled = 2,
-        EnabledWithStackTrace = 3
-    }
-
     public static class NativeLeakDetection
     {
-        const string kNativeLeakDetectionModePrefsString = "Unity.Collections.NativeLeakDetection.Mode";
-
-        // Initialize leak detection on startup/domain reload to avoid NativeLeakDetection.Mode
-        // access on a job to trigger the initialization.
-        [RuntimeInitializeOnLoadMethod]
-        static NativeLeakDetectionMode Initialize()
-        {
-            var mode = UnsafeUtility.GetLeakDetectionMode();
-            if (mode == 0)
-            {
-                // If editor pref is out of range, reset it to Enabled                                                                                
-                // Also reset it to Enabled if stack traces were enabled, for performance reasons.                                                    
-                var editorPref = UnityEngine.PlayerPrefs.EditorPrefsGetInt(kNativeLeakDetectionModePrefsString, (int)NativeLeakDetectionMode.Enabled);
-                if (editorPref < (int)NativeLeakDetectionMode.Disabled || editorPref > (int)NativeLeakDetectionMode.Enabled)
-                {
-                    editorPref = (int)NativeLeakDetectionMode.Enabled;
-                    UnityEngine.PlayerPrefs.EditorPrefsSetInt(kNativeLeakDetectionModePrefsString, editorPref);
-                }
-
-                // Set mode based on editor pref
-                mode = (NativeLeakDetectionMode)editorPref;
-                NativeLeakDetection.Mode = mode;
-                AppDomain.CurrentDomain.ProcessExit += (_, __) => { OnProcessExit(); };
-            }
-            return mode;
-        }
-
         public static NativeLeakDetectionMode Mode
         {
             get
             {
-                var mode = UnsafeUtility.GetLeakDetectionMode();
-                if (mode == 0)
-                    mode = Initialize();
-                return mode;
+                return UnsafeUtility.GetLeakDetectionMode();
             }
             set
             {
@@ -62,14 +25,8 @@ namespace Unity.Collections
                     throw new ArgumentException("NativeLeakDetectionMode out of range");
                 }
 
-                // If value is set programmatically, don't change Editor Pref.
                 UnsafeUtility.SetLeakDetectionMode(value);
             }
-        }
-
-        static void OnProcessExit()
-        {
-            UnsafeUtility.CheckForLeaks();
         }
     }
 }

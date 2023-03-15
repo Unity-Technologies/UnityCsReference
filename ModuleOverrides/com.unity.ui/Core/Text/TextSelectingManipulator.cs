@@ -92,15 +92,21 @@ namespace UnityEngine.UIElements
             return m_TextElement.hasFocus;
         }
 
-        internal void ExecuteDefaultActionAtTarget(EventBase evt)
+        internal void HandleEventBubbleUp(EventBase evt)
         {
             switch (evt)
             {
-                case FocusEvent fe:
-                    OnFocusEvent(fe);
+                case FocusEvent:
+                    OnFocusEvent();
                     break;
-                case BlurEvent be:
-                    OnBlurEvent(be);
+                case BlurEvent:
+                    OnBlurEvent();
+                    break;
+                case ValidateCommandEvent vce:
+                    OnValidateCommandEvent(vce);
+                    break;
+                case ExecuteCommandEvent ece:
+                    OnExecuteCommandEvent(ece);
                     break;
                 case KeyDownEvent kde:
                     OnKeyDown(kde);
@@ -114,16 +120,10 @@ namespace UnityEngine.UIElements
                 case PointerUpEvent pue:
                     OnPointerUpEvent(pue);
                     break;
-                case ValidateCommandEvent vce:
-                    OnValidateCommandEvent(vce);
-                    break;
-                case ExecuteCommandEvent ece:
-                    OnExecuteCommandEvent(ece);
-                    break;
             }
         }
 
-        void OnFocusEvent(FocusEvent evt)
+        void OnFocusEvent()
         {
             selectAllOnMouseUp = false;
 
@@ -132,10 +132,10 @@ namespace UnityEngine.UIElements
                 m_TextElement.panel.contextType == ContextType.Editor && Event.current == null)
                 selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp;
 
-            m_SelectingUtilities.OnFocus(m_TextElement.selection.selectAllOnFocus);
+            m_SelectingUtilities.OnFocus(m_TextElement.selection.selectAllOnFocus && !isClicking);
         }
 
-        void OnBlurEvent(BlurEvent evt)
+        void OnBlurEvent()
         {
             selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp;
         }

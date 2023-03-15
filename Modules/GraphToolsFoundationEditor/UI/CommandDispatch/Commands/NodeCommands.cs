@@ -249,6 +249,12 @@ namespace Unity.GraphToolsFoundation.Editor
                     foreach (var constant in command.Constants)
                     {
                         constant.ObjectValue = command.Value;
+
+                        if (constant.OwnerModel is PortModel portModel && portModel.Options == PortModelOptions.IsNodeOption)
+                        {
+                            // If the constant is part of a node option, invoke its setter method.
+                            (portModel.NodeModel as InputOutputPortsNodeModel)?.NodeOptions.FirstOrDefault(o => o.PortModel.UniqueName == portModel.UniqueName)?.SetterMethod?.Invoke(constant);
+                        }
                     }
                     graphUpdater.MarkUpdated(changeScope.ChangeDescription);
                 }

@@ -171,7 +171,7 @@ namespace UnityEngine.Rendering
     public enum BatchCullingFlags : int
     {
         None = 0,
-        CullLightmappedShadowCasters = 1,
+        CullLightmappedShadowCasters = 1 << 0,
     }
 
     // Match with BatchCullingViewType in C++ side

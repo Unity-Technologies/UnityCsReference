@@ -162,41 +162,41 @@ namespace UnityEngine.UIElements
 
         public void ProcessPointerCapture(int pointerId)
         {
-            if (m_PointerCapture[pointerId] == m_PendingPointerCapture[pointerId])
+            var capture = m_PointerCapture[pointerId];
+
+            if (capture == m_PendingPointerCapture[pointerId])
                 return;
 
-            if (m_PointerCapture[pointerId] != null)
+            if (capture != null)
             {
-                using (var e =
-                           PointerCaptureOutEvent.GetPooled(m_PointerCapture[pointerId], m_PendingPointerCapture[pointerId], pointerId))
+                using (var e = PointerCaptureOutEvent.GetPooled(capture, m_PendingPointerCapture[pointerId], pointerId))
                 {
-                    m_PointerCapture[pointerId].SendEvent(e);
+                    capture.SendEvent(e);
                 }
 
-                if (pointerId == PointerId.mousePointerId)
+                // Don't send MouseCaptureOutEvent if PointerCaptureOutEvent callbacks changed the capture in-between
+                if (pointerId == PointerId.mousePointerId && m_PointerCapture[pointerId] == capture)
                 {
-                    using (var e =
-                               MouseCaptureOutEvent.GetPooled(m_PointerCapture[pointerId], m_PendingPointerCapture[pointerId], pointerId))
+                    using (var e = MouseCaptureOutEvent.GetPooled(capture, m_PendingPointerCapture[pointerId], pointerId))
                     {
-                        m_PointerCapture[pointerId].SendEvent(e);
+                        capture.SendEvent(e);
                     }
                 }
             }
 
-            if (m_PendingPointerCapture[pointerId] != null)
+            var pendingCapture = m_PendingPointerCapture[pointerId];
+            if (pendingCapture != null)
             {
-                using (var e =
-                           PointerCaptureEvent.GetPooled(m_PendingPointerCapture[pointerId], m_PointerCapture[pointerId], pointerId))
+                using (var e = PointerCaptureEvent.GetPooled(pendingCapture, m_PointerCapture[pointerId], pointerId))
                 {
-                    m_PendingPointerCapture[pointerId].SendEvent(e);
+                    pendingCapture.SendEvent(e);
                 }
 
-                if (pointerId == PointerId.mousePointerId)
+                if (pointerId == PointerId.mousePointerId && m_PendingPointerCapture[pointerId] == pendingCapture)
                 {
-                    using (var e =
-                               MouseCaptureEvent.GetPooled(m_PendingPointerCapture[pointerId], m_PointerCapture[pointerId], pointerId))
+                    using (var e = MouseCaptureEvent.GetPooled(pendingCapture, m_PointerCapture[pointerId], pointerId))
                     {
-                        m_PendingPointerCapture[pointerId].SendEvent(e);
+                        pendingCapture.SendEvent(e);
                     }
                 }
             }

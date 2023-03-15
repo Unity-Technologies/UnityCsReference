@@ -1162,10 +1162,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
                 phaseDurationContainer.AddToClassList("log-line-item");
 
                 timeStamp.text = "[" + eventBase.TimestampString() + "]";
-                handler.text = defaultAction.targetName + "." +
-                    (defaultAction.phase == PropagationPhase.AtTarget
-                        ? "ExecuteDefaultActionAtTarget"
-                        : "ExecuteDefaultAction");
+                handler.text = defaultAction.targetName + "." + "ExecuteDefaultAction";
 
                 duration.text = defaultAction.duration / 1000f + "ms";
 
@@ -1210,26 +1207,6 @@ namespace UnityEditor.UIElements.Experimental.Debugger
                         if (string.IsNullOrEmpty(trickleDownPathName))
                             trickleDownPathName = trickleDownPathElement.GetType().Name;
                         m_EventPropagationPaths.text += "    " + trickleDownPathName + "\n";
-                    }
-                }
-                else
-                {
-                    m_EventPropagationPaths.text += "    <empty>\n";
-                }
-
-                m_EventPropagationPaths.text += "Target list:\n";
-                var targets = propagationPath.paths.targetElements;
-                if (targets != null && targets.Any())
-                {
-                    var i = 0;
-                    foreach (var t in targets)
-                    {
-                        var targetName = t.name;
-                        if (string.IsNullOrEmpty(targetName))
-                            targetName = t.GetType().Name;
-                        m_EventPropagationPaths.text += "    " + targetName + "\n";
-
-                        HighlightElement(t, i++ == 0);
                     }
                 }
                 else

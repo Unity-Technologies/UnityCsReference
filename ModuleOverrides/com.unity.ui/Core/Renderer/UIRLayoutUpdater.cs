@@ -5,11 +5,44 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Profiling;
 using UnityEngine;
 
 namespace UnityEngine.UIElements
 {
+
+    internal class LayoutDebuggerItem
+    {
+        public LayoutDebuggerItem(int frameIndex, int passIndex, int layoutLoop, LayoutDebuggerVisualElement ve)
+        {
+            m_FrameIndex = frameIndex;
+            m_PassIndex = passIndex;
+            m_LayoutLoop = layoutLoop;
+            m_VE = ve;
+        }
+
+        public int m_FrameIndex;
+        public int m_PassIndex;
+        public int m_LayoutLoop;
+
+        public LayoutDebuggerVisualElement m_VE;
+    }
+
+    internal class LayoutDebuggerVisualElement
+    {
+        public List<LayoutDebuggerVisualElement> m_Children = null;
+        public VisualElement m_OriginalVisualElement;
+        public string name;
+        public Rect layout = new Rect();
+        public bool visible = false;
+        public bool enable = false;
+        public bool enabledInHierarchy = false;
+        public bool isYogaNodeDirty = false;
+        public LayoutDebuggerVisualElement parent = null;
+    }
+
+
     // This is basically the same as the standard layout update except for 1 thing :
     // - Only call dirty repaint when the layout rect has changed instead of "layoutNode.HasNewLayout"
     internal class UIRLayoutUpdater : BaseVisualTreeUpdater
@@ -17,12 +50,86 @@ namespace UnityEngine.UIElements
          // When changing this value, we always consider that some controls may require multiple passes to compute their layout.
          // We also consider that these controls can also be nested inside other similar controls.
          // For example, a simple scroll view may need more than 2 passes to lay out the viewport and scrollers.
-         // Therefore, having a deep hierachy of scroll views can require a fair amount of layout passes.
+         // Therefore, having a deep hierarchy of scroll views can require a fair amount of layout passes.
         const int kMaxValidateLayoutCount = 10;
 
         private static readonly string s_Description = "Update Layout";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
+
+
+        private bool m_CurrentlyRecordingLayout = false;
+
+        public bool recordLayout
+        {
+            get
+            {
+                return m_CurrentlyRecordingLayout;
+            }
+
+            set
+            {
+                m_CurrentlyRecordingLayout = value;
+                if (value)
+                {
+                    recordedLayoutItemList.Clear();
+                    s_FrameIndex = 0;
+                    s_OldMainLoopCount = 0;
+                    s_PassIndex = 0;
+                }
+            }
+        }
+
+        static public void IncrementMainLoopCount()
+        {
+            s_MainLoopCount++;
+        }
+
+        public int recordLayoutCount
+        {
+            get
+            {
+                return recordedLayoutItemList.Count;
+            }
+        }
+
+        public List<LayoutDebuggerItem> GetListOfRecord()
+        {
+            return recordedLayoutItemList;
+        }
+
+        List<LayoutDebuggerItem> recordedLayoutItemList = new List<LayoutDebuggerItem>();
+
+        private void CopyLayout(VisualElement source, LayoutDebuggerVisualElement dest)
+        {
+            dest.name = source.name;
+            dest.layout = source.layout;
+            dest.visible = source.visible;
+            dest.enable = source.enabledSelf;
+            dest.enabledInHierarchy = source.enabledInHierarchy;
+            dest.isYogaNodeDirty = source.layoutNode.IsDirty;
+            dest.m_OriginalVisualElement = source;
+
+            var childCount = source.hierarchy.childCount;
+
+            dest.m_Children = new List<LayoutDebuggerVisualElement>(childCount);
+
+            for (int i = 0; i < childCount; ++i)
+            {
+                var child = source.hierarchy[i];
+                LayoutDebuggerVisualElement ve = new LayoutDebuggerVisualElement();
+                CopyLayout(child, ve);
+                ve.parent = dest;
+                dest.m_Children.Add(ve);
+            }
+        }
+
+        static int s_FrameIndex = 0;
+        static int s_OldMainLoopCount = 0;
+        static int s_MainLoopCount = 0;
+        static int s_PassIndex = 0;
+
+
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
@@ -36,32 +143,68 @@ namespace UnityEngine.UIElements
             }
         }
 
-        List<(Rect, Rect, VisualElement)> changeEventsList = new ();
+        List<(Rect, Rect, VisualElement)> changeEventsList = new();
 
         public override void Update()
         {
             // update flex once
             int validateLayoutCount = 0;
-            while (visualTree.layoutNode.IsDirty)
+
+            LayoutDebuggerItem record;
+            int layoutLoop = 0;
+
+            if (visualTree.layoutNode.IsDirty)
             {
-                changeEventsList.Clear();
 
-                // Doing multiple layout passes requires to update the styles or else the
-                // elements may not be initialized properly and the resulting layout will be invalid.
-                if (validateLayoutCount > 0)
-                    panel.ApplyStyles();
-
-                panel.duringLayoutPhase = true;
-                visualTree.layoutNode.CalculateLayout();
-                panel.duringLayoutPhase = false;
-
-                UpdateSubTree(visualTree, changeEventsList);
-                DispatchChangeEvents(changeEventsList, validateLayoutCount);
-
-                if (validateLayoutCount++ >= kMaxValidateLayoutCount)
+                if (recordLayout)
                 {
-                    Debug.LogError("Layout update is struggling to process current layout (consider simplifying to avoid recursive layout): " + visualTree);
-                    break;
+                    if (s_OldMainLoopCount == s_MainLoopCount)
+                    {
+                        s_PassIndex++;
+                    }
+                    else
+                    {
+                        s_OldMainLoopCount = s_MainLoopCount;
+                        s_FrameIndex++;
+                        s_PassIndex = 0;
+                    }
+
+                    LayoutDebuggerVisualElement ve = new LayoutDebuggerVisualElement();
+                    record = new LayoutDebuggerItem(s_FrameIndex, s_PassIndex, layoutLoop, ve);
+                    CopyLayout(visualTree, ve);
+                    layoutLoop++;
+                    recordedLayoutItemList.Add(record);
+                }
+                while (visualTree.layoutNode.IsDirty)
+                {
+                    changeEventsList.Clear();
+
+                    // Doing multiple layout passes requires to update the styles or else the
+                    // elements may not be initialized properly and the resulting layout will be invalid.
+                    if (validateLayoutCount > 0)
+                        panel.ApplyStyles();
+
+                    panel.duringLayoutPhase = true;
+                    visualTree.layoutNode.CalculateLayout();
+                    panel.duringLayoutPhase = false;
+
+                    UpdateSubTree(visualTree, changeEventsList);
+
+                    if (recordLayout)
+                    {
+                        LayoutDebuggerVisualElement ve = new LayoutDebuggerVisualElement();
+                        record = new LayoutDebuggerItem(s_FrameIndex, s_PassIndex, layoutLoop, ve);
+                        CopyLayout(visualTree, ve);
+                        layoutLoop++;
+                        recordedLayoutItemList.Add(record);
+                    }
+                    DispatchChangeEvents(changeEventsList, validateLayoutCount);
+
+                    if (validateLayoutCount++ >= kMaxValidateLayoutCount)
+                    {
+                        Debug.LogError("Layout update is struggling to process current layout (consider simplifying to avoid recursive layout): " + visualTree);
+                        break;
+                    }
                 }
             }
 
@@ -112,8 +255,8 @@ namespace UnityEngine.UIElements
                     ve.IncrementVersion(VersionChangeType.Size);
                 }
 
-                if ( ve.HasEventCallbacksOrDefaultActions(GeometryChangedEvent.EventCategory) )
-                    changeEvents.Add( (ve.lastLayout, Rect.zero, ve));
+                if (ve.HasSelfEventInterests(GeometryChangedEvent.EventCategory))
+                    changeEvents.Add((ve.lastLayout, Rect.zero, ve));
 
                 var childCount = ve.hierarchy.childCount;
                 for (int i = 0; i < childCount; ++i)
@@ -213,7 +356,7 @@ namespace UnityEngine.UIElements
 
             // Only send GeometryChanged events when the layout changes
             // (padding changes don't affect the element's outer geometry).
-            if ((layoutSizeChanged || layoutPositionChanged || isDisplayedJustChanged) && ve.HasEventCallbacksOrDefaultActions(GeometryChangedEvent.EventCategory))
+            if ((layoutSizeChanged || layoutPositionChanged || isDisplayedJustChanged) && ve.HasSelfEventInterests(GeometryChangedEvent.EventCategory))
             {
                 changeEvents.Add((isDisplayedJustChanged ? Rect.zero : lastLayoutRect, layoutRect, ve));
             }

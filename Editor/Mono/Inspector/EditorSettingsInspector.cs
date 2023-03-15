@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Hardware;
+using UnityEngine.Rendering;
 using UnityEditor.Collaboration;
 using UnityEngine.Assertions;
 
@@ -58,6 +59,7 @@ namespace UnityEditor
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
             public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
             public static GUIContent enableCookiesInLightmapper = EditorGUIUtility.TrTextContent("Enable baked cookies support", "Determines whether cookies should be evaluated by the Progressive Lightmapper during Global Illumination calculations. Introduced in version 2020.1. ");
+            public static GUIContent recalculateEnvironmentLighting = EditorGUIUtility.TrTextContent("Recalculate Environment Lighting", "When enabled, Unity automatically calculates environment lighting using the SkyManager for all open scenes, if you haven't generated precomputed lighting data. This affects the ambient Light Probe and default cubemap which are both generated from the sky.");
 
             public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Atlas");
             public static readonly GUIContent spriteMaxCacheSize = EditorGUIUtility.TrTextContent("Max SpriteAtlas Cache Size (GB)", "The size of the Sprite Atlas Cache folder will be kept below this maximum value when possible. Change requires Editor restart.");
@@ -260,6 +262,7 @@ namespace UnityEditor
         SerializedProperty m_PrefabModeAllowAutoSave;
         SerializedProperty m_UseLegacyProbeSampleCount;
         SerializedProperty m_DisableCookiesInLightmapper;
+        SerializedProperty m_RecalculateEnvironmentLighting;
         SerializedProperty m_SpritePackerMode;
         SerializedProperty m_SpritePackerCacheSize;
         SerializedProperty m_Bc7TextureCompressor;
@@ -325,6 +328,9 @@ namespace UnityEditor
 
             m_DisableCookiesInLightmapper = serializedObject.FindProperty("m_DisableCookiesInLightmapper");
             Assert.IsNotNull(m_DisableCookiesInLightmapper);
+
+            m_RecalculateEnvironmentLighting = serializedObject.FindProperty("m_RecalculateEnvironmentLighting");
+            Assert.IsNotNull(m_RecalculateEnvironmentLighting);
 
             m_SpritePackerMode = serializedObject.FindProperty("m_SpritePackerMode");
             Assert.IsNotNull(m_SpritePackerMode);
@@ -572,6 +578,20 @@ namespace UnityEditor
                 EditorApplication.RequestRepaintAllViews();
             }
             EditorGUI.EndProperty();
+
+            // If either auto ambient or auto reflection baking is supported, show the SkyManager toggle.
+            if (SupportedRenderingFeatures.active.autoAmbientProbeBaking || SupportedRenderingFeatures.active.autoDefaultReflectionProbeBaking)
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_RecalculateEnvironmentLighting, Content.recalculateEnvironmentLighting);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    if (m_IsGlobalSettings)
+                        EditorSettings.recalculateEnvironmentLighting = m_RecalculateEnvironmentLighting.boolValue;
+
+                    EditorApplication.RequestRepaintAllViews();
+                }
+            }
 
             GUILayout.Space(10);
 

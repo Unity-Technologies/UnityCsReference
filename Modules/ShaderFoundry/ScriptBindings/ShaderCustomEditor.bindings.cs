@@ -10,11 +10,13 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/ShaderCustomEditor.h")]
     internal struct ShaderCustomEditorInternal : IInternalType<ShaderCustomEditorInternal>
     {
-        internal FoundryHandle m_CustomEditorClassName;         // string
-        internal FoundryHandle m_RenderPipelineAssetClassName;  // string
+        internal FoundryHandle m_CustomEditorClassNameHandle;         // string
+        internal FoundryHandle m_RenderPipelineAssetClassNameHandle;  // string
 
         internal extern static ShaderCustomEditorInternal Invalid();
         internal extern bool IsValid();
+        internal extern string GetCustomEditorClassName(ShaderContainer container);
+        internal extern string GetRenderPipelineAssetClassName(ShaderContainer container);
 
         // IInternalType
         ShaderCustomEditorInternal IInternalType<ShaderCustomEditorInternal>.ConstructInvalid() => Invalid();
@@ -43,23 +45,23 @@ namespace UnityEditor.ShaderFoundry
         {
         }
 
-        internal ShaderCustomEditor(ShaderContainer container, FoundryHandle customEditorClassName, FoundryHandle renderPipelineAssetClassName)
+        internal ShaderCustomEditor(ShaderContainer container, FoundryHandle customEditorClassNameHandle, FoundryHandle renderPipelineAssetClassNameHandle)
         {
-            if ((container == null) || !customEditorClassName.IsValid) // rpAsset is allowed to be invalid
+            if ((container == null) || !customEditorClassNameHandle.IsValid) // rpAsset is allowed to be invalid
             {
                 this = Invalid;
             }
             else
             {
-                shaderCustomEditor.m_CustomEditorClassName = customEditorClassName;
-                shaderCustomEditor.m_RenderPipelineAssetClassName = renderPipelineAssetClassName;
+                shaderCustomEditor.m_CustomEditorClassNameHandle = customEditorClassNameHandle;
+                shaderCustomEditor.m_RenderPipelineAssetClassNameHandle = renderPipelineAssetClassNameHandle;
                 handle = container.Add(shaderCustomEditor);
                 this.container = handle.IsValid ? container : null;
             }
         }
 
-        public string CustomEditorClassName => container?.GetString(shaderCustomEditor.m_CustomEditorClassName);
-        public string RenderPipelineAssetClassName => container?.GetString(shaderCustomEditor.m_RenderPipelineAssetClassName);
+        public string CustomEditorClassName => shaderCustomEditor.GetCustomEditorClassName(container);
+        public string RenderPipelineAssetClassName => shaderCustomEditor.GetRenderPipelineAssetClassName(container);
 
         internal ShaderCustomEditor(ShaderContainer container, FoundryHandle handle)
         {

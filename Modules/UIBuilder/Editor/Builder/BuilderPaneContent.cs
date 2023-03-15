@@ -55,9 +55,9 @@ namespace Unity.UI.Builder
         }
 
         [EventInterest(typeof(AttachToPanelEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (evt.eventTypeId == AttachToPanelEvent.TypeId())
             {

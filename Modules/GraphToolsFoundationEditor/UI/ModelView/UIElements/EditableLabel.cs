@@ -73,8 +73,8 @@ namespace Unity.GraphToolsFoundation.Editor
             m_Label.RegisterCallback<MouseDownEvent>(OnLabelMouseDown);
 
             m_TextField.style.display = DisplayStyle.None;
-            m_TextField.RegisterCallback<KeyDownEvent>(OnKeyDown);
-            m_TextField.RegisterCallback<BlurEvent>(OnFieldBlur);
+            m_TextField.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+            m_TextField.RegisterCallback<FocusOutEvent>(OnFieldFocusOut);
             m_TextField.RegisterCallback<ChangeEvent<string>>(OnChange);
             m_TextField.isDelayed = true;
 
@@ -131,7 +131,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         BeginEditing();
 
                         e.StopPropagation();
-                        e.PreventDefault();
+                        focusController.IgnoreEvent(e);
                     }
                 }
             }
@@ -139,20 +139,16 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected void OnKeyDown(KeyDownEvent e)
         {
-            if (e.target == e.currentTarget)
+            if (e.keyCode == KeyCode.Escape)
             {
-                if (e.keyCode == KeyCode.Escape)
-                {
-                    m_TextField.SetValueWithoutNotify(m_CurrentValue);
-                    m_TextField.Blur();
-                }
+                m_TextField.SetValueWithoutNotify(m_CurrentValue);
+                m_TextField.Blur();
             }
         }
 
-        protected void OnFieldBlur(BlurEvent e)
+        protected void OnFieldFocusOut(FocusOutEvent e)
         {
-            if (e.target == e.currentTarget)
-                m_Label.style.display = DisplayStyle.Flex;
+            m_Label.style.display = DisplayStyle.Flex;
             m_TextField.style.display = DisplayStyle.None;
         }
 

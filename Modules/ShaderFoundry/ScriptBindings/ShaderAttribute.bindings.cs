@@ -19,8 +19,6 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static ShaderAttributeParameterInternal Invalid();
 
-        internal extern void Setup(ShaderContainer container, string name, string value);
-
         internal extern bool IsValid();
         internal extern string GetName(ShaderContainer container);
         internal extern string GetValue(ShaderContainer container);
@@ -63,7 +61,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 if (container == null || !ValueIsString)
                     throw new InvalidOperationException("Invalid call to 'ShaderAttributeParameter.Value'. Value is not a string. Check ValueIsString before calling.");
-                return container.GetString(param.m_ValueHandle);
+                return param.GetValue(container);
             }
         }
         public IEnumerable<ShaderAttributeParameter> Values
@@ -124,13 +122,11 @@ namespace UnityEditor.ShaderFoundry
             public ShaderAttributeParameter Build()
             {
                 var paramInternal = new ShaderAttributeParameterInternal();
+                paramInternal.m_NameHandle = container.AddString(m_Name);
                 if (m_Values == null)
-                    paramInternal.Setup(container, m_Name, m_Value);
+                    paramInternal.m_ValueHandle = container.AddString(m_Value);
                 else
-                {
-                    paramInternal.m_NameHandle = container.AddString(m_Name);
                     paramInternal.m_ValueHandle = FixedHandleListInternal.Build(container, m_Values, (v) => v.handle);
-                }
 
                 var returnHandle = container.Add(paramInternal);
                 return new ShaderAttributeParameter(container, returnHandle);
@@ -145,8 +141,6 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ParameterListHandle;
 
         internal extern static ShaderAttributeInternal Invalid();
-
-        internal extern void Setup(ShaderContainer container, string name, FoundryHandle parameterListHandle);
 
         internal extern bool IsValid();
         internal extern string GetName(ShaderContainer container);
@@ -244,7 +238,8 @@ namespace UnityEditor.ShaderFoundry
             {
                 var paramListHandle = FixedHandleListInternal.Build(container, parameters, (p) => (p.handle));
                 var attributeInternal = new ShaderAttributeInternal();
-                attributeInternal.Setup(container, name, paramListHandle);
+                attributeInternal.m_NameHandle = container.AddString(name); 
+                attributeInternal.m_ParameterListHandle = paramListHandle; 
 
                 var returnHandle = container.Add(attributeInternal);
                 return new ShaderAttribute(container, returnHandle);

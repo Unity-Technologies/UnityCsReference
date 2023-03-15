@@ -485,6 +485,13 @@ namespace UnityEngine.UIElements
             }
 
             m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, triggerEvent);
+
+            if (triggerEvent is IPointerEventInternal pe && pe.compatibilityMouseEvent != null)
+            {
+                m_TopElementUnderPointers.SetElementUnderPointer(element, PointerId.mousePointerId,
+                    (EventBase) pe.compatibilityMouseEvent);
+            }
+
             return element;
         }
 
@@ -1316,10 +1323,10 @@ namespace UnityEngine.UIElements
             viewDataKey = "PanelContainer";
             pickingMode = PickingMode.Ignore;
 
-            // Setting eventCallbackCategories will ensure panel.visualTree is always a valid next parent.
-            // This allows deeper elements to have an active tracking version based on their panel
-            // if they would not otherwise have a next parent with callbacks.
-            eventCallbackCategories = 1 << (int) EventCategory.Reserved;
+            // Make sure panel.visualTree is always the last element of the nextParentWithEventInterests chain of all
+            // its children. This allows deeper elements to have an active tracking version based on their panel
+            // if they would not otherwise have a next parent with interests.
+            SetAsNextParentWithEventInterests();
         }
     }
 
@@ -1339,19 +1346,12 @@ namespace UnityEngine.UIElements
 
         private void OnEventCompletedAtAnyTarget(EventBase evt)
         {
-            // Send to other IMGUIContainers. If target is an IMGUIContainer, already processed, it will be skipped.
-            EventDispatchUtilities.PropagateToRemainingIMGUIContainers(evt, this);
-
-            // Stop propagateToIMGUI to prevent ExecuteDefaultActionAtTarget below from also kicking in.
-            evt.propagateToIMGUI = false;
-        }
-
-        [EventInterest(EventInterestOptionsInternal.TriggeredByOS)]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
-        {
-            // Send to all IMGUIContainers. Current target is an EditorPanelRootElement so it doesn't specially need to be skipped.
-            if (!evt.isPropagationStopped && evt.propagateToIMGUI)
+            if (evt.propagateToIMGUI)
+            {
+                // Send to other IMGUIContainers. If target is an IMGUIContainer, already processed, it will be skipped.
                 EventDispatchUtilities.PropagateToRemainingIMGUIContainers(evt, this);
+                evt.propagateToIMGUI = false;
+            }
         }
     }
 }

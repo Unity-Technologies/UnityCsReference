@@ -76,8 +76,7 @@ namespace UnityEngine.UIElements
     ///     sent. While the key is held down, the event is sent repeatedly at a frequency determined by the OS.
     ///   - When the key is released, a <see cref="KeyUpEvent"/> is sent.
     ///
-    /// By default, keyboard events trickle down and bubble up. They are cancellable, and disabled elements won't
-    /// receive these events.
+    /// By default, keyboard events trickle down and bubble up. disabled elements won't receive these events.
     ///
     /// </remarks>
     [EventCategory(EventCategory.Keyboard)]
@@ -187,7 +186,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
             modifiers = default(EventModifiers);
             character = default(char);
@@ -247,7 +246,7 @@ namespace UnityEngine.UIElements
     /// This event is sent when a key is pressed.
     /// </summary>
     /// <remarks>
-    /// This event trickles down and bubbles up. It is cancellable.
+    /// This event trickles down and bubbles up.
     /// </remarks>
     public class KeyDownEvent : KeyboardEventBase<KeyDownEvent>
     {
@@ -351,7 +350,7 @@ namespace UnityEngine.UIElements
     /// This event is sent when a pressed key is released.
     /// </summary>
     /// <remarks>
-    /// This event trickles down and bubbles up. It is cancellable.
+    /// This event trickles down and bubbles up.
     /// </remarks>
     public class KeyUpEvent : KeyboardEventBase<KeyUpEvent>
     {

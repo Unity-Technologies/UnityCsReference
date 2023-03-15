@@ -403,11 +403,8 @@ namespace UnityEditor
                     menuItemsResult.Add(menuItem.name, menuItem);
             }
 
-            if (!Application.HasARGV("suppressDefaultMenuEntries"))
-            {
-                // We always add the default mode menus (if not present)
-                AddMenuItemsFromMode(menuItemsResult, s_MenuItemsDefaultMode.Values);
-            }
+            // Always adding the default menu, which may be filtered later when using a custom mode file
+            AddMenuItemsFromMode(menuItemsResult, s_MenuItemsDefaultMode.Values);
 
             // If the menus depend on the .mode file, we also add the other modes menus because the mode file can reference them
             if (menusDependOnModeFile)

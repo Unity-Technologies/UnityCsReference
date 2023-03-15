@@ -31,8 +31,6 @@ namespace UnityEditor.ShaderFoundry
             internal extern static LinkAccessorInternal Invalid();
             internal extern bool IsValid();
 
-            internal extern FoundryHandle GetAccessorHandle();
-
             // IInternalType
             LinkAccessorInternal IInternalType<LinkAccessorInternal>.ConstructInvalid() => Invalid();
         }
@@ -109,7 +107,7 @@ namespace UnityEditor.ShaderFoundry
             string GetAccessor(BlockLinkOverrideInternal.LinkAccessorInternal.Kind expectedKind)
             {
                 if (IsKind(expectedKind))
-                    return container?.GetString(accessor.GetAccessorHandle());
+                    return container?.GetString(accessor.m_AccessorHandle);
                 return string.Empty;
             }
 

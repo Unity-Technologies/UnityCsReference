@@ -135,6 +135,9 @@ namespace Unity.UI.Builder
         public static readonly string InspectorContainerClassName = "unity-builder-inspector__container";
         public static readonly string InspectorMultiFieldsRowClassName = "unity-builder-composite-field-row";
         public static readonly string InspectorCompositeStyleRowElementClassName = "unity-builder-composite-style-row-element";
+        public static readonly string InspectorFixedItemHeightFieldClassName = "unity-builder-uxml-attribute__fixed-item-height";
+        public static readonly string InspectorShownNegativeWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--shown";
+        public static readonly string InspectorHiddenNegativeWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--hidden";
 
         // Inspector Links VE Property Names
         public static readonly string InspectorLinkedStyleRowVEPropertyName = "__unity-ui-builder-style-row";
@@ -172,6 +175,7 @@ namespace Unity.UI.Builder
         public static readonly string EditPropertyToAddNewTransition = "Set a property to a non-keyword value to add a new transition.";
         public static readonly string FileNotFoundMessage = "File not found";
         public static readonly string HeaderSectionHelpBoxMessage = "This control is not supported in Runtime UI. Remove it, or enable Editor Extension Authoring in the Library.";
+        public static readonly string HeightIntFieldValueCannotBeNegativeMessage = "Please enter a positive number. Non-positive numbers will default to 1.";
         public static readonly string UnnamedValue = "<No Name>";
 
         // Tooltip Messages

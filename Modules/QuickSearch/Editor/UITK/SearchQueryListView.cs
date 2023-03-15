@@ -265,7 +265,6 @@ namespace UnityEditor.Search
             {
                 Rename();
                 evt.StopImmediatePropagation();
-                evt.PreventDefault();
             }
         }
     }
@@ -395,7 +394,6 @@ namespace UnityEditor.Search
             if (evt.keyCode != KeyCode.F2)
             {
                 evt.StopImmediatePropagation();
-                evt.PreventDefault();
                 return;
             }
 

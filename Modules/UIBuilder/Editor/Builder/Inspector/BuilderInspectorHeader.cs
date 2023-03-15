@@ -242,7 +242,6 @@ namespace Unity.UI.Builder
 
             ValidateStyleSelectorNameChange(m_TextField.text);
 
-            evt.PreventDefault();
             evt.StopImmediatePropagation();
         }
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Pool;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -146,7 +147,7 @@ namespace UnityEngine.UIElements
         // Use the tree to find the first focusable child.
         // FIXME: we should use the focus ring; however, it may happens that the
         // children are focusable but not part of the ring.
-        Focusable GetFocusDelegate()
+        internal Focusable GetFocusDelegate()
         {
             var f = this;
 
@@ -182,29 +183,6 @@ namespace UnityEngine.UIElements
             }
 
             return null;
-        }
-
-        // If we open IFocusRing to users, we need to offer a way to listen to other event types.
-        [EventInterest(typeof(PointerDownEvent), typeof(NavigationMoveEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-            ProcessEvent(evt);
-        }
-
-        [EventInterest(typeof(PointerDownEvent), typeof(NavigationMoveEvent))]
-        internal override void ExecuteDefaultActionDisabled(EventBase evt)
-        {
-            base.ExecuteDefaultActionDisabled(evt);
-            ProcessEvent(evt);
-        }
-
-        private void ProcessEvent(EventBase evt)
-        {
-            if (evt != null && evt.elementTarget == evt.leafTarget)
-            {
-                focusController?.SwitchFocusOnEvent(evt);
-            }
         }
     }
 
@@ -297,7 +275,7 @@ namespace UnityEngine.UIElements
         struct FocusedElement
         {
             public VisualElement m_SubTreeRoot;
-            public Focusable m_FocusedElement;
+            public VisualElement m_FocusedElement;
         }
 
         TextElement m_SelectedTextElement;
@@ -327,6 +305,24 @@ namespace UnityEngine.UIElements
                 var result = GetRetargetedFocusedElement(null);
                 return IsLocalElement(result) ? result : null;
             }
+        }
+
+        /// <summary>
+        /// Instructs the FocusController to ignore the given event.
+        /// This will prevent the event from changing the current focused VisualElement or triggering focus events.
+        /// </summary>
+        /// <param name="evt">The event to be ignored.</param>
+        /// <remarks>
+        /// In general this will have no effect if the event is not a
+        /// <see cref="PointerDownEvent"/>, <see cref="MouseDownEvent"/>, or <see cref="NavigationMoveEvent"/>.
+        /// </remarks>
+        public void IgnoreEvent(EventBase evt)
+        {
+            // Setting this to true will make SwitchFocusOnEvent have no effect
+            evt.processedByFocusController = true;
+
+            if (evt is IMouseEventInternal me && me.sourcePointerEvent is EventBase pe)
+                pe.processedByFocusController = true;
         }
 
         internal bool IsFocused(Focusable f)
@@ -449,18 +445,7 @@ namespace UnityEngine.UIElements
         internal void DoFocusChange(Focusable f)
         {
             m_FocusedElements.Clear();
-
-            VisualElement ve = f as VisualElement;
-
-            while (ve != null)
-            {
-                if (ve.hierarchy.parent == null || ve.isCompositeRoot)
-                {
-                    m_FocusedElements.Add(new FocusedElement { m_SubTreeRoot = ve, m_FocusedElement = f });
-                    f = ve;
-                }
-                ve = ve.hierarchy.parent;
-            }
+            GetFocusTargets(f, m_FocusedElements);
         }
 
         internal void ProcessPendingFocusChange(Focusable f)
@@ -469,12 +454,34 @@ namespace UnityEngine.UIElements
             if (m_PendingFocusCount == 0)
                 m_LastPendingFocusedElement = null;
 
+            foreach (var element in m_FocusedElements)
+                element.m_FocusedElement.pseudoStates &= ~PseudoStates.Focus;
+
             DoFocusChange(f);
+
+            foreach (var element in m_FocusedElements)
+                element.m_FocusedElement.pseudoStates |= PseudoStates.Focus;
         }
 
-        internal Focusable FocusNextInDirection(FocusChangeDirection direction)
+        private static void GetFocusTargets(Focusable f, List<FocusedElement> outTargets)
         {
-            Focusable f = focusRing.GetNextFocusable(GetLeafFocusedElement(), direction);
+            VisualElement ve = f as VisualElement;
+            VisualElement subTreeRoot = ve;
+
+            while (subTreeRoot != null)
+            {
+                if (subTreeRoot.hierarchy.parent == null || subTreeRoot.isCompositeRoot)
+                {
+                    outTargets.Add(new FocusedElement {m_SubTreeRoot = subTreeRoot, m_FocusedElement = ve});
+                    ve = subTreeRoot;
+                }
+                subTreeRoot = subTreeRoot.hierarchy.parent;
+            }
+        }
+
+        internal Focusable FocusNextInDirection(Focusable currentFocusable, FocusChangeDirection direction)
+        {
+            Focusable f = focusRing.GetNextFocusable(currentFocusable, direction);
             direction.ApplyTo(this, f);
             return f;
         }
@@ -489,9 +496,15 @@ namespace UnityEngine.UIElements
 
         void ReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction, DispatchMode dispatchMode)
         {
-            using (BlurEvent e = BlurEvent.GetPooled(focusable, willGiveFocusTo, direction, this))
+            using (ListPool<FocusedElement>.Get(out var focusedElements))
             {
-                focusable.SendEvent(e, dispatchMode);
+                GetFocusTargets(focusable, focusedElements);
+                foreach (var f in focusedElements)
+                {
+                    using BlurEvent e = BlurEvent.GetPooled(f.m_FocusedElement, willGiveFocusTo, direction, this);
+                    e.target = f.m_FocusedElement;
+                    focusable.SendEvent(e, dispatchMode);
+                }
             }
         }
 
@@ -505,9 +518,15 @@ namespace UnityEngine.UIElements
 
         void GrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction, bool bIsFocusDelegated, DispatchMode dispatchMode)
         {
-            using (FocusEvent e = FocusEvent.GetPooled(focusable, willTakeFocusFrom, direction, this, bIsFocusDelegated))
+            using (ListPool<FocusedElement>.Get(out var focusedElements))
             {
-                focusable.SendEvent(e, dispatchMode);
+                GetFocusTargets(focusable, focusedElements);
+                foreach (var f in focusedElements)
+                {
+                    using FocusEvent e = FocusEvent.GetPooled(f.m_FocusedElement, willTakeFocusFrom, direction, this, bIsFocusDelegated);
+                    e.target = f.m_FocusedElement;
+                    focusable.SendEvent(e, dispatchMode);
+                }
             }
         }
 
@@ -536,15 +555,18 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (newFocusedElement == null || !newFocusedElement.canGrabFocus)
+            if (!(newFocusedElement is VisualElement newFocusedVe) || !newFocusedElement.canGrabFocus || newFocusedVe.panel == null)
             {
-                if (oldFocusedElement != null)
+                if (oldFocusedElement is VisualElement oldFocusedVe)
                 {
                     m_LastPendingFocusedElement = null;
                     m_PendingFocusCount++; // ReleaseFocus will always trigger DoFocusChange
 
-                    AboutToReleaseFocus(oldFocusedElement, null, direction, dispatchMode);
-                    ReleaseFocus(oldFocusedElement, null, direction, dispatchMode);
+                    using (new EventDispatcherGate(oldFocusedVe.panel.dispatcher))
+                    {
+                        AboutToReleaseFocus(oldFocusedElement, null, direction, dispatchMode);
+                        ReleaseFocus(oldFocusedElement, null, direction, dispatchMode);
+                    }
                 }
             }
             else if (newFocusedElement != oldFocusedElement)
@@ -556,33 +578,36 @@ namespace UnityEngine.UIElements
                 m_LastPendingFocusedElement = newFocusedElement;
                 m_PendingFocusCount++; // GrabFocus will always trigger DoFocusChange, but ReleaseFocus won't
 
-                if (oldFocusedElement != null)
+                using (new EventDispatcherGate(newFocusedVe.panel.dispatcher))
                 {
-                    AboutToReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction, dispatchMode);
+                    if (oldFocusedElement != null)
+                    {
+                        AboutToReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction, dispatchMode);
+                    }
+
+                    AboutToGrabFocus(newFocusedElement, retargetedOldFocusedElement, direction, dispatchMode);
+
+                    if (oldFocusedElement != null)
+                    {
+                        // Since retargetedNewFocusedElement != null, so ReleaseFocus will not trigger DoFocusChange
+                        ReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction, dispatchMode);
+                    }
+
+                    GrabFocus(newFocusedElement, retargetedOldFocusedElement, direction, bIsFocusDelegated, dispatchMode);
                 }
-
-                AboutToGrabFocus(newFocusedElement, retargetedOldFocusedElement, direction, dispatchMode);
-
-                if (oldFocusedElement != null)
-                {
-                    // Since retargetedNewFocusedElement != null, so ReleaseFocus will not trigger DoFocusChange
-                    ReleaseFocus(oldFocusedElement, retargetedNewFocusedElement, direction, dispatchMode);
-                }
-
-                GrabFocus(newFocusedElement, retargetedOldFocusedElement, direction, bIsFocusDelegated, dispatchMode);
             }
         }
 
-        internal void SwitchFocusOnEvent(EventBase e)
+        internal void SwitchFocusOnEvent(Focusable currentFocusable, EventBase e)
         {
             if (e.processedByFocusController)
                 return;
 
-            using (FocusChangeDirection direction = focusRing.GetFocusChangeDirection(GetLeafFocusedElement(), e))
+            using (FocusChangeDirection direction = focusRing.GetFocusChangeDirection(currentFocusable, e))
             {
                 if (direction != FocusChangeDirection.none)
                 {
-                    FocusNextInDirection(direction);
+                    FocusNextInDirection(currentFocusable, direction);
                     e.processedByFocusController = true;
                     // The new element does not have the focus until the series of focus events have been handled.
                 }

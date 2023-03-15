@@ -130,6 +130,26 @@ namespace UnityEngine.UIElements
         // The usual height used for a control, such as a one-line text field. See --unity-metrics-single_line-height and EditorGUIUtility.singleLineHeight.
         internal static float singleLineHeight = 18;
 
+        internal static bool s_EnableOSXContextualMenuEventsOnNonOSXPlatforms;
+        public static bool isOSXContextualMenuPlatform
+        {
+            get
+            {
+                RuntimePlatform platform = Application.platform;
+                return platform == RuntimePlatform.OSXEditor || platform == RuntimePlatform.OSXPlayer ||
+                       s_EnableOSXContextualMenuEventsOnNonOSXPlatforms;
+            }
+        }
+
+        internal static void EnableOSXContextualMenuEventsOnNonOSXPlatforms()
+        {
+            s_EnableOSXContextualMenuEventsOnNonOSXPlatforms = true;
+        }
+        internal static void ResetOSXContextualMenuEventsOnNonOSXPlatforms()
+        {
+            s_EnableOSXContextualMenuEventsOnNonOSXPlatforms = false;
+        }
+
         internal static Action<IMGUIContainer> s_BeginContainerCallback;
         internal static Action<IMGUIContainer> s_EndContainerCallback;
 

@@ -173,14 +173,14 @@ namespace UnityEditor
                 return;
 
             var isNothing = m_SerializedProperty.intValue == 0;
-            var isEverything = m_SerializedProperty.intValue == int.MaxValue;
+            var isEverything = m_SerializedProperty.intValue == -1;
 
             GUILayout.Space(2);
 
             var toggleStyle = m_SerializedProperty.hasMultipleDifferentValues && isNothing ? Styles.menuItemMixed : Styles.menuItem;
             DrawEverythingOrNothingSelectedToggle(isNothing, "Nothing", toggleStyle, 0);
             toggleStyle = m_SerializedProperty.hasMultipleDifferentValues && isEverything ? Styles.menuItemMixed : Styles.menuItem;
-            DrawEverythingOrNothingSelectedToggle(isEverything, "Everything", toggleStyle, int.MaxValue);
+            DrawEverythingOrNothingSelectedToggle(isEverything, "Everything", toggleStyle, -1);
 
             for (int i = 0; i < m_OptionNames.Length; i++)
             {
@@ -233,7 +233,7 @@ namespace UnityEditor
                 }
 
                 if (property.intValue == m_AllLayersMask)
-                    property.intValue = int.MaxValue;
+                    property.intValue = -1;
 
                 m_SelectionMaskValues[i] = property.intValue;
                 serializedObject.ApplyModifiedProperties();

@@ -23,6 +23,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public string Path { get; }
         /// <summary>
+        /// Subtitle of the item.
+        /// </summary>
+        public string Subtitle { get; }
+        /// <summary>
         /// Search context where this item should figure.
         /// </summary>
         public SearchContext Context { get; }
@@ -46,15 +50,27 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="context">Search context where this item should figure.</param>
         /// <param name="path">Path of the item in the library.</param>
         /// <param name="styleName">Style name to give to this item.</param>
+        /// <param name="subtitle">The subtitle of this item.</param>
         /// <param name="mode">When applicable, the mode of this item.</param>
-        public LibraryItemAttribute(Type stencilType, SearchContext context, string path, string styleName = null, string mode = null)
+        public LibraryItemAttribute(Type stencilType, SearchContext context, string path, string styleName = null, string subtitle = null, string mode = null)
         {
             Assert.IsTrue(
                 stencilType.IsSubclassOf(typeof(Stencil)),
                 $"Parameter stencilType is type of {stencilType.FullName} which is not a subclass of {typeof(Stencil).FullName}");
 
+
+            if (path != null && subtitle == null)
+            {
+                var slash = path.IndexOf('/');
+                if (slash != -1)
+                {
+                    subtitle = path.Substring(0, slash);
+                }
+            }
+
             StencilType = stencilType;
             Path = path;
+            Subtitle = subtitle;
             Context = context;
             StyleName = styleName;
             Mode = mode;

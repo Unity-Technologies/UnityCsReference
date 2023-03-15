@@ -51,10 +51,20 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>True if the port was removed. False otherwise.</returns>
         public bool Remove(PortModel portModel)
         {
+            return Remove(portModel.UniqueName);
+        }
+
+        /// <summary>
+        /// Removes a port from the container using its unique name.
+        /// </summary>
+        /// <param name="uniqueName">The unique name of the port model to remove.</param>
+        /// <returns>True if the port was removed. False otherwise.</returns>
+        public bool Remove(string uniqueName)
+        {
             bool found = false;
-            if (m_Dictionary.ContainsKey(portModel.UniqueName))
+            if (m_Dictionary.TryGetValue(uniqueName, out var portModel))
             {
-                m_Dictionary.Remove(portModel.UniqueName);
+                m_Dictionary.Remove(uniqueName);
                 found = true;
                 int index = m_PortModels.FindIndex(x => x == portModel);
                 m_PortModels.Remove(portModel);
@@ -64,10 +74,10 @@ namespace Unity.GraphToolsFoundation.Editor
                     if (m_Order[i] > index)
                         --m_Order[i];
                 }
-            }
 
-            var graphModel = portModel.NodeModel?.GraphModel;
-            graphModel?.PortWireIndex_Internal.MarkDirty();
+                var graphModel = portModel.NodeModel?.GraphModel;
+                graphModel?.PortWireIndex_Internal.MarkDirty();
+            }
 
             return found;
         }

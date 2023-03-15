@@ -46,6 +46,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public const int frameBorder = 30;
         const float k_VerySmallZoom = 0.125f;
         const float k_SmallZoom = 0.25f;
+        const float k_MediumZoom = 0.75f;
 
         GraphViewZoomMode m_ZoomMode;
 
@@ -71,6 +72,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string verySmallModifier = "very-small";
 
         /// <summary>
+        /// The uss modifier that appears when the graph view is at 100% or zoomed in;
+        /// </summary>
+        public static readonly string mediumModifier = "medium";
+
+        /// <summary>
         /// The class name of the graphview with the small modifier.
         /// </summary>
         public static readonly string ussSmallModifierClassName = ussClassName.WithUssModifier(smallModifier);
@@ -79,6 +85,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// The class name of the graphview with the very small modifier.
         /// </summary>
         public static readonly string ussVerySmallModifierClassName = ussClassName.WithUssModifier(verySmallModifier);
+
+        /// <summary>
+        /// The class name of the graphview with the medium modifier.
+        /// </summary>
+        public static readonly string ussMediumModifierClassName = ussClassName.WithUssModifier(mediumModifier);
 
         readonly Dictionary<int, Layer> m_ContainerLayers = new Dictionary<int, Layer>();
 
@@ -227,17 +238,32 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>A new instance of <see cref="GraphView"/>.</returns>
         public virtual GraphView CreateSimplePreview()
         {
-            return new GraphView(null, null, "", GraphViewDisplayMode.NonInteractive);
+            return Create(null, null, "", GraphViewDisplayMode.NonInteractive);
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="GraphView" /> class.
+        /// Creates and initializes a new instance of the <see cref="GraphView" /> class.
         /// </summary>
         /// <param name="window">The window to which the GraphView belongs.</param>
         /// <param name="graphTool">The tool for this GraphView.</param>
         /// <param name="graphViewName">The name of the GraphView.</param>
         /// <param name="displayMode">The display mode for the graph view.</param>
-        public GraphView(GraphViewEditorWindow window, BaseGraphTool graphTool, string graphViewName,
+        public static GraphView Create(GraphViewEditorWindow window, BaseGraphTool graphTool, string graphViewName,
+            GraphViewDisplayMode displayMode = GraphViewDisplayMode.Interactive)
+        {
+            var view = new GraphView(window, graphTool, graphViewName, displayMode);
+            view.Initialize();
+            return view;
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="GraphView" /> class. Call <see cref="RootView.Initialize"/> to initialize it.
+        /// </summary>
+        /// <param name="window">The window to which the GraphView belongs.</param>
+        /// <param name="graphTool">The tool for this GraphView.</param>
+        /// <param name="graphViewName">The name of the GraphView.</param>
+        /// <param name="displayMode">The display mode for the graph view.</param>
+        protected GraphView(GraphViewEditorWindow window, BaseGraphTool graphTool, string graphViewName,
             GraphViewDisplayMode displayMode = GraphViewDisplayMode.Interactive)
         : base(window, graphTool)
         {
@@ -343,7 +369,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 void StopEvent(EventBase e)
                 {
                     e.StopImmediatePropagation();
-                    e.PreventDefault();
+                    focusController.IgnoreEvent(e);
                 }
 
                 pickingMode = PickingMode.Ignore;
@@ -438,11 +464,14 @@ namespace Unity.GraphToolsFoundation.Editor
                     m_ZoomMode = GraphViewZoomMode.VerySmall;
                 else if (zoom.x < k_SmallZoom)
                     m_ZoomMode = GraphViewZoomMode.Small;
+                else if (zoom.x < k_MediumZoom)
+                    m_ZoomMode = GraphViewZoomMode.Medium;
                 else
                     m_ZoomMode = GraphViewZoomMode.Normal;
 
                 EnableInClassList(ussSmallModifierClassName, m_ZoomMode is GraphViewZoomMode.Small or GraphViewZoomMode.VerySmall);
                 EnableInClassList(ussVerySmallModifierClassName, m_ZoomMode == GraphViewZoomMode.VerySmall);
+                EnableInClassList(ussMediumModifierClassName, m_ZoomMode is GraphViewZoomMode.Medium or GraphViewZoomMode.Small or GraphViewZoomMode.VerySmall );
 
                 ContentViewContainer.transform.scale = zoom;
 
@@ -971,7 +1000,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        protected override void RegisterObservers()
+        protected override void RegisterModelObservers()
         {
             if (GraphTool?.ObserverManager == null)
                 return;
@@ -995,6 +1024,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_SelectionGraphLoadedObserver = new SelectionStateComponent.GraphLoadedObserver(GraphTool.ToolState, GraphViewModel.SelectionState);
                 GraphTool.ObserverManager.RegisterObserver(m_SelectionGraphLoadedObserver);
             }
+        }
+
+        /// <inheritdoc />
+        protected override void RegisterViewObservers()
+        {
+            if (GraphTool?.ObserverManager == null)
+                return;
 
             if (m_UpdateObserver == null)
             {
@@ -1019,12 +1055,10 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        protected override void UnregisterObservers()
+        protected override void UnregisterModelObservers()
         {
             if (GraphTool?.ObserverManager == null)
                 return;
-
-            SelectionDragger?.UnregisterObservers(GraphTool.ObserverManager);
 
             if (m_GraphViewGraphLoadedObserver != null)
             {
@@ -1043,6 +1077,15 @@ namespace Unity.GraphToolsFoundation.Editor
                 GraphTool?.ObserverManager?.UnregisterObserver(m_SelectionGraphLoadedObserver);
                 m_SelectionGraphLoadedObserver = null;
             }
+        }
+
+        /// <inheritdoc />
+        protected override void UnregisterViewObservers()
+        {
+            if (GraphTool?.ObserverManager == null)
+                return;
+
+            SelectionDragger?.UnregisterObservers(GraphTool.ObserverManager);
 
             if (m_UpdateObserver != null)
             {

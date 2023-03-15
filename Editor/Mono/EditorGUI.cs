@@ -6518,7 +6518,25 @@ namespace UnityEditor
         // Make a help box with a message to the user.
         public static void HelpBox(Rect position, string message, MessageType type)
         {
-            GUI.Label(position, EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(type)), EditorStyles.helpBox);
+            HelpBox(position, EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(type)));
+        }
+
+        public static void HelpBox(Rect position, GUIContent content)
+        {
+            if (content.image != null)
+            {
+                var labelRect = position;
+                int iconSize = content.image.width + EditorStyles.helpBox.padding.right;
+                labelRect.x += iconSize;
+                labelRect.width -= iconSize;
+
+                GUI.Label(position, EditorGUIUtility.TempContent(content.image), EditorStyles.helpBox);
+                GUI.Label(labelRect, EditorGUIUtility.TempContent(content.text), EditorStyles.helpBoxLabel);
+            }
+            else
+            {
+                GUI.Label(position, content, EditorStyles.helpBox);
+            }
         }
 
         internal static bool LabelHasContent(GUIContent label)
@@ -10709,23 +10727,26 @@ namespace UnityEditor
 
         public static void HelpBox(string message, MessageType type)
         {
-            LabelField(GUIContent.none, EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(type)), EditorStyles.helpBox);
+            HelpBox(EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(type)), true);
         }
 
         // Make a help box with a message to the user.
         public static void HelpBox(string message, MessageType type, bool wide)
         {
-            LabelField(wide ? GUIContent.none : EditorGUIUtility.blankContent,
-                EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(type)),
-                EditorStyles.helpBox);
+            HelpBox(EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(type)), wide);
         }
 
         // Make a help box with a message to the user.
         public static void HelpBox(GUIContent content, bool wide = true)
         {
-            LabelField(wide ? GUIContent.none : EditorGUIUtility.blankContent,
-                content,
-                EditorStyles.helpBox);
+            BeginHorizontal();
+            PrefixLabel(wide ? GUIContent.none : EditorGUIUtility.blankContent, EditorStyles.helpBox);
+            Rect r = GUILayoutUtility.GetRect(content, EditorStyles.helpBox);
+            int oldIndent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = 0;
+            EditorGUI.HelpBox(r, content);
+            EditorGUI.indentLevel = oldIndent;
+            EndHorizontal();
         }
 
         // Make a label in front of some control.

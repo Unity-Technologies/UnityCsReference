@@ -17,7 +17,6 @@ namespace UnityEngine.UIElements.Experimental
         private readonly long m_Start;
         private readonly bool m_IsPropagationStopped;
         private readonly bool m_IsImmediatePropagationStopped;
-        private readonly bool m_IsDefaultPrevented;
         public EventDebuggerLogCall(Delegate callback, EventBase evt)
         {
             m_Callback = callback;
@@ -26,7 +25,6 @@ namespace UnityEngine.UIElements.Experimental
             m_Start = (long)(Time.realtimeSinceStartup * 1000.0f);
             m_IsPropagationStopped = evt.isPropagationStopped;
             m_IsImmediatePropagationStopped = evt.isImmediatePropagationStopped;
-            m_IsDefaultPrevented = evt.isDefaultPrevented;
         }
 
         public void Dispose()
@@ -39,7 +37,6 @@ namespace UnityEngine.UIElements.Experimental
                 m_Event.eventLogger.LogCall(GetCallbackHashCode(), GetCallbackName(), m_Event,
                     m_IsPropagationStopped != m_Event.isPropagationStopped,
                     m_IsImmediatePropagationStopped != m_Event.isImmediatePropagationStopped,
-                    m_IsDefaultPrevented != m_Event.isDefaultPrevented,
                     (long)(Time.realtimeSinceStartup * 1000.0f) - m_Start, capture);
             }
         }
@@ -171,9 +168,9 @@ namespace UnityEngine.UIElements.Experimental
             UpdateModificationCount();
         }
 
-        public void LogCall(int cbHashCode, string cbName, EventBase evt, bool propagationHasStopped, bool immediatePropagationHasStopped, bool defaultHasBeenPrevented, long duration, IEventHandler mouseCapture)
+        public void LogCall(int cbHashCode, string cbName, EventBase evt, bool propagationHasStopped, bool immediatePropagationHasStopped, long duration, IEventHandler mouseCapture)
         {
-            AddCallObject(cbHashCode, cbName, evt, propagationHasStopped, immediatePropagationHasStopped, defaultHasBeenPrevented, duration, mouseCapture);
+            AddCallObject(cbHashCode, cbName, evt, propagationHasStopped, immediatePropagationHasStopped, duration, mouseCapture);
             UpdateModificationCount();
         }
 
@@ -616,14 +613,14 @@ namespace UnityEngine.UIElements.Experimental
             m_Log = true;
         }
 
-        void AddCallObject(int cbHashCode, string cbName, EventBase evt, bool propagationHasStopped, bool immediatePropagationHasStopped, bool defaultHasBeenPrevented, long duration, IEventHandler mouseCapture)
+        void AddCallObject(int cbHashCode, string cbName, EventBase evt, bool propagationHasStopped, bool immediatePropagationHasStopped, long duration, IEventHandler mouseCapture)
         {
             if (suspended)
                 return;
 
             if (m_Log)
             {
-                var callObject = new EventDebuggerCallTrace(panel, evt, cbHashCode, cbName, propagationHasStopped, immediatePropagationHasStopped, defaultHasBeenPrevented, duration, mouseCapture);
+                var callObject = new EventDebuggerCallTrace(panel, evt, cbHashCode, cbName, propagationHasStopped, immediatePropagationHasStopped, duration, mouseCapture);
 
                 if (!m_EventCalledObjects.TryGetValue(panel, out var list))
                 {
@@ -680,7 +677,7 @@ namespace UnityEngine.UIElements.Experimental
 
             if (m_Log)
             {
-                var callObject = new EventDebuggerCallTrace(panel, evt, 0, "OnGUI", false, false, false, duration, mouseCapture);
+                var callObject = new EventDebuggerCallTrace(panel, evt, 0, "OnGUI", false, false, duration, mouseCapture);
 
                 if (!m_EventCalledObjects.TryGetValue(panel, out var list))
                 {

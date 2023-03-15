@@ -703,9 +703,9 @@ namespace UnityEngine.UIElements
         }
 
         [EventInterest(typeof(GeometryChangedEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (evt == null)
             {
@@ -716,6 +716,12 @@ namespace UnityEngine.UIElements
             {
                 UpdateDragElementPosition((GeometryChangedEvent)evt);
             }
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultAction override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
         }
 
         private void UpdateTextFieldVisibility()

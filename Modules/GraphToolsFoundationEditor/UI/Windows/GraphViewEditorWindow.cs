@@ -139,7 +139,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected virtual GraphView CreateGraphView()
         {
-            return new GraphView(this, GraphTool, GraphTool.Name);
+            return GraphView.Create(this, GraphTool, GraphTool.Name);
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>A new BlackboardView.</returns>
         public virtual BlackboardView CreateBlackboardView()
         {
-            return GraphView != null ? new BlackboardView(this, GraphView) : null;
+            return GraphView != null ? BlackboardView.Create(this, GraphView) : null;
         }
 
         /// <summary>
@@ -157,7 +157,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>A new MiniMapView.</returns>
         public virtual MiniMapView CreateMiniMapView()
         {
-            return new MiniMapView(this, GraphView);
+            return MiniMapView.Create(this, GraphView);
         }
 
         /// <summary>
@@ -166,7 +166,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>A new ModelInspectorView.</returns>
         public virtual ModelInspectorView CreateModelInspectorView()
         {
-            return GraphView != null ? new ModelInspectorView(this, GraphView) : null;
+            return GraphView != null ? ModelInspectorView.Create(this, GraphView) : null;
         }
 
         /// <inheritdoc />
@@ -217,6 +217,24 @@ namespace Unity.GraphToolsFoundation.Editor
             m_WindowID = SerializableGUID.Generate();
         }
 
+        void LoadLastOpenedGraph()
+        {
+            try
+            {
+                var graphModel = GraphTool?.ToolState.LastOpenedGraph.GetGraphModel();
+                if (graphModel != null)
+                {
+                    GraphTool?.Dispatch(new LoadGraphCommand(graphModel,
+                        GraphTool.ToolState.LastOpenedGraph.BoundObject,
+                        LoadGraphCommand.LoadStrategies.KeepHistory));
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(e);
+            }
+        }
+
         protected virtual void OnEnable()
         {
             GraphTool = CreateGraphTool();
@@ -249,31 +267,18 @@ namespace Unity.GraphToolsFoundation.Editor
             rootVisualElement.AddToClassList("unity-theme-env-variables");
             rootVisualElement.AddToClassList("gtf-root");
 
-            // PF FIXME: Use EditorApplication.playModeStateChanged / AssemblyReloadEvents ? Make sure it works on all domain reloads.
-
             // After a domain reload, all loaded objects will get reloaded and their OnEnable() called again
             // It looks like all loaded objects are put in a deserialization/OnEnable() queue
             // the previous graph's nodes/wires/... might be queued AFTER this window's OnEnable
             // so relying on objects to be loaded/initialized is not safe
-            // hence, we need to defer the loading command
-
-            rootVisualElement.schedule.Execute(() =>
-            {
-                try
-                {
-                    var graphModel = GraphTool?.ToolState.LastOpenedGraph.GetGraphModel();
-                    if (graphModel != null)
-                    {
-                        GraphTool?.Dispatch(new LoadGraphCommand(graphModel,
-                            GraphTool.ToolState.LastOpenedGraph.BoundObject,
-                            LoadGraphCommand.LoadStrategies.KeepHistory));
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.LogError(e);
-                }
-            }).ExecuteLater(0);
+            // hence, we need to defer the loading command. Since we can be here from multiple scenarios,
+            // i.e. EnterPlayMode, ProjectLoad, LayoutChanged, etc. or even just opening a new window
+            // and each can have their own order of execution wrt OnEnable() and AfterAssemblyReload,
+            // we therefore rely on EditorApplication.CallDelayed instead which will execute one tick later. We could load the
+            // last opened graph in an EditorApplication.update event, but those event are handled by the test runner and it messes
+            // with some tests.
+            EditorApplication.CallDelayed(LoadLastOpenedGraph);
+            EditorApplication.update += EditorUpdate;
 
             m_GraphProcessingPendingLabel = new Label("Graph Processing Pending") { name = "graph-processing-pending-label" };
 
@@ -313,9 +318,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 GraphTool.ObserverManager.UnregisterObserver(m_AutomaticGraphProcessingObserver);
                 GraphTool.ObserverManager.UnregisterObserver(m_GraphProcessingStatusObserver);
                 GraphTool.Dispose();
+                GraphTool = null;
             }
 
             rootVisualElement.Remove(m_GraphContainer);
+            m_GraphView.Dispose();
 
             m_GraphContainer = null;
             m_GraphView = null;
@@ -323,6 +330,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             m_ShortcutBlocker.Disable();
             m_ShortcutBlocker = null;
+
+            EditorApplication.update -= EditorUpdate;
         }
 
         protected virtual void OnFocus()
@@ -404,11 +413,6 @@ namespace Unity.GraphToolsFoundation.Editor
         protected void OnInspectorUpdate()
         {
             GraphView?.ProcessOnIdleAgent?.Execute();
-
-            UpdateWindowTitle_Internal();
-
-            m_UnsavedChangesWindowIsEnabled = IsUnsavedChangesWindowEnabled();
-            UpdateHasUnsavedChanges_Internal();
         }
 
         protected virtual void Update()
@@ -421,8 +425,6 @@ namespace Unity.GraphToolsFoundation.Editor
             UpdateGraphContainer();
             UpdateOverlays();
 
-            GraphTool.Update();
-
             sw.Stop();
 
             if (GraphTool.Preferences.GetBool(BoolPref.LogUIBuildTime))
@@ -431,6 +433,20 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             Profiler.EndSample();
+        }
+
+        /// <summary>
+        /// Method called each frame as long as it exists, even when the window is hidden and detached from the panel.
+        /// Used to update the models.
+        /// </summary>
+        protected virtual void EditorUpdate()
+        {
+            UpdateWindowTitle_Internal();
+
+            m_UnsavedChangesWindowIsEnabled = IsUnsavedChangesWindowEnabled();
+            UpdateHasUnsavedChanges_Internal();
+
+            GraphTool?.Update();
         }
 
         public void AdjustWindowMinSize(Vector2 size)

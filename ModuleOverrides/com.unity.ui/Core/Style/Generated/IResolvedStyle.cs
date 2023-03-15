@@ -346,7 +346,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         Visibility visibility { get; }
         /// <summary>
-        /// Word wrapping over multiple lines if not enough space is available to draw the text of an element.
+        /// Word wrap over multiple lines if not enough space is available to draw the text of an element.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.

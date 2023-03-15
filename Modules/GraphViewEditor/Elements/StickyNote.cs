@@ -378,7 +378,7 @@ namespace UnityEditor.Experimental.GraphView
                 m_TitleField.textSelection.SelectAll();
 
                 e.StopPropagation();
-                e.PreventDefault();
+                focusController.IgnoreEvent(e);
             }
         }
 
@@ -398,7 +398,7 @@ namespace UnityEditor.Experimental.GraphView
                 m_ContentsField.style.display = DisplayStyle.Flex;
                 m_ContentsField.Q(TextField.textInputUssName).Focus();
                 e.StopPropagation();
-                e.PreventDefault();
+                focusController.IgnoreEvent(e);
             }
         }
 

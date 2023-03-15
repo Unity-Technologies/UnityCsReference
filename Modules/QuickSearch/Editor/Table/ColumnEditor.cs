@@ -148,7 +148,6 @@ namespace UnityEditor.Search
                 {
                     Close();
                     e.StopImmediatePropagation();
-                    e.PreventDefault();
                 }
 
             }, invokePolicy: InvokePolicy.IncludeDisabled, useTrickleDown: TrickleDown.TrickleDown);

@@ -458,6 +458,54 @@ namespace UnityEditorInternal
             return $"{deployDirectory}/{expectedToolExecutableName}";
         }
 
+        internal static string GetLibrarySearchPaths(string name, string tfm, string customRoot = null)
+        {
+            var il2CppFolder = GetIl2CppFolder(out var isDevelopmentLocation);
+            var expectedToolExecutableName = $"{name}.dll";
+
+            if (isDevelopmentLocation)
+            {
+                // Locating the correct development build to use is a little tricky.  Complications come from
+                // 1) We don't know if the Debug or Release build is desired.  To overcome this we will pick whichever was modified most recently
+
+                var topLevel = il2CppFolder;
+                if (customRoot != null)
+                    topLevel = Path.Combine(topLevel, customRoot);
+
+                var toolBinDirectory = Path.Combine(topLevel, name, "bin").ToNPath();
+                var candidates = toolBinDirectory.Files($"*{expectedToolExecutableName}", recurse: true)
+                    .Where(f => f.Parent.FileName == tfm)
+                    .OrderByDescending(f => f.GetLastWriteTimeUtc())
+                    .ToArray();
+
+                if (candidates.Length == 0)
+                    throw new InvalidOperationException($"{name} does not appear to be built in {il2CppFolder}");
+
+                return candidates[0].Parent.ToString();
+            }
+
+            throw new ArgumentException($"Could not locate assembly for {name}");
+        }
+
+        internal static string ConstructBeeLibrarySearchPath()
+        {
+            var projectBinDirs = new[]
+            {
+                GetLibrarySearchPaths("Unity.Options", "netstandard2.0", "repos/UnityOptions"),
+                GetLibrarySearchPaths("Unity.Linker.Api", "netstandard2.0"),
+                GetLibrarySearchPaths("Unity.IL2CPP.Api", "netstandard2.0"),
+                GetLibrarySearchPaths("Unity.Api.Attributes", "netstandard2.0"),
+                GetLibrarySearchPaths("Unity.IL2CPP.Bee.IL2CPPExeCompileCppBuildProgram.Data", "netstandard2.0"),
+                GetLibrarySearchPaths("Unity.IL2CPP.Bee.BuildLogic", "net6.0"),
+                // Now the quirky part.  We need to locate the platform build logic assemblies.
+                // While il2cpp will have these during some build scenarios (IDE build or build.pl)
+                // the project that will always have all of the is il2cpp-compile
+                GetExePath("il2cpp-compile").ToNPath().Parent
+            };
+
+            return projectBinDirs.Aggregate(string.Empty, (accum, next) => $"{accum}{Path.PathSeparator}{next}");
+        }
+
         internal static string GetAdditionalArguments()
         {
             var arguments = new List<string>();

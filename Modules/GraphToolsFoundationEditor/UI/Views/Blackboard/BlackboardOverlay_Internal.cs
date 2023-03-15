@@ -31,6 +31,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var window = containerWindow as GraphViewEditorWindow;
             if (window != null)
             {
+                m_BlackboardView?.Dispose();
                 m_BlackboardView = window.CreateBlackboardView();
                 if (m_BlackboardView != null)
                 {
@@ -44,6 +45,14 @@ namespace Unity.GraphToolsFoundation.Editor
             placeholder.AddToClassList(BlackboardView.ussClassName);
             placeholder.AddStylesheet_Internal("BlackboardView.uss");
             return placeholder;
+        }
+
+        /// <inheritdoc />
+        public override void OnWillBeDestroyed()
+        {
+            base.OnWillBeDestroyed();
+            m_BlackboardView?.Dispose();
+            m_BlackboardView = null;
         }
     }
 }

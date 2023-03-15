@@ -170,9 +170,9 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public override void ExecuteDefaultActionAtTarget(EventBase evt)
+        public override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (!editingUtilities.TouchScreenKeyboardShouldBeUsed() || textElement.edition.isReadOnly)
                 return;

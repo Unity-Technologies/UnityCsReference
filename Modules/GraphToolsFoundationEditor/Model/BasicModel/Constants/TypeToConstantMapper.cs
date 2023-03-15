@@ -40,6 +40,8 @@ namespace Unity.GraphToolsFoundation.Editor
                     { typeof(Mesh).GenerateTypeHandle(), typeof(MeshConstant) },
                     { typeof(Texture2D).GenerateTypeHandle(), typeof(Texture2DConstant) },
                     { typeof(Texture3D).GenerateTypeHandle(), typeof(Texture3DConstant) },
+                    { typeof(AnimationCurve).GenerateTypeHandle(), typeof(AnimationCurveConstant) },
+                    { typeof(Gradient).GenerateTypeHandle(), typeof(GradientConstant) },
                 };
             }
 

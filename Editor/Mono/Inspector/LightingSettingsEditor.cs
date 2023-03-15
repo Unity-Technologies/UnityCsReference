@@ -124,7 +124,7 @@ namespace UnityEditor
             public static readonly GUIContent[] bakeBackendStrings =
             {
                 EditorGUIUtility.TrTextContent("Progressive CPU"),
-                EditorGUIUtility.TrTextContent("Progressive GPU (Preview)"),
+                EditorGUIUtility.TrTextContent("Progressive GPU"),
             };
 
             public static readonly int[] lightmapDirectionalModeValues = { (int)LightmapsMode.NonDirectional, (int)LightmapsMode.CombinedDirectional };
@@ -747,6 +747,10 @@ namespace UnityEditor
 
                 Lightmapping.concurrentJobsType = (Lightmapping.ConcurrentJobsType)EditorGUILayout.IntPopup(Styles.concurrentJobs, (int)Lightmapping.concurrentJobsType, Styles.concurrentJobsTypeStrings, Styles.concurrentJobsTypeValues);
 
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(EditorGUI.indent + 4);
+                EditorGUILayout.BeginVertical();
+
                 if (GUILayout.Button("Clear disk cache", GUILayout.Width(Styles.buttonWidth)))
                 {
                     Lightmapping.Clear();
@@ -763,6 +767,9 @@ namespace UnityEditor
 
                 if (GUILayout.Button("Reset environment", GUILayout.Width(Styles.buttonWidth)))
                     DynamicGI.UpdateEnvironment();
+
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.EndHorizontal();
 
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space();

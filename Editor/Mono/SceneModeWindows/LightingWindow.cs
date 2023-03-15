@@ -246,9 +246,7 @@ namespace UnityEditor
             EditorGUI.DrawDelimiterLine(lineRect);
             EditorGUILayout.Space();
 
-            EditorGUI.indentLevel++;
             DrawBottomBarGUI(selectedMode);
-            EditorGUI.indentLevel--;
 
             lightingSettings.ApplyModifiedProperties();
         }
@@ -570,11 +568,6 @@ namespace UnityEditor
                 DrawGPUDeviceSelector();
                 DrawBakingProfileSelector();
 
-                // Make sure to indent the rest of the panel.
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.Space(EditorGUI.indent + 3);
-                EditorGUILayout.BeginVertical();
-
                 bool resultingIterative = iterativeInLightingSettings && !isEntitiesPackageUsed;
                 using (new EditorGUI.DisabledScope(resultingIterative))
                 {
@@ -612,9 +605,6 @@ namespace UnityEditor
                     m_Tabs[selectedMode].OnSummaryGUI();
                     GUILayout.EndVertical();
                 }
-
-                EditorGUILayout.EndVertical();
-                EditorGUILayout.EndHorizontal();
             }
         }
 

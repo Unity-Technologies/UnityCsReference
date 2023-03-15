@@ -212,7 +212,6 @@ namespace UnityEditor.UIElements
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             RegisterCallback<KeyDownEvent>(OnKeyDown);
             RegisterCallback<PointerDownEvent>(OnPointerDown);
-            RegisterCallback<MouseDownEvent>(OnMouseDownCompatibilityEvent);
 
             visualInput.generateVisualContent += OnGenerateVisualContent;
         }
@@ -306,29 +305,21 @@ namespace UnityEditor.UIElements
             }
         }
 
-        void OnMouseDownCompatibilityEvent(MouseDownEvent evt)
-        {
-            var mdeInternal = (IMouseEventInternal)evt;
-            if (visualInput.ContainsPoint(visualInput.WorldToLocal(evt.mousePosition)) && mdeInternal.sourcePointerEvent != null && ((EventBase)mdeInternal.sourcePointerEvent).isPropagationStopped)
-            {
-                evt.StopPropagation();
-            }
-        }
-
         [EventInterest(typeof(DetachFromPanelEvent), typeof(GeometryChangedEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
-
-            if (evt == null)
-            {
-                return;
-            }
+            base.HandleEventBubbleUp(evt);
 
             if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
                 OnDetach();
             else if (evt.eventTypeId == GeometryChangedEvent.TypeId())
                 m_TextureDirty = true;
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultAction override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
         }
 
         void OnCurveChanged(AnimationCurve curve)
@@ -602,9 +593,9 @@ namespace UnityEditor.UIElements
             }
 
             [EventInterest(typeof(DetachFromPanelEvent))]
-            protected override void ExecuteDefaultAction(EventBase evt)
+            protected override void HandleEventBubbleUp(EventBase evt)
             {
-                base.ExecuteDefaultAction(evt);
+                base.HandleEventBubbleUp(evt);
 
                 if (evt?.eventTypeId == DetachFromPanelEvent.TypeId())
                     OnDetach();

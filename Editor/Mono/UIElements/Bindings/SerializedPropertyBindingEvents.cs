@@ -140,7 +140,7 @@ namespace UnityEditor.UIElements
 
         void LocalInit()
         {
-            this.propagation = EventPropagation.Cancellable; // Also makes it not propagatable.
+            this.propagation = EventPropagation.None;
             m_BindObject = null;
         }
 
@@ -182,7 +182,7 @@ namespace UnityEditor.UIElements
 
         void LocalInit()
         {
-            this.propagation = EventPropagation.Cancellable; // Also makes it not propagatable.
+            this.propagation = EventPropagation.None;
             m_BindProperty = null;
         }
 

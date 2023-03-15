@@ -7,6 +7,8 @@
 // We moved pointer events support in this class and removed PointerClickable.cs in a first step towards handling
 // only pointer events as the default, and slowly moving away from mouse events which are not touch screen friendly.
 
+using System;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -140,11 +142,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown, invokePolicy);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove, invokePolicy);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp, InvokePolicy.IncludeDisabled);
-            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut, InvokePolicy.IncludeDisabled);
-
             target.RegisterCallback<PointerDownEvent>(OnPointerDown, invokePolicy);
             target.RegisterCallback<PointerMoveEvent>(OnPointerMove, invokePolicy);
             target.RegisterCallback<PointerUpEvent>(OnPointerUp, InvokePolicy.IncludeDisabled);
@@ -157,11 +154,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected override void UnregisterCallbacksFromTarget()
         {
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
-            target.UnregisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
-
             target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
@@ -169,58 +161,38 @@ namespace UnityEngine.UIElements
             target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
         }
 
-        /// <summary>
-        /// This method is called when a MouseDownEvent is sent to the target element.
-        /// </summary>
-        /// <param name="evt">The event.</param>
+        [Obsolete("OnMouseDown has been removed and replaced by its pointer-based equivalent. Please use OnPointerDown.", false)]
         protected void OnMouseDown(MouseDownEvent evt)
         {
             if (CanStartManipulation(evt))
                 ProcessDownEvent(evt, evt.localMousePosition, PointerId.mousePointerId);
         }
 
-        /// <summary>
-        /// This method is called when a MouseMoveEvent is sent to the target element.
-        /// </summary>
-        /// <param name="evt">The event.</param>
+        [Obsolete("OnMouseMove has been removed and replaced by its pointer-based equivalent. Please use OnPointerMove.", false)]
         protected void OnMouseMove(MouseMoveEvent evt)
         {
             if (active)
                 ProcessMoveEvent(evt, evt.localMousePosition);
         }
 
-        /// <summary>
-        /// This method is called when a MouseUpEvent is sent to the target element.
-        /// </summary>
-        /// <param name="evt">The event.</param>
+        [Obsolete("OnMouseUp has been removed and replaced by its pointer-based equivalent. Please use OnPointerUp.", false)]
         protected void OnMouseUp(MouseUpEvent evt)
         {
             if (active && CanStopManipulation(evt))
                 ProcessUpEvent(evt, evt.localMousePosition, PointerId.mousePointerId);
         }
 
-        void OnMouseCaptureOut(MouseCaptureOutEvent evt)
-        {
-            if (active)
-                ProcessCancelEvent(evt, PointerId.mousePointerId);
-        }
-
         /// <summary>
         /// This method is called when a PointerDownEvent is sent to the target element.
         /// </summary>
         /// <param name="evt">The event.</param>
-        void OnPointerDown(PointerDownEvent evt)
+        protected void OnPointerDown(PointerDownEvent evt)
         {
             if (!CanStartManipulation(evt)) return;
 
-            if (evt.pointerId != PointerId.mousePointerId)
+            if (!evt.DiscardMouseEventsOnMobile())
             {
                 ProcessDownEvent(evt, evt.localPosition, evt.pointerId);
-                target.panel.PreventCompatibilityMouseEvents(evt.pointerId);
-            }
-            else
-            {
-                evt.StopImmediatePropagation();
             }
         }
 
@@ -228,18 +200,13 @@ namespace UnityEngine.UIElements
         /// This method is called when a PointerMoveEvent is sent to the target element.
         /// </summary>
         /// <param name="evt">The event.</param>
-        void OnPointerMove(PointerMoveEvent evt)
+        protected void OnPointerMove(PointerMoveEvent evt)
         {
             if (!active) return;
 
-            if (evt.pointerId != PointerId.mousePointerId)
+            if (!evt.DiscardMouseEventsOnMobile())
             {
                 ProcessMoveEvent(evt, evt.localPosition);
-                target.panel.PreventCompatibilityMouseEvents(evt.pointerId);
-            }
-            else
-            {
-                evt.StopPropagation();
             }
         }
 
@@ -247,18 +214,13 @@ namespace UnityEngine.UIElements
         /// This method is called when a PointerUpEvent is sent to the target element.
         /// </summary>
         /// <param name="evt">The event.</param>
-        void OnPointerUp(PointerUpEvent evt)
+        protected void OnPointerUp(PointerUpEvent evt)
         {
             if (!active || !CanStopManipulation(evt)) return;
 
-            if (evt.pointerId != PointerId.mousePointerId)
+            if (!evt.DiscardMouseEventsOnMobile())
             {
                 ProcessUpEvent(evt, evt.localPosition, evt.pointerId);
-                target.panel.PreventCompatibilityMouseEvents(evt.pointerId);
-            }
-            else
-            {
-                evt.StopPropagation();
             }
         }
 
@@ -270,10 +232,7 @@ namespace UnityEngine.UIElements
         {
             if (!active || !CanStopManipulation(evt)) return;
 
-            if (IsNotMouseEvent(evt.pointerId))
-            {
-                ProcessCancelEvent(evt, evt.pointerId);
-            }
+            ProcessCancelEvent(evt, evt.pointerId);
         }
 
         /// <summary>
@@ -284,21 +243,13 @@ namespace UnityEngine.UIElements
         {
             if (!active) return;
 
-            if (IsNotMouseEvent(evt.pointerId))
-            {
-                ProcessCancelEvent(evt, evt.pointerId);
-            }
+            ProcessCancelEvent(evt, evt.pointerId);
         }
 
         bool ContainsPointer(int pointerId)
         {
             var elementUnderPointer = target.elementPanel.GetTopElementUnderPointer(pointerId);
             return target == elementUnderPointer || target.Contains(elementUnderPointer);
-        }
-
-        static bool IsNotMouseEvent(int pointerId)
-        {
-            return pointerId != PointerId.mousePointerId;
         }
 
         /// <summary>

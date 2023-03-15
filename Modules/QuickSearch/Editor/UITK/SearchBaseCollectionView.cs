@@ -227,7 +227,6 @@ namespace UnityEditor.Search
 
             m_ListView.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove);
             evt.StopImmediatePropagation();
-            evt.PreventDefault();
         }
 
         private void WrapNextSelectedItem(int currentIndex, int itemCount, ref int nextSelectedIndex)

@@ -474,7 +474,6 @@ namespace UnityEditor.Search
             if (Apply(operation, shiftKey))
             {
                 sourceEvent?.StopPropagation();
-                sourceEvent?.PreventDefault();
             }
         }
 

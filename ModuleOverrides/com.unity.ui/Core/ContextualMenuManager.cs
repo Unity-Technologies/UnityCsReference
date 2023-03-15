@@ -29,6 +29,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="triggerEvent">The event that triggered the display of the menu.</param>
         /// <param name="target">The element for which the menu is displayed.</param>
+        /// <returns>True if a contextual menu was effectively displayed.</returns>
         public void DisplayMenu(EventBase triggerEvent, IEventHandler target)
         {
             DropdownMenu menu = new DropdownMenu();
@@ -38,9 +39,14 @@ namespace UnityEngine.UIElements
                 target?.SendEvent(cme);
             }
 
-            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+            if (UIElementsUtility.isOSXContextualMenuPlatform)
             {
                 displayMenuHandledOSX = true;
+
+                // The pointer up will likely happen on the menu itself. Since we won't get a chance to call
+                // ActivateCompatibilityMouseEvents until the next pointer down, we need to not prevent them.
+                if (triggerEvent is PointerDownEvent p)
+                    p.DontPreventCompatibilityMouseEventsOnPropagationStopped();
             }
         }
 

@@ -20,9 +20,6 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern bool IsValid();
 
-        internal extern FoundryHandle GetNameHandle();
-        internal extern FoundryHandle GetValueHandle();
-
         // IInternalType
         TagDescriptorInternal IInternalType<TagDescriptorInternal>.ConstructInvalid() => Invalid();
     }
@@ -45,8 +42,8 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && descriptor.IsValid());
 
-        public string Name => Container?.GetString(descriptor.GetNameHandle()) ?? string.Empty;
-        public string Value => Container?.GetString(descriptor.GetValueHandle()) ?? string.Empty;
+        public string Name => Container?.GetString(descriptor.m_NameHandle) ?? string.Empty;
+        public string Value => Container?.GetString(descriptor.m_ValueHandle) ?? string.Empty;
 
         // private
         internal TagDescriptor(ShaderContainer container, FoundryHandle handle)

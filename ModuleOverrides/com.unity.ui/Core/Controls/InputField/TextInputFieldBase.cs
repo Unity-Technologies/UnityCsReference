@@ -39,9 +39,6 @@ namespace UnityEngine.UIElements
         internal const int kMaxLengthNone = -1;
         internal const char kMaskCharDefault = '*';
 
-        // This is to save the value of the tabindex of the visual input to achieve the IMGUI behaviour of tabbing on focused-non-edit-mode TextFields.
-        int m_VisualInputTabIndex;
-
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for <see cref="TextInputFieldBase"/>.
         /// </summary>
@@ -605,53 +602,38 @@ namespace UnityEngine.UIElements
             return TextUtilities.MeasureVisualElementTextSize(m_TextInputBase.textElement, textToMeasure, width, widthMode, height, heightMode);
         }
 
-        [EventInterest(typeof(NavigationSubmitEvent), typeof(FocusInEvent), typeof(FocusEvent), typeof(BlurEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        [EventInterest(typeof(NavigationSubmitEvent), typeof(FocusInEvent), typeof(FocusEvent), typeof(FocusOutEvent),
+            typeof(BlurEvent))]
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (textEdition.isReadOnly)
                 return;
 
-            if (evt.eventTypeId == NavigationSubmitEvent.TypeId() && evt.leafTarget != textInputBase.textElement)
+            if (evt.eventTypeId == NavigationSubmitEvent.TypeId() && evt.target != textInputBase.textElement)
             {
                 textInputBase.textElement.Focus();
             }
-
-            // The following code is to help achieve the following behaviour:
-            // On IMGUI, on any text input field in focused-non-edit-mode, doing a TAB will allow the user to get to the next control...
-            // To mimic that behaviour in UIE, when in focused-non-edit-mode, we have to make sure the input is not "tabbable".
-            //     So, each time, either the main TextField or the Label is receiving the focus, we remove the tabIndex on
-            //     the input, and we put it back when the BlurEvent is received.
+            else if (evt.eventTypeId == NavigationMoveEvent.TypeId() && evt.target != textInputBase.textElement)
+            {
+                // Move focus as though the textElement was focused to begin with.
+                // This allows TextField to have a similar behavior than IMGUI where if you select a TextField,
+                // press Enter, then Tab to the next element, it jumps over the text content and into the next control.
+                focusController.SwitchFocusOnEvent(textInputBase.textElement, evt);
+            }
             else if (evt.eventTypeId == FocusInEvent.TypeId())
             {
                 if (showMixedValue)
                     textEdition.ResetValueAndText();
-
-                if (evt.leafTarget == this || evt.leafTarget == labelElement)
-                {
-                    m_VisualInputTabIndex = textInputBase.textElement.tabIndex;
-                    textInputBase.textElement.tabIndex = -1;
-                }
             }
-            // The following code was added to help achieve the following behaviour:
-            // On IMGUI, doing a Return, Shift+Return or Escape will get out of the Edit mode, but stay on the control. To allow a
-            //     focused-non-edit-mode, we remove the delegateFocus when we start editing to allow focusing on the parent,
-            //     and we restore it when we exit the control, to prevent coming in a semi-focused state from outside the control.
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
                 UpdatePlaceholderClassList();
-                delegatesFocus = false;
             }
             else if (evt.eventTypeId == BlurEvent.TypeId())
             {
                 UpdatePlaceholderClassList();
-                delegatesFocus = true;
-
-                if (evt.leafTarget == this || evt.leafTarget == labelElement)
-                {
-                    textInputBase.textElement.tabIndex = m_VisualInputTabIndex;
-                }
             }
         }
 
@@ -865,7 +847,7 @@ namespace UnityEngine.UIElements
             internal void MoveFocusToCompositeRoot()
             {
                 TextInputBaseField<TValueType> parentTextField = (TextInputBaseField<TValueType>)parent;
-                parentTextField.Focus();
+                focusController.SwitchFocus(parentTextField);
                 textEdition.keyboardType = TouchScreenKeyboardType.Default;
                 textEdition.autoCorrection = false;
             }

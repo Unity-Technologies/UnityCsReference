@@ -202,7 +202,6 @@ namespace UnityEditor.Search
 
             if (SetValue(value) && evt is EventBase eb)
             {
-                eb.PreventDefault();
                 eb.StopPropagation();
             }
         }

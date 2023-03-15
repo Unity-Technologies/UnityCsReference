@@ -729,7 +729,7 @@ namespace UnityEngine.UIElements
             {
                 m_Owner.m_PhysicalParent = value;
                 m_Owner.m_LogicalParent = value;
-                m_Owner.DirtyNextParentWithEventCallback();
+                m_Owner.DirtyNextParentWithEventInterests();
                 m_Owner.SetPanel(value?.elementPanel);
             }
 

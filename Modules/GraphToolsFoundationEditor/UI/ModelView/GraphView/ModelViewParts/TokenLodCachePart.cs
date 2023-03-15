@@ -28,12 +28,19 @@ namespace Unity.GraphToolsFoundation.Editor
             return null;
         }
 
-        TokenLodCachePart(string name, Model model, ModelView ownerElement, string parentClassName)
+        /// <summary>
+        /// Creates a new instance of the <see cref="TokenLodCachePart"/> class.
+        /// </summary>
+        /// <param name="name">The name of the part.</param>
+        /// <param name="model">The model displayed in this part.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
+        /// <param name="parentClassName">The class name of the parent.</param>
+        protected TokenLodCachePart(string name, Model model, ModelView ownerElement, string parentClassName)
             : base(name, model, ownerElement, parentClassName) { }
 
-        Image m_Icon;
-        VisualElement m_Background;
-        VisualElement m_Root;
+        protected Image m_Icon;
+        protected VisualElement m_Background;
+        protected VisualElement m_Root;
 
         /// <inheritdoc />
         public override VisualElement Root => m_Root;

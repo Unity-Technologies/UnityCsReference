@@ -192,8 +192,9 @@ namespace UnityEditor.TerrainTools
             m_Slider.RegisterCallback<GeometryChangedEvent>(OnSliderWidthChange);
             textField.RegisterValueChangedCallback(TextFieldValueChange);
             m_Slider.RegisterValueChangedCallback(SliderSetValue);
-            m_Slider.RegisterCallback<MouseDownEvent>(SliderMouseDownEvent);
-            m_Slider.RegisterCallback<MouseUpEvent>(SliderMouseUpEvent);
+            // Register Mouse Up/Down in TrickleDown to stop propagation before triggering ContextualMenu
+            m_Slider.RegisterCallback<MouseDownEvent>(SliderMouseDownEvent, TrickleDown.TrickleDown);
+            m_Slider.RegisterCallback<MouseUpEvent>(SliderMouseUpEvent, TrickleDown.TrickleDown);
             contentTextField.RegisterCallback<MouseDownEvent>(TextFieldMouseDownEvent);
             textField.RegisterCallback<KeyDownEvent>(TextFieldKeyDownEvent);
         }
@@ -206,8 +207,8 @@ namespace UnityEditor.TerrainTools
             m_Slider.UnregisterCallback<GeometryChangedEvent>(OnSliderWidthChange);
             textField.UnregisterValueChangedCallback(TextFieldValueChange);
             m_Slider.UnregisterValueChangedCallback(SliderSetValue);
-            m_Slider.UnregisterCallback<MouseDownEvent>(SliderMouseDownEvent);
-            m_Slider.UnregisterCallback<MouseUpEvent>(SliderMouseUpEvent);
+            m_Slider.UnregisterCallback<MouseDownEvent>(SliderMouseDownEvent, TrickleDown.TrickleDown);
+            m_Slider.UnregisterCallback<MouseUpEvent>(SliderMouseUpEvent, TrickleDown.TrickleDown);
             contentTextField.UnregisterCallback<MouseDownEvent>(TextFieldMouseDownEvent);
             textField.UnregisterCallback<KeyDownEvent>(TextFieldKeyDownEvent);
         }
@@ -242,7 +243,6 @@ namespace UnityEditor.TerrainTools
             if (e.button == (int)MouseButton.RightMouse)
             {
                 e.StopPropagation();
-                e.PreventDefault();
 
                 var textField = m_Slider.Q("textField") as FloatField;
                 var contentTextField = m_Slider.Q("contentTextField");
@@ -263,7 +263,6 @@ namespace UnityEditor.TerrainTools
             if (e.button == (int)MouseButton.RightMouse)
             {
                 e.StopPropagation();
-                e.PreventDefault();
             }
         }
 

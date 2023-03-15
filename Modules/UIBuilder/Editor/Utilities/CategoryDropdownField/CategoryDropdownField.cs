@@ -78,9 +78,9 @@ namespace Unity.UI.Builder
         }
 
         [EventInterest(typeof(KeyDownEvent), typeof(MouseDownEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (evt == null)
                 return;

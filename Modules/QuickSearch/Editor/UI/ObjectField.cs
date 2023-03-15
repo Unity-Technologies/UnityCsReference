@@ -114,9 +114,9 @@ namespace UnityEditor.Search
 
             [EventInterest(typeof(MouseDownEvent), typeof(KeyDownEvent),
                 typeof(DragUpdatedEvent), typeof(DragPerformEvent), typeof(DragLeaveEvent))]
-            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+            protected override void HandleEventBubbleUp(EventBase evt)
             {
-                base.ExecuteDefaultActionAtTarget(evt);
+                base.HandleEventBubbleUp(evt);
 
                 if (evt == null)
                 {
@@ -243,9 +243,9 @@ namespace UnityEditor.Search
             }
 
             [EventInterest(typeof(MouseDownEvent))]
-            protected override void ExecuteDefaultAction(EventBase evt)
+            protected override void HandleEventBubbleUp(EventBase evt)
             {
-                base.ExecuteDefaultAction(evt);
+                base.HandleEventBubbleUp(evt);
 
                 if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
                     m_ObjectField.ShowObjectSelector();

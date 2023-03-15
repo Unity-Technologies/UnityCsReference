@@ -49,8 +49,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AnchorWindow = anchorWindow;
 
             packageNameField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            packageNameField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
-            packageVersionField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            packageNameField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
+            packageVersionField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
 
             m_PackageNamePlaceholder = new TextFieldPlaceholder(packageNameField, L10n.Tr("Name"));
             m_PackageVersionPlaceholder = new TextFieldPlaceholder(packageVersionField, L10n.Tr("Version (optional)"));
@@ -79,8 +79,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageVersionPlaceholder.OnDisable();
 
             packageNameField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            packageNameField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
-            packageVersionField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            packageNameField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
+            packageVersionField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
 
             if (m_AnchorWindow != null)
             {

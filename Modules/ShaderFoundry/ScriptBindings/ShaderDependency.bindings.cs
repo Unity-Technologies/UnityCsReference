@@ -15,6 +15,8 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static ShaderDependencyInternal Invalid();
         internal extern bool IsValid();
+        internal extern string GetDependencyName(ShaderContainer container);
+        internal extern string GetShaderName(ShaderContainer container);
 
         // IInternalType
         ShaderDependencyInternal IInternalType<ShaderDependencyInternal>.ConstructInvalid() => Invalid();
@@ -58,8 +60,8 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
-        public string DependencyName => container?.GetString(shaderDependency.m_DependencyNameStringHandle);
-        public string ShaderName => container?.GetString(shaderDependency.m_ShaderNameStringHandle);
+        public string DependencyName => shaderDependency.GetDependencyName(container);
+        public string ShaderName => shaderDependency.GetShaderName(container);
 
         internal ShaderDependency(ShaderContainer container, FoundryHandle handle)
         {

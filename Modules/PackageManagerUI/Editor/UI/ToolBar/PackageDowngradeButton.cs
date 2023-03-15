@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var canDownload = m_OperationDispatcher.Download(version.package);
             if (canDownload)
-                PackageManagerWindowAnalytics.SendEvent("startDownloadDowngrade", version.package.uniqueId);
+                PackageManagerWindowAnalytics.SendEvent("startDownloadDowngrade", version);
             return canDownload;
         }
 

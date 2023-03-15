@@ -32,9 +32,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public DropdownMenuEventInfo(EventBase e)
         {
-            IMouseEvent mouseEvent = e as IMouseEvent;
-
-            if (mouseEvent != null)
+            if (e is IMouseEvent mouseEvent)
             {
                 mousePosition = mouseEvent.mousePosition;
                 localMousePosition = mouseEvent.localMousePosition;
@@ -42,17 +40,21 @@ namespace UnityEngine.UIElements
                 character = '\0';
                 keyCode = KeyCode.None;
             }
-            else
+            else if (e is IPointerEvent pointerEvent)
             {
-                IKeyboardEvent keyboardEvent = e as IKeyboardEvent;
-                if (keyboardEvent != null)
-                {
-                    character = keyboardEvent.character;
-                    keyCode = keyboardEvent.keyCode;
-                    modifiers = keyboardEvent.modifiers;
-                    mousePosition = Vector2.zero;
-                    localMousePosition = Vector2.zero;
-                }
+                mousePosition = pointerEvent.position;
+                localMousePosition = pointerEvent.localPosition;
+                modifiers = pointerEvent.modifiers;
+                character = '\0';
+                keyCode = KeyCode.None;
+            }
+            else if (e is IKeyboardEvent keyboardEvent)
+            {
+                character = keyboardEvent.character;
+                keyCode = keyboardEvent.keyCode;
+                modifiers = keyboardEvent.modifiers;
+                mousePosition = Vector2.zero;
+                localMousePosition = Vector2.zero;
             }
         }
     }
@@ -201,6 +203,8 @@ namespace UnityEngine.UIElements
     {
         List<DropdownMenuItem> m_MenuItems = new List<DropdownMenuItem>();
         DropdownMenuEventInfo m_DropdownMenuEventInfo;
+
+        internal int Count => m_MenuItems.Count;
 
         /// <summary>
         /// Get the list of menu items.

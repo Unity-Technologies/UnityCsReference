@@ -111,7 +111,7 @@ namespace Unity.GraphToolsFoundation.Editor
             AddToClassList(ussClassName);
         }
 
-        protected virtual VisualElement CreateDefaultFieldForType(Type type, string fieldTooltip)
+        protected virtual VisualElement CreateDefaultFieldForType(Type type, string fieldTooltip, IReadOnlyList<Attribute> attributes = null)
         {
             // PF TODO Eventually, add support for nested properties, arrays and Enum Flags.
 
@@ -147,17 +147,28 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (type == typeof(string))
             {
-                TextField field;
-                if (InspectedField != null && InspectedField.FieldType == typeof(string) && InspectedField.GetCustomAttribute<MultilineAttribute>() != null)
+                var enumAttribute = attributes?.OfType<EnumAttribute>().SingleOrDefault();
+                if (enumAttribute != null)
                 {
-                    AddToClassList(multilineUssClassName);
-                    field = new TextField() { isDelayed = true, tooltip = fieldTooltip, multiline = true };
+                    var enumValues = enumAttribute.Values;
+                    var defaultValue = enumValues.Length > 0 ? enumValues.GetValue(0).ToString() : null;
+                    var field = new DropdownField(enumValues.ToList(), defaultValue) { tooltip = fieldTooltip };
+                    return ConfigureField(field);
                 }
                 else
                 {
-                    field = new TextField { isDelayed = true, tooltip = fieldTooltip };
+                    TextField field;
+                    if (InspectedField != null && InspectedField.FieldType == typeof(string) && InspectedField.GetCustomAttribute<MultilineAttribute>() != null)
+                    {
+                        AddToClassList(multilineUssClassName);
+                        field = new TextField() { isDelayed = true, tooltip = fieldTooltip, multiline = true };
+                    }
+                    else
+                    {
+                        field = new TextField { isDelayed = true, tooltip = fieldTooltip };
+                    }
+                    return ConfigureField(field);
                 }
-                return ConfigureField(field);
             }
 
             if (type == typeof(Color))
@@ -230,6 +241,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 var field = new TextField { isDelayed = true, tooltip = fieldTooltip };
                 field.maxLength = 1;
+                field.AddToClassList("unity-char-field");
                 return ConfigureField(field);
             }
 

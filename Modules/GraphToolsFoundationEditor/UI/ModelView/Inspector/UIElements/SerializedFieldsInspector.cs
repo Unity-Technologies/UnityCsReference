@@ -108,6 +108,27 @@ namespace Unity.GraphToolsFoundation.Editor
             if (targets == null)
                 yield break;
 
+            var inspectorOrderFields = new SortedDictionary<int, List<BaseModelPropertyField>>();
+
+            foreach (var field in AddFieldsFromTypes(targets, inspectorOrderFields))
+                yield return field;
+
+            var customFields = GetCustomFields();
+            if (customFields != null)
+            {
+                foreach (var field in customFields)
+                    yield return field;
+            }
+
+            foreach (var fieldAtPositionList in inspectorOrderFields.Values)
+            {
+                foreach (var field in fieldAtPositionList)
+                    yield return field;
+            }
+        }
+
+        protected IEnumerable<BaseModelPropertyField> AddFieldsFromTypes(IEnumerable<object> targets, SortedDictionary<int, List<BaseModelPropertyField>> inspectorOrderFields)
+        {
             var type = ModelHelpers.GetCommonBaseType(targets);
 
             if (type == null)
@@ -121,7 +142,22 @@ namespace Unity.GraphToolsFoundation.Editor
                 type = type.BaseType;
             }
 
-            SortedDictionary<int, List<FieldInfo>> inspectorOrderAttributeFields = new SortedDictionary<int, List<FieldInfo>>();
+            foreach (var t in typeList)
+            {
+                var fields = t.GetFields(k_FieldFlags);
+                foreach (var fieldInfo in fields.Where(m_Filter))
+                {
+                    var moveAfter = fieldInfo.GetCustomAttribute<InspectorFieldOrderAttribute>();
+
+                    if (moveAfter != null)
+                    {
+                        AddFieldToInspectorOrderFields(moveAfter.Order, GetFieldFromFieldInfo(fieldInfo), inspectorOrderFields);
+                        continue;
+                    }
+
+                    yield return GetFieldFromFieldInfo(fieldInfo);
+                }
+            }
 
             BaseModelPropertyField GetFieldFromFieldInfo(FieldInfo fieldInfo1)
             {
@@ -138,44 +174,16 @@ namespace Unity.GraphToolsFoundation.Editor
                     as BaseModelPropertyField;
                 return baseModelPropertyField;
             }
+        }
 
-            foreach (var t in typeList)
+        protected static void AddFieldToInspectorOrderFields(int order, BaseModelPropertyField fieldToAdd, SortedDictionary<int, List<BaseModelPropertyField>> inspectorOrderFields)
+        {
+            if (!inspectorOrderFields.TryGetValue(order, out var fieldsAtPosition))
             {
-                var fields = t.GetFields(k_FieldFlags);
-                foreach (var fieldInfo in fields.Where(m_Filter))
-                {
-                    var moveAfter = fieldInfo.GetCustomAttribute<InspectorFieldOrderAttribute>();
-
-                    if (moveAfter != null)
-                    {
-                        if (!inspectorOrderAttributeFields.TryGetValue(moveAfter.Order, out var fieldInfosAtPosition))
-                        {
-                            fieldInfosAtPosition = new List<FieldInfo>();
-                            inspectorOrderAttributeFields[moveAfter.Order] = fieldInfosAtPosition;
-                        }
-                        fieldInfosAtPosition.Add(fieldInfo);
-
-                        continue;
-                    }
-
-                    yield return GetFieldFromFieldInfo(fieldInfo);
-                }
+                fieldsAtPosition = new List<BaseModelPropertyField>();
+                inspectorOrderFields[order] = fieldsAtPosition;
             }
-
-            var customFields = GetCustomFields();
-            if (customFields != null)
-            {
-                foreach (var field in customFields)
-                    yield return field;
-            }
-
-            foreach (var fieldInfosAtPosition in inspectorOrderAttributeFields.Values)
-            {
-                foreach (var fieldInfo in fieldInfosAtPosition)
-                {
-                    yield return GetFieldFromFieldInfo(fieldInfo);
-                }
-            }
+            fieldsAtPosition.Add(fieldToAdd);
         }
     }
 }

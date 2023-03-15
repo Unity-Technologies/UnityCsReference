@@ -124,12 +124,9 @@ namespace UnityEditor.Search
                         m_ValueElement = new FloatField() { label = "\u2022", style = { flexDirection = FlexDirection.Row } };
                         break;
                     case MaterialProperty.PropType.Range:
-                        m_ValueElement = new Slider(0f, 1f);
-                        m_ValueElement.Add(new Label());
-                        m_ValueElement.RegisterCallback<ChangeEvent<float>>(evt =>
-                        {
-                            m_ValueElement.Q<Label>().text = m_ValueElement.tooltip = evt.newValue.ToString();
-                        });
+                        var slider = new Slider(0f, 1f);
+                        slider.showInputField = true;
+                        m_ValueElement = slider;
                         break;
                     case MaterialProperty.PropType.Vector: m_ValueElement = new Vector4Field(); break;
                     case MaterialProperty.PropType.Texture:
@@ -185,7 +182,6 @@ namespace UnityEditor.Search
                                 s.SetValueWithoutNotify(matProp.floatValue);
                                 s.lowValue = matProp.rangeLimits.x;
                                 s.SetHighValueWithoutNotify(matProp.rangeLimits.y);
-                                s.Q<Label>().text = s.tooltip = matProp.floatValue.ToString();
                             }
                         }
                         break;

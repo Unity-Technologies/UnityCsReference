@@ -187,7 +187,6 @@ namespace Unity.UI.Builder
             value = evt.newValue;
 
             evt.StopImmediatePropagation();
-            evt.PreventDefault();
         }
 
         void OnPopupFieldValueChange(ChangeEvent<string> evt)
@@ -195,23 +194,21 @@ namespace Unity.UI.Builder
             // There's a bug in UIE that makes the PopupField send a ChangeEvent<string> even
             // if you called SetValueWithoutNotify(). It's the PopupTextElement.text that
             // sends it. Hence, this check.
-            if (evt.leafTarget != optionsPopup)
+            if (evt.target != optionsPopup)
             {
                 evt.StopImmediatePropagation();
-                evt.PreventDefault();
                 return;
             }
 
             value = evt.newValue;
 
             evt.StopImmediatePropagation();
-            evt.PreventDefault();
         }
 
         [EventInterest(typeof(AttachToPanelEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (evt.eventTypeId != AttachToPanelEvent.TypeId())
                 return;

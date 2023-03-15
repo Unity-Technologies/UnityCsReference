@@ -84,7 +84,10 @@ namespace UnityEditor.UIElements
                     tooltipEvent.rect = Rect.zero;
                     target.SendEvent(tooltipEvent);
 
-                    if (!string.IsNullOrEmpty(tooltipEvent.tooltip) && !tooltipEvent.isDefaultPrevented)
+                    // StopPropagation will prevent further elements from modifying the tooltip but will not to prevent
+                    // the tooltip from showing.
+                    // To achieve that result, set tooltip = string.Empty and then StopImmediatePropagation().
+                    if (!string.IsNullOrEmpty(tooltipEvent.tooltip))
                     {
                         tooltip = tooltipEvent.tooltip;
                         screenRectPosition = tooltipEvent.rect;

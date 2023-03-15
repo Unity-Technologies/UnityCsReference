@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.CommandStateObserver;
 using UnityEngine;
 
@@ -102,9 +103,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="command">The command.</param>
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, CreateSubgraphCommand command)
         {
+            var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
             using (var undoStateUpdater = undoState.UpdateScope)
             {
-                undoStateUpdater.SaveState(graphModelState);
+                undoStateUpdater.SaveStates(graphModelState);
+                undoStateUpdater.SaveStates(selectionHelper.SelectionStates);
             }
 
             SubgraphNodeModel subgraphNodeModel;
@@ -162,6 +165,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 SubgraphCreationHelpers_Internal.PopulateSubgraph_Internal(graphAsset.GraphModel, elementsToAddToSubgraph, allWireModels, inputWireConnections, outputWireConnections);
 
+                // Save the graph asset, since it was populated after its creation.
+                graphAsset.Dirty = true;
+                graphAsset.Save();
+
                 // Delete the graph elements that will be created in the local subgraph
                 var graphModel = graphModelState.GraphModel;
                 graphModel.DeletePlacemats(elementsToAddToSubgraph.PlacematModels);
@@ -181,13 +188,59 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (subgraphNodeModel != null)
             {
-                var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
                 using (var selectionUpdaters = selectionHelper.UpdateScopes)
                 {
                     foreach (var updater in selectionUpdaters)
                         updater.ClearSelection();
                     selectionUpdaters.MainUpdateScope.SelectElement(subgraphNodeModel, true);
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Command to update a subgraph. This command is not undoable because it updates
+    /// the subgraph nodes based on external asset modifications.
+    /// </summary>
+    class UpdateSubgraphCommand : ICommand
+    {
+        /// <summary>
+        /// The guid of the graph referenced by subgraph nodes that need updating.
+        /// </summary>
+        public readonly string SubgraphGuid;
+
+        /// <summary>
+        /// Creates a new <see cref="UpdateSubgraphCommand"/>.
+        /// </summary>
+        /// <param name="subgraphGuid">The guid of the graph referenced by subgraph nodes that need updating.</param>
+        public UpdateSubgraphCommand(string subgraphGuid)
+        {
+            SubgraphGuid = subgraphGuid;
+        }
+
+        /// <summary>
+        /// Default command handler.
+        /// </summary>
+        /// <param name="graphModelState">The graph model state component.</param>
+        /// <param name="command">The command.</param>
+        public static void DefaultCommandHandler(GraphModelStateComponent graphModelState, UpdateSubgraphCommand command)
+        {
+            if (string.IsNullOrEmpty(command.SubgraphGuid))
+                return;
+
+            var graphModel = graphModelState.GraphModel;
+            using (var updater = graphModelState.UpdateScope)
+            using (var changeScope = graphModel.ChangeDescriptionScope)
+            {
+                var subGraphNodeModels = graphModel.NodeModels.OfType<SubgraphNodeModel>().Where(nodeModel => nodeModel.SubgraphGuid == command.SubgraphGuid);
+
+                foreach (var subgraphNodeModel in subGraphNodeModels)
+                {
+                    // The subgraph was changed or deleted. Update it.
+                    subgraphNodeModel.Update();
+                }
+
+                updater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
     }

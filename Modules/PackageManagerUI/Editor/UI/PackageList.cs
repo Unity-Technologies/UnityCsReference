@@ -156,7 +156,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (evt.keyCode == KeyCode.Escape)
             {
                 evt.StopImmediatePropagation();
-                evt.PreventDefault();
             }
         }
 

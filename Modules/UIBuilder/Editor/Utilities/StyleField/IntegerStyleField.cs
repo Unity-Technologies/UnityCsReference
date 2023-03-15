@@ -92,7 +92,6 @@ namespace Unity.UI.Builder
             value = evt.newValue.ToString();
 
             evt.StopImmediatePropagation();
-            evt.PreventDefault();
         }
     }
 }

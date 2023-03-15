@@ -150,17 +150,14 @@ namespace UnityEditor.UIElements.Samples
             element.focusable = false;
             element.RegisterCallback<MouseDownEvent>(e =>
             {
-                e.PreventDefault();
                 e.StopImmediatePropagation();
             });
             element.RegisterCallback<MouseUpEvent>(e =>
             {
-                e.PreventDefault();
                 e.StopImmediatePropagation();
             });
             element.RegisterCallback<MouseMoveEvent>(e =>
             {
-                e.PreventDefault();
                 e.StopImmediatePropagation();
             });
         }

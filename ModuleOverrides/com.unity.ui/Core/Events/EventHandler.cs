@@ -21,25 +21,23 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Handles an event according to its propagation phase and current target, by executing the element's
-        /// default action, default action at target, or callbacks associated with the event.
+        /// default action or callbacks associated with the event.
         /// </summary>
         /// <param name="evt">The event to handle.</param>
         /// <remarks>
         /// The <see cref="EventDispatcher"/> may invoke this method multiple times for the same event: once for each
-        /// propagation phase and each target along the event's propagation path if it has matching callbacks or,
-        /// in the case of the leaf target, if it overrides default actions for the event.
+        /// propagation phase and each target along the event's propagation path if it has matching callbacks or
+        /// overrides default actions for the event.
         ///
         /// Do not use this method to intercept all events whose propagation path include this element. There is no
         /// guarantee that it will or will not be invoked for a propagation phase or target along the propagation path
         /// if that target has no callbacks for the event and has no default action override that can receive the event.
         ///
         /// Use <see cref="CallbackEventHandler.RegisterCallback&lt;TEventType&gt;(EventCallback&lt;TEventType&gt;, TrickleDown)"/>,
-        /// <see cref="CallbackEventHandler.ExecuteDefaultAction"/>, or <see cref="CallbackEventHandler.ExecuteDefaultActionAtTarget"/>
-        /// for more predictable results.
+        /// or <see cref="CallbackEventHandler.HandleEventBubbleUp"/> for more predictable results.
         /// </remarks>
         /// <seealso cref="CallbackEventHandler.RegisterCallback&lt;TEventType&gt;(EventCallback&lt;TEventType&gt;, TrickleDown)"/>
-        /// <seealso cref="CallbackEventHandler.ExecuteDefaultAction"/>
-        /// <seealso cref="CallbackEventHandler.ExecuteDefaultActionAtTarget"/>
+        /// <seealso cref="CallbackEventHandler.HandleEventBubbleUp"/>
         void HandleEvent(EventBase evt);
 
         /// <summary>
@@ -80,14 +78,14 @@ namespace UnityEngine.UIElements
 
             GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
 
-            AddEventCategories<TEventType>();
+            AddEventCategories<TEventType>(useTrickleDown);
         }
 
-        private void AddEventCategories<TEventType>() where TEventType : EventBase<TEventType>, new()
+        private void AddEventCategories<TEventType>(TrickleDown useTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
             if (this is VisualElement ve)
             {
-                ve.eventCallbackCategories |= 1 << (int)EventBase<TEventType>.EventCategory;
+                ve.AddEventCallbackCategories(1 << (int)EventBase<TEventType>.EventCategory, useTrickleDown);
             }
         }
 
@@ -106,7 +104,7 @@ namespace UnityEngine.UIElements
 
             GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
 
-            AddEventCategories<TEventType>();
+            AddEventCategories<TEventType>(useTrickleDown);
         }
 
         internal void RegisterCallback<TEventType>(EventCallback<TEventType> callback, InvokePolicy invokePolicy, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
@@ -115,13 +113,13 @@ namespace UnityEngine.UIElements
 
             GlobalCallbackRegistry.RegisterListeners<TEventType>(this, callback, useTrickleDown);
 
-            AddEventCategories<TEventType>();
+            AddEventCategories<TEventType>(useTrickleDown);
         }
 
         /// <summary>
         /// Remove callback from the instance.
         /// </summary>
-        /// <param name="callback">The callback to remove.</param>
+        /// <param name="callback">The callback to remove. If this callback was never registered, nothing happens.</param>
         /// <param name="useTrickleDown">Set this parameter to true to remove the callback from the TrickleDown phase. Set this parameter to false to remove the callback from the BubbleUp phase.</param>
         public void UnregisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
@@ -136,7 +134,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Remove callback from the instance.
         /// </summary>
-        /// <param name="callback">The callback to remove.</param>
+        /// <param name="callback">The callback to remove. If this callback was never registered, nothing happens.</param>
         /// <param name="useTrickleDown">Set this parameter to true to remove the callback from the TrickleDown phase. Set this parameter to false to remove the callback from the BubbleUp phase.</param>
         public void UnregisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
@@ -186,22 +184,67 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Executes logic after the callbacks registered on the event target have executed,
-        /// unless the event is marked to prevent its default behaviour.
+        /// Executes logic after the callbacks registered on each element in the BubbleUp phase have executed,
+        /// unless the event propagation is stopped by one of the callbacks.
         /// <see cref="EventBase{T}.PreventDefault"/>.
         /// </summary>
         /// <remarks>
         /// This method is designed to be overriden by subclasses. Use it to implement event handling without
         /// registering callbacks, which guarantees precedences of callbacks registered by users of the subclass.
-        /// Unlike <see cref="ExecuteDefaultAction"/>, this method is called after the callbacks registered on
-        /// the element but before callbacks registered on its ancestors with <see cref="TrickleDown.NoTrickleDown"/>.
         ///
         /// Use <see cref="EventInterestAttribute"/> on this method to specify a range of event types that this
         /// method needs to receive. Events that don't fall into the specified types might not be sent to this method.
         /// </remarks>
         /// <param name="evt">The event instance.</param>
         [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("Use HandleEventBubbleUp. Before proceeding, make sure you understand the latest changes to " +
+                  "UIToolkit event propagation rules by visiting Unity's manual page " +
+                  "https://docs.unity3d.com/Manual/UIE-Events-Dispatching.html")]
         protected virtual void ExecuteDefaultActionAtTarget(EventBase evt) {}
+
+        /// <summary>
+        /// Executes logic on this element during the BubbleUp phase, immediately before this element's
+        /// BubbleUp callbacks.
+        /// Calling StopPropagation will prevent further invocations of this method along the propagation path.
+        /// </summary>
+        /// <remarks>
+        /// This method is designed to be overriden by subclasses. Use it to implement event handling without
+        /// registering callbacks, which guarantees precedences of callbacks registered by users of the subclass.
+        ///
+        /// Use <see cref="EventInterestAttribute"/> on this method to specify a range of event types that this
+        /// method needs to receive. Events that don't fall into the specified types might not be sent to this method.
+        /// </remarks>
+        /// <param name="evt">The event instance.</param>
+        [EventInterest(EventInterestOptions.Inherit)]
+        protected virtual void HandleEventBubbleUp(EventBase evt) {}
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        internal virtual void HandleEventBubbleUpDisabled(EventBase evt) {}
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void HandleEventBubbleUpInternal(EventBase evt) => HandleEventBubbleUp(evt);
+        internal const string HandleEventBubbleUpName = nameof(HandleEventBubbleUp);
+
+        /// <summary>
+        /// Executes logic on this element during the TrickleDown phase, immediately after this element's
+        /// TrickleDown callbacks.
+        /// Calling StopPropagation will prevent further invocations of this method along the propagation path.
+        /// </summary>
+        /// <remarks>
+        /// This method is designed to be overriden by subclasses. Use it to implement event handling without
+        /// registering callbacks, which guarantees precedences of callbacks registered by users of the subclass.
+        ///
+        /// Use <see cref="EventInterestAttribute"/> on this method to specify a range of event types that this
+        /// method needs to receive. Events that don't fall into the specified types might not be sent to this method.
+        /// </remarks>
+        /// <param name="evt">The event instance.</param>
+        [EventInterest(EventInterestOptions.Inherit)]
+        protected virtual void HandleEventTrickleDown(EventBase evt) {}
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        internal virtual void HandleEventTrickleDownDisabled(EventBase evt) {}
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void HandleEventTrickleDownInternal(EventBase evt) => HandleEventTrickleDown(evt);
+        internal const string HandleEventTrickleDownName = nameof(HandleEventTrickleDown);
 
         /// <summary>
         /// Executes logic after the callbacks registered on the event target have executed,
@@ -211,7 +254,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This method is designed to be overriden by subclasses. Use it to implement event handling without
         /// registering callbacks which guarantees precedences of callbacks registered by users of the subclass.
-        /// Unlike <see cref="ExecuteDefaultActionAtTarget"/>, this method is called after both the callbacks registered
+        /// Unlike <see cref="HandleEventBubbleUp"/>, this method is called after both the callbacks registered
         /// on the element and callbacks registered on its ancestors with <see cref="TrickleDown.NoTrickleDown"/>.
         ///
         /// Use <see cref="EventInterestAttribute"/> on this method to specify a range of event types that this
@@ -219,16 +262,26 @@ namespace UnityEngine.UIElements
         /// </remarks>
         /// <param name="evt">The event instance.</param>
         [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("Use HandleEventBubbleUp. Before proceeding, make sure you understand the latest changes to " +
+                  "UIToolkit event propagation rules by visiting Unity's manual page " +
+                  "https://docs.unity3d.com/Manual/UIE-Events-Dispatching.html")]
         protected virtual void ExecuteDefaultAction(EventBase evt) {}
 
         [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("Use HandleEventBubbleUpDisabled.")]
         internal virtual void ExecuteDefaultActionDisabledAtTarget(EventBase evt) {}
 
         [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("Use HandleEventBubbleUpDisabled.")]
         internal virtual void ExecuteDefaultActionDisabled(EventBase evt) {}
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#pragma warning disable 618
+        internal void ExecuteDefaultActionAtTargetInternal(EventBase evt) => ExecuteDefaultActionAtTarget(evt);
 
         internal const string ExecuteDefaultActionName = nameof(ExecuteDefaultAction);
         internal const string ExecuteDefaultActionAtTargetName = nameof(ExecuteDefaultActionAtTarget);
+#pragma warning restore 618
 
         /// <summary>
         /// Informs the data binding system that a property of a control has changed.
@@ -240,9 +293,19 @@ namespace UnityEngine.UIElements
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ExecuteDefaultActionInternal(EventBase evt) => ExecuteDefaultAction(evt);
+        internal void ExecuteDefaultActionInternal(EventBase evt)
+        {
+#pragma warning disable 618
+            ExecuteDefaultAction(evt);
+#pragma warning restore 618
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ExecuteDefaultActionAtTargetInternal(EventBase evt) => ExecuteDefaultActionAtTarget(evt);
+        internal void ExecuteDefaultActionDisabledInternal(EventBase evt)
+        {
+#pragma warning disable 618
+            ExecuteDefaultActionDisabled(evt);
+#pragma warning restore 618
+        }
     }
 }

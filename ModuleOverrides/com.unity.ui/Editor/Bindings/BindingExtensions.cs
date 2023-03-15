@@ -91,7 +91,7 @@ namespace UnityEditor.UIElements.Bindings
 
         internal void BindTree(VisualElement element, SerializedProperty parentProperty)
         {
-            if (element.HasEventCallbacksOrDefaultActions(SerializedObjectBindEvent.EventCategory))
+            if (element.HasSelfEventInterests(SerializedObjectBindEvent.EventCategory))
             {
                 using (var evt = SerializedObjectBindEvent.GetPooled(serializedObject))
                 {
@@ -181,7 +181,7 @@ namespace UnityEditor.UIElements.Bindings
             // Set enabled state before sending the event because element like PropertyField may stop the event
             SyncEditableState(fieldElement, property.editable);
 
-            if (fieldElement.HasEventCallbacksOrDefaultActions(SerializedPropertyBindEvent.EventCategory))
+            if (fieldElement.HasSelfEventInterests(SerializedPropertyBindEvent.EventCategory))
             {
                 using (var evt = SerializedPropertyBindEvent.GetPooled(property))
                 {

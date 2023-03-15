@@ -53,6 +53,11 @@ namespace Unity.GraphToolsFoundation.Editor
         Hidden = 2,
 
         /// <summary>
+        /// The port is a node option.
+        /// </summary>
+        IsNodeOption = 4,
+
+        /// <summary>
         /// Default port options.
         /// </summary>
         Default = None,
@@ -81,6 +86,7 @@ namespace Unity.GraphToolsFoundation.Editor
         PortNodeModel m_NodeModel;
         PortModelOptions m_Options;
         PortOrientation m_Orientation;
+        Attribute[] m_Attributes;
 
         /// <summary>
         /// The node model that owns this port.
@@ -105,6 +111,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
             }
         }
+
+        /// <summary>
+        /// The attributes used to convey information about the port, if any.
+        /// </summary>
+        public IReadOnlyList<Attribute> Attributes => m_Attributes;
 
         /// <inheritdoc />
         public virtual string DisplayTitle => Title;
@@ -256,7 +267,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         public PortModel(PortNodeModel nodeModel, PortDirection direction, PortOrientation orientation, string portName,
-            PortType portType, TypeHandle dataType, string portId, PortModelOptions options)
+            PortType portType, TypeHandle dataType, string portId, PortModelOptions options, Attribute[] attributes)
         {
             var hash = new Hash128();
             var gparts = nodeModel.Guid.ToParts();
@@ -288,6 +299,7 @@ namespace Unity.GraphToolsFoundation.Editor
             m_Title = portName ?? "";
             m_Options = options;
             m_NodeModel = nodeModel;
+            m_Attributes = attributes;
             // Avoid virtual call.
             base.GraphModel = nodeModel.GraphModel;
         }
@@ -301,6 +313,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected virtual void OnUniqueNameChanged(string oldUniqueName, string newUniqueName)
         {
             GraphModel?.PortWireIndex_Internal.UpdatePortUniqueName(this, oldUniqueName, newUniqueName);
+            NodeModel.OnPortUniqueNameChanged(oldUniqueName, newUniqueName);
         }
 
         /// <summary>

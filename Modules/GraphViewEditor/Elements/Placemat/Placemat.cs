@@ -326,13 +326,19 @@ namespace UnityEditor.Experimental.GraphView
         }
 
         [EventInterest(typeof(PointerDownEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
+            base.HandleEventBubbleUp(evt);
             var mde = evt as PointerDownEvent;
             if (mde != null)
                 if (mde.clickCount == 2 && mde.button == (int)MouseButton.LeftMouse)
                     SelectGraphElementsOver();
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultActionAtTarget override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
         }
 
         void ActOnGraphElementsOver(Action<GraphElement> act)

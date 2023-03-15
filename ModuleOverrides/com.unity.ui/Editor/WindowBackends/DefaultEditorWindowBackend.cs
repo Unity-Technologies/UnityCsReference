@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements.Debugger;
+using UnityEditor.UIElements.Experimental.UILayoutDebugger;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -414,6 +415,10 @@ namespace UnityEditor.UIElements
         void IEditorWindowBackend.OnDisplayWindowMenu(GenericMenu menu)
         {
             AddLiveReloadOptionToMenu(menu);
+            if (UIToolkitProjectSettings.enableLayoutDebugger)
+            {
+                AddUIELayoutDebuggerToMenu(menu);
+            }
             AddUIElementsDebuggerToMenu(menu);
         }
 
@@ -449,6 +454,12 @@ namespace UnityEditor.UIElements
             menu.AddItem(EditorGUIUtility.TextContent(itemContent), false, DebugWindow, editorWindowModel.window);
         }
 
+        private void AddUIELayoutDebuggerToMenu(GenericMenu menu)
+        {
+            var itemContent = UILayoutDebuggerWindow.WindowName;
+            menu.AddItem(EditorGUIUtility.TextContent(itemContent), false, LayoutDebugWindow, editorWindowModel.window);
+        }
+
         private void DebugWindow(object userData)
         {
             EditorWindow window = userData as EditorWindow;
@@ -460,6 +471,20 @@ namespace UnityEditor.UIElements
             else
             {
                 UIElementsDebugger.OpenAndInspectWindow(window);
+            }
+        }
+
+        private void LayoutDebugWindow(object userData)
+        {
+            EditorWindow window = userData as EditorWindow;
+            if (window == null)
+                return;
+
+            if (CommandService.Exists(UILayoutDebuggerWindow.OpenWindowCommand))
+                CommandService.Execute(UILayoutDebuggerWindow.OpenWindowCommand, CommandHint.Menu, window);
+            else
+            {
+                UILayoutDebuggerWindow.OpenAndInspectWindow(window);
             }
         }
 

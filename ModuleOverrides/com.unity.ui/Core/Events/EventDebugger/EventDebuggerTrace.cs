@@ -31,7 +31,6 @@ namespace UnityEngine.UIElements.Experimental
         public EventDebuggerCallTrace(IPanel panel, EventBase evt, int cbHashCode, string cbName,
                                       bool propagationHasStopped,
                                       bool immediatePropagationHasStopped,
-                                      bool defaultHasBeenPrevented,
                                       long duration,
                                       IEventHandler mouseCapture)
             : base(panel, evt, duration, mouseCapture)

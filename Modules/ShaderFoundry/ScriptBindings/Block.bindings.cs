@@ -37,9 +37,7 @@ namespace UnityEditor.ShaderFoundry
 
         internal extern static BlockInternal Invalid();
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
-
-        internal extern FoundryHandle GetPassParentHandle();
-        internal extern FoundryHandle GetTemplateParentHandle();
+        
         internal extern bool HasParent();
 
         // IInternalType
@@ -173,8 +171,8 @@ namespace UnityEditor.ShaderFoundry
             return list.Select<BlockVariable>(localContainer, (handle) => (new BlockVariable(localContainer, handle)));
         }
 
-        public TemplatePass ParentPass => new TemplatePass(container, block.GetPassParentHandle());
-        public Template ParentTemplate => new Template(container, block.GetTemplateParentHandle());
+        public TemplatePass ParentPass => new TemplatePass(container, block.m_PassParentHandle);
+        public Template ParentTemplate => new Template(container, block.m_TemplateParentHandle);
 
         // private
         internal Block(ShaderContainer container, FoundryHandle handle)

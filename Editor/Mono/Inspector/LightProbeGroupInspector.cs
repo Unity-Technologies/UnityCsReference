@@ -696,13 +696,23 @@ namespace UnityEditor
     [CustomEditor(typeof(LightProbeGroup))]
     class LightProbeGroupInspector : Editor
     {
+        SerializedProperty dering;
+
+        public void OnEnable()
+        {
+            if (serializedObject == null)
+                return;
+            dering = serializedObject.FindProperty("m_Dering");
+        }
+
         public override void OnInspectorGUI()
         {
             bool srpHasAlternativeToLegacyProbes = SupportedRenderingFeatures.active.overridesLightProbeSystem;
             using (new EditorGUI.DisabledScope(srpHasAlternativeToLegacyProbes))
             {
-                LightProbeGroup probeGroup = target as LightProbeGroup;
-                probeGroup.dering = EditorGUILayout.Toggle(LightProbeGroupOverlay.Styles.performDeringing, probeGroup.dering);
+                serializedObject.Update();
+                EditorGUILayout.PropertyField(dering, LightProbeGroupOverlay.Styles.performDeringing);
+                serializedObject.ApplyModifiedProperties();
             }
 
             if (srpHasAlternativeToLegacyProbes)

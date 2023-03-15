@@ -46,7 +46,9 @@ namespace Unity.UI.Builder
             // Popup is hidden by default
             AddToClassList(BuilderConstants.HiddenStyleClassName);
             this.RegisterCallback<GeometryChangedEvent>(e => EnsureVisibilityInParent());
-            this.RegisterCallback<MouseDownEvent>(e => e.PreventDefault(), TrickleDown.TrickleDown); // To prevent MouseDownEvent on a child from switching focus
+
+            // Prevent PointerDownEvent on a child from switching focus.
+            this.RegisterCallback<PointerDownEvent>(e => focusController.IgnoreEvent(e), TrickleDown.TrickleDown);
         }
 
         public virtual void Show()

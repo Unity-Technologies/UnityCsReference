@@ -130,7 +130,7 @@ namespace Unity.UI.Builder
             var typeName = evt.newValue;
             var fullTypeName = typeName;
 
-            if (evt.leafTarget == field.labelElement)
+            if (evt.target == field.labelElement)
                 return;
 
             Type type = null;

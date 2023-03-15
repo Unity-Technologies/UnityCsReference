@@ -47,7 +47,6 @@ namespace UnityEngine.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 TextField field = ((TextField)ve);
-                field.multiline = m_Multiline.GetValueFromBag(bag, cc);
                 base.Init(ve, bag, cc);
 
                 // Re-defining the value to account for the "obsolete" text property.
@@ -57,6 +56,15 @@ namespace UnityEngine.UIElements
                 if (k_Value.TryGetValueFromBag(bag, cc, ref value))
                 {
                     field.SetValueWithoutNotify(value);
+                }
+
+                field.multiline = m_Multiline.GetValueFromBag(bag, cc);
+
+                // \n characters in the string are only removed when multiline goes from true to false.
+                // If the field value in the bag contains \n and multiline is false in the bag, we remove any \n here.
+                if (!field.multiline && !string.IsNullOrEmpty(field.value) && field.value.Contains("\n"))
+                {
+                    field.SetValueWithoutNotify(field.value.Replace("\n",""));
                 }
             }
         }
@@ -155,12 +163,12 @@ namespace UnityEngine.UIElements
             ((INotifyValueChanged<string>)textInput.textElement).SetValueWithoutNotify(rawValue);
         }
 
-        [EventInterest(typeof(BlurEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        [EventInterest(typeof(FocusOutEvent))]
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
-            if (isDelayed && evt?.eventTypeId == BlurEvent.TypeId())
+            if (isDelayed && evt?.eventTypeId == FocusOutEvent.TypeId())
             {
                 value = text;
             }

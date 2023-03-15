@@ -87,6 +87,7 @@ namespace Unity.UI.Builder
                 {
                     m_ShouldRefocusSelectorFieldOnBlur = false;
                     field.value = BuilderConstants.UssSelectorClassNameSymbol;
+                    field.textSelection.selectAllOnMouseUp = false;
                 }
 
                 ShowTooltip();
@@ -128,11 +129,12 @@ namespace Unity.UI.Builder
                 var input = evt.elementTarget;
                 var field = GetTextFieldParent(input);
 
+                field.textSelection.selectAllOnMouseUp = true;
+
                 HideTooltip();
                 if (m_ShouldRefocusSelectorFieldOnBlur)
                 {
                     field.schedule.Execute(PostEnterRefocus);
-                    evt.PreventDefault();
                     evt.StopImmediatePropagation();
                     return;
                 }
@@ -205,7 +207,6 @@ namespace Unity.UI.Builder
 
             CreateNewSelector(document.activeStyleSheet);
 
-            evt.PreventDefault();
             evt.StopImmediatePropagation();
         }
 

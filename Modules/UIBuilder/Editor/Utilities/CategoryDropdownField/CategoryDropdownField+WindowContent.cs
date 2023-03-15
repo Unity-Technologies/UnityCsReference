@@ -415,7 +415,6 @@ namespace Unity.UI.Builder
                     return;
 
                 sourceEvent.StopImmediatePropagation();
-                sourceEvent.PreventDefault();
             }
 
             bool Apply(KeyboardNavigationOperation op)

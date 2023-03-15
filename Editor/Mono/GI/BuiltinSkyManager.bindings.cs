@@ -12,6 +12,5 @@ namespace UnityEditor
     {
         private BuiltinSkyManager() {}
         extern public static bool StaticIsDone();
-        extern public static bool enabled { get; set; }
     }
 }

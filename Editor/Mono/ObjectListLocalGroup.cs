@@ -815,7 +815,7 @@ namespace UnityEditor
                             icon = filterItem != null ? filterItem.icon : null;
                             if (icon == null)
                             {
-                                if (ShouldGetAssetPreview(assetReference.instanceID))
+                                if (ShouldGetAssetPreview(assetReference))
                                 {
                                     if (assetReference.instanceID != 0)
                                         icon = AssetPreview.GetAssetPreview(assetReference.instanceID, m_Owner.GetAssetPreviewManagerID());
@@ -859,7 +859,7 @@ namespace UnityEditor
                         {
                             // Check for asset preview
                             Texture image = null;
-                            bool shouldGetAssetPreview = ShouldGetAssetPreview(assetReference.instanceID);
+                            bool shouldGetAssetPreview = ShouldGetAssetPreview(assetReference);
                             if (shouldGetAssetPreview)
                             {
                                 if (assetReference.instanceID != 0)
@@ -1237,12 +1237,12 @@ namespace UnityEditor
                     m_BuiltinResourceMap.Add(typeName, resourceList);
             }
 
-            private bool ShouldGetAssetPreview(int instanceId)
+            private bool ShouldGetAssetPreview(AssetReference assetReference)
             {
-                string path = AssetDatabase.GetAssetPath(instanceId);
+                string path = AssetDatabase.GUIDToAssetPath(assetReference.guid);
                 if (m_AssetExtensionsPreviewIgnoreList.Contains(System.IO.Path.GetExtension(path).ToLowerInvariant()))
                     return false;
-                Type assetDataType = InternalEditorUtility.GetTypeWithoutLoadingObject(instanceId);
+                Type assetDataType = InternalEditorUtility.GetTypeWithoutLoadingObject(assetReference.instanceID);
                 if (m_AssetPreviewIgnoreList.Contains(assetDataType))
                     return false;
                 return true;

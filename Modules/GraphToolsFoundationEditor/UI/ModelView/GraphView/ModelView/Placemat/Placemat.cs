@@ -193,9 +193,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         /// <inheritdoc />
         [EventInterest(typeof(PointerDownEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
+            base.HandleEventBubbleUp(evt);
             if (evt is PointerDownEvent mde)
                 if (mde.clickCount == 2 && mde.button == (int)MouseButton.LeftMouse)
                 {

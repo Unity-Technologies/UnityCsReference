@@ -108,7 +108,7 @@ namespace Unity.UI.Builder
         void OnDelete(KeyDownEvent evt)
         {
             // HACK: This must be a bug. TextField leaks its key events to everyone!
-            if (evt.leafTarget is TextElement)
+            if (evt.target is TextElement)
                 return;
 
             switch (evt.keyCode)

@@ -39,6 +39,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual void OnDisconnection(PortModel selfConnectedPortModel, PortModel otherConnectedPortModel) { }
 
         /// <summary>
+        /// Called when the unique name of any port on this node model has changed.
+        /// </summary>
+        /// <param name="oldUniqueName">The old unique name of the port.</param>
+        /// <param name="newUniqueName">The new unique name of the port.</param>
+        public virtual void OnPortUniqueNameChanged(string oldUniqueName, string newUniqueName) { }
+
+        /// <summary>
         /// Gets the model of a port that would be fit to connect to another port model.
         /// </summary>
         /// <param name="portModel">The model of the port we want to connect to this node.</param>

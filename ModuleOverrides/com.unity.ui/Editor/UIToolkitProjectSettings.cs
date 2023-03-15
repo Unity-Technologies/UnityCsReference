@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.UIElements.Experimental.Debugger;
+using UnityEditor.UIElements.Experimental.UILayoutDebugger;
 
 namespace UnityEditor.UIElements
 {
@@ -14,6 +15,7 @@ namespace UnityEditor.UIElements
         const string k_DisableMouseWheelZooming = "UIBuilder.DisableMouseWheelZooming";
         const string k_EnableAbsolutePositionPlacement = "UIBuilder.EnableAbsolutePositionPlacement";
         const string k_EnableEventDebugger = "UIToolkit.EnableEventDebugger";
+        const string k_EnableLayoutDebugger = "UIToolkit.EnableLayoutDebugger";
 
         public static bool enableEditorExtensionModeByDefault
         {
@@ -59,6 +61,31 @@ namespace UnityEditor.UIElements
             if (menuItems != null)
             {
                 Menu.RemoveMenuItem("Window/UI Toolkit/Event Debugger");
+                Menu.RebuildAllMenus();
+            }
+        }
+
+        public static bool enableLayoutDebugger
+        {
+            get => GetBool(k_EnableLayoutDebugger);
+            set
+            {
+                SetBool(k_EnableLayoutDebugger, value);
+                if (value)
+                    Menu.AddMenuItem(UILayoutDebuggerWindow.k_WindowPath, "", false, 3010,
+                        UILayoutDebuggerWindow.OpenAndInspectWindow, null);
+                else
+                    EditorApplication.CallDelayed(RemoveLayoutDebuggerMenuItem);
+            }
+
+        }
+
+        static void RemoveLayoutDebuggerMenuItem()
+        {
+            var menuItems = Menu.GetMenuItems(UILayoutDebuggerWindow.k_WindowPath, false, false);
+            if (menuItems != null)
+            {
+                Menu.RemoveMenuItem(UILayoutDebuggerWindow.k_WindowPath);
                 Menu.RebuildAllMenus();
             }
         }

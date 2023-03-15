@@ -42,7 +42,7 @@ namespace Unity.UI.Builder
         public void RegisterCallbacksOnTarget(VisualElement target)
         {
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<MouseUpEvent>(OnMouseUp, TrickleDown.TrickleDown);
             target.RegisterCallback<ContextualMenuPopulateEvent>(a => BuildElementContextualMenu(a, target));
             target.RegisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
         }
@@ -52,7 +52,7 @@ namespace Unity.UI.Builder
             var target = evt.elementTarget;
 
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<MouseUpEvent>(OnMouseUp, TrickleDown.TrickleDown);
             target.UnregisterCallback<ContextualMenuPopulateEvent>(a => BuildElementContextualMenu(a, target));
             target.UnregisterCallback<DetachFromPanelEvent>(UnregisterCallbacksFromTarget);
         }
@@ -90,7 +90,7 @@ namespace Unity.UI.Builder
             if (target.elementPanel?.contextualMenuManager != null)
             {
                 target.elementPanel.contextualMenuManager.DisplayMenu(triggerEvent, target);
-                triggerEvent.PreventDefault();
+                triggerEvent.StopPropagation();
             }
         }
 

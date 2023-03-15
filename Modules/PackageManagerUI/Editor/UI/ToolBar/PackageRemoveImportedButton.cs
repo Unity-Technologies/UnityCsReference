@@ -25,14 +25,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             m_OperationDispatcher.RemoveImportedAssets(versions);
-            PackageManagerWindowAnalytics.SendEvent("removeImported", packageIds: versions.Select(v => v.package.uniqueId));
+            PackageManagerWindowAnalytics.SendEvent("removeImported", versions);
             return true;
         }
 
         protected override bool TriggerAction(IPackageVersion version)
         {
             m_OperationDispatcher.RemoveImportedAssets(version.package);
-            PackageManagerWindowAnalytics.SendEvent("removeImported", version.uniqueId);
+            PackageManagerWindowAnalytics.SendEvent("removeImported", version);
             return true;
         }
 

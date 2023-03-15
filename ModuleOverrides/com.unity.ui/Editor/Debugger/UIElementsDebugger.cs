@@ -577,30 +577,22 @@ namespace UnityEditor.UIElements.Debugger
 
             if (((BaseVisualElementPanel)p).ownerObject is HostView hostView && hostView.actualView is PlayModeView playModeView)
             {
-                // Send event to runtime panels from closest to deepest
-                var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
-                for (var i = panels.Count - 1; i >= 0; i--)
-                {
-                    if (SendEventToRuntimePanel((BaseRuntimePanel)panels[i], evtBase, playModeView.viewPadding, playModeView.viewMouseScale))
-                        return true;
-                }
-
-                // If no RuntimePanel catches it, select GameView editor panel and let interception fall through.
-                if (evtType == MouseMoveEvent.TypeId() && m_Context.selectedElement != target)
-                {
-                    OnPickMouseOver(target, p);
-                }
-            }
-            else if (p is BaseRuntimePanel)
-            {
-                // Ignore events not coming from the Editor event loop
-                if (evtBase.imguiEvent == null)
+                // RuntimePanels won't receive MouseOverEvent when arriving from GameView editor panel, so listen for
+                // MouseMoveEvent instead, but still intercept other events going to the game view window.
+                if (evtType != MouseMoveEvent.TypeId() && evtType != MouseDownEvent.TypeId())
                     return false;
 
-                // RuntimePanel won't receive MouseOverEvent when arriving from GameView editor panel, so force it to be selected.
-                if (evtType == MouseMoveEvent.TypeId() && m_Context.selectedElement != target)
+                if (evtType == MouseMoveEvent.TypeId())
                 {
-                    OnPickMouseOver(target, p);
+                    if (SelectTopElementFromRuntimePanel(evtBase.imguiEvent.mousePosition,
+                        evtBase.imguiEvent.delta, playModeView.viewPadding, playModeView.viewMouseScale))
+                        return true;
+
+                    // If no RuntimePanel catches it, select GameView editor panel and let interception fall through.
+                    if (m_Context.selectedElement != target)
+                    {
+                        OnPickMouseOver(target, p);
+                    }
                 }
             }
 
@@ -730,24 +722,29 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        private bool SendEventToRuntimePanel(BaseRuntimePanel runtimePanel, EventBase ev, Vector2 gameViewPadding, float gameMouseScale)
+        private bool SelectTopElementFromRuntimePanel(Vector2 editorMousePosition, Vector2 editorMouseDelta, Vector2 gameViewPadding, float gameMouseScale)
         {
-            if (ev.imguiEvent == null)
-                return false;
-
-            if (!runtimePanel.ScreenToPanel(ev.imguiEvent.mousePosition - gameViewPadding, ev.imguiEvent.delta, out var panelPosition, out _))
-                return false;
-
-            var mousePosition = panelPosition * gameMouseScale;
-
-            if (runtimePanel.Pick(mousePosition) == null)
-                return false;
-
-            using (EventBase evt = UIElementsRuntimeUtility.CreateEvent(new Event(ev.imguiEvent) { mousePosition = mousePosition}))
+            // Try picking element in runtime panels from closest to deepest
+            var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
+            for (var i = panels.Count - 1; i >= 0; i--)
             {
-                runtimePanel.visualTree.SendEvent(evt);
+                var runtimePanel = (BaseRuntimePanel) panels[i];
+
+                if (!runtimePanel.ScreenToPanel(editorMousePosition - gameViewPadding, editorMouseDelta, out var panelPosition, out _))
+                    continue;
+
+                var mousePosition = panelPosition * gameMouseScale;
+
+                var pickedElement = runtimePanel.Pick(mousePosition);
+                if (pickedElement == null)
+                    continue;
+
+                if (m_Context.selectedElement != pickedElement)
+                    OnPickMouseOver(pickedElement, runtimePanel);
+                return true;
             }
-            return true;
+
+            return false;
         }
 
         private void DrawLayoutBounds(MeshGenerationContext mgc)

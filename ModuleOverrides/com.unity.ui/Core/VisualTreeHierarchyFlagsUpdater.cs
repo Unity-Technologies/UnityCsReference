@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
             VisualElementFlags mustDirtyFlags =
                 (mustDirtyWorldTransform ? VisualElementFlags.WorldTransformDirty | VisualElementFlags.WorldBoundingBoxDirty : 0) |
                 (mustDirtyWorldClip ? VisualElementFlags.WorldClipDirty : 0) |
-                (mustDirtyEventParentCategories ? VisualElementFlags.EventCallbackParentCategoriesDirty : 0);
+                (mustDirtyEventParentCategories ? VisualElementFlags.EventInterestParentCategoriesDirty : 0);
 
             var needDirtyFlags = mustDirtyFlags & ~ve.m_Flags;
             if (needDirtyFlags != 0)

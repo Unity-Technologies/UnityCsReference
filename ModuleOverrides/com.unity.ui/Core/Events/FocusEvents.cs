@@ -85,7 +85,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Event sent immediately before an element loses focus. This event trickles down and bubbles up. This event cannot be cancelled.
+    /// Event sent immediately before an element loses focus. This event trickles down and bubbles up.
     /// </summary>
     public class FocusOutEvent : FocusEventBase<FocusOutEvent>
     {
@@ -115,10 +115,20 @@ namespace UnityEngine.UIElements
         {
             LocalInit();
         }
+
+        protected internal override void PostDispatch(IPanel panel)
+        {
+            if (relatedTarget == null)
+            {
+                focusController.ProcessPendingFocusChange(null);
+            }
+
+            base.PostDispatch(panel);
+        }
     }
 
     /// <summary>
-    /// Event sent immediately after an element has lost focus. This event trickles down, it does not bubble up, and it cannot be cancelled.
+    /// Event sent immediately after an element has lost focus. This event trickles down and does not bubbles up.
     /// </summary>
     public class BlurEvent : FocusEventBase<BlurEvent>
     {
@@ -126,20 +136,10 @@ namespace UnityEngine.UIElements
         {
             SetCreateFunction(() => new BlurEvent());
         }
-
-        protected internal override void PreDispatch(IPanel panel)
-        {
-            base.PreDispatch(panel);
-
-            if (relatedTarget == null)
-            {
-                focusController.ProcessPendingFocusChange(null);
-            }
-        }
     }
 
     /// <summary>
-    /// Event sent immediately before an element gains focus. This event trickles down and bubbles up. This event cannot be cancelled.
+    /// Event sent immediately before an element gains focus. This event trickles down and bubbles up.
     /// </summary>
     public class FocusInEvent : FocusEventBase<FocusInEvent>
     {
@@ -169,22 +169,23 @@ namespace UnityEngine.UIElements
         {
             LocalInit();
         }
+
+        protected internal override void PostDispatch(IPanel panel)
+        {
+            focusController.ProcessPendingFocusChange(elementTarget);
+
+            base.PostDispatch(panel);
+        }
     }
 
     /// <summary>
-    /// Event sent immediately after an element has gained focus. This event trickles down, it does not bubble up, and it cannot be cancelled.
+    /// Event sent immediately after an element has gained focus. This event trickles down and does not bubbles up.
     /// </summary>
     public class FocusEvent : FocusEventBase<FocusEvent>
     {
         static FocusEvent()
         {
             SetCreateFunction(() => new FocusEvent());
-        }
-
-        protected internal override void PreDispatch(IPanel panel)
-        {
-            base.PreDispatch(panel);
-            focusController.ProcessPendingFocusChange(elementTarget);
         }
     }
 }

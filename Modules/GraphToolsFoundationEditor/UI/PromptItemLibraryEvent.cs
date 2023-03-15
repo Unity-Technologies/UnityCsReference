@@ -36,7 +36,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected override void Init()
         {
             base.Init();
-            propagation = EventPropagation.TricklesDown | EventPropagation.Bubbles | EventPropagation.Cancellable;
+            propagation = EventPropagation.TricklesDown | EventPropagation.Bubbles;
         }
     }
 }

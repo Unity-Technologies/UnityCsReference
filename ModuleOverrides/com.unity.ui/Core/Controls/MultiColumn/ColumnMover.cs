@@ -117,11 +117,6 @@ namespace UnityEngine.UIElements.Internal
         /// </summary>
         protected override void RegisterCallbacksOnTarget()
         {
-            target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-            target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
-
             target.RegisterCallback<PointerDownEvent>(OnPointerDown);
             target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
             target.RegisterCallback<PointerUpEvent>(OnPointerUp);
@@ -136,11 +131,6 @@ namespace UnityEngine.UIElements.Internal
         /// </summary>
         protected override void UnregisterCallbacksFromTarget()
         {
-            target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-            target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-            target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
-            target.UnregisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
-
             target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
             target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
             target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
@@ -148,44 +138,6 @@ namespace UnityEngine.UIElements.Internal
             target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
 
             target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
-        }
-
-
-
-        /// <summary>
-        /// This method is called when a MouseDownEvent is sent to the target element.
-        /// </summary>
-        /// <param name="evt">The event.</param>
-        protected void OnMouseDown(MouseDownEvent evt)
-        {
-            if (CanStartManipulation(evt))
-                ProcessDownEvent(evt, evt.localMousePosition, PointerId.mousePointerId);
-        }
-
-        /// <summary>
-        /// This method is called when a MouseMoveEvent is sent to the target element.
-        /// </summary>
-        /// <param name="evt">The event.</param>
-        protected void OnMouseMove(MouseMoveEvent evt)
-        {
-            if (active)
-                ProcessMoveEvent(evt, evt.localMousePosition);
-        }
-
-        /// <summary>
-        /// This method is called when a MouseUpEvent is sent to the target element.
-        /// </summary>
-        /// <param name="evt">The event.</param>
-        protected void OnMouseUp(MouseUpEvent evt)
-        {
-            if (active && CanStopManipulation(evt))
-                ProcessUpEvent(evt, evt.localMousePosition, PointerId.mousePointerId);
-        }
-
-        void OnMouseCaptureOut(MouseCaptureOutEvent evt)
-        {
-            if (active)
-                ProcessCancelEvent(evt, PointerId.mousePointerId);
         }
 
         /// <summary>
@@ -196,14 +148,9 @@ namespace UnityEngine.UIElements.Internal
         {
             if (!CanStartManipulation(evt)) return;
 
-            if (evt.pointerId != PointerId.mousePointerId)
+            if (!evt.DiscardMouseEventsOnMobile())
             {
                 ProcessDownEvent(evt, evt.localPosition, evt.pointerId);
-                target.panel.PreventCompatibilityMouseEvents(evt.pointerId);
-            }
-            else
-            {
-                evt.StopImmediatePropagation();
             }
         }
 
@@ -215,14 +162,9 @@ namespace UnityEngine.UIElements.Internal
         {
             if (!active) return;
 
-            if (evt.pointerId != PointerId.mousePointerId)
+            if (!evt.DiscardMouseEventsOnMobile())
             {
                 ProcessMoveEvent(evt, evt.localPosition);
-                target.panel.PreventCompatibilityMouseEvents(evt.pointerId);
-            }
-            else
-            {
-                evt.StopPropagation();
             }
         }
 
@@ -234,14 +176,9 @@ namespace UnityEngine.UIElements.Internal
         {
             if (!active || !CanStopManipulation(evt)) return;
 
-            if (evt.pointerId != PointerId.mousePointerId)
+            if (!evt.DiscardMouseEventsOnMobile())
             {
                 ProcessUpEvent(evt, evt.localPosition, evt.pointerId);
-                target.panel.PreventCompatibilityMouseEvents(evt.pointerId);
-            }
-            else
-            {
-                evt.StopPropagation();
             }
         }
 
@@ -253,10 +190,7 @@ namespace UnityEngine.UIElements.Internal
         {
             if (!active || !CanStopManipulation(evt)) return;
 
-            if (IsNotMouseEvent(evt.pointerId))
-            {
-                ProcessCancelEvent(evt, evt.pointerId);
-            }
+            ProcessCancelEvent(evt, evt.pointerId);
         }
 
         /// <summary>
@@ -267,15 +201,7 @@ namespace UnityEngine.UIElements.Internal
         {
             if (!active) return;
 
-            if (IsNotMouseEvent(evt.pointerId))
-            {
-                ProcessCancelEvent(evt, evt.pointerId);
-            }
-        }
-
-        static bool IsNotMouseEvent(int pointerId)
-        {
-            return pointerId != PointerId.mousePointerId;
+            ProcessCancelEvent(evt, evt.pointerId);
         }
 
         /// <summary>

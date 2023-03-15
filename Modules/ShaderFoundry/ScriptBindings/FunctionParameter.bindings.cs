@@ -29,6 +29,7 @@ namespace UnityEditor.ShaderFoundry
         internal static extern FunctionParameterInternal Invalid();
 
         internal bool IsValid => (m_NameHandle.IsValid && (m_Flags != 0));
+        internal extern string GetName(ShaderContainer container);
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
 
@@ -53,7 +54,7 @@ namespace UnityEditor.ShaderFoundry
         // public API
         public ShaderContainer Container => container;
         public bool IsValid => (container != null) && handle.IsValid && (param.IsValid);
-        public string Name => container?.GetString(param.m_NameHandle) ?? string.Empty;
+        public string Name => param.GetName(container);
         public ShaderType Type => new ShaderType(container, param.m_TypeHandle);
         public IEnumerable<ShaderAttribute> Attributes => param.m_AttributeListHandle.AsListEnumerable<ShaderAttribute>(container, (container, handle) => (new ShaderAttribute(container, handle)));
         public bool IsInput => ((param.m_Flags & (UInt32)FunctionParameterInternal.Flags.kFlagsInput) != 0);

@@ -58,11 +58,6 @@ namespace Unity.UI.Builder
             selection.NotifyOfStylingChange(null);
         }
 
-        protected override bool StopEventOnMouseDown(MouseDownEvent evt)
-        {
-            return false;
-        }
-
         protected override bool IsPickedElementValid(VisualElement element)
         {
             if (element == null)

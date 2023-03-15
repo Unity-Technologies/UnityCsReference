@@ -369,7 +369,7 @@ namespace UnityEngine.UIElements
             // Need to send the custom styles event after the inheritance is resolved because an element
             // may want to read standard styles too (TextInputFieldBase callback depends on it).
             if (updateElement && (originalCustomStyleCount > 0 || element.computedStyle.customPropertiesCount > 0) &&
-                element.HasEventCallbacksOrDefaultActions(CustomStyleResolvedEvent.EventCategory))
+                element.HasSelfEventInterests(CustomStyleResolvedEvent.EventCategory))
             {
                 using (var evt = CustomStyleResolvedEvent.GetPooled())
                 {

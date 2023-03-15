@@ -235,7 +235,8 @@ namespace UnityEditor.ShortcutManagement
                 Event.current.Use();
 
                 var e = new Event(Event.current) { type = EventType.MouseUp };
-                using (var mouseUpEvent = MouseUpEvent.GetPooled(e)) m_Root.ExecuteDefaultActionDisabled(mouseUpEvent);
+                using (var mouseUpEvent = MouseUpEvent.GetPooled(e))
+                    m_Root.HandleEventBubbleUpDisabled(mouseUpEvent);
             }
 
             m_ViewController.RequestRebindOfSelectedEntry(evt.newValue);
@@ -1442,8 +1443,6 @@ namespace UnityEditor.ShortcutManagement
             input.RegisterCallback<FocusEvent>((evt) => {
                 StartNewCombination();
                 evt.StopPropagation();
-                evt.propagation |= EventBase.EventPropagation.Cancellable;
-                evt.PreventDefault();
                 textSelection.MoveTextEnd();
             }, TrickleDown.TrickleDown);
             input.RegisterCallback<BlurEvent>((evt) =>

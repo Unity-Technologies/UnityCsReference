@@ -386,7 +386,6 @@ namespace UnityEditor.SceneTemplate
                     break;
                 case KeyCode.Tab:
                     elementSelected = NavigateToNextItem();
-                    evt.PreventDefault();
                     break;
                 case KeyCode.Home:
                     elementSelected = SetSelectedVisibleIndex(0, true);

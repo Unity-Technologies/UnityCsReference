@@ -24,6 +24,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public override void Observe()
         {
+            if (m_GraphModelState.GraphModel == null)
+                return;
+
             using (var selObs = this.ObserveState(m_SelectionState))
             {
                 List<GraphElementModel> changedModels = null;

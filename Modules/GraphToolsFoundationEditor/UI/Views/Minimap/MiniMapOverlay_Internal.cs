@@ -17,6 +17,8 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         public const string idValue = "gtf-minimap";
 
+        MiniMapView m_MiniMapView;
+
         public MiniMapOverlay_Internal()
         {
             minSize = new Vector2(100, 100);
@@ -29,16 +31,28 @@ namespace Unity.GraphToolsFoundation.Editor
             var window = containerWindow as GraphViewEditorWindow;
             if (window != null && window.GraphView != null)
             {
-                var content = window.CreateMiniMapView();
-                content.AddToClassList("unity-theme-env-variables");
-                content.RegisterCallback<TooltipEvent>((e) => e.StopPropagation());
-                return content;
+                m_MiniMapView?.Dispose();
+                m_MiniMapView = window.CreateMiniMapView();
+                if (m_MiniMapView != null)
+                {
+                    m_MiniMapView.AddToClassList("unity-theme-env-variables");
+                    m_MiniMapView.RegisterCallback<TooltipEvent>((e) => e.StopPropagation());
+                    return m_MiniMapView;
+                }
             }
 
             var placeholder = new VisualElement();
             placeholder.AddToClassList(MiniMapView.ussClassName);
             placeholder.AddStylesheet_Internal("MiniMapView.uss");
             return placeholder;
+        }
+
+        /// <inheritdoc />
+        public override void OnWillBeDestroyed()
+        {
+            base.OnWillBeDestroyed();
+            m_MiniMapView?.Dispose();
+            m_MiniMapView = null;
         }
     }
 }

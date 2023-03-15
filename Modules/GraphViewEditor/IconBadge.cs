@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -328,8 +329,10 @@ namespace UnityEditor.Experimental.GraphView
 
         [EventInterest(typeof(GeometryChangedEvent), typeof(DetachFromPanelEvent), typeof(MouseEnterEvent),
             typeof(MouseLeaveEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
+            base.HandleEventBubbleUp(evt);
+
             if (evt.eventTypeId == GeometryChangedEvent.TypeId())
             {
                 if (m_Attacher != null)
@@ -355,9 +358,12 @@ namespace UnityEditor.Experimental.GraphView
             {
                 HideText();
             }
+        }
 
-
-            base.ExecuteDefaultAction(evt);
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultAction override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
         }
 
         private void PerformTipLayout()

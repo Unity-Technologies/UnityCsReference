@@ -42,8 +42,8 @@ namespace UnityEngine.UIElements
         internal void Invoke(EventBase evt, PropagationPhase propagationPhase)
         {
             if (eventTypeId == evt.eventTypeId && (phase == CallbackPhase.TrickleDown
-                    ? propagationPhase == PropagationPhase.TrickleDown || propagationPhase == PropagationPhase.AtTarget
-                    : propagationPhase == PropagationPhase.AtTarget || propagationPhase == PropagationPhase.BubbleUp))
+                    ? propagationPhase == PropagationPhase.TrickleDown
+                    : propagationPhase == PropagationPhase.BubbleUp))
                 Invoke(evt);
         }
 

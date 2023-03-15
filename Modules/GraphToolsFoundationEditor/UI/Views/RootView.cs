@@ -13,20 +13,22 @@ namespace Unity.GraphToolsFoundation.Editor
     /// Base class for root views.
     /// </summary>
     /// <remarks>Root views are model views that can receive commands. They are also usually being updated by an observer.</remarks>
-    abstract class RootView : BaseModelView, IHierarchicalCommandTarget, IUndoableCommandMerger
+    abstract class RootView : BaseModelView, IHierarchicalCommandTarget, IUndoableCommandMerger, IDisposable
     {
         public static readonly string ussClassName = "ge-view";
         public static readonly string focusedViewModifierUssClassName = ussClassName.WithUssModifier("focused");
 
+        bool m_RequiresCompleteUIBuild;
+
         /// <summary>
         /// The graph tool.
         /// </summary>
-        public BaseGraphTool GraphTool { get; }
+        public BaseGraphTool GraphTool { get; private set; }
 
         /// <summary>
         /// The <see cref="EditorWindow"/> containing this view.
         /// </summary>
-        public EditorWindow Window { get; }
+        public EditorWindow Window { get; private set; }
 
         /// <summary>
         /// The model backing this view.
@@ -42,7 +44,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// The dispatcher.
         /// </summary>
         /// <remarks>To dispatch a command, use <see cref="Dispatch"/>. This will ensure the command is also dispatched to parent dispatchers.</remarks>
-        protected Dispatcher Dispatcher { get; }
+        protected Dispatcher Dispatcher { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="RootView"/> class.
@@ -52,6 +54,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected RootView(EditorWindow window, BaseGraphTool graphTool)
         {
             focusable = true;
+            m_RequiresCompleteUIBuild = true;
 
             GraphTool = graphTool;
             Dispatcher = new CommandDispatcher();
@@ -64,6 +67,50 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCallback<FocusOutEvent>(OnLostFocus);
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
+        }
+
+        /// <summary>
+        /// Adds the <see cref="Model"/> to the <see cref="GraphTool"/>'s state and registers all observers.
+        /// </summary>
+        protected virtual void Initialize()
+        {
+            Model?.AddToState(GraphTool?.State);
+            RegisterModelObservers();
+        }
+
+        ~RootView()
+        {
+            Dispose(false);
+        }
+
+        /// <summary>
+        /// Disposes all resources, unregisters all observers and removes the <see cref="Model"/> from the <see cref="GraphTool"/>'s state.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Disposes all resources, unregisters all observers and removes the <see cref="Model"/> from the <see cref="GraphTool"/>'s state.
+        /// </summary>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposing)
+                return;
+
+            UnregisterModelObservers();
+            Model?.RemoveFromState(GraphTool?.State);
+
+            GraphTool = null;
+            Dispatcher = null;
+            Window = null;
+
+            UnregisterCallback<FocusInEvent>(OnFocus);
+            UnregisterCallback<FocusOutEvent>(OnLostFocus);
+            UnregisterCallback<AttachToPanelEvent>(OnEnterPanel);
+            UnregisterCallback<DetachFromPanelEvent>(OnLeavePanel);
         }
 
         /// <inheritdoc />
@@ -115,14 +162,24 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// Registers all observers.
+        /// Registers all observers that can affect the models.
         /// </summary>
-        protected abstract void RegisterObservers();
+        protected abstract void RegisterModelObservers();
 
         /// <summary>
-        /// Unregisters all observers.
+        /// Registers all observers that affect only the view.
         /// </summary>
-        protected abstract void UnregisterObservers();
+        protected abstract void RegisterViewObservers();
+
+        /// <summary>
+        /// Unregisters all observers that can affect the models.
+        /// </summary>
+        protected abstract void UnregisterModelObservers();
+
+        /// <summary>
+        /// Unregisters all observers that affect only the view.
+        /// </summary>
+        protected abstract void UnregisterViewObservers();
 
         void OnFocus(FocusInEvent e)
         {
@@ -141,9 +198,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="e">The event.</param>
         protected virtual void OnEnterPanel(AttachToPanelEvent e)
         {
-            BuildUI();
-            Model?.AddToState(GraphTool?.State);
-            RegisterObservers();
+            if (m_RequiresCompleteUIBuild)
+            {
+                BuildUI();
+                m_RequiresCompleteUIBuild = false;
+            }
+            RegisterViewObservers();
             UpdateFromModel();
         }
 
@@ -153,8 +213,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="e">The event.</param>
         protected virtual void OnLeavePanel(DetachFromPanelEvent e)
         {
-            UnregisterObservers();
-            Model?.RemoveFromState(GraphTool?.State);
+            UnregisterViewObservers();
         }
     }
 }

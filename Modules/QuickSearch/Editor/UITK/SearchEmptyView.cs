@@ -364,7 +364,6 @@ namespace UnityEditor.Search
             }
 
             evt.StopPropagation();
-            evt.PreventDefault();
         }
 
         private void SetCurrentArea(QueryAreaBlock area)

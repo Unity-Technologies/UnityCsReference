@@ -188,7 +188,7 @@ namespace UnityEngine.UIElements
             HandleFocus(recycledItem, previousIndex);
         }
 
-        public override void OnFocus(VisualElement leafTarget)
+        public override void OnFocusIn(VisualElement leafTarget)
         {
             if (leafTarget == m_ScrollView.contentContainer)
                 return;
@@ -215,7 +215,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public override void OnBlur(VisualElement willFocus)
+        public override void OnFocusOut(VisualElement willFocus)
         {
             // Focus lost and the about-to-be-focused VisualElement is not part of the VerticalVirtualizationController.
             if (willFocus == null || willFocus != m_ScrollView.contentContainer)

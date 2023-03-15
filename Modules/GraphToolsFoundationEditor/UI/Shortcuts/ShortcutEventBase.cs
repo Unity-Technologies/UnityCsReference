@@ -56,7 +56,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             base.Init();
             MousePosition = PointerDeviceState.GetPointerPosition(PointerId.mousePointerId, ContextType.Editor);
-            propagation = EventPropagation.TricklesDown | EventPropagation.Bubbles | EventPropagation.Cancellable;
+            propagation = EventPropagation.TricklesDown | EventPropagation.Bubbles;
         }
 
         internal static void SendTestEvent_Internal(GraphViewEditorWindow window, ShortcutStage stage)

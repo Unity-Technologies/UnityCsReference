@@ -10,37 +10,50 @@ namespace UnityEngine.UIElements
 {
     partial class VisualElement
     {
+        // Virtual methods that only react to specific event categories can use the [EventInterest] attribute to allow
+        // UI Toolkit to skip any unrelated events. EventInterests from base classes are automatically carried over.
+        // Applies to the "HandleEventTrickleDown" and "HandleEventBubbleUp" methods.
+
+        // Since this is type-specific data, it could eventually be stored in a shared object.
+        private readonly int m_TrickleDownHandleEventCategories;
+        private readonly int m_BubbleUpHandleEventCategories;
+
+        private int m_BubbleUpEventCallbackCategories = 0;
+        private int m_TrickleDownEventCallbackCategories = 0;
+        private int m_EventInterestSelfCategories = 0;
+        private int m_CachedEventInterestParentCategories = 0;
+
         private static uint s_NextParentVersion;
 
-        // The version with which this element's m_CachedNextParentWithEventCallback was computed.
+        // The version with which this element's m_CachedNextParentWithEventInterests was computed.
         private uint m_NextParentCachedVersion;
 
-        // The version that children need to have to use this element as their m_CachedNextParentWithEventCallback.
+        // The version that children need to have to use this element as their m_CachedNextParentWithEventInterests.
         // This should be 0 if this element has no event callback, and non-0 if it has any.
         private uint m_NextParentRequiredVersion;
 
-        // The last computed nextParentWithEventCallback for this element.
+        // The last computed nextParentWithEventInterests for this element.
         // We make sure to reset this to null when an element's panel changes, to allow the GC to do its work.
         // This is used in performance-critical paths so we should avoid WeakReference or GCHandle (10x slower).
-        private VisualElement m_CachedNextParentWithEventCallback;
+        private VisualElement m_CachedNextParentWithEventInterests;
 
-        // Call this to force any children of this element to invalidate their m_CachedNextParentWithEventCallback.
+        // Call this to force any children of this element to invalidate their m_CachedNextParentWithEventInterests.
         // Instead of actually overwriting the children's data, which might be a costly task, we instead mark the
         // old shared parent as having a newer version than what the children had seen, thus forcing them to lazily
         // reevaluate their next parent when queried about it.
-        private void DirtyNextParentWithEventCallback()
+        private void DirtyNextParentWithEventInterests()
         {
-            if (m_CachedNextParentWithEventCallback != null &&
-                m_NextParentCachedVersion == m_CachedNextParentWithEventCallback.m_NextParentRequiredVersion)
+            if (m_CachedNextParentWithEventInterests != null &&
+                m_NextParentCachedVersion == m_CachedNextParentWithEventInterests.m_NextParentRequiredVersion)
             {
-                m_CachedNextParentWithEventCallback.m_NextParentRequiredVersion = ++s_NextParentVersion;
+                m_CachedNextParentWithEventInterests.m_NextParentRequiredVersion = ++s_NextParentVersion;
             }
         }
 
         // Makes this element appear as its children's next parent with an event callback, provided these children had
         // the same next parent as we did, opening a new required version for this element.
         // By invalidating our own nextParent's version, we also invalidate that of our children, by construction.
-        private void SetAsNextParentWithEventCallback()
+        internal void SetAsNextParentWithEventInterests()
         {
             // If I'm already a reference point for my children, then my children have nothing to retarget.
             if (m_NextParentRequiredVersion != 0u)
@@ -49,28 +62,29 @@ namespace UnityEngine.UIElements
             m_NextParentRequiredVersion = ++s_NextParentVersion;
 
             // All those pointing to my old parent might now point to me, so we make their version outdated
-            if (m_CachedNextParentWithEventCallback != null &&
-                m_NextParentCachedVersion == m_CachedNextParentWithEventCallback.m_NextParentRequiredVersion)
+            if (m_CachedNextParentWithEventInterests != null &&
+                m_NextParentCachedVersion == m_CachedNextParentWithEventInterests.m_NextParentRequiredVersion)
             {
-                m_CachedNextParentWithEventCallback.m_NextParentRequiredVersion = ++s_NextParentVersion;
+                m_CachedNextParentWithEventInterests.m_NextParentRequiredVersion = ++s_NextParentVersion;
             }
         }
 
         // Returns the cached next parent if its cached version is up to date.
-        internal bool GetCachedNextParentWithEventCallback(out VisualElement nextParent)
+        internal bool GetCachedNextParentWithEventInterests(out VisualElement nextParent)
         {
-            nextParent = m_CachedNextParentWithEventCallback;
+            nextParent = m_CachedNextParentWithEventInterests;
             return nextParent != null && nextParent.m_NextParentRequiredVersion == m_NextParentCachedVersion;
         }
 
-        // Returns or computes the exact next parent that has an event callback or is a composite root.
+        // Returns or computes the exact next parent that has an event callback or HandleEvent action.
         // This is useful for quickly building PropagationPaths and parentEventCallbackCategories.
-        internal VisualElement nextParentWithEventCallback
+        // Panel root must always be the last parent of the chain if an element in inside a panel.
+        internal VisualElement nextParentWithEventInterests
         {
             get
             {
                 // Value is up to date, return it. This should be the most frequent case.
-                if (GetCachedNextParentWithEventCallback(out var nextParent))
+                if (GetCachedNextParentWithEventInterests(out var nextParent))
                 {
                     return nextParent;
                 }
@@ -81,156 +95,155 @@ namespace UnityEngine.UIElements
                     // Candidate is a proper next parent
                     if (candidate.m_NextParentRequiredVersion != 0u)
                     {
-                        PropagateCachedNextParentWithEventCallback(candidate, candidate);
+                        PropagateCachedNextParentWithEventInterests(candidate, candidate);
                         return candidate;
                     }
 
                     // Candidate has a fast path to a suitable parent
-                    if (candidate.GetCachedNextParentWithEventCallback(out var candidateNextParent))
+                    if (candidate.GetCachedNextParentWithEventInterests(out var candidateNextParent))
                     {
-                        PropagateCachedNextParentWithEventCallback(candidateNextParent, candidate);
+                        PropagateCachedNextParentWithEventInterests(candidateNextParent, candidate);
                         return candidateNextParent;
                     }
                 }
 
                 // This is the top element, return null and clear the cached reference (to allow the GC to do its work)
-                m_CachedNextParentWithEventCallback = null;
+                m_CachedNextParentWithEventInterests = null;
                 return null;
             }
         }
 
         // Sets new next parent across the hierarchy between this and the new parent
-        private void PropagateCachedNextParentWithEventCallback(VisualElement nextParent, VisualElement stopParent)
+        private void PropagateCachedNextParentWithEventInterests(VisualElement nextParent, VisualElement stopParent)
         {
             for (var ve = this; ve != stopParent; ve = ve.hierarchy.parent)
             {
-                ve.m_CachedNextParentWithEventCallback = nextParent;
+                ve.m_CachedNextParentWithEventInterests = nextParent;
                 ve.m_NextParentCachedVersion = nextParent.m_NextParentRequiredVersion;
             }
         }
 
-        private int m_EventCallbackCategories = 0;
-
-        // An aggregate of the EventCategory values of all the calls to RegisterCallback for this element.
-        // This also encodes the isCompositeRoot property, to simplify the nextParentWithEventCallback computation.
-        internal int eventCallbackCategories
+        internal void AddEventCallbackCategories(int eventCategories, TrickleDown trickleDown)
         {
-            get => m_EventCallbackCategories;
-            set
-            {
-                if (m_EventCallbackCategories != value)
-                {
-                    int diff = m_EventCallbackCategories ^ value;
-                    if ((diff & (int)~EventCategoryFlags.TargetOnly) != 0)
-                    {
-                        SetAsNextParentWithEventCallback();
-                        IncrementVersion(VersionChangeType.EventCallbackCategories);
-                    }
-                    else
-                    {
-                        // Don't invalidate children's categories, but do maintain parentCategories >= targetCategories
-                        m_CachedEventCallbackParentCategories |= value;
-                    }
-                    m_EventCallbackCategories = value;
-                }
-            }
+            if (trickleDown == TrickleDown.TrickleDown)
+                m_TrickleDownEventCallbackCategories |= eventCategories;
+            else
+                m_BubbleUpEventCallbackCategories |= eventCategories;
+            UpdateEventInterestSelfCategories();
         }
 
-        private int m_CachedEventCallbackParentCategories = 0;
+        // An aggregate of the EventCategory values of all the calls to RegisterCallback for this element
+        // and overrides of HandleEventTrickleDown or HandleEventBubbleUp across this element's class hierarchy.
+        internal int eventInterestSelfCategories => m_EventInterestSelfCategories;
 
-        // Returns or computes the combined eventCallbackCategories of this element and all its parents.
+        // Returns or computes the combined EventCategory interests of this element and all its parents.
         // The cached version of this property will be invalidated frequently, so this needs to be relatively cheap.
-        internal int eventCallbackParentCategories
+        internal int eventInterestParentCategories
         {
             get
             {
                 if (elementPanel == null)
                     return -1;
 
-                if (isEventCallbackParentCategoriesDirty)
+                if (isEventInterestParentCategoriesDirty)
                 {
-                    UpdateCallbackParentCategories();
-                    isEventCallbackParentCategoriesDirty = false;
+                    UpdateEventInterestParentCategories();
+                    isEventInterestParentCategoriesDirty = false;
                 }
 
-                return m_CachedEventCallbackParentCategories;
+                return m_CachedEventInterestParentCategories;
             }
         }
 
-        internal bool isEventCallbackParentCategoriesDirty
+        internal bool isEventInterestParentCategoriesDirty
         {
-            get => (m_Flags & VisualElementFlags.EventCallbackParentCategoriesDirty) == VisualElementFlags.EventCallbackParentCategoriesDirty;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.EventCallbackParentCategoriesDirty : m_Flags & ~VisualElementFlags.EventCallbackParentCategoriesDirty;
+            get => (m_Flags & VisualElementFlags.EventInterestParentCategoriesDirty) == VisualElementFlags.EventInterestParentCategoriesDirty;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.EventInterestParentCategoriesDirty : m_Flags & ~VisualElementFlags.EventInterestParentCategoriesDirty;
         }
 
-        private void UpdateCallbackParentCategories()
+        private void UpdateEventInterestSelfCategories()
         {
-            m_CachedEventCallbackParentCategories = m_EventCallbackCategories;
+            int value = m_TrickleDownHandleEventCategories | m_BubbleUpHandleEventCategories |
+                        m_TrickleDownEventCallbackCategories | m_BubbleUpEventCallbackCategories;
 
-            // Composite roots receive DefaultAction during event propagation as though they were the leaf target.
-            if (isCompositeRoot)
-                m_CachedEventCallbackParentCategories |= m_DefaultActionEventCategories;
+            if (m_EventInterestSelfCategories != value)
+            {
+                int diff = m_EventInterestSelfCategories ^ value;
+                if ((diff & (int)~EventCategoryFlags.TargetOnly) != 0)
+                {
+                    SetAsNextParentWithEventInterests();
+                    IncrementVersion(VersionChangeType.EventCallbackCategories);
+                }
+                else
+                {
+                    // Don't invalidate children's categories, but do maintain parentCategories >= targetCategories
+                    m_CachedEventInterestParentCategories |= value;
+                }
 
-            var nextParent = nextParentWithEventCallback;
+                m_EventInterestSelfCategories = value;
+            }
+        }
+
+        private void UpdateEventInterestParentCategories()
+        {
+            m_CachedEventInterestParentCategories = m_EventInterestSelfCategories;
+
+            var nextParent = nextParentWithEventInterests;
             if (nextParent == null)
                 return;
 
             // Recursively compute categories for next parent with event callbacks
-            m_CachedEventCallbackParentCategories |= nextParent.eventCallbackParentCategories;
+            m_CachedEventInterestParentCategories |= nextParent.eventInterestParentCategories;
 
             // Fill in the gap between this and the next parent with non-identical callback info.
             if (hierarchy.parent != null)
             {
                 for (var ve = hierarchy.parent; ve != nextParent; ve = ve.hierarchy.parent)
                 {
-                    ve.m_CachedEventCallbackParentCategories = m_CachedEventCallbackParentCategories;
-                    ve.isEventCallbackParentCategoriesDirty = false;
+                    ve.m_CachedEventInterestParentCategories = m_CachedEventInterestParentCategories;
+                    ve.isEventInterestParentCategoriesDirty = false;
                 }
             }
         }
 
-        // Returns true if this element might have a RegisterCallback on an event of the given category.
-        internal bool HasEventCallbacks(EventCategory eventCategory) =>
-            0 != (eventCallbackCategories & (1 << (int)eventCategory));
+        // Returns true if this element or any of its parents might have a RegisterCallback or a
+        // HandleEventTrickleDown or HandleEventBubbleUp override for the given category.
+        // Use this to skip an event that bubbles up or trickles down but with no interest from its target's hierarchy.
+        internal bool HasParentEventInterests(EventCategory eventCategory) =>
+            0 != (eventInterestParentCategories & (1 << (int)eventCategory));
+        internal bool HasParentEventInterests(int eventCategories) =>
+            0 != (eventInterestParentCategories & eventCategories);
 
-        // Returns true if this element or any of its parents might have a RegisterCallback for the given category.
-        internal bool HasParentEventCallbacks(EventCategory eventCategory) =>
-            0 != (eventCallbackParentCategories & (1 << (int)eventCategory));
+        // Returns true if this element itself has a RegisterCallback or a HandleEventTrickleDown/BubbleUp override.
+        // Use this to skip an event that affects only its target, if the target has no interest for it.
+        internal bool HasSelfEventInterests(EventCategory eventCategory) =>
+            0 != (m_EventInterestSelfCategories & (1 << (int)eventCategory));
+        internal bool HasTrickleDownEventInterests(int eventCategories) =>
+            0 != ((m_TrickleDownHandleEventCategories | m_TrickleDownEventCallbackCategories) & eventCategories);
+        internal bool HasBubbleUpEventInterests(int eventCategories) =>
+            0 != ((m_BubbleUpHandleEventCategories | m_BubbleUpEventCallbackCategories) & eventCategories);
 
-        // Virtual methods that only react to specific event categories can use the [EventInterest] attribute to allow
-        // UI Toolkit to skip any unrelated events. EventInterests from base classes are automatically carried over.
-        // Applies to the "ExecuteDefaultAction" and "ExecuteDefaultActionAtTarget" methods.
-        // Since this is all type-specific data, it could eventually be stored in a shared object.
-        private readonly int m_DefaultActionEventCategories;
-        private readonly int m_DefaultActionAtTargetEventCategories;
+        // Returns true if this element might have TrickleDown or BubbleUp callbacks on an event of the given category.
+        // The EventDispatcher uses this to skip InvokeCallbacks.
+        internal bool HasTrickleDownEventCallbacks(EventCategory eventCategory) =>
+            0 != (m_TrickleDownEventCallbackCategories & (1 << (int)eventCategory));
+        internal bool HasTrickleDownEventCallbacks(int eventCategories) =>
+            0 != (m_TrickleDownEventCallbackCategories & eventCategories);
+        internal bool HasBubbleUpEventCallbacks(EventCategory eventCategory) =>
+            0 != (m_BubbleUpEventCallbackCategories & (1 << (int)eventCategory));
+        internal bool HasBubbleUpEventCallbacks(int eventCategories) =>
+            0 != (m_BubbleUpEventCallbackCategories & eventCategories);
 
-        // Use this to fully skip an event that bubbles or trickles down
-        internal bool HasParentEventCallbacksOrDefaultActions(EventCategory eventCategory) =>
-            0 != ((m_DefaultActionEventCategories | m_DefaultActionAtTargetEventCategories |
-                eventCallbackParentCategories) & (1 << (int)eventCategory));
-
-        // Use this to fully skip an event that affects only its target
-        internal bool HasEventCallbacksOrDefaultActions(EventCategory eventCategory) =>
-            0 != ((m_DefaultActionEventCategories | m_DefaultActionAtTargetEventCategories |
-                eventCallbackCategories) & (1 << (int)eventCategory));
-
-        // Use this to skip event propagation for an event that bubbles or trickles down.
-        // Do not use this to skip the ExecuteDefaultAction last phase, however.
-        internal bool HasParentEventCallbacksOrDefaultActionAtTarget(EventCategory eventCategory) =>
-            0 != ((m_DefaultActionAtTargetEventCategories | eventCallbackParentCategories) & (1 << (int)eventCategory));
-
-        // Use this to skip event propagation for an event that affects only its target.
-        // Do not use this to skip the ExecuteDefaultAction last phase, however.
-        internal bool HasEventCallbacksOrDefaultActionAtTarget(EventCategory eventCategory) =>
-            0 != ((m_DefaultActionAtTargetEventCategories | eventCallbackCategories) & (1 << (int)eventCategory));
-
-        // Use this to skip ExecuteDefaultActionAtTarget.
-        internal bool HasDefaultActionAtTarget(EventCategory eventCategory) =>
-            0 != (m_DefaultActionAtTargetEventCategories & (1 << (int)eventCategory));
-
-        // Use this to skip ExecuteDefaultAction.
-        internal bool HasDefaultAction(EventCategory eventCategory) =>
-            0 != (m_DefaultActionEventCategories & (1 << (int)eventCategory));
+        // Returns true if this element has HandleEventTrickleDown or HandleEventBubbleUp overrides.
+        // The EventDispatcher uses this to skip HandleEventTrickleDown and HandleEventBubbleUp.
+        internal bool HasTrickleDownHandleEvent(EventCategory eventCategory) =>
+            0 != (m_TrickleDownHandleEventCategories & (1 << (int)eventCategory));
+        internal bool HasTrickleDownHandleEvent(int eventCategories) =>
+            0 != (m_TrickleDownHandleEventCategories & eventCategories);
+        internal bool HasBubbleUpHandleEvent(EventCategory eventCategory) =>
+            0 != (m_BubbleUpHandleEventCategories & (1 << (int)eventCategory));
+        internal bool HasBubbleUpHandleEvent(int eventCategories) =>
+            0 != (m_BubbleUpHandleEventCategories & eventCategories);
     }
 
     internal static class EventInterestReflectionUtils
@@ -240,37 +253,57 @@ namespace UnityEngine.UIElements
         {
             public int DefaultActionCategories;
             public int DefaultActionAtTargetCategories;
+            public int HandleEventTrickleDownCategories;
+            public int HandleEventBubbleUpCategories;
         }
 
         private static readonly Dictionary<Type, DefaultEventInterests> s_DefaultEventInterests =
             new Dictionary<Type, DefaultEventInterests>();
 
         // Initialize this VisualElement's default categories according to its fully-resolved Type.
-        internal static void GetDefaultEventInterests(Type elementType, out int defaultActionCategories,
-            out int defaultActionAtTargetCategories)
+        internal static void GetDefaultEventInterests(Type elementType,
+            out int defaultActionCategories, out int defaultActionAtTargetCategories,
+            out int handleEventTrickleDownCategories, out int handleEventBubbleUpCategories)
         {
             if (!s_DefaultEventInterests.TryGetValue(elementType, out var categories))
             {
                 var ancestorType = elementType.BaseType;
                 if (ancestorType != null)
                 {
-                    GetDefaultEventInterests(ancestorType, out categories.DefaultActionCategories,
-                        out categories.DefaultActionAtTargetCategories);
+                    GetDefaultEventInterests(ancestorType,
+                        out categories.DefaultActionCategories, out categories.DefaultActionAtTargetCategories,
+                        out categories.HandleEventTrickleDownCategories, out categories.HandleEventBubbleUpCategories);
                 }
 
                 categories.DefaultActionCategories |=
                     ComputeDefaultEventInterests(elementType, CallbackEventHandler.ExecuteDefaultActionName) |
+// Disable deprecation warnings so we can access legacy method ExecuteDefaultActionDisabled
+#pragma warning disable 618
                     ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.ExecuteDefaultActionDisabled));
+#pragma warning restore 618
 
                 categories.DefaultActionAtTargetCategories |=
                     ComputeDefaultEventInterests(elementType, CallbackEventHandler.ExecuteDefaultActionAtTargetName) |
+// Disable deprecation warnings so we can access legacy method ExecuteDefaultActionDisabledAtTarget
+#pragma warning disable 618
                     ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.ExecuteDefaultActionDisabledAtTarget));
+#pragma warning restore 618
+
+                categories.HandleEventTrickleDownCategories |=
+                    ComputeDefaultEventInterests(elementType, CallbackEventHandler.HandleEventTrickleDownName) |
+                    ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.HandleEventTrickleDownDisabled));
+
+                categories.HandleEventBubbleUpCategories |=
+                    ComputeDefaultEventInterests(elementType, CallbackEventHandler.HandleEventBubbleUpName) |
+                    ComputeDefaultEventInterests(elementType, nameof(CallbackEventHandler.HandleEventBubbleUpDisabled));
 
                 s_DefaultEventInterests.Add(elementType, categories);
             }
 
             defaultActionCategories = categories.DefaultActionCategories;
             defaultActionAtTargetCategories = categories.DefaultActionAtTargetCategories;
+            handleEventTrickleDownCategories = categories.HandleEventTrickleDownCategories;
+            handleEventBubbleUpCategories = categories.HandleEventBubbleUpCategories;
         }
 
         // Compute one level of EventInterests, for the given type. Those values can be combined with that of the
@@ -337,6 +370,7 @@ namespace UnityEngine.UIElements
         Default = 0,
         Pointer,
         PointerMove,
+        PointerDown,
         EnterLeave,
         EnterLeaveWindow,
         Keyboard,
@@ -351,8 +385,7 @@ namespace UnityEngine.UIElements
         Command,
         Tooltip,
         DragAndDrop,
-        IMGUI,
-        Reserved = 31   // used by Panel.m_RootContainer to force it to be a nextParentWithEventCallback
+        IMGUI
     }
 
     // Event category aggregator and useful shorthands for internal use.
@@ -365,6 +398,7 @@ namespace UnityEngine.UIElements
         // All events that have an equivalent IMGUI event
         TriggeredByOS = 1 << EventCategory.Pointer |
             1 << EventCategory.PointerMove |
+            1 << EventCategory.PointerDown |
             1 << EventCategory.EnterLeaveWindow |
             1 << EventCategory.Keyboard |
             1 << EventCategory.Command |
@@ -388,8 +422,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Use the <see cref="Inherit"/> option when only the events needed by the base
         /// class are required.
-        /// For example, a class that overrides the <see cref="CallbackEventHandler.ExecuteDefaultAction"/> method and
-        /// checks if an enabled flag is active before calling its base.ExecuteDefaultAction method would use this option.
+        /// For example, a class that overrides the <see cref="CallbackEventHandler.HandleEventBubbleUp"/>
+        /// method and checks if an enabled flag is active before calling its base.ExecuteDefaultActionAtTarget method
+        /// would use this option.
         /// </summary>
         Inherit = EventCategoryFlags.None,
 
@@ -397,8 +432,8 @@ namespace UnityEngine.UIElements
         /// Use the <see cref="EventInterestOptions.AllEventTypes"/> option when the method with an
         /// <see cref="EventInterestAttribute"/> doesn't have a specific filter for the event types it uses, or wants
         /// to receive all possible event types.
-        /// For example, a class that overrides <see cref="CallbackEventHandler.ExecuteDefaultAction"/> and logs a
-        /// message every time an event of any kind is received would require this option.
+        /// For example, a class that overrides <see cref="CallbackEventHandler.HandleEventBubbleUp"/> and logs
+        /// a message every time an event of any kind is received would require this option.
         /// </summary>
         AllEventTypes = EventCategoryFlags.All,
     }
@@ -409,8 +444,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Optional attribute on overrides of <see cref="CallbackEventHandler.ExecuteDefaultAction"/> or
-    /// <see cref="CallbackEventHandler.ExecuteDefaultActionAtTarget"/>
+    /// Optional attribute on overrides of <see cref="CallbackEventHandler.HandleEventBubbleUp"/>.
     /// </summary>
     /// <remarks>
     /// Use this to specify all the event types that these methods require to operate.

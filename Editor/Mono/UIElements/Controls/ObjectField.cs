@@ -164,14 +164,9 @@ namespace UnityEditor.UIElements
 
             [EventInterest(typeof(MouseDownEvent), typeof(KeyDownEvent),
                 typeof(DragUpdatedEvent), typeof(DragPerformEvent), typeof(DragLeaveEvent))]
-            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+            protected override void HandleEventBubbleUp(EventBase evt)
             {
-                base.ExecuteDefaultActionAtTarget(evt);
-
-                if (evt == null)
-                {
-                    return;
-                }
+                base.HandleEventBubbleUp(evt);
 
                 if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
                     OnMouseDown(evt as MouseDownEvent);
@@ -206,9 +201,9 @@ namespace UnityEditor.UIElements
             }
 
             [EventInterest(typeof(MouseDownEvent))]
-            internal override void ExecuteDefaultActionDisabledAtTarget(EventBase evt)
+            internal override void HandleEventBubbleUpDisabled(EventBase evt)
             {
-                base.ExecuteDefaultActionDisabledAtTarget(evt);
+                base.HandleEventBubbleUpDisabled(evt);
 
                 if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
                     OnMouseDown(evt as MouseDownEvent);
@@ -316,9 +311,9 @@ namespace UnityEditor.UIElements
             }
 
             [EventInterest(typeof(MouseDownEvent))]
-            protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+            protected override void HandleEventBubbleUp(EventBase evt)
             {
-                base.ExecuteDefaultActionAtTarget(evt);
+                base.HandleEventBubbleUp(evt);
 
                 if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
                 {

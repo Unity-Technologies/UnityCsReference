@@ -165,11 +165,6 @@ namespace Unity.UI.Builder
             m_TooltipPreview.Enable();
         }
 
-        protected override bool StopEventOnMouseDown(MouseDownEvent evt)
-        {
-            return false;
-        }
-
         protected override bool IsPickedElementValid(VisualElement element)
         {
             if (element == null)

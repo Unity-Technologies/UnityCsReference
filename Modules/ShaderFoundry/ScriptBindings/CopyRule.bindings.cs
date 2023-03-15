@@ -14,7 +14,7 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/CopyRule.h")]
     internal struct CopyRuleInternal : IInternalType<CopyRuleInternal>
     {
-        internal FoundryHandle m_SourceName; // string
+        internal FoundryHandle m_SourceNameHandle; // string
         internal FoundryHandle m_InclusionListHandle; // List<string>
         internal FoundryHandle m_ExclusionListHandle; // List<string>
 
@@ -42,7 +42,7 @@ namespace UnityEditor.ShaderFoundry
         // public API
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && rule.IsValid());
-        public string SourceName => container?.GetString(rule.m_SourceName) ?? string.Empty;
+        public string SourceName => container?.GetString(rule.m_SourceNameHandle) ?? string.Empty;
         public IEnumerable<string> Inclusions => rule.m_InclusionListHandle.AsListEnumerable<string>(Container, (container, handle) => (container?.GetString(handle) ?? string.Empty));
         public IEnumerable<string> Exclusions => rule.m_ExclusionListHandle.AsListEnumerable<string>(Container, (container, handle) => (container?.GetString(handle) ?? string.Empty));
 
@@ -95,7 +95,7 @@ namespace UnityEditor.ShaderFoundry
             public CopyRule Build()
             {
                 var rule = new CopyRuleInternal();
-                rule.m_SourceName = container.AddString(sourceName);
+                rule.m_SourceNameHandle = container.AddString(sourceName);
                 rule.m_InclusionListHandle = FixedHandleListInternal.Build(container, inclusions, (n) => (container.AddString(n)));
                 rule.m_ExclusionListHandle = FixedHandleListInternal.Build(container, exclusions, (n) => (container.AddString(n)));
                 var resultHandle = container.Add(rule);

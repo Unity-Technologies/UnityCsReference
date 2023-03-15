@@ -164,7 +164,7 @@ namespace UnityEngine.UIElements
             s_ListPool.Release(toRelease);
         }
 
-        struct DynamicCallbackList
+        internal struct DynamicCallbackList
         {
             [NotNull] private EventCallbackList m_Callbacks;
             [CanBeNull] private EventCallbackList m_TemporaryCallbacks;
@@ -245,8 +245,8 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private DynamicCallbackList m_TrickleDownCallbacks = DynamicCallbackList.Create();
-        private DynamicCallbackList m_BubbleUpCallbacks = DynamicCallbackList.Create();
+        internal DynamicCallbackList m_TrickleDownCallbacks = DynamicCallbackList.Create();
+        internal DynamicCallbackList m_BubbleUpCallbacks = DynamicCallbackList.Create();
 
         ref DynamicCallbackList GetDynamicCallbackList(CallbackPhase phase)
         {
@@ -310,9 +310,7 @@ namespace UnityEngine.UIElements
         {
             var target = (VisualElement) evt.currentTarget;
             var panel = target.elementPanel;
-            if (propagationPhase == PropagationPhase.AtTarget)
-                InvokeCallbacksAtTarget(evt, panel, target);
-            else if (propagationPhase == PropagationPhase.TrickleDown)
+            if (propagationPhase == PropagationPhase.TrickleDown)
                 InvokeCallbacks(evt, panel, target, CallbackPhase.TrickleDown);
             else if (propagationPhase == PropagationPhase.BubbleUp)
                 InvokeCallbacks(evt, panel, target, CallbackPhase.BubbleUp);
@@ -323,14 +321,6 @@ namespace UnityEngine.UIElements
         {
             ref var dynamicCallbackList = ref GetDynamicCallbackList(phase);
             dynamicCallbackList.Invoke(evt, panel, target);
-        }
-
-        public void InvokeCallbacksAtTarget(EventBase evt, [NotNull] BaseVisualElementPanel panel,
-            [NotNull] VisualElement target)
-        {
-            m_TrickleDownCallbacks.Invoke(evt, panel, target);
-            if (!evt.isPropagationStopped)
-                m_BubbleUpCallbacks.Invoke(evt, panel, target);
         }
 
         public bool HasTrickleDownHandlers()

@@ -83,6 +83,7 @@ namespace UnityEngine.UIElements
 
             m_IsPickingPointerTemporaries[pointerId] = temporary;
             m_PickingPointerPositions[pointerId] = GetEventPointerPosition(triggerEvent);
+            m_PendingTopElementUnderPointer[pointerId] = newElementUnderPointer;
 
             VisualElement previousTopElementUnderPointer = m_TopElementUnderPointer[pointerId];
             if (newElementUnderPointer == previousTopElementUnderPointer)
@@ -90,7 +91,6 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            m_PendingTopElementUnderPointer[pointerId] = newElementUnderPointer;
             if (m_TriggerPointerEvent[pointerId] == null && triggerEvent is IPointerEvent)
             {
                 m_TriggerPointerEvent[pointerId] = triggerEvent as IPointerEvent;

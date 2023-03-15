@@ -452,9 +452,9 @@ namespace UnityEditor.Experimental.GraphView
         }
 
         [EventInterest(typeof(MouseEnterEvent), typeof(MouseLeaveEvent), typeof(MouseUpEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (m_ConnectorBox == null || m_ConnectorBoxCap == null)
             {
@@ -482,6 +482,12 @@ namespace UnityEditor.Experimental.GraphView
                     UpdateCapColor();
                 }
             }
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultAction override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
         }
 
         protected override void OnCustomStyleResolved(ICustomStyle styles)

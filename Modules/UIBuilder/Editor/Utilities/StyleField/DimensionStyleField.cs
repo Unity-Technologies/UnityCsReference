@@ -258,7 +258,6 @@ namespace Unity.UI.Builder
 
             value = (evt.newValue * m_DragStep).ToString(CultureInfo.InvariantCulture.NumberFormat);
             evt.StopImmediatePropagation();
-            evt.PreventDefault();
         }
     }
 }

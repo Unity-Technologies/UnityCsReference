@@ -133,33 +133,6 @@ namespace Unity.UI.Builder
         {
         }
 
-        protected virtual bool StopEventOnMouseDown(MouseDownEvent evt)
-        {
-            // TODO: ListView right now does not allow selecting a single
-            // item that is already part of multi-selection, and having
-            // only that item selected. Clicking on any already-selected
-            // item in ListView does nothing. This needs to be fixed in trunk.
-            //
-            // Once we do fix this however, we'll have to do something like this
-            // because otherwise single-click will de-select all other items
-            // BEFORE we start a multi-selection drag, meaning only one
-            // element will be dragged. This attempts to stop the MouseDownEvent
-            // from "doing the right thing" inside ListView when dragging...
-            //
-            // See: https://unity3d.atlassian.net/browse/UIT-1011
-
-            var leafTarget = evt.leafTarget as VisualElement;
-            var item = leafTarget?.GetFirstOfType<BuilderExplorerItem>();
-            if (item == null)
-                return false;
-
-            var documentElement = item.GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
-            if (m_Selection.selection.Contains(documentElement))
-                return true;
-
-            return false;
-        }
-
         protected virtual bool IsPickedElementValid(VisualElement element)
         {
             return true;
@@ -449,29 +422,24 @@ namespace Unity.UI.Builder
 
         void OnMouseDown(MouseDownEvent evt)
         {
+            if (s_CurrentlyActiveBuilderDragger != null)
+            {
+                return;
+            }
+
             var target = evt.currentTarget as VisualElement;
 
             if (m_WeStartedTheDrag && target.HasMouseCapture())
             {
                 evt.StopImmediatePropagation();
-                evt.PreventDefault();
                 return;
             }
 
             if (!CanStartManipulation(evt))
                 return;
 
-            var stopEvent = StopEventOnMouseDown(evt);
-            if (stopEvent)
-                evt.StopImmediatePropagation();
-
             if (target.HasMouseCapture())
-            {
-                if (!stopEvent)
-                    evt.StopImmediatePropagation();
-
                 return;
-            }
 
             s_CurrentlyActiveBuilderDragger ??= this;
 
@@ -560,8 +528,6 @@ namespace Unity.UI.Builder
             if (evt.button != (int)MouseButton.LeftMouse)
             {
                 evt.StopPropagation();
-                evt.PreventDefault();
-
                 return;
             }
 

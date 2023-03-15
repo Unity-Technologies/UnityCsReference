@@ -79,6 +79,8 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty virtualizationMethodProperty = nameof(virtualizationMethod);
         internal static readonly DataBindingProperty fixedItemHeightProperty = nameof(fixedItemHeight);
 
+        internal const string internalBindingKey = "__unity-collection-view-internal-binding";
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseVerticalCollectionView"/>.
         /// </summary>
@@ -87,8 +89,8 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
-            private readonly UxmlIntAttributeDescription m_FixedItemHeight = new UxmlIntAttributeDescription { name = "fixed-item-height", obsoleteNames = new[] { "itemHeight, item-height" }, defaultValue = s_DefaultItemHeight };
             private readonly UxmlEnumAttributeDescription<CollectionVirtualizationMethod> m_VirtualizationMethod = new UxmlEnumAttributeDescription<CollectionVirtualizationMethod> { name = "virtualization-method", defaultValue = CollectionVirtualizationMethod.FixedHeight };
+            private readonly UxmlIntAttributeDescription m_FixedItemHeight = new UxmlIntAttributeDescription { name = "fixed-item-height", obsoleteNames = new[] { "itemHeight, item-height" }, defaultValue = s_DefaultItemHeight };
             private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
             private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
             private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
@@ -247,7 +249,9 @@ namespace UnityEngine.UIElements
                 var previous = itemsSource;
                 GetOrCreateViewController().itemsSource = value;
                 if (previous != itemsSource)
+                {
                     NotifyPropertyChanged(itemsSourceProperty);
+                }
             }
         }
 
@@ -1179,14 +1183,13 @@ namespace UnityEngine.UIElements
             if (Apply(op, shiftKey))
             {
                 sourceEvent.StopPropagation();
-                sourceEvent.PreventDefault();
             }
         }
 
         private void OnPointerMove(PointerMoveEvent evt)
         {
             // Support cases where PointerMove corresponds to a MouseDown or MouseUp event with multiple buttons.
-            if (evt.button == (int)MouseButton.LeftMouse)
+            if (!evt.DiscardMouseEventsOnMobile() && evt.button == (int)MouseButton.LeftMouse)
             {
                 if ((evt.pressedButtons & (1 << (int)MouseButton.LeftMouse)) == 0)
                 {
@@ -1201,12 +1204,7 @@ namespace UnityEngine.UIElements
 
         private void OnPointerDown(PointerDownEvent evt)
         {
-            if (evt.pointerType != PointerType.mouse)
-            {
-                ProcessPointerDown(evt);
-                panel.PreventCompatibilityMouseEvents(evt.pointerId);
-            }
-            else
+            if (!evt.DiscardMouseEventsOnMobile())
             {
                 ProcessPointerDown(evt);
             }
@@ -1225,12 +1223,7 @@ namespace UnityEngine.UIElements
 
         private void OnPointerUp(PointerUpEvent evt)
         {
-            if (evt.pointerType != PointerType.mouse)
-            {
-                ProcessPointerUp(evt);
-                panel.PreventCompatibilityMouseEvents(evt.pointerId);
-            }
-            else
+            if (!evt.DiscardMouseEventsOnMobile())
             {
                 ProcessPointerUp(evt);
             }
@@ -1593,14 +1586,13 @@ namespace UnityEngine.UIElements
             OverwriteFromViewData(this, key);
         }
 
-        [EventInterest(typeof(PointerUpEvent), typeof(FocusEvent), typeof(NavigationSubmitEvent), typeof(BlurEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        [EventInterest(typeof(PointerUpEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
+            typeof(NavigationSubmitEvent))]
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
             // We always need to know when pointer up event occurred to reset DragEventsProcessor flags.
-            // Some controls may capture the mouse, but the collection view is a composite root (isCompositeRoot),
-            // and will always receive ExecuteDefaultAction despite what the actual event target is.
             if (evt.eventTypeId == PointerUpEvent.TypeId())
             {
                 m_Dragger?.OnPointerUpEvent((PointerUpEvent)evt);
@@ -1608,14 +1600,13 @@ namespace UnityEngine.UIElements
             // We need to store the focused item in order to be able to scroll out and back to it, without
             // seeing the focus affected. To do so, we store the path to the tree element that is focused,
             // and set it back in Setup().
-            else if (evt.eventTypeId == FocusEvent.TypeId())
+            else if (evt.eventTypeId == FocusInEvent.TypeId())
             {
-                m_VirtualizationController?.OnFocus(evt.leafTarget as VisualElement);
+                m_VirtualizationController?.OnFocusIn(evt.elementTarget);
             }
-            else if (evt.eventTypeId == BlurEvent.TypeId())
+            else if (evt.eventTypeId == FocusOutEvent.TypeId())
             {
-                BlurEvent e = evt as BlurEvent;
-                m_VirtualizationController?.OnBlur(e?.relatedTarget as VisualElement);
+                m_VirtualizationController?.OnFocusOut(((FocusOutEvent)evt).relatedTarget as VisualElement);
             }
             else if (evt.eventTypeId == NavigationSubmitEvent.TypeId())
             {
@@ -1624,6 +1615,12 @@ namespace UnityEngine.UIElements
                     m_ScrollView.contentContainer.Focus();
                 }
             }
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultAction override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
         }
 
         private void OnSizeChanged(GeometryChangedEvent evt)

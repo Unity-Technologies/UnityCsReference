@@ -224,6 +224,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
                 else
                 {
+                    if (field is IMixedValueSupport mixedValueSupport && mixedValueSupport.showMixedValue)
+                    {
+                        m_IgnoreEventBecauseMixedIsBuggish = true;
+                        mixedValueSupport.showMixedValue = false;
+                        m_IgnoreEventBecauseMixedIsBuggish = false;
+                    }
+
                     var setValueMethod = fieldType.GetMethod("SetValueWithoutNotify");
                     var value = displayedValue.Type == typeof(EnumValueReference) ?
                         ((EnumValueReference)displayedValue.ObjectValue).ValueAsEnum() : displayedValue.ObjectValue;
@@ -245,9 +252,13 @@ namespace Unity.GraphToolsFoundation.Editor
             var fieldType = ConstantModels.First().GetTypeHandle().Resolve();
 
             string tooltipString = null;
+            IReadOnlyList<Attribute> attributes = null;
+
             if (Owners != null && Owners.OfType<PortModel>().Any())
             {
-                tooltipString = Owners.OfType<PortModel>().First().ToolTip;
+                var firstPortModel = Owners.OfType<PortModel>().First();
+                tooltipString = firstPortModel.ToolTip;
+                attributes = firstPortModel.Attributes;
 
                 foreach (var port in Owners.OfType<PortModel>().Skip(1))
                 {
@@ -255,6 +266,12 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         tooltipString = "";
                         break;
+                    }
+
+                    if (port.Attributes != null)
+                    {
+                        if (port.Attributes.Any(attribute => attributes != null && !attributes.Contains(attribute)))
+                            attributes = null;
                     }
                 }
             }
@@ -264,7 +281,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 TryCreateCustomPropertyFieldBuilder(fieldType, out m_CustomFieldBuilder);
             }
 
-            return m_CustomFieldBuilder?.Build(CommandTarget, Label, tooltipString, ConstantModels.Select(t => t.ObjectValue), nameof(Constant.ObjectValue)) ?? CreateDefaultFieldForType(fieldType, tooltipString);
+            return m_CustomFieldBuilder?.Build(CommandTarget, Label, tooltipString,
+                    ConstantModels.Select(t => t.ObjectValue), nameof(Constant.ObjectValue)) ??
+                CreateDefaultFieldForType(fieldType, tooltipString, attributes);
         }
     }
 }

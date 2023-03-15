@@ -23,10 +23,10 @@ namespace UnityEditor.UIElements.Debugger
         }
 
         [EventInterest(typeof(ContextualMenuPopulateEvent),
-            typeof(MouseDownEvent), typeof(MouseUpEvent), typeof(KeyUpEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+            typeof(PointerDownEvent), typeof(PointerUpEvent), typeof(PointerMoveEvent), typeof(KeyUpEvent))]
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (elementPanel != null && elementPanel.contextualMenuManager != null)
             {

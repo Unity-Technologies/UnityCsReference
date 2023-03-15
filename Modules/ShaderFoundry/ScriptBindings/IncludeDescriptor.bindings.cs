@@ -14,8 +14,7 @@ namespace UnityEditor.ShaderFoundry
     internal struct IncludeDescriptorInternal : IInternalType<IncludeDescriptorInternal>
     {
         internal FoundryHandle m_StringHandle;
-
-        internal extern void Setup(ShaderContainer container, String value);
+        
         internal extern bool IsValid();
         internal extern string GetValue(ShaderContainer container);
         internal extern static IncludeDescriptorInternal Invalid();
@@ -41,8 +40,8 @@ namespace UnityEditor.ShaderFoundry
         // public API
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && descriptor.IsValid());
-
-        public string Value => descriptor.GetValue(Container);
+        
+        public string Value => descriptor.GetValue(container);
 
         // private
         internal IncludeDescriptor(ShaderContainer container, FoundryHandle handle)
@@ -54,7 +53,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static IncludeDescriptor Invalid => new IncludeDescriptor(null, FoundryHandle.Invalid());
 
-        // Equals and operator == implement Reference Equality.  ValueEquals does a deep compare if you need that instead.
+        // Equals and operator == implement Reference Equality. ValueEquals does a deep compare if you need that instead.
         public override bool Equals(object obj) => obj is IncludeDescriptor other && this.Equals(other);
         public bool Equals(IncludeDescriptor other) => EqualityChecks.ReferenceEquals(this.handle, this.container, other.handle, other.container);
         public override int GetHashCode() => (container, handle).GetHashCode();
@@ -77,7 +76,7 @@ namespace UnityEditor.ShaderFoundry
             public IncludeDescriptor Build()
             {
                 var descriptor = new IncludeDescriptorInternal();
-                descriptor.Setup(container, value);
+                descriptor.m_StringHandle = container.AddString(value);
                 var resultHandle = container.Add(descriptor);
                 return new IncludeDescriptor(container, resultHandle);
             }

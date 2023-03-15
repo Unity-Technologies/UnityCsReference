@@ -754,17 +754,13 @@ namespace UnityEditor.Experimental.GraphView
             nodeCreationRequest(new NodeCreationContext() { screenMousePosition = screenPoint, target = target, index = index});
         }
 
-        [EventInterest(typeof(MouseDownEvent), typeof(MouseUpEvent), typeof(KeyUpEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        [EventInterest(typeof(PointerDownEvent), typeof(PointerUpEvent), typeof(PointerMoveEvent), typeof(KeyUpEvent),
+            typeof(DetachFromPanelEvent) , typeof(AttachToPanelEvent))]
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
-            elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
-        }
+            base.HandleEventBubbleUp(evt);
 
-        [EventInterest(typeof(DetachFromPanelEvent) , typeof(AttachToPanelEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
+            elementPanel?.contextualMenuManager?.DisplayMenuIfEventMatches(evt, this);
 
             if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
             {
@@ -792,6 +788,17 @@ namespace UnityEditor.Experimental.GraphView
                     m_GraphViewUndoRedoSelection.hideFlags = HideFlags.HideAndDontSave;
                 }
             }
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultAction override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
+        }
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultActionAtTarget override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
         }
 
         void OnContextualMenu(ContextualMenuPopulateEvent evt)

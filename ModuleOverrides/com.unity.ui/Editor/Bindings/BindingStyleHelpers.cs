@@ -366,13 +366,12 @@ namespace UnityEditor.UIElements.Bindings
         static void StopContextClickEvent(ContextClickEvent e)
         {
             e.StopImmediatePropagation();
-            e.PreventDefault();
         }
 
         internal static void RegisterRightClickMenu<TValue>(BaseField<TValue> field, SerializedProperty property)
         {
             field.userData = property.Copy();
-            field.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled);
+            field.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
             field.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
         }
 
@@ -382,7 +381,7 @@ namespace UnityEditor.UIElements.Bindings
             if (toggle != null)
             {
                 toggle.userData = property.Copy();
-                toggle.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled);
+                toggle.RegisterCallback(s_RightClickMenuCallback, InvokePolicy.IncludeDisabled, TrickleDown.TrickleDown);
                 toggle.RegisterCallback<ContextClickEvent>(StopContextClickEvent, TrickleDown.TrickleDown);
             }
         }
@@ -425,7 +424,6 @@ namespace UnityEditor.UIElements.Bindings
             var menuRect = new Rect(evt.position, Vector2.zero);
             menu.DropDown(menuRect);
 
-            evt.PreventDefault();
             evt.StopPropagation();
         }
     }

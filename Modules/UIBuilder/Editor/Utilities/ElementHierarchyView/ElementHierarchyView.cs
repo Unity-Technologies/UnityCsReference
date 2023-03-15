@@ -109,8 +109,8 @@ namespace Unity.UI.Builder
             // HACK: ListView/TreeView need to clear their selections when clicking on nothing.
             this.RegisterCallback<MouseDownEvent>(e =>
             {
-                var leafTarget = e.leafTarget as VisualElement;
-                if (leafTarget.parent is ScrollView)
+                var target = e.elementTarget;
+                if (target.parent is ScrollView)
                     m_PaneWindow.primarySelection.ClearSelection(null);
             });
 
@@ -176,7 +176,7 @@ namespace Unity.UI.Builder
                         if (Application.platform == RuntimePlatform.OSXEditor)
                         {
                             explorerItem.ActivateRenameElementMode();
-                            evt.PreventDefault();
+                            evt.StopPropagation();
                         }
 
                         break;
@@ -184,7 +184,7 @@ namespace Unity.UI.Builder
                         if (Application.platform != RuntimePlatform.OSXEditor)
                         {
                             explorerItem.ActivateRenameElementMode();
-                            evt.PreventDefault();
+                            evt.StopPropagation();
                         }
                         break;
                 }
@@ -886,7 +886,7 @@ namespace Unity.UI.Builder
                             element.ActivateRenameElementMode();
                         }
                     }).StartingIn(500);
-                    evt.PreventDefault();
+                    evt.StopPropagation();
                 }
 
                 m_AllowMouseUpRenaming = false;

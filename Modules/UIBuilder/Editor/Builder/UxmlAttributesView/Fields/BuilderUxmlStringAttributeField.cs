@@ -38,7 +38,7 @@ namespace Unity.UI.Builder
                     uiField.SetValueWithoutNotify(null);
                 uiField.RegisterValueChangedCallback(evt =>
                 {
-                    if (evt.leafTarget == uiField.labelElement)
+                    if (evt.target == uiField.labelElement)
                         return;
                     InvokeValueChangedCallback(uiField, attribute, evt.newValue, ValueToUxml.Convert(uiField.value), onValueChange);
                 });
@@ -56,7 +56,7 @@ namespace Unity.UI.Builder
                     uiField.SetValueWithoutNotify(null);
                 uiField.RegisterValueChangedCallback(evt =>
                 {
-                    if (evt.leafTarget == uiField.labelElement)
+                    if (evt.target == uiField.labelElement)
                         return;
                     InvokeValueChangedCallback(uiField, attribute, evt.newValue, ValueToUxml.Convert(uiField.value), onValueChange);
                 });
@@ -69,11 +69,25 @@ namespace Unity.UI.Builder
                 var uiField = new TagField(fieldLabel);
                 uiField.RegisterValueChangedCallback(evt =>
                 {
-                    if (evt.leafTarget == uiField.labelElement)
+                    if (evt.target == uiField.labelElement)
                         return;
                     InvokeValueChangedCallback(uiField, attribute, evt.newValue, ValueToUxml.Convert(uiField.value), onValueChange);
                 });
 
+                return uiField;
+            }
+
+            if (attribute.name.Equals("value") && attributeOwner is TextField { multiline: true })
+            {
+                var uiField = new TextField(fieldLabel);
+                uiField.RegisterValueChangedCallback(evt =>
+                {
+                    if (evt.target == uiField.labelElement || !CheckNullOrEmptyTextChange(evt))
+                        return;
+                    InvokeValueChangedCallback(uiField, attribute, evt.newValue, ValueToUxml.Convert(uiField.value), onValueChange);
+                });
+                uiField.multiline = true;
+                uiField.AddToClassList(BuilderConstants.InspectorMultiLineTextFieldClassName);
                 return uiField;
             }
             else
@@ -82,7 +96,7 @@ namespace Unity.UI.Builder
                 if (attribute.name.Equals("name") || attribute.name.Equals("view-data-key"))
                     uiField.RegisterValueChangedCallback(evt =>
                     {
-                        if (evt.leafTarget == uiField.labelElement || !CheckNullOrEmptyTextChange(evt))
+                        if (evt.target == uiField.labelElement || !CheckNullOrEmptyTextChange(evt))
                             return;
                         OnValidatedAttributeValueChange(evt, BuilderNameUtilities.attributeRegex,
                             BuilderConstants.AttributeValidationSpacialCharacters, attribute, onValueChange);
@@ -90,7 +104,7 @@ namespace Unity.UI.Builder
                 else if (attributeOwner is VisualElement && attribute.name.Equals("binding-path") || attribute.name.Equals("data-source-path"))
                     uiField.RegisterValueChangedCallback(evt =>
                     {
-                        if (evt.leafTarget == uiField.labelElement || !CheckNullOrEmptyTextChange(evt))
+                        if (evt.target == uiField.labelElement || !CheckNullOrEmptyTextChange(evt))
                             return;
                         OnValidatedAttributeValueChange(evt, BuilderNameUtilities.bindingPathAttributeRegex,
                             BuilderConstants.BindingPathAttributeValidationSpacialCharacters, attribute, onValueChange);
@@ -99,7 +113,7 @@ namespace Unity.UI.Builder
                 {
                     uiField.RegisterValueChangedCallback(evt =>
                     {
-                        if (evt.leafTarget == uiField.labelElement || !CheckNullOrEmptyTextChange(evt))
+                        if (evt.target == uiField.labelElement || !CheckNullOrEmptyTextChange(evt))
                             return;
                         InvokeValueChangedCallback(uiField, attribute, evt.newValue, ValueToUxml.Convert(uiField.value), onValueChange);
                     });

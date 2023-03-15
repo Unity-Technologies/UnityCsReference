@@ -4,7 +4,6 @@
 
 using System.Linq;
 using System.Collections.Generic;
-using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -49,7 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_PackageManagerPrefs.skipMultiSelectRemoveConfirmation = true;
 
             m_OperationDispatcher.Uninstall(versions.Select(v => v.package));
-            PackageManagerWindowAnalytics.SendEvent("uninstall", packageIds: versions.Select(v => v.uniqueId));
+            PackageManagerWindowAnalytics.SendEvent("uninstall", versions);
             // After a bulk removal, we want to deselect them to avoid installing them back by accident.
             DeselectVersions(versions);
             return true;
@@ -109,7 +108,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             // Remove
             m_OperationDispatcher.Uninstall(version.package);
-            PackageManagerWindowAnalytics.SendEvent("uninstall", version?.uniqueId);
+            PackageManagerWindowAnalytics.SendEvent("uninstall", version);
             return true;
         }
 

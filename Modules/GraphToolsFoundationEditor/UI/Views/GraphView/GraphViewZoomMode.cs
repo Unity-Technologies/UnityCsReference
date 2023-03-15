@@ -7,27 +7,32 @@
 namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
-    /// THe graphview zoom mode enum that hints the level of details.
+    /// The graphview zoom mode enum that hints the level of details.
     /// </summary>
     enum GraphViewZoomMode
     {
         /// <summary>
-        /// The zoom is normal at 100% and above, and still until the small zoom level is reached. Everything is considered visible.
+        /// The zoom is normal at 100% and above.
         /// </summary>
         Normal,
 
         /// <summary>
-        /// At the small zoom level ports are no longer visible and are therefore hidden
+        /// Medium zoom level from 75%.
+        /// </summary>
+        Medium,
+
+        /// <summary>
+        /// Small zoom level, under 25%.
         /// </summary>
         Small,
 
         /// <summary>
-        /// At very small zoom the nodes are too little to even have their name displayed.
+        /// Very small zoom level, under 12.5%.
         /// </summary>
         VerySmall,
 
         /// <summary>
-        /// The unknown zoom level is used at element creation since we don't known how the element is configured by default.
+        /// The unknown zoom level is used at element creation.
         /// </summary>
         Unknown
     }

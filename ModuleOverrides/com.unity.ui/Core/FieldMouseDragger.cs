@@ -69,7 +69,7 @@ namespace UnityEngine.UIElements
         {
             if (m_DragElement != null)
             {
-                m_DragElement.UnregisterCallback<PointerDownEvent>(UpdateValueOnPointerDown);
+                m_DragElement.UnregisterCallback<PointerDownEvent>(UpdateValueOnPointerDown, TrickleDown.TrickleDown);
                 m_DragElement.UnregisterCallback<PointerUpEvent>(UpdateValueOnPointerUp);
                 m_DragElement.UnregisterCallback<KeyDownEvent>(UpdateValueOnKeyDown);
             }
@@ -80,7 +80,7 @@ namespace UnityEngine.UIElements
             if (m_DragElement != null)
             {
                 dragging = false;
-                m_DragElement.RegisterCallback<PointerDownEvent>(UpdateValueOnPointerDown);
+                m_DragElement.RegisterCallback<PointerDownEvent>(UpdateValueOnPointerDown, TrickleDown.TrickleDown);
                 m_DragElement.RegisterCallback<PointerUpEvent>(UpdateValueOnPointerUp);
                 m_DragElement.RegisterCallback<KeyDownEvent>(UpdateValueOnKeyDown);
             }
@@ -104,7 +104,6 @@ namespace UnityEngine.UIElements
                 }
                 else if (m_DragElement.panel.contextType == ContextType.Editor)
                 {
-                    evt.PreventDefault();
                     m_DragElement.CapturePointer(evt.pointerId);
                     ProcessDownEvent(evt);
                 }

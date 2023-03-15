@@ -122,15 +122,15 @@ namespace UnityEngine.UIElements
             return Hash128Input.Parse(str);
         }
 
-        [EventInterest(typeof(BlurEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        [EventInterest(typeof(FocusOutEvent))]
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
-            if (evt == null || isReadOnly)
+            if (isReadOnly)
                 return;
 
-            if (evt.eventTypeId == BlurEvent.TypeId())
+            if (evt.eventTypeId == FocusOutEvent.TypeId())
             {
                 if (string.IsNullOrEmpty(text))
                 {

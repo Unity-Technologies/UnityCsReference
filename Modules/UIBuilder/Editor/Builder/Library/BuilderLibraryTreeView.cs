@@ -56,7 +56,6 @@ namespace Unity.UI.Builder
 
             if (m_Dragger.active)
             {
-                evt.PreventDefault();
                 evt.StopImmediatePropagation();
                 return;
             }

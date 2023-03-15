@@ -34,12 +34,26 @@ namespace Unity.GraphToolsFoundation.Editor
         public BlackboardViewModel BlackboardViewModel => (BlackboardViewModel)Model;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BlackboardView"/> class.
+        /// Creates and initializes a new instance of the <see cref="BlackboardView"/> class. Call <see cref="RootView.Initialize"/> to initialize it.
         /// </summary>
         /// <param name="window">The <see cref="EditorWindow"/> containing this view.</param>
         /// <param name="parentGraphView">The <see cref="GraphView"/> linked to this blackboard.</param>
         /// <param name="viewSelectionProvider">A delegate to create the <see cref="ViewSelection"/> for this view. If null, an instance of <see cref="BlackboardViewSelection"/> will be created and used.</param>
-        public BlackboardView(EditorWindow window, GraphView parentGraphView,
+        public static BlackboardView Create(EditorWindow window, GraphView parentGraphView,
+            Func<BlackboardView, BlackboardViewModel, ViewSelection> viewSelectionProvider = null)
+        {
+            var view = new BlackboardView(window, parentGraphView, viewSelectionProvider);
+            view.Initialize();
+            return view;
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="BlackboardView"/> class.
+        /// </summary>
+        /// <param name="window">The <see cref="EditorWindow"/> containing this view.</param>
+        /// <param name="parentGraphView">The <see cref="GraphView"/> linked to this blackboard.</param>
+        /// <param name="viewSelectionProvider">A delegate to create the <see cref="ViewSelection"/> for this view. If null, an instance of <see cref="BlackboardViewSelection"/> will be created and used.</param>
+        protected BlackboardView(EditorWindow window, GraphView parentGraphView,
             Func<BlackboardView, BlackboardViewModel, ViewSelection> viewSelectionProvider = null)
             : base(window, parentGraphView.GraphTool)
         {
@@ -58,14 +72,18 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        protected override void RegisterObservers()
+        protected override void RegisterModelObservers()
         {
             if (m_LoadedObserver == null)
             {
                 m_LoadedObserver = new BlackboardGraphLoadedObserver(GraphTool.ToolState, BlackboardViewModel.ViewState, BlackboardViewModel.SelectionState);
                 GraphTool.ObserverManager.RegisterObserver(m_LoadedObserver);
             }
+        }
 
+        /// <inheritdoc />
+        protected override void RegisterViewObservers()
+        {
             if (m_UpdateObserver == null)
             {
                 m_UpdateObserver = new ModelViewUpdater(this, BlackboardViewModel.GraphModelState, BlackboardViewModel.SelectionState, BlackboardViewModel.ViewState, GraphTool.HighlighterState);
@@ -80,14 +98,18 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        protected override void UnregisterObservers()
+        protected override void UnregisterModelObservers()
         {
             if (m_LoadedObserver != null)
             {
                 GraphTool?.ObserverManager?.UnregisterObserver(m_LoadedObserver);
                 m_LoadedObserver = null;
             }
+        }
 
+        /// <inheritdoc />
+        protected override void UnregisterViewObservers()
+        {
             if (m_UpdateObserver != null)
             {
                 GraphTool?.ObserverManager?.UnregisterObserver(m_UpdateObserver);

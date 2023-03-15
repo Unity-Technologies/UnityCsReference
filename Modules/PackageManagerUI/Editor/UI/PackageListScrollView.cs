@@ -293,7 +293,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private PackageItem GetPackageItemFromMouseEvent(MouseDownEvent evt)
         {
-            var target = evt.leafTarget;
+            var target = evt.elementTarget;
             while (target != null && target != this)
             {
                 if (target is PackageItem packageItem)

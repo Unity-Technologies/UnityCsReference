@@ -153,9 +153,10 @@ namespace Unity.ItemLibrary.Editor
                 m_SearchTextField.focusable = true;
                 m_SearchTextField.RegisterCallback<InputEvent>(OnSearchTextFieldTextChanged);
                 m_SearchTextField.RegisterCallback<KeyDownEvent>(OnSearchTextFieldKeyDown, TrickleDown.TrickleDown);
-                m_SearchTextField.RegisterCallback<NavigationMoveEvent>(OnSearchTextFieldNavigationMove);
-                m_SearchTextField.RegisterCallback<NavigationSubmitEvent>(OnSearchTextFieldNavigationSubmit);
-                m_SearchTextField.RegisterCallback<NavigationCancelEvent>(OnSearchTextFieldNavigationCancel);
+                // Register navigation events in TrickleDown to catch them before our TextElement child stops them
+                m_SearchTextField.RegisterCallback<NavigationMoveEvent>(OnSearchTextFieldNavigationMove, TrickleDown.TrickleDown);
+                m_SearchTextField.RegisterCallback<NavigationSubmitEvent>(OnSearchTextFieldNavigationSubmit, TrickleDown.TrickleDown);
+                m_SearchTextField.RegisterCallback<NavigationCancelEvent>(OnSearchTextFieldNavigationCancel, TrickleDown.TrickleDown);
                 m_SearchTextField.AddToClassList(TextInputBaseField<string>.ussClassName);
 
                 m_SearchTextInput = m_SearchTextField.Q(TextInputBaseField<string>.textInputUssName);
@@ -440,7 +441,6 @@ namespace Unity.ItemLibrary.Editor
             {
                 // Prevent switching focus to another visual element.
                 keyDownEvent.StopPropagation();
-                keyDownEvent.PreventDefault();
                 return;
             }
 
@@ -451,7 +451,6 @@ namespace Unity.ItemLibrary.Editor
                     // Close window with no selection and prevent text field from processing the event.
                     itemChosen_Internal?.Invoke(null);
                     keyDownEvent.StopPropagation();
-                    keyDownEvent.PreventDefault();
                     break;
                 }
                 case KeyCode.Tab:
@@ -469,7 +468,6 @@ namespace Unity.ItemLibrary.Editor
                     }
 
                     keyDownEvent.StopPropagation();
-                    keyDownEvent.PreventDefault();
                     break;
                 }
                 case KeyCode.Home:
@@ -486,7 +484,6 @@ namespace Unity.ItemLibrary.Editor
                     }
 
                     keyDownEvent.StopPropagation();
-                    keyDownEvent.PreventDefault();
                     break;
                 }
                 case KeyCode.LeftArrow:
@@ -504,7 +501,6 @@ namespace Unity.ItemLibrary.Editor
                         if (eKeyDown.isPropagationStopped)
                         {
                             keyDownEvent.StopPropagation();
-                            keyDownEvent.PreventDefault();
                         }
                     }
 
@@ -515,7 +511,6 @@ namespace Unity.ItemLibrary.Editor
                 {
                     // Ignore those events. They will be translated to NavigationMoveEvent.
                     keyDownEvent.StopPropagation();
-                    keyDownEvent.PreventDefault();
                     break;
                 }
                 case KeyCode.Space:
@@ -538,7 +533,6 @@ namespace Unity.ItemLibrary.Editor
                 SendEvent(ee);
             }
             evt.StopPropagation();
-            evt.PreventDefault();
         }
 
         void OnSearchTextFieldNavigationSubmit(NavigationSubmitEvent evt)
@@ -556,7 +550,6 @@ namespace Unity.ItemLibrary.Editor
                 SendEvent(ee);
             }
             evt.StopPropagation();
-            evt.PreventDefault();
         }
 
         void OnSearchTextFieldNavigationMove(NavigationMoveEvent evt)
@@ -568,7 +561,6 @@ namespace Unity.ItemLibrary.Editor
                 SendEvent(ee);
             }
             evt.StopPropagation();
-            evt.PreventDefault();
         }
 
         void SelectAndReplaceCurrentWord()

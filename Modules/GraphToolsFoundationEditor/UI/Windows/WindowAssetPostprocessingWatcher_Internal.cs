@@ -19,45 +19,39 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var windows = Resources.FindObjectsOfTypeAll<GraphViewEditorWindow>();
 
-            var importedOrMoved = new HashSet<string>(importedAssets);
-            importedOrMoved.UnionWith(movedAssets);
-            importedOrMoved.ExceptWith(deletedAssets);
+            var changedAssets = new HashSet<string>(importedAssets);
+            changedAssets.UnionWith(movedAssets);
+            changedAssets.UnionWith(deletedAssets);
 
             // Deleted graphs have already been unloaded by WindowAssetModificationWatcher, just before they were deleted.
 
-            // Reload imported or moved graphs.
-            foreach (var path in importedOrMoved)
+            var changedGuids = changedAssets.ToDictionary(path => path, AssetDatabase.AssetPathToGUID);
+            foreach (var window in windows)
             {
-                var guid = AssetDatabase.AssetPathToGUID(path);
-
-                foreach (var window in windows)
+                // Update all subgraph nodes displayed in windows
+                var referencedSubGraphsGuids = changedGuids
+                    .Where(kvp => IsWindowReferencingGraphAsset(window, kvp.Value))
+                    .Select(kvp => kvp.Value);
+                foreach (var subgraphGuid in referencedSubGraphsGuids)
                 {
-                    if (window.GraphView?.GraphModel != null)
-                    {
-                        if (IsWindowReferencingGraphAsset(window, guid) || IsWindowDisplayingGraphAsset_Internal(window, guid))
-                        {
-                            window.GraphTool.Dispatch(new LoadGraphCommand(window.GraphView.GraphModel,
-                                loadStrategy: LoadGraphCommand.LoadStrategies.KeepHistory));
-                        }
-                    }
+                    window.GraphView?.Dispatch(new UpdateSubgraphCommand(subgraphGuid));
                 }
-            }
 
-            // Reload graphs that reference deleted assets.
-            foreach (var path in deletedAssets)
-            {
-                var guid = AssetDatabase.AssetPathToGUID(path);
-
-                foreach (var window in windows)
+                // Update all breadcrumb overlays for moved assets
+                foreach (var movedAsset in movedAssets)
                 {
-                    if (window.GraphView?.GraphModel != null)
+                    if (!changedGuids.TryGetValue(movedAsset, out var guid))
+                        continue;
+
+                    if (!IsWindowDisplayingGraphAsset_Internal(window, guid) && !IsWindowDisplayingSubgraphAssetOfParentGraphAsset(window, guid))
+                        continue;
+
+                    if (window.TryGetOverlay(BreadcrumbsToolbar.toolbarId, out var overlay))
                     {
-                        if (IsWindowReferencingGraphAsset(window, guid))
-                        {
-                            window.GraphTool.Dispatch(new LoadGraphCommand(window.GraphView.GraphModel,
-                                loadStrategy: LoadGraphCommand.LoadStrategies.KeepHistory));
-                        }
+                        var graphBreadcrumbs = overlay.rootVisualElement.SafeQ<GraphBreadcrumbs>();
+                        graphBreadcrumbs?.Update();
                     }
+                    break;
                 }
             }
         }
@@ -66,6 +60,12 @@ namespace Unity.GraphToolsFoundation.Editor
         internal static bool IsWindowDisplayingGraphAsset_Internal(GraphViewEditorWindow window, string graphGuid)
         {
             return window.GraphTool != null && window.GraphTool.ToolState.CurrentGraph.GraphAssetGuid == graphGuid;
+        }
+
+        // Returns true if the window is displaying a subgraph of the graph parentGraphGuid.
+        static bool IsWindowDisplayingSubgraphAssetOfParentGraphAsset(GraphViewEditorWindow window, string parentGraphGuid)
+        {
+            return window.GraphTool != null && window.GraphTool.ToolState.SubGraphStack.Any(openedGraph => openedGraph.GraphAssetGuid == parentGraphGuid);
         }
 
         // Returns true if the window is displaying a graph that has subgraph nodes that reference graphGuid.

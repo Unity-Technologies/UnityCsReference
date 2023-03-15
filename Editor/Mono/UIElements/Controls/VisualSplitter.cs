@@ -89,7 +89,6 @@ namespace UnityEditor.UIElements
                         m_Active = true;
                         target.CaptureMouse();
                         e.StopPropagation();
-                        e.PreventDefault();
                     }
                 }
             }

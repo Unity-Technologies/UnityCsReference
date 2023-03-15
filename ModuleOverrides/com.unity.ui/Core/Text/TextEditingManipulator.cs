@@ -6,8 +6,22 @@ namespace UnityEngine.UIElements
 {
     internal class TextEditingManipulator
     {
-        TextElement m_TextElement;
-        internal TextEditorEventHandler editingEventHandler;
+        private readonly TextElement m_TextElement;
+
+        private TextEditorEventHandler m_EditingEventHandler;
+        internal TextEditorEventHandler editingEventHandler
+        {
+            get => m_EditingEventHandler;
+            set
+            {
+                if (m_EditingEventHandler == value)
+                    return;
+
+                m_EditingEventHandler?.UnregisterCallbacksFromTarget(m_TextElement);
+                m_EditingEventHandler = value;
+                m_EditingEventHandler?.RegisterCallbacksOnTarget(m_TextElement);
+            }
+        }
         internal TextEditingUtilities editingUtilities;
 
         private bool m_TouchScreenTextFieldInitialized;
@@ -19,6 +33,11 @@ namespace UnityEngine.UIElements
             m_TextElement = textElement;
             editingUtilities = new TextEditingUtilities(textElement.selectingManipulator.m_SelectingUtilities, textElement.uitkTextHandle, textElement.text);
             InitTextEditorEventHandler();
+        }
+
+        public void Reset()
+        {
+            editingEventHandler = null;
         }
 
         private void InitTextEditorEventHandler()
@@ -34,25 +53,25 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void ExecuteDefaultActionAtTarget(EventBase evt)
+        internal void HandleEventBubbleUp(EventBase evt)
         {
             if (m_TextElement.edition.isReadOnly)
                 return;
 
             switch (evt)
             {
-                case FocusInEvent fie:
-                    OnFocusInEvent(fie);
+                case FocusInEvent:
+                    OnFocusInEvent();
                     break;
-                case FocusOutEvent foe:
-                    OnFocusOutEvent(foe);
+                case FocusOutEvent:
+                    OnFocusOutEvent();
                     break;
             }
 
-            editingEventHandler?.ExecuteDefaultActionAtTarget(evt);
+            editingEventHandler?.HandleEventBubbleUp(evt);
         }
 
-        void OnFocusInEvent(FocusInEvent _)
+        void OnFocusInEvent()
         {
             m_TextElement.edition.SaveValueAndText();
             // Update the selectedTextElement when an InputField takes focus.
@@ -82,7 +101,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void OnFocusOutEvent(FocusOutEvent _)
+        void OnFocusOutEvent()
         {
             m_HardwareKeyboardPoller?.Pause();
             editingUtilities.OnBlur();

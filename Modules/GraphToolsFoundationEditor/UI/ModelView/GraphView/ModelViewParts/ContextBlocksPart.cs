@@ -40,9 +40,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public string EtchClassName => m_ParentClassName.WithUssElement(k_EtchName);
 
-        VisualElement m_Root;
-        VisualElement m_Etch;
-        Button m_AddBlock;
+        protected VisualElement m_Root;
+        protected VisualElement m_Etch;
+        protected Button m_AddBlock;
 
         /// <inheritdoc/>
         public override VisualElement Root => m_Root;

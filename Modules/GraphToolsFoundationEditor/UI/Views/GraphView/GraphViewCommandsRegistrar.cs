@@ -71,7 +71,7 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCommandHandler<ReorderWireCommand>(ReorderWireCommand.DefaultCommandHandler);
             RegisterCommandHandler<SplitWireAndInsertExistingNodeCommand>(SplitWireAndInsertExistingNodeCommand.DefaultCommandHandler);
             RegisterCommandHandler<DisconnectNodeCommand>(DisconnectNodeCommand.DefaultCommandHandler);
-            
+
             m_CommandTarget.RegisterCommandHandler<UndoStateComponent, GraphViewStateComponent, GraphModelStateComponent, SelectionStateComponent, ConvertWiresToPortalsCommand>(
                 ConvertWiresToPortalsCommand.DefaultCommandHandler, m_GraphTool.UndoStateComponent, m_GraphViewState, m_GraphModelState, m_SelectionState);
 
@@ -118,6 +118,7 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCommandHandler<CreateBlockFromItemLibraryCommand>(CreateBlockFromItemLibraryCommand.DefaultCommandHandler);
             RegisterCommandHandler<InsertBlocksInContextCommand>(InsertBlocksInContextCommand.DefaultCommandHandler);
             RegisterCommandHandler<CreateSubgraphCommand>(CreateSubgraphCommand.DefaultCommandHandler);
+            m_CommandTarget.RegisterCommandHandler<GraphModelStateComponent, UpdateSubgraphCommand>(UpdateSubgraphCommand.DefaultCommandHandler, m_GraphModelState);
         }
     }
 }

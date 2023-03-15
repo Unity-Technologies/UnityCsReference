@@ -68,11 +68,12 @@ namespace UnityEngine
             get => m_TextEditing.text;
             set
             {
-                if (m_TextEditing.text == value)
+                var newValue = value ?? "";
+                if (m_TextEditing.text == newValue)
                     return;
-                m_TextEditing.SetTextWithoutNotify(value);
-                m_Content.SetTextWithoutNotify(value);
-                textWithWhitespace = value;
+                m_TextEditing.SetTextWithoutNotify(newValue);
+                m_Content.SetTextWithoutNotify(newValue);
+                textWithWhitespace = newValue;
                 // TODO: Change this call to only do the parsing of the text, to update the characterCount properly.
                 UpdateTextHandle();
             }

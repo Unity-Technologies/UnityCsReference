@@ -40,7 +40,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable;
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
         }
 
         /// <summary>

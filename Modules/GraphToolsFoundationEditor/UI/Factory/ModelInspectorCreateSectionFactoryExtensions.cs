@@ -38,7 +38,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     case SectionType.Options:
                         {
-                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
+                            var inspectorFields = NodeOptionsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
                             ui.PartList.AppendPart(inspectorFields);
                             break;
                         }

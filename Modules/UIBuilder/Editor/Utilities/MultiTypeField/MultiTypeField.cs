@@ -105,7 +105,6 @@ namespace Unity.UI.Builder
         {
             value = evt.newValue;
             evt.StopImmediatePropagation();
-            evt.PreventDefault();
         }
 
         protected void AddType(Type type)

@@ -361,9 +361,9 @@ namespace UnityEditor.UIElements
         }
 
         [EventInterest(typeof(SerializedObjectBindEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
+            base.HandleEventBubbleUp(evt);
 
             var bindEvent = evt as SerializedObjectBindEvent;
             if (bindEvent == null)
@@ -381,6 +381,12 @@ namespace UnityEditor.UIElements
             }
 
             Reset(bindEvent.bindObject);
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultActionAtTarget override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
         }
 
         private Editor GetOrCreateEditor(SerializedObject serializedObject)

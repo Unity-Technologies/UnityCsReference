@@ -166,15 +166,11 @@ namespace UnityEditor.UIElements
             rawValue = new Gradient();
         }
 
-        [EventInterest(typeof(KeyDownEvent), typeof(MouseDownEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        [EventInterest(typeof(KeyDownEvent), typeof(MouseDownEvent),
+            typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            if (evt == null)
-            {
-                return;
-            }
+            base.HandleEventBubbleUp(evt);
 
             var showGradientPicker = false;
             KeyDownEvent kde = (evt as KeyDownEvent);
@@ -201,22 +197,22 @@ namespace UnityEditor.UIElements
                 ShowGradientPicker();
                 evt.StopPropagation();
             }
-        }
-
-        [EventInterest(typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            if (evt == null)
-            {
-                return;
-            }
-
-            if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
+            else if (evt.eventTypeId == DetachFromPanelEvent.TypeId())
                 OnDetach();
             else if (evt.eventTypeId == AttachToPanelEvent.TypeId())
                 OnAttach();
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultAction override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultAction(EventBase evt)
+        {
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultActionAtTarget override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
+        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
         }
 
         void OnDetach()

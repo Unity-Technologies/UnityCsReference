@@ -232,10 +232,8 @@ namespace UnityEditor.UIElements
 
             m_ColorContainer.RegisterCallback<AttachToPanelEvent>(OnAttach);
             m_ColorContainer.RegisterCallback<PointerDownEvent>(OnColorFieldClicked);
-            m_ColorContainer.RegisterCallback<MouseDownEvent>(OnColorFieldClickedCompatibilityEventHandler);
             visualInput.RegisterCallback<KeyDownEvent>(OnColorFieldKeyDown);
             m_EyeDropperElement.RegisterCallback<PointerDownEvent>(OnEyeDropperClicked);
-            m_EyeDropperElement.RegisterCallback<MouseDownEvent>(OnEyeDropperClickedCompatibilityEventHandler);
             RegisterCallback<ExecuteCommandEvent>(OnCommandExecute);
 
             m_ColorContainer.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
@@ -280,15 +278,6 @@ namespace UnityEditor.UIElements
             }
         }
 
-        static void OnColorFieldClickedCompatibilityEventHandler(MouseDownEvent evt)
-        {
-            var mdeInternal = (IMouseEventInternal)evt;
-            if (evt.button == (int) MouseButton.LeftMouse && mdeInternal.sourcePointerEvent != null && ((EventBase)mdeInternal.sourcePointerEvent).isPropagationStopped)
-            {
-                evt.StopPropagation();
-            }
-        }
-
         void ShowColorPicker()
         {
             ColorPicker.Show((c) =>
@@ -318,15 +307,6 @@ namespace UnityEditor.UIElements
             m_EyeDropperScheduler = schedule.Execute(OnEyeDropperMove).Every(10).StartingIn(10)
                 .Until(ShouldStopWatchingEyeDropper);
             evt.StopPropagation();
-        }
-
-        static void OnEyeDropperClickedCompatibilityEventHandler(MouseDownEvent evt)
-        {
-            var mdeInternal = (IMouseEventInternal)evt;
-            if (evt.button == (int) MouseButton.LeftMouse && mdeInternal.sourcePointerEvent != null && ((EventBase)mdeInternal.sourcePointerEvent).isPropagationStopped)
-            {
-                evt.StopPropagation();
-            }
         }
 
         bool ShouldStopWatchingEyeDropper()

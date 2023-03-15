@@ -24,8 +24,6 @@ namespace UnityEditor
             public static readonly GUIContent cloneLightingSettings = EditorGUIUtility.TrTextContent("Clone", "Create a new Lighting Settings Asset based on the current settings.");
 
             public static readonly GUIContent lightingSettings = EditorGUIUtility.TrTextContent("Lighting Settings");
-            public static readonly GUIContent workflowSettings = EditorGUIUtility.TrTextContent("Workflow Settings");
-            public static readonly GUIContent recalculateEnvironmentLighting = EditorGUIUtility.TrTextContent("Recalculate Environment Lighting", "Whether to automatically generate environment lighting in cases where the Active Scene has not previously been baked. This affects the ambient Light Probe and default cubemap which are both generated from the sky.");
         }
 
         SavedBool m_ShowLightingSettings;
@@ -76,7 +74,6 @@ namespace UnityEditor
             LightingSettingsGUI();
 
             m_BakeSettings.OnGUI();
-            WorkflowSettingsGUI();
 
             EditorGUILayout.EndScrollView();
 
@@ -130,25 +127,6 @@ namespace UnityEditor
                 EditorGUILayout.Space();
 
                 --EditorGUI.indentLevel;
-            }
-        }
-
-        void WorkflowSettingsGUI()
-        {
-            m_ShowWorkflowSettings.value = EditorGUILayout.FoldoutTitlebar(m_ShowWorkflowSettings.value, Styles.workflowSettings, true);
-
-            if (m_ShowWorkflowSettings.value)
-            {
-                EditorGUI.indentLevel++;
-
-                // If either auto ambient or auto reflection baking is supported, show the SkyManager toggle.
-                if (SupportedRenderingFeatures.active.autoAmbientProbeBaking || SupportedRenderingFeatures.active.autoDefaultReflectionProbeBaking)
-                {
-                    BuiltinSkyManager.enabled = EditorGUILayout.Toggle(Styles.recalculateEnvironmentLighting, BuiltinSkyManager.enabled);
-                }
-
-                EditorGUI.indentLevel--;
-                EditorGUILayout.Space();
             }
         }
     }

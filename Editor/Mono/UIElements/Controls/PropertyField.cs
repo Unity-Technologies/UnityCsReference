@@ -174,19 +174,21 @@ namespace UnityEditor.UIElements
         }
 
         [EventInterest(typeof(SerializedPropertyBindEvent))]
+        protected override void HandleEventBubbleUp(EventBase evt)
+        {
+            base.HandleEventBubbleUp(evt);
+
+            if (evt is SerializedPropertyBindEvent bindEvent)
+            {
+                Reset(bindEvent);
+                evt.StopPropagation();
+            }
+        }
+
+        [EventInterest(EventInterestOptions.Inherit)]
+        [Obsolete("ExecuteDefaultActionAtTarget override has been removed because default event handling was migrated to HandleEventBubbleUp. Please use HandleEventBubbleUp.", false)]
         protected override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
-            base.ExecuteDefaultActionAtTarget(evt);
-
-            var bindEvent = evt as SerializedPropertyBindEvent;
-            if (bindEvent == null)
-                return;
-
-            Reset(bindEvent);
-
-            // Don't allow the binding of `this` to continue because `this` is not
-            // the actually bound field, it is just a container.
-            evt.StopPropagation();
         }
 
         void Reset(SerializedProperty newProperty)
@@ -335,6 +337,7 @@ namespace UnityEditor.UIElements
                          decoratorRect.height = decorator.GetHeight();
                          decoratorRect.width = resolvedStyle.width;
                          decorator.OnGUI(decoratorRect);
+                         ve.style.height = decoratorRect.height;
                      });
                      ve.style.height = decorator.GetHeight();
                  }
@@ -677,10 +680,7 @@ namespace UnityEditor.UIElements
             }
 
             var propertyCopy = property.Copy();
-            var isReorderable = PropertyHandler.IsArrayReorderable(property);
             var listViewName = $"{listViewNamePrefix}{property.propertyPath}";
-            listView.reorderable = isReorderable;
-            listView.reorderMode = isReorderable ? ListViewReorderMode.Animated : ListViewReorderMode.Simple;
             listView.headerTitle = string.IsNullOrEmpty(label) ? propertyCopy.localizedDisplayName : label;
             listView.userData = propertyCopy;
             listView.bindingPath = property.propertyPath;

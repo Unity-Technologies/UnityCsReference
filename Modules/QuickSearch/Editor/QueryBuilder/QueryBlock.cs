@@ -381,7 +381,6 @@ namespace UnityEditor.Search
 
             this.ReleasePointer(evt.pointerId);
             evt.StopPropagation();
-            evt.PreventDefault();
         }
 
         private void OnBlockDragged(PointerMoveEvent evt)

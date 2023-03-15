@@ -18,7 +18,6 @@ namespace UnityEngine.UIElements
                 if (s_GlobalPanelDebug.InterceptMouseEvent(panel, mouseEvent))
                 {
                     evt.StopPropagation();
-                    evt.PreventDefault();
                     return true;
                 }
             }
@@ -26,7 +25,6 @@ namespace UnityEngine.UIElements
             if (panel.panelDebug?.InterceptEvent(evt) ?? false)
             {
                 evt.StopPropagation();
-                evt.PreventDefault();
                 return true;
             }
 
@@ -38,7 +36,7 @@ namespace UnityEngine.UIElements
             panel.panelDebug?.PostProcessEvent(evt);
 
             if (s_GlobalPanelDebug != null && evt.eventTypeId == ContextClickEvent.TypeId() && evt.target != null &&
-                !evt.isDefaultPrevented && !evt.isPropagationStopped)
+                !evt.isPropagationStopped)
             {
                 // Safe to handle the event (to display the right click menu)
                 s_GlobalPanelDebug.OnContextClick(panel, evt as ContextClickEvent);

@@ -92,7 +92,6 @@ namespace Unity.UI.Builder
             AddStyleClass();
 
             evt.StopPropagation();
-            evt.PreventDefault();
 
             m_AddClassField.Focus();
         }

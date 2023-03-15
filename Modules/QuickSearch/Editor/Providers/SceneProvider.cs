@@ -395,6 +395,9 @@ namespace UnityEditor.Search.Providers
             foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryIsFilterBlock)))
                 yield return f;
 
+            foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryMissingBlock)))
+                yield return f;
+
             foreach (var p in queryEngine.engine.GetPropositions())
                 yield return p;
 

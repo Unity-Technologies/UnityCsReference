@@ -13,12 +13,22 @@ namespace UnityEditor.ShaderFoundry
     [NativeHeader("Modules/ShaderFoundry/Public/StructField.h")]
     internal struct StructFieldInternal : IInternalType<StructFieldInternal>
     {
+        // This enum must be kept in sync with the enum in StructField.h
+        internal enum Flags : ushort
+        {
+            kNone = 0,
+            kInput = 1 << 0,
+            kOutput = 1 << 1
+        }
+
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_TypeHandle;
         internal FoundryHandle m_AttributeListHandle;
+        internal Flags m_Flags;
 
         internal static extern StructFieldInternal Invalid();
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
+        internal extern string GetName(ShaderContainer container);
 
         internal IEnumerable<ShaderAttribute> Attributes(ShaderContainer container)
         {
@@ -49,9 +59,11 @@ namespace UnityEditor.ShaderFoundry
         // public API
         public ShaderContainer Container => container;
         public bool IsValid => (container != null) && handle.IsValid && (field.IsValid);
-        public string Name => container?.GetString(field.m_NameHandle) ?? string.Empty;
+        public string Name => field.GetName(container);
         public ShaderType Type => new ShaderType(container, field.m_TypeHandle);
         public IEnumerable<ShaderAttribute> Attributes => field.Attributes(container);
+        public bool IsInput => field.m_Flags.HasFlag(StructFieldInternal.Flags.kInput);
+        public bool IsOutput => field.m_Flags.HasFlag(StructFieldInternal.Flags.kOutput);
 
         // private
         internal StructField(ShaderContainer container, FoundryHandle handle)
@@ -81,12 +93,21 @@ namespace UnityEditor.ShaderFoundry
             internal string name;
             internal ShaderType type = ShaderType.Invalid;
             internal List<ShaderAttribute> attributes;
+            internal StructFieldInternal.Flags m_Flags = StructFieldInternal.Flags.kNone;
 
             public Builder(ShaderContainer container, string name, ShaderType type)
             {
                 this.container = container;
                 this.name = name;
                 this.type = type;
+            }
+            public Builder(ShaderContainer container, string name, ShaderType type, bool isInput, bool isOutput)
+            {
+                this.container = container;
+                this.name = name;
+                this.type = type;
+                IsInput = isInput;
+                IsOutput = isOutput;
             }
 
             public void AddAttribute(ShaderAttribute attribute)
@@ -95,6 +116,23 @@ namespace UnityEditor.ShaderFoundry
                     attributes = new List<ShaderAttribute>();
                 attributes.Add(attribute);
             }
+            public bool IsInput
+            {
+                get { return m_Flags.HasFlag(StructFieldInternal.Flags.kInput); }
+                set { SetFlag(StructFieldInternal.Flags.kInput, value); }
+            }
+            public bool IsOutput
+            {
+                get { return m_Flags.HasFlag(StructFieldInternal.Flags.kOutput); }
+                set { SetFlag(StructFieldInternal.Flags.kOutput, value); }
+            }
+            void SetFlag(StructFieldInternal.Flags flag, bool state)
+            {
+                if (state)
+                    m_Flags |= flag;
+                else
+                    m_Flags &= ~flag;
+            }
 
             public StructField Build()
             {
@@ -102,6 +140,7 @@ namespace UnityEditor.ShaderFoundry
                 structFieldInternal.m_NameHandle = container.AddString(name);
                 structFieldInternal.m_TypeHandle = type.handle;
                 structFieldInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes, (a) => (a.handle));
+                structFieldInternal.m_Flags = m_Flags;
                 var returnHandle = container.Add(structFieldInternal);
                 return new StructField(container, returnHandle);
             }

@@ -30,6 +30,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public override void Observe()
         {
+            var graphModel = m_GraphModelStateComponent.GraphModel;
+            if (graphModel == null)
+                return;
+
             var selectionObservations = this.ObserveStates(m_SelectionStates).ToList();
             try
             {
@@ -41,7 +45,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
                     if (updateType != UpdateType.None || gvObservation.UpdateType == UpdateType.Complete)
                     {
-                        var graphModel = m_GraphModelStateComponent.GraphModel;
                         var selection = m_SelectionStates.SelectMany(s => s.GetSelection(graphModel));
                         var selectedModels = m_ToolState.CurrentGraph.GetGraphModel().Stencil.GetModelsDisplayableInInspector(selection).Distinct().ToList();
 

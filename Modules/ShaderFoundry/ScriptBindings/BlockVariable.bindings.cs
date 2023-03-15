@@ -28,6 +28,7 @@ namespace UnityEditor.ShaderFoundry
 
         internal static extern BlockVariableInternal Invalid();
         internal extern bool IsValid();
+        internal extern string GetName(ShaderContainer container);
 
         // IInternalType
         BlockVariableInternal IInternalType<BlockVariableInternal>.ConstructInvalid() => Invalid();
@@ -51,7 +52,7 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null);
         public ShaderType Type => new ShaderType(container, variable.m_TypeHandle);
-        public string Name => container?.GetString(variable.m_NameHandle) ?? string.Empty;
+        public string Name => variable.GetName(container);
         public IEnumerable<ShaderAttribute> Attributes
         {
             get

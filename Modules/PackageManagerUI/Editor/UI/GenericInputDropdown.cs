@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_InputPlaceholder.OnDisable();
 
             inputTextField.UnregisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            inputTextField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            inputTextField.UnregisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
 
             submitButton.clickable.clicked -= SubmitClicked;
 
@@ -74,7 +74,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             inputTextField.value = args.defaultValue ?? string.Empty;
             inputTextField.RegisterCallback<ChangeEvent<string>>(OnTextFieldChange);
-            inputTextField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut);
+            inputTextField.RegisterCallback<KeyDownEvent>(OnKeyDownShortcut, TrickleDown.TrickleDown);
 
             m_InputPlaceholder = new TextFieldPlaceholder(inputTextField);
             m_InputPlaceholder.text = args.placeholderText ?? string.Empty;

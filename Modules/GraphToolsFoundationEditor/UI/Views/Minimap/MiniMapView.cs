@@ -24,11 +24,23 @@ namespace Unity.GraphToolsFoundation.Editor
         public MiniMapViewModel MiniMapViewModel => (MiniMapViewModel)Model;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MiniMapView"/> class.
+        /// Creates and initializes a new instance of the <see cref="MiniMapView"/> class.
         /// </summary>
         /// <param name="window">The <see cref="EditorWindow"/> containing this view.</param>
         /// <param name="parentGraphView">The <see cref="GraphView"/> associated with this view.</param>
-        public MiniMapView(EditorWindow window, GraphView parentGraphView)
+        public static MiniMapView Create(EditorWindow window, GraphView parentGraphView)
+        {
+            var view = new MiniMapView(window, parentGraphView);
+            view.Initialize();
+            return view;
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="MiniMapView"/> class. Call <see cref="RootView.Initialize"/> to initialize it.
+        /// </summary>
+        /// <param name="window">The <see cref="EditorWindow"/> containing this view.</param>
+        /// <param name="parentGraphView">The <see cref="GraphView"/> associated with this view.</param>
+        protected MiniMapView(EditorWindow window, GraphView parentGraphView)
             : base(window, parentGraphView.GraphTool)
         {
             Model = new MiniMapViewModel(parentGraphView);
@@ -38,7 +50,11 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        protected override void RegisterObservers()
+        protected override void RegisterModelObservers()
+        {}
+
+        /// <inheritdoc />
+        protected override void RegisterViewObservers()
         {
             if (m_UpdateObserver == null && MiniMapViewModel.ParentGraphView != null)
             {
@@ -49,7 +65,11 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        protected override void UnregisterObservers()
+        protected override void UnregisterModelObservers()
+        {}
+
+        /// <inheritdoc />
+        protected override void UnregisterViewObservers()
         {
             if (m_UpdateObserver != null)
             {

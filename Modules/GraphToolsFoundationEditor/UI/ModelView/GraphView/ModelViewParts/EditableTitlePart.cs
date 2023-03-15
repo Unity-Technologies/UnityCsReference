@@ -97,6 +97,11 @@ namespace Unity.GraphToolsFoundation.Editor
         protected VisualElement TitleContainer { get; set; }
 
         /// <summary>
+        /// If any, the element inside the Title container that contains the label.
+        /// </summary>
+        protected VisualElement LabelContainer { get; private set; }
+
+        /// <summary>
         /// The title visual element that can be either a <see cref="Label"/> or an <see cref="EditableLabel"/>.
         /// </summary>
         public VisualElement TitleLabel { get; protected set; }
@@ -151,7 +156,10 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        protected void CreateTitleLabel()
+        /// <summary>
+        /// Creates the title label element.
+        /// </summary>
+        protected virtual void CreateTitleLabel()
         {
             if (HasEditableLabel)
             {
@@ -165,10 +173,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (m_UseEllipsis)
             {
-                VisualElement labelContainer = new VisualElement();
-                labelContainer.AddToClassList(ussClassName.WithUssElement("label-container"));
-                labelContainer.Add(TitleLabel);
-                TitleContainer.Add(labelContainer);
+                LabelContainer = new VisualElement();
+                LabelContainer.AddToClassList(ussClassName.WithUssElement("label-container"));
+                LabelContainer.Add(TitleLabel);
+                TitleContainer.Add(LabelContainer);
             }
             else
             {
@@ -246,6 +254,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected void OnRename(ChangeEvent<string> e)
         {
+            // Restore the value in the model in case we don't have notification (in case the change of name doesn't change the model).
+            if (TitleLabel is EditableLabel editableLabel)
+                editableLabel.SetValueWithoutNotify(e.previousValue);
+
             m_OwnerElement.RootView.Dispatch(new RenameElementCommand(m_Model as IRenamable, e.newValue));
         }
 

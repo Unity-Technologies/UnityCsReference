@@ -52,9 +52,9 @@ namespace UnityEditor.Experimental.GraphView
         }
 
         [EventInterest(typeof(GeometryChangedEvent), typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
             if (evt.eventTypeId == GeometryChangedEvent.TypeId())
             {

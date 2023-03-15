@@ -164,7 +164,6 @@ namespace Unity.UI.Builder
             if (evt.keyCode == KeyCode.C)
                 return;
 
-            evt.PreventDefault();
             evt.StopImmediatePropagation();
         }
 
@@ -174,7 +173,6 @@ namespace Unity.UI.Builder
             if (evt.keyCode == KeyCode.C)
                 return;
 
-            evt.PreventDefault();
             evt.StopImmediatePropagation();
         }
 

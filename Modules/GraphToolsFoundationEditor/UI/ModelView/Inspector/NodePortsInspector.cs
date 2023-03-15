@@ -83,7 +83,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (portNodeModel == null)
                 return Enumerable.Empty<List<PortModel>>();
 
-            var portList = portNodeModel.Ports.Where(p => p.Direction == PortDirection.Input && p.PortType == PortType.Data && p.EmbeddedValue != null)
+            var portList = portNodeModel.Ports.Where(p => p.Options != PortModelOptions.IsNodeOption && p.Direction == PortDirection.Input && p.PortType == PortType.Data && p.EmbeddedValue != null)
                 .Select(t => new List<PortModel>(new[] { t })).ToList();
 
             for (int i = 0; i < portList.Count; ++i)

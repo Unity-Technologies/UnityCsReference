@@ -122,11 +122,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (m_Clicked == null)
                         return;
 
-                    evt.PreventDefault();
                     evt.StopImmediatePropagation();
 
                     ShowDropdown();
-                });
+                }, TrickleDown.TrickleDown);
                 Add(m_DropDownArea);
             }
             UIUtils.SetElementDisplay(m_DropDownArea, showDropdownArea);

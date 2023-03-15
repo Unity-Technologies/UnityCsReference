@@ -197,13 +197,13 @@ namespace UnityEngine.UIElements
 
 
         [EventInterest(typeof(BlurEvent), typeof(FocusEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.HandleEventBubbleUp(evt);
 
             //if we want to show placeholder text then we must early out before UpdateValueFromText()
             bool showPlaceholderText = string.IsNullOrEmpty(text) && !string.IsNullOrEmpty(textEdition.placeholder);
-            if (evt == null || showPlaceholderText)
+            if (showPlaceholderText)
             {
                 return;
             }

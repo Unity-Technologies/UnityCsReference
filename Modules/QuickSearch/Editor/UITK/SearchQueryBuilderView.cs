@@ -125,6 +125,9 @@ namespace UnityEditor.Search
                 m_QueryBuilder.wordText = evt.newValue;
                 m_ViewModel.SetSelection();
             }
+
+            // Don't let SearchToolbar process the ChangeEvent too.
+            evt.StopPropagation();
         }
 
         private void OnKeyDown(KeyDownEvent evt)
@@ -132,7 +135,6 @@ namespace UnityEditor.Search
             if (evt.imguiEvent != null && (m_QueryBuilder?.HandleKeyEvent(evt.imguiEvent) ?? false))
             {
                 evt.StopImmediatePropagation();
-                evt.PreventDefault();
             }
         }
 

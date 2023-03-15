@@ -10,18 +10,18 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Manipulator that displays a contextual menu when the user clicks the right mouse button or presses the menu key on the keyboard.
     /// </summary>
-    public class ContextualMenuManipulator : MouseManipulator
+    public class ContextualMenuManipulator : PointerManipulator
     {
-        System.Action<ContextualMenuPopulateEvent> m_MenuBuilder;
+        Action<ContextualMenuPopulateEvent> m_MenuBuilder;
 
         /// <summary>
         /// Constructor.
         /// </summary>
-        public ContextualMenuManipulator(System.Action<ContextualMenuPopulateEvent> menuBuilder)
+        public ContextualMenuManipulator(Action<ContextualMenuPopulateEvent> menuBuilder)
         {
             m_MenuBuilder = menuBuilder;
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.RightMouse });
-            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+            if (UIElementsUtility.isOSXContextualMenuPlatform)
             {
                 activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
             }
@@ -32,15 +32,18 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected override void RegisterCallbacksOnTarget()
         {
-            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+            if (UIElementsUtility.isOSXContextualMenuPlatform)
             {
-                target.RegisterCallback<MouseDownEvent>(OnMouseDownEventOSX);
-                target.RegisterCallback<MouseUpEvent>(OnMouseUpEventOSX);
+                target.RegisterCallback<PointerDownEvent>(OnPointerDownEventOSX);
+                target.RegisterCallback<PointerUpEvent>(OnPointerUpEventOSX);
+                target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEventOSX);
             }
             else
             {
-                target.RegisterCallback<MouseUpEvent>(OnMouseUpDownEvent);
+                target.RegisterCallback<PointerUpEvent>(OnPointerUpEvent);
+                target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
             }
+
             target.RegisterCallback<KeyUpEvent>(OnKeyUpEvent);
             target.RegisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuEvent);
         }
@@ -50,47 +53,64 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected override void UnregisterCallbacksFromTarget()
         {
-            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+            if (UIElementsUtility.isOSXContextualMenuPlatform)
             {
-                target.UnregisterCallback<MouseDownEvent>(OnMouseDownEventOSX);
-                target.UnregisterCallback<MouseUpEvent>(OnMouseUpEventOSX);
+                target.UnregisterCallback<PointerDownEvent>(OnPointerDownEventOSX);
+                target.UnregisterCallback<PointerUpEvent>(OnPointerUpEventOSX);
+                target.UnregisterCallback<PointerMoveEvent>(OnPointerMoveEventOSX);
             }
             else
             {
-                target.UnregisterCallback<MouseUpEvent>(OnMouseUpDownEvent);
+                target.UnregisterCallback<PointerUpEvent>(OnPointerUpEvent);
+                target.UnregisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
             }
 
             target.UnregisterCallback<KeyUpEvent>(OnKeyUpEvent);
             target.UnregisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuEvent);
         }
 
-        void OnMouseUpDownEvent(IMouseEvent evt)
+        void OnPointerUpEvent(IPointerEvent evt)
         {
-            if (CanStartManipulation(evt))
-            {
-                DoDisplayMenu(evt as EventBase);
-            }
+            ProcessPointerEvent(evt);
         }
 
-        void OnMouseDownEventOSX(MouseDownEvent evt)
+        void OnPointerDownEventOSX(IPointerEvent evt)
         {
             if (target.elementPanel?.contextualMenuManager != null)
                 target.elementPanel.contextualMenuManager.displayMenuHandledOSX = false;
 
-            var eventBase = evt as EventBase;
-            if (eventBase.isDefaultPrevented)
-                return;
-
-            OnMouseUpDownEvent(evt);
+            ProcessPointerEvent(evt);
         }
 
-        void OnMouseUpEventOSX(MouseUpEvent evt)
+        void OnPointerUpEventOSX(IPointerEvent evt)
         {
             if (target.elementPanel?.contextualMenuManager != null &&
                 target.elementPanel.contextualMenuManager.displayMenuHandledOSX)
                 return;
 
-            OnMouseUpDownEvent(evt);
+            ProcessPointerEvent(evt);
+        }
+
+        void OnPointerMoveEvent(PointerMoveEvent evt)
+        {
+            if (evt.isPointerUp)
+                OnPointerUpEvent(evt);
+        }
+
+        void OnPointerMoveEventOSX(PointerMoveEvent evt)
+        {
+            if (evt.isPointerUp)
+                OnPointerUpEventOSX(evt);
+            else if (evt.isPointerDown)
+                OnPointerDownEventOSX(evt);
+        }
+
+        void ProcessPointerEvent(IPointerEvent evt)
+        {
+            if (CanStartManipulation(evt))
+            {
+                DoDisplayMenu(evt as EventBase);
+            }
         }
 
         void OnKeyUpEvent(KeyUpEvent evt)
@@ -107,7 +127,6 @@ namespace UnityEngine.UIElements
             {
                 target.elementPanel.contextualMenuManager.DisplayMenu(evt, target);
                 evt.StopPropagation();
-                evt.PreventDefault();
             }
         }
 

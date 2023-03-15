@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                           EventPropagation.SkipDisabledElements;
         }
 
@@ -99,7 +99,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Use the DragEnterEvent class to manage events that occur when dragging enters an element or one of its descendants. The DragEnterEvent is cancellable, it does not trickle down, and it does not bubble up.
+    /// Use the DragEnterEvent class to manage events that occur when dragging enters an element or one of its descendants. The DragEnterEvent does not trickle down and does not bubble up.
     /// </summary>
     public class DragEnterEvent : DragAndDropEventBase<DragEnterEvent>
     {
@@ -132,7 +132,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Use the DragLeaveEvent class to manage events sent when dragging leaves an element or one of its descendants. The DragLeaveEvent is cancellable, it does not trickle down, and it does not bubble up.
+    /// Use the DragLeaveEvent class to manage events sent when dragging leaves an element or one of its descendants. The DragLeaveEvent does not trickle down and does not bubble up.
     /// </summary>
     public class DragLeaveEvent : DragAndDropEventBase<DragLeaveEvent>
     {

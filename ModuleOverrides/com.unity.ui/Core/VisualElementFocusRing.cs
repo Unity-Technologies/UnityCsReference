@@ -349,7 +349,7 @@ namespace UnityEngine.UIElements
                     return VisualElementFocusChangeTarget.GetPooled(target);
             }
 
-            if (currentFocusable is IMGUIContainer)
+            if (currentFocusable != null && currentFocusable.isIMGUIContainer)
             {
                 // Let IMGUIContainer manage the focus change.
                 return FocusChangeDirection.none;
@@ -392,21 +392,27 @@ namespace UnityEngine.UIElements
                 return null;
             }
 
+            int previousIndex = GetFocusableInternalIndex(currentFocusable);
+
+            if (currentFocusable != null && previousIndex == -1)
+            {
+                // currentFocusable was not found in the ring. Use the element tree to find the next focusable.
+                if (direction == VisualElementFocusChangeDirection.right)
+                    return GetNextFocusableInTree(currentFocusable as VisualElement);
+                if (direction == VisualElementFocusChangeDirection.left)
+                    return GetPreviousFocusableInTree(currentFocusable as VisualElement);
+            }
+
             int index = 0;
             if (direction == VisualElementFocusChangeDirection.right)
             {
-                index = GetFocusableInternalIndex(currentFocusable) + 1;
-
-                if (currentFocusable != null && index == 0)
-                {
-                    // currentFocusable was not found in the ring. Use the element tree to find the next focusable.
-                    return GetNextFocusableInTree(currentFocusable as VisualElement);
-                }
+                index = previousIndex + 1;
 
                 if (index == m_FocusRing.Count)
                 {
                     index = 0;
                 }
+
                 // FIXME: Element could be unrelated to delegator; should we detect this case and return null?
                 // Spec is not very clear on this.
                 while (m_FocusRing[index].m_Focusable.delegatesFocus)
@@ -420,13 +426,7 @@ namespace UnityEngine.UIElements
             }
             else if (direction == VisualElementFocusChangeDirection.left)
             {
-                index = GetFocusableInternalIndex(currentFocusable) - 1;
-
-                if (currentFocusable != null && index == -2)
-                {
-                    // currentFocusable was not found in the ring. Use the element tree to find the previous focusable.
-                    return GetPreviousFocusableInTree(currentFocusable as VisualElement);
-                }
+                index = previousIndex - 1;
 
                 if (index < 0)
                 {

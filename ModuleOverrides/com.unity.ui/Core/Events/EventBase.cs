@@ -33,9 +33,7 @@ namespace UnityEngine.UIElements
             None = 0,
             Bubbles = 1,
             TricklesDown = 2,
-            Cancellable = 4,
-            SkipDisabledElements = 8,
-            IgnoreCompositeRoots = 16,
+            SkipDisabledElements = 4,
             BubblesOrTricklesDown = Bubbles | TricklesDown,
         }
 
@@ -45,14 +43,13 @@ namespace UnityEngine.UIElements
             None = 0,
             PropagationStopped = 1,
             ImmediatePropagationStopped = 2,
-            DefaultPrevented = 4,
-            Dispatching = 8,
-            Pooled = 16,
-            IMGUIEventIsValid = 32,
-            PropagateToIMGUI = 64,
-            Dispatched = 128,
-            Processed = 256,
-            ProcessedByFocusController = 512,
+            Dispatching = 4,
+            Pooled = 8,
+            IMGUIEventIsValid = 16,
+            PropagateToIMGUI = 32,
+            Dispatched = 64,
+            Processed = 128,
+            ProcessedByFocusController = 256,
         }
 
         internal EventCategory eventCategory { get; }
@@ -62,8 +59,11 @@ namespace UnityEngine.UIElements
 
         // Read-only state
         /// <summary>
-        /// The time when the event was created.
+        /// The time when the event was created, in milliseconds.
         /// </summary>
+        /// <remarks>
+        /// This value is relative to the start time of the current application.
+        /// </remarks>
         public long timestamp { get; private set; }
 
         internal ulong eventId { get; private set; }
@@ -169,26 +169,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal bool ignoreCompositeRoots
-        {
-            get { return (propagation & EventPropagation.IgnoreCompositeRoots) != 0; }
-            set
-            {
-                if (value)
-                {
-                    propagation |= EventPropagation.IgnoreCompositeRoots;
-                }
-                else
-                {
-                    propagation &= ~EventPropagation.IgnoreCompositeRoots;
-                }
-            }
-        }
-
         internal bool bubblesOrTricklesDown => (propagation & EventPropagation.BubblesOrTricklesDown) != 0;
-
-        // Original target. May be different than 'target' when propagating event and 'target.isCompositeRoot' is true.
-        internal VisualElement leafTarget { get; set; }
 
         internal VisualElement elementTarget { get; set; }
 
@@ -222,7 +203,10 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Stops propagating this event. The event is not sent to other elements along the propagation path. This method does not prevent other event handlers from executing on the current target.
+        /// Stops propagating this event. The event is not sent to other elements along the propagation path.
+        /// This method does not prevent other event handlers from executing on the current target.
+        /// If this method is called during the TrickleDown propagation phase, it will prevent default actions
+        /// to be processed, such as an element getting focused as a result of a PointerDownEvent.
         /// </summary>
         public void StopPropagation()
         {
@@ -260,36 +244,26 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns true if the default actions should not be executed for this event.
         /// </summary>
-        public bool isDefaultPrevented
-        {
-            get { return (lifeCycleStatus & LifeCycleStatus.DefaultPrevented) != LifeCycleStatus.None; }
-            private set
-            {
-                if (value)
-                {
-                    lifeCycleStatus |= LifeCycleStatus.DefaultPrevented;
-                }
-                else
-                {
-                    lifeCycleStatus &= ~LifeCycleStatus.DefaultPrevented;
-                }
-            }
-        }
+        [Obsolete("Use isPropagationStopped. Before proceeding, make sure you understand the latest changes to " +
+                  "UIToolkit event propagation rules by visiting Unity's manual page " +
+                  "https://docs.unity3d.com/Manual/UIE-Events-Dispatching.html")]
+        public bool isDefaultPrevented => isPropagationStopped;
 
         /// <summary>
         /// Indicates whether the default actions are prevented from being executed for this event.
         /// </summary>
+        [Obsolete("Use StopPropagation and/or FocusController.IgnoreEvent. Before proceeding, make sure you understand the latest changes to " +
+                  "UIToolkit event propagation rules by visiting Unity's manual page " +
+                  "https://docs.unity3d.com/Manual/UIE-Events-Dispatching.html")]
         public void PreventDefault()
         {
-            if ((propagation & EventPropagation.Cancellable) == EventPropagation.Cancellable)
-            {
-                isDefaultPrevented = true;
-            }
+            StopPropagation();
+            elementTarget?.focusController?.IgnoreEvent(this);
         }
 
         // Propagation state
         /// <summary>
-        /// The current propagation phase.
+        /// The current propagation phase for this event. 
         /// </summary>
         public PropagationPhase propagationPhase { get; internal set; }
 
@@ -484,14 +458,12 @@ namespace UnityEngine.UIElements
 
             propagation = EventPropagation.None;
 
-            leafTarget = null;
             elementTarget = null;
 
             isPropagationStopped = false;
             isImmediatePropagationStopped = false;
-            isDefaultPrevented = false;
 
-            propagationPhase = PropagationPhase.None;
+            propagationPhase = default;
 
             originalMousePosition = Vector2.zero;
             m_CurrentTarget = null;

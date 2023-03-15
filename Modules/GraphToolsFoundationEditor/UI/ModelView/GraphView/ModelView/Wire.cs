@@ -205,13 +205,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         public override bool Overlaps(Rect rectangle)
         {
-            return WireControl.Overlaps(this.ChangeCoordinatesTo(WireControl, rectangle));
+            return WireControl.MatchControlPoints(rectangle);
         }
 
         /// <inheritdoc />
         public override bool ContainsPoint(Vector2 localPoint)
         {
-            return WireControl.ContainsPoint(this.ChangeCoordinatesTo(WireControl, localPoint));
+            return WireControl.MatchControlPoints(localPoint);
         }
 
         /// <summary>

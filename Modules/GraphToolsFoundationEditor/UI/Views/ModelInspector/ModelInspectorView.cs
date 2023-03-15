@@ -87,11 +87,23 @@ namespace Unity.GraphToolsFoundation.Editor
         public ModelInspectorViewModel ModelInspectorViewModel => (ModelInspectorViewModel)Model;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ModelInspectorView"/> class.
+        /// Creates and initializes a new instance of the <see cref="ModelInspectorView"/> class.
         /// </summary>
         /// <param name="window">The <see cref="GraphViewEditorWindow"/> associated with this view.</param>
         /// <param name="parentGraphView">The <see cref="GraphView"/> linked to this inspector.</param>
-        public ModelInspectorView(EditorWindow window, GraphView parentGraphView)
+        public static ModelInspectorView Create(EditorWindow window, GraphView parentGraphView)
+        {
+            var view = new ModelInspectorView(window, parentGraphView);
+            view.Initialize();
+            return view;
+        }
+
+        /// <summary>
+        /// Creates a new instance of the <see cref="ModelInspectorView"/> class. Call <see cref="RootView.Initialize"/> to initialize it.
+        /// </summary>
+        /// <param name="window">The <see cref="GraphViewEditorWindow"/> associated with this view.</param>
+        /// <param name="parentGraphView">The <see cref="GraphView"/> linked to this inspector.</param>
+        protected ModelInspectorView(EditorWindow window, GraphView parentGraphView)
         : base(window, parentGraphView.GraphTool)
         {
             Model = new ModelInspectorViewModel(parentGraphView);
@@ -141,14 +153,18 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        protected override void RegisterObservers()
+        protected override void RegisterModelObservers()
         {
             if (m_LoadedGraphObserver == null)
             {
                 m_LoadedGraphObserver = new ModelInspectorGraphLoadedObserver(GraphTool.ToolState, ModelInspectorViewModel.ModelInspectorState);
                 GraphTool.ObserverManager.RegisterObserver(m_LoadedGraphObserver);
             }
+        }
 
+        /// <inheritdoc />
+        protected override void RegisterViewObservers()
+        {
             if (m_UpdateObserver == null)
             {
                 m_UpdateObserver = new ModelViewUpdater(this, ModelInspectorViewModel.ModelInspectorState, ModelInspectorViewModel.GraphModelState);
@@ -161,18 +177,31 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        protected override void UnregisterObservers()
+        protected override void UnregisterModelObservers()
         {
             if (GraphTool != null)
             {
                 GraphTool.ObserverManager?.UnregisterObserver(m_LoadedGraphObserver);
                 m_LoadedGraphObserver = null;
+            }
+        }
 
-                GraphTool.ObserverManager?.UnregisterObserver(m_UpdateObserver);
-                m_UpdateObserver = null;
+        /// <inheritdoc />
+        protected override void UnregisterViewObservers()
+        {
+            if (GraphTool != null)
+            {
+                if (m_UpdateObserver != null)
+                {
+                    GraphTool.ObserverManager?.UnregisterObserver(m_UpdateObserver);
+                    m_UpdateObserver = null;
+                }
 
-                GraphTool.ObserverManager?.UnregisterObserver(m_SelectionObserver);
-                m_SelectionObserver = null;
+                if (m_SelectionObserver != null)
+                {
+                    GraphTool.ObserverManager?.UnregisterObserver(m_SelectionObserver);
+                    m_SelectionObserver = null;
+                }
 
                 if (GraphTool.State != null)
                 {

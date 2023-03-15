@@ -31,7 +31,6 @@ namespace UnityEngine.UIElements.Experimental
         public bool hasUnderlyingPhysicalEvent { get; private set; }
         private bool isPropagationStopped { get; set; }
         private bool isImmediatePropagationStopped { get; set; }
-        private bool isDefaultPrevented { get; set; }
         public PropagationPhase propagationPhase { get; private set; }
         private IEventHandler currentTarget { get; set; }
         private bool dispatch { get; set; }
@@ -84,7 +83,6 @@ namespace UnityEngine.UIElements.Experimental
 
             isPropagationStopped = evt.isPropagationStopped;
             isImmediatePropagationStopped = evt.isImmediatePropagationStopped;
-            isDefaultPrevented = evt.isDefaultPrevented;
 
             var mouseEvent = evt as IMouseEvent;
             var mouseEventInternal = evt as IMouseEventInternal;

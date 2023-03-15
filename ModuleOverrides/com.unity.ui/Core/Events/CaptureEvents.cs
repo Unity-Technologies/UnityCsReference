@@ -83,6 +83,12 @@ namespace UnityEngine.UIElements
         {
             SetCreateFunction(() => new PointerCaptureOutEvent());
         }
+
+        protected internal override void PreDispatch(IPanel panel)
+        {
+            base.PreDispatch(panel);
+            elementTarget.UpdateHoverPseudoStateAfterCaptureChange(pointerId);
+        }
     }
 
     /// <summary>
@@ -96,6 +102,12 @@ namespace UnityEngine.UIElements
         static PointerCaptureEvent()
         {
             SetCreateFunction(() => new PointerCaptureEvent());
+        }
+
+        protected internal override void PreDispatch(IPanel panel)
+        {
+            base.PreDispatch(panel);
+            elementTarget.UpdateHoverPseudoStateAfterCaptureChange(pointerId);
         }
     }
 
@@ -128,14 +140,6 @@ namespace UnityEngine.UIElements
             T e = GetPooled(target, relatedTarget, 0);
             return e;
         }
-
-        /// <summary>
-        /// Resets the event members to their initial values.
-        /// </summary>
-        protected override void Init()
-        {
-            base.Init();
-        }
     }
 
     /// <summary>
@@ -146,6 +150,15 @@ namespace UnityEngine.UIElements
         static MouseCaptureOutEvent()
         {
             SetCreateFunction(() => new MouseCaptureOutEvent());
+        }
+
+        protected internal override void PreDispatch(IPanel panel)
+        {
+            base.PreDispatch(panel);
+
+            // Updating cursor has to happen on MouseOver/Out because exiting a child does not send a mouse enter to the parent.
+            // We can use MouseEvents instead of PointerEvents since only the mouse has a displayed cursor.
+            elementTarget.UpdateCursorStyle(eventTypeId);
         }
     }
 

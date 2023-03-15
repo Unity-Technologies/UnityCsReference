@@ -211,8 +211,6 @@ namespace UnityEngine.UIElements
         public IMGUIContainer(Action onGUIHandler)
         {
             isIMGUIContainer = true;
-            eventCallbackCategories |= (int)EventCategoryFlags.TriggeredByOS |
-                                       (1 << (int)EventCategory.Navigation);
 
             AddToClassList(ussClassName);
 
@@ -414,7 +412,7 @@ namespace UnityEngine.UIElements
                             // If CheckForTabEvent returns -1 or -2, we have reach the end/beginning of its control list.
                             // We should switch the focus to the next VisualElement.
                             Focusable currentFocusedElement = focusController.GetLeafFocusedElement();
-                            Focusable nextFocusedElement = focusController.FocusNextInDirection(result == -1
+                            Focusable nextFocusedElement = focusController.FocusNextInDirection(this, result == -1
                                 ? VisualElementFocusChangeDirection.right
                                 : VisualElementFocusChangeDirection.left);
 
@@ -486,9 +484,9 @@ namespace UnityEngine.UIElements
                 }
             }
 
-                // This will copy Event.current into evt. End the container by now since the container
-                // should end at this point no matter an exception occured or not. Not ending the container will make the GUIDepth off by 1.
-                UIElementsUtility.EndContainerGUI(evt, layoutSize);
+            // This will copy Event.current into evt. End the container by now since the container
+            // should end at this point no matter an exception occured or not. Not ending the container will make the GUIDepth off by 1.
+            UIElementsUtility.EndContainerGUI(evt, layoutSize);
             RestoreGlobals();
 
             // See if the container size has changed. This is to make absolutely sure the VisualElement resizes
@@ -532,19 +530,6 @@ namespace UnityEngine.UIElements
         {
             m_RefreshCachedLayout = true;
             IncrementVersion(VersionChangeType.Layout);
-        }
-
-        private void ProcessEvent(EventBase evt)
-        {
-            if (evt.imguiEvent != null && SendEventToIMGUI(evt) ||
-                // Prevent navigation events since IMGUI already uses KeyDown events
-                evt.eventTypeId == NavigationMoveEvent.TypeId() ||
-                evt.eventTypeId == NavigationSubmitEvent.TypeId() ||
-                evt.eventTypeId == NavigationCancelEvent.TypeId())
-            {
-                evt.StopPropagation();
-                evt.PreventDefault();
-            }
         }
 
         static readonly ProfilerMarker k_ImmediateCallbackMarker = new ProfilerMarker(nameof(IMGUIContainer));
@@ -739,36 +724,41 @@ namespace UnityEngine.UIElements
         }
 
         [EventInterest(EventInterestOptionsInternal.TriggeredByOS)]
-        [EventInterest(typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent))]
-        protected override void ExecuteDefaultActionAtTarget(EventBase evt)
+        [EventInterest(typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent),
+            typeof(BlurEvent), typeof(FocusEvent), typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
+        internal override void HandleEventBubbleUpDisabled(EventBase evt)
         {
-            // If IMGUIContainer is in the propagation path, it's necessarily AtTarget because it can't be the parent
-            // of any other element.
-            if (!evt.isPropagationStopped)
-                ProcessEvent(evt);
+            HandleEventBubbleUp(evt);
         }
 
         [EventInterest(EventInterestOptionsInternal.TriggeredByOS)]
-        [EventInterest(typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent))]
-        internal override void ExecuteDefaultActionDisabledAtTarget(EventBase evt)
+        [EventInterest(typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent),
+            typeof(BlurEvent), typeof(FocusEvent), typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
+        protected override void HandleEventBubbleUp(EventBase evt)
         {
-            if (!evt.isPropagationStopped)
-                ProcessEvent(evt);
-        }
-
-        [EventInterest(typeof(BlurEvent), typeof(FocusEvent), typeof(DetachFromPanelEvent), typeof(AttachToPanelEvent))]
-        protected override void ExecuteDefaultAction(EventBase evt)
-        {
-            // no call to base.ExecuteDefaultAction(evt):
+            // No call to base.HandleEventBubbleUp(evt):
             // - we dont want mouse click to directly give focus to IMGUIContainer:
             //   they should be handled by IMGUI and if an IMGUI control grabs the
             //   keyboard, the IMGUIContainer will gain focus via FocusController.SyncIMGUIFocus.
             // - same thing for tabs: IMGUI should handle them.
             // - we dont want to set the PseudoState.Focus flag on IMGUIContainer.
             //   They are focusable, but only for the purpose of focusing their children.
+            //
+            // If IMGUIContainer is in the propagation path, it's necessarily the target because it can't be the parent
+            // of any other element.
+
+            if (evt.imguiEvent != null && SendEventToIMGUI(evt) ||
+                // Prevent navigation events since IMGUI already uses KeyDown events
+                evt.eventTypeId == NavigationMoveEvent.TypeId() ||
+                evt.eventTypeId == NavigationSubmitEvent.TypeId() ||
+                evt.eventTypeId == NavigationCancelEvent.TypeId())
+            {
+                evt.StopPropagation();
+                focusController?.IgnoreEvent(evt);
+            }
 
             // Here, we set flags that will be acted upon in DoOnGUI(), since we need to change IMGUI state.
-            if (evt.eventTypeId == BlurEvent.TypeId())
+            else if (evt.eventTypeId == BlurEvent.TypeId())
             {
                 // A lost focus event is ... a lost focus event.
                 // The specific handling of the IMGUI will be done in the DoOnGUI() above...

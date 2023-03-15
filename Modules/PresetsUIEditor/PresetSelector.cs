@@ -326,7 +326,7 @@ namespace UnityEditor.Presets
                     selection.ApplyTo(target);
                 }
             }
-            else if (presetContext.PresetProperty != null)
+            else if (presetContext.PresetProperty != null && presetContext.PresetProperty.isValid)
             {
                 presetContext.PresetProperty.objectReferenceValue = selection;
                 presetContext.PresetProperty.serializedObject.ApplyModifiedProperties();

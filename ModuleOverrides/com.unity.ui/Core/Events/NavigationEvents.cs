@@ -92,8 +92,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Navigation events abstract base class.
     ///
-    /// By default, navigation events trickle down and bubble up. They are cancellable, and disabled elements won't
-    /// receive these events.
+    /// By default, navigation events trickle down and bubble up. Disabled elements won't receive these events.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     [EventCategory(EventCategory.Navigation)]
@@ -188,7 +187,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown | EventPropagation.Cancellable |
+            propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
             modifiers = EventModifiers.None;
             deviceType = NavigationDeviceType.Unknown;
@@ -376,6 +375,13 @@ namespace UnityEngine.UIElements
         {
             direction = Direction.None;
             move = Vector2.zero;
+        }
+
+        protected internal override void PostDispatch(IPanel panel)
+        {
+            panel.focusController.SwitchFocusOnEvent(panel.focusController.GetLeafFocusedElement(), this);
+
+            base.PostDispatch(panel);
         }
     }
 

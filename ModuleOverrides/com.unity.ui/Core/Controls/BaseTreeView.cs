@@ -226,8 +226,6 @@ namespace UnityEngine.UIElements
             AddToClassList(ussClassName);
 
             scrollView.contentContainer.RegisterCallback<NavigationMoveEvent>(OnScrollViewNavigationMove);
-
-            RegisterCallback<MouseUpEvent>(OnTreeViewMouseUp, TrickleDown.TrickleDown);
         }
 
         /// <summary>
@@ -565,11 +563,6 @@ namespace UnityEngine.UIElements
         public void CollapseAll()
         {
             viewController.CollapseAll();
-        }
-
-        private void OnTreeViewMouseUp(MouseUpEvent evt)
-        {
-            scrollView.contentContainer.Focus();
         }
 
         private bool IsExpandedByIndex(int index)
