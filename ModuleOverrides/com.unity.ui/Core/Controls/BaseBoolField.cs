@@ -5,7 +5,7 @@
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A <see cref="BaseBoolField"/> is a clickable element that represents a boolean value.
+    /// A BaseBoolField is a clickable element that represents a boolean value.
     /// </summary>
     public abstract class BaseBoolField : BaseField<bool>
     {

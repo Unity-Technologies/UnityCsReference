@@ -249,7 +249,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UIUtils.SetElementDisplay(GetTagLabel(tag.ToString()), m_Version.HasTag(tag));
 
             var scopedRegistryTagLabel = GetTagLabel("ScopedRegistry");
-            if ((m_Version as UpmPackageVersion)?.isUnityPackage == false && !string.IsNullOrEmpty(m_Version.version?.Prerelease))
+            if (!m_Version.HasTag(PackageTag.Unity) && !string.IsNullOrEmpty(m_Version.version?.Prerelease))
             {
                 scopedRegistryTagLabel.tooltip = m_Version.version?.Prerelease;
                 scopedRegistryTagLabel.text = m_Version.version?.Prerelease;
@@ -321,7 +321,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // In Lifecycle V2, if a Unity package doesn't have a lifecycle version (listed in the editor manifest),
             // then that package is not considered part of the Unity Editor "product" and we need to let users know.
             var unityVersionString = m_Application.unityVersion;
-            if (!m_Package.versions.hasLifecycleVersion && m_Package.Is(PackageType.Unity))
+            if (!m_Package.versions.hasLifecycleVersion && m_Version.HasTag(PackageTag.Unity))
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
                 versionInfoIcon.tooltip = string.Format(L10n.Tr("This package is not officially supported for Unity {0}."), unityVersionString);
@@ -335,7 +335,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var recommended = m_Package.versions.recommended;
             if (m_Version.isInstalled
                 && m_Package.state != PackageState.InstalledAsDependency
-                && m_Package.Is(PackageType.Unity)
+                && m_Version.HasTag(PackageTag.Unity)
                 && recommended != null
                 && installed.version?.IsEqualOrPatchOf(recommended.version) != true)
             {
@@ -353,13 +353,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var registry = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString)?.registry;
             var showRegistry = registry != null;
             UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
-            if (showRegistry)
-            {
-                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
-                detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
-                detailRegistryName.tooltip = registry.url;
-            }
+
             if (m_Version.HasTag(PackageTag.Experimental))
             {
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.Experimental];
@@ -375,6 +369,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ReleaseCandidate];
                 UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
             }
+            else if (showRegistry)
+            {
+                scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
+                detailRegistryName.text = registry.isDefault ? "Unity" : registry.name;
+                detailRegistryName.tooltip = registry.url;
+            }
         }
 
         private void RefreshEmbeddedFeatureSetWarningBox()
@@ -384,13 +385,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnInfoBoxClickMore()
         {
-            if (m_Version.HasTag(PackageTag.PreRelease))
-                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.PreRelease]}");
-            else if (m_Version.HasTag(PackageTag.Experimental))
+            if (m_Version.HasTag(PackageTag.Experimental))
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.Experimental]}");
+            else if (m_Version.HasTag(PackageTag.PreRelease))
+                m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.PreRelease]}");
             else if (m_Version.HasTag(PackageTag.ReleaseCandidate))
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ReleaseCandidate]}");
-            else if (m_Package.Is(PackageType.ScopedRegistry))
+            else
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ScopedRegistry]}");
         }
 

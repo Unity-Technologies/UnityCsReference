@@ -10,10 +10,10 @@ namespace UnityEngine.UIElements
     /// This is a clickable button.
     /// </summary>
     /// <remarks>
-    /// A <see cref="Button"/> consists of a text label element that can respond to pointer and mouse events.
-    /// You can replace or add to the content of the button by adding elements to its hierarchy.
-    /// For example, to use a separate image as an icon for the button, you can make an <see cref="Image"/>
-    /// element a child of the button.
+    /// A Button has a text label element that can respond to pointer and mouse events.
+    /// You can customize a button by adding child elements to its hierarchy.
+    /// For example, to use a separate image as an icon for the button, you can add an <see cref="Image"/>
+    /// element as a child of the button.
     ///
     /// By default, a single left mouse click activates the Button's <see cref="Clickable"/> property button.
     /// To remove this activator, or add more activators, modify the <c>clickable.activators</c> property.

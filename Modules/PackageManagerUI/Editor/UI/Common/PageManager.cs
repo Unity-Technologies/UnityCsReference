@@ -481,7 +481,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return page.tab;
             }
 
-            if (package?.Is(PackageType.Unity) == true)
+            if (package?.versions.Any(v => v.availableRegistry == RegistryType.UnityRegistry) == true)
                 return PackageFilterTab.UnityRegistry;
 
             return PackageFilterTab.MyRegistries;
@@ -808,7 +808,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             static string GroupPackagesWithAuthorAndFeatures(IPackage package)
             {
-                if (package?.Is(PackageType.Feature) == true && package.Is(PackageType.Unity)) return L10n.Tr("Features");
+                if (package?.Is(PackageType.Feature) == true && package.versions.Any(v => v.availableRegistry == RegistryType.UnityRegistry)) return L10n.Tr("Features");
                 return string.Format(L10n.Tr("Packages - {0}"), BasePage.GetDefaultGroupName(PackageFilterTab.InProject, package));
             }
 

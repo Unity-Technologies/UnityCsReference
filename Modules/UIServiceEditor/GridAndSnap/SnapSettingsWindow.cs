@@ -51,7 +51,7 @@ namespace UnityEditor.Snap
 
             rootVisualElement.Add(new SnapSettingsHeader(L10n.Tr("Grid Snapping"), ResetValues));
 
-            m_GridSize = new LinkedVector3Field(L10n.Tr("Grid Size")) { name = "GridSize" };
+            m_GridSize = new LinkedVector3Field(L10n.Tr("Grid Size")) { name = "GridSize", isDelayed = true};
             m_GridSize.value = GridSettings.size;
             m_GridSize.linked = Mathf.Approximately(m_GridSize.value.x, m_GridSize.value.y) && Mathf.Approximately(m_GridSize.value.x, m_GridSize.value.z);
             GridSettings.sizeChanged += (value) => m_GridSize.SetValueWithoutNotify(value);

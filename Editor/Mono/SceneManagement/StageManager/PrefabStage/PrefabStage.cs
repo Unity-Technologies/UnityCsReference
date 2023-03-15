@@ -436,7 +436,23 @@ namespace UnityEditor.SceneManagement
                 StageUtility.SetPrefabInstanceHiddenForInContextEditing(m_OpenedFromInstanceRoot, hide);
         }
 
-        static List<Canvas> s_ReusableCanvasList = new List<Canvas>();
+        void UpdateSortableComponentsWithStagePriority(int stagePriority)
+        {
+            List<Renderer> rendererList = new List<Renderer>();
+            List<Canvas> canvasList = new List<Canvas>();
+
+            // Renderer components requires to know there is stage priority when entering context and isolation
+            // mode. If this is not shared, their sorting order will not be evaluated accordingly since they are not
+            // in the same layer.
+            m_PrefabContentsRoot.GetComponentsInChildren<Renderer>(true, rendererList);
+            m_PrefabContentsRoot.GetComponentsInChildren<Canvas>(true, canvasList);
+
+            foreach (Renderer renderer in rendererList)
+                renderer.stagePriority = (byte)stagePriority;
+
+            foreach (Canvas canvas in canvasList)
+                canvas.stagePriority = (byte)stagePriority;
+        }
 
         bool LoadStage()
         {
@@ -482,13 +498,11 @@ namespace UnityEditor.SceneManagement
             if (m_PrefabContentsRoot != null)
             {
                 // Corresponds to which breadcrumb this is.
-                int stagePriority = StageNavigationManager.instance.stageHistory.IndexOf(this);
+                var stagePriority = StageNavigationManager.instance.stageHistory.IndexOf(this);
 
                 if (isUIPrefab)
                 {
-                    m_PrefabContentsRoot.GetComponentsInChildren<Canvas>(true, s_ReusableCanvasList);
-                    foreach (Canvas canvas in s_ReusableCanvasList)
-                        canvas.stagePriority = (byte)stagePriority;
+                    UpdateSortableComponentsWithStagePriority(stagePriority);
 
                     if (m_Mode == Mode.InIsolation && m_PrefabContentsRoot.transform.parent == null)
                         PrefabStageUtility.HandleUIReparentingIfNeeded(m_PrefabContentsRoot, stagePriority);
@@ -1172,7 +1186,15 @@ namespace UnityEditor.SceneManagement
         void DetectSceneDirtinessChange()
         {
             if (scene.dirtyID != m_LastSceneDirtyID)
+            {
+                // We want to make sure that all the new sortable components (e.g, canvas, renderer) being added have
+                // the correct StagePriority assigned to them. Otherwise they won't be sorted accordingly when in
+                // context/isolation mode.
+                if (PrefabStageUtility.IsUIPrefab(m_PrefabAssetPath))
+                    UpdateSortableComponentsWithStagePriority(StageNavigationManager.instance.stageHistory.IndexOf(this));
+
                 SceneView.RepaintAll();
+            }
             m_LastSceneDirtyID = scene.dirtyID;
         }
 

@@ -213,7 +213,6 @@ namespace UnityEngine.UIElements
         }
     }
 
-
     /// <summary>
     /// A control that displays the progress between a lower and upper bound value.
     /// </summary>

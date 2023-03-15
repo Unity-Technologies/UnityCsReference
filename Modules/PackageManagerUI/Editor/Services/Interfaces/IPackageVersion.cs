@@ -64,6 +64,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         bool HasTag(PackageTag tag);
 
+        RegistryType availableRegistry { get; }
+
         // A version is fully fetched when the information isn't derived from another version (therefore may be inaccurate)
         bool isFullyFetched { get; }
 

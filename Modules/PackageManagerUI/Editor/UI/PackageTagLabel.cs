@@ -28,6 +28,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (version.HasTag(PackageTag.Custom))
                     return new PackageTagLabel(L10n.Tr("Custom"), string.Empty, PackageTag.Custom);
+                if (version.HasTag(PackageTag.Local))
+                    return new PackageTagLabel(L10n.Tr("Local"), string.Empty, PackageTag.Local);
+                if (version.HasTag(PackageTag.Git))
+                    return new PackageTagLabel(L10n.Tr("Git"), string.Empty, PackageTag.Git);
                 if (version.HasTag(PackageTag.PreRelease))
                     return new PackageTagLabel(L10n.Tr("Pre"), L10n.Tr("Pre-release"), PackageTag.PreRelease);
                 if (isVersionItem && version.HasTag(PackageTag.Release))

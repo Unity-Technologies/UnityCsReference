@@ -103,10 +103,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 // we can skip the whole database scan to save some time
                 var changed = added.Concat(removed).Concat(preUpdate).Concat(postUpdate);
-                if (!changed.Any(p => p.Is(PackageType.ScopedRegistry)))
+                if (!changed.Any(p => p.versions.Any(v => v.availableRegistry == RegistryType.MyRegistries)))
                     return;
 
-                if (!m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.ScopedRegistry)))
+                if (!m_PackageDatabase.allPackages.Any(p => p.versions.Any(v => v.availableRegistry == RegistryType.MyRegistries)))
                     SetFilter(PackageFilterTab.UnityRegistry);
             }
         }
@@ -368,9 +368,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             AddFilterTabToDropdownMenu(PackageFilterTab.UnityRegistry);
             AddFilterTabToDropdownMenu(PackageFilterTab.MyRegistries, null, a =>
             {
-                if (!m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.ScopedRegistry)) && !m_PackageDatabase.allPackages.Any(p => p.Is(PackageType.MainNotUnity)))
+                if (!m_PackageDatabase.allPackages.Any(p => p.versions.Any(v => v.availableRegistry == RegistryType.MyRegistries)))
                     return DropdownMenuAction.Status.Hidden;
-                else if (m_PackageFiltering.currentFilterTab == PackageFilterTab.MyRegistries)
+                if (m_PackageFiltering.currentFilterTab == PackageFilterTab.MyRegistries)
                     return DropdownMenuAction.Status.Checked;
                 return DropdownMenuAction.Status.Normal;
             });

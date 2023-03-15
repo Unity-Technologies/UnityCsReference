@@ -278,7 +278,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var seeAllVersionsLabelVisible = package.versions.numUnloadedVersions > 0
-                && (package.Is(PackageType.ScopedRegistry) || m_SettingsProxy.seeAllPackageVersions || package.versions.installed?.HasTag(PackageTag.Experimental) == true);
+                && (package.versions.Any(v => v.availableRegistry == RegistryType.MyRegistries) || m_SettingsProxy.seeAllPackageVersions || package.versions.installed?.HasTag(PackageTag.Experimental) == true);
             UIUtils.SetElementDisplay(m_SeeAllVersionsLabel, seeAllVersionsLabelVisible);
 
             // Hack until ScrollList has a better way to do the same -- Vertical scroll bar is not yet visible

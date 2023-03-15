@@ -15,6 +15,7 @@ namespace UnityEditor.Snap
 
         bool m_Linked;
         readonly VisualElement m_LinkedToggle;
+        readonly FloatField m_XField;
         readonly FloatField m_YField;
         readonly FloatField m_ZField;
 
@@ -49,7 +50,7 @@ namespace UnityEditor.Snap
                 ? "StyleSheets/SceneViewToolbarElements/LinkedVector3FieldDark.uss"
                 : "StyleSheets/SceneViewToolbarElements/LinkedVector3FieldLight.uss"));
 
-            var xField = this.Q<FloatField>("unity-x-input");
+            m_XField = this.Q<FloatField>("unity-x-input");
 
             m_YField = this.Q<FloatField>("unity-y-input");
             m_ZField = this.Q<FloatField>("unity-z-input");
@@ -59,6 +60,17 @@ namespace UnityEditor.Snap
             Insert(IndexOf(this.Q(classes: inputUssClassName)), m_LinkedToggle);
             m_LinkedToggle.AddManipulator(new Clickable(() => linked = !linked));
             UpdateLinkedState();
+        }
+
+        public bool isDelayed
+        {
+            get => m_XField.isDelayed;
+            set
+            {
+                m_XField.isDelayed = value;
+                m_YField.isDelayed = value;
+                m_ZField.isDelayed = value;
+            }
         }
 
         void UpdateLinkedState()

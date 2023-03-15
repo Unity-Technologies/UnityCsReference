@@ -638,10 +638,6 @@ namespace UnityEditorInternal.Profiling
         void DrawSearchBar()
         {
             var rect = GUILayoutUtility.GetRect(50f, 300f, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.toolbarSearchField);
-            if (Event.current.isMouse && Event.current.button == 0 && rect.Contains(Event.current.mousePosition))
-            {
-                ProfilerWindowAnalytics.AddNewView(ProfilerWindowAnalytics.profilerCPUModuleSearch);
-            }
             treeView.searchString = m_SearchField.OnToolbarGUI(rect, treeView.searchString);
         }
 

@@ -4,14 +4,15 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Profiling;
 using Unity.Profiling.Editor;
 using Unity.Profiling.LowLevel;
-using UnityEngine;
 using UnityEditor;
-using UnityEditor.Profiling;
 using UnityEditor.IMGUI.Controls;
-using Unity.Profiling;
+using UnityEditor.Profiling;
+using UnityEditor.Profiling.Analytics;
 using UnityEditorInternal;
+using UnityEngine;
 
 namespace UnityEditor.Profiling
 {
@@ -84,10 +85,22 @@ namespace UnityEditorInternal.Profiling
                 m_Selection = null;
         }
 
+        internal override void LegacyModuleInitialize()
+        {
+            base.LegacyModuleInitialize();
+            k_HierarchyViewAnalyticsName = DisplayName + ".Hierarchy";
+            k_RawHierarchyViewAnalyticsName = DisplayName + ".RawHierarchy";
+            k_TimelineViewAnalyticsName = DisplayName + ".Timeline";
+        }
+
         protected bool fetchData
         {
             get { return !(ProfilerWindow == null || ProfilerWindow.ProfilerWindowOverheadIsAffectingProfilingRecordingData()) || updateViewLive; }
         }
+
+        string k_HierarchyViewAnalyticsName { get; set; }
+        string k_RawHierarchyViewAnalyticsName { get; set; }
+        string k_TimelineViewAnalyticsName { get; set; }
 
         protected const string k_MainThreadName = "Main Thread";
 
@@ -282,6 +295,8 @@ namespace UnityEditorInternal.Profiling
         {
             base.OnSelected();
             TryRestoringSelection();
+
+            SendViewTypeAnalytics(m_ViewType);
         }
 
         internal override void SaveViewSettings()
@@ -391,11 +406,9 @@ namespace UnityEditorInternal.Profiling
         {
             if (m_ViewType == viewtype)
                 return;
-            m_ViewType = viewtype;
 
-            ProfilerWindowAnalytics.AddNewView(m_ViewType == ProfilerViewType.Timeline
-                ? ProfilerWindowAnalytics.profilerCPUModuleTimeline
-                : ProfilerWindowAnalytics.profilerCPUModuleHierarchy);
+            m_ViewType = viewtype;
+            SendViewTypeAnalytics(viewtype);
 
             // reset the hierarchy overruling if the user leaves the Hierarchy space
             // otherwise, switching back and forth between hierarchy views and Timeline feels inconsistent once you overruled the thread selection
@@ -1031,6 +1044,13 @@ namespace UnityEditorInternal.Profiling
 
                 return name;
             }
+        }
+
+        void SendViewTypeAnalytics(ProfilerViewType viewtype)
+        {
+            ProfilerWindowAnalytics.SwitchActiveView(viewtype == ProfilerViewType.Timeline
+                ? k_TimelineViewAnalyticsName
+                : viewtype == ProfilerViewType.Hierarchy ? k_HierarchyViewAnalyticsName : k_RawHierarchyViewAnalyticsName);
         }
     }
 }

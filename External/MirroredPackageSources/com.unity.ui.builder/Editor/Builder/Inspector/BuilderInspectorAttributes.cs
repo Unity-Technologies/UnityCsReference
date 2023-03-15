@@ -141,6 +141,15 @@ namespace Unity.UI.Builder
                 uiField.RegisterValueChangedCallback(OnAttributeValueChange);
                 fieldElement = uiField;
             }
+            else if (attribute.name.Equals("fixed-item-height") &&
+                     currentVisualElement is BaseVerticalCollectionView)
+            {
+                var uiField = new IntegerField(fieldLabel);
+                uiField.isDelayed = true;
+                uiField.RegisterValueChangedCallback(OnFixedItemHeightValueChange);
+                uiField.RegisterCallback<InputEvent>(OnFixedHeightValueChangedImmediately);
+                fieldElement = uiField;
+            }
             else if (attribute is UxmlIntAttributeDescription)
             {
                 var uiField = new IntegerField(fieldLabel);
@@ -751,6 +760,58 @@ namespace Unity.UI.Builder
         {
             var field = evt.target as EnumField;
             PostAttributeValueChange(field, evt.newValue.ToString());
+        }
+
+        void OnFixedItemHeightValueChange(ChangeEvent<int> evt)
+        {
+            var field = evt.target as BaseField<int>;
+            if (evt.newValue < 0)
+            {
+                var negativeWarningHelpBox = field.parent.Q<UnityEngine.UIElements.HelpBox>();
+                if (negativeWarningHelpBox == null)
+                {
+                    negativeWarningHelpBox = new UnityEngine.UIElements.HelpBox(BuilderConstants.HeightIntFieldValueCannotBeNegativeMessage, HelpBoxMessageType.Warning);
+                    field.parent.Add(negativeWarningHelpBox);
+                }
+                negativeWarningHelpBox.style.unityFontStyleAndWeight = FontStyle.Normal;
+                field.SetValueWithoutNotify(0);
+                PostAttributeValueChange(field, field.value.ToString());
+                return;
+            }
+
+            PostAttributeValueChange(field, evt.newValue.ToString());
+        }
+
+        void OnFixedHeightValueChangedImmediately(InputEvent evt)
+        {
+            var field = evt.target as BaseField<int>;
+            if (field == null)
+                return;
+
+            var newValue = evt.newData;
+            var valueResolved = EditorGUI.StringToLong(newValue, out var v);
+            var resolvedValue = valueResolved ? MathUtils.ClampToInt(v) : field.value;
+
+            var negativeWarningHelpBox = field.parent.Q<UnityEngine.UIElements.HelpBox>();
+            if (newValue.Length != 0 && (resolvedValue < 0 || newValue.Equals("-")))
+            {
+                if (negativeWarningHelpBox == null)
+                {
+                    negativeWarningHelpBox = new UnityEngine.UIElements.HelpBox(
+                        BuilderConstants.HeightIntFieldValueCannotBeNegativeMessage, HelpBoxMessageType.Warning);
+                    field.parent.Add(negativeWarningHelpBox);
+                    negativeWarningHelpBox.style.unityFontStyleAndWeight = FontStyle.Normal;
+                }
+                else
+                {
+                    negativeWarningHelpBox.style.display = DisplayStyle.Flex;
+                    negativeWarningHelpBox.style.unityFontStyleAndWeight = FontStyle.Normal;
+                }
+                return;
+            }
+
+            if (negativeWarningHelpBox != null)
+                negativeWarningHelpBox.style.display = DisplayStyle.None;
         }
 
         void PostAttributeValueChange(BindableElement field, string value)

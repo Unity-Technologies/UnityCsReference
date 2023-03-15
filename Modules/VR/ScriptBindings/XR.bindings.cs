@@ -172,7 +172,7 @@ namespace UnityEngine.XR
 
 
         [NativeName("DeviceRefreshRate")]
-        [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
+        [StaticAccessor("GetIVRDeviceSwapChain()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
         extern public static float refreshRate { get; }
 
         [StaticAccessor("GetIVRDeviceScripting()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
