@@ -81,6 +81,17 @@ namespace Unity.UI.Builder
 
             field.label = fieldLabel;
 
+            if (attribute.name.Equals("multiline") && attributeOwner is TextField)
+            {
+                field.RegisterValueChangedCallback(evt =>
+                {
+                    OnMultilineToggleValueChange(evt, attributeUxmlOwner);
+                    NotifyValueChanged(evt, field, attributeOwner, attributeUxmlOwner, attribute, ValueToUxml.Convert(evt.newValue), onValueChange);
+                });
+
+                return field;
+            }
+
             field.RegisterValueChangedCallback((evt) =>
             {
                 NotifyValueChanged(evt, field, attributeOwner, attributeUxmlOwner, attribute, ValueToUxml.Convert(evt.newValue), onValueChange);
@@ -117,6 +128,28 @@ namespace Unity.UI.Builder
             , Action<VisualElement, UxmlAttributeDescription, object, string> onValueChange)
         {
             onValueChange?.Invoke(field, attribute, evt.newValue, uxmlValue);
+        }
+
+        void OnMultilineToggleValueChange(ChangeEvent<T> evt, UxmlAsset attributeUxmlOwner)
+        {
+            if (evt.target is not Toggle target)
+                return;
+            if (evt is not ChangeEvent<bool> boolEvt)
+                return;
+
+            var valueFieldInInspector = target?.GetFirstAncestorOfType<BuilderInspector>().Query<TextField>().Where(x => x.bindingPath is "value").First();
+            if (valueFieldInInspector == null)
+                return;
+
+            valueFieldInInspector.multiline = boolEvt.newValue;
+            valueFieldInInspector.EnableInClassList(BuilderConstants.InspectorMultiLineTextFieldClassName, boolEvt.newValue);
+            if (!boolEvt.newValue)
+                return;
+
+            // when multiline set, inspector field does not have \n, but its value attribute does
+            // set inspector field value to the value attribute
+            var valueAttributeString = attributeUxmlOwner.GetAttributeValue("value");
+            valueFieldInInspector.SetValueWithoutNotify(valueAttributeString);
         }
     }
 

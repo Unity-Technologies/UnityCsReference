@@ -67,7 +67,7 @@ namespace UnityEditor
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
-                        if (!m_RectSelecting && (mousePos - m_SelectStartPoint).magnitude > 6f)
+                        if (!m_RectSelecting && (mousePos - m_SelectStartPoint).magnitude > 6f && Tools.s_LockedViewTool == ViewTool.None)
                         {
                             EditorApplication.modifierKeysChanged += SendCommandsOnModifierKeys;
                             m_RectSelecting = true;

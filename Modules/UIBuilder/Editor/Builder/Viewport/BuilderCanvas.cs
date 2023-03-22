@@ -72,6 +72,7 @@ namespace Unity.UI.Builder
         private float m_Height;
         private float m_ZoomScale = 1.0f;
         private bool m_MatchGameView = false;
+        private bool m_IsFirstDragSinceClick = true;
 
         public float x
         {
@@ -292,28 +293,38 @@ namespace Unity.UI.Builder
             height = BuilderConstants.CanvasInitialHeight;
         }
 
+        // GameView Disabled Warning should only be shown if the resize bar is used, not if it is only clicked on
+        private void DisplayGameViewWarning(bool allowWarning)
+        {
+            // Make sure that the warning is not spammed every time the mouse is slightly moved
+            if (matchGameView && allowWarning && m_IsFirstDragSinceClick)
+            {
+                Builder.ShowWarning(BuilderConstants.DocumentMatchGameViewModeDisabled);
+                matchGameView = false;
+                m_IsFirstDragSinceClick = false;
+            }
+        }
+
         void OnStartDrag(VisualElement handle)
         {
             m_ThisRectOnStartDrag = new Rect(x, y, width * zoomScale, height * zoomScale);
 
             m_DragHoverCoverLayer.style.display = DisplayStyle.Flex;
             m_DragHoverCoverLayer.style.cursor = handle.computedStyle.cursor;
-
-            if (matchGameView)
-            {
-                Builder.ShowWarning(BuilderConstants.DocumentMatchGameViewModeDisabled);
-                matchGameView = false;
-            }
+            m_IsFirstDragSinceClick = true;
         }
 
         void OnEndDrag()
         {
             m_DragHoverCoverLayer.style.display = DisplayStyle.None;
             m_DragHoverCoverLayer.RemoveFromClassList(k_ActiveHandleClassName);
+            m_IsFirstDragSinceClick = false;
         }
 
         void OnDragLeft(Vector2 diff)
         {
+            Undo.RegisterCompleteObjectUndo(m_Document,BuilderConstants.ChangeCanvasDimensionsOrMatchViewUndoMessage);
+            DisplayGameViewWarning(diff != Vector2.zero);
             var newWidth = (m_ThisRectOnStartDrag.width - diff.x) / m_ZoomScale;
             var oldWidth = width;
 
@@ -324,6 +335,8 @@ namespace Unity.UI.Builder
 
         void OnDragBottom(Vector2 diff)
         {
+            Undo.RegisterCompleteObjectUndo(m_Document,BuilderConstants.ChangeCanvasDimensionsOrMatchViewUndoMessage);
+            DisplayGameViewWarning(diff != Vector2.zero);
             var newHeight = m_ThisRectOnStartDrag.height + diff.y;
             newHeight = Mathf.Max(newHeight, BuilderConstants.CanvasMinHeight);
             height = newHeight / m_ZoomScale;
@@ -331,6 +344,8 @@ namespace Unity.UI.Builder
 
         void OnDragRight(Vector2 diff)
         {
+            Undo.RegisterCompleteObjectUndo(m_Document,BuilderConstants.ChangeCanvasDimensionsOrMatchViewUndoMessage);
+            DisplayGameViewWarning(diff != Vector2.zero);
             var newWidth = m_ThisRectOnStartDrag.width + diff.x;
             newWidth = Mathf.Max(newWidth, BuilderConstants.CanvasMinWidth);
             width = newWidth / m_ZoomScale;
@@ -338,6 +353,8 @@ namespace Unity.UI.Builder
 
         void OnDragTop(Vector2 diff)
         {
+            Undo.RegisterCompleteObjectUndo(m_Document,BuilderConstants.ChangeCanvasDimensionsOrMatchViewUndoMessage);
+            DisplayGameViewWarning(diff != Vector2.zero);
             var oldHeight = height;
             var newHeight = (m_ThisRectOnStartDrag.height - diff.y) / m_ZoomScale;
 

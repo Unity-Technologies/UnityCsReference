@@ -397,7 +397,7 @@ namespace UnityEditor.Search
         }
 
         private static object DefaultFetchItems(SearchContext context, List<SearchItem> items, SearchProvider provider) => null;
-        private string DefaultFetchLabel(SearchItem item, SearchContext context) => item.id ?? string.Empty;
+        private string DefaultFetchLabel(SearchItem item, SearchContext context) => item.label ?? item.id ?? string.Empty;
         private static Texture2D DefaultFetchThumbnail(SearchItem item, SearchContext context) => Icons.quicksearch;
 
         /// <summary>

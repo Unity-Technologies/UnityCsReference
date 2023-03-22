@@ -498,8 +498,10 @@ namespace UnityEngine.UIElements
         void OnItemsSourceSizeChanged()
         {
             // When bound, the ListViewBinding class takes care of refreshing when the array size is updated.
-            if (binding is not IInternalListViewBinding)
+            if (GetProperty(internalBindingKey) == null)
+            {
                 RefreshItems();
+            }
         }
 
         ListViewReorderMode m_ReorderMode;

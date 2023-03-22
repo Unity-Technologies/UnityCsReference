@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace UnityEditor.UIElements.Bindings
 {
-    class ListViewSerializedObjectBinding : SerializedObjectBindingBase, IInternalListViewBinding
+    class ListViewSerializedObjectBinding : SerializedObjectBindingBase
     {
         static ObjectPool<ListViewSerializedObjectBinding> s_Pool = new (() => new ListViewSerializedObjectBinding(), 32);
 
@@ -77,6 +77,7 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             listView = lv;
+            listView.SetProperty(BaseVerticalCollectionView.internalBindingKey, this);
 
             if (listView.makeItem == null)
             {
@@ -97,12 +98,13 @@ namespace UnityEditor.UIElements.Bindings
             listView.scrollView.contentContainer.RegisterCallback(m_SerializedObjectBindEventCallback);
             listView.scrollView.contentContainer.RegisterCallback(m_SerializedPropertyBindEventCallback);
 
-            var reorderable = listView.reorderable;
+            var isReorderable = PropertyHandler.IsArrayReorderable(m_DataList.ArrayProperty);
             listView.SetViewController(new EditorListViewController());
             listView.SetDragAndDropController(new SerializedObjectListReorderableDragAndDropController(listView)
             {
-                enableReordering = reorderable,
+                enableReordering = isReorderable,
             });
+            listView.reorderMode = isReorderable ? ListViewReorderMode.Animated : ListViewReorderMode.Simple;
             listView.itemsSource = m_DataList;
 
             var foldoutInput = listView.headerFoldout?.toggle?.visualInput;
@@ -121,12 +123,24 @@ namespace UnityEditor.UIElements.Bindings
                 return;
             }
 
+            listView.SetProperty(BaseVerticalCollectionView.internalBindingKey, null);
             listView.itemsSource = null;
             listView.Rebuild();
 
-            listView.SetBindItemWithoutNotify(null);
-            listView.SetMakeItemWithoutNotify(null);
-            listView.unbindItem = null;
+            if (listView.bindItem == m_DefaultBindItem)
+            {
+                listView.SetBindItemWithoutNotify(null);
+            }
+
+            if (listView.makeItem == m_DefaultMakeItem)
+            {
+                listView.SetMakeItemWithoutNotify(null);
+            }
+
+            if (listView.unbindItem == m_DefaultUnbindItem)
+            {
+                listView.unbindItem = null;
+            }
 
             listView.scrollView.contentContainer.UnregisterCallback(m_SerializedObjectBindEventCallback);
             listView.scrollView.contentContainer.UnregisterCallback(m_SerializedPropertyBindEventCallback);
@@ -204,7 +218,7 @@ namespace UnityEditor.UIElements.Bindings
 
         void SerializedObjectBindEventCallback(SerializedObjectBindEvent evt)
         {
-            if (m_IsBinding)
+            if (m_IsBinding || listView.bindItem != m_DefaultBindItem)
                 return;
 
             evt.PreventDefault();
@@ -213,7 +227,7 @@ namespace UnityEditor.UIElements.Bindings
 
         void SerializedPropertyBindEventCallback(SerializedPropertyBindEvent evt)
         {
-            if (m_IsBinding) 
+            if (m_IsBinding || listView.bindItem != m_DefaultBindItem) 
                 return;
 
             evt.PreventDefault();
@@ -446,7 +460,7 @@ namespace UnityEditor.UIElements.Bindings
                    if (IsOverMaxMultiEditLimit)
                         return 0;
 
-                    return ArrayProperty.minArraySize;
+                   return ArrayProperty.minArraySize;
                 }
                 return properties != null ? properties.Count : 0;
             }
@@ -530,12 +544,13 @@ namespace UnityEditor.UIElements.Bindings
         {
             if (index >= 0 && index < Count)
             {
+                var newCount = Count - 1;
                 ArrayProperty.DeleteArrayElementAtIndex(index);
 
-                if (index < Count - 1)
+                if (index < newCount - 1)
                 {
                     var currentProperty = ArrayProperty.GetArrayElementAtIndex(index);
-                    for (var i = index + 1; i < Count; i++)
+                    for (var i = index + 1; i < newCount; i++)
                     {
                         var nextProperty = ArrayProperty.GetArrayElementAtIndex(i);
                         if (nextProperty != null)

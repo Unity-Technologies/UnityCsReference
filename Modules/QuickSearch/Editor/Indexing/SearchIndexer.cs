@@ -381,6 +381,8 @@ namespace UnityEditor.Search
         /// </summary>
         public int minWordIndexationLength { get; set; } = 2;
 
+        public int minQueryLength { get; set; } = 1;
+
         internal IEnumerable<SearchIndexEntry> indexes => m_Indexes;
 
         private long m_Timestamp;
@@ -415,6 +417,7 @@ namespace UnityEditor.Search
         public SearchIndexer()
             : this(String.Empty)
         {
+            minWordIndexationLength = SearchSettings.minIndexVariations;
         }
 
         /// <summary>
@@ -437,6 +440,7 @@ namespace UnityEditor.Search
             m_FixedRanges = new Dictionary<RangeSet, IndexRange>();
             m_SourceDocuments = new ConcurrentDictionary<string, Hash128>();
             m_MetaInfo = new ConcurrentDictionary<string, string>();
+            minWordIndexationLength = SearchSettings.minIndexVariations;
         }
 
         private ParsedQuery<SearchResult, object> BuildQuery(string searchQuery)
@@ -446,7 +450,7 @@ namespace UnityEditor.Search
                 if (m_QueryEngine == null)
                 {
                     m_QueryEngine = new QueryEngine<SearchResult>(k_QueryEngineOptions);
-                    m_QueryEngine.SetSearchDataCallback(e => null, s => s.Length < minWordIndexationLength ? null : s, StringComparison.Ordinal);
+                    m_QueryEngine.SetSearchDataCallback(e => null, s => s.Length < minQueryLength ? null : s, StringComparison.Ordinal);
                     m_QueryPool = new ConcurrentDictionary<string, ParsedQuery<SearchResult, object>>();
                 }
 

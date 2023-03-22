@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Profiling;
 using UnityEditor.ShortcutManagement;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
@@ -986,6 +987,11 @@ namespace UnityEditor.Search
             var searchQueryPath = string.IsNullOrWhiteSpace(path) ? EditorUtility.SaveFilePanel("Save search query...", initialFolder, searchQueryFileName, "asset") : path;
             if (string.IsNullOrEmpty(searchQueryPath))
                 return;
+            if (!Paths.IsValidAssetPath(searchQueryPath, ".asset", out var errorMessage))
+            {
+                Debug.LogWarning($"Search query path: {searchQueryPath} is invalid: {errorMessage}.");
+                return;
+            }
 
             searchQueryPath = Utils.CleanPath(searchQueryPath);
             if (!System.IO.Directory.Exists(Path.GetDirectoryName(searchQueryPath)) || !Utils.IsPathUnderProject(searchQueryPath))
@@ -996,7 +1002,6 @@ namespace UnityEditor.Search
 
             SaveSearchQueryFromContext(searchQueryPath, true);
         }
-
         private void SaveSearchQueryFromContext(string searchQueryPath, bool newQuery)
         {
             try
@@ -1403,11 +1408,16 @@ namespace UnityEditor.Search
             return action;
         }
 
+        internal static string GetHelpURL()
+        {
+            return Help.FindHelpNamed("search-overview");
+        }
+
         private static void OpenSearchHelp(EditorWindow window, WindowAction action)
         {
             var windowId = (window as SearchWindow)?.windowId ?? null;
             SearchAnalytics.SendEvent(windowId, SearchAnalytics.GenericEventType.QuickSearchOpenDocLink);
-            EditorUtility.OpenWithDefaultApp("https://docs.unity3d.com/Manual/search-overview.html");
+            EditorUtility.OpenWithDefaultApp(GetHelpURL());
         }
     }
 }

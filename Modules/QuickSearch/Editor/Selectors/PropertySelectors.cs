@@ -13,7 +13,7 @@ namespace UnityEditor.Search
 {
     static class PropertySelectors
     {
-        [SearchSelector(@"#(?<propertyPath>[\w\d\.]+)", 9999, printable: false)]
+        [SearchSelector(@"#(?<propertyPath>[\w\d\.\[\]]+)", 9999, printable: false)]
         [SearchSelector("SerializedProperty/(?<propertyPath>.+)", 9999, printable: false)]
         public static object GetSerializedPropertyValue(SearchSelectorArgs args)
         {

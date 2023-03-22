@@ -15,7 +15,6 @@ namespace UnityEngine
     }
 
     [RequiredByNativeCode]
-    [Icon("cs Script Icon")] // For StateMachineBehaviour we want to show the MonoBehaviour icon instead of the ScriptableObject.
     public abstract class StateMachineBehaviour : ScriptableObject
     {
         // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state

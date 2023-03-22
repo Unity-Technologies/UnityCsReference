@@ -267,6 +267,11 @@ namespace Unity.UI.Builder
 
             ApplyBackgroundOptions();
             RefreshMatchGameViewToggle();
+            bool canvasDimensionsDifferentFromSettings = (int) m_Canvas.height != settings.CanvasHeight || (int) m_Canvas.width != settings.CanvasWidth;
+            if (canvasDimensionsDifferentFromSettings)
+            {
+                m_Canvas.SetSizeFromDocumentSettings();
+            }
         }
 
         void RefreshMatchGameViewToggle()
@@ -436,6 +441,7 @@ namespace Unity.UI.Builder
         void OnWidthChange(ChangeEvent<int> evt)
         {
             var newValue = evt.newValue;
+            Undo.RegisterCompleteObjectUndo(m_Document, BuilderConstants.ChangeCanvasDimensionsOrMatchViewUndoMessage);
             if (newValue < (int)BuilderConstants.CanvasMinWidth)
             {
                 newValue = (int)BuilderConstants.CanvasMinWidth;
@@ -456,6 +462,7 @@ namespace Unity.UI.Builder
         void OnHeightChange(ChangeEvent<int> evt)
         {
             var newValue = evt.newValue;
+            Undo.RegisterCompleteObjectUndo(m_Document,BuilderConstants.ChangeCanvasDimensionsOrMatchViewUndoMessage);
             if (newValue < (int)BuilderConstants.CanvasMinHeight)
             {
                 newValue = (int)BuilderConstants.CanvasMinHeight;
@@ -476,6 +483,7 @@ namespace Unity.UI.Builder
 
         void OnMatchGameViewModeChanged(ChangeEvent<bool> evt)
         {
+            Undo.RegisterCompleteObjectUndo(m_Document,BuilderConstants.ChangeCanvasDimensionsOrMatchViewUndoMessage);
             settings.MatchGameView = evt.newValue;
             RefreshMatchGameViewToggle();
             m_Canvas.matchGameView = settings.MatchGameView;

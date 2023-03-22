@@ -498,6 +498,9 @@ namespace UnityEditor.Search
 
         public void ShowItemContextualMenu(SearchItem item, Rect contextualActionPosition)
         {
+            if (IsPicker())
+                return;
+
             SearchAnalytics.SendEvent(viewState.sessionId, SearchAnalytics.GenericEventType.QuickSearchShowActionMenu, item.provider.id);
             var menu = new GenericMenu();
             var shortcutIndex = 0;

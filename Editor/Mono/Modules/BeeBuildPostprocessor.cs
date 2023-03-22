@@ -466,8 +466,7 @@ namespace UnityEditor.Modules
             var searchPaths = $"{beePlatformFolder}{Path.PathSeparator}";
             if (IL2CPPUtils.UsingDevelopmentBuild())
             {
-                NPath il2cppPath = IL2CPPUtils.GetExePath("il2cpp").ToNPath().Parent;
-                searchPaths = $"{il2cppPath}{Path.PathSeparator}";
+                searchPaths = $"{IL2CPPUtils.ConstructBeeLibrarySearchPath()}{Path.PathSeparator}";
             }
 
             return new SystemProcessRunnableProgram(NetCoreRunProgram.NetCoreRunPath,
