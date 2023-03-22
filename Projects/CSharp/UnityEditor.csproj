@@ -6506,6 +6506,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\MyRegistriesPage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\MyRegistriesPage.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\ScopedRegistryPage.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\ScopedRegistryPage.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\UnityRegistryPage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\UnityRegistryPage.cs</Link>
     </Compile>
@@ -7084,9 +7087,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManager.bindings.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageManager.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManagerCommands.cs">
-      <Link>Modules\PackageManager\Editor\Managed\PackageManagerCommands.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageProgress.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageProgress.cs</Link>
@@ -8608,6 +8608,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\KeywordDescriptor.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\KeywordDescriptor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\Namespace.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\Namespace.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\PackageRequirement.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\PackageRequirement.bindings.cs</Link>

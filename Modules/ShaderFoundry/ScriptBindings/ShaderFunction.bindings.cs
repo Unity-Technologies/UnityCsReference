@@ -20,6 +20,7 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ParentBlockHandle;
         internal FoundryHandle m_IncludeListHandle;
         internal FoundryHandle m_AttributeListHandle;
+        internal FoundryHandle m_ContainingNamespaceHandle;
 
         internal extern static ShaderFunctionInternal Invalid();
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
@@ -80,6 +81,7 @@ namespace UnityEditor.ShaderFoundry
         }
 
         public IEnumerable<ShaderAttribute> Attributes => function.m_AttributeListHandle.AsListEnumerable(container, (container, handle) => new ShaderAttribute(container, handle));
+        public Namespace ContainingNamespace => new Namespace(container, function.m_ContainingNamespaceHandle);
 
         internal ShaderFunction(ShaderContainer container, FoundryHandle handle)
         {
@@ -110,6 +112,7 @@ namespace UnityEditor.ShaderFoundry
             List<FunctionParameter> parameters;
             List<IncludeDescriptor> includes;
             List<ShaderAttribute> attributes;
+            public Namespace containingNamespace;
             bool finalized = false;
 
             public ShaderContainer Container => container;
@@ -145,6 +148,7 @@ namespace UnityEditor.ShaderFoundry
                 this.returnType = returnType;
                 functionHandle = container.Create<ShaderFunctionInternal>();
                 this.parentBlockBuilder = parentBlockBuilder;
+                this.containingNamespace = parentBlockBuilder?.containingNamespace ?? Namespace.Invalid;
             }
 
             public void AddParameter(FunctionParameter parameter)
@@ -197,6 +201,7 @@ namespace UnityEditor.ShaderFoundry
                 shaderFunctionInternal.m_ParentBlockHandle = parentBlockHandle;
                 shaderFunctionInternal.m_IncludeListHandle = FixedHandleListInternal.Build(container, includes, (i) => (i.handle));
                 shaderFunctionInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes, (a) => (a.handle));
+                shaderFunctionInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
                 container.Set(functionHandle, shaderFunctionInternal);
                 var builtFunction = new ShaderFunction(container, functionHandle);
 

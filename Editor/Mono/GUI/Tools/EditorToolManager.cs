@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;
 
@@ -497,14 +498,26 @@ namespace UnityEditor.EditorTools
             return false;
         }
 
+        static bool IsGizmoCulledBySceneCullingMasksOrFocusedScene(UnityObject uobject)
+        {
+            var cmp = uobject as UnityEngine.Component;
+            if (cmp == null)
+                return false;
+
+            return StageUtility.IsGizmoCulledBySceneCullingMasksOrFocusedScene(cmp.gameObject, Camera.current);
+        }
+
         internal static void OnToolGUI(EditorWindow window)
         {
-            activeToolContext.OnToolGUI(window);
+            if (!IsGizmoCulledBySceneCullingMasksOrFocusedScene(activeToolContext.target))
+                activeToolContext.OnToolGUI(window);
 
             if (Tools.s_Hidden || instance.m_ActiveTool == null)
                 return;
 
             var current = instance.m_ActiveTool;
+            if (IsGizmoCulledBySceneCullingMasksOrFocusedScene(current.target))
+                return;
 
             using (new EditorGUI.DisabledScope(!current.IsAvailable()))
             {
@@ -699,6 +712,9 @@ namespace UnityEditor.EditorTools
         {
             foreach (var context in instance.m_ComponentContexts)
             {
+                if (IsGizmoCulledBySceneCullingMasksOrFocusedScene(context.target))
+                    continue;
+
                 // ReSharper disable once SuspiciousTypeConversion.Global
                 if (context.editor is IDrawSelectedHandles handle)
                     handle.OnDrawHandles();
@@ -706,6 +722,9 @@ namespace UnityEditor.EditorTools
 
             foreach (var tool in instance.m_ComponentTools)
             {
+                if (IsGizmoCulledBySceneCullingMasksOrFocusedScene(tool.target))
+                    continue;
+
                 // ReSharper disable once SuspiciousTypeConversion.Global
                 if (tool.editor is IDrawSelectedHandles handle)
                     handle.OnDrawHandles();

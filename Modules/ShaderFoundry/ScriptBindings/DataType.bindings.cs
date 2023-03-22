@@ -50,7 +50,8 @@ namespace UnityEditor.ShaderFoundry
         BlockShader,
         InterfaceRegistrationStatement,
         RegisterTemplatesWithInterface,
-        // THIS ENUM MUST BE KEPT IN SYNC WITH THE ENUM IN DataType.h -- ALSO ADD THE TYPE MAPPING TO Initialize() BELOW
+        Namespace,
+        // THIS ENUM MUST BE KEPT IN SYNC WITH THE ENUM IN DataType.h -- ALSO ADD THE TYPE MAPPING TO Initialize()
         // ALSO ADD THE TYPE MAPPING TO DataTypeStatic.Initialize()
     };
 }

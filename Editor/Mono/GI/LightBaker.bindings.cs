@@ -94,6 +94,11 @@ namespace UnityEditor.LightBaking
             public UInt64 positionLength;
             public float pushoff;
             public string outputFolderPath;
+
+            // Environment occlusion
+            public UInt64 integrationRadiusOffset;
+            public UInt32 environmentOcclusionSampleCount;
+            public bool ignoreDirectEnvironment;
         };
         [Flags]
         public enum LightmapRequestOutputType : UInt32
@@ -549,12 +554,20 @@ namespace UnityEditor.LightBaking
             }
             public extern void SetProbePositions(ReadOnlySpan<Vector3> positions);
 
+            public void SetIntegrationRadii(float[] positions)
+            {
+                SetIntegrationRadii(positions.AsSpan());
+            }
+            public extern void SetIntegrationRadii(ReadOnlySpan<float> positions);
+
             public extern Vector3[] GetProbePositions();
+            public extern float[] GetIntegrationRadii();
 
             internal static class BindingsMarshaller
             {
                 public static IntPtr ConvertToNative(BakeInput bakeInput) => bakeInput.m_Ptr;
             }
+            public extern bool CheckIntegrity();
         }
 
         [StructLayout(LayoutKind.Sequential)]

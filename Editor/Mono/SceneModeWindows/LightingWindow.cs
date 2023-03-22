@@ -30,7 +30,8 @@ namespace UnityEditor
             public static readonly GUIStyle labelStyle = EditorStyles.wordWrappedMiniLabel;
             public static readonly GUIStyle buttonStyle = "LargeButton";
             public static readonly GUIContent continuousBakeLabel = EditorGUIUtility.TrTextContent("Auto Generate", "Generate lighting data in the Scene when there are changes that affect Scene lighting, such as modifications to lights, materials, or geometry. This option is only available when there is a Lighting Settings Asset assigned in the Lighting Window.");
-            public static readonly GUIContent buildLabel = EditorGUIUtility.TrTextContent("Generate Lighting", "Generates the lightmap data for the current master scene.  This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
+            public static readonly GUIContent bakeLabel = EditorGUIUtility.TrTextContent("Generate Lighting", "Generates the lightmap data for the current active scene. This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
+            public static readonly GUIContent cancelLabel = EditorGUIUtility.TrTextContent("Cancel");
 
             public static readonly GUIContent progressiveGPUBakingDevice = EditorGUIUtility.TrTextContent("GPU Baking Device", "Will list all available GPU devices.");
             public static readonly GUIContent progressiveGPUUnknownDeviceInfo = EditorGUIUtility.TrTextContent("No devices found. Please start an initial bake to make this information available.");
@@ -578,7 +579,7 @@ namespace UnityEditor
                         var customTab = m_Tabs[selectedMode] as LightingWindowTab;
                         if (customTab != null)
                             customTab.OnBakeButtonGUI();
-                        else if (EditorGUI.ButtonWithDropdownList(Styles.buildLabel, Styles.BakeModeStrings, BakeDropDownCallback))
+                        else if (EditorGUI.LargeSplitButtonWithDropdownList(Styles.bakeLabel, Styles.BakeModeStrings, BakeDropDownCallback))
                         {
                             DoBake();
 
@@ -590,8 +591,7 @@ namespace UnityEditor
                     // Cancel button if we are currently baking
                     else
                     {
-                        var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
-                        if (GUILayout.Button("Cancel"))
+                        if (GUILayout.Button(Styles.cancelLabel, Styles.buttonStyle))
                         {
                             Lightmapping.Cancel();
                         }
@@ -827,7 +827,7 @@ namespace UnityEditor
         private static readonly double s_MraysPerSecRepaintThreshold = 0.01;
         internal static bool isShown => s_Window && !s_Window.docked;
 
-        [MenuItem("Window/Rendering/Lighting", false, 1)]
+        [MenuItem("Window/Rendering/Lighting %9", false, 1)]
         internal static void CreateLightingWindow()
         {
             LightingWindow window = EditorWindow.GetWindow<LightingWindow>();

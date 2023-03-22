@@ -572,7 +572,7 @@ namespace UnityEngine.TextCore.Text
             // TODO: Find a way for GetPaddingForMaterial to not allocate
             // TODO: Hard coded padding value is temporary change to avoid clipping of text geometry with small point size.
             m_Padding = 6.0f; // generationSettings.extraPadding ? 5.5f : 1.5f;
-
+            m_CurrentFontAsset = generationSettings.fontAsset;
             m_IsMaskingEnabled = false;
 
             // Set the font style that is assigned by the builder
@@ -633,7 +633,6 @@ namespace UnityEngine.TextCore.Text
                 return;
             }
 
-            m_CurrentFontAsset = generationSettings.fontAsset;
             m_CurrentMaterial = generationSettings.material;
             m_CurrentMaterialIndex = 0;
             m_MaterialReferenceStack.SetDefault(new MaterialReference(m_CurrentMaterialIndex, m_CurrentFontAsset, null, m_CurrentMaterial, m_Padding));

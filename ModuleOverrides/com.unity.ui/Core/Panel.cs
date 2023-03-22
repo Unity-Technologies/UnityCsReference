@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
@@ -24,41 +25,84 @@ namespace UnityEngine.UIElements
         Editor = 1
     }
 
+    /// <summary>
+    /// Value used to signify some changes in the VisualElement
+    /// </summary>
     // NOTE: if a new VersionChangeType is added, ComputedStyle.CompareChanges may need to be reworked!
     [Flags]
-    internal enum VersionChangeType
+    public enum VersionChangeType
     {
-        // Some data was bound
+        /// <summary>
+        /// Some data was bound
+        /// </summary>
         Bindings = 1 << 0,
-        // persistent data ready
+        /// <summary>
+        /// persistent data ready
+        /// </summary>
         ViewData = 1 << 1,
-        // changes to hierarchy
+        /// <summary>
+        /// changes to hierarchy
+        /// </summary>
         Hierarchy = 1 << 2,
-        // changes to properties that may have an impact on layout
+        /// <summary>
+        /// changes to properties that may have an impact on layout
+        /// </summary>
         Layout = 1 << 3,
-        // changes to StyleSheet, USS class
+        /// <summary>
+        /// changes to StyleSheet, USS class
+        /// </summary>
         StyleSheet = 1 << 4,
-        // changes to styles, colors and other render properties
+        /// <summary>
+        /// changes to styles
+        /// </summary>
         Styles = 1 << 5,
+        /// <summary>
+        /// changes to the overflow
+        /// </summary>
         Overflow = 1 << 6,
+        /// <summary>
+        /// changes to the border radis
+        /// </summary>
         BorderRadius = 1 << 7,
+        /// <summary>
+        /// changes to the border width
+        /// </summary>
         BorderWidth = 1 << 8,
-        // changes that may impact the world transform (e.g. laid out position, local transform)
+        /// <summary>
+        /// changes that may impact the world transform (e.g. laid out position, local transform)
+        /// </summary>
         Transform = 1 << 9,
-        // changes to the size of the element after layout has been performed, without taking the local transform into account
+        /// <summary>
+        /// changes to the size of the element after layout has been performed, without taking the local transform into account
+        /// </summary>
         Size = 1 << 10,
-        // The visuals of the element have changed
+        /// <summary>
+        /// The visuals of the element have changed
+        /// </summary>
         Repaint = 1 << 11,
-        // The opacity of the element have changed
+        /// <summary>
+        /// The opacity of the element have changed
+        /// </summary>
         Opacity = 1 << 12,
-        // Some color of the element has changed (background-color, border-color, etc.)
+        /// <summary>
+        /// Some color of the element has changed (background-color, border-color, etc.)
+        /// </summary>
         Color = 1 << 13,
+        /// <summary>
+        /// Some render hints were changed
+        /// </summary>
         RenderHints = 1 << 14,
-        // The 'transition-property' style of the element has changed (impacts cancelling of ongoing style transitions)
+        /// <summary>
+        /// The 'transition-property' style of the element has changed (impacts cancelling of ongoing style transitions)
+        /// </summary>
         TransitionProperty = 1 << 15,
-        // The combined registered callbacks' EventCategory values has changed
+        /// <summary>
+        /// The combined registered callbacks' EventCategory values has changed
+        /// </summary>
         EventCallbackCategories = 1 << 16,
-        // The DisableRendering flag has changed
+        /// <summary>
+        /// The DisableRendering flag has changed
+        /// </summary>
         DisableRendering = 1 << 17,
     }
 
@@ -235,6 +279,28 @@ namespace UnityEngine.UIElements
         /// The Contextual menu manager for the panel.
         /// </summary>
         ContextualMenuManager contextualMenuManager { get; }
+    }
+
+    /// <summary>
+    /// Implement this to receive callbacks for visual element changes.
+    /// This interface is exclusively available in debug builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="PanelSettings.panelChangeReceiver"/>
+    /// </remarks>
+    public interface IDebugPanelChangeReceiver
+    {
+        /// <summary>
+        /// Receives notifications for every change that occurs on the panel's visual elements.
+        /// This method is exclusively available in debug builds and the Editor, as it serves as a debug feature that complements the profiling of an application. 
+        /// </summary>
+        /// <remarks>
+        /// The number of times the callback is called, the value returned, and the order in which they are returned are subject to change between each minor release of Unity, as this is considered internal. 
+        /// <see cref="PanelSettings.panelChangeReceiver"/>
+        /// </remarks>
+        /// <param name="element"> The element that changed.</param>
+        /// <param name="changeType">A string that contains the comma-separated value of what has changed.</param>
+        public void OnVisualElementChange(VisualElement element, VersionChangeType changeType);
     }
 
     abstract class BaseVisualElementPanel : IPanel, IGroupBox
@@ -613,6 +679,7 @@ namespace UnityEngine.UIElements
         ProfilerMarker m_MarkerLayout;
         ProfilerMarker m_MarkerBindings;
         ProfilerMarker m_MarkerAnimations;
+        ProfilerMarker m_MarkerPanelChangeReceiver;
         static ProfilerMarker s_MarkerPickAll = new ProfilerMarker("Panel.PickAll");
 
         public sealed override VisualElement visualTree
@@ -726,6 +793,28 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private IDebugPanelChangeReceiver m_PanelChangeReceiver;
+
+        /// <summary>
+        /// Sets a custom <see cref="IPanelChangeReceiver"> in the panelChangeReceiver setter to receive every change event.
+        /// This method is exclusively available in debug builds and the Editor, as it serves as a debug feature that complements the profiling of an application. 
+        /// </summary>
+        /// <remarks>
+        /// Note that the values returned might change over time when the underlying architecture is modified.
+        /// 
+        /// As this is called at every change marked on any visual element of the panel, the overhead is not negligeable.
+        /// </remarks>
+
+        public IDebugPanelChangeReceiver panelChangeReceiver {
+            get => m_PanelChangeReceiver;
+            set
+            {
+                m_PanelChangeReceiver = value;
+                if (value != null)
+                    Debug.LogWarning($"IPanelChangeReceiver suscribed to panel '{name}' and this may affect perfromance. This callback should be used only in debugging scenario and wont work in release builds");
+            }
+        }
+
         void CreateMarkers()
         {
             if (!string.IsNullOrEmpty(m_PanelName))
@@ -735,6 +824,7 @@ namespace UnityEngine.UIElements
                 m_MarkerLayout = new ProfilerMarker($"Panel.Layout.{m_PanelName}");
                 m_MarkerBindings = new ProfilerMarker($"Panel.Bindings.{m_PanelName}");
                 m_MarkerAnimations = new ProfilerMarker($"Panel.Animations.{m_PanelName}");
+                m_MarkerPanelChangeReceiver = new ProfilerMarker($"Panel.PanelChangeReceiver.{m_PanelName}");
             }
             else
             {
@@ -743,6 +833,7 @@ namespace UnityEngine.UIElements
                 m_MarkerLayout = new ProfilerMarker("Panel.Layout");
                 m_MarkerBindings = new ProfilerMarker("Panel.Bindings");
                 m_MarkerAnimations = new ProfilerMarker("Panel.Animations");
+                m_MarkerPanelChangeReceiver = new ProfilerMarker("Panel.PanelChangeReceiver");
             }
         }
 
@@ -1072,8 +1163,15 @@ namespace UnityEngine.UIElements
             ++m_Version;
             m_VisualTreeUpdater.OnVersionChanged(ve, versionChangeType);
 
+            using (m_MarkerPanelChangeReceiver.Auto())
+            {
+                if (panelChangeReceiver != null)
+                    panelChangeReceiver.OnVisualElementChange(ve, versionChangeType);
+            }
+
             if ((versionChangeType & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
                 ++m_HierarchyVersion;
+
             panelDebug?.OnVersionChanged(ve, versionChangeType);
         }
 

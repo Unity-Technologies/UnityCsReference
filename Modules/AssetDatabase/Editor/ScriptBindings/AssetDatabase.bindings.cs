@@ -377,12 +377,6 @@ namespace UnityEditor
         extern public static Object[] LoadAllAssetsAtPath(string assetPath);
         extern public static string[] GetAllAssetPaths();
 
-        [System.Obsolete("Please use AssetDatabase.Refresh instead", true)]
-        public static void RefreshDelayed(ImportAssetOptions options) {}
-
-        [System.Obsolete("Please use AssetDatabase.Refresh instead", true)]
-        public static void RefreshDelayed() {}
-
         [uei.ExcludeFromDocs] public static void Refresh() { Refresh(ImportAssetOptions.Default); }
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException)]
@@ -527,7 +521,7 @@ namespace UnityEditor
 
         extern public static string[] GetAllAssetBundleNames();
 
-        [System.Obsolete("Method GetAssetBundleNames has been deprecated. Use GetAllAssetBundleNames instead.")] public string[] GetAssetBundleNames() { return GetAllAssetBundleNames(); }
+        [System.Obsolete("Method GetAssetBundleNames has been deprecated. Use GetAllAssetBundleNames instead.",true)] public string[] GetAssetBundleNames() { return GetAllAssetBundleNames(); } // TODO DELETE IN 2024
 
         extern internal static string[] GetAllAssetBundleNamesWithoutVariant();
         extern internal static string[] GetAllAssetBundleVariants();
@@ -777,20 +771,6 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::GetGUIDAndLocalIdentifierInFile")]
         extern private static bool GetGUIDAndLocalIdentifierInFile(int instanceID, out GUID outGuid, out long outLocalId);
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use the overload of this function that uses a long data type for the localId parameter, because this version can return a localID that has overflowed. This can happen when called on objects that are part of a Prefab.",  true)]
-        public static bool TryGetGUIDAndLocalFileIdentifier(Object obj, out string guid, out int localId)
-        {
-            return TryGetGUIDAndLocalFileIdentifier(obj.GetInstanceID(), out guid, out localId);
-        }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use the overload of this function that uses a long data type for the localId parameter, because this version can return a localID that has overflowed. This can happen when called on objects that are part of a Prefab.",  true)]
-        public static bool TryGetGUIDAndLocalFileIdentifier(int instanceID, out string guid, out int localId)
-        {
-            throw new NotSupportedException("Use the overload of this function that uses a long data type for the localId parameter, because this version can return a localID that has overflowed. This can happen when called on objects that are part of a Prefab.");
-        }
-
         public static bool TryGetGUIDAndLocalFileIdentifier(Object obj, out string guid, out long localId)
         {
             return TryGetGUIDAndLocalFileIdentifier(obj.GetInstanceID(), out guid, out localId);
@@ -929,7 +909,7 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::GetImporterOverride")]
         extern public static System.Type GetImporterOverride(string path);
 
-        [Obsolete("GetAvailableImporterTypes() has been deprecated. Use GetAvailableImporters() instead (UnityUpgradable) -> GetAvailableImporters(*)")]
+        [Obsolete("GetAvailableImporterTypes() has been deprecated. Use GetAvailableImporters() instead (UnityUpgradable) -> GetAvailableImporters(*)", true)]
         public static Type[] GetAvailableImporterTypes(string path)
         {
             return GetAvailableImporters(path);

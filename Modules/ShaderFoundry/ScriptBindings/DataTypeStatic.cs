@@ -86,6 +86,7 @@ namespace UnityEditor.ShaderFoundry
             m_Instance.Register<BlockShaderInternal, BlockShader>(DataType.BlockShader);
             m_Instance.Register<RegisterTemplatesWithInterfaceInternal, RegisterTemplatesWithInterface>(DataType.RegisterTemplatesWithInterface);
             m_Instance.Register<InterfaceRegistrationStatementInternal, InterfaceRegistrationStatement>(DataType.InterfaceRegistrationStatement);
+            m_Instance.Register<NamespaceInternal, Namespace>(DataType.Namespace);
         }
 
         void Register<InternalType, PublicType>(DataType dataType)

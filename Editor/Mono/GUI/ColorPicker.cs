@@ -479,7 +479,7 @@ namespace UnityEditor
             public static readonly GUIStyle selectedExposureSwatchStroke = "ColorPickerCurrentExposureSwatchBorder";
 
             public static readonly GUIContent eyeDropper = EditorGUIUtility.TrIconContent("EyeDropper.Large", "Pick a color from the screen.");
-            public static readonly GUIContent exposureValue = EditorGUIUtility.TrTextContent("Intensity", "Number of stops to over- or under-expose the color.");
+            public static readonly GUIContent exposureValue = EditorGUIUtility.TrTextContent("Intensity", "Number of stops to over- or under-expose the color. The intensity calculates each time based on the predefined max color component of 191 (0.749) when Color Picker opens.");
             public static readonly GUIContent hexLabel = EditorGUIUtility.TrTextContent("Hexadecimal");
             public static readonly GUIContent presetsToggle = EditorGUIUtility.TrTextContent("Swatches");
 
@@ -493,11 +493,23 @@ namespace UnityEditor
             public static readonly Texture2D alphaSliderCheckerBackground =
                 EditorGUIUtility.LoadRequired("Previews/Textures/textureChecker.png") as Texture2D;
 
-            public static readonly GUIContent[] sliderModeLabels = new[]
+            public static readonly GUIContent RGB0_255Mode = EditorGUIUtility.TrTextContent("RGB 0-255");
+            public static readonly GUIContent RGB0_1Mode = EditorGUIUtility.TrTextContent("RGB 0-1.0");
+            public static readonly GUIContent RGB0_InfMode = EditorGUIUtility.TrTextContent("RGB 0-Inf");
+            public static readonly GUIContent RGBHSVMode = EditorGUIUtility.TrTextContent("HSV");
+
+            public static readonly GUIContent[] sliderLDRModeLabels = new[]
             {
-                EditorGUIUtility.TrTextContent("RGB 0-255"),
-                EditorGUIUtility.TrTextContent("RGB 0-1.0"),
-                EditorGUIUtility.TrTextContent("HSV")
+                RGB0_255Mode,
+                RGB0_1Mode,
+                RGBHSVMode
+            };
+
+            public static readonly GUIContent[] sliderHDRModeLabels = new[]
+            {
+                RGB0_255Mode,
+                RGB0_InfMode,
+                RGBHSVMode
             };
 
             public static readonly int[] sliderModeValues = new[] { 0, 1, 2 };
@@ -699,9 +711,10 @@ namespace UnityEditor
             float oldFieldWidth = EditorGUIUtility.fieldWidth;
             EditorGUIUtility.labelWidth = availableWidth - Styles.sliderModeFieldWidth;
             EditorGUIUtility.fieldWidth = Styles.sliderModeFieldWidth;
-            m_SliderMode = (SliderMode)EditorGUILayout.IntPopup(
-                GUIContent.Temp(" "), (int)m_SliderMode, Styles.sliderModeLabels, Styles.sliderModeValues
-            );
+            if(m_HDR && m_Color.exposureAdjustedColor.maxColorComponent > 1f)
+                m_SliderMode = (SliderMode)EditorGUILayout.IntPopup(GUIContent.Temp(" "), (int)m_SliderMode, Styles.sliderHDRModeLabels, Styles.sliderModeValues);
+            else
+                m_SliderMode = (SliderMode)EditorGUILayout.IntPopup(GUIContent.Temp(" "), (int)m_SliderMode, Styles.sliderLDRModeLabels, Styles.sliderModeValues);
 
             GUILayout.Space(Styles.extraVerticalSpacing);
 

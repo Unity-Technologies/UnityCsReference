@@ -129,6 +129,7 @@ namespace UnityEditor
         internal const int kInspTitlebarFoldoutIconWidth = 13;
         internal static readonly SVC<float> kWindowToolbarHeight = new SVC<float>("--window-toolbar-height", 21f);
         internal const int kTabButtonHeight = 22;
+        internal const int kLargeButtonHeight = 24;
         private const string kEnabledPropertyName = "m_Enabled";
         private const string k_MultiEditValueString = "<>";
         private const float kDropDownArrowMargin = 2;
@@ -7469,6 +7470,7 @@ namespace UnityEditor
             // Should we inline? All one-line vars as well as Vector2, Vector3, Rect and Bounds properties are inlined.
             if (!HasVisibleChildFields(property))
             {
+                bool canUseExpression = ConstrainProportionsTransformScale.CanUseMathExpressions(property);
                 switch (type)
                 {
                     case SerializedPropertyType.Integer:
@@ -7488,7 +7490,8 @@ namespace UnityEditor
                                     for (var i = 0; i < values.Length; ++i)
                                     {
                                         values[i] = originalValues[i];
-                                        val.expression.Evaluate(ref values[i], i, values.Length);
+                                        if(canUseExpression)
+                                            val.expression.Evaluate(ref values[i], i, values.Length);
                                     }
                                     property.allLongValues = values;
                                 }
@@ -7525,7 +7528,7 @@ namespace UnityEditor
                                     for (var i = 0; i < values.Length; ++i)
                                     {
                                         values[i] = originalValues[i];
-                                        if (val.expression.Evaluate(ref values[i], i, values.Length))
+                                        if (canUseExpression && val.expression.Evaluate(ref values[i], i, values.Length))
                                         {
                                             if (isFloat)
                                                 values[i] = MathUtils.ClampToFloat(values[i]);

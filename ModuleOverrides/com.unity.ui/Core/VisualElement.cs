@@ -2339,9 +2339,10 @@ namespace UnityEngine.UIElements
         }
     }
 
-    internal static class VisualElementDebugExtensions
+    /// <undoc/>
+    public static class VisualElementDebugExtensions
     {
-        public static string GetDisplayName(this VisualElement ve, bool withHashCode = true)
+        internal static string GetDisplayName(this VisualElement ve, bool withHashCode = true)
         {
             if (ve == null) return String.Empty;
 
@@ -2358,5 +2359,19 @@ namespace UnityEngine.UIElements
 
             return objectName;
         }
+
+        /// <summary>
+        /// Invalidate some values in the retained data of UI Toolkit. 
+        /// </summary>
+        /// <remarks>
+        /// This method should only be used for debugging as in normal conditions the relevant state should be dirtied by modifying properties or calling <see cref="VisualElement.MarkDirtyRepaint"/> "
+        /// </remarks>
+        /// <param name="ve"> Element to which the change applies</param>
+        /// <param name="changeType">The type of change requested</param>
+        public static void DebugIncrementVersionChange(VisualElement ve, VersionChangeType changeType)
+        {
+            ve.IncrementVersion((VersionChangeType)changeType);
+        }
+        
     }
 }

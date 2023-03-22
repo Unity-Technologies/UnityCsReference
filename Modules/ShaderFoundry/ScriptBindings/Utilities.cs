@@ -14,5 +14,11 @@ namespace UnityEditor.ShaderFoundry
                 list = new List<T>();
             list.Add(value);
         }
+
+        static internal Namespace BuildDefaultObjectNamespace(ShaderContainer container, string objectName)
+        {
+            var builder = new Namespace.Builder(container, $"{objectName}_Namespace");
+            return builder.Build();
+        }
     }
 }

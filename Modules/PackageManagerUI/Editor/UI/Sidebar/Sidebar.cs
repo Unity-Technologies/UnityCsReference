@@ -17,6 +17,7 @@ internal class Sidebar : ScrollView
     private PackageManagerProjectSettingsProxy m_SettingsProxy;
     private PageManager m_PageManager;
 
+    private Dictionary<string, SidebarRow> m_ScopedRegistryRows = new();
     private SidebarRow m_CurrentlySelectedRow;
 
     private void ResolveDependencies()
@@ -34,7 +35,7 @@ internal class Sidebar : ScrollView
 
     public void OnEnable()
     {
-        m_UpmRegistryClient.onRegistriesModified += OnRegistriesModified;
+        m_UpmRegistryClient.onRegistriesModified += UpdateScopedRegistryRelatedRows;
         m_PageManager.onActivePageChanged += OnActivePageChanged;
     }
 
@@ -46,7 +47,7 @@ internal class Sidebar : ScrollView
 
     public void OnDisable()
     {
-        m_UpmRegistryClient.onRegistriesModified -= OnRegistriesModified;
+        m_UpmRegistryClient.onRegistriesModified -= UpdateScopedRegistryRelatedRows;
         m_PageManager.onActivePageChanged -= OnActivePageChanged;
     }
 
@@ -66,14 +67,16 @@ internal class Sidebar : ScrollView
         CreateAndAddSeparator();
         CreateAndAddSidebarRow(m_PageManager.GetPage(MyRegistriesPage.k_Id));
 
-        UpdateMyRegistriesRowVisibility();
+        UpdateScopedRegistryRelatedRows();
     }
 
-    private void CreateAndAddSidebarRow(IPage page)
+    private void CreateAndAddSidebarRow(IPage page, bool isScopedRegistryPage = false, bool isIndented = false)
     {
         var pageId = page.id;
-        var sidebarRow = new SidebarRow(page.id, page.displayName);
+        var sidebarRow = new SidebarRow(page.id, page.displayName, isIndented);
         sidebarRow.OnLeftClick(() => OnRowClick(pageId));
+        if (isScopedRegistryPage)
+            m_ScopedRegistryRows[page.id] = sidebarRow;
         Add(sidebarRow);
     }
 
@@ -98,19 +101,35 @@ internal class Sidebar : ScrollView
         m_CurrentlySelectedRow?.SetSelected(true);
     }
 
-    private void OnRegistriesModified()
+    private void UpdateScopedRegistryRelatedRows()
     {
-        var rowVisibility = UpdateMyRegistriesRowVisibility();
-        if (!rowVisibility && m_PageManager.activePage.id == MyRegistriesPage.k_Id)
-            m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
-    }
+        var scopedRegistryPages = m_SettingsProxy.scopedRegistries.Select(r => m_PageManager.GetPage(r)).ToArray();
 
-    // Returns true if the row is visible
-    private bool UpdateMyRegistriesRowVisibility()
-    {
-        var visibility = m_SettingsProxy.registries?.Count > 1;
-        UIUtils.SetElementDisplay(GetRow(MyRegistriesPage.k_Id), visibility);
-        return visibility;
+        // We remove the rows from the hierarchy so we can add it back later with the right order
+        foreach (var row in m_ScopedRegistryRows.Values)
+            Remove(row);
+
+        var deletedOrHiddenPageIds = m_ScopedRegistryRows.Keys.ToHashSet();
+        foreach (var page in scopedRegistryPages)
+        {
+            if (m_ScopedRegistryRows.TryGetValue(page.id, out var row))
+            {
+                deletedOrHiddenPageIds.Remove(page.id);
+                Add(row);
+            }
+            else
+                CreateAndAddSidebarRow(page, true, true);
+        }
+
+        foreach (var pageId in deletedOrHiddenPageIds)
+            m_ScopedRegistryRows.Remove(pageId);
+
+        var myRegistriesRowVisible = scopedRegistryPages.Any();
+        UIUtils.SetElementDisplay(GetRow(MyRegistriesPage.k_Id), myRegistriesRowVisible);
+        if (!myRegistriesRowVisible)
+            deletedOrHiddenPageIds.Add(MyRegistriesPage.k_Id);
+        if (deletedOrHiddenPageIds.Contains(m_PageManager.activePage.id))
+            m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
     }
 
     public SidebarRow GetRow(string pageId)

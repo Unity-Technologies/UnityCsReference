@@ -19,11 +19,22 @@ namespace UnityEditor.ShaderFoundry
         internal UInt32 m_Flags; // Enum declaration in ShaderType.h
         internal FoundryHandle m_AttributeListHandle;
         internal FoundryHandle m_IncludeListHandle;
+        internal FoundryHandle m_ContainingNamespaceHandle;
         internal FoundryHandle m_v0;
         internal UInt32 m_v1;
         internal UInt32 m_v2;
         internal FoundryHandle m_ParentBlockHandle;
 
+        internal struct StructInitializationData
+        {
+            internal FoundryHandle nameHandle;
+            internal FoundryHandle containingNamespaceHandle;
+            internal FoundryHandle attributeListHandle;
+            internal FoundryHandle fieldListHandle;
+            internal FoundryHandle includeListHandle;
+            internal FoundryHandle parentBlockHandle;
+            internal bool declaredExternally;
+        }
         internal static extern ShaderTypeInternal Invalid();
 
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
@@ -75,7 +86,7 @@ namespace UnityEditor.ShaderFoundry
         internal extern static FoundryHandle Texture(ShaderContainer container, string name);
         internal extern static FoundryHandle SamplerState(ShaderContainer container, string name);
         internal extern static FoundryHandle Array(ShaderContainer container, FoundryHandle elementTypeHandle, int elementCount);
-        internal extern static FoundryHandle Struct(ShaderContainer container, FoundryHandle typeHandle, string name, FoundryHandle fieldListHandle, FoundryHandle attributeListHandle, FoundryHandle includeListHandle,  FoundryHandle parentBlockHandle, bool declaredExternally);
+        internal extern static FoundryHandle BuildStruct(ShaderContainer container, FoundryHandle typeHandle, StructInitializationData initData);
 
         internal extern static bool ValueEquals(ShaderContainer aContainer, FoundryHandle aHandle, ShaderContainer bContainer, FoundryHandle bHandle);
 
@@ -130,6 +141,7 @@ namespace UnityEditor.ShaderFoundry
         public IEnumerable<StructField> StructFields => type.StructFields(container);
         public IEnumerable<ShaderAttribute> Attributes => type.Attributes(container);
         public IEnumerable<IncludeDescriptor> Includes => type.Includes(container);
+        public Namespace ContainingNamespace => new Namespace(container, type.m_ContainingNamespaceHandle);
         // Not valid until the parent block is finished being built.
         public Block ParentBlock => new Block(container, type.m_ParentBlockHandle);
 
@@ -238,38 +250,6 @@ namespace UnityEditor.ShaderFoundry
             return ShaderType.Invalid;
         }
 
-        // use Builder ?
-        internal static ShaderType Struct(ShaderContainer container, FoundryHandle typeHandle, string name, FoundryHandle parentBlockHandle, List<StructField> fields, List<ShaderAttribute> attributes = null, List<string> includes = null, bool declaredExternally = false)
-        {
-            if ((container != null) && !string.IsNullOrEmpty(name))
-            {
-                bool success = true;
-                FoundryHandle fieldListHandle = FixedHandleListInternal.Build(container, fields, (f) => (f.handle));
-
-                var attributeList = FixedHandleListInternal.Build(container, attributes, (a) => (a.handle));
-                FoundryHandle includeList = FoundryHandle.Invalid();
-                if ((includes != null) && (includes.Count > 0))
-                {
-                    var includeHandles = new List<FoundryHandle>();
-                    foreach (string path in includes)
-                    {
-                        var builder = new IncludeDescriptor.Builder(container, path);
-                        FoundryHandle includeHandle = builder.Build().handle;
-                        if (includeHandle.IsValid)
-                            includeHandles.Add(includeHandle);
-                    }
-                    includeList = FixedHandleListInternal.Build(container, includeHandles);
-                }
-                if (success)
-                {
-                    var handle = ShaderTypeInternal.Struct(container, typeHandle, name, fieldListHandle, attributeList, includeList, parentBlockHandle, declaredExternally);
-                    if (handle.IsValid)
-                        return new ShaderType(container, handle);
-                }
-            }
-            return ShaderType.Invalid;
-        }
-
         public class StructBuilder
         {
             ShaderContainer container;
@@ -280,15 +260,16 @@ namespace UnityEditor.ShaderFoundry
             string name;
             List<StructField> fields;
             List<ShaderAttribute> attributes;
-            List<string> includes;
+            List<IncludeDescriptor> includes;
             bool declaredExternally;
             bool finalized = false;
+            public Namespace containingNamespace;
 
             // create struct in global namespace
-            public StructBuilder(ShaderContainer container, string name) : this(container, name, null) {}
+            public StructBuilder(ShaderContainer container, string name) : this(container, name, null) { }
 
             // create struct in block
-            public StructBuilder(Block.Builder blockBuilder, string name) : this(blockBuilder.Container, name, blockBuilder) {}
+            public StructBuilder(Block.Builder blockBuilder, string name) : this(blockBuilder.Container, name, blockBuilder) { }
 
             internal StructBuilder(ShaderContainer container, string name, Block.Builder blockBuilder)
             {
@@ -296,6 +277,7 @@ namespace UnityEditor.ShaderFoundry
                 this.name = name;
                 this.typeHandle = container.Create<ShaderTypeInternal>();
                 this.parentBlock = blockBuilder;
+                this.containingNamespace = blockBuilder?.containingNamespace ?? Namespace.Invalid;
             }
 
             public void AddField(ShaderType type, string name)
@@ -320,9 +302,8 @@ namespace UnityEditor.ShaderFoundry
 
             public void AddInclude(string path)
             {
-                if (includes == null)
-                    includes = new List<string>();
-                includes.Add(path);
+                var includeBuilder = new IncludeDescriptor.Builder(container, path);
+                Utilities.AddToList(ref includes, includeBuilder.Build());
             }
 
             public void DeclaredExternally()
@@ -337,15 +318,25 @@ namespace UnityEditor.ShaderFoundry
                 finalized = true;
 
                 FoundryHandle parentBlockHandle = parentBlock?.blockHandle ?? FoundryHandle.Invalid();
-                var structType = ShaderType.Struct(container, typeHandle, name, parentBlockHandle, fields, attributes, includes, declaredExternally);
+                var initData = new ShaderTypeInternal.StructInitializationData
+                {
+                    nameHandle = container.AddString(name),
+                    containingNamespaceHandle = containingNamespace.handle,
+                    attributeListHandle = FixedHandleListInternal.Build(container, attributes),
+                    fieldListHandle = FixedHandleListInternal.Build(container, fields),
+                    includeListHandle = FixedHandleListInternal.Build(container, includes),
+                    parentBlockHandle = parentBlockHandle,
+                    declaredExternally = declaredExternally,
+                };
 
-                if (parentBlock != null)
+                var handle = ShaderTypeInternal.BuildStruct(container, typeHandle, initData);
+                var result = new ShaderType(container, handle);
+                if (handle.IsValid && parentBlock != null)
                 {
                     // register with parent block
-                    parentBlock.AddType(structType);
+                    parentBlock.AddType(result);
                 }
-
-                return structType;
+                return result;
             }
         }
     }

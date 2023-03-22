@@ -180,6 +180,7 @@ namespace UnityEditor.PackageManager
             return new SetCacheRootRequest(operationId, status);
         }
 
+        [System.Obsolete("ResetToEditorDefaults is deprecated and will be removed in a later version.", false)]
         public static ResetToEditorDefaultsRequest ResetToEditorDefaults()
         {
             long operationId;

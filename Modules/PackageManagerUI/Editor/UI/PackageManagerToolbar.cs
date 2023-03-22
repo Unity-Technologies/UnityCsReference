@@ -11,9 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageManagerToolbar : VisualElement
     {
-        public const string k_ResetPackagesMenuName = "Reset Packages to defaults";
-        public const string k_ResetPackagesMenuPath = "Help/" + k_ResetPackagesMenuName;
-
         internal new class UxmlFactory : UxmlFactory<PackageManagerToolbar> {}
 
         private ResourceLoader m_ResourceLoader;
@@ -226,16 +223,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     m_UpmClient.Resolve();
                 }
-            };
-
-            dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
-            dropdownItem.insertSeparatorBefore = true;
-            dropdownItem.text = L10n.Tr("Reset Packages to defaults");
-            dropdownItem.action = () =>
-            {
-                EditorApplication.ExecuteMenuItem(k_ResetPackagesMenuPath);
-                m_PageRefreshHandler.Refresh(RefreshOptions.UpmListOffline);
-                PackageManagerWindowAnalytics.SendEvent("resetToDefaults");
             };
 
             if (Unsupported.IsDeveloperBuild())

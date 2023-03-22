@@ -14,6 +14,7 @@ namespace UnityEditor.ShaderFoundry
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_AttributeListHandle;
+        internal FoundryHandle m_ContainingNamespaceHandle;
         internal FoundryHandle m_ExtensionsListHandle;
         internal FoundryHandle m_CustomizationPointListHandle;
 
@@ -51,6 +52,7 @@ namespace UnityEditor.ShaderFoundry
                 return FixedHandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
             }
         }
+        public Namespace ContainingNamespace => new Namespace(container, blockShaderInterfaceInternal.m_ContainingNamespaceHandle);
         public IEnumerable<BlockShaderInterface> Extensions
         {
             get
@@ -90,6 +92,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             public string Name;
             public List<ShaderAttribute> Attributes;
+            public Namespace containingNamespace;
             public List<BlockShaderInterface> Extensions;
             public List<CustomizationPoint> CustomizationPoints;
             public ShaderContainer Container => container;
@@ -123,6 +126,7 @@ namespace UnityEditor.ShaderFoundry
                 };
 
                 blockShaderInterfaceInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, Attributes);
+                blockShaderInterfaceInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
                 blockShaderInterfaceInternal.m_ExtensionsListHandle = FixedHandleListInternal.Build(container, Extensions);
                 blockShaderInterfaceInternal.m_CustomizationPointListHandle = FixedHandleListInternal.Build(container, CustomizationPoints);
 

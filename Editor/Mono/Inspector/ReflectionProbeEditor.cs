@@ -87,7 +87,7 @@ namespace UnityEditor
 
             public static GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel);
 
-            public static string bakeButtonText = "Bake";
+            public static GUIContent bakeButtonText = EditorGUIUtility.TrTextContent("Bake");
             public static string[] bakeCustomOptionText = { "Bake as new Cubemap..." };
             public static string[] bakeButtonsText = { "Bake All Reflection Probes" };
 
@@ -339,7 +339,7 @@ namespace UnityEditor
             switch (reflectionProbeMode)
             {
                 case ReflectionProbeMode.Custom:
-                    if (EditorGUI.ButtonWithDropdownList(Styles.bakeCustomButtonText, Styles.bakeCustomOptionText, OnBakeCustomButton))
+                    if (EditorGUI.LargeSplitButtonWithDropdownList(Styles.bakeCustomButtonText, Styles.bakeCustomOptionText, OnBakeCustomButton))
                     {
                         BakeCustomReflectionProbe(reflectionProbeTarget, true);
                         GUIUtility.ExitGUI();
@@ -350,7 +350,7 @@ namespace UnityEditor
                     using (new EditorGUI.DisabledScope(!reflectionProbeTarget.enabled))
                     {
                         // Bake button in non-continous mode
-                        if (EditorGUI.ButtonWithDropdownList(Styles.bakeButtonText, Styles.bakeButtonsText, OnBakeButton))
+                        if (EditorGUI.LargeSplitButtonWithDropdownList(Styles.bakeButtonText, Styles.bakeButtonsText, OnBakeButton))
                         {
                             Lightmapping.BakeReflectionProbeSnapshot(reflectionProbeTarget);
                             GUIUtility.ExitGUI();
@@ -692,7 +692,7 @@ namespace UnityEditor
                 if (!reflectiveMaterial)
                     return;
 
-                if (!StageUtility.IsGameObjectRenderedByCameraAndPartOfEditableScene(p.gameObject, Camera.current))
+                if (StageUtility.IsGizmoCulledBySceneCullingMasksOrFocusedScene(p.gameObject, Camera.current))
                     return;
 
                 Matrix4x4 m = new Matrix4x4();

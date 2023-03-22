@@ -116,21 +116,14 @@ namespace UnityEditor.ShaderFoundry
         [NativeMethod("SetArrayElement<ShaderFoundry::FoundryHandle>")]
         internal extern void SetHandleBlobElement(FoundryHandle blobHandle, uint elementIndex, FoundryHandle handle);
 
-        internal extern FoundryHandle GetTypeByName(string typeName, FoundryHandle blockHandle);
+        internal extern FoundryHandle GetTypeByName(string typeName);
+        internal extern FoundryHandle GetTypeByNameAndNamespace(string typeName, FoundryHandle namespaceHandle);
 
-        public ShaderType GetType(string name)
-        {
-            return new ShaderType(this, GetTypeByName(name, FoundryHandle.Invalid()));
-        }
+        public ShaderType GetType(string name) => new ShaderType(this, GetTypeByName(name));
 
-        public ShaderType GetType(string name, Block block)
+        public ShaderType GetType(string name, Namespace namespaceSymbol)
         {
-            return new ShaderType(this, GetTypeByName(name, block.handle));
-        }
-
-        public ShaderType GetType(string name, Block.Builder builder)
-        {
-            return new ShaderType(this, GetTypeByName(name, builder.blockHandle));
+            return new ShaderType(this, GetTypeByNameAndNamespace(name, namespaceSymbol.handle));
         }
 
         internal FoundryHandle AddTemplateLinker(ITemplateLinker linker)

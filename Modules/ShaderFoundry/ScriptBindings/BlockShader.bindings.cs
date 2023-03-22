@@ -14,6 +14,7 @@ namespace UnityEditor.ShaderFoundry
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_AttributeListHandle;
+        internal FoundryHandle m_ContainingNamespaceHandle;
         internal FoundryHandle m_BlockShaderInterfaceListHandle;
         internal FoundryHandle m_BlockListHandle;
         internal FoundryHandle m_CustomizationPointImplementationListHandle;
@@ -52,6 +53,7 @@ namespace UnityEditor.ShaderFoundry
                 return FixedHandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
             }
         }
+        public Namespace ContainingNamespace => new Namespace(container, blockShaderInternal.m_ContainingNamespaceHandle);
         public IEnumerable<BlockShaderInterface> BlockShaderInterfaces
         {
             get
@@ -99,6 +101,7 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
             public string Name;
             public List<ShaderAttribute> Attributes;
+            public Namespace containingNamespace;
             public List<BlockShaderInterface> BlockShaderInterfaces;
             public List<Block> Blocks;
             public List<CustomizationPointImplementation> CustomizationPointImplementations;
@@ -109,6 +112,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 this.container = container;
                 this.Name = name;
+                this.containingNamespace = Utilities.BuildDefaultObjectNamespace(container, name);
             }
 
             public void AddAttribute(ShaderAttribute attribute)
@@ -139,6 +143,7 @@ namespace UnityEditor.ShaderFoundry
                 };
 
                 blockShaderInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, Attributes);
+                blockShaderInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
                 blockShaderInternal.m_BlockShaderInterfaceListHandle = FixedHandleListInternal.Build(container, BlockShaderInterfaces);
                 blockShaderInternal.m_BlockListHandle = FixedHandleListInternal.Build(container, Blocks);
                 blockShaderInternal.m_CustomizationPointImplementationListHandle = FixedHandleListInternal.Build(container, CustomizationPointImplementations);

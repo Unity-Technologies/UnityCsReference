@@ -360,6 +360,7 @@ namespace Unity.UI.Builder
         public static readonly string RenameSelectorUndoMessage = "Rename USS Selector";
         public static readonly string DeleteSelectorUndoMessage = "Delete USS Selector";
         public static readonly string MoveUSSSelectorUndoMessage = "Move USS Selector";
+        public static readonly string ChangeCanvasDimensionsOrMatchViewUndoMessage = "Change Canvas Dimensions or Match View";
         public static readonly string SaveAsNewDocumentsDialogMessage = "Save As New UI Documents";
         public static readonly string NewDocumentsDialogMessage = "New UI Documents";
 

@@ -19,6 +19,7 @@ namespace UnityEditor.ShaderFoundry
     {
         internal FoundryHandle m_NameHandle;
         internal FoundryHandle m_AttributeListHandle;
+        internal FoundryHandle m_ContainingNamespaceHandle;
         internal FoundryHandle m_DeclaredTypeListHandle;
         internal FoundryHandle m_ReferencedTypeListHandle;
         internal FoundryHandle m_DeclaredFunctionListHandle;
@@ -69,6 +70,7 @@ namespace UnityEditor.ShaderFoundry
 
         public string Name => container?.GetString(block.m_NameHandle) ?? string.Empty;
         public IEnumerable<ShaderAttribute> Attributes => FixedHandleListInternal.Enumerate<ShaderAttribute>(container, block.m_AttributeListHandle);
+        public Namespace ContainingNamespace => new Namespace(container, block.m_ContainingNamespaceHandle);
         public IEnumerable<ShaderType> Types
         {
             get
@@ -78,7 +80,7 @@ namespace UnityEditor.ShaderFoundry
                 return list.Select<ShaderType>(localContainer, (handle) => (new ShaderType(localContainer, handle)));
             }
         }
-        public ShaderType GetType(string typeName) => Container.GetType(typeName, this);
+        public ShaderType GetType(string typeName) => Container.GetType(typeName, this.ContainingNamespace);
         public IEnumerable<ShaderType> ReferencedTypes
         {
             get
@@ -199,6 +201,7 @@ namespace UnityEditor.ShaderFoundry
             internal FoundryHandle templateParentHandle;
             internal string name;
             List<ShaderAttribute> attributes;
+            public Namespace containingNamespace;
             List<ShaderType> types = new List<ShaderType>();
             List<ShaderType> referencedTypes = new List<ShaderType>();
             List<ShaderFunction> functions = new List<ShaderFunction>();
@@ -227,6 +230,7 @@ namespace UnityEditor.ShaderFoundry
                 this.name = name;
                 this.passParentHandle = passParentHandle;
                 this.templateParentHandle = templateParentHandle;
+                this.containingNamespace = Utilities.BuildDefaultObjectNamespace(container, name);
                 blockHandle = container.Create<BlockInternal>();
             }
 
@@ -356,6 +360,7 @@ namespace UnityEditor.ShaderFoundry
                 blockInternal.m_NameHandle = container.AddString(name);
 
                 blockInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes);
+                blockInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
                 blockInternal.m_DeclaredTypeListHandle = FixedHandleListInternal.Build(container, types, (t) => (t.handle));
                 blockInternal.m_ReferencedTypeListHandle = FixedHandleListInternal.Build(container, referencedTypes, (t) => (t.handle));
                 blockInternal.m_DeclaredFunctionListHandle = FixedHandleListInternal.Build(container, functions, (f) => (f.handle));

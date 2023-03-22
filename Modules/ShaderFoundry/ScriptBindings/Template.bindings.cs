@@ -16,6 +16,7 @@ namespace UnityEditor.ShaderFoundry
     {
         internal FoundryHandle m_NameHandle;                        // string
         internal FoundryHandle m_AttributeListHandle;               // List<ShaderAttribute>
+        internal FoundryHandle m_ContainingNamespaceHandle;         // Namespace
         internal FoundryHandle m_PassListHandle;                    // List<TemplatePass>
         internal FoundryHandle m_TagDescriptorListHandle;           // List<FoundryHandle>
         internal FoundryHandle m_LODHandle;                         // string
@@ -60,6 +61,7 @@ namespace UnityEditor.ShaderFoundry
         public bool IsValid => (container != null && handle.IsValid);
         public string Name => container?.GetString(template.m_NameHandle) ?? string.Empty;
         public IEnumerable<ShaderAttribute> Attributes => FixedHandleListInternal.Enumerate<ShaderAttribute>(container, template.m_AttributeListHandle);
+        public Namespace ContainingNamespace => new Namespace(container, template.m_ContainingNamespaceHandle);
         public string AdditionalShaderID => container?.GetString(template.m_AdditionalShaderIDStringHandle) ?? string.Empty;
         public IEnumerable<TemplatePass> Passes
         {
@@ -106,6 +108,7 @@ namespace UnityEditor.ShaderFoundry
         {
             public string Name { get; set; }
             public List<ShaderAttribute> attributes;
+            public Namespace containingNamespace = Namespace.Invalid;
             List<TemplatePass> passes { get; set; }
             public string AdditionalShaderID { get; set; }
             ITemplateLinker linker;
@@ -131,6 +134,7 @@ namespace UnityEditor.ShaderFoundry
 
                 this.container = container;
                 this.Name = name;
+                this.containingNamespace = Utilities.BuildDefaultObjectNamespace(container, name);
                 this.linker = null;
             }
 
@@ -141,6 +145,7 @@ namespace UnityEditor.ShaderFoundry
 
                 this.container = container;
                 this.Name = name;
+                this.containingNamespace = Utilities.BuildDefaultObjectNamespace(container, name);
                 this.linker = linker;
             }
 
@@ -230,8 +235,9 @@ namespace UnityEditor.ShaderFoundry
                 };
 
                 templateInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes);
+                templateInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
                 templateInternal.m_PassListHandle = FixedHandleListInternal.Build(container, passes, (p) => (p.handle));
-                templateInternal.m_LODHandle =  container.AddString(LOD);
+                templateInternal.m_LODHandle = container.AddString(LOD);
                 templateInternal.m_PackageRequirementListHandle = FixedHandleListInternal.Build(container, packageRequirements, (p) => (p.handle));
                 templateInternal.m_CustomizationPointListHandle = FixedHandleListInternal.Build(container, customizationPoints, (c) => c.handle);
                 templateInternal.m_ExtendedTemplateListHandle = FixedHandleListInternal.Build(container, extendedTemplates, (t) => (t.handle));

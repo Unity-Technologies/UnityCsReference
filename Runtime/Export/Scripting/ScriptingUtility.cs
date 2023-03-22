@@ -31,10 +31,10 @@ namespace UnityEngine
             return testClass.value == 42;
         }
 
-
         [RequiredByNativeCode]
         static unsafe void SetupCallbacks(IntPtr p)
         {
         }
+
     }
 }

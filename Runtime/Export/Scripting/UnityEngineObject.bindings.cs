@@ -76,7 +76,6 @@ namespace UnityEngine
 #pragma warning restore 169
 
 #pragma warning disable 414
-        internal static int OffsetOfInstanceIDInCPlusPlusObject = -1;
 #pragma warning restore 414
 #pragma warning restore 649
 

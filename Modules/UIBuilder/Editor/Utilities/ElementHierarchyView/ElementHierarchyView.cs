@@ -218,7 +218,7 @@ namespace Unity.UI.Builder
             var selectedElement = m_Selection.selection.First();
             var explorerItem = selectedElement.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName) as BuilderExplorerItem;
 
-            if (explorerItem != null && !explorerItem.IsRenamingActive())
+            if (explorerItem != null && !explorerItem.IsRenamingActive() && m_TreeView.IsFocused())
             {
                 m_AllowMouseUpRenaming = true;
             }
@@ -254,6 +254,8 @@ namespace Unity.UI.Builder
         {
             var item = m_TreeViewController.GetTreeViewItemDataForIndex(index);
             var explorerItem = element as BuilderExplorerItem;
+
+            explorerItem.SetReorderingZonesEnabled(true);
             explorerItem.Clear();
 
             // Pre-emptive cleanup.
@@ -916,6 +918,12 @@ namespace Unity.UI.Builder
             }
 
             return default;
+        }
+
+        // Used in tests
+        internal bool IsRenamingScheduled()
+        {
+            return m_RenamingScheduledItem != null && m_RenamingScheduledItem.isActive;
         }
 
         public void ClearSelection()

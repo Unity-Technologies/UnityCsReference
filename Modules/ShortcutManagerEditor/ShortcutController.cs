@@ -28,10 +28,7 @@ namespace UnityEditor.ShortcutManagement
     {
         const string k_DeleteID = "Main Menu/Edit/Delete";
         const string k_IgnoreWhenPlayModeFocused = "GameView.IgnoreWhenPlayModeFocused";
-
-        static ShortcutEntry s_DeleteKeyCombination;
-        static List<KeyCombination> s_PreAllocatedKeyCombination = new() { new KeyCombination(KeyCode.None) };
-
+        
         class LastUsedProfileIdProvider : ILastUsedProfileIdProvider
         {
             static string lastUsedProfileIdEditorPrefKey => $"ShortcutManagement_LastUsedShortcutProfileId_{ModeService.currentId}";
@@ -102,22 +99,10 @@ namespace UnityEditor.ShortcutManagement
         internal static bool s_IgnoreWhenPlayModeFocused;
 
         [RequiredByNativeCode]
-        static void SetShortcutIntegrationEnabled(bool enable)
-        {
-            enabled = enable;
-        }
+        static void SetShortcutIntegrationEnabled(bool enable) => enabled = enable;
 
         [RequiredByNativeCode]
-        static bool IsDeleteCombination(KeyCode keyCode, EventModifiers modifiers)
-        {
-            s_PreAllocatedKeyCombination[0] = KeyCombination.FromKeyboardInput(keyCode, modifiers);
-            return s_DeleteKeyCombination?.FullyMatches(s_PreAllocatedKeyCombination) ?? false;
-        }
-
-        static void CacheDeleteEntry()
-        {
-            s_DeleteKeyCombination = s_Instance.directory.FindShortcutEntry(k_DeleteID);
-        }
+        static bool HasModifiers(EventModifiers modifiers) => Event.current?.modifiers == modifiers;
 
         static ShortcutIntegration()
         {
@@ -140,7 +125,6 @@ namespace UnityEditor.ShortcutManagement
             // the list of shortcuts is incomplete.
             // This delayed call ensures that the shortcuts are always up to date when the editor becomes usable.
             s_Instance.RebuildShortcuts();
-            CacheDeleteEntry();
         }
 
         static bool HasAnyEntriesHandler()

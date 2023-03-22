@@ -13,12 +13,12 @@ namespace UnityEditor
     partial class AssetDatabase
     {
         // Gets the path to the text .meta file associated with an asset
-        [Obsolete("GetTextMetaDataPathFromAssetPath has been renamed to GetTextMetaFilePathFromAssetPath (UnityUpgradable) -> GetTextMetaFilePathFromAssetPath(*)")]
+        [Obsolete("GetTextMetaDataPathFromAssetPath has been renamed to GetTextMetaFilePathFromAssetPath (UnityUpgradable) -> GetTextMetaFilePathFromAssetPath(*)",true)]
         public static string GetTextMetaDataPathFromAssetPath(string path) { return null; }
     }
 
     // Used to be part of Asset Server, and public API for some reason.
-    [Obsolete("AssetStatus enum is not used anymore (Asset Server has been removed)")]
+    [Obsolete("AssetStatus enum is not used anymore (Asset Server has been removed)",true)]
     public enum AssetStatus
     {
         Calculating = -1,
@@ -35,7 +35,7 @@ namespace UnityEditor
     }
 
     // Used to be part of Asset Server, and public API for some reason.
-    [Obsolete("AssetsItem class is not used anymore (Asset Server has been removed)")]
+    [Obsolete("AssetsItem class is not used anymore (Asset Server has been removed)",true)]
     [StructLayout(LayoutKind.Sequential)]
     [System.Serializable]
     public sealed class AssetsItem
@@ -58,11 +58,11 @@ namespace UnityEditor.Experimental
     public partial class AssetDatabaseExperimental
     {
         [FreeFunction("AssetDatabase::ClearImporterOverride")]
-        [Obsolete("AssetDatabaseExperimental.ClearImporterOverride() has been deprecated. Use AssetDatabase.ClearImporterOverride() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.ClearImporterOverride(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.ClearImporterOverride() has been deprecated. Use AssetDatabase.ClearImporterOverride() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.ClearImporterOverride(*)", true)]
         extern public static void ClearImporterOverride(string path);
 
         [FreeFunction("AssetDatabase::IsCacheServerEnabled")]
-        [Obsolete("AssetDatabaseExperimental.IsCacheServerEnabled() has been deprecated. Use AssetDatabase.IsCacheServerEnabled() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsCacheServerEnabled(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.IsCacheServerEnabled() has been deprecated. Use AssetDatabase.IsCacheServerEnabled() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsCacheServerEnabled(*)", true)]
         public extern static bool IsCacheServerEnabled();
 
         [Obsolete("AssetDatabaseExperimental.SetImporterOverride<T>() has been deprecated. Use AssetDatabase.SetImporterOverride<T>() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.SetImporterOverride<T>(*)", true)]
@@ -81,70 +81,64 @@ namespace UnityEditor.Experimental
         extern public static Type[] GetAvailableImporterTypes(string path);
 
         [FreeFunction("AcceleratorClientCanConnectTo")]
-        [Obsolete("AssetDatabaseExperimental.CanConnectToCacheServer() has been deprecated. Use AssetDatabase.CanConnectToCacheServer() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.CanConnectToCacheServer(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.CanConnectToCacheServer() has been deprecated. Use AssetDatabase.CanConnectToCacheServer() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.CanConnectToCacheServer(*)", true)]
         public extern static bool CanConnectToCacheServer(string ip, UInt16 port);
 
         [FreeFunction()]
-        [Obsolete("AssetDatabaseExperimental.RefreshSettings() has been deprecated. Use AssetDatabase.RefreshSettings() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.RefreshSettings(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.RefreshSettings() has been deprecated. Use AssetDatabase.RefreshSettings() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.RefreshSettings(*)", true)]
         public extern static void RefreshSettings();
 
-        [Obsolete("AssetDatabaseExperimental.CacheServerConnectionChangedParameters has been deprecated. Use UnityEditor.CacheServerConnectionChangedParameters instead (UnityUpgradable) -> UnityEditor.CacheServerConnectionChangedParameters", false)]
+        [Obsolete("AssetDatabaseExperimental.CacheServerConnectionChangedParameters has been deprecated. Use UnityEditor.CacheServerConnectionChangedParameters instead (UnityUpgradable) -> UnityEditor.CacheServerConnectionChangedParameters", true)]
         public struct CacheServerConnectionChangedParameters
         {
         }
 
 #pragma warning disable 67
-        [Obsolete("AssetDatabaseExperimental.cacheServerConnectionChanged has been deprecated. Use AssetDatabase.cacheServerConnectionChanged instead (UnityUpgradable) -> UnityEditor.AssetDatabase.cacheServerConnectionChanged", false)]
+        [Obsolete("AssetDatabaseExperimental.cacheServerConnectionChanged has been deprecated. Use AssetDatabase.cacheServerConnectionChanged instead (UnityUpgradable) -> UnityEditor.AssetDatabase.cacheServerConnectionChanged", true)]
         public static event Action<CacheServerConnectionChangedParameters> cacheServerConnectionChanged;
 #pragma warning restore 67
 
         [FreeFunction("AcceleratorClientIsConnected")]
-        [Obsolete("AssetDatabaseExperimental.IsConnectedToCacheServer() has been deprecated. Use AssetDatabase.IsConnectedToCacheServer() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsConnectedToCacheServer(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.IsConnectedToCacheServer() has been deprecated. Use AssetDatabase.IsConnectedToCacheServer() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsConnectedToCacheServer(*)", true)]
         public extern static bool IsConnectedToCacheServer();
 
         [FreeFunction()]
-        [Obsolete("AssetDatabaseExperimental.GetCacheServerAddress() has been deprecated. Use AssetDatabase.GetCacheServerAddress() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetCacheServerAddress(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.GetCacheServerAddress() has been deprecated. Use AssetDatabase.GetCacheServerAddress() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetCacheServerAddress(*)", true)]
         public extern static string GetCacheServerAddress();
 
         [FreeFunction()]
-        [Obsolete("AssetDatabaseExperimental.GetCacheServerPort() has been deprecated. Use AssetDatabase.GetCacheServerPort() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetCacheServerPort(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.GetCacheServerPort() has been deprecated. Use AssetDatabase.GetCacheServerPort() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetCacheServerPort(*)", true)]
         public extern static UInt16 GetCacheServerPort();
 
         [FreeFunction("AssetDatabase::GetCacheServerNamespacePrefix")]
-        [Obsolete("AssetDatabaseExperimental.GetCacheServerNamespacePrefix() has been deprecated. Use AssetDatabase.GetCacheServerNamespacePrefix() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetCacheServerNamespacePrefix(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.GetCacheServerNamespacePrefix() has been deprecated. Use AssetDatabase.GetCacheServerNamespacePrefix() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetCacheServerNamespacePrefix(*)", true)]
         public extern static string GetCacheServerNamespacePrefix();
 
         [FreeFunction("AssetDatabase::GetCacheServerEnableDownload")]
-        [Obsolete("AssetDatabaseExperimental.GetCacheServerEnableDownload() has been deprecated. Use AssetDatabase.GetCacheServerEnableDownload() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetCacheServerEnableDownload(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.GetCacheServerEnableDownload() has been deprecated. Use AssetDatabase.GetCacheServerEnableDownload() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetCacheServerEnableDownload(*)", true)]
         public extern static bool GetCacheServerEnableDownload();
 
         [FreeFunction("AssetDatabase::GetCacheServerEnableUpload")]
-        [Obsolete("AssetDatabaseExperimental.GetCacheServerEnableUpload() has been deprecated. Use AssetDatabase.GetCacheServerEnableUpload() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetCacheServerEnableUpload(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.GetCacheServerEnableUpload() has been deprecated. Use AssetDatabase.GetCacheServerEnableUpload() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.GetCacheServerEnableUpload(*)", true)]
         public extern static bool GetCacheServerEnableUpload();
 
         [FreeFunction("AssetDatabase::IsDirectoryMonitoringEnabled")]
-        [Obsolete("AssetDatabaseExperimental.IsDirectoryMonitoringEnabled() has been deprecated. Use AssetDatabase.IsDirectoryMonitoringEnabled() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsDirectoryMonitoringEnabled(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.IsDirectoryMonitoringEnabled() has been deprecated. Use AssetDatabase.IsDirectoryMonitoringEnabled() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsDirectoryMonitoringEnabled(*)", true)]
         public extern static bool IsDirectoryMonitoringEnabled();
 
         [FreeFunction("AssetDatabaseExperimental::RegisterCustomDependency")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
-        [Obsolete("AssetDatabaseExperimental.RegisterCustomDependency() has been deprecated. Use AssetDatabase.RegisterCustomDependency() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.RegisterCustomDependency(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.RegisterCustomDependency() has been deprecated. Use AssetDatabase.RegisterCustomDependency() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.RegisterCustomDependency(*)", true)]
         public extern static void RegisterCustomDependency(string dependency, Hash128 hashOfValue);
 
         [FreeFunction("AssetDatabaseExperimental::UnregisterCustomDependencyPrefixFilter")]
         [PreventExecutionInState(AssetDatabasePreventExecution.kPreventCustomDependencyChanges, PreventExecutionSeverity.PreventExecution_ManagedException, "Custom dependencies can only be removed when the assetdatabase is not importing.")]
-        [Obsolete("AssetDatabaseExperimental.UnregisterCustomDependencyPrefixFilter() has been deprecated. Use AssetDatabase.UnregisterCustomDependencyPrefixFilter() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.UnregisterCustomDependencyPrefixFilter(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.UnregisterCustomDependencyPrefixFilter() has been deprecated. Use AssetDatabase.UnregisterCustomDependencyPrefixFilter() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.UnregisterCustomDependencyPrefixFilter(*)", true)]
         public extern static UInt32 UnregisterCustomDependencyPrefixFilter(string prefixFilter);
 
         [FreeFunction("AssetDatabase::IsAssetImportProcess")]
-        [Obsolete("AssetDatabaseExperimental.IsAssetImportWorkerProcess() has been deprecated. Use AssetDatabase.IsAssetImportWorkerProcess() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsAssetImportWorkerProcess(*)", false)]
+        [Obsolete("AssetDatabaseExperimental.IsAssetImportWorkerProcess() has been deprecated. Use AssetDatabase.IsAssetImportWorkerProcess() instead (UnityUpgradable) -> UnityEditor.AssetDatabase.IsAssetImportWorkerProcess(*)", true)]
         public extern static bool IsAssetImportWorkerProcess();
-
-        [Obsolete("Has been replaced by AssetDatabaseExperimental.RefreshSettings", true)]
-        public static void ReconnectToCacheServer()
-        {
-            throw new NotSupportedException("Please use AssetdatabaseExperimental.RefreshSettings instead.");
-        }
     }
 }
 

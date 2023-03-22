@@ -98,6 +98,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     case MyAssetsPage myAssetsPage:
                         myAssetsPage.ResolveDependencies(packageDatabase, packageManagerPrefs, unityConnect, assetStoreClient);
                         break;
+                    case ScopedRegistryPage scopedRegistryPage:
+                        scopedRegistryPage.ResolveDependencies(packageDatabase, upmCache);
+                        break;
                     case SimplePage simplePage:
                         simplePage.ResolveDependencies(packageDatabase);
                         break;
@@ -186,6 +189,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             return !string.IsNullOrEmpty(pageId) && m_Pages.TryGetValue(pageId, out var page) ? page : CreatePageFromId(pageId);
         }
 
+        public virtual IPage GetPage(RegistryInfo registryInfo)
+        {
+            if (registryInfo == null)
+                return null;
+            var pageId = ScopedRegistryPage.GetIdFromRegistry(registryInfo);
+            if (m_Pages.TryGetValue(pageId, out var page))
+                return page;
+            var newPage = new ScopedRegistryPage(m_PackageDatabase, m_UpmCache, registryInfo);
+            return OnNewPageCreated(newPage);
+        }
+
         private void OnPackagesChanged(PackagesChangeArgs args)
         {
             activePage.OnPackagesChanged(args);
@@ -193,7 +207,25 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRegistriesModified()
         {
-            var scopedRegistries = m_SettingsProxy.registries?.Skip(1).ToDictionary(r => r.id, r => r) ?? new Dictionary<string, RegistryInfo>();
+            // Here we only want to remove outdated pages and update existing pages when needed
+            // We will delay the creation of new pages to when the UI is displaying them to save some resources
+            var scopedRegistries = m_SettingsProxy.scopedRegistries.ToDictionary(r => r.id, r => r);
+            var scopedRegistryPages = m_Pages.Values.OfType<ScopedRegistryPage>().ToArray();
+            var pagesToRemove = new HashSet<string>();
+            foreach (var page in scopedRegistryPages)
+            {
+                if (scopedRegistries.TryGetValue(page.registry.id, out var registryInfo))
+                    page.UpdateRegistry(registryInfo);
+                else
+                    pagesToRemove.Add(page.id);
+            }
+
+            if (pagesToRemove.Contains(activePage.id))
+                activePage = GetPage(k_DefaultPageId);
+
+            foreach (var pageId in pagesToRemove)
+                m_Pages.Remove(pageId);
+
             if (scopedRegistries.Count > 0)
                 return;
             GetPage(MyRegistriesPage.k_Id).ClearFilters(true);

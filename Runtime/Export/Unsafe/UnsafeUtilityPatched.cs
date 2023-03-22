@@ -81,6 +81,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         // Reinterprets reference as reference of different type.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T As<U, T>(ref U from)
         {
             // @patched at compile time
@@ -123,6 +124,12 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         // generic enum equals check without boxing
         public static bool EnumEquals<T>(T lhs, T rhs) where T : struct, IConvertible
+        {
+            throw new NotImplementedException("Patching this method failed");
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal unsafe static ref T Add<T> (ref T source, int elementOffset) where T : unmanaged
         {
             throw new NotImplementedException("Patching this method failed");
         }
