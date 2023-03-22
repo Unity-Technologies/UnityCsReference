@@ -155,7 +155,9 @@ namespace UnityEditor.Search
         internal static bool queryBuilder { get; set; }
         internal static string ignoredProperties { get; set; }
         internal static string helperWidgetCurrentArea { get; set; }
-
+        internal static bool refreshSearchWindowsInPlayMode { get; set; }
+        internal static int minIndexVariations { get; set; }
+        internal static bool findProviderIndexHelper { get; set; }
         internal static int[] expandedQueries { get; set; }
 
         internal static bool wantsMore
@@ -243,6 +245,9 @@ namespace UnityEditor.Search
             ignoredProperties = ReadSetting(settings, nameof(ignoredProperties), "id;name;classname;imagecontentshash");
             helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), "all");
             s_DisabledIndexersString = ReadSetting(settings, nameof(disabledIndexers), "");
+            refreshSearchWindowsInPlayMode = ReadSetting(settings, nameof(refreshSearchWindowsInPlayMode), false);
+            minIndexVariations = ReadSetting(settings, nameof(minIndexVariations), 2);
+            findProviderIndexHelper = ReadSetting(settings, nameof(findProviderIndexHelper), true);
 
             itemIconSize = EditorPrefs.GetFloat(k_ItemIconSizePrefKey, itemIconSize);
 
@@ -271,6 +276,7 @@ namespace UnityEditor.Search
             var settings = new Dictionary<string, object>
             {
                 [nameof(trackSelection)] = trackSelection,
+                [nameof(refreshSearchWindowsInPlayMode)] = refreshSearchWindowsInPlayMode,
                 [nameof(fetchPreview)] = fetchPreview,
                 [nameof(defaultFlags)] = (int)defaultFlags,
                 [nameof(keepOpen)] = keepOpen,
@@ -291,12 +297,14 @@ namespace UnityEditor.Search
                 [nameof(ignoredProperties)] = ignoredProperties,
                 [nameof(helperWidgetCurrentArea)] = helperWidgetCurrentArea,
                 [nameof(disabledIndexers)] = string.Join(";;;", disabledIndexers),
+                [nameof(minIndexVariations)] = minIndexVariations,
+                [nameof(findProviderIndexHelper)] = findProviderIndexHelper,
 
-            };
+        };
 
             RetriableOperation<IOException>.Execute(() =>
             {
-            SJSON.Save(settings, projectLocalSettingsPath);
+                SJSON.Save(settings, projectLocalSettingsPath);
             }, 5, TimeSpan.FromMilliseconds(10));
             SaveFavorites();
 
@@ -610,6 +618,7 @@ namespace UnityEditor.Search
                     {
                         trackSelection = Toggle(Styles.trackSelectionContent, nameof(trackSelection), trackSelection);
                         fetchPreview = Toggle(Styles.fetchPreviewContent, nameof(fetchPreview), fetchPreview);
+                        refreshSearchWindowsInPlayMode = Toggle(Styles.refreshSearchWindowsInPlayModeContent, nameof(refreshSearchWindowsInPlayMode), refreshSearchWindowsInPlayMode);
                         var newDebounceMs = EditorGUILayout.IntSlider(Styles.debounceThreshold, debounceMs, 0, 1000);
                         if (newDebounceMs != debounceMs)
                             debounceMs = newDebounceMs;
@@ -642,9 +651,23 @@ namespace UnityEditor.Search
                     if (EditorGUILayout.DropdownButton(Utils.GUIContentTemp("Custom Indexers"), FocusType.Passive))
                         OpenCustomIndexerMenu();
 
-                    EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
                     EditorGUI.BeginChangeCheck();
-                        ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+                    if (Unsupported.IsSourceBuild())
+                    {
+                        findProviderIndexHelper = EditorGUILayout.Toggle("Use Find Provider", findProviderIndexHelper);
+                        minIndexVariations = EditorGUILayout.IntField("Min Variations", minIndexVariations);
+                        if (minIndexVariations < 1)
+                        {
+                            minIndexVariations = 1;
+                        }
+                        else if (minIndexVariations > 5)
+                        {
+                            minIndexVariations = 5;
+                        }
+                    }
+
+                    EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
+                    ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
                     if (EditorGUI.EndChangeCheck())
                         Save();
                 }
@@ -978,6 +1001,9 @@ namespace UnityEditor.Search
             public static GUIContent fetchPreviewContent = EditorGUIUtility.TrTextContent(
                 "Generate an asset preview thumbnail for found items",
                 "Fetching the preview of the items can consume more memory and make searches within very large project slower.");
+            public static GUIContent refreshSearchWindowsInPlayModeContent = EditorGUIUtility.TrTextContent(
+                "Refresh Search views in Play Mode",
+                "Automatically refresh search views when hierarchy changes happened in Play Mode");
             public static GUIContent dockableContent = EditorGUIUtility.TrTextContent("Open Search as dockable window");
             public static GUIContent debugContent = EditorGUIUtility.TrTextContent("[DEV] Display additional debugging information");
             public static GUIContent debounceThreshold = EditorGUIUtility.TrTextContent("Select the typing debounce threshold (ms)");

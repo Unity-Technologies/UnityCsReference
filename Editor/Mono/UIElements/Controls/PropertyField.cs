@@ -333,6 +333,7 @@ namespace UnityEditor.UIElements
                          decoratorRect.height = decorator.GetHeight();
                          decoratorRect.width = resolvedStyle.width;
                          decorator.OnGUI(decoratorRect);
+                         ve.style.height = decoratorRect.height;
                      });
                      ve.style.height = decorator.GetHeight();
                  }

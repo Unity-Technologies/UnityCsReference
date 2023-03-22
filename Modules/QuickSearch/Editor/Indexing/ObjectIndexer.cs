@@ -82,18 +82,19 @@ namespace UnityEditor.Search
                 foreach (var r in base.SearchWord(word, op, subset))
                     yield return r;
 
-                var baseScore = settings.baseScore;
-                var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
-                if (op == SearchIndexOperator.Equal)
-                    options = FindOptions.Exact;
-                else if (m_DoFuzzyMatch)
-                    options |= FindOptions.Fuzzy;
-
-                var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
-                foreach (var r in FindProvider.SearchWord(false, word, options, documents))
+                if (SearchSettings.findProviderIndexHelper)
                 {
-                    if (m_IndexByDocuments.TryGetValue(r.id, out var documentIndex))
-                        yield return new SearchResult(r.id, documentIndex, baseScore + r.score + 5);
+                    var baseScore = settings.baseScore;
+                    var options = FindOptions.Words | FindOptions.Glob | FindOptions.Regex | FindOptions.FileName;
+                    if (m_DoFuzzyMatch)
+                        options |= FindOptions.Fuzzy;
+
+                    var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
+                    foreach (var r in FindProvider.SearchWord(false, word, options, documents))
+                    {
+                        if (m_IndexByDocuments.TryGetValue(r.id, out var documentIndex))
+                            yield return new SearchResult(r.id, documentIndex, baseScore + r.score + 5);
+                    }
                 }
             }
         }
@@ -231,9 +232,14 @@ namespace UnityEditor.Search
         /// <param name="scoreModifier">Modified to apply to the base score for a specific word.</param>
         public void IndexWord(int documentIndex, in string word, int maxVariations, bool exact, int scoreModifier = 0)
         {
+            IndexWord(documentIndex, word, minWordIndexationLength, maxVariations, exact, scoreModifier);
+        }
+
+        internal void IndexWord(int documentIndex, in string word, int minVariations, int maxVariations, bool exact, int scoreModifier = 0)
+        {
             var lword = word.ToLowerInvariant();
             var modifiedScore = settings.baseScore + scoreModifier;
-            AddWord(lword, minWordIndexationLength, maxVariations, modifiedScore, documentIndex);
+            AddWord(lword, minVariations, maxVariations, modifiedScore, documentIndex);
             if (exact)
                 AddExactWord(lword, modifiedScore, documentIndex);
         }

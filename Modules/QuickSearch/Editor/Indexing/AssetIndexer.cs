@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEditor.SceneManagement;
+using UnityEditor.Utils;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -121,11 +122,8 @@ namespace UnityEditor.Search
                 return;
 
             AddSourceDocument(path, GetDocumentHash(path));
+            IndexFileName(documentIndex, path);
 
-            var fileName = Path.GetFileName(path);
-            IndexWordComponents(documentIndex, fileName);
-            IndexPropertyComponents(documentIndex, "name", Path.GetFileNameWithoutExtension(fileName));
-            
             if (path.StartsWith("Packages/", StringComparison.Ordinal))
                 IndexProperty(documentIndex, "a", "packages", saveKeyword: true, exact: true);
             else
@@ -138,9 +136,11 @@ namespace UnityEditor.Search
                 IndexProperty(documentIndex, "ext", fi.Extension.Replace(".", ""), saveKeyword: false, exact: true);
                 IndexNumber(documentIndex, "age", (DateTime.Now - fi.LastWriteTime).TotalDays);
 
-                foreach (var dir in Path.GetDirectoryName(path).Split(new[] { '/', '\\' }).Skip(1).Reverse().Take(3))
+                var dirPath = Paths.ConvertSeparatorsToUnity(Path.GetDirectoryName(path));
+                foreach (var dir in dirPath.Split('/').Skip(1).Reverse().Take(3))
                     IndexProperty(documentIndex, "dir", dir, saveKeyword: false, exact: true);
-
+                
+                IndexProperty(documentIndex, "dir", dirPath, saveKeyword: false, exact: true);
                 IndexProperty(documentIndex, "t", "file", saveKeyword: true, exact: true);
             }
             else if (Directory.Exists(path))
@@ -215,6 +215,56 @@ namespace UnityEditor.Search
 
             if (settings.options.dependencies)
                 IndexDependencies(documentIndex, path);
+        }
+
+        internal void IndexFileName(in int documentIndex, string filePath)
+        {
+            var fileName = Path.GetFileName(filePath);
+            var extension = Path.GetExtension(fileName);
+            if (!string.IsNullOrEmpty(extension))
+            {
+                extension = extension.Substring(1).ToLowerInvariant();
+            }
+            var components = SearchUtils.SplitFileEntryComponents(fileName, SearchUtils.entrySeparators, 1).ToArray();
+            int scoreModifier = 0;
+            double number = 0;
+            var minIndexationLength = minWordIndexationLength;
+            minWordIndexationLength = 1;
+            foreach (var c in components)
+            {
+                // Skip indexing variations on extension
+                if (c == extension)
+                    continue;
+
+                var score = settings.baseScore + scoreModifier++;
+                IndexWord(documentIndex, c, exact: false, scoreModifier: scoreModifier);
+
+                if (Utils.TryParse(c, out number))
+                {
+                    AddNumber("name", number, score, documentIndex);
+                }
+                else
+                {
+                    AddProperty("name", c, score, documentIndex, saveKeyword: false, exact: false);
+                }
+            }
+
+            fileName = fileName.ToLowerInvariant();
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            if (components.Length > 1)
+            {
+                AddProperty("name", fileNameWithoutExtension, fileNameWithoutExtension.Length, fileNameWithoutExtension.Length, scoreModifier, documentIndex, saveKeyword: false, exact: true);
+                IndexWord(documentIndex, fileNameWithoutExtension, fileNameWithoutExtension.Length, fileNameWithoutExtension.Length, exact: true, scoreModifier: scoreModifier);
+            }
+
+            if (!string.IsNullOrEmpty(extension))
+            {
+                AddProperty("name", fileName, fileName.Length, fileName.Length, scoreModifier, documentIndex, saveKeyword: false, exact: true);
+                IndexWord(documentIndex, fileName, fileName.Length, fileName.Length, exact: true, scoreModifier: scoreModifier);
+                IndexWord(documentIndex, extension, extension.Length, extension.Length, exact: true, scoreModifier: scoreModifier);
+            }
+
+            minWordIndexationLength = minIndexationLength;
         }
 
         private void IndexProperties(in int documentIndex, in string path, in bool hasCustomIndexers)

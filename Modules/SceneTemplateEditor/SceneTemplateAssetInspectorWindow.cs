@@ -183,12 +183,16 @@ namespace UnityEditor.SceneTemplate
             buttonRow.Add(createPipelineButton);
             sceneTemplatePipeline.Add(buttonRow);
             var version = UnityEditorInternal.InternalEditorUtility.GetUnityVersion();
-            var url = $"https://docs.unity3d.com/{version.Major}.{version.Minor}/Documentation/Manual/scene-templates-customizing-scene-instantiation.html";
-            root.Add(CreateFoldoutInspectorWithHelp(sceneTemplatePipeline, L10n.Tr("Scene Template Pipeline"), "SceneTemplatePipelineFoldout", url));
+            root.Add(CreateFoldoutInspectorWithHelp(sceneTemplatePipeline, L10n.Tr("Scene Template Pipeline"), "SceneTemplatePipelineFoldout", GetSceneTemplatePipelineHelp()));
 
             // Dependencies
             root.Add(CreateFoldoutInspector(BuildDependencyRows(), L10n.Tr("Dependencies"), "SceneTemplateDependenciesFoldout"));
             return root;
+        }
+
+        internal static string GetSceneTemplatePipelineHelp()
+        {
+            return Help.FindHelpNamed("scene-templates-customizing-scene-instantiation");
         }
 
         protected override bool ShouldHideOpenButton()

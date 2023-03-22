@@ -206,7 +206,11 @@ namespace UnityEditor
                     }
                 }
 
-                return url;
+                if (IsURL(url))
+                    return url;
+
+                // Assume url is a topic that needs to be properly formatted: 
+                return FindHelpNamed(url);
             }
 
             var topicForObject = HelpFileNameForObject(obj);
@@ -417,6 +421,11 @@ namespace UnityEditor
                     }
                 }
             }
+        }
+
+        private static bool IsURL(string path)
+        {
+            return path.StartsWith("http://") || path.StartsWith("https://") || path.StartsWith(k_AbsoluteFileRef);
         }
 
         private static bool IsLocalPath(string path)

@@ -67,6 +67,11 @@ namespace Unity.UI.Builder
             m_OffsetXField = this.Q<DimensionStyleField>(s_OffsetXFieldName);
             m_OffsetYField = this.Q<DimensionStyleField>(s_OffsetYFieldName);
             m_BlurRadiusField = this.Q<DimensionStyleField>(s_BlurRadiusFieldName);
+
+            m_OffsetXField.dragStep = BuilderConstants.DimensionStyleFieldReducedDragStep;
+            m_OffsetYField.dragStep = BuilderConstants.DimensionStyleFieldReducedDragStep;
+            m_BlurRadiusField.dragStep = BuilderConstants.DimensionStyleFieldReducedDragStep;
+
             m_ColorField = this.Q<ColorField>(s_ColorFieldName);
 
             m_OffsetXField.RegisterValueChangedCallback(e =>

@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
 using System;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
@@ -19,12 +17,20 @@ namespace UnityEditor
         public TypeSelectionList(Object[] objects)
         {
             // Create dictionary of lists of objects indexed by their type.
-            Dictionary<string, List<Object>> types = new Dictionary<string, List<Object>>();
+            var types = new Dictionary<string, List<Object>>();
             foreach (Object o in objects)
             {
-                string typeName = ObjectNames.GetTypeName(o);
-                if (o is GameObject && EditorUtility.IsPersistent(o))
-                    typeName = "Prefab";
+                var typeName = ObjectNames.GetTypeName(o) + "{0}";
+
+                if (EditorUtility.IsPersistent(o))
+                {
+                    if (o is GameObject)
+                        typeName = "Prefab{0}";
+
+                    var importerType = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(o))?.GetType();
+                    if (importerType is not null && importerType != typeof(AssetImporter))
+                        typeName = $"{typeName} ({importerType.Name})";
+                }
 
                 if (!types.ContainsKey(typeName))
                     types[typeName] = new List<Object>();
@@ -33,7 +39,7 @@ namespace UnityEditor
 
             // Create and store a TypeSelection per type.
             m_TypeSelections = new List<TypeSelection>();
-            foreach (KeyValuePair<string, List<Object>> kvp in types)
+            foreach (var kvp in types)
                 m_TypeSelections.Add(new TypeSelection(kvp.Key, kvp.Value.ToArray()));
 
             // Sort the TypeSelections
@@ -50,7 +56,11 @@ namespace UnityEditor
         {
             System.Diagnostics.Debug.Assert(objects != null && objects.Length >= 1);
             this.objects = objects;
-            label = new GUIContent(objects.Length + " " + ObjectNames.NicifyVariableName(typeName) + (objects.Length > 1 ? "s" : ""));
+
+            label = new GUIContent(
+                $"{objects.Length} " +
+                $"{ObjectNames.NicifyVariableName(string.Format(typeName, objects.Length > 1 ? "s" : ""))}");
+
             if (objects[0] is GameObject)
                 label.image = EditorUtility.IsPersistent(objects[0]) ? PrefabUtility.GameObjectStyles.prefabIcon : PrefabUtility.GameObjectStyles.gameObjectIcon;
             else

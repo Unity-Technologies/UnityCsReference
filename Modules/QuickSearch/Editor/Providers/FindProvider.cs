@@ -23,6 +23,8 @@ namespace UnityEditor.Search.Providers
         Glob = 1 << 2,
         Fuzzy = 1 << 3,
         Exact = 1 << 15,
+        FileName = 1 << 16,
+        NoExtension = 1 << 17,
         Packages = 1 << 28,
         All = Words | Regex | Glob | Fuzzy | Packages,
 
@@ -196,7 +198,7 @@ namespace UnityEditor.Search.Providers
                 try
                 {
                     var match = SearchFile(doc.name, word, options, rxm, globRx, out var score) ||
-                        (!string.IsNullOrEmpty(doc.m_Source) && SearchFile(doc.m_Source, word, options, rxm, globRx, out score));
+                        (!string.IsNullOrEmpty(doc.m_Source) && doc.m_Source != doc.name && SearchFile(doc.m_Source, word, options, rxm, globRx, out score));
                     if (!exclude && match)
                         results.Add(new SearchDocument(doc, ComputeResultScore(score, doc.name)));
                     else if (exclude && !match)
@@ -220,9 +222,29 @@ namespace UnityEditor.Search.Providers
             return score;
         }
 
+        internal static string ProcessFilePath(string path, FindOptions options)
+        {
+            if (options.HasAll(FindOptions.FileName | FindOptions.NoExtension))
+            {
+                return Path.GetFileNameWithoutExtension(path);
+            }
+            else if (options.HasFlag(FindOptions.FileName))
+            {
+                return Path.GetFileName(path);
+            }
+            else if(options.HasFlag(FindOptions.NoExtension))
+            {
+                var ext = Path.GetExtension(path);
+                return string.IsNullOrEmpty(ext) ? path : path.Substring(0, path.Length - ext.Length);
+            }
+
+            return path;
+        }
+
         private static bool SearchFile(string f, string word, FindOptions options, in Regex rxm, in Regex globRx, out int score)
         {
             score = 0;
+            f = ProcessFilePath(f, options);
 
             if (options.HasAny(FindOptions.Words))
             {

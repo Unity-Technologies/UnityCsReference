@@ -60,7 +60,7 @@ namespace UnityEditor.Search
         /// </summary>
         /// <param name="source"></param>
         /// <returns></returns>
-        static readonly Regex s_CamelCaseSplit = new Regex(@"(?<!^)(?=[A-Z0-9])", RegexOptions.Compiled);
+        static readonly Regex s_CamelCaseSplit = new Regex(@"(?<!^)(?=[A-Z])", RegexOptions.Compiled);
         public static string[] SplitCamelCase(string source)
         {
             return s_CamelCaseSplit.Split(source);
@@ -133,17 +133,22 @@ namespace UnityEditor.Search
         /// <returns>Returns list of tokens and variations in lowercase</returns>
         public static IEnumerable<string> SplitFileEntryComponents(string path, in char[] entrySeparators)
         {
+            return SplitFileEntryComponents(path, entrySeparators, 1);
+        }
+
+        public static IEnumerable<string> SplitFileEntryComponents(string path, in char[] entrySeparators, int minTokenLength)
+        {
             path = Utils.RemoveInvalidCharsFromPath(path, '_');
             var name = Path.GetFileNameWithoutExtension(path);
             var nameTokens = name.Split(entrySeparators).Distinct().ToArray();
             var scc = nameTokens.SelectMany(s => SplitCamelCase(s)).Where(s => s.Length > 0).ToArray();
             var fcc = scc.Aggregate("", (current, s) => current + s[0]);
             return new[] { Path.GetExtension(path).Replace(".", "") }
-                .Concat(scc.Where(s => s.Length > 1))
+                .Concat(scc)
                 .Concat(FindShiftLeftVariations(fcc))
                 .Concat(nameTokens)
                 .Concat(path.Split(entrySeparators).Reverse())
-                .Where(s => s.Length > 1)
+                .Where(s => s.Length >= minTokenLength)
                 .Select(s => s.ToLowerInvariant())
                 .Distinct();
         }
@@ -755,7 +760,7 @@ namespace UnityEditor.Search
                     return false;
             }
 
-            return !p.isArray && !p.isFixedBuffer && p.propertyPath.LastIndexOf('[') == -1;
+            return (p.propertyType == SerializedPropertyType.String || !p.isArray) && !p.isFixedBuffer && p.propertyPath.LastIndexOf('[') == -1;
         }
 
         internal static IEnumerable<UnityEngine.Object> GetTemplates(IEnumerable<UnityEngine.Object> objects)
