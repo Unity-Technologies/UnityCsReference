@@ -538,6 +538,8 @@ namespace UnityEditorInternal
         private float listElementTopPadding => headerHeight > 5 ? 4 : 1; // headerHeight is usually set to 3px when there is no header content. Therefore, we add a 1px top margin to match the 4px bottom margin
         private const float kListElementBottomPadding = 4;
 
+        bool useCulling => GUI.matrix.rotation == Quaternion.identity && GUI.matrix.lossyScale == Vector3.one;
+
         // draggable accessor
         public bool draggable
         {
@@ -874,8 +876,11 @@ namespace UnityEditorInternal
                         var next = Mathf.Min(i + 1, m_Count - 1);
                         var previous = Mathf.Max(i - 1, 0);
 
-                        if (visibleRect.y > GetElementYOffset(next) + GetElementHeight(next)) continue;
-                        if (visibleRect.y + visibleRect.height < GetElementYOffset(previous)) break;
+                        if (useCulling)
+                        {
+                            if (visibleRect.y > GetElementYOffset(next) + GetElementHeight(next)) continue;
+                            if (visibleRect.y + visibleRect.height < GetElementYOffset(previous)) break;
+                        }
 
                         var nonDragTargetIndex = m_NonDragTargetIndices[i];
                         if (nonDragTargetIndex != -1)
@@ -953,8 +958,11 @@ namespace UnityEditorInternal
                     // if we aren't dragging, we just draw all of the elements in order
                     for (int i = 0; i < m_Count; i++)
                     {
-                        if (visibleRect.y > GetElementYOffset(i) + GetElementHeight(i)) continue;
-                        if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
+                        if (useCulling)
+                        {
+                            if (visibleRect.y > GetElementYOffset(i) + GetElementHeight(i)) continue;
+                            if (visibleRect.y + visibleRect.height < GetElementYOffset(i > 0 ? i - 1 : i)) break;
+                        }
 
                         bool activeElement = m_Selection.Any(id => id == i);
                         bool focusedElement = (activeElement && HasKeyboardControl());

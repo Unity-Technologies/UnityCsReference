@@ -222,7 +222,7 @@ namespace UnityEditor.Search
             }
 
             m_ActionsRefreshCallback?.Pause();
-            if (showOptions.HasAny(ShowDetailsOptions.Actions))
+            if (showOptions.HasAny(ShowDetailsOptions.Actions) && !m_ViewModel.IsPicker())
             {
                 RefreshActions(context);
                 m_ActionsRefreshCallback = schedule.Execute(() => RefreshActions(context)).StartingIn(100).Every(100);

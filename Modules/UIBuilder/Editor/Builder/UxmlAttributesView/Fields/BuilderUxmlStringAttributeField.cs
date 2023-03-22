@@ -76,6 +76,20 @@ namespace Unity.UI.Builder
 
                 return uiField;
             }
+
+            if (attribute.name.Equals("value") && attributeOwner is TextField { multiline: true })
+            {
+                var uiField = new TextField(fieldLabel);
+                uiField.RegisterValueChangedCallback(evt =>
+                {
+                    if (evt.leafTarget == uiField.labelElement || !CheckNullOrEmptyTextChange(evt))
+                        return;
+                    InvokeValueChangedCallback(uiField, attribute, evt.newValue, ValueToUxml.Convert(uiField.value), onValueChange);
+                });
+                uiField.multiline = true;
+                uiField.AddToClassList(BuilderConstants.InspectorMultiLineTextFieldClassName);
+                return uiField;
+            }
             else
             {
                 var uiField = new TextField(fieldLabel);

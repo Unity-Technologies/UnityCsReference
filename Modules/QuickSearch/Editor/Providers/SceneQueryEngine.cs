@@ -121,7 +121,8 @@ namespace UnityEditor.Search.Providers
 
             var sceneIcon = Utils.LoadIcon("SceneAsset Icon");
             m_QueryEngine.GetFilter("ref")
-                .AddOrUpdatePropositionData(category: "Reference", label:"Reference By Path (Object)", replacement:"ref=<$object:none,UnityEngine.Object$>", help: "Find all objects referencing a specific asset.", icon:sceneIcon, color: QueryColors.filter)
+                .AddOrUpdatePropositionData(category: "Reference", label:"Referencing Asset", replacement:"ref=<$object:none,UnityEngine.Object$>", help: "Find all objects referencing a specific asset.", icon:sceneIcon, color: QueryColors.filter)
+                .AddOrUpdatePropositionData(category: "Reference", label: "Referencing GameObject", replacement: "ref=<$object:none,UnityEngine.GameObject$>", help: "Find all objects referencing a specific GameObject.", icon: sceneIcon, color: QueryColors.filter)
                 .AddOrUpdatePropositionData(category: "Reference", label:"Reference By Instance ID (Number)", replacement:"ref=1000", help: "Find all objects referencing a specific instance ID (Number).", icon: sceneIcon, color: QueryColors.filter)
                 .AddOrUpdatePropositionData(category: "Reference", label:"Reference By Asset Expression", replacement:"ref={p: }", help: "Find all objects referencing for a given asset search.", icon: sceneIcon, color: QueryColors.filter);
 

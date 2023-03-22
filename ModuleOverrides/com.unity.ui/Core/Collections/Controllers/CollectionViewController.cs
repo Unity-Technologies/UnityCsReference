@@ -38,7 +38,19 @@ namespace UnityEngine.UIElements
             {
                 if (m_ItemsSource == value)
                     return;
+                
+                var hadValidDataAndBindings = m_View.HasValidDataAndBindings();
+
                 m_ItemsSource = value;
+
+                // We need to make sure to RefreshItems if itemsSource was set last, but only when we're not using
+                // ListViewBindings, that does the refresh already when the SerializedProperty is ready.
+                if (!hadValidDataAndBindings && m_View.HasValidDataAndBindings() && 
+                    m_View.GetProperty(BaseVerticalCollectionView.internalBindingKey) == null)
+                {
+                    m_View.RefreshItems();
+                }
+
                 RaiseItemsSourceChanged();
             }
         }

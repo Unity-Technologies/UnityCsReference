@@ -79,6 +79,8 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty virtualizationMethodProperty = nameof(virtualizationMethod);
         internal static readonly DataBindingProperty fixedItemHeightProperty = nameof(fixedItemHeight);
 
+        internal const string internalBindingKey = "__unity-collection-view-internal-binding";
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseVerticalCollectionView"/>.
         /// </summary>
@@ -87,8 +89,8 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
-            private readonly UxmlIntAttributeDescription m_FixedItemHeight = new UxmlIntAttributeDescription { name = "fixed-item-height", obsoleteNames = new[] { "itemHeight, item-height" }, defaultValue = s_DefaultItemHeight };
             private readonly UxmlEnumAttributeDescription<CollectionVirtualizationMethod> m_VirtualizationMethod = new UxmlEnumAttributeDescription<CollectionVirtualizationMethod> { name = "virtualization-method", defaultValue = CollectionVirtualizationMethod.FixedHeight };
+            private readonly UxmlIntAttributeDescription m_FixedItemHeight = new UxmlIntAttributeDescription { name = "fixed-item-height", obsoleteNames = new[] { "itemHeight, item-height" }, defaultValue = s_DefaultItemHeight };
             private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
             private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
             private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };
@@ -247,7 +249,9 @@ namespace UnityEngine.UIElements
                 var previous = itemsSource;
                 GetOrCreateViewController().itemsSource = value;
                 if (previous != itemsSource)
+                {
                     NotifyPropertyChanged(itemsSourceProperty);
+                }
             }
         }
 

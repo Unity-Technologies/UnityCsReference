@@ -212,6 +212,20 @@ namespace UnityEditorInternal
                 eventItem.BindFields(propertyData, createMenuCallback, formatSelectedValueCallback, getArgumentCallback);
             };
 
+            listView.itemsAdded += indices =>
+            {
+                foreach (var i in indices)
+                {
+                    var pListener = propertyRelative.GetArrayElementAtIndex(i);
+                    var callState = pListener.FindPropertyRelative(kCallStatePath);
+                    // SERIAL-124
+                    // Objects added to an array via SerializedObject do not have their default values set.
+                    // Therefore we need to set the initial values here to fix UUM-27561
+                    callState.enumValueIndex = (int)UnityEventCallState.RuntimeOnly;
+                    callState.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+                }
+            };
+
             return listView;
         }
 

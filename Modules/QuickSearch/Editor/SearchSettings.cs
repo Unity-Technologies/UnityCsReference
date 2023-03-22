@@ -156,7 +156,8 @@ namespace UnityEditor.Search
         internal static string ignoredProperties { get; set; }
         internal static string helperWidgetCurrentArea { get; set; }
         internal static bool refreshSearchWindowsInPlayMode { get; set; }
-
+        internal static int minIndexVariations { get; set; }
+        internal static bool findProviderIndexHelper { get; set; }
         internal static int[] expandedQueries { get; set; }
 
         internal static bool wantsMore
@@ -245,6 +246,8 @@ namespace UnityEditor.Search
             helperWidgetCurrentArea = ReadSetting(settings, nameof(helperWidgetCurrentArea), "all");
             s_DisabledIndexersString = ReadSetting(settings, nameof(disabledIndexers), "");
             refreshSearchWindowsInPlayMode = ReadSetting(settings, nameof(refreshSearchWindowsInPlayMode), false);
+            minIndexVariations = ReadSetting(settings, nameof(minIndexVariations), 2);
+            findProviderIndexHelper = ReadSetting(settings, nameof(findProviderIndexHelper), true);
 
             itemIconSize = EditorPrefs.GetFloat(k_ItemIconSizePrefKey, itemIconSize);
 
@@ -294,8 +297,10 @@ namespace UnityEditor.Search
                 [nameof(ignoredProperties)] = ignoredProperties,
                 [nameof(helperWidgetCurrentArea)] = helperWidgetCurrentArea,
                 [nameof(disabledIndexers)] = string.Join(";;;", disabledIndexers),
+                [nameof(minIndexVariations)] = minIndexVariations,
+                [nameof(findProviderIndexHelper)] = findProviderIndexHelper,
 
-            };
+        };
 
             RetriableOperation<IOException>.Execute(() =>
             {
@@ -646,9 +651,23 @@ namespace UnityEditor.Search
                     if (EditorGUILayout.DropdownButton(Utils.GUIContentTemp("Custom Indexers"), FocusType.Passive))
                         OpenCustomIndexerMenu();
 
-                    EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
                     EditorGUI.BeginChangeCheck();
-                        ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+                    if (Unsupported.IsSourceBuild())
+                    {
+                        findProviderIndexHelper = EditorGUILayout.Toggle("Use Find Provider", findProviderIndexHelper);
+                        minIndexVariations = EditorGUILayout.IntField("Min Variations", minIndexVariations);
+                        if (minIndexVariations < 1)
+                        {
+                            minIndexVariations = 1;
+                        }
+                        else if (minIndexVariations > 5)
+                        {
+                            minIndexVariations = 5;
+                        }
+                    }
+
+                    EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
+                    ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
                     if (EditorGUI.EndChangeCheck())
                         Save();
                 }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Search.Providers;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -424,6 +425,25 @@ namespace UnityEditor.Search
             yield return CreateProposition(flags, "Static", "static", "Search static objects");
             yield return CreateProposition(flags, "Prefab", "prefab", "Search prefab objects");
             yield return CreateProposition(flags, "Main", "main", "Search main asset representation");
+        }
+    }
+
+    [QueryListBlock("Missing", "missing", "missing", ":")]
+    class QueryMissingBlock : QueryListBlock
+    {
+        public QueryMissingBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+            : base(source, id, value, attr)
+        {
+            icon = Utils.LoadIcon("Filter Icon");
+            alwaysDrawLabel = false;
+        }
+
+        public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+        {
+            foreach(var e in Enum.GetValues(typeof(MissingReferenceFilter)))
+            {
+                yield return CreateProposition(flags, e.ToString(), e, $"Missing {e}");
+            }
         }
     }
 }

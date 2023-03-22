@@ -21,7 +21,7 @@ namespace UnityEditor.SceneTemplate
     [Serializable]
     [ExcludeFromPreset]
     [AssetFileNameExtension("scenetemplate")]
-    [HelpURL("https://docs.unity3d.com/2023.1/Documentation/Manual/scene-templates.html")]
+    [HelpURL("scene-templates")]
     public class SceneTemplateAsset : ScriptableObject
     {
         internal const string extension = "scenetemplate";
