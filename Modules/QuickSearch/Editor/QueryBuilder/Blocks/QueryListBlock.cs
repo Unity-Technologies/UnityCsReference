@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Search.Providers;
 using System.Text;
 using UnityEditorInternal;
 using UnityEngine;
@@ -69,13 +70,13 @@ namespace UnityEditor.Search
             return icon == null ? QueryColors.type : QueryColors.typeIcon;
         }
 
-        internal SearchProposition CreateProposition(SearchPropositionFlags flags, string label, string data, string help = "", int score = 0)
+        internal SearchProposition CreateProposition(SearchPropositionFlags flags, string label, object data, string help = "", int score = 0)
         {
             return new SearchProposition(category: GetCategory(flags), label: label, help: help,
                     data: data, priority: score, icon: icon, type: GetType(), color: GetBackgroundColor());
         }
 
-        internal SearchProposition CreateProposition(SearchPropositionFlags flags, string label, string data, string help, Texture2D icon, int score = 0)
+        internal SearchProposition CreateProposition(SearchPropositionFlags flags, string label, object data, string help, Texture2D icon, int score = 0)
         {
             return new SearchProposition(category: GetCategory(flags), label: label, help: help,
                     data: data, priority: score, icon: icon, type: GetType(), color: GetBackgroundColor());
@@ -444,6 +445,25 @@ namespace UnityEditor.Search
             yield return CreateProposition(flags, "Static", "static", "Search static objects");
             yield return CreateProposition(flags, "Prefab", "prefab", "Search prefab objects");
             yield return CreateProposition(flags, "Main", "main", "Search main asset representation");
+        }
+    }
+
+    [QueryListBlock("Missing", "missing", "missing", ":")]
+    class QueryMissingBlock : QueryListBlock
+    {
+        public QueryMissingBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+            : base(source, id, value, attr)
+        {
+            icon = Utils.LoadIcon("Filter Icon");
+            alwaysDrawLabel = false;
+        }
+
+        public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+        {
+            foreach(var e in Enum.GetValues(typeof(MissingReferenceFilter)))
+            {
+                yield return CreateProposition(flags, e.ToString(), e, $"Missing {e}");
+            }
         }
     }
 }

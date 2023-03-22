@@ -199,6 +199,9 @@ namespace Unity.UI.Builder
         public static readonly string MatchingStyleSheetRuleSourceTooltipFormatString = "    Selector: {0}\n    Sheet: {1}";
         public static readonly string VariableBindingTooltipFormatString =  "    Name: {0}\n    Sheet: {1}";
 
+        // Dimension Style Field specific
+        public const float DimensionStyleFieldReducedDragStep = 0.1f;
+
         //
         // Explorer
         //

@@ -15,9 +15,7 @@ namespace UnityEditor.Search
 {
     static partial class Evaluators
     {
-        [Description("Returns the currently selected folder."), Category("Env")]
-        [SearchExpressionEvaluator]
-        public static IEnumerable<SearchItem> CurrentFolder(SearchExpressionContext c)
+        static string GetSelectedPath()
         {
             string currentSelectedPath = string.Empty;
             if (ProjectBrowser.s_LastInteractedProjectBrowser)
@@ -37,10 +35,29 @@ namespace UnityEditor.Search
                     }
                 }
             }
+            return currentSelectedPath;
+        }
 
+        [Description("Returns the currently selected folder."), Category("Env")]
+        [SearchExpressionEvaluator]
+        public static IEnumerable<SearchItem> CurrentFolder(SearchExpressionContext c)
+        {
+            var currentSelectedPath = GetSelectedPath();
             if (!string.IsNullOrEmpty(currentSelectedPath))
                 currentSelectedPath = currentSelectedPath.ConvertSeparatorsToUnity();
             yield return SearchExpression.CreateItem(currentSelectedPath, c.ResolveAlias("CurrentFolder"));
+        }
+
+        [Description("Returns the currently selected folder name"), Category("Env")]
+        [SearchExpressionEvaluator]
+        public static IEnumerable<SearchItem> CurrentFolderName(SearchExpressionContext c)
+        {
+            var currentSelectedPath = GetSelectedPath();
+            if (!string.IsNullOrEmpty(currentSelectedPath))
+            {
+                currentSelectedPath = Path.GetFileName(currentSelectedPath);
+            }
+            yield return SearchExpression.CreateItem(currentSelectedPath, c.ResolveAlias("CurrentFolderName"));
         }
 
         [Description("Returns the name of the current project."), Category("Env")]

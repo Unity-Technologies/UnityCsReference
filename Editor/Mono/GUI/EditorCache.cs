@@ -67,9 +67,16 @@ namespace UnityEditor
                 // Are we dealing with a Root Editor?
                 if (editor.GetType() != nonRootEditor.GetType())
                 {
-                    // Try again, with a normal editor
+                    // Destroy previous editor
+                    UnityEngine.Object.DestroyImmediate(editor);
+                    // Try again, with a non Root editor
                     editor = nonRootEditor;
                     onSceneDragMethodInfo = editor.GetType().GetMethod("OnSceneDrag", sceneDragReflectionFlags);
+                }
+                else
+                {
+                    // Destroy unused non Root editor
+                    UnityEngine.Object.DestroyImmediate(nonRootEditor);
                 }
             }
 
