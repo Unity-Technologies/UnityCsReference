@@ -241,7 +241,8 @@ namespace UnityEditor
                 list.serializedProperty.serializedObject.ApplyModifiedProperties();
             }
 
-            SortingLayer.onLayerAdded(SortingLayer.layers[list.index]);
+            if (SortingLayer.onLayerAdded != null)
+                SortingLayer.onLayerAdded(SortingLayer.layers[list.index]);
         }
 
         public void ReorderSortLayerList(ReorderableList list)
@@ -252,7 +253,8 @@ namespace UnityEditor
 
         private void RemoveFromSortLayerList(ReorderableList list)
         {
-            SortingLayer.onLayerRemoved(SortingLayer.layers[list.index]);
+            if (SortingLayer.onLayerRemoved != null)
+                SortingLayer.onLayerRemoved(SortingLayer.layers[list.index]);
 
             ReorderableList.defaultBehaviours.DoRemoveButton(list);
             serializedObject.ApplyModifiedProperties();

@@ -116,8 +116,9 @@ namespace UnityEditor
 
             imguiContainer.style.minWidth = collapsed ? new StyleLength(240) : new StyleLength(StyleKeyword.Auto);
             imguiContainer.style.minHeight = collapsed ? new StyleLength(135) : new StyleLength(StyleKeyword.Auto);
-            imguiContainer.parent.style.flexGrow = 1;
-            imguiContainer.style.flexGrow = 1;
+
+            imguiContainer.style.flexGrow = collapsed ? 0 : 1;
+            imguiContainer.parent.style.flexGrow = collapsed ? 0 : 1;
 
             if (selectedCamera == null)
             {

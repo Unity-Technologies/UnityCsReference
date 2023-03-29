@@ -944,7 +944,7 @@ namespace UnityEditor
                     case TerrainTool.TerrainSettings:
                         if (GetActiveTerrainTool() != null)
                         {
-                            EditorTools.ToolManager.SetActiveTool<NoneTool>();
+                            ToolManager.RestorePreviousPersistentTool();
                         }
                         break;
                     case TerrainTool.None:
@@ -1213,8 +1213,7 @@ namespace UnityEditor
                     // is editor tool?
                     if (paintTool is ITerrainPaintToolWithOverlays)
                     {
-                        // deactivate the editor tool
-                        ToolManager.SetActiveTool<NoneTool>();
+                        ToolManager.RestorePreviousPersistentTool();
                         s_ActiveTerrainToolIsEditorTool = false;
                     }
                     else

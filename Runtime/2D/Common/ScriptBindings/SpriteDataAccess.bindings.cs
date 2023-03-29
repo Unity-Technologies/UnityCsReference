@@ -128,7 +128,7 @@ namespace UnityEngine.U2D
         unsafe public static NativeArray<Matrix4x4> GetBindPoses(this Sprite sprite)
         {
             var info = GetBindPoseInfo(sprite);
-            var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>(info.buffer, info.count, Allocator.Invalid);
+            var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>(info.buffer, info.count, Allocator.None);
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, sprite.GetSafetyHandle());
             return arr;
         }

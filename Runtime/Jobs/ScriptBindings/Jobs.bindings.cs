@@ -156,9 +156,44 @@ namespace Unity.Jobs.LowLevel.Unsafe
             }
         }
 
-        //@TODO: @timj Should we decrease this???
+        /// <summary>
+        /// The maximum number of job threads that can ever be created by the job system.
+        /// </summary>
+        /// <remarks>This maximum is the theoretical max the job system supports. In practice, the maximum number of job worker threads
+        /// created by the job system will be lower as the job system will prevent creating more job worker threads than logical
+        /// CPU cores on the target hardware. This value is useful for compile time constants, however when used for creating buffers
+        /// it may be larger than required. For allocating a buffer that can be subdivided evenly between job worker threads, prefer
+        /// the runtime constant returned by <seealso cref="JobsUtility.ThreadIndexCount"/>.
+        /// </remarks>
         public const int MaxJobThreadCount = 128;
         public const int CacheLineSize = 64;
+
+        /// <summary>
+        /// Returns the index for the current thread when executing a job, otherwise 0. When multiple threads are executing jobs, no two threads will have the same index. Range is [0, <seealso cref="JobsUtility.ThreadIndexCount"/>).
+        /// </summary>
+        /// <remarks>
+        /// The value returned when used from within a job is the same as the one stored in job members decorated with <seealso cref="Unity.Collections.LowLevel.Unsafe.NativeSetThreadIndexAttribute"/>.
+        /// </remarks>
+        public static extern int ThreadIndex
+        {
+            [FreeFunction("GetJobWorkerIndex", IsThreadSafe = true)]
+            get;
+        }
+
+        /// <summary>
+        /// Returns the maximum number of job workers that can work on a job at the same time.
+        /// </summary>
+        /// <remarks>
+        /// The job system will create a number of job worker threads that will be no greater than the number of logical CPU cores for the platform. However, since arbitrary threads
+        /// can execute jobs via work stealing we allocate extra workers which act as temporary job worker threads. JobsUtility.ThreadIndexCount reflects the maximum number of job worker threads
+        /// plus temporary workers the job system will ever use. As such, this value is useful for allocating buffers which should be subdivided evenly between job workers since
+        /// <seealso cref="JobsUtility.ThreadIndex"/> and <seealso cref="Collections.LowLevel.Unsafe.NativeSetThreadIndexAttribute"/> will never return a value greater than JobsUtility.ThreadIndexCount.
+        /// </remarks>
+        public static extern int ThreadIndexCount
+        {
+            [FreeFunction("GetJobWorkerIndexCount", IsThreadSafe = true)]
+            get;
+        }
 
         [FreeFunction("IsJobQueueBatchingEnabled")]
         static extern bool GetJobBatchingEnabled();
