@@ -688,11 +688,13 @@ namespace UnityEngine.UIElements
             else
             {
                 m_BoundingBox = rect;
-                if (!ShouldClip())
+                if (!ShouldClip() && resolvedStyle.display == DisplayStyle.Flex)
                 {
                     var childCount = m_Children.Count;
                     for (int i = 0; i < childCount; i++)
                     {
+                        if (!m_Children[i].areAncestorsAndSelfDisplayed)
+                            continue;
                         var childBB = m_Children[i].boundingBoxInParentSpace;
                         m_BoundingBox.xMin = Math.Min(m_BoundingBox.xMin, childBB.xMin);
                         m_BoundingBox.xMax = Math.Max(m_BoundingBox.xMax, childBB.xMax);
