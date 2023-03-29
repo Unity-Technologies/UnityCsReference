@@ -96,8 +96,8 @@ namespace UnityEditor.ShaderFoundry
             {
                 var rule = new CopyRuleInternal();
                 rule.m_SourceNameHandle = container.AddString(sourceName);
-                rule.m_InclusionListHandle = FixedHandleListInternal.Build(container, inclusions, (n) => (container.AddString(n)));
-                rule.m_ExclusionListHandle = FixedHandleListInternal.Build(container, exclusions, (n) => (container.AddString(n)));
+                rule.m_InclusionListHandle = HandleListInternal.Build(container, inclusions, (n) => (container.AddString(n)));
+                rule.m_ExclusionListHandle = HandleListInternal.Build(container, exclusions, (n) => (container.AddString(n)));
                 var resultHandle = container.Add(rule);
                 return new CopyRule(container, resultHandle);
             }

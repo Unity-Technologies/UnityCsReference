@@ -3995,6 +3995,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebugger.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebugger.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebuggerHistogram.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebuggerHistogram.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebuggerWindow.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\LayoutDebugger\UILayoutDebuggerWindow.cs</Link>
     </Compile>
@@ -4339,6 +4342,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildSettings.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildTargetSelection.cs">
+      <Link>Modules\BuildPipeline\Editor\Managed\BuildTargetSelection.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsageCache.bindings.cs">
       <Link>Modules\BuildPipeline\Editor\Managed\BuildUsageCache.bindings.cs</Link>
@@ -4775,12 +4781,6 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\AbstractNodeModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\AbstractNodeModel.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Badges\BadgeModel.cs">
-      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Badges\BadgeModel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Badges\ErrorBadgeModel.cs">
-      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Badges\ErrorBadgeModel.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Blackboard\BlackboardGraphModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Blackboard\BlackboardGraphModel.cs</Link>
     </Compile>
@@ -4832,6 +4832,9 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\IntConstant.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\IntConstant.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\LongConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\LongConstant.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\MeshConstant.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\MeshConstant.cs</Link>
     </Compile>
@@ -4849,6 +4852,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\TypeToConstantMapper.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\TypeToConstantMapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\UIntConstant.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\UIntConstant.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Vector2Constant.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Constants\Vector2Constant.cs</Link>
@@ -4888,6 +4894,12 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\InputOutputPortsNodeModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\InputOutputPortsNodeModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Markers\ErrorMarkerModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Markers\ErrorMarkerModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Markers\MarkerModel.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Markers\MarkerModel.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\Model.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\Model.cs</Link>
@@ -5447,6 +5459,9 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphElementPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphElementPart.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\BasePortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\BasePortContainerPart.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\CollapseButtonPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\CollapseButtonPart.cs</Link>
     </Compile>
@@ -5461,6 +5476,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\FourWayResizerPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\FourWayResizerPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\HorizontalPortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\HorizontalPortContainerPart.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\IconTitleProgressPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\IconTitleProgressPart.cs</Link>
@@ -5492,9 +5510,6 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConstantEditorPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConstantEditorPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortContainerPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortContainerPart.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\SinglePortContainerPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\SinglePortContainerPart.cs</Link>
     </Compile>
@@ -5516,9 +5531,6 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\WireControlPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\WireControlPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Badge.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Badge.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\BlockDragInfos_Internal.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\BlockDragInfos_Internal.cs</Link>
     </Compile>
@@ -5531,8 +5543,8 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ContextNode.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ContextNode.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ErrorBadge.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ErrorBadge.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ErrorMarker.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ErrorMarker.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\GraphElement.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\GraphElement.cs</Link>
@@ -5542,6 +5554,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Line_Internal.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Line_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Marker.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Marker.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\MiniMap.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\MiniMap.cs</Link>
@@ -5881,6 +5896,12 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\CopyPasteData.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\Views\CopyPasteData.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\AutoPlacementObserver.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\AutoPlacementObserver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\AutoPlacementStateComponent.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\AutoPlacementStateComponent.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphModelStateComponent.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\Views\GraphView\GraphModelStateComponent.cs</Link>
@@ -8579,9 +8600,6 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\EqualityChecks.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\EqualityChecks.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\FixedHandleList.bindings.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\FixedHandleList.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\FoundryAPIAttribute.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\FoundryAPIAttribute.cs</Link>
     </Compile>
@@ -8590,6 +8608,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\FunctionParameter.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\FunctionParameter.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\HandleList.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\HandleList.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ITemplateLinker.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ITemplateLinker.cs</Link>
@@ -8821,6 +8842,9 @@
     </Compile>
     <Compile Include="..\..\Modules\StyleSheetsEditor\StylePainter.cs">
       <Link>Modules\StyleSheetsEditor\StylePainter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TerrainEditor\AssemblyInfo.cs">
+      <Link>Modules\TerrainEditor\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TerrainEditor\Brush\Brush.cs">
       <Link>Modules\TerrainEditor\Brush\Brush.cs</Link>

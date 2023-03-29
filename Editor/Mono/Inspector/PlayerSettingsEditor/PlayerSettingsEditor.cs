@@ -94,6 +94,7 @@ namespace UnityEditor
             public static readonly GUIContent platformShaderChunkCount = EditorGUIUtility.TrTextContent("Chunk count", "Use this setting to control how much memory is used when loading shader variants.");
 
             public static readonly GUIContent bakeCollisionMeshes = EditorGUIUtility.TrTextContent("Prebake Collision Meshes*", "Bake collision data into the meshes on build time");
+            public static readonly GUIContent dedicatedServerOptimizations = EditorGUIUtility.TrTextContent("Enable Dedicated Server optimizations", "Performs additional optimizations on Dedicated Server builds.");
             public static readonly GUIContent keepLoadedShadersAlive = EditorGUIUtility.TrTextContent("Keep Loaded Shaders Alive*", "Prevents shaders from being unloaded");
             public static readonly GUIContent preloadedAssets = EditorGUIUtility.TrTextContent("Preloaded Assets*", "Assets to load at start up in the player and kept alive until the player terminates");
             public static readonly GUIContent stripEngineCode = EditorGUIUtility.TrTextContent("Strip Engine Code*", "Strip Unused Engine Code - Note that byte code stripping of managed assemblies is always enabled for the IL2CPP scripting backend.");
@@ -416,6 +417,7 @@ namespace UnityEditor
         SerializedProperty m_KeepLoadedShadersAlive;
         SerializedProperty m_PreloadedAssets;
         SerializedProperty m_BakeCollisionMeshes;
+        SerializedProperty m_DedicatedServerOptimizations;
         SerializedProperty m_ResizableWindow;
         SerializedProperty m_FullscreenMode;
         SerializedProperty m_VisibleInBackground;
@@ -638,6 +640,7 @@ namespace UnityEditor
             m_KeepLoadedShadersAlive           = FindPropertyAssert("keepLoadedShadersAlive");
             m_PreloadedAssets                  = FindPropertyAssert("preloadedAssets");
             m_BakeCollisionMeshes              = FindPropertyAssert("bakeCollisionMeshes");
+            m_DedicatedServerOptimizations     = FindPropertyAssert("dedicatedServerOptimizations");
             m_ResizableWindow                  = FindPropertyAssert("resizableWindow");
             m_UseMacAppStoreValidation         = FindPropertyAssert("useMacAppStoreValidation");
             m_MacAppStoreCategory              = FindPropertyAssert("macAppStoreCategory");
@@ -3191,6 +3194,9 @@ namespace UnityEditor
         {
             // Optimization
             GUILayout.Label(SettingsContent.optimizationTitle, EditorStyles.boldLabel);
+
+            if (platform.namedBuildTarget == NamedBuildTarget.Server)
+                EditorGUILayout.PropertyField(m_DedicatedServerOptimizations, SettingsContent.dedicatedServerOptimizations);
 
             EditorGUILayout.PropertyField(m_BakeCollisionMeshes, SettingsContent.bakeCollisionMeshes);
 

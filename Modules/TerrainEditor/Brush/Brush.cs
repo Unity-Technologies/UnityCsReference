@@ -80,6 +80,7 @@ namespace UnityEditor
                     m_Mask = DefaultMask();
 
                 m_Texture = GenerateBrushTexture(m_Mask, m_Falloff, m_RadiusScale, m_BlackWhiteRemapMin, m_BlackWhiteRemapMax, m_InvertRemapRange, m_Mask.width, m_Mask.height);
+                m_Texture.name = $"Terrain Brush ({m_Mask.name})";
                 m_UpdateTexture = false;
             }
         }
@@ -92,6 +93,7 @@ namespace UnityEditor
                     m_Mask = DefaultMask();
 
                 m_Thumbnail = GenerateBrushTexture(m_Mask, m_Falloff, m_RadiusScale, m_BlackWhiteRemapMin, m_BlackWhiteRemapMax, m_InvertRemapRange, 64, 64, true);
+                m_Thumbnail.name = $"Terrain Brush Thumbnail ({m_Mask.name})";
                 m_UpdateThumbnail = false;
             }
         }

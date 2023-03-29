@@ -49,18 +49,7 @@ namespace Unity.GraphToolsFoundation.Editor
             GraphChangeDescription changes = null;
             if (changeset != null)
             {
-                var newModels = changeset.NewModels.Select(graphModel.GetModel).Where(m => m != null);
-                var changedModels = new Dictionary<GraphElementModel, IReadOnlyList<ChangeHint>>();
-                foreach (var kv in changeset.ChangedModelsAndHints)
-                {
-                    if (graphModel.TryGetModelFromGuid(kv.Key, out var model))
-                    {
-                        changedModels[model] = kv.Value;
-                    }
-                }
-                var deletedModels = changeset.DeletedModels.Select(graphModel.GetModel).Where(m => m != null);
-
-                changes = new GraphChangeDescription(newModels, changedModels, deletedModels);
+                changes = new GraphChangeDescription(changeset.NewModels, changeset.ChangedModelsAndHints, changeset.DeletedModels);
             }
 
             if (options == RequestGraphProcessingOptions.SaveGraph && graphModel.Asset != null)

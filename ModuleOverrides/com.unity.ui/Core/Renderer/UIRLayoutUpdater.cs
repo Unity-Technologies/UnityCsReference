@@ -40,6 +40,34 @@ namespace UnityEngine.UIElements
         public bool enabledInHierarchy = false;
         public bool isYogaNodeDirty = false;
         public LayoutDebuggerVisualElement parent = null;
+
+        public bool IsVisualElementVisible()
+        {
+            return visible && enable && enabledInHierarchy;
+        }
+
+        public int CountTotalElement()
+        {
+            int count = 0;
+            CountTotalElement(this, ref count);
+            return count;
+        }
+
+        private static void CountTotalElement(LayoutDebuggerVisualElement ve, ref int count)
+        {
+            if (!ve.IsVisualElementVisible())
+            {
+                return;
+            }
+
+            count++;
+
+            for (int i = 0; i < ve.m_Children.Count; ++i)
+            {
+                var child = ve.m_Children[i];
+                CountTotalElement(child, ref count);
+            }
+        }
     }
 
 
@@ -51,7 +79,7 @@ namespace UnityEngine.UIElements
          // We also consider that these controls can also be nested inside other similar controls.
          // For example, a simple scroll view may need more than 2 passes to lay out the viewport and scrollers.
          // Therefore, having a deep hierarchy of scroll views can require a fair amount of layout passes.
-        const int kMaxValidateLayoutCount = 10;
+        public const int kMaxValidateLayoutCount = 10;
 
         private static readonly string s_Description = "Update Layout";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);

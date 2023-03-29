@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.CommandStateObserver;
+using UnityEditor;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -66,7 +67,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="graphModelState">The state of the graph model.</param>
         /// <param name="selectionState">The selection state.</param>
         /// <param name="command">The command.</param>
-        public static void DefaultCommandHandler(UndoStateComponent undoState, BlackboardViewStateComponent blackboardViewState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, BlackboardGroupCreateCommand command)
+        public static void DefaultCommandHandler(UndoStateComponent undoState, BlackboardViewStateComponent blackboardViewState,
+            GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, BlackboardGroupCreateCommand command)
         {
             using var graphUpdater = graphModelState.UpdateScope;
             using var changeScope = graphModelState.GraphModel.ChangeDescriptionScope;
@@ -83,18 +85,10 @@ namespace Unity.GraphToolsFoundation.Editor
                 undoStateUpdater.SaveStates(undoableStates);
             }
 
-            var title = command.Title;
+            var title = string.IsNullOrEmpty(command.Title) ? "New Group" : command.Title.Trim();
 
-
-            if (string.IsNullOrEmpty(title))
-            {
-                var trimmedName = "New Group";
-                title = trimmedName;
-
-                int cpt = 1;
-                while (command.ContainingGroup.Items.Any(t => (t is IHasTitle titled) && titled.Title == title))
-                    title = trimmedName.FormatWithNamingScheme(cpt++);
-            }
+            var existingNames = command.ContainingGroup.Items.OfType<IHasTitle>().Select(t => t.Title).ToArray();
+            title = ObjectNames.GetUniqueName(existingNames, title);
 
             foreach (var selectionUpdater in selectionUpdaters)
             {

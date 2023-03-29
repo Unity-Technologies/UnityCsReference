@@ -354,6 +354,18 @@ namespace UnityEngine.Tilemaps
 
 
         [RequiredByNativeCode]
+        internal void GetLoopEndedForTileAnimationCallbackSettings(ref bool hasEndLoopForTileAnimationCallback)
+        {
+            hasEndLoopForTileAnimationCallback = HasLoopEndedForTileAnimationCallback();
+        }
+
+        [RequiredByNativeCode]
+        private void DoLoopEndedForTileAnimationCallback(int count, IntPtr positionsIntPtr)
+        {
+            HandleLoopEndedForTileAnimationCallback(count, positionsIntPtr);
+        }
+
+        [RequiredByNativeCode]
         public struct SyncTile
         {
             internal Vector3Int m_Position;

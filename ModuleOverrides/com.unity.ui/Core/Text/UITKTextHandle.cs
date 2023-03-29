@@ -20,26 +20,18 @@ namespace UnityEngine.UIElements
 
         TextElement m_TextElement;
 
-        public float ComputeTextWidth(string textToMeasure, bool wordWrap, float width, float height)
+        public Vector2 ComputeTextSize(string textToMeasure, float width, float height)
         {
-            ConvertUssToTextGenerationSettings(s_LayoutSettings);
-            s_LayoutSettings.text = textToMeasure;
-            s_LayoutSettings.screenRect = new Rect(0, 0, width, height);
-            s_LayoutSettings.wordWrap = wordWrap;
-            return ComputeTextWidth(s_LayoutSettings);
+            ConvertUssToTextGenerationSettings();
+            s_Settings.text = textToMeasure;
+            s_Settings.screenRect = new Rect(0, 0, width, height);
+            UpdatePreferredValues(s_Settings);
+            return preferredSize;
         }
 
-        public float ComputeTextHeight(string textToMeasure, float width, float height)
+        public virtual MeshInfo[] Update()
         {
-            ConvertUssToTextGenerationSettings(s_LayoutSettings);
-            s_LayoutSettings.text = textToMeasure;
-            s_LayoutSettings.screenRect = new Rect(0, 0, width, height);
-            return ComputeTextHeight(s_LayoutSettings);
-        }
-
-        public virtual TextInfo Update()
-        {
-            ConvertUssToTextGenerationSettings(textGenerationSettings);
+            ConvertUssToTextGenerationSettings();
 
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             var size = m_TextElement.contentRect.size;
@@ -56,12 +48,25 @@ namespace UnityEngine.UIElements
                 MeasuredSizes = size;
             }
 
-            textGenerationSettings.screenRect = new Rect(Vector2.zero, size);
-            Update(textGenerationSettings);
+            s_Settings.screenRect = new Rect(Vector2.zero, size);
+
+
+            // this should be a dynamic asset
+            if (m_PreviousGenerationSettingsHash == s_Settings.GetHashCode())
+                AddTextInfoToCache();
+            else
+                Update(s_Settings);
+
             HandleATag();
             HandleLinkTag();
 
-            return textInfo;
+            return textInfo.meshInfo;
+        }
+
+        public override void AddTextInfoToCache()
+        {
+            ConvertUssToTextGenerationSettings();
+            base.AddTextInfoToCache();
         }
 
         void ATagOnPointerUp(PointerUpEvent pue)
@@ -307,10 +312,10 @@ namespace UnityEngine.UIElements
             return TextOverflowMode.Overflow;
         }
 
-        internal void ConvertUssToTextGenerationSettings(UnityEngine.TextCore.Text.TextGenerationSettings tgs)
+        internal void ConvertUssToTextGenerationSettings()
         {
             var style = m_TextElement.computedStyle;
-
+            var tgs = s_Settings;
             tgs.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
             if (tgs.textSettings == null)
                 return;
@@ -322,6 +327,7 @@ namespace UnityEngine.UIElements
             tgs.material = tgs.fontAsset.material;
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             tgs.screenRect = new Rect(0, 0, m_TextElement.contentRect.width, m_TextElement.contentRect.height);
+            tgs.extraPadding = GetTextEffectPadding(tgs.fontAsset);
             tgs.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedText;
             tgs.isPlaceholder = m_TextElement.showPlaceholderText;
 
@@ -351,12 +357,44 @@ namespace UnityEngine.UIElements
             tgs.inverseYAxis = true;
             tgs.fontFeatures = m_ActiveFontFeatures;
             tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
+            tgs.isIMGUI = false;
         }
 
         internal bool TextLibraryCanElide()
         {
             // TextCore can only elide at the end
             return m_TextElement.computedStyle.unityTextOverflowPosition == TextOverflowPosition.End;
+        }
+
+        internal static readonly float k_MinPadding = 6.0f;
+        // Function to determine how much extra padding is required as a result of text effect like outline thickness, shadow etc... (see UUM-9524).
+        internal float GetTextEffectPadding(FontAsset fontAsset)
+        {
+            float horizontalPadding;
+            float verticalPadding;
+
+            var style = m_TextElement.computedStyle;
+
+            // Grow half inside and half outside
+            float outlineThickness = style.unityTextOutlineWidth / 2.0f;
+
+            // Text Shadow is not additive to outline thickness
+            float offsetX = Mathf.Abs(style.textShadow.offset.x);
+            float offsetY = Mathf.Abs(style.textShadow.offset.y);
+            float blurRadius = Mathf.Abs(style.textShadow.blurRadius);
+
+            if (outlineThickness <= 0.0f && offsetX <= 0.0f && offsetY <= 0.0f && blurRadius <= 0.0f)
+                return k_MinPadding;
+
+            horizontalPadding = Mathf.Max(offsetX + blurRadius, outlineThickness);
+            verticalPadding = Mathf.Max(offsetY + blurRadius, outlineThickness);
+
+            var padding = Mathf.Max(horizontalPadding, verticalPadding) + k_MinPadding;
+
+            var factor = TextUtilities.ConvertPixelUnitsToTextCoreRelativeUnits(m_TextElement, fontAsset);
+            var gradientScale = fontAsset.atlasPadding + 1;
+
+            return Mathf.Min(padding * factor * gradientScale, gradientScale);
         }
 
     }
@@ -379,14 +417,20 @@ namespace UnityEngine.UIElements
             if ( pixelsPerPoint <= 0)
                 return Vector2.zero;
 
+
+            if (widthMode != VisualElement.MeasureMode.Exactly || heightMode != VisualElement.MeasureMode.Exactly)
+            {
+                var size = te.uitkTextHandle.ComputeTextSize(textToMeasure, width, height);
+                measuredWidth = size.x;
+                measuredHeight = size.y;
+            }
+
             if (widthMode == VisualElement.MeasureMode.Exactly)
             {
                 measuredWidth = width;
             }
             else
             {
-                measuredWidth = te.uitkTextHandle.ComputeTextWidth(textToMeasure, false, width, height);
-
                 if (widthMode == VisualElement.MeasureMode.AtMost)
                 {
                     measuredWidth = Mathf.Min(measuredWidth, width);
@@ -399,8 +443,6 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                measuredHeight = te.uitkTextHandle.ComputeTextHeight(textToMeasure, width, height);
-
                 if (heightMode == VisualElement.MeasureMode.AtMost)
                 {
                     measuredHeight = Mathf.Min(measuredHeight, height);
@@ -428,6 +470,8 @@ namespace UnityEngine.UIElements
                 return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font, TextShaderUtilities.ShaderRef_MobileSDF);
             else if (ve.computedStyle.unityFont != null)
                 return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont, TextShaderUtilities.ShaderRef_MobileSDF);
+            else if (textSettings != null)
+                return textSettings.defaultFontAsset;
             return null;
         }
 
@@ -454,6 +498,14 @@ namespace UnityEngine.UIElements
             return getEditorTextSettings();
         }
 
+        internal static float ConvertPixelUnitsToTextCoreRelativeUnits(VisualElement ve, FontAsset fontAsset)
+        {
+            // Convert the text settings pixel units to TextCore relative units
+            float paddingPercent = 1.0f / fontAsset.atlasPadding;
+            float pointSizeRatio = ((float)fontAsset.faceInfo.pointSize) / ve.computedStyle.fontSize.value;
+            return paddingPercent * pointSizeRatio;
+        }
+
         internal static TextCoreSettings GetTextCoreSettingsForElement(VisualElement ve)
         {
             var fontAsset = GetFontAsset(ve);
@@ -463,14 +515,14 @@ namespace UnityEngine.UIElements
             var resolvedStyle = ve.resolvedStyle;
             var computedStyle = ve.computedStyle;
 
-            // Convert the text settings pixel units to TextCore relative units
-            float paddingPercent = 1.0f / fontAsset.atlasPadding;
-            float pointSizeRatio = ((float)fontAsset.faceInfo.pointSize) / ve.computedStyle.fontSize.value;
-            float factor = paddingPercent * pointSizeRatio;
+            float factor = ConvertPixelUnitsToTextCoreRelativeUnits(ve, fontAsset);
 
-            float outlineWidth = Mathf.Max(0.0f, resolvedStyle.unityTextOutlineWidth * factor);
-            float underlaySoftness = Mathf.Max(0.0f, computedStyle.textShadow.blurRadius * factor);
-            Vector2 underlayOffset = computedStyle.textShadow.offset * factor;
+            float outlineWidth = Mathf.Clamp(resolvedStyle.unityTextOutlineWidth * factor, 0.0f, 1.0f);
+            float underlaySoftness = Mathf.Clamp(computedStyle.textShadow.blurRadius * factor, 0.0f, 1.0f);
+
+            float underlayOffsetX = computedStyle.textShadow.offset.x < 0 ? Mathf.Max(computedStyle.textShadow.offset.x * factor, -1.0f) : Mathf.Min(computedStyle.textShadow.offset.x * factor, 1.0f);
+            float underlayOffsetY = computedStyle.textShadow.offset.y < 0 ? Mathf.Max(computedStyle.textShadow.offset.y * factor, -1.0f) : Mathf.Min(computedStyle.textShadow.offset.y * factor, 1.0f);
+            Vector2 underlayOffset = new Vector2(underlayOffsetX, underlayOffsetY);
 
             var faceColor = resolvedStyle.color;
             var outlineColor = resolvedStyle.unityTextOutlineColor;

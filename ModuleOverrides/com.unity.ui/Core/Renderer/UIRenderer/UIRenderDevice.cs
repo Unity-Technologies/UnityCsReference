@@ -107,8 +107,9 @@ namespace UnityEngine.UIElements.UIR
         static ProfilerMarker s_MarkerBeforeDraw = new ProfilerMarker("UIR.BeforeDraw");
 
         internal static uint maxVerticesPerPage => 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
-
         internal bool breakBatches { get; set; }
+        internal bool isFlat { get; set; }
+        internal bool drawsInCameras { get; set; }
 
 
         static UIRenderDevice()
@@ -229,7 +230,7 @@ namespace UnityEngine.UIElements.UIR
             m_StandardMatProps = new MaterialPropertyBlock();
             m_DefaultStencilState = Utility.CreateStencilState(new StencilState
             {
-                enabled = true,
+                enabled = isFlat,
                 readMask = 255,
                 writeMask = 255,
 
@@ -716,7 +717,8 @@ namespace UnityEngine.UIElements.UIR
 
             var drawParams = m_DrawParams;
             drawParams.Reset();
-            drawParams.renderTexture.Add(RenderTexture.active);
+            if (!drawsInCameras)
+                drawParams.renderTexture.Add(RenderTexture.active);
             stateMatProps.Clear();
             m_TextureSlotManager.Reset();
 

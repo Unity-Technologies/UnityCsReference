@@ -19,6 +19,7 @@ namespace UnityEditor
     internal class EditorTextSettings : TextSettings
     {
         private static EditorTextSettings s_DefaultTextSettings;
+        private static float s_CurrentEditorSharpness;
 
         const string k_DefaultEmojisFallback = "UIPackageResources/FontAssets/Emojis/";
         const string k_Platform =
@@ -27,8 +28,21 @@ namespace UnityEditor
         static EditorTextSettings()
         {
             IMGUITextHandle.GetEditorTextSettings = () => defaultTextSettings;
-            IMGUITextHandle.GetEditorTextSharpness = (string fontAssetName) => EditorPrefs.GetFloat($"EditorTextSharpness_{fontAssetName}", 0.0f);
-            IMGUITextHandle.GetEditorFont = () => EditorResources.GetFont(FontDef.Style.Normal);
+        }
+
+        internal static void SetCurrentEditorSharpness(float sharpness)
+        {
+            s_CurrentEditorSharpness = sharpness;
+        }
+
+        internal override float GetEditorTextSharpness()
+        {
+            return s_CurrentEditorSharpness;
+        }
+
+        internal override Font GetEditorFont()
+        {
+            return EditorResources.GetFont(FontDef.Style.Normal);
         }
 
         internal static EditorTextSettings defaultTextSettings

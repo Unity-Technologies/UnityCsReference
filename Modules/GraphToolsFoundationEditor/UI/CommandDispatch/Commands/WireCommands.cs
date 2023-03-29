@@ -155,7 +155,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="selectionState">The selection state.</param>
         /// <param name="preferences">The tool preferences.</param>
         /// <param name="command">The command.</param>
-        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, Preferences preferences, CreateWireCommand command)
+        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, AutoPlacementStateComponent autoPlacementState, Preferences preferences, CreateWireCommand command)
         {
             var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
             using (var undoStateUpdater = undoState.UpdateScope)
@@ -166,6 +166,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var createdElements = new List<GraphElementModel>();
             var graphModel = graphModelState.GraphModel;
+            using (var autoPlacementUpdater = autoPlacementState.UpdateScope)
             using (var graphUpdater = graphModelState.UpdateScope)
             using (var changeScope = graphModel.ChangeDescriptionScope)
             {
@@ -200,7 +201,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 if (command.AlignFromNode)
                 {
-                    graphUpdater.MarkModelToAutoAlign(wireModel);
+                    autoPlacementUpdater.MarkModelToAutoAlign(wireModel);
                 }
 
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
@@ -609,7 +610,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 undoStateUpdater.SaveState(graphModelState);
             }
 
-            var createdElements = new List<GraphElementModel>();
+            var createdElements = new List<SerializableGUID>();
             var graphModel = graphModelState.GraphModel;
 
             var elementsToFrame = new List<GraphElement>();
@@ -644,7 +645,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
 
                 graphModelUpdater.MarkUpdated(changeScope.ChangeDescription);
-                createdElements.AddRange(changeScope.ChangeDescription.NewModels.OfType<AbstractNodeModel>());
+                createdElements.AddRange(changeScope.ChangeDescription.NewModels.Select(graphModel.GetModel).OfType<AbstractNodeModel>().Select(m => m.Guid));
             }
 
             if (command.GraphView != null && elementsToFrame.Any())

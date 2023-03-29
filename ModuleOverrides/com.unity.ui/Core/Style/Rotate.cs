@@ -29,6 +29,16 @@ namespace UnityEngine.UIElements
             m_IsNone = false;
         }
 
+        internal Rotate(Quaternion quaternion)
+        {
+
+            quaternion.ToAngleAxis(out float angle, out Vector3 axis);
+            m_Angle = angle;
+            m_Axis = axis;
+            m_IsNone = false;
+        }
+        
+
         internal static Rotate Initial()
         {
             return new Rotate(0);

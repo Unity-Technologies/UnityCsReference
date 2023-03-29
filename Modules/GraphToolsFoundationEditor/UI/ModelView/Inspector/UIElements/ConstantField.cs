@@ -23,11 +23,6 @@ namespace Unity.GraphToolsFoundation.Editor
         ICustomPropertyFieldBuilder m_CustomFieldBuilder;
 
         /// <summary>
-        /// The root element of the UI.
-        /// </summary>
-        protected VisualElement m_Field;
-
-        /// <summary>
         /// The constants edited by the field.
         /// </summary>
         public IEnumerable<Constant> ConstantModels { get; }
@@ -45,15 +40,15 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             ConstantModels = constantModels;
             Owners = owners;
-            m_Field = CreateField();
+            CreateField();
 
             SetFieldChangedCallback();
 
             this.AddStylesheet_Internal("ConstantField.uss");
 
-            if (m_Field != null)
+            if (Field != null)
             {
-                hierarchy.Add(m_Field);
+                hierarchy.Add(Field);
             }
         }
 
@@ -69,13 +64,13 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void SetFieldChangedCallback()
         {
-            if (m_Field == null)
+            if (Field == null)
                 return;
 
-            foreach (var numericField in m_Field.Query<FloatField>().ToList().Cast<VisualElement>()
-                                .Concat(m_Field.Query<IntegerField>().ToList())
-                                .Concat(m_Field.Query<LongField>().ToList())
-                                .Concat(m_Field.Query<DoubleField>().ToList()))
+            foreach (var numericField in Field.Query<FloatField>().ToList().Cast<VisualElement>()
+                                .Concat(Field.Query<IntegerField>().ToList())
+                                .Concat(Field.Query<LongField>().ToList())
+                                .Concat(Field.Query<DoubleField>().ToList()))
             {
                 var label = numericField.Q<Label>();
                 if (label != null)
@@ -100,7 +95,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                 }
 
-                registerCallbackMethod.Invoke(m_Field, new object[] { (EventCallback<IChangeEvent, ConstantField>)EventCallback, this, TrickleDown.NoTrickleDown });
+                registerCallbackMethod.Invoke(Field, new object[] { (EventCallback<IChangeEvent, ConstantField>)EventCallback, this, TrickleDown.NoTrickleDown });
             }
         }
 
@@ -146,7 +141,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         public override void UpdateDisplayedValue()
         {
-            if (m_Field == null)
+            if (Field == null)
                 return;
 
 
@@ -164,11 +159,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
             }
 
-            m_Field.EnableInClassList(connectedModifierUssClassName, isConnected);
-            m_Field.SetEnabled(!isConnected);
+            Field.EnableInClassList(connectedModifierUssClassName, isConnected);
+            Field.SetEnabled(!isConnected);
 
             // PF TODO when this is a module, submit modifications to UIToolkit to avoid having to do reflection.
-            var field = m_Field.SafeQ(null, BaseField<int>.ussClassName);
+            var field = Field.SafeQ(null, BaseField<int>.ussClassName);
             var fieldType = field.GetType();
             try
             {
@@ -247,7 +242,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        VisualElement CreateField()
+        void CreateField()
         {
             var fieldType = ConstantModels.First().GetTypeHandle().Resolve();
 
@@ -281,7 +276,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 TryCreateCustomPropertyFieldBuilder(fieldType, out m_CustomFieldBuilder);
             }
 
-            return m_CustomFieldBuilder?.Build(CommandTarget, Label, tooltipString,
+            Field = m_CustomFieldBuilder?.Build(CommandTarget, Label, tooltipString,
                     ConstantModels.Select(t => t.ObjectValue), nameof(Constant.ObjectValue)) ??
                 CreateDefaultFieldForType(fieldType, tooltipString, attributes);
         }

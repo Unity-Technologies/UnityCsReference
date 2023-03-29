@@ -127,10 +127,14 @@ namespace UnityEngine.UIElements
                 return;
 
             attachedPanel = panel;
+            attachedPanel.isFlatChanged += OnPanelIsFlatChanged;
             attachedPanel.atlasChanged += OnPanelAtlasChanged;
             attachedPanel.standardShaderChanged += OnPanelStandardShaderChanged;
             attachedPanel.standardWorldSpaceShaderChanged += OnPanelStandardWorldSpaceShaderChanged;
             attachedPanel.hierarchyChanged += OnPanelHierarchyChanged;
+
+            if (panel is BaseRuntimePanel runtimePanel)
+                runtimePanel.drawsInCamerasChanged += OnPanelDrawsInCamerasChanged;
         }
 
         void DetachFromPanel()
@@ -140,6 +144,10 @@ namespace UnityEngine.UIElements
 
             DestroyRenderChain();
 
+            if (panel is BaseRuntimePanel runtimePanel)
+                runtimePanel.drawsInCamerasChanged -= OnPanelDrawsInCamerasChanged;
+
+            attachedPanel.isFlatChanged -= OnPanelIsFlatChanged;
             attachedPanel.atlasChanged -= OnPanelAtlasChanged;
             attachedPanel.standardShaderChanged -= OnPanelStandardShaderChanged;
             attachedPanel.standardWorldSpaceShaderChanged -= OnPanelStandardWorldSpaceShaderChanged;
@@ -169,7 +177,17 @@ namespace UnityEngine.UIElements
             ResetAllElementsDataRecursive(attachedPanel.visualTree);
         }
 
+        void OnPanelIsFlatChanged()
+        {
+            DestroyRenderChain();
+        }
+
         void OnPanelAtlasChanged()
+        {
+            DestroyRenderChain();
+        }
+
+        void OnPanelDrawsInCamerasChanged()
         {
             DestroyRenderChain();
         }

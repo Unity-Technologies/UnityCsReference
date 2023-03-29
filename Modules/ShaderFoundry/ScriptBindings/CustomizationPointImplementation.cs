@@ -94,7 +94,7 @@ namespace UnityEditor.ShaderFoundry
                     m_CustomizationPointHandle = customizationPoint.handle,
                 };
 
-                customizationPointImplementationInternal.m_BlockSequenceElementListHandle = FixedHandleListInternal.Build(container, blockSequenceElements, (e) => (e.handle));
+                customizationPointImplementationInternal.m_BlockSequenceElementListHandle = HandleListInternal.Build(container, blockSequenceElements, (e) => (e.handle));
 
                 var returnTypeHandle = container.Add(customizationPointImplementationInternal);
                 return new CustomizationPointImplementation(container, returnTypeHandle);

@@ -47,7 +47,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var listHandle = internalData.m_AttributeListHandle;
-                return FixedHandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
+                return HandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
             }
         }
         public BlockShaderInterface Interface => new BlockShaderInterface(container, internalData.m_BlockShaderInterfaceHandle);
@@ -56,7 +56,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var listHandle = internalData.m_RegistrationStatementListHandle;
-                return FixedHandleListInternal.Enumerate<InterfaceRegistrationStatement>(container, listHandle);
+                return HandleListInternal.Enumerate<InterfaceRegistrationStatement>(container, listHandle);
             }
         }
         // private
@@ -104,8 +104,21 @@ namespace UnityEditor.ShaderFoundry
             {
                 var internalData = new RegisterTemplatesWithInterfaceInternal();
                 internalData.m_BlockShaderInterfaceHandle = blockShaderInterface.handle;
-                internalData.m_AttributeListHandle = FixedHandleListInternal.Build(container, Attributes);
-                internalData.m_RegistrationStatementListHandle = FixedHandleListInternal.Build(container, RegistrationStatements);
+                internalData.m_AttributeListHandle = HandleListInternal.Build(container, Attributes);
+                internalData.m_RegistrationStatementListHandle = HandleListInternal.Build(container, RegistrationStatements);
+
+                if (RegistrationStatements != null)
+                {
+                    foreach (var registrationStatement in RegistrationStatements)
+                    {
+                        if (!registrationStatement.RegisterWithInterface(blockShaderInterface, container))
+                        {
+                            var templateName = registrationStatement.IsTemplateStatement ? registrationStatement.Template.Name : ("generator " + registrationStatement.ProviderName);
+                            var message = "Failed to register template " + templateName + " with the block shader interface.";
+                            throw new InvalidOperationException(message);
+                        }
+                    }
+                }
 
                 var returnTypeHandle = container.Add(internalData);
                 return new RegisterTemplatesWithInterface(container, returnTypeHandle);

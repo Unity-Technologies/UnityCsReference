@@ -489,6 +489,7 @@ namespace UnityEngine.UIElements.UIR
                     indexOffset = entryIndexOffset,
 
                     flipIndices = shapeWindingIsClockwise == transformFlipsWinding ? 1 : 0,
+                    forceZ = m_RenderChain.isFlat ? 1 : 0,
                     positionZ = m_IsDrawingMask ? UIRUtility.k_MaskPosZ : UIRUtility.k_MeshPosZ,
 
                     remapUVs = m_RemapUVs ? 1 : 0,

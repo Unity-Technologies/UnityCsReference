@@ -69,7 +69,8 @@ namespace Unity.GraphToolsFoundation.Editor
         List<AbstractNodeModel> m_GraphNodeModels;
 
         [SerializeReference]
-        List<BadgeModel> m_BadgeModels;
+        [FormerlySerializedAs("m_BadgeModels")]
+        List<MarkerModel> m_MarkerModels;
 
         [SerializeReference, FormerlySerializedAs("m_GraphEdgeModels")]
         List<WireModel> m_GraphWireModels;
@@ -184,9 +185,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual IReadOnlyList<WireModel> WireModels => m_GraphWireModels;
 
         /// <summary>
-        /// The badges of the graph.
+        /// The markers of the graph.
         /// </summary>
-        public virtual IReadOnlyList<BadgeModel> BadgeModels => m_BadgeModels;
+        public virtual IReadOnlyList<MarkerModel> MarkerModels => m_MarkerModels;
 
         /// <summary>
         /// The sticky note of the graph.
@@ -348,7 +349,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             m_GraphNodeModels = new List<AbstractNodeModel>();
             m_GraphWireModels = new List<WireModel>();
-            m_BadgeModels = new List<BadgeModel>();
+            m_MarkerModels = new List<MarkerModel>();
             m_GraphStickyNoteModels = new List<StickyNoteModel>();
             m_GraphPlacematModels = new List<PlacematModel>();
             m_GraphVariableModels = new List<VariableDeclarationModel>();
@@ -741,8 +742,8 @@ namespace Unity.GraphToolsFoundation.Editor
                     case AbstractNodeModel nodeModel:
                         RemoveNode(nodeModel);
                         break;
-                    case BadgeModel badgeModel:
-                        RemoveBadge(badgeModel);
+                    case MarkerModel markerModel:
+                        RemoveMarker(markerModel);
                         break;
                     case PortModel portModel:
                         UnregisterPort(portModel);
@@ -850,27 +851,27 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// Adds a badge to the graph.
+        /// Adds a marker to the graph.
         /// </summary>
-        /// <param name="badgeModel">The badge to add.</param>
-        public virtual void AddBadge(BadgeModel badgeModel)
+        /// <param name="markerModel">The marker to add.</param>
+        public virtual void AddMarker(MarkerModel markerModel)
         {
-            RegisterElement(badgeModel);
-            badgeModel.GraphModel = this;
-            m_BadgeModels.Add(badgeModel);
-            CurrentGraphChangeDescription?.AddNewModels(badgeModel);
+            RegisterElement(markerModel);
+            markerModel.GraphModel = this;
+            m_MarkerModels.Add(markerModel);
+            CurrentGraphChangeDescription?.AddNewModels(markerModel);
         }
 
         /// <summary>
-        /// Removes a badge from the graph.
+        /// Removes a marker from the graph.
         /// </summary>
-        /// <param name="badgeModel">The badge to remove.</param>
-        public virtual void RemoveBadge(BadgeModel badgeModel)
+        /// <param name="markerModel">The marker to remove.</param>
+        public virtual void RemoveMarker(MarkerModel markerModel)
         {
-            UnregisterElement(badgeModel);
-            badgeModel.GraphModel = null;
-            m_BadgeModels.Remove(badgeModel);
-            CurrentGraphChangeDescription?.AddDeletedModels(badgeModel);
+            UnregisterElement(markerModel);
+            markerModel.GraphModel = null;
+            m_MarkerModels.Remove(markerModel);
+            CurrentGraphChangeDescription?.AddDeletedModels(markerModel);
         }
 
         /// <summary>
@@ -993,7 +994,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 RegisterElement(model);
             }
 
-            foreach (var model in m_BadgeModels)
+            foreach (var model in m_MarkerModels)
             {
                 RegisterElement(model);
             }
@@ -1171,40 +1172,40 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// Deletes all badges from the graph.
+        /// Deletes all markers from the graph.
         /// </summary>
-        public virtual void DeleteBadges()
+        public virtual void DeleteMarkers()
         {
-            var deletedBadges = new List<GraphElementModel>(m_BadgeModels);
+            var deletedMarkers = new List<GraphElementModel>(m_MarkerModels);
 
-            foreach (var model in deletedBadges)
+            foreach (var model in deletedMarkers)
             {
                 UnregisterElement(model);
             }
 
-            m_BadgeModels.Clear();
-            CurrentGraphChangeDescription?.AddDeletedModels(deletedBadges);
+            m_MarkerModels.Clear();
+            CurrentGraphChangeDescription?.AddDeletedModels(deletedMarkers);
         }
 
         /// <summary>
-        /// Deletes all badges of type <typeparamref name="T"/> from the graph.
+        /// Deletes all markers of type <typeparamref name="T"/> from the graph.
         /// </summary>
-        public virtual void DeleteBadgesOfType<T>() where T : BadgeModel
+        public virtual void DeleteMarkersOfType<T>() where T : MarkerModel
         {
-            var deletedBadges = m_BadgeModels
+            var deletedMarkers = m_MarkerModels
                 .Where(b => b is T)
                 .ToList();
 
-            foreach (var model in deletedBadges)
+            foreach (var model in deletedMarkers)
             {
                 UnregisterElement(model);
             }
 
-            m_BadgeModels = m_BadgeModels
+            m_MarkerModels = m_MarkerModels
                 .Where(b => !(b is T))
                 .ToList();
 
-            CurrentGraphChangeDescription?.AddDeletedModels(deletedBadges);
+            CurrentGraphChangeDescription?.AddDeletedModels(deletedMarkers);
         }
 
         /// <summary>
@@ -1635,19 +1636,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The unique name for the variable declaration.</returns>
         protected virtual string GenerateGraphVariableDeclarationUniqueName(string originalName)
         {
-            originalName = originalName.Trim();
-
-            if (!m_ExistingVariableNames.Contains(originalName))
-                return originalName;
-
-            var i = 1;
-            do
-            {
-                originalName = originalName.FormatWithNamingScheme(i++);
-            } while (m_ExistingVariableNames.Contains(originalName));
-
-            return originalName;
-
+            var names = m_ExistingVariableNames.ToArray();
+            var name = ObjectNames.GetUniqueName(names, originalName);
+            return name;
         }
 
         /// <summary>
@@ -2276,7 +2267,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 model.GraphModel = this;
             }
 
-            foreach (var model in m_BadgeModels.Where(m => m != null))
+            foreach (var model in m_MarkerModels.Where(m => m != null))
             {
                 model.GraphModel = this;
             }
@@ -2562,8 +2553,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void RemoveUnmanagedNullElements()
         {
-            m_BadgeModels.RemoveAll(t => t == null);
-            m_BadgeModels.RemoveAll(t => t.ParentModel == null);
+            m_MarkerModels.RemoveAll(t => t == null);
+            m_MarkerModels.RemoveAll(t => t.ParentModel == null);
             m_GraphStickyNoteModels.RemoveAll(t => t == null);
             m_GraphPlacematModels.RemoveAll(t => t == null);
             m_SectionModels.ForEach(t => t.Repair());
@@ -2763,8 +2754,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var validGuids = new HashSet<SerializableGUID>(m_GraphNodeModels.Select(t => t.Guid));
 
-            m_BadgeModels.RemoveAll(t => t == null);
-            m_BadgeModels.RemoveAll(t => t.ParentModel == null);
+            m_MarkerModels.RemoveAll(t => t == null);
+            m_MarkerModels.RemoveAll(t => t.ParentModel == null);
             m_GraphWireModels.RemoveAll(t => t is null or IPlaceholder);
             m_GraphWireModels.RemoveAll(t => !validGuids.Contains(t.FromNodeGuid) || !validGuids.Contains(t.ToNodeGuid));
             m_GraphStickyNoteModels.RemoveAll(t => t == null);

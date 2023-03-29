@@ -26,6 +26,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         internal static string blocksFieldName_Internal = nameof(m_Blocks);
 
+        [NonSerialized]
         List<BlockNodePlaceholder> m_BlockPlaceholders = new List<BlockNodePlaceholder>();
 
         public IReadOnlyList<BlockNodeModel> BlockPlaceholders => m_BlockPlaceholders;
@@ -234,13 +235,6 @@ namespace Unity.GraphToolsFoundation.Editor
         public override void OnAfterDeserialize()
         {
             base.OnAfterDeserialize();
-
-            // Remove outdated placeholders
-            for (var i = m_BlockPlaceholders.Count - 1; i >= 0; i--)
-            {
-                if (m_Blocks.Any(b => b?.Guid == m_BlockPlaceholders[i].Guid))
-                    m_BlockPlaceholders.RemoveAt(i);
-            }
 
             // For compatibility with old version or corruption
             if (m_BlockGuids == null || m_BlockGuids.Count < m_Blocks.Count)

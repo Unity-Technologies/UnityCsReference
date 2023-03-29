@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -209,27 +210,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
         }
 
-        static readonly List<ModelView> k_ActOnGraphElementsOverAllUIs = new List<ModelView>();
-
-        /// <summary>
-        /// Executes an <see cref="Action"/> on each <see cref="GraphElement"/> within this <see cref="Placemat"/>.
-        /// </summary>
-        /// <param name="act">The action that will be executed.</param>
-        protected internal void ActOnGraphElementsOver_Internal(Action<GraphElement> act)
-        {
-            GraphView.GraphModel.GraphElementModels
-                .Where(ge => ge.IsSelectable() && !(ge is WireModel))
-                .GetAllViewsInList_Internal(GraphView, e => e.parent is GraphView.Layer, k_ActOnGraphElementsOverAllUIs);
-
-            foreach (var elem in k_ActOnGraphElementsOverAllUIs.OfType<GraphElement>())
-            {
-                if (elem.layout.Overlaps(layout))
-                    act(elem);
-            }
-
-            k_ActOnGraphElementsOverAllUIs.Clear();
-        }
-
         static readonly List<ModelView> k_ActOnGraphElementsOver2AllUIs = new List<ModelView>();
         protected internal bool ActOnGraphElementsInside_Internal(Func<GraphElement, bool> act)
         {
@@ -244,6 +224,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 var elemLayout = elem.layout;
                 if (currentActivePlacematRect.Contains(elemLayout.position) && currentActivePlacematRect.Contains(elemLayout.position + elemLayout.size))
                 {
+                    if (elem is Placemat placematElem)
+                    {
+                        if (PlacematModel.GetZOrder() > placematElem.PlacematModel.GetZOrder())
+                            continue;
+                    }
                     if (elem.resolvedStyle.visibility != Visibility.Hidden)
                         if (act(elem))
                             return true;
@@ -255,21 +240,30 @@ namespace Unity.GraphToolsFoundation.Editor
             return false;
         }
 
-        protected internal bool WillDragNode_Internal(GraphElement node)
-        {
-            return ActOnGraphElementsInside_Internal(t => node == t);
-        }
+        static readonly List<GraphElement> k_ShrinkToFitElements = new List<GraphElement>();
 
         internal Rect ComputeShrinkToFitElementsRect_Internal()
         {
-            var elements = GetNodesOverThisPlacemat();
+            k_ShrinkToFitElements.Clear();
+            ActOnGraphElementsInside_Internal(e =>
+            {
+                k_ShrinkToFitElements.Add(e);
+                return false;
+            });
+
             var pos = new Rect();
-            ComputeElementBounds_Internal(ref pos, elements);
+            ComputeElementBounds_Internal(ref pos, k_ShrinkToFitElements);
             return pos;
         }
 
+        public bool HasElementsOverThisPlacemat()
+        {
+            return ActOnGraphElementsInside_Internal(e => true);
+        }
+
         internal void GetElementsToMove_Internal(bool moveOnlyPlacemat, HashSet<GraphElement> collectedElementsToMove)
-        {if (!moveOnlyPlacemat)
+        {
+            if (!moveOnlyPlacemat)
             {
                 ActOnGraphElementsInside_Internal(e =>
                 {
@@ -295,13 +289,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 evt.menu.AppendAction("Select All Placemat Contents",
                     _ =>
                     {
-                        var elements = new List<GraphElementModel>();
-                        ActOnGraphElementsInside_Internal(element =>
-                        {
-                            elements.Add(element.GraphElementModel);
-                            return true;
-                        });
-                        GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, elements));
+                        SelectAllInside();
                     });
             }
 
@@ -329,49 +317,52 @@ namespace Unity.GraphToolsFoundation.Editor
 
             evt.menu.AppendSeparator();
             // Gather nodes here so that we don't recycle this code in the resize functions.
-            List<GraphElement> hoveringNodes = placemat.GetNodesOverThisPlacemat();
+            bool hoveringNodes = placemat.HasElementsOverThisPlacemat();
 
             if (selectedPlacemats.Count == 1)
             {
                 evt.menu.AppendAction("Smart Resize",
                     _ =>
                     {
-                        var newRect = placemat.ComputeShrinkToFitElementsRect_Internal();
-                        if (newRect != Rect.zero)
-                            GraphView.Dispatch(new ChangeElementLayoutCommand(PlacematModel, newRect));
+                        placemat.SmartResize();
                     },
-                    hoveringNodes.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                    hoveringNodes ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
             }
         }
 
         /// <summary>
-        /// Gets the list of <see cref="Node"/>s that are within this <see cref="Placemat"/>.
+        /// Selects all elements inside the Placemat.
         /// </summary>
-        /// <returns>The list of <see cref="Node"/>s that are within this <see cref="Placemat"/>.</returns>
-        protected List<GraphElement> GetNodesOverThisPlacemat()
+        public void SelectAllInside()
         {
-            var potentialElements = new List<ModelView>();
-            ActOnGraphElementsOver_Internal(e => potentialElements.Add(e));
-
-            return potentialElements.OfType<GraphElement>().Where(e => e.Model is AbstractNodeModel).ToList();
+            var elements = new List<GraphElementModel>();
+            ActOnGraphElementsInside_Internal(element =>
+            {
+                elements.Add(element.GraphElementModel);
+                return false;
+            });
+            GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, elements));
         }
 
-        protected internal bool GetPortCenterOverride_Internal(PortModel port, out Vector2 overriddenPosition)
+        /// <summary>
+        /// Resizes the placemat so it is only a big as needed to contain all the included elements.
+        /// </summary>
+        public void SmartResize()
         {
-                overriddenPosition = Vector2.zero;
-                return false;
+            var newRect = ComputeShrinkToFitElementsRect_Internal();
+            if (newRect.width <= k_Bounds_Internal * 2 || newRect.height <= k_Bounds_Internal * 2)
+        {
+                newRect.position = PlacematModel.Position;
+                newRect.size = DefaultPlacematSize;
             }
 
-        // Helper method that calculates how big a Placemat should be to fit the nodes on top of it currently.
-        // Returns false if bounds could not be computed.
-        protected internal static bool ComputeElementBounds_Internal(ref Rect pos, IEnumerable<GraphElement> elements)
-        {
-            return ComputeElementBounds(ref pos, elements);
+            if (newRect != Rect.zero)
+                GraphView.Dispatch(new ChangeElementLayoutCommand(PlacematModel, newRect));
         }
 
         // Helper method that calculates how big a Placemat should be to fit the nodes on top of it currently.
         // Returns false if bounds could not be computed.
-        static bool ComputeElementBounds(ref Rect pos, IEnumerable<GraphElement> elements)
+        internal static bool ComputeElementBounds_Internal(ref Rect pos, IEnumerable<GraphElement> elements)
         {
             if (elements == null || !elements.Any())
                 return false;
@@ -381,8 +372,19 @@ namespace Unity.GraphToolsFoundation.Editor
             float minY = Mathf.Infinity;
             float maxY = -Mathf.Infinity;
 
-            foreach (var r in elements.Where(t => t.GraphElementModel.IsMovable()).Select(n => n.layout))
+            foreach (var e in elements.Where(t => t.GraphElementModel.IsMovable()))
             {
+                Rect r = e.layout;
+
+                if (e is Placemat placemat)
+            {
+                    var placematTitleHeight = placemat.TitleContainer.layout.height * 2;
+
+                    r.y -= placematTitleHeight;
+                    r.height += placematTitleHeight;
+                }
+
+
                 if (r.xMin < minX)
                     minX = r.xMin;
 

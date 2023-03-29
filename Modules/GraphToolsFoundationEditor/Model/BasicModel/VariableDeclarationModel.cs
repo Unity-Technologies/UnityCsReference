@@ -206,6 +206,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
+        [field: NonSerialized]
         public virtual GroupModel ParentGroup { get; set; }
 
         /// <summary>

@@ -48,7 +48,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var listHandle = statementInternal.m_AttributeListHandle;
-                return FixedHandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
+                return HandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
             }
         }
         public bool IsProviderStatement => statementInternal.IsProviderStatement(container);
@@ -86,6 +86,11 @@ namespace UnityEditor.ShaderFoundry
             this.container = container;
             this.handle = handle;
             ShaderContainer.Get(container, handle, out statementInternal);
+        }
+
+        internal bool RegisterWithInterface(BlockShaderInterface blockShaderInterface, ShaderContainer container)
+        {
+            return blockShaderInterface.RegisterTemplate(container, handle);
         }
 
         public static InterfaceRegistrationStatement Invalid => new InterfaceRegistrationStatement(null, FoundryHandle.Invalid());
@@ -127,7 +132,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 var statementInternal = new InterfaceRegistrationStatementInternal();
 
-                statementInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, Attributes);
+                statementInternal.m_AttributeListHandle = HandleListInternal.Build(container, Attributes);
                 if (Template.IsValid)
                     statementInternal.m_EntryHandle = Template.handle;
                 else

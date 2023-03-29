@@ -18,10 +18,10 @@ namespace UnityEngine.UIElements
 
         private int m_ConsecutiveMouseDownCount;
         private long m_LastMouseDownTimeStamp = 0;
-        private bool isClicking
+        internal bool isClicking
         {
             get => m_IsClicking;
-            set
+            private set
             {
                 if (m_IsClicking == value) return;
                 m_IsClicking = value;
@@ -94,6 +94,15 @@ namespace UnityEngine.UIElements
 
         internal void HandleEventBubbleUp(EventBase evt)
         {
+            if (evt is BlurEvent)
+            {
+                m_TextElement.uitkTextHandle.RemoveTextInfoFromCache();
+            }
+            else if ((evt is not PointerMoveEvent && evt is not MouseMoveEvent) || isClicking)
+            {
+                m_TextElement.uitkTextHandle.AddTextInfoToCache();
+            }
+
             switch (evt)
             {
                 case FocusEvent:

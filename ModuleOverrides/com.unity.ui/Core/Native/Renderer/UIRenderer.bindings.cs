@@ -134,7 +134,7 @@ namespace UnityEngine.UIElements.UIR
         public extern static void RegisterIntermediateRenderer(
             Camera camera, Material material, Matrix4x4 transform, Bounds aabb,
             int renderLayer, int shadowCasting, bool receiveShadows, int sameDistanceSortPriority,
-            UInt64 sceneCullingMask, int rendererCallbackFlags, IntPtr userData, int userDataSize);
+            int rendererCallbackFlags, IntPtr userData, int userDataSize);
         [ThreadSafe] public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl);
         [ThreadSafe] public extern static void SetPropertyBlock(MaterialPropertyBlock props);
         [ThreadSafe] public extern static void SetScissorRect(RectInt scissorRect);

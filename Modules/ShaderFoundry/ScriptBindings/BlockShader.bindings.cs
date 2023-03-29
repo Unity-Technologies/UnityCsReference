@@ -50,7 +50,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var listHandle = blockShaderInternal.m_AttributeListHandle;
-                return FixedHandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
+                return HandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
             }
         }
         public Namespace ContainingNamespace => new Namespace(container, blockShaderInternal.m_ContainingNamespaceHandle);
@@ -59,7 +59,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var listHandle = blockShaderInternal.m_BlockShaderInterfaceListHandle;
-                return FixedHandleListInternal.Enumerate<BlockShaderInterface>(container, listHandle);
+                return HandleListInternal.Enumerate<BlockShaderInterface>(container, listHandle);
             }
         }
         public IEnumerable<Block> Blocks
@@ -67,7 +67,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var listHandle = blockShaderInternal.m_BlockListHandle;
-                return FixedHandleListInternal.Enumerate<Block>(container, listHandle);
+                return HandleListInternal.Enumerate<Block>(container, listHandle);
             }
         }
         public IEnumerable<CustomizationPointImplementation> CustomizationPointImplementations
@@ -75,7 +75,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var listHandle = blockShaderInternal.m_CustomizationPointImplementationListHandle;
-                return FixedHandleListInternal.Enumerate<CustomizationPointImplementation>(container, listHandle);
+                return HandleListInternal.Enumerate<CustomizationPointImplementation>(container, listHandle);
             }
         }
 
@@ -142,11 +142,11 @@ namespace UnityEditor.ShaderFoundry
                     m_NameHandle = container.AddString(Name),
                 };
 
-                blockShaderInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, Attributes);
+                blockShaderInternal.m_AttributeListHandle = HandleListInternal.Build(container, Attributes);
                 blockShaderInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
-                blockShaderInternal.m_BlockShaderInterfaceListHandle = FixedHandleListInternal.Build(container, BlockShaderInterfaces);
-                blockShaderInternal.m_BlockListHandle = FixedHandleListInternal.Build(container, Blocks);
-                blockShaderInternal.m_CustomizationPointImplementationListHandle = FixedHandleListInternal.Build(container, CustomizationPointImplementations);
+                blockShaderInternal.m_BlockShaderInterfaceListHandle = HandleListInternal.Build(container, BlockShaderInterfaces);
+                blockShaderInternal.m_BlockListHandle = HandleListInternal.Build(container, Blocks);
+                blockShaderInternal.m_CustomizationPointImplementationListHandle = HandleListInternal.Build(container, CustomizationPointImplementations);
 
                 var returnTypeHandle = container.Add(blockShaderInternal);
                 return new BlockShader(container, returnTypeHandle);

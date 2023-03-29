@@ -11,7 +11,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// <summary>
     /// A part to build the UI for the horizontal ports of a node, with the input ports on the left and the output ports on the right.
     /// </summary>
-    class InOutPortContainerPart : BaseModelViewPart
+    class InOutPortContainerPart : BasePortContainerPart
     {
         public static readonly string ussClassName = "ge-in-out-port-container-part";
         public static readonly string inputPortsUssName = "inputs";
@@ -25,29 +25,23 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="maxInputLabelWidth">Maximum input ports label width.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
+        /// <param name="portFilter">A filter used to select the ports to display in the container.</param>
         /// <returns>A new instance of <see cref="InOutPortContainerPart"/>.</returns>
-        public static InOutPortContainerPart Create(string name, Model model, ModelView ownerElement, float maxInputLabelWidth, string parentClassName)
+        public static InOutPortContainerPart Create(string name, Model model, ModelView ownerElement,
+            float maxInputLabelWidth, string parentClassName, Func<PortModel, bool> portFilter = null)
         {
-            if (model is PortNodeModel)
-            {
-                return new InOutPortContainerPart(name, model, ownerElement, maxInputLabelWidth, parentClassName);
-            }
-
-            return null;
+            return model is PortNodeModel
+                ? new InOutPortContainerPart(name, model, ownerElement, maxInputLabelWidth, parentClassName, portFilter)
+                : null;
         }
 
-        protected PortContainer m_InputPortContainer;
+        protected PortContainer InputPortContainer
+        {
+            get => PortContainer;
+            set => PortContainer = value;
+        }
 
-        protected PortContainer m_OutputPortContainer;
-
-        protected VisualElement m_Root;
-
-        /// <inheritdoc />
-        public override VisualElement Root => m_Root;
-
-
-        public PortContainer InputPortContainer => m_InputPortContainer;
-
+        protected PortContainer OutputPortContainer { get; set; }
 
         readonly float m_MaxInputLabelWidth;
 
@@ -57,9 +51,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="name">The name of the part.</param>
         /// <param name="model">The model displayed in this part.</param>
         /// <param name="ownerElement">The owner of the part.</param>
+        /// <param name="maxInputLabelWidth">Maximum width in pixels for the port label.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
-        protected InOutPortContainerPart(string name, Model model, ModelView ownerElement, float maxInputLabelWidth, string parentClassName)
-            : base(name, model, ownerElement, parentClassName)
+        /// <param name="portFilter">A filter used to select the ports to display in the container.</param>
+        protected InOutPortContainerPart(string name, Model model, ModelView ownerElement, float maxInputLabelWidth, string parentClassName, Func<PortModel, bool> portFilter)
+            : base(name, model, ownerElement, parentClassName, null, null,
+                portFilter == null ? horizontalPortFilter : p => horizontalPortFilter(p) && portFilter(p))
         {
             m_MaxInputLabelWidth = maxInputLabelWidth;
         }
@@ -73,23 +70,16 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_Root.AddToClassList(ussClassName);
                 m_Root.AddToClassList(m_ParentClassName.WithUssElement(PartName));
 
-                m_InputPortContainer = new PortContainer(true,m_MaxInputLabelWidth) { name = inputPortsUssName };
-                m_InputPortContainer.AddToClassList(m_ParentClassName.WithUssElement(inputPortsUssName));
-                m_Root.Add(m_InputPortContainer);
+                InputPortContainer = new PortContainer(true, m_MaxInputLabelWidth) { name = inputPortsUssName };
+                InputPortContainer.AddToClassList(m_ParentClassName.WithUssElement(inputPortsUssName));
+                m_Root.Add(InputPortContainer);
 
-                m_OutputPortContainer = new PortContainer { name = outputPortsUssName };
-                m_OutputPortContainer.AddToClassList(m_ParentClassName.WithUssElement(outputPortsUssName));
-                m_Root.Add(m_OutputPortContainer);
+                OutputPortContainer = new PortContainer { name = outputPortsUssName };
+                OutputPortContainer.AddToClassList(m_ParentClassName.WithUssElement(outputPortsUssName));
+                m_Root.Add(OutputPortContainer);
 
                 container.Add(m_Root);
             }
-        }
-
-        /// <inheritdoc />
-        protected override void PostBuildPartUI()
-        {
-            base.PostBuildPartUI();
-            m_Root.AddStylesheet_Internal("PortContainerPart.uss");
         }
 
         /// <inheritdoc />
@@ -105,8 +95,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 //     m_OutputPortContainer?.UpdatePorts(new[] { outputPortHolder.OutputPort }, m_OwnerElement.GraphView, m_OwnerElement.CommandDispatcher);
                 //     break;
                 case InputOutputPortsNodeModel portHolder:
-                    m_InputPortContainer?.UpdatePorts(portHolder.GetInputPorts().Where(p => p.Orientation == PortOrientation.Horizontal), m_OwnerElement.RootView);
-                    m_OutputPortContainer?.UpdatePorts(portHolder.GetOutputPorts().Where(p => p.Orientation == PortOrientation.Horizontal), m_OwnerElement.RootView);
+                    InputPortContainer?.UpdatePorts(portHolder.GetInputPorts().Where(PortFilter), m_OwnerElement.RootView);
+                    OutputPortContainer?.UpdatePorts(portHolder.GetOutputPorts().Where(PortFilter), m_OwnerElement.RootView);
                     break;
             }
         }

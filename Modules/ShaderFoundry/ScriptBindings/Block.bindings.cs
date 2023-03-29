@@ -28,13 +28,14 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_InputVariableListHandle;
         internal FoundryHandle m_OutputVariableListHandle;
         internal FoundryHandle m_PropertyVariableListHandle;
-        internal FoundryHandle m_RenderStateListHandle;
+        internal FoundryHandle m_RenderStateDescriptorListHandle;
         internal FoundryHandle m_DefineListHandle;
         internal FoundryHandle m_IncludeListHandle;
         internal FoundryHandle m_KeywordListHandle;
-        internal FoundryHandle m_PragmaListHandle;
+        internal FoundryHandle m_PragmaDescriptorListHandle;
         internal FoundryHandle m_PassParentHandle;
         internal FoundryHandle m_TemplateParentHandle;
+        internal FoundryHandle m_GeneratedIncludePathHandle;
 
         internal extern static BlockInternal Invalid();
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
@@ -69,14 +70,14 @@ namespace UnityEditor.ShaderFoundry
         public bool IsValid => Exists && block.IsValid;
 
         public string Name => container?.GetString(block.m_NameHandle) ?? string.Empty;
-        public IEnumerable<ShaderAttribute> Attributes => FixedHandleListInternal.Enumerate<ShaderAttribute>(container, block.m_AttributeListHandle);
+        public IEnumerable<ShaderAttribute> Attributes => HandleListInternal.Enumerate<ShaderAttribute>(container, block.m_AttributeListHandle);
         public Namespace ContainingNamespace => new Namespace(container, block.m_ContainingNamespaceHandle);
         public IEnumerable<ShaderType> Types
         {
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(block.m_DeclaredTypeListHandle);
+                var list = new HandleListInternal(block.m_DeclaredTypeListHandle);
                 return list.Select<ShaderType>(localContainer, (handle) => (new ShaderType(localContainer, handle)));
             }
         }
@@ -86,7 +87,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(block.m_ReferencedTypeListHandle);
+                var list = new HandleListInternal(block.m_ReferencedTypeListHandle);
                 return list.Select<ShaderType>(localContainer, (handle) => (new ShaderType(localContainer, handle)));
             }
         }
@@ -96,7 +97,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(block.m_DeclaredFunctionListHandle);
+                var list = new HandleListInternal(block.m_DeclaredFunctionListHandle);
                 return list.Select<ShaderFunction>(localContainer, (handle) => (new ShaderFunction(localContainer, handle)));
             }
         }
@@ -105,7 +106,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(block.m_ReferencedFunctionListHandle);
+                var list = new HandleListInternal(block.m_ReferencedFunctionListHandle);
                 return list.Select<ShaderFunction>(localContainer, (handle) => (new ShaderFunction(localContainer, handle)));
             }
         }
@@ -121,7 +122,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(block.m_RenderStateListHandle);
+                var list = new HandleListInternal(block.m_RenderStateDescriptorListHandle);
                 return list.Select<RenderStateDescriptor>(localContainer, (handle) => (new RenderStateDescriptor(localContainer, handle)));
             }
         }
@@ -131,7 +132,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(block.m_DefineListHandle);
+                var list = new HandleListInternal(block.m_DefineListHandle);
                 return list.Select<DefineDescriptor>(localContainer, (handle) => (new DefineDescriptor(localContainer, handle)));
             }
         }
@@ -141,7 +142,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(block.m_IncludeListHandle);
+                var list = new HandleListInternal(block.m_IncludeListHandle);
                 return list.Select<IncludeDescriptor>(localContainer, (handle) => (new IncludeDescriptor(localContainer, handle)));
             }
         }
@@ -151,7 +152,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(block.m_KeywordListHandle);
+                var list = new HandleListInternal(block.m_KeywordListHandle);
                 return list.Select<KeywordDescriptor>(localContainer, (handle) => (new KeywordDescriptor(localContainer, handle)));
             }
         }
@@ -161,7 +162,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(block.m_PragmaListHandle);
+                var list = new HandleListInternal(block.m_PragmaDescriptorListHandle);
                 return list.Select<PragmaDescriptor>(localContainer, (handle) => (new PragmaDescriptor(localContainer, handle)));
             }
         }
@@ -169,7 +170,7 @@ namespace UnityEditor.ShaderFoundry
         IEnumerable<BlockVariable> GetVariableEnumerable(FoundryHandle listHandle)
         {
             var localContainer = Container;
-            var list = new FixedHandleListInternal(listHandle);
+            var list = new HandleListInternal(listHandle);
             return list.Select<BlockVariable>(localContainer, (handle) => (new BlockVariable(localContainer, handle)));
         }
 
@@ -359,12 +360,12 @@ namespace UnityEditor.ShaderFoundry
                 var blockInternal = new BlockInternal();
                 blockInternal.m_NameHandle = container.AddString(name);
 
-                blockInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes);
+                blockInternal.m_AttributeListHandle = HandleListInternal.Build(container, attributes);
                 blockInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
-                blockInternal.m_DeclaredTypeListHandle = FixedHandleListInternal.Build(container, types, (t) => (t.handle));
-                blockInternal.m_ReferencedTypeListHandle = FixedHandleListInternal.Build(container, referencedTypes, (t) => (t.handle));
-                blockInternal.m_DeclaredFunctionListHandle = FixedHandleListInternal.Build(container, functions, (f) => (f.handle));
-                blockInternal.m_ReferencedFunctionListHandle = FixedHandleListInternal.Build(container, referencedFunctions, (f) => (f.handle));
+                blockInternal.m_DeclaredTypeListHandle = HandleListInternal.Build(container, types, (t) => (t.handle));
+                blockInternal.m_ReferencedTypeListHandle = HandleListInternal.Build(container, referencedTypes, (t) => (t.handle));
+                blockInternal.m_DeclaredFunctionListHandle = HandleListInternal.Build(container, functions, (f) => (f.handle));
+                blockInternal.m_ReferencedFunctionListHandle = HandleListInternal.Build(container, referencedFunctions, (f) => (f.handle));
                 blockInternal.m_EntryPointFunctionHandle = entryPointFunction.handle;
 
                 List<BlockVariable> inputs = new List<BlockInput>();
@@ -380,14 +381,14 @@ namespace UnityEditor.ShaderFoundry
                     }
                 }
 
-                blockInternal.m_InputVariableListHandle = FixedHandleListInternal.Build(container, inputs, (v) => (v.handle));
-                blockInternal.m_OutputVariableListHandle = FixedHandleListInternal.Build(container, outputs, (v) => (v.handle));
+                blockInternal.m_InputVariableListHandle = HandleListInternal.Build(container, inputs, (v) => (v.handle));
+                blockInternal.m_OutputVariableListHandle = HandleListInternal.Build(container, outputs, (v) => (v.handle));
 
-                blockInternal.m_RenderStateListHandle = FixedHandleListInternal.Build(container, m_RenderStates, (c) => (c.handle));
-                blockInternal.m_DefineListHandle = FixedHandleListInternal.Build(container, m_Defines, (d) => (d.handle));
-                blockInternal.m_IncludeListHandle = FixedHandleListInternal.Build(container, m_Includes, (i) => (i.handle));
-                blockInternal.m_KeywordListHandle = FixedHandleListInternal.Build(container, m_Keywords, (k) => (k.handle));
-                blockInternal.m_PragmaListHandle = FixedHandleListInternal.Build(container, m_Pragmas, (p) => (p.handle));
+                blockInternal.m_RenderStateDescriptorListHandle = HandleListInternal.Build(container, m_RenderStates, (c) => (c.handle));
+                blockInternal.m_DefineListHandle = HandleListInternal.Build(container, m_Defines, (d) => (d.handle));
+                blockInternal.m_IncludeListHandle = HandleListInternal.Build(container, m_Includes, (i) => (i.handle));
+                blockInternal.m_KeywordListHandle = HandleListInternal.Build(container, m_Keywords, (k) => (k.handle));
+                blockInternal.m_PragmaDescriptorListHandle = HandleListInternal.Build(container, m_Pragmas, (p) => (p.handle));
                 blockInternal.m_PassParentHandle = passParentHandle;
                 blockInternal.m_TemplateParentHandle = templateParentHandle;
 

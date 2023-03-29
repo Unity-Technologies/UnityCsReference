@@ -32,7 +32,7 @@ namespace UnityEditor.ShaderFoundry
 
         internal IEnumerable<ShaderAttribute> Attributes(ShaderContainer container)
         {
-            var list = new FixedHandleListInternal(m_AttributeListHandle);
+            var list = new HandleListInternal(m_AttributeListHandle);
             return list.Select<ShaderAttribute>(container, (handle) => (new ShaderAttribute(container, handle)));
         }
 
@@ -139,7 +139,7 @@ namespace UnityEditor.ShaderFoundry
                 var structFieldInternal = new StructFieldInternal();
                 structFieldInternal.m_NameHandle = container.AddString(name);
                 structFieldInternal.m_TypeHandle = type.handle;
-                structFieldInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes, (a) => (a.handle));
+                structFieldInternal.m_AttributeListHandle = HandleListInternal.Build(container, attributes, (a) => (a.handle));
                 structFieldInternal.m_Flags = m_Flags;
                 var returnHandle = container.Add(structFieldInternal);
                 return new StructField(container, returnHandle);

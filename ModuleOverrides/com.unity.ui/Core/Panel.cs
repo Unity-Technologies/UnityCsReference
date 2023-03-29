@@ -591,6 +591,21 @@ namespace UnityEngine.UIElements
             if (standardWorldSpaceShaderChanged != null) standardWorldSpaceShaderChanged();
         }
 
+        internal event Action isFlatChanged;
+        bool m_IsFlat = true;
+        public bool isFlat
+        {
+            get => m_IsFlat;
+            set
+            {
+                if (m_IsFlat == value)
+                    return;
+
+                m_IsFlat = value;
+                isFlatChanged?.Invoke();
+            }
+        }
+
         internal event Action atlasChanged;
         protected void InvokeAtlasChanged() { atlasChanged?.Invoke(); }
         public abstract AtlasBase atlas { get; set; }
@@ -1264,23 +1279,25 @@ namespace UnityEngine.UIElements
             }
         }
 
-        bool m_DrawToCameras;
-
-        internal bool drawToCameras
+        internal event Action drawsInCamerasChanged;
+        void InvokeDrawsInCamerasChanged() { drawsInCamerasChanged?.Invoke(); }
+        bool m_DrawsInCameras;
+        internal bool drawsInCameras
         {
-            get { return m_DrawToCameras; }
+            get { return m_DrawsInCameras; }
             set
             {
-                if (m_DrawToCameras != value)
+                if (m_DrawsInCameras != value)
                 {
-                    m_DrawToCameras = value;
-                    (GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.DestroyRenderChain();
+                    m_DrawsInCameras = value;
+                    InvokeDrawsInCamerasChanged();
                 }
             }
         }
 
         internal RenderTexture targetTexture = null; // Render panel to a texture
         internal Matrix4x4 panelToWorld = Matrix4x4.identity;
+        internal int worldSpaceLayer = 0;
 
         internal int targetDisplay { get; set;}
 
@@ -1299,9 +1316,14 @@ namespace UnityEngine.UIElements
             return display >= 0 && display < Display.displays.Length ? Display.displays[display].renderingWidth : Screen.width;
         }
 
-
         public override void Repaint(Event e)
         {
+            if (drawsInCameras)
+            {
+                base.Repaint(e);
+                return;
+            }
+
             // if the targetTexture is not set, we simply render on whatever target is currently set
             if (targetTexture == null)
             {

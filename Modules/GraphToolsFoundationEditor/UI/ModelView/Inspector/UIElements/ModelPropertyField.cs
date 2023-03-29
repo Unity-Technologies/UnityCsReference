@@ -47,11 +47,6 @@ namespace Unity.GraphToolsFoundation.Editor
         ICustomPropertyFieldBuilder<TValue> m_CustomFieldBuilder;
 
         /// <summary>
-        /// The root element of the UI.
-        /// </summary>
-        protected VisualElement m_Field;
-
-        /// <summary>
         /// A function to get the current value of the property.
         /// </summary>
         protected Func<TValue> m_ValueGetter;
@@ -83,9 +78,9 @@ namespace Unity.GraphToolsFoundation.Editor
             : base(commandTarget, label ?? ObjectNames.NicifyVariableName(propertyName), inspectedField)
         {
             Models = models;
-            m_Field = CreateFieldFromProperty(propertyName, fieldTooltip);
-            if (m_Field != null)
-                hierarchy.Add(m_Field);
+            CreateFieldFromProperty(propertyName, fieldTooltip);
+            if (Field != null)
+                hierarchy.Add(Field);
         }
 
         /// <summary>
@@ -112,11 +107,11 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (onValueChanged != null)
             {
-                switch (m_Field)
+                switch (Field)
                 {
                     case PopupField<string>:
                         Debug.Assert(typeof(Enum).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
-                        m_Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>(
+                        Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>(
                             (e, f) =>
                             {
                                 var newValue = (TValue)Enum.Parse(typeof(TValue), e.newValue);
@@ -126,31 +121,31 @@ namespace Unity.GraphToolsFoundation.Editor
 
                     case BaseField<Enum>:
                         Debug.Assert(typeof(Enum).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
-                        m_Field.RegisterCallback<ChangeEvent<Enum>, ModelPropertyField<TValue>>(
+                        Field.RegisterCallback<ChangeEvent<Enum>, ModelPropertyField<TValue>>(
                             (e, f) => onValueChanged((TValue)(object)e.newValue, f), this);
                         break;
 
                     case ObjectField:
                         Debug.Assert(typeof(Object).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
-                        m_Field.RegisterCallback<ChangeEvent<Object>, ModelPropertyField<TValue>>(
+                        Field.RegisterCallback<ChangeEvent<Object>, ModelPropertyField<TValue>>(
                             (e, f) => onValueChanged((TValue)(object)e.newValue, f), this);
                         break;
 
                     case LayerMaskField:
                         Debug.Assert(typeof(TValue) == typeof(LayerMask), $"Unexpected type for field {Label}.");
-                        m_Field.RegisterCallback<ChangeEvent<int>, ModelPropertyField<TValue>>(
+                        Field.RegisterCallback<ChangeEvent<int>, ModelPropertyField<TValue>>(
                             (e, f) => onValueChanged((TValue)(object)e.newValue, f), this);
                         break;
 
                     case TextField { maxLength: 1 }:
                         Debug.Assert(typeof(TValue) == typeof(char), $"Unexpected type for field {Label}.");
-                        m_Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>(
+                        Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>(
                             (e, f) => onValueChanged((TValue)(object)e.newValue[0], f), this);
                         break;
 
                     // For BaseField<TValue> and fields build by ICustomPropertyFieldBuilder.
                     default:
-                        m_Field.RegisterCallback<ChangeEvent<TValue>, ModelPropertyField<TValue>>(
+                        Field.RegisterCallback<ChangeEvent<TValue>, ModelPropertyField<TValue>>(
                             (e, f) => onValueChanged(e.newValue, f), this);
                         break;
                 }
@@ -214,14 +209,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="commandType">The type of command to dispatch.</param>
         protected void SetOnChangeDispatchCommand(Type commandType)
         {
-            if (m_Field == null)
+            if (Field == null)
                 return;
 
-            switch (m_Field)
+            switch (Field)
             {
                 case PopupField<string>:
                     Debug.Assert(typeof(Enum).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
-                    m_Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>((e, f) =>
+                    Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>((e, f) =>
                     {
                         var value = (TValue)Enum.Parse(typeof(TValue), e.newValue);
                         if (Activator.CreateInstance(commandType, value, f.Models) is ICommand command)
@@ -231,7 +226,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 case BaseField<Enum>:
                     Debug.Assert(typeof(Enum).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
-                    m_Field.RegisterCallback<ChangeEvent<Enum>, ModelPropertyField<TValue>>((e, f) =>
+                    Field.RegisterCallback<ChangeEvent<Enum>, ModelPropertyField<TValue>>((e, f) =>
                     {
                         if (Activator.CreateInstance(commandType, (TValue)(object)e.newValue, f.Models) is ICommand command)
                             f.CommandTarget.Dispatch(command);
@@ -240,7 +235,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 case ObjectField:
                     Debug.Assert(typeof(Object).IsAssignableFrom(typeof(TValue)), $"Unexpected type for field {Label}.");
-                    m_Field.RegisterCallback<ChangeEvent<Object>, ModelPropertyField<TValue>>((e, f) =>
+                    Field.RegisterCallback<ChangeEvent<Object>, ModelPropertyField<TValue>>((e, f) =>
                     {
                         if (Activator.CreateInstance(commandType, (TValue)(object)e.newValue, f.Models) is ICommand command)
                             f.CommandTarget.Dispatch(command);
@@ -249,7 +244,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 case LayerMaskField:
                     Debug.Assert(typeof(TValue) == typeof(LayerMask), $"Unexpected type for field {Label}.");
-                    m_Field.RegisterCallback<ChangeEvent<int>, ModelPropertyField<TValue>>((e, f) =>
+                    Field.RegisterCallback<ChangeEvent<int>, ModelPropertyField<TValue>>((e, f) =>
                     {
                         LayerMask mask = e.newValue;
                         if (Activator.CreateInstance(commandType, mask, f.Models) is ICommand command)
@@ -259,7 +254,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 case TextField { maxLength: 1 }:
                     Debug.Assert(typeof(TValue) == typeof(char), $"Unexpected type for field {Label}.");
-                    m_Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>((e, f) =>
+                    Field.RegisterCallback<ChangeEvent<string>, ModelPropertyField<TValue>>((e, f) =>
                     {
                         if (Activator.CreateInstance(commandType, e.newValue[0], f.Models) is ICommand command)
                             f.CommandTarget.Dispatch(command);
@@ -268,7 +263,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 // For BaseField<TValue> and fields build by ICustomPropertyFieldBuilder.
                 default:
-                    m_Field.RegisterCallback<ChangeEvent<TValue>, ModelPropertyField<TValue>>((e, f) =>
+                    Field.RegisterCallback<ChangeEvent<TValue>, ModelPropertyField<TValue>>((e, f) =>
                     {
                         if (Activator.CreateInstance(commandType, e.newValue, f.Models) is ICommand command)
                             f.CommandTarget.Dispatch(command);
@@ -317,7 +312,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         return;
                     }
 
-                    if (m_Field is BaseField<TValue> baseField)
+                    if (Field is BaseField<TValue> baseField)
                     {
                         baseField.showMixedValue = true;
                         return;
@@ -334,7 +329,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                     else
                     {
-                        switch (m_Field)
+                        switch (Field)
                         {
                             case PopupField<string> popupField:
                             {
@@ -419,8 +414,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 TryCreateCustomPropertyFieldBuilder(out m_CustomFieldBuilder);
             }
 
-            return m_CustomFieldBuilder?.Build(CommandTarget, Label, fieldTooltip, Models, propertyName) ??
+            Field = m_CustomFieldBuilder?.Build(CommandTarget, Label, fieldTooltip, Models, propertyName) ??
                 CreateDefaultFieldForType(typeof(TValue), fieldTooltip);
+            return Field;
         }
     }
 }

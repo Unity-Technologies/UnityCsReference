@@ -68,6 +68,24 @@ namespace Unity.CommandStateObserver
         where TCommand : ICommand;
 
     /// <summary>
+    /// A function to handle a command.
+    /// </summary>
+    /// <param name="param1">The first parameter to pass to the handler.</param>
+    /// <param name="param2">The second parameter to pass to the handler.</param>
+    /// <param name="param3">The third parameter to pass to the handler.</param>
+    /// <param name="param4">The fourth parameter to pass to the handler.</param>
+    /// <param name="param5">The fifth parameter to pass to the handler.</param>
+    /// <param name="command">The command that needs to be handled.</param>
+    /// <typeparam name="TParam1">The type of the handler first parameter.</typeparam>
+    /// <typeparam name="TParam2">The type of the handler second parameter.</typeparam>
+    /// <typeparam name="TParam3">The type of the handler third parameter.</typeparam>
+    /// <typeparam name="TParam4">The type of the handler fourth parameter.</typeparam>
+    /// <typeparam name="TParam5">The type of the handler fifth parameter.</typeparam>
+    /// <typeparam name="TCommand">The command type.</typeparam>
+    delegate void CommandHandler<in TParam1, in TParam2, in TParam3, in TParam4, in TParam5, in TCommand>(TParam1 param1, TParam2 param2, TParam3 param3, TParam4 param4, TParam5 param5, TCommand command)
+        where TCommand : ICommand;
+
+    /// <summary>
     /// Interface to wrap a command handler, bind its parameters and invoke it.
     /// </summary>
     interface ICommandHandlerFunctor
@@ -262,6 +280,49 @@ namespace Unity.CommandStateObserver
 
             var tCommand = (TCommand)command;
             m_Callback(m_HandlerParam1, m_HandlerParam2, m_HandlerParam3, m_HandlerParam4, tCommand);
+        }
+    }
+
+    /// <summary>
+    /// Class to wrap a <see cref="CommandHandler{TParam1, TParam2, TParam3, TParam4, TParam5, TCommand}"/>, bind its parameters and invoke it.
+    /// </summary>
+    class CommandHandlerFunctor<TParam1, TParam2, TParam3, TParam4, TParam5, TCommand> : ICommandHandlerFunctor
+        where TCommand : ICommand
+    {
+        CommandHandler<TParam1, TParam2, TParam3, TParam4, TParam5, TCommand> m_Callback;
+        TParam1 m_HandlerParam1;
+        TParam2 m_HandlerParam2;
+        TParam3 m_HandlerParam3;
+        TParam4 m_HandlerParam4;
+        TParam5 m_HandlerParam5;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommandHandlerFunctor{TParam1, TParam2, TParam3, TParam4, TParam5, TCommand}"/> class.
+        /// </summary>
+        public CommandHandlerFunctor(CommandHandler<TParam1, TParam2, TParam3, TParam4, TParam5, TCommand> callback, TParam1 handlerParam1, TParam2 handlerParam2, TParam3 handlerParam3, TParam4 handlerParam4, TParam5 handlerParam5)
+        {
+            m_Callback = callback;
+            m_HandlerParam1 = handlerParam1;
+            m_HandlerParam2 = handlerParam2;
+            m_HandlerParam3 = handlerParam3;
+            m_HandlerParam4 = handlerParam4;
+            m_HandlerParam5 = handlerParam5;
+        }
+
+        /// <summary>
+        /// Invokes the command handler.
+        /// </summary>
+        /// <param name="command">The command that triggered the invocation.</param>
+        /// <param name="logHandler">Whether to log the invocation.</param>
+        public void Invoke(ICommand command, bool logHandler)
+        {
+            if (logHandler)
+            {
+                Debug.Log($"{command.GetType().FullName} => {m_Callback.Method.DeclaringType}.{m_Callback.Method.Name}");
+            }
+
+            var tCommand = (TCommand)command;
+            m_Callback(m_HandlerParam1, m_HandlerParam2, m_HandlerParam3, m_HandlerParam4, m_HandlerParam5, tCommand);
         }
     }
 }

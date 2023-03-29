@@ -276,11 +276,11 @@ namespace UnityEditor
 
                     if (assemblyDefinitionFile != null)
                     {
-                        var assemblyDefintionFileAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(assemblyDefinitionFile);
+                        var assemblyDefinitionFileAsset = AssetDatabase.LoadAssetAtPath<TextAsset>(assemblyDefinitionFile);
 
                         using (new EditorGUI.DisabledScope(true))
                         {
-                            EditorGUILayout.ObjectField("Definition File", assemblyDefintionFileAsset, typeof(TextAsset), false);
+                            EditorGUILayout.ObjectField("Definition File", assemblyDefinitionFileAsset, typeof(TextAsset), false);
                         }
                     }
 

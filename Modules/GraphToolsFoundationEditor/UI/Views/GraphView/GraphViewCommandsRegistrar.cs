@@ -19,26 +19,28 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="graphTool">The tool, used to get the <see cref="Preferences"/> and the <see cref="UndoStateComponent"/>.</param>
         public static void RegisterCommands(GraphView graphView, BaseGraphTool graphTool)
         {
-            new GraphViewCommandsRegistrar(graphView, graphView.GraphViewModel.GraphViewState, graphView.GraphViewModel.GraphModelState, graphView.GraphViewModel.SelectionState, graphTool).RegisterCommandHandlers();
+            new GraphViewCommandsRegistrar(graphView, graphView.GraphViewModel.GraphViewState, graphView.GraphViewModel.GraphModelState, graphView.GraphViewModel.SelectionState, graphView.GraphViewModel.AutoPlacementState, graphTool).RegisterCommandHandlers();
         }
 
-        internal static void RegisterCommands_Internal(ICommandTarget commandTarget, GraphViewStateComponent graphViewState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, BaseGraphTool graphTool)
+        internal static void RegisterCommands_Internal(ICommandTarget commandTarget, GraphViewStateComponent graphViewState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, AutoPlacementStateComponent autoPlacementState, BaseGraphTool graphTool)
         {
-            new GraphViewCommandsRegistrar(commandTarget, graphViewState, graphModelState, selectionState, graphTool).RegisterCommandHandlers();
+            new GraphViewCommandsRegistrar(commandTarget, graphViewState, graphModelState, selectionState, autoPlacementState, graphTool).RegisterCommandHandlers();
         }
 
         ICommandTarget m_CommandTarget;
         GraphViewStateComponent m_GraphViewState;
         GraphModelStateComponent m_GraphModelState;
         SelectionStateComponent m_SelectionState;
+        AutoPlacementStateComponent m_AutoPlacementState;
         BaseGraphTool m_GraphTool;
 
-        GraphViewCommandsRegistrar(ICommandTarget commandTarget, GraphViewStateComponent graphViewState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, BaseGraphTool graphTool)
+        GraphViewCommandsRegistrar(ICommandTarget commandTarget, GraphViewStateComponent graphViewState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, AutoPlacementStateComponent autoPlacementState, BaseGraphTool graphTool)
         {
             m_CommandTarget = commandTarget;
             m_GraphViewState = graphViewState;
             m_GraphModelState = graphModelState;
             m_SelectionState = selectionState;
+            m_AutoPlacementState = autoPlacementState;
             m_GraphTool = graphTool;
         }
 
@@ -54,10 +56,10 @@ namespace Unity.GraphToolsFoundation.Editor
             m_CommandTarget.RegisterCommandHandler(commandHandler, m_GraphTool.UndoStateComponent, m_GraphModelState, m_SelectionState);
         }
 
-        void RegisterCommandHandler<TParam3, TCommand>(CommandHandler<UndoStateComponent, GraphModelStateComponent, SelectionStateComponent, TParam3, TCommand> commandHandler, TParam3 handlerParam3)
+        void RegisterCommandHandler<TParam3, TCommand>(CommandHandler<UndoStateComponent, GraphModelStateComponent, SelectionStateComponent, AutoPlacementStateComponent, TParam3, TCommand> commandHandler, TParam3 handlerParam3)
             where TCommand : ICommand
         {
-            m_CommandTarget.RegisterCommandHandler(commandHandler, m_GraphTool.UndoStateComponent, m_GraphModelState, m_SelectionState, handlerParam3);
+            m_CommandTarget.RegisterCommandHandler(commandHandler, m_GraphTool.UndoStateComponent, m_GraphModelState, m_SelectionState, m_AutoPlacementState, handlerParam3);
         }
 
         void RegisterCommandHandlers()

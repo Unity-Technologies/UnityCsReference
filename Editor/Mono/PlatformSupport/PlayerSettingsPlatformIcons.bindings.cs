@@ -467,15 +467,12 @@ namespace UnityEditor
 
         public static void SetIcons(NamedBuildTarget buildTarget, Texture2D[] icons, IconKind kind)
         {
-            if (buildTarget == NamedBuildTarget.iOS ||
-                buildTarget == NamedBuildTarget.tvOS ||
-                buildTarget == NamedBuildTarget.Android)
+            IPlatformIconProvider iconProvider = GetPlatformIconProvider(buildTarget);
+
+            if (iconProvider == null)
+                SetIconsForPlatform(buildTarget.TargetName, icons, kind);
+            else
             {
-                IPlatformIconProvider iconProvider = GetPlatformIconProvider(buildTarget);
-
-                if (iconProvider == null)
-                    return;
-
                 PlatformIconKind platformIconKind = iconProvider.GetPlatformIconKindFromEnumValue(kind);
 
                 PlatformIcon[] platformIcons = GetPlatformIcons(buildTarget, platformIconKind);
@@ -485,8 +482,6 @@ namespace UnityEditor
 
                 SetPlatformIcons(buildTarget, platformIconKind, platformIcons);
             }
-            else
-                SetIconsForPlatform(buildTarget.TargetName, icons, kind);
         }
 
         [Obsolete("Use SetIcons(NamedBuildTarget, Texture2D[], IconKind) instead")]

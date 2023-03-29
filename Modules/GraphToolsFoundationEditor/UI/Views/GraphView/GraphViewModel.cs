@@ -29,6 +29,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public SelectionStateComponent SelectionState { get; }
 
         /// <summary>
+        /// The automatic placement state component.
+        /// </summary>
+        public AutoPlacementStateComponent AutoPlacementState { get; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GraphViewModel"/> class.
         /// </summary>
         public GraphViewModel(string graphViewName, GraphModel graphModel)
@@ -41,6 +46,8 @@ namespace Unity.GraphToolsFoundation.Editor
             GraphModelState = new GraphModelStateComponent();
 
             SelectionState = PersistedState.GetOrCreatePersistedStateComponent<SelectionStateComponent>(default, Guid, graphKey);
+
+            AutoPlacementState = new AutoPlacementStateComponent();
         }
 
         /// <inheritdoc />
@@ -49,6 +56,7 @@ namespace Unity.GraphToolsFoundation.Editor
             state?.AddStateComponent(GraphViewState);
             state?.AddStateComponent(GraphModelState);
             state?.AddStateComponent(SelectionState);
+            state?.AddStateComponent(AutoPlacementState);
         }
 
         /// <inheritdoc />
@@ -57,6 +65,7 @@ namespace Unity.GraphToolsFoundation.Editor
             state?.RemoveStateComponent(GraphViewState);
             state?.RemoveStateComponent(GraphModelState);
             state?.RemoveStateComponent(SelectionState);
+            state?.RemoveStateComponent(AutoPlacementState);
         }
     }
 }

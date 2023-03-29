@@ -213,7 +213,14 @@ namespace UnityEngine.UIElements
         }
 
         private Quaternion ResolveRotation() => computedStyle.rotate.ToQuaternion();
-        private Vector3 ResolveScale() => computedStyle.scale.value;
+
+        private Vector3 ResolveScale()
+        {
+            Vector3 s = computedStyle.scale.value;
+            if (elementPanel is { isFlat: true })
+                s.z = 1;
+            return s;
+        }
 
         internal class CustomStyleAccess : ICustomStyle
         {

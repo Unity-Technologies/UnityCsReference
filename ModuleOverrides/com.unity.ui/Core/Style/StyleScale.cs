@@ -54,6 +54,13 @@ namespace UnityEngine.UIElements
             : this(new Scale(scale))
         {}
 
+        /// <summary>
+        /// Creates a new StyleScale from a <see cref="Vector3"/>.
+        /// </summary>
+        internal StyleScale(Vector3 scale)
+            : this(new Scale(scale))
+        { }
+
         internal StyleScale(Scale v, StyleKeyword keyword)
         {
             m_Keyword = keyword;

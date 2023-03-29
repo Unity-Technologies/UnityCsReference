@@ -38,6 +38,8 @@ namespace UnityEngine
         public extern void SetTexture(Texture texture);
         public extern void SetAlphaTexture(Texture texture);
         public extern void SetMesh(Mesh mesh);
+        public extern Mesh GetMesh();
+
         public extern void Clear();
 
         public float GetAlpha()

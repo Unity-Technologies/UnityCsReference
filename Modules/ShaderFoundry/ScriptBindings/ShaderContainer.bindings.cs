@@ -109,7 +109,7 @@ namespace UnityEditor.ShaderFoundry
 
         [NativeMethod("CreateArray<ShaderFoundry::FoundryHandle>")]
         internal extern FoundryHandle AddHandleBlob(uint size);
-        [NativeMethod("GetArraySize<ShaderFoundry::FoundryHandle>")]
+        [NativeMethod("GetArraySize")]
         internal extern uint GetHandleBlobSize(FoundryHandle blobHandle);
         [NativeMethod("GetArrayElement<ShaderFoundry::FoundryHandle>")]
         internal extern FoundryHandle GetHandleBlobElement(FoundryHandle blobHandle, uint elementIndex);

@@ -1189,7 +1189,7 @@ namespace UnityEngine.UIElements
         private void OnPointerMove(PointerMoveEvent evt)
         {
             // Support cases where PointerMove corresponds to a MouseDown or MouseUp event with multiple buttons.
-            if (!evt.DiscardMouseEventsOnMobile() && evt.button == (int)MouseButton.LeftMouse)
+            if (evt.button == (int)MouseButton.LeftMouse)
             {
                 if ((evt.pressedButtons & (1 << (int)MouseButton.LeftMouse)) == 0)
                 {
@@ -1204,10 +1204,7 @@ namespace UnityEngine.UIElements
 
         private void OnPointerDown(PointerDownEvent evt)
         {
-            if (!evt.DiscardMouseEventsOnMobile())
-            {
-                ProcessPointerDown(evt);
-            }
+            ProcessPointerDown(evt);
         }
 
         private void OnPointerCancel(PointerCancelEvent evt)
@@ -1223,10 +1220,7 @@ namespace UnityEngine.UIElements
 
         private void OnPointerUp(PointerUpEvent evt)
         {
-            if (!evt.DiscardMouseEventsOnMobile())
-            {
-                ProcessPointerUp(evt);
-            }
+            ProcessPointerUp(evt);
         }
 
         private Vector3 m_TouchDownPosition;

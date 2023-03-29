@@ -195,6 +195,11 @@ namespace Unity.GraphToolsFoundation.Editor
 
         internal static ItemLibraryWindow ShowEnumValues_Internal(string title, Type enumType, Vector2 position, Action<Enum, int> callback)
         {
+            return ShowEnumValues_Internal(EditorWindow.focusedWindow, title, enumType, position, callback);
+        }
+
+        internal static ItemLibraryWindow ShowEnumValues_Internal(EditorWindow host, string title, Type enumType, Vector2 position, Action<Enum, int> callback)
+        {
             var items = Enum.GetValues(enumType)
                 .Cast<Enum>()
                 .Select(v => new EnumValuesAdapter_Internal.EnumValueItem(v) as ItemLibraryItem)
@@ -202,13 +207,19 @@ namespace Unity.GraphToolsFoundation.Editor
             var database = new ItemLibraryDatabase(items);
             var library = new ItemLibraryLibrary_Internal(database, new EnumValuesAdapter_Internal(title), context: "Enum" + enumType.FullName);
 
-            var window = library.Show(EditorWindow.focusedWindow, position);
+            var window = library.Show(host, position);
             window.StatusBarText = k_DefaultValueStatusText;
             window.itemChosen += item => callback(((EnumValuesAdapter_Internal.EnumValueItem)item)?.value, 0);
             return window;
         }
 
         public static ItemLibraryWindow ShowValues(Preferences preferences, string title, IEnumerable<string> values, Vector2 position,
+            Action<string> callback)
+        {
+            return ShowValues_Internal(EditorWindow.focusedWindow, preferences, title, values, position, callback);
+        }
+
+        internal static ItemLibraryWindow ShowValues_Internal(EditorWindow host, Preferences preferences, string title, IEnumerable<string> values, Vector2 position,
             Action<string> callback)
         {
             var librarySize = preferences.GetItemLibrarySize(Usage.Values);
@@ -219,7 +230,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var adapter = new SimpleLibraryAdapter(title);
             var library = new ItemLibraryLibrary_Internal(database, adapter, context: Usage.Values);
 
-            var window = library.Show(EditorWindow.focusedWindow, rect);
+            var window = library.Show(host, rect);
             window.StatusBarText = k_DefaultValueStatusText;
             window.itemChosen += item => callback(item?.Name);
             ListenToResize(preferences, Usage.Values, window);
@@ -228,18 +239,28 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public static ItemLibraryWindow ShowVariableTypes(Stencil stencil, Preferences preferences, Vector2 position, Action<TypeHandle, int> callback)
         {
+            return ShowVariableTypes_Internal(EditorWindow.focusedWindow, stencil, preferences, position, callback);
+        }
+
+        internal static ItemLibraryWindow ShowVariableTypes_Internal(EditorWindow host, Stencil stencil, Preferences preferences, Vector2 position, Action<TypeHandle, int> callback)
+        {
             var databases = stencil.GetItemDatabaseProvider()?.GetVariableTypesDatabases();
-            return databases != null ? ShowTypes_Internal(preferences, databases, position, callback) : null;
+            return databases != null ? ShowTypes_Internal(host, preferences, databases, position, callback) : null;
         }
 
         internal static ItemLibraryWindow ShowTypes_Internal(Preferences preferences, IEnumerable<ItemLibraryDatabaseBase> databases, Vector2 position, Action<TypeHandle, int> callback)
+        {
+            return ShowTypes_Internal(EditorWindow.focusedWindow, preferences, databases, position, callback);
+        }
+
+        internal static ItemLibraryWindow ShowTypes_Internal(EditorWindow host, Preferences preferences, IEnumerable<ItemLibraryDatabaseBase> databases, Vector2 position, Action<TypeHandle, int> callback)
         {
             var librarySize = preferences.GetItemLibrarySize(Usage.Types);
             var rect = new Rect(position, librarySize.Size);
 
             var library = new ItemLibraryLibrary_Internal(databases, k_TypeAdapter, context: Usage.Types);
 
-            var window = library.Show(EditorWindow.focusedWindow, rect);
+            var window = library.Show(host, rect);
             ListenToResize(preferences, Usage.Types, window);
             window.itemChosen += item =>
             {

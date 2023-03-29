@@ -58,7 +58,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(templateInstance.m_TagDescriptorListHandle);
+                var list = new HandleListInternal(templateInstance.m_TagDescriptorListHandle);
                 return list.Select(localContainer, (handle) => (new TagDescriptor(localContainer, handle)));
             }
         }
@@ -108,8 +108,8 @@ namespace UnityEditor.ShaderFoundry
             {
                 var templateInstanceInternal = new TemplateInstanceInternal();
                 templateInstanceInternal.m_TemplateHandle = template.handle;
-                templateInstanceInternal.m_CustomizationPointImplementationListHandle = FixedHandleListInternal.Build(container, customizationPointImplementations, (o) => (o.handle));
-                templateInstanceInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
+                templateInstanceInternal.m_CustomizationPointImplementationListHandle = HandleListInternal.Build(container, customizationPointImplementations, (o) => (o.handle));
+                templateInstanceInternal.m_TagDescriptorListHandle = HandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
 
                 var returnTypeHandle = container.Add(templateInstanceInternal);
                 return new TemplateInstance(container, returnTypeHandle);

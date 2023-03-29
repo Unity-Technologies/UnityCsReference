@@ -43,7 +43,7 @@ namespace UnityEditor.ShaderFoundry
 
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
-        public IEnumerable<ShaderAttribute> Attributes => FixedHandleListInternal.Enumerate<ShaderAttribute>(container, element.m_AttributeListHandle);
+        public IEnumerable<ShaderAttribute> Attributes => HandleListInternal.Enumerate<ShaderAttribute>(container, element.m_AttributeListHandle);
         public Block Block => new Block(container, element.m_BlockHandle);
         public CustomizationPoint CustomizationPoint => new CustomizationPoint(container, element.m_CustomizationPointHandle);
         public string InstanceName => container?.GetString(element.m_InstanceNameHandle) ?? string.Empty;
@@ -112,12 +112,12 @@ namespace UnityEditor.ShaderFoundry
             public BlockSequenceElement Build()
             {
                 var internalResult = new BlockSequenceElementInternal();
-                internalResult.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes);
+                internalResult.m_AttributeListHandle = HandleListInternal.Build(container, attributes);
                 internalResult.m_BlockHandle = block.handle;
                 internalResult.m_CustomizationPointHandle = customizationPoint.handle;
                 internalResult.m_InstanceNameHandle = container.AddString(instanceName);
-                internalResult.m_InputLinkOverridesListHandle = FixedHandleListInternal.Build(container, inputOverrides, (o) => (o.handle));
-                internalResult.m_OutputLinkOverridesListHandle = FixedHandleListInternal.Build(container, outputOverrides, (o) => (o.handle));
+                internalResult.m_InputLinkOverridesListHandle = HandleListInternal.Build(container, inputOverrides, (o) => (o.handle));
+                internalResult.m_OutputLinkOverridesListHandle = HandleListInternal.Build(container, outputOverrides, (o) => (o.handle));
                 var returnTypeHandle = container.Add(internalResult);
                 return new BlockSequenceElement(container, returnTypeHandle);
             }

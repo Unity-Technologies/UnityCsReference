@@ -79,16 +79,38 @@ namespace Unity.CommandStateObserver
         /// <param name="handlerParam1">The first parameter of the command handler.</param>
         /// <param name="handlerParam2">The second parameter of the command handler.</param>
         /// <param name="handlerParam3">The third parameter of the command handler.</param>
-        /// <param name="handlerParam4">The third parameter of the command handler.</param>
+        /// <param name="handlerParam4">The fourth parameter of the command handler.</param>
         /// <typeparam name="TCommand">The command type.</typeparam>
         /// <typeparam name="TParam1">The type of the command handler first parameter.</typeparam>
         /// <typeparam name="TParam2">The type of the command handler second parameter.</typeparam>
         /// <typeparam name="TParam3">The type of the command handler third parameter.</typeparam>
-        /// <typeparam name="TParam4">The type of the command handler third parameter.</typeparam>
+        /// <typeparam name="TParam4">The type of the command handler fourth parameter.</typeparam>
         public static void RegisterCommandHandler<TParam1, TParam2, TParam3, TParam4, TCommand>(this ICommandTarget self, CommandHandler<TParam1, TParam2, TParam3, TParam4, TCommand> commandHandler, TParam1 handlerParam1, TParam2 handlerParam2, TParam3 handlerParam3, TParam4 handlerParam4)
             where TCommand : ICommand
         {
             self.RegisterCommandHandler<TCommand>(new CommandHandlerFunctor<TParam1, TParam2, TParam3, TParam4, TCommand>(commandHandler, handlerParam1, handlerParam2, handlerParam3, handlerParam4));
+        }
+
+        /// <summary>
+        /// Registers a handler for a command type.
+        /// </summary>
+        /// <param name="self">The dispatcher onto which to register the command handler.</param>
+        /// <param name="commandHandler">The command handler.</param>
+        /// <param name="handlerParam1">The first parameter of the command handler.</param>
+        /// <param name="handlerParam2">The second parameter of the command handler.</param>
+        /// <param name="handlerParam3">The third parameter of the command handler.</param>
+        /// <param name="handlerParam4">The fourth parameter of the command handler.</param>
+        /// <param name="handlerParam5">The fifth parameter of the command handler.</param>
+        /// <typeparam name="TCommand">The command type.</typeparam>
+        /// <typeparam name="TParam1">The type of the command handler first parameter.</typeparam>
+        /// <typeparam name="TParam2">The type of the command handler second parameter.</typeparam>
+        /// <typeparam name="TParam3">The type of the command handler third parameter.</typeparam>
+        /// <typeparam name="TParam4">The type of the command handler fourth parameter.</typeparam>
+        /// <typeparam name="TParam5">The type of the command handler fifth parameter.</typeparam>
+        public static void RegisterCommandHandler<TParam1, TParam2, TParam3, TParam4, TParam5, TCommand>(this ICommandTarget self, CommandHandler<TParam1, TParam2, TParam3, TParam4, TParam5, TCommand> commandHandler, TParam1 handlerParam1, TParam2 handlerParam2, TParam3 handlerParam3, TParam4 handlerParam4, TParam5 handlerParam5)
+            where TCommand : ICommand
+        {
+            self.RegisterCommandHandler<TCommand>(new CommandHandlerFunctor<TParam1, TParam2, TParam3, TParam4, TParam5, TCommand>(commandHandler, handlerParam1, handlerParam2, handlerParam3, handlerParam4, handlerParam5));
         }
     }
 }

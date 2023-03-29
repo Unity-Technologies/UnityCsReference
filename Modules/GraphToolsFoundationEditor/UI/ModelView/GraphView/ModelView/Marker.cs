@@ -11,7 +11,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// <summary>
     /// An element that displays text and is attached to another element. Used to display annotations on nodes.
     /// </summary>
-    abstract class Badge : GraphElement
+    abstract class Marker : GraphElement
     {
         static readonly CustomStyleProperty<int> k_DistanceProperty = new CustomStyleProperty<int>("--distance");
         static readonly int k_DefaultDistanceValue = 6;
@@ -22,12 +22,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected Attacher Attacher { get; private set; }
         protected SpriteAlignment Alignment { get; private set; }
-        public BadgeModel BadgeModel => Model as BadgeModel;
+        public MarkerModel MarkerModel => Model as MarkerModel;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="Badge"/> class.
+        /// Initializes a new instance of the <see cref="Marker"/> class.
         /// </summary>
-        protected Badge()
+        protected Marker()
         {
             m_Distance = k_DefaultDistanceValue;
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -36,7 +36,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected virtual void Attach()
         {
-            var visualElement = BadgeModel?.ParentModel?.GetView<GraphElement>(RootView);
+            var visualElement = MarkerModel?.ParentModel?.GetView<GraphElement>(RootView);
             if (visualElement != null)
             {
                 AttachTo(visualElement, SpriteAlignment.RightCenter);

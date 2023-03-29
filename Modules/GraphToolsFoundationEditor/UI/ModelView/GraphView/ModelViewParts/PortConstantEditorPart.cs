@@ -43,6 +43,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public override VisualElement Root => m_Root;
 
         /// <summary>
+        /// The <see cref="BaseFieldMouseDragger"/> that can be used to change the value of the port.
+        /// </summary>
+        public BaseFieldMouseDragger Dragger { get; private set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PortConstantEditorPart"/> class.
         /// </summary>
         /// <param name="name">The name of the part.</param>
@@ -100,6 +105,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     m_Editor.RemoveFromHierarchy();
                     m_Editor = null;
+                    Dragger = null;
                 }
 
                 if (m_Editor == null)
@@ -110,6 +116,27 @@ namespace Unity.GraphToolsFoundation.Editor
                         m_IsConnected = portModel.IsConnected();
                         m_Editor = InlineValueEditor.CreateEditorForConstants(
                             m_OwnerElement.RootView, new[] { portModel }, new[] { portModel.EmbeddedValue }, false);
+
+                        if(portModel.DataTypeHandle == TypeHandle.Float)
+                        {
+                            Dragger = new FieldMouseDragger<float>((IValueField<float>)m_Editor.Field);
+                        }
+                        else if(portModel.DataTypeHandle == TypeHandle.Double)
+                        {
+                            Dragger = new FieldMouseDragger<double>((IValueField<double>)m_Editor.Field);
+                        }
+                        else if(portModel.DataTypeHandle == TypeHandle.Int)
+                        {
+                            Dragger = new FieldMouseDragger<int>((IValueField<int>)m_Editor.Field);
+                        }
+                        else if(portModel.DataTypeHandle == TypeHandle.Long)
+                        {
+                            Dragger = new FieldMouseDragger<long>((IValueField<long>)m_Editor.Field);
+                        }
+                        else if(portModel.DataTypeHandle == TypeHandle.UInt)
+                        {
+                            Dragger = new FieldMouseDragger<uint>((IValueField<uint>)m_Editor.Field);
+                        }
 
                         if (m_Editor != null)
                         {

@@ -60,7 +60,7 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
         public string Name => container?.GetString(template.m_NameHandle) ?? string.Empty;
-        public IEnumerable<ShaderAttribute> Attributes => FixedHandleListInternal.Enumerate<ShaderAttribute>(container, template.m_AttributeListHandle);
+        public IEnumerable<ShaderAttribute> Attributes => HandleListInternal.Enumerate<ShaderAttribute>(container, template.m_AttributeListHandle);
         public Namespace ContainingNamespace => new Namespace(container, template.m_ContainingNamespaceHandle);
         public string AdditionalShaderID => container?.GetString(template.m_AdditionalShaderIDStringHandle) ?? string.Empty;
         public IEnumerable<TemplatePass> Passes
@@ -68,7 +68,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var passList = new FixedHandleListInternal(template.m_PassListHandle);
+                var passList = new HandleListInternal(template.m_PassListHandle);
                 return passList.Select<TemplatePass>(localContainer, (handle) => (new TemplatePass(localContainer, handle)));
             }
         }
@@ -234,18 +234,18 @@ namespace UnityEditor.ShaderFoundry
                     m_ShaderFallbackHandle = container.AddString(ShaderFallback),
                 };
 
-                templateInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes);
+                templateInternal.m_AttributeListHandle = HandleListInternal.Build(container, attributes);
                 templateInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
-                templateInternal.m_PassListHandle = FixedHandleListInternal.Build(container, passes, (p) => (p.handle));
+                templateInternal.m_PassListHandle = HandleListInternal.Build(container, passes, (p) => (p.handle));
                 templateInternal.m_LODHandle = container.AddString(LOD);
-                templateInternal.m_PackageRequirementListHandle = FixedHandleListInternal.Build(container, packageRequirements, (p) => (p.handle));
-                templateInternal.m_CustomizationPointListHandle = FixedHandleListInternal.Build(container, customizationPoints, (c) => c.handle);
-                templateInternal.m_ExtendedTemplateListHandle = FixedHandleListInternal.Build(container, extendedTemplates, (t) => (t.handle));
-                templateInternal.m_PassCopyRuleListHandle = FixedHandleListInternal.Build(container, passCopyRules, (r) => (r.handle));
-                templateInternal.m_CustomizationPointCopyRuleListHandle = FixedHandleListInternal.Build(container, customizationPointCopyRules, (r) => (r.handle));
-                templateInternal.m_CustomizationPointImplementationListHandle = FixedHandleListInternal.Build(container, customizationPointImplementations, (c) => (c.handle));
-                templateInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (t) => (t.handle));
-                templateInternal.m_ShaderDependencyListHandle = FixedHandleListInternal.Build(container, shaderDependencies, (sd) => sd.handle);
+                templateInternal.m_PackageRequirementListHandle = HandleListInternal.Build(container, packageRequirements, (p) => (p.handle));
+                templateInternal.m_CustomizationPointListHandle = HandleListInternal.Build(container, customizationPoints, (c) => c.handle);
+                templateInternal.m_ExtendedTemplateListHandle = HandleListInternal.Build(container, extendedTemplates, (t) => (t.handle));
+                templateInternal.m_PassCopyRuleListHandle = HandleListInternal.Build(container, passCopyRules, (r) => (r.handle));
+                templateInternal.m_CustomizationPointCopyRuleListHandle = HandleListInternal.Build(container, customizationPointCopyRules, (r) => (r.handle));
+                templateInternal.m_CustomizationPointImplementationListHandle = HandleListInternal.Build(container, customizationPointImplementations, (c) => (c.handle));
+                templateInternal.m_TagDescriptorListHandle = HandleListInternal.Build(container, tagDescriptors, (t) => (t.handle));
+                templateInternal.m_ShaderDependencyListHandle = HandleListInternal.Build(container, shaderDependencies, (sd) => sd.handle);
                 templateInternal.m_ShaderCustomEditorHandle = CustomEditor.IsValid ? CustomEditor.handle : FoundryHandle.Invalid();
 
                 var returnTypeHandle = container.Add(templateInternal);

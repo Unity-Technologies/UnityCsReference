@@ -54,6 +54,9 @@ namespace UnityEngine
     // String tests
 
     [ExcludeFromDocs]
+    [RequiredByNativeCode(GenerateProxy = true, Name = "StructCoreStringManaged")]
+    [NativeClass("StructCoreString", "struct StructCoreString;")]
+    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
     internal struct StructCoreString
     {
         public string field;
@@ -89,6 +92,8 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterStructCoreString(StructCoreString param);
 
         [NativeThrows] public static extern void ParameterStructCoreStringVector(StructCoreStringVector param);
+
+        [NativeThrows] public static extern StructCoreString TestCoreStringViaProxy(StructCoreString param);
 
         public static extern string ReturnCoreString();
         public static extern string ReturnCoreStringRef();

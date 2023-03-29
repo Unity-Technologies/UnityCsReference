@@ -57,6 +57,12 @@ namespace UnityEngine.UIElements
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
+            if (elementPanel is BaseRuntimePanel { drawsInCameras: true })
+            {
+                Debug.LogError($"{nameof(ImmediateModeElement)} cannot be used in a panel drawn by cameras.");
+                return;
+            }
+
             mgc.entryRecorder.DrawImmediate(CallImmediateRepaint, cullingEnabled);
         }
 

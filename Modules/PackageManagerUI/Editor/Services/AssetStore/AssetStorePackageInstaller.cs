@@ -19,15 +19,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetDatabaseProxy m_AssetDatabase;
         [NonSerialized]
         private AssetSelectionHandler m_AssetSelectionHandler;
+        [NonSerialized]
+        private ApplicationProxy m_ApplicationProxy;
         public void ResolveDependencies(IOProxy ioProxy,
             AssetStoreCache assetStoreCache,
             AssetDatabaseProxy assetDatabaseProxy,
-            AssetSelectionHandler assetSelectionHandler)
+            AssetSelectionHandler assetSelectionHandler,
+            ApplicationProxy applicationProxy)
         {
             m_IOProxy = ioProxy;
             m_AssetStoreCache = assetStoreCache;
             m_AssetDatabase = assetDatabaseProxy;
             m_AssetSelectionHandler = assetSelectionHandler;
+            m_ApplicationProxy = applicationProxy;
         }
 
         public void OnEnable()
@@ -100,6 +104,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 foreach (var path in pathsFailedToRemove)
                     errorMessage += "\n" + path;
                 Debug.LogError(errorMessage);
+
+                m_ApplicationProxy.DisplayDialog("cannotRemoveAsset",
+                    L10n.Tr("Cannot Remove"),
+                    L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example."),
+                    L10n.Tr("Ok"));
             }
         }
 

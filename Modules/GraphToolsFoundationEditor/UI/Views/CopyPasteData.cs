@@ -526,7 +526,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     ((VariableNodeModel)pastedNode).VariableDeclarationModel = declarationModel;
                 }
 
-                selectionStateUpdater?.SelectElements(new[] { pastedNode }, true);
+                selectionStateUpdater?.SelectElement(pastedNode, true);
                 RecurseAddMapping(elementMapping, originalModel, pastedNode);
 
                 (pastedNode as ICopyPasteCallbackReceiver)?.OnAfterPaste();
@@ -567,7 +567,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (copiedWire != null)
                 {
                     elementMapping.Add(wire.Guid.ToString(), copiedWire);
-                    selectionStateUpdater?.SelectElements(new[] { copiedWire }, true);
+                    selectionStateUpdater?.SelectElement(copiedWire, true);
 
                     (copiedWire as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                 }
@@ -581,7 +581,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 pastedStickyNote.Contents = stickyNote.Contents;
                 pastedStickyNote.Theme = stickyNote.Theme;
                 pastedStickyNote.TextSize = stickyNote.TextSize;
-                selectionStateUpdater?.SelectElements(new[] { pastedStickyNote }, true);
+                selectionStateUpdater?.SelectElement(pastedStickyNote, true);
                 elementMapping.Add(stickyNote.Guid.ToString(), pastedStickyNote);
 
                 (pastedStickyNote as ICopyPasteCallbackReceiver)?.OnAfterPaste();
@@ -595,7 +595,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 var pastedPlacemat = graphModel.CreatePlacemat(newPosition);
                 PlacematModel.CopyPlacematParameters(placemat,pastedPlacemat);
                 pastedPlacemat.Title = newTitle;
-                selectionStateUpdater?.SelectElements(new[] { pastedPlacemat }, true);
+                selectionStateUpdater?.SelectElement(pastedPlacemat, true);
                 elementMapping.Add(placemat.Guid.ToString(), pastedPlacemat);
 
                 (pastedPlacemat as ICopyPasteCallbackReceiver)?.OnAfterPaste();

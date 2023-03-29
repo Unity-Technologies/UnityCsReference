@@ -767,6 +767,9 @@ namespace UnityEngine.UIElements.UIR
 
         static ClipMethod DetermineSelfClipMethod(RenderChain renderChain, VisualElement ve)
         {
+            if (!renderChain.isFlat)
+                return ClipMethod.NotClipped;
+
             if (!ve.ShouldClip())
                 return ClipMethod.NotClipped;
 
@@ -787,13 +790,16 @@ namespace UnityEngine.UIElements.UIR
             if (inheritedMaskDepth == UIRUtility.k_MaxMaskDepth)
                 return rectClipMethod;
 
-            // Stencil clipping is not yet supported in world-space rendering, fallback to a coarse shader discard for now
-            return renderChain.drawInCameras ? rectClipMethod : ClipMethod.Stencil;
+            // Default to stencil
+            return ClipMethod.Stencil;
         }
 
         // Returns true when a change was detected
         static bool UpdateLocalFlipsWinding(VisualElement ve)
         {
+            if (!ve.elementPanel.isFlat)
+                return false;
+
             bool oldFlipsWinding = ve.renderChainData.localFlipsWinding;
             Vector3 scale = ve.transform.scale;
             float winding = scale.x * scale.y;

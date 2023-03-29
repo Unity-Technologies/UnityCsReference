@@ -49,7 +49,7 @@ namespace UnityEngine.TextCore.Text
         public bool emojiFallbackSupport = true;
         public bool richText;
         public bool isRightToLeft;
-        public bool extraPadding;
+        public float extraPadding = 6.0f;
         public bool parseControlCharacters = true;
         public bool isOrthographic = true;
         public bool isPlaceholder = false;
@@ -81,24 +81,8 @@ namespace UnityEngine.TextCore.Text
         public float charWidthMaxAdj;
         internal TextInputSource inputSource = TextInputSource.TextString;
 
-        private bool m_CachedHashCodeIsIntialized = false;
-        private int m_CachedHashCode;
 
-        public int cachedHashCode
-        {
-            get
-            {
-                if (!m_CachedHashCodeIsIntialized)
-                {
-                    m_CachedHashCode = GetHashCode();
-                    m_CachedHashCodeIsIntialized = true;
-                }
-
-                return m_CachedHashCode;
-            }
-        }
-
-        public bool Equals(TextGenerationSettings other)
+	public bool Equals(TextGenerationSettings other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
@@ -126,7 +110,8 @@ namespace UnityEngine.TextCore.Text
                 && useMaxVisibleDescender == other.useMaxVisibleDescender && fontWeight == other.fontWeight
                 && horizontalMapping == other.horizontalMapping && verticalMapping == other.verticalMapping
                 && uvLineOffset.Equals(other.uvLineOffset) && geometrySortingOrder == other.geometrySortingOrder
-                && inverseYAxis == other.inverseYAxis && charWidthMaxAdj.Equals(other.charWidthMaxAdj);
+                && inverseYAxis == other.inverseYAxis && charWidthMaxAdj.Equals(other.charWidthMaxAdj)
+                && isIMGUI == other.isIMGUI;
         }
 
         public override bool Equals(object obj)
@@ -537,7 +522,6 @@ namespace UnityEngine.TextCore.Text
         bool m_IsAutoSizePointSizeSet;
         float m_StartOfLineAscender;
         float m_LineSpacingDelta;
-        bool m_IsMaskingEnabled;
         MaterialReference[] m_MaterialReferences = new MaterialReference[8];
         int m_SpriteCount = 0;
         TextProcessingStack<int> m_StyleStack = new TextProcessingStack<int>(new int[16]);
@@ -561,19 +545,13 @@ namespace UnityEngine.TextCore.Text
         protected SpecialCharacter m_Ellipsis;
         protected SpecialCharacter m_Underline;
 
-        bool m_IsUsingBold;
-        bool m_IsSdfShader;
-
         TextElementInfo[] m_InternalTextElementInfo;
 
         void Prepare(TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             Profiler.BeginSample("TextGenerator.Prepare");
-            // TODO: Find a way for GetPaddingForMaterial to not allocate
-            // TODO: Hard coded padding value is temporary change to avoid clipping of text geometry with small point size.
-            m_Padding = 6.0f; // generationSettings.extraPadding ? 5.5f : 1.5f;
-            m_CurrentFontAsset = generationSettings.fontAsset;
-            m_IsMaskingEnabled = false;
+            m_Padding = generationSettings.extraPadding;
+			m_CurrentFontAsset = generationSettings.fontAsset;
 
             // Set the font style that is assigned by the builder
             m_FontStyleInternal = generationSettings.fontStyle;
@@ -1028,7 +1006,7 @@ namespace UnityEngine.TextCore.Text
                     textInfo.textElementInfo[m_CharacterCount].elementType = TextElementType.Character;
                     textInfo.textElementInfo[m_CharacterCount].scale = currentElementScale;
 
-                    padding = m_CurrentMaterialIndex == 0 ? m_Padding : GetPaddingForMaterial(m_CurrentMaterial, generationSettings.extraPadding);
+                    padding = m_Padding;
                 }
 
                 #endregion
@@ -2320,17 +2298,13 @@ namespace UnityEngine.TextCore.Text
                     bool shouldSaveHardLineBreak = false;
                     bool shouldSaveSoftLineBreak = false;
 
-                    if ((isWhiteSpace || charCode == k_ZeroWidthSpace || charCode == k_HyphenMinus || charCode == k_SoftHyphen) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != k_NoBreakSpace && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
+                    if ((isWhiteSpace || charCode == k_ZeroWidthSpace || (charCode == k_HyphenMinus && (m_CharacterCount <= 0 || char.IsWhiteSpace(textInfo.textElementInfo[m_CharacterCount - 1].character) == false)) || charCode == k_SoftHyphen) && (!m_IsNonBreakingSpace || ignoreNonBreakingSpace) && charCode != k_NoBreakSpace && charCode != k_FigureSpace && charCode != k_NonBreakingHyphen && charCode != k_NarrowNoBreakSpace && charCode != k_WordJoiner)
                     {
-                        // Ignore Hyphen (0x2D) when preceded by a whitespace
-                        if ((charCode == k_HyphenMinus && m_CharacterCount > 0 && char.IsWhiteSpace(textInfo.textElementInfo[m_CharacterCount - 1].character)) == false)
-                        {
-                            isFirstWordOfLine = false;
-                            shouldSaveHardLineBreak = true;
+                        isFirstWordOfLine = false;
+                        shouldSaveHardLineBreak = true;
 
-                            // Reset soft line breaking point since we now have a valid hard break point.
-                            m_SavedSoftLineBreakState.previousWordBreak = -1;
-                        }
+                        //Reset soft line breaking point since we now have a valid hard break point.
+                        m_SavedSoftLineBreakState.previousWordBreak = -1;
                     }
                     // Handling for East Asian scripts
                     else if (m_IsNonBreakingSpace == false && (TextGeneratorUtilities.IsHangul(charCode) && textSettings.lineBreakingRules.useModernHangulLineBreakingRules == false || TextGeneratorUtilities.IsCJK(charCode)))
@@ -5198,9 +5172,7 @@ namespace UnityEngine.TextCore.Text
             }
             #endregion
 
-            // Apply stylePadding only if this is a SDF Shader.
-            if (!m_IsSdfShader)
-                stylePadding = 0;
+            stylePadding = 0;
 
             // Setup UVs for the Character
             #region Setup UVs
@@ -5734,17 +5706,6 @@ namespace UnityEngine.TextCore.Text
             textInfo.ClearMeshInfo(updateMesh);
         }
 
-        void EnableMasking()
-        {
-            m_IsMaskingEnabled = true;
-        }
-
-        // Enable Masking in the Shader
-        void DisableMasking()
-        {
-            m_IsMaskingEnabled = false;
-        }
-
         // This function parses through the Char[] to determine how many characters will be visible. It then makes sure the arrays are large enough for all those characters.
         int SetArraySizes(TextProcessingElement[] textProcessingArray, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
@@ -5753,7 +5714,6 @@ namespace UnityEngine.TextCore.Text
             int spriteCount = 0;
 
             m_TotalCharacterCount = 0;
-            m_IsUsingBold = false;
             m_isTextLayoutPhase = false;
             m_TagNoParsing = false;
             m_FontStyleInternal = generationSettings.fontStyle;
@@ -5857,9 +5817,6 @@ namespace UnityEngine.TextCore.Text
                     {
                         int tagStartIndex = textProcessingArray[i].stringIndex;
                         i = endTagIndex;
-
-                        if ((m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold)
-                            m_IsUsingBold = true;
 
                         if (m_TextElementType == TextElementType.Sprite)
                         {
@@ -6416,24 +6373,6 @@ namespace UnityEngine.TextCore.Text
 
             if (character != null)
                 m_Underline = new SpecialCharacter(character, m_CurrentMaterialIndex);
-        }
-
-        /// <summary>
-        /// Get the padding value for the currently assigned material.
-        /// </summary>
-        /// <returns></returns>
-        float GetPaddingForMaterial(Material material, bool extraPadding)
-        {
-            TextShaderUtilities.GetShaderPropertyIDs();
-
-            if (material == null)
-                return 0;
-
-            m_Padding = TextShaderUtilities.GetPadding(material, extraPadding, m_IsUsingBold);
-            m_IsMaskingEnabled = TextShaderUtilities.IsMaskingEnabled(material);
-            m_IsSdfShader = material.HasProperty(TextShaderUtilities.ID_WeightNormal);
-
-            return m_Padding;
         }
 
         /// <summary>

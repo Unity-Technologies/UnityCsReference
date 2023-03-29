@@ -73,7 +73,7 @@ namespace UnityEditor.ShaderFoundry
 
                 var handleType = container.GetDataTypeFromHandle(param.m_ValueHandle);
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(param.m_ValueHandle);
+                var list = new HandleListInternal(param.m_ValueHandle);
                 return list.Select<ShaderAttributeParameter>(localContainer, (handle) => (new ShaderAttributeParameter(localContainer, handle)));
             }
         }
@@ -126,7 +126,7 @@ namespace UnityEditor.ShaderFoundry
                 if (m_Values == null)
                     paramInternal.m_ValueHandle = container.AddString(m_Value);
                 else
-                    paramInternal.m_ValueHandle = FixedHandleListInternal.Build(container, m_Values, (v) => v.handle);
+                    paramInternal.m_ValueHandle = HandleListInternal.Build(container, m_Values, (v) => v.handle);
 
                 var returnHandle = container.Add(paramInternal);
                 return new ShaderAttributeParameter(container, returnHandle);
@@ -188,7 +188,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(attr.m_ParameterListHandle);
+                var list = new HandleListInternal(attr.m_ParameterListHandle);
                 return list.Select<ShaderAttributeParameter>(localContainer, (handle) => (new ShaderAttributeParameter(localContainer, handle)));
             }
         }
@@ -236,7 +236,7 @@ namespace UnityEditor.ShaderFoundry
 
             public ShaderAttribute Build()
             {
-                var paramListHandle = FixedHandleListInternal.Build(container, parameters, (p) => (p.handle));
+                var paramListHandle = HandleListInternal.Build(container, parameters, (p) => (p.handle));
                 var attributeInternal = new ShaderAttributeInternal();
                 attributeInternal.m_NameHandle = container.AddString(name); 
                 attributeInternal.m_ParameterListHandle = paramListHandle; 

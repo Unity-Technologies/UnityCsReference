@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class AssetSelectionHandler
 {
-    public event Action<IEnumerable<Asset>> onRemoveSelectionDone = delegate {};
+    public virtual event Action<IEnumerable<Asset>> onRemoveSelectionDone = delegate {};
 
     private SelectionWindowProxy m_SelectionWindowProxy;
 

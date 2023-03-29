@@ -981,7 +981,7 @@ namespace UnityEngine.UIElements
             internal void UpdateScrollOffset(bool isBackspace, bool widthChanged)
             {
                 var selection = textSelection;
-                if (selection.cursorIndex < 0)
+                if (selection.cursorIndex < 0 || (selection.cursorIndex <= 0 && selection.selectIndex <= 0 && scrollOffset == Vector2.zero))
                     return;
 
                 if (scrollView != null)

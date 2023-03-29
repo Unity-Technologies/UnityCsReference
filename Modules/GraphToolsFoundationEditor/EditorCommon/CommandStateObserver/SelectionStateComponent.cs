@@ -63,29 +63,42 @@ namespace Unity.GraphToolsFoundation.Editor
             /// </summary>
             /// <param name="graphElementModels">The graph elements to select or unselect.</param>
             /// <param name="select">True if the graph elements should be selected.
-            /// False is the graph elements should be unselected.</param>
-            public void SelectElements(IReadOnlyCollection<GraphElementModel> graphElementModels, bool select)
+            /// False if the graph elements should be unselected.</param>
+            public void SelectElements(IEnumerable<GraphElementModel> graphElementModels, bool select)
             {
-                // If m_SelectedModels is not null, we maintain it. Otherwise, we let GetSelection rebuild it.
+                SelectElements(graphElementModels.Select(m => m.Guid), select);
+            }
 
+            /// <summary>
+            /// Marks graph elements as selected or unselected.
+            /// </summary>
+            /// <param name="graphElementModelGuids">The graph elements guids to select or unselect.</param>
+            /// <param name="select">True if the graph elements should be selected.
+            /// False if the graph elements should be unselected.</param>
+            public void SelectElements(IEnumerable<SerializableGUID> graphElementModelGuids, bool select)
+            {
+                // Invalidate m_State.m_SelectedModels
+                m_State.m_SelectedModels = null;
+
+                var currentSelection = new HashSet<SerializableGUID>(m_State.m_Selection);
                 if (select)
                 {
-                    m_State.m_SelectedModels = m_State.m_SelectedModels?.Concat(graphElementModels).Distinct().ToList();
-
-                    var guidsToAdd = graphElementModels.Select(x => x.Guid);
-                    m_State.m_Selection = m_State.m_Selection.Concat(guidsToAdd).Distinct().ToList();
+                    m_State.m_Selection = m_State.m_Selection.Concat(graphElementModelGuids).Distinct().ToList();
                 }
                 else
                 {
-                    foreach (var graphElementModel in graphElementModels)
+                    foreach (var graphElementModelGuid in graphElementModelGuids)
                     {
-                        if (m_State.m_Selection.Remove(graphElementModel.Guid))
-                            m_State.m_SelectedModels?.Remove(graphElementModel);
+                        m_State.m_Selection.Remove(graphElementModelGuid);
                     }
                 }
 
-                m_State.CurrentChangeset.ChangedModels.UnionWith(graphElementModels.Select(m => m.Guid));
-                m_State.SetUpdateType(UpdateType.Partial);
+                currentSelection.SymmetricExceptWith(m_State.m_Selection);
+                if (currentSelection.Any())
+                {
+                    m_State.CurrentChangeset.ChangedModels.UnionWith(currentSelection);
+                    m_State.SetUpdateType(UpdateType.Partial);
+                }
             }
 
             /// <summary>
@@ -93,7 +106,7 @@ namespace Unity.GraphToolsFoundation.Editor
             /// </summary>
             /// <param name="graphElementModel">The graph element to select or unselect.</param>
             /// <param name="select">True if the graph element should be selected.
-            /// False is the graph element should be unselected.</param>
+            /// False if the graph element should be unselected.</param>
             public void SelectElement(GraphElementModel graphElementModel, bool select)
             {
                 if (select)
@@ -208,13 +221,23 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// Checks is the graph element model is selected.
+        /// Checks if the graph element model is selected.
         /// </summary>
         /// <param name="model">The model to check.</param>
-        /// <returns>True is the model is selected. False otherwise.</returns>
+        /// <returns>True if the model is selected. False otherwise.</returns>
         public bool IsSelected(GraphElementModel model)
         {
             return model != null && m_Selection.Contains(model.Guid);
+        }
+
+        /// <summary>
+        /// Checks if the graph element model is selected.
+        /// </summary>
+        /// <param name="model">The model guid to check.</param>
+        /// <returns>True if the model is selected. False otherwise.</returns>
+        public bool IsSelected(SerializableGUID modelGuid)
+        {
+            return m_Selection.Contains(modelGuid);
         }
 
         /// <inheritdoc />

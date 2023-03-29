@@ -138,6 +138,7 @@ namespace Unity.UI.Builder
         public static readonly string InspectorFixedItemHeightFieldClassName = "unity-builder-uxml-attribute__fixed-item-height";
         public static readonly string InspectorShownNegativeWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--shown";
         public static readonly string InspectorHiddenNegativeWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--hidden";
+        public static readonly string InspectorListViewAllowAddRemoveFieldClassName = "unity-builder-uxml-attribute__allow-add-remove";
 
         // Inspector Links VE Property Names
         public static readonly string InspectorLinkedStyleRowVEPropertyName = "__unity-ui-builder-style-row";

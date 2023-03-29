@@ -16,6 +16,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public Vector2 CurrentPanSpeed { get; private set; } = Vector2.zero;
         public Vector2 LastLocalMousePosition { get; private set; }
+        public Vector2 TraveledThisFrame { get; private set; }
+        public Vector3 Position { get; private set; }
+        public Vector3 Scale { get; private set; }
 
         public void OnMouseDown(IMouseEvent e, GraphView graphView, Action<TimerState> onPan)
         {
@@ -69,10 +72,10 @@ namespace Unity.GraphToolsFoundation.Editor
             if (m_GraphView == null)
                 return;
 
-            var travelThisFrame = CurrentPanSpeed * timerState.deltaTime;
-            var position = m_GraphView.ContentViewContainer.transform.position - (Vector3)travelThisFrame;
-            var scale = m_GraphView.ContentViewContainer.transform.scale;
-            m_GraphView.Dispatch(new ReframeGraphViewCommand(position, scale));
+            TraveledThisFrame = CurrentPanSpeed * timerState.deltaTime;
+            Position = m_GraphView.ContentViewContainer.transform.position - (Vector3)TraveledThisFrame;
+            Scale = m_GraphView.ContentViewContainer.transform.scale;
+            m_GraphView.Dispatch(new ReframeGraphViewCommand(Position, Scale));
 
             m_OnPan?.Invoke(timerState);
         }

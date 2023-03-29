@@ -110,8 +110,8 @@ namespace UnityEditor.ShaderFoundry
                     m_StageType = stageType,
                 };
 
-                stageDescriptionInternal.m_SetupVariablesListHandle = FixedHandleListInternal.Build(container, setupVariables, (e) => (e.handle));
-                stageDescriptionInternal.m_ElementListHandle = FixedHandleListInternal.Build(container, elements, (e) => (e.handle));
+                stageDescriptionInternal.m_SetupVariablesListHandle = HandleListInternal.Build(container, setupVariables, (e) => (e.handle));
+                stageDescriptionInternal.m_ElementListHandle = HandleListInternal.Build(container, elements, (e) => (e.handle));
 
                 var returnTypeHandle = container.Add(stageDescriptionInternal);
                 return new StageDescription(container, returnTypeHandle);

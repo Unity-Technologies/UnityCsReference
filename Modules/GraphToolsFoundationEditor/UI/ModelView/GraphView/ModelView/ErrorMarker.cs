@@ -9,15 +9,15 @@ using UnityEngine.UIElements;
 namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
-    /// A badge that displays an error message.
+    /// A marker that displays an error message.
     /// </summary>
-    class ErrorBadge : Badge
+    class ErrorMarker : Marker
     {
-        public new static readonly string ussClassName = "ge-error-badge";
+        public new static readonly string ussClassName = "ge-error-marker";
         public static readonly string iconUssClassName = ussClassName.WithUssElement("icon");
         public static readonly string tipUssClassName = ussClassName.WithUssElement("tip");
         public static readonly string textUssClassName = ussClassName.WithUssElement("text");
-        public static readonly string hasErrorUssClassName = "ge-has-error-badge";
+        public static readonly string hasErrorUssClassName = "ge-has-error-marker";
 
         public static readonly string hiddenModifierUssClassName = ussClassName.WithUssModifier("hidden");
         public static readonly string arrowHiddenModifierUssClassName = ussClassName.WithUssModifier("tip-hidden");
@@ -27,7 +27,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string sideBottomModifierUssClassName = ussClassName.WithUssModifier("bottom");
         public static readonly string sideLeftModifierUssClassName = ussClassName.WithUssModifier("left");
 
-        static readonly string k_DefaultStylePath = "ErrorBadge.uss";
+        static readonly string k_DefaultStylePath = "ErrorMarker.uss";
 
         private static CustomStyleProperty<float> s_TextSizeProperty = new CustomStyleProperty<float>("--error-text-size");
         private static CustomStyleProperty<float> s_TextMaxWidthProperty = new CustomStyleProperty<float>("--error-text-max-width");
@@ -36,7 +36,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected Image m_IconElement;
         protected Label m_TextElement;
 
-        protected string m_BadgeType;
+        protected string m_MarkerType;
 
         float m_LastZoom;
 
@@ -47,13 +47,13 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             set
             {
-                if (m_BadgeType != value)
+                if (m_MarkerType != value)
                 {
-                    RemoveFromClassList(ussClassName.WithUssModifier(m_BadgeType));
+                    RemoveFromClassList(ussClassName.WithUssModifier(m_MarkerType));
 
-                    m_BadgeType = value;
+                    m_MarkerType = value;
 
-                    AddToClassList(ussClassName.WithUssModifier(m_BadgeType));
+                    AddToClassList(ussClassName.WithUssModifier(m_MarkerType));
                 }
             }
         }
@@ -85,7 +85,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected override void BuildElementUI()
         {
             base.BuildElementUI();
-            name = "error-badge";
+            name = "error-marker";
 
             m_TipElement = new Image { name = "tip" };
             Add(m_TipElement);
@@ -139,14 +139,14 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             base.UpdateElementFromModel();
 
-            if (Model is ErrorBadgeModel errorBadgeModel)
+            if (Model is ErrorMarkerModel errorMarkerModel)
             {
                 if (m_TextElement != null)
                 {
-                    m_TextElement.text = errorBadgeModel.ErrorMessage;
+                    m_TextElement.text = errorMarkerModel.ErrorMessage;
                 }
 
-                VisualStyle = errorBadgeModel.ErrorType.ToString().ToLower();
+                VisualStyle = errorMarkerModel.ErrorType.ToString().ToLower();
             }
         }
 

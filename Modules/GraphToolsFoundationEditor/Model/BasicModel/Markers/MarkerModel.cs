@@ -7,13 +7,13 @@ using System;
 namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
-    /// Data to be displayed by a badge.
+    /// Data to be displayed by a marker.
     /// </summary>
     [Serializable]
-    abstract class BadgeModel : GraphElementModel
+    abstract class MarkerModel : GraphElementModel
     {
         /// <summary>
-        /// The model to which the badge is attached.
+        /// The model to which the marker is attached.
         /// </summary>
         public abstract GraphElementModel ParentModel { get; }
     }

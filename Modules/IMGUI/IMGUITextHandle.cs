@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEngine.TextCore.Text;
 
@@ -19,14 +18,13 @@ namespace UnityEngine
         const string kDefaultFontName = "LegacyRuntime.ttf";
 
         internal static Func<Object> GetEditorTextSettings;
-        internal static Func<string, float> GetEditorTextSharpness;
-        internal static Func<Font> GetEditorFont;
-
-        private static IMGUITextHandle s_TextHandle = new IMGUITextHandle();
+        private static TextSettings s_EditorTextSettings;
 
         private static Dictionary<int, IMGUITextHandle> textHandles = new Dictionary<int, IMGUITextHandle>();
         private static LinkedList<TextHandleTuple> textHandlesTuple = new LinkedList<TextHandleTuple>();
         private static float lastCleanupTime;
+
+        internal bool isCachedOnNative = false;
 
         internal class TextHandleTuple
         {
@@ -40,6 +38,7 @@ namespace UnityEngine
             public int hashCode;
         }
 
+        // This cleans both the managed and the native cache
         internal static void EmptyCache()
         {
             GUIStyle.Internal_CleanupAllTextGenerator();
@@ -47,11 +46,24 @@ namespace UnityEngine
             textHandlesTuple.Clear();
         }
 
+        // This only cleans up the cache on the managed side. We assume it is already cleaned on the native side to avoid calls.
+        internal static void EmptyManagedCache()
+        {
+            textHandles.Clear();
+            textHandlesTuple.Clear();
+        }
+
         internal static IMGUITextHandle GetTextHandle(GUIStyle style, Rect position, string content, Color32 textColor)
         {
-            var settings = new TextCore.Text.TextGenerationSettings();
-            ConvertGUIStyleToGenerationSettings(settings, style, textColor, content, position);
-            return GetTextHandle(settings);
+            bool isCached = false;
+            ConvertGUIStyleToGenerationSettings(s_Settings, style, textColor, content, position);
+            return GetTextHandle(s_Settings, false, ref isCached);
+        }
+
+        internal static IMGUITextHandle GetTextHandle(GUIStyle style, Rect position, string content, Color32 textColor, ref bool isCached)
+        {
+            ConvertGUIStyleToGenerationSettings(s_Settings, style, textColor, content, position);
+            return GetTextHandle(s_Settings, true, ref isCached);
         }
 
         private static void ClearUnusedTextHandles()
@@ -71,8 +83,9 @@ namespace UnityEngine
             }
         }
 
-        private static IMGUITextHandle GetTextHandle(TextCore.Text.TextGenerationSettings settings)
+        private static IMGUITextHandle GetTextHandle(TextCore.Text.TextGenerationSettings settings, bool isCalledFromNative, ref bool isCached)
         {
+            isCached = false;
             var currentTime = Time.realtimeSinceStartup;
             if (currentTime - lastCleanupTime > sTimeToFlush)
             {
@@ -80,12 +93,20 @@ namespace UnityEngine
                 lastCleanupTime = currentTime;
             }
 
-            int hash = settings.cachedHashCode;
+            int hash = settings.GetHashCode();
 
             if (textHandles.TryGetValue(hash, out IMGUITextHandle textHandleCached))
             {
                 textHandlesTuple.Remove(textHandleCached.tuple);
                 textHandlesTuple.AddLast(textHandleCached.tuple);
+
+                isCached = isCalledFromNative ? textHandleCached.isCachedOnNative : true;
+                if (!textHandleCached.isCachedOnNative && isCalledFromNative)
+                {
+                    textHandleCached.Update(settings);
+                    textHandleCached.UpdatePreferredSize(settings);
+                    textHandleCached.isCachedOnNative = true;
+                }
                 return textHandleCached;
             }
 
@@ -97,20 +118,14 @@ namespace UnityEngine
             handle.Update(settings);
             handle.UpdatePreferredSize(settings);
             textHandlesTuple.AddLast(listNode);
+            handle.isCachedOnNative = isCalledFromNative;
             return handle;
         }
 
         internal static float GetLineHeight(GUIStyle style)
         {
-            var settings = new TextCore.Text.TextGenerationSettings();
-            ConvertGUIStyleToGenerationSettings(settings, style, Color.white, "", Rect.zero);
-            return GetLineHeightDefault(settings);
-        }
-
-        internal TextInfo GetTextInfo(ref int id)
-        {
-            id = textGenerationSettings.cachedHashCode;
-            return textInfo;
+            ConvertGUIStyleToGenerationSettings(s_Settings, style, Color.white, "", Rect.zero);
+            return GetLineHeightDefault(s_Settings);
         }
 
         internal Vector2 GetPreferredSize()
@@ -120,6 +135,7 @@ namespace UnityEngine
 
         internal int GetNumCharactersThatFitWithinWidth(float width)
         {
+            AddTextInfoToCache();
             int characterCount = textInfo.lineInfo[0].characterCount;
             int charCount;
             float currentSize = 0;
@@ -136,32 +152,62 @@ namespace UnityEngine
             return charCount;
         }
 
+        public Rect[] GetHyperlinkRects(Rect content)
+        {
+            AddTextInfoToCache();
+
+            List<Rect> rects = new List<Rect>();
+
+            for (int i = 0; i < textInfo.linkCount; i++)
+            {
+                var minPos = GetCursorPositionFromStringIndexUsingLineHeight(textInfo.linkInfo[i].linkTextfirstCharacterIndex) + new Vector2(content.x, content.y);
+                var maxPos = GetCursorPositionFromStringIndexUsingLineHeight(textInfo.linkInfo[i].linkTextLength + textInfo.linkInfo[i].linkTextfirstCharacterIndex) + new Vector2(content.x, content.y);
+                var lineHeight = textInfo.lineInfo[0].lineHeight;
+
+                if (minPos.y == maxPos.y)
+                {
+                    rects.Add(new Rect(minPos.x, minPos.y - lineHeight, maxPos.x - minPos.x, lineHeight));
+                }
+                else
+                {
+                    // Rect for the first line - including end part
+                    rects.Add(new Rect(minPos.x, minPos.y - lineHeight, textInfo.lineInfo[0].width - minPos.x, lineHeight));
+                    // Rect for the middle part
+                    rects.Add(new Rect(content.x, minPos.y, textInfo.lineInfo[0].width, maxPos.y - minPos.y - lineHeight));
+                    // Rect for the bottom line - up to selection
+                    if (maxPos.x != 0f)
+                        rects.Add(new Rect(content.x, maxPos.y - lineHeight, maxPos.x, lineHeight));
+                }
+            }
+            return rects.ToArray();
+        }
+
         private static void ConvertGUIStyleToGenerationSettings(UnityEngine.TextCore.Text.TextGenerationSettings settings, GUIStyle style, Color textColor, string text, Rect rect)
         {
-            if (settings.textSettings == null)
+            if (s_EditorTextSettings == null)
             {
-                settings.textSettings = (TextSettings)GetEditorTextSettings();
-
-                if (settings.textSettings == null)
-                    return;
+                s_EditorTextSettings = (TextSettings)GetEditorTextSettings();
             }
+            settings.textSettings = s_EditorTextSettings;
+
+            if (settings.textSettings == null)
+                return;
 
             Font font = style.font;
 
             if (!font)
             {
-                font = GetEditorFont();
+                font = settings.textSettings.GetEditorFont();
             }
 
             settings.fontAsset = settings.textSettings.GetCachedFontAsset(font, TextShaderUtilities.ShaderRef_MobileSDF_IMGUI);
-
             if (settings.fontAsset == null)
                 return;
-
+         
             settings.material = settings.fontAsset.material;
-
+            
             // We only want to update the sharpness of the text in the editor with those preferences
-            settings.fontAsset.material.SetFloat("_Sharpness", GetEditorTextSharpness(style.font ? style.font.name : GetEditorFont().name));
+            settings.fontAsset.material.SetFloat("_Sharpness", settings.textSettings.GetEditorTextSharpness());
 
             settings.screenRect = new Rect(0, 0, rect.width, rect.height);
             settings.text = text;
@@ -193,6 +239,7 @@ namespace UnityEngine
             settings.wordWrappingRatio = 0.4f;
             settings.richText = style.richText;
             settings.parseControlCharacters = false;
+            settings.isPlaceholder = false;
 
             if (style.fontSize > 0)
                 settings.fontSize = style.fontSize;

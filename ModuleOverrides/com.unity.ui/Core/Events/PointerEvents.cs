@@ -278,12 +278,6 @@ namespace UnityEngine.UIElements
                 return PointerUpEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers);
             return PointerMoveEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers);
         }
-
-        public static bool DiscardMouseEventsOnMobile<TEvent>(this PointerEventBase<TEvent> evt)
-            where TEvent : PointerEventBase<TEvent>, new()
-        {
-            return false;
-        }
     }
 
     /// <summary>

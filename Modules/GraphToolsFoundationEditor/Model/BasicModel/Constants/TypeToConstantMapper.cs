@@ -31,6 +31,8 @@ namespace Unity.GraphToolsFoundation.Editor
                     { TypeHandle.Double, typeof(DoubleConstant) },
                     { TypeHandle.Float, typeof(FloatConstant) },
                     { TypeHandle.Int, typeof(IntConstant) },
+                    { TypeHandle.UInt, typeof(UIntConstant) },
+                    { TypeHandle.Long, typeof(LongConstant) },
                     { TypeHandle.Quaternion, typeof(QuaternionConstant) },
                     { TypeHandle.String, typeof(StringConstant) },
                     { TypeHandle.Vector2, typeof(Vector2Constant) },

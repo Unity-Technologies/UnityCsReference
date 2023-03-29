@@ -22,29 +22,5 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             return ObjectNames.NicifyVariableName(value);
         }
-
-        /// <summary>
-        /// Formats an object's name to make it compatible with the Editor Settings' naming scheme and naming digits.
-        /// </summary>
-        /// <param name="baseName">The object's name to format.</param>
-        /// <param name="index">The object's index to be displayed next to its name.</param>
-        /// <returns>The object's formatted name.</returns>
-        public static string FormatWithNamingScheme(this string baseName, int index)
-        {
-            if (index < 0)
-                return baseName;
-
-            var formattedIndex = index.ToString("D" + Math.Max(1, EditorSettings.gameObjectNamingDigits));
-
-            switch (EditorSettings.gameObjectNamingScheme)
-            {
-                case EditorSettings.NamingScheme.Dot:
-                    return baseName + "." + formattedIndex;
-                case EditorSettings.NamingScheme.Underscore:
-                    return baseName + "_" + formattedIndex;
-                default:
-                    return baseName + " (" + formattedIndex + ")";
-            }
-        }
     }
 }

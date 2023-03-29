@@ -44,6 +44,6 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         static bool IsOutput(this VariableDeclarationModel self) => self.Modifiers == ModifierFlags.Write;
-        static bool IsInput(this VariableDeclarationModel declarationModel) => declarationModel.Modifiers == ModifierFlags.Read;
+        static bool IsInput(this VariableDeclarationModel self) => self.Modifiers == ModifierFlags.Read;
     }
 }

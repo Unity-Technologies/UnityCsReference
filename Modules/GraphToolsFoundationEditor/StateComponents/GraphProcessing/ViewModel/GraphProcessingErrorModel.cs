@@ -13,7 +13,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     [Serializable]
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Editor")]
-    class GraphProcessingErrorModel : ErrorBadgeModel
+    class GraphProcessingErrorModel : ErrorMarkerModel
     {
         /// <inheritdoc/>
         public override GraphModel GraphModel

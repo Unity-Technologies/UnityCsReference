@@ -24,6 +24,7 @@ namespace Unity.GraphToolsFoundation.Editor
         bool m_Active;
         bool m_ElementsToMoveDirty;
         HashSet<GraphElement> m_ElementsToMove = new HashSet<GraphElement>();
+        GraphViewPanHelper_Internal m_PanHelper = new GraphViewPanHelper_Internal();
 
         // selectedElement is used to store a unique selection candidate for cases where user clicks on an item not to
         // drag it but just to reset the selection -- we only know this after the manipulation has ended
@@ -302,12 +303,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_TotalFreePanTravel = Vector2.zero;
                 m_LastMousePosition = e.localMousePosition;
 
-                if (m_PanSchedule == null)
-                {
-                    var panInterval = GraphView.panIntervalMs_Internal;
-                    m_PanSchedule = m_GraphView.schedule.Execute(Pan).Every(panInterval).StartingIn(panInterval);
-                    m_PanSchedule.Pause();
-                }
+                m_PanHelper.OnMouseDown(e, m_GraphView, Pan);
 
                 m_Snapper.BeginSnap(SelectedElement);
 
@@ -333,14 +329,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 placemat.GetElementsToMove_Internal(m_MoveOnlyPlacemats, m_ElementsToMove);
         }
 
-        IVisualElementScheduledItem m_PanSchedule;
-        /// <summary>
-        /// The offset by which the graphview should be panned based on the last mouse move.
-        /// </summary>
-        Vector2 m_CurrentPanSpeed = Vector2.zero;
         /// <summary>
         /// The offset by which the graphview has been panned during the move.
-        /// <remarks>Used to figure out if we need to send a reframe command or not.</remarks>
+        /// <remarks>Used to figure out if we need to send a reframe command or not on escape.</remarks>
         /// </summary>
         Vector2 m_TotalFreePanTravel = Vector2.zero;
 
@@ -373,17 +364,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 target.CaptureMouse();
             }
 
-            m_CurrentPanSpeed = m_GraphView.GetEffectivePanSpeed_Internal(e.mousePosition);
             m_TotalFreePanTravel = Vector2.zero;
 
-            if (m_CurrentPanSpeed != Vector2.zero)
-            {
-                m_PanSchedule.Resume();
-            }
-            else
-            {
-                m_PanSchedule.Pause();
-            }
+            m_PanHelper.OnMouseMove(e);
 
             if (SelectedElement.parent != null)
             {
@@ -452,12 +435,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void Pan(TimerState ts)
         {
-            var travelThisFrame = m_CurrentPanSpeed * ts.deltaTime;
-            var position = m_GraphView.ContentViewContainer.transform.position - (Vector3)travelThisFrame;
-            var scale = m_GraphView.ContentViewContainer.transform.scale;
-            m_GraphView.Dispatch(new ReframeGraphViewCommand(position, scale));
-
-            m_TotalFreePanTravel += travelThisFrame / scale;
+            m_TotalFreePanTravel += m_PanHelper.TraveledThisFrame / m_PanHelper.Scale;
             MoveElements(m_TotalMouseDelta + m_TotalFreePanTravel);
         }
 
@@ -481,6 +459,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     ((EventBase)evt).StopPropagation();
                 m_LastMousePosition = evt.localMousePosition;
                 ApplyDrag(true);
+                m_PanHelper.OnMouseUp(evt);
                 StopManipulation();
             }
         }
@@ -530,7 +509,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 if (target is GraphView graphView)
                     graphView.StopSelectionDragger();
-                m_PanSchedule.Pause();
+                m_PanHelper.Stop();
                 m_CurrentSelectionDraggerTarget?.ClearDropHighlightStatus();
                 if (m_Snapper.IsActive_Internal)
                     m_Snapper.EndSnap();

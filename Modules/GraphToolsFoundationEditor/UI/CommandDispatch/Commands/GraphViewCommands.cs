@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.CommandStateObserver;
@@ -183,13 +184,27 @@ namespace Unity.GraphToolsFoundation.Editor
             using (var graphUpdater = graphModelState.UpdateScope)
             using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
             {
+                var initialVariables = new HashSet<VariableDeclarationModel>(graphModelState.GraphModel.VariableDeclarations.Where(v => v.IsInputOrOutput()));
+
                 graphModelState.GraphModel.DeleteElements(command.Models);
                 var deletedModels = changeScope.ChangeDescription.DeletedModels.ToList();
 
-                if (deletedModels.Any(model => model is VariableDeclarationModel variable && variable.IsInputOrOutput()))
+                if (deletedModels.Any())
                 {
-                    foreach (var recursiveSubgraphNode in graphModelState.GraphModel.GetRecursiveSubgraphNodes())
-                        recursiveSubgraphNode.Update();
+                    // Find out if there were any deleted I/O variable declaration.
+                    foreach (var variableDeclaration in graphModelState.GraphModel.VariableDeclarations)
+                    {
+                        if (variableDeclaration.IsInputOrOutput())
+                        {
+                            initialVariables.Remove(variableDeclaration);
+                        }
+                    }
+
+                    if (initialVariables.Any())
+                    {
+                        foreach (var recursiveSubgraphNode in graphModelState.GraphModel.GetRecursiveSubgraphNodes())
+                            recursiveSubgraphNode.Update();
+                    }
                 }
 
                 var selectedModels = deletedModels.Where(selectionState.IsSelected).ToList();

@@ -54,7 +54,7 @@ namespace Unity.GraphToolsFoundation.Editor
             PartList.AppendPart(EditableTitlePart.Create(titleContainerPartName, Model, this, ussClassName));
             PartList.AppendPart(NodeModeDropDownPart.Create(nodeModeDropDownPartName, Model, this, ussClassName));
             PartList.AppendPart(NodeOptionsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.NodeOptionsFilterForNode));
-            PartList.AppendPart(PortContainerPart.Create(portContainerPartName, Model, this, ussClassName));
+            PartList.AppendPart(HorizontalPortContainerPart.Create(portContainerPartName, Model, this, ussClassName));
         }
 
         /// <inheritdoc />

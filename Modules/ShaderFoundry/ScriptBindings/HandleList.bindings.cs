@@ -10,29 +10,30 @@ using System.Runtime.InteropServices;
 
 namespace UnityEditor.ShaderFoundry
 {
-    [NativeHeader("Modules/ShaderFoundry/Public/FixedHandleList.h")]
-    internal struct FixedHandleListInternal
+    [NativeHeader("Modules/ShaderFoundry/Public/HandleList.h")]
+    internal struct HandleListInternal
     {
         FoundryHandle m_ListHandle;
 
         public FoundryHandle ListHandle => m_ListHandle;
 
-        public FixedHandleListInternal(FoundryHandle listHandle)
+        public HandleListInternal(FoundryHandle listHandle)
         {
             m_ListHandle = listHandle;
         }
 
-        public extern static FixedHandleListInternal Invalid();
+        public extern static HandleListInternal Invalid();
         public extern bool IsValid();
         public extern uint GetSize(ShaderContainer container);
         public extern FoundryHandle GetElement(ShaderContainer container, uint elementIndex);
         public extern void SetElement(ShaderContainer container, uint elementIndex, FoundryHandle handle);
+        public extern void AddElement(ShaderContainer container, FoundryHandle value);
 
-        public static FixedHandleListInternal Empty => Invalid();
+        public static HandleListInternal Empty => Invalid();
 
         public static FoundryHandle Build(ShaderContainer container, List<FoundryHandle> values)
         {
-            if ((values == null) || (values.Count <= 0))
+            if (values == null)
                 return FoundryHandle.Invalid();
             var listHandle = container.AddHandleBlob((uint)values.Count);
             for (var i = 0; i < values.Count; ++i)
@@ -42,7 +43,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static FoundryHandle Build<T>(ShaderContainer container, List<T> items) where T : struct, IPublicType<T>
         {
-            if ((items == null) || (items.Count <= 0))
+            if (items == null)
                 return FoundryHandle.Invalid();
             var listHandle = container.AddHandleBlob((uint)items.Count);
             for (var i = 0; i < items.Count; ++i)
@@ -52,7 +53,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static FoundryHandle Build<T>(ShaderContainer container, List<T> items, Func<T, FoundryHandle> indexFunc)
         {
-            if ((items == null) || (items.Count <= 0))
+            if (items == null)
                 return FoundryHandle.Invalid();
             var listHandle = container.AddHandleBlob((uint)items.Count);
             for (var i = 0; i < items.Count; ++i)
@@ -72,7 +73,7 @@ namespace UnityEditor.ShaderFoundry
 
         public static IEnumerable<T> Enumerate<T>(ShaderContainer container, FoundryHandle listHandle) where T : struct, IPublicType<T>
         {
-            var list = new FixedHandleListInternal(listHandle);
+            var list = new HandleListInternal(listHandle);
             var size = list.GetSize(container);
             for (uint i = 0; i < size; i++)
             {
@@ -82,13 +83,13 @@ namespace UnityEditor.ShaderFoundry
         }
     }
 
-    internal static class FixedHandleListUtilities
+    internal static class HandleListUtilities
     {
         internal static IEnumerable<T> AsListEnumerable<T>(this FoundryHandle listHandle, ShaderContainer container, Func<ShaderContainer, FoundryHandle, T> accessor)
         {
             if ((container != null) && listHandle.IsValid)
             {
-                var list = new FixedHandleListInternal(listHandle);
+                var list = new HandleListInternal(listHandle);
                 var size = list.GetSize(container);
                 for (uint i = 0; i < size; i++)
                 {

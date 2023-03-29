@@ -27,6 +27,11 @@ namespace UnityEngine.UIElements
         public Translate(Length x, Length y) : this(x, y, 0)
         { }
 
+        internal Translate(Vector3 v):this(v.x, v.y, v.z)
+        {
+            
+        }
+
         /// <summary>
         /// Returns the value of a Translate object with no translation applied.
         /// </summary>

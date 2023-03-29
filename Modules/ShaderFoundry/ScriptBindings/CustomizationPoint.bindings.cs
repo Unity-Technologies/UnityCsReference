@@ -45,7 +45,7 @@ namespace UnityEditor.ShaderFoundry
         public ShaderContainer Container => container;
         public bool IsValid => (container != null && handle.IsValid);
         public string Name => container?.GetString(customizationPoint.m_NameHandle) ?? string.Empty;
-        public IEnumerable<ShaderAttribute> Attributes => FixedHandleListInternal.Enumerate<ShaderAttribute>(container, customizationPoint.m_AttributeListHandle);
+        public IEnumerable<ShaderAttribute> Attributes => HandleListInternal.Enumerate<ShaderAttribute>(container, customizationPoint.m_AttributeListHandle);
         public Namespace ContainingNamespace => new Namespace(container, customizationPoint.m_ContainingNamespaceHandle);
         public IEnumerable<BlockVariable> InterfaceFields => GetVariableEnumerable(customizationPoint.m_InterfaceFieldListHandle);
         public IEnumerable<BlockVariable> Inputs => InterfaceFields.Where((v) => (v.IsInput));
@@ -63,7 +63,7 @@ namespace UnityEditor.ShaderFoundry
         IEnumerable<BlockVariable> GetVariableEnumerable(FoundryHandle listHandle)
         {
             var localContainer = Container;
-            var list = new FixedHandleListInternal(listHandle);
+            var list = new HandleListInternal(listHandle);
             return list.Select<BlockVariable>(localContainer, (handle) => (new BlockVariable(localContainer, handle)));
         }
 
@@ -113,10 +113,10 @@ namespace UnityEditor.ShaderFoundry
                     m_NameHandle = container.AddString(name),
                 };
 
-                customizationPointInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes);
+                customizationPointInternal.m_AttributeListHandle = HandleListInternal.Build(container, attributes);
                 customizationPointInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
-                customizationPointInternal.m_InterfaceFieldListHandle = FixedHandleListInternal.Build(container, interfaceFields, (v) => (v.handle));
-                customizationPointInternal.m_DefaultBlockSequenceElementListHandle = FixedHandleListInternal.Build(container, defaultBlockSequenceElements, (v) => (v.handle));
+                customizationPointInternal.m_InterfaceFieldListHandle = HandleListInternal.Build(container, interfaceFields, (v) => (v.handle));
+                customizationPointInternal.m_DefaultBlockSequenceElementListHandle = HandleListInternal.Build(container, defaultBlockSequenceElements, (v) => (v.handle));
 
                 var returnTypeHandle = container.Add(customizationPointInternal);
                 return new CustomizationPoint(container, returnTypeHandle);

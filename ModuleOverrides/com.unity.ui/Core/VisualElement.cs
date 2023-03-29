@@ -454,8 +454,7 @@ namespace UnityEngine.UIElements
             }
             set
             {
-                value.ToAngleAxis(out float angle, out Vector3 axis);
-                style.rotate = new Rotate(angle, axis);
+                style.rotate = new Rotate(value);
             }
         }
 
@@ -463,7 +462,10 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                return resolvedStyle.scale.value;
+                Vector3 s = resolvedStyle.scale.value;
+                if (elementPanel is { isFlat: true })
+                    s.z = 1;
+                return s;
             }
             set
             {
@@ -474,7 +476,13 @@ namespace UnityEngine.UIElements
 
         Matrix4x4 ITransform.matrix
         {
-            get { return Matrix4x4.TRS(resolvedStyle.translate, resolvedStyle.rotate.ToQuaternion(), resolvedStyle.scale.value); }
+            get
+            {
+                Vector3 s = resolvedStyle.scale.value;
+                if (elementPanel is { isFlat: true })
+                    s.z = 1;
+                return Matrix4x4.TRS(resolvedStyle.translate, resolvedStyle.rotate.ToQuaternion(), s);
+            }
         }
 
         internal bool isLayoutManual
@@ -680,11 +688,13 @@ namespace UnityEngine.UIElements
             else
             {
                 m_BoundingBox = rect;
-                if (!ShouldClip())
+                if (!ShouldClip() && resolvedStyle.display == DisplayStyle.Flex)
                 {
                     var childCount = m_Children.Count;
                     for (int i = 0; i < childCount; i++)
                     {
+                        if (!m_Children[i].areAncestorsAndSelfDisplayed)
+                            continue;
                         var childBB = m_Children[i].boundingBoxInParentSpace;
                         m_BoundingBox.xMin = Math.Min(m_BoundingBox.xMin, childBB.xMin);
                         m_BoundingBox.xMax = Math.Max(m_BoundingBox.xMax, childBB.xMax);
@@ -2361,7 +2371,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Invalidate some values in the retained data of UI Toolkit. 
+        /// Invalidate some values in the retained data of UI Toolkit.
         /// </summary>
         /// <remarks>
         /// This method should only be used for debugging as in normal conditions the relevant state should be dirtied by modifying properties or calling <see cref="VisualElement.MarkDirtyRepaint"/> "
@@ -2372,6 +2382,6 @@ namespace UnityEngine.UIElements
         {
             ve.IncrementVersion((VersionChangeType)changeType);
         }
-        
+
     }
 }

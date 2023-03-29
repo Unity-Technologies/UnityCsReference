@@ -45,14 +45,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void BuildPartList()
         {
-            PartList.AppendPart(VerticalPortContainerPart.Create(topPortContainerPartName, PortDirection.Input, Model, this, ussClassName));
+            PartList.AppendPart(VerticalPortContainerPart.Create(topPortContainerPartName, Model, this, ussClassName, BasePortContainerPart.inputPortFilter));
 
             PartList.AppendPart(NodeTitlePart.Create(titleIconContainerPartName, NodeModel, this, ussClassName));
             PartList.AppendPart(NodeModeDropDownPart.Create(nodeModeDropDownPartName, Model, this, ussClassName));
             PartList.AppendPart(NodeOptionsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.NodeOptionsFilterForNode));
             PartList.AppendPart(InOutPortContainerPart.Create(portContainerPartName, Model, this, MaxInputLabelWidth, ussClassName));
 
-            PartList.AppendPart(VerticalPortContainerPart.Create(bottomPortContainerPartName, PortDirection.Output, Model, this, ussClassName));
+            PartList.AppendPart(VerticalPortContainerPart.Create(bottomPortContainerPartName, Model, this, ussClassName, BasePortContainerPart.outputPortFilter));
 
             PartList.AppendPart(NodeLodCachePart.Create(nodeCachePartName, Model, this, ussClassName));
         }

@@ -30,11 +30,6 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Scale(Vector3 scale)
         {
-            if (!Mathf.Approximately(1.0f, scale.z))
-            {
-                Debug.LogWarning("Assigning Z scale different than 1.0f, this is not yet supported. Forcing the value to 1.0f.");
-                scale.z = 1.0f;
-            }
             m_Scale = scale;
             m_IsNone = false;
         }

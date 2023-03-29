@@ -84,7 +84,9 @@ namespace UnityEditor
             foreach (string assetPath in AssetDatabase.FindAssets($"t:{typeof(Brush).Name}"))
             {
                 var b = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(assetPath), typeof(Brush)) as Brush;
-                if (b != null && b.texture != null)
+                // We do not need to test whether b.texture is non-null because for Brush objects it is always true;
+                // if no mask is assigned then the default one is used.
+                if (b != null)
                 {
                     arr.Add(b);
                     hashes.Add(b.thumbnail.imageContentsHash);

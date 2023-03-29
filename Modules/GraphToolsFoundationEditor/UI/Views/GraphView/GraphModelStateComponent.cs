@@ -110,7 +110,7 @@ namespace Unity.GraphToolsFoundation.Editor
             /// Marks graph element models as changed.
             /// </summary>
             /// <param name="changes">The changed models.</param>
-            public void MarkChanged(IReadOnlyDictionary<GraphElementModel, IReadOnlyList<ChangeHint>> changes)
+            public void MarkChanged(IEnumerable<KeyValuePair<GraphElementModel, IReadOnlyList<ChangeHint>>> changes)
             {
                 var somethingChanged = m_State.CurrentChangeset.AddChangedModels(changes);
                 SetDirty(somethingChanged);
@@ -191,27 +191,6 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             /// <summary>
-            /// Marks a model as needing to be aligned.
-            /// </summary>
-            /// <param name="model">The model to align.</param>
-            public void MarkModelToAutoAlign(GraphElementModel model)
-            {
-                m_State.CurrentChangeset.AddModelToAutoAlign(model);
-            }
-
-            /// <summary>
-            /// Marks a model as needing to be repositioned after its creation.
-            /// </summary>
-            /// <param name="model">The model to reposition.</param>
-            /// <remarks>Nodes created from wires need to recompute their position after their creation to make sure
-            /// that the last hovered position corresponds to the connected port. In the case of an incompatible connection,
-            /// the last hovered position will correspond to the nodes' middle height or width, depending on the orientation.</remarks>
-            public void MarkModelToRepositionAtCreation((GraphElementModel, WireModel, WireSide) model)
-            {
-                m_State.CurrentChangeset.AddModelToRepositionAtCreation(model);
-            }
-
-            /// <summary>
             /// Tells the state component that the graph asset was modified externally.
             /// </summary>
             public void AssetChangedOnDisk()
@@ -245,47 +224,6 @@ namespace Unity.GraphToolsFoundation.Editor
         [Serializable]
         public class Changeset : IChangeset, ISerializationCallbackReceiver
         {
-            /// <summary>
-            /// Holds information about a model that needs to be repositioned immediately after creation.
-            /// </summary>
-            [Serializable]
-            public struct ModelToReposition
-            {
-                [SerializeField]
-                SerializableGUID m_Model;
-                [SerializeField]
-                SerializableGUID m_WireModel;
-                [SerializeField]
-                WireSide m_Side;
-
-                /// <summary>
-                /// The model to reposition.
-                /// </summary>
-                public SerializableGUID Model
-                {
-                    get => m_Model;
-                    set => m_Model = value;
-                }
-
-                /// <summary>
-                /// A wire attached to the node.
-                /// </summary>
-                public SerializableGUID WireModel
-                {
-                    get => m_WireModel;
-                    set => m_WireModel = value;
-                }
-
-                /// <summary>
-                /// The side on which the wire is attached to the node.
-                /// </summary>
-                public WireSide WireSide
-                {
-                    get => m_Side;
-                    set => m_Side = value;
-                }
-            }
-
             static readonly List<ChangeHint> k_DefaultChangeHints = new List<ChangeHint> { ChangeHint.Unspecified };
 
             [SerializeField]
@@ -300,17 +238,9 @@ namespace Unity.GraphToolsFoundation.Editor
             [SerializeField]
             List<SerializableGUID> m_DeletedModelList;
 
-            [SerializeField]
-            List<SerializableGUID> m_ModelsToAutoAlignList;
-
-            [SerializeField]
-            List<ModelToReposition> m_ModelsToRepositionAtCreationList;
-
             HashSet<SerializableGUID> m_NewModels;
             Dictionary<SerializableGUID, List<ChangeHint>> m_ChangedModelsAndHints;
             HashSet<SerializableGUID> m_DeletedModels;
-            HashSet<SerializableGUID> m_ModelsToAutoAlign;
-            HashSet<ModelToReposition> m_ModelsToRepositionAtCreation;
 
             /// <summary>
             /// The new models.
@@ -320,8 +250,9 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <summary>
             /// The changed models and the hints about what changed.
             /// </summary>
-            public IEnumerable<KeyValuePair<SerializableGUID, IReadOnlyList<ChangeHint>>> ChangedModelsAndHints =>
-                m_ChangedModelsAndHints.Select(kv => new KeyValuePair<SerializableGUID, IReadOnlyList<ChangeHint>>(kv.Key, kv.Value));
+            public IReadOnlyDictionary<SerializableGUID, IReadOnlyList<ChangeHint>> ChangedModelsAndHints =>
+                m_ChangedModelsAndHints.ToDictionary<KeyValuePair<SerializableGUID, List<ChangeHint>>, SerializableGUID, IReadOnlyList<ChangeHint>>(
+                    kv => kv.Key, kv => kv.Value);
 
             /// <summary>
             /// The changed models.
@@ -332,16 +263,6 @@ namespace Unity.GraphToolsFoundation.Editor
             /// The deleted models.
             /// </summary>
             public IEnumerable<SerializableGUID> DeletedModels => m_DeletedModels;
-
-            /// <summary>
-            /// The models that need to be aligned.
-            /// </summary>
-            public IEnumerable<SerializableGUID> ModelsToAutoAlign => m_ModelsToAutoAlign;
-
-            /// <summary>
-            /// The models that need to be repositioned at their creation.
-            /// </summary>
-            public IEnumerable<ModelToReposition> ModelsToRepositionAtCreation => m_ModelsToRepositionAtCreation;
 
             /// <summary>
             /// The models whose title will be focused for rename.
@@ -356,8 +277,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_NewModels = new HashSet<SerializableGUID>();
                 m_ChangedModelsAndHints = new Dictionary<SerializableGUID, List<ChangeHint>>();
                 m_DeletedModels = new HashSet<SerializableGUID>();
-                m_ModelsToAutoAlign = new HashSet<SerializableGUID>();
-                m_ModelsToRepositionAtCreation = new HashSet<ModelToReposition>();
             }
 
             /// <summary>
@@ -367,15 +286,25 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <returns>True if at least one model was added to the list of new models, false otherwise.</returns>
             public bool AddNewModels(IEnumerable<Model> models)
             {
+                return AddNewModels(models.Where(m => m != null).Select(m => m.Guid));
+            }
+
+            /// <summary>
+            /// Adds models to the list of new models.
+            /// </summary>
+            /// <param name="modelGuids">The guids of the models to add.</param>
+            /// <returns>True if at least one model was added to the list of new models, false otherwise.</returns>
+            public bool AddNewModels(IEnumerable<SerializableGUID> modelGuids)
+            {
                 var somethingChanged = false;
 
-                foreach (var model in models ?? Enumerable.Empty<Model>())
+                foreach (var guid in modelGuids ?? Enumerable.Empty<SerializableGUID>())
                 {
-                    if (model == null || m_DeletedModels.Contains(model.Guid))
+                    if (m_DeletedModels.Contains(guid))
                         continue;
 
-                    m_ChangedModelsAndHints.Remove(model.Guid);
-                    m_NewModels.Add(model.Guid);
+                    m_ChangedModelsAndHints.Remove(guid);
+                    m_NewModels.Add(guid);
 
                     somethingChanged = true;
                 }
@@ -388,18 +317,29 @@ namespace Unity.GraphToolsFoundation.Editor
             /// </summary>
             /// <param name="changes">The models to add.</param>
             /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
-            public bool AddChangedModels(IReadOnlyDictionary<GraphElementModel, IReadOnlyList<ChangeHint>> changes)
+            public bool AddChangedModels(IEnumerable<KeyValuePair<GraphElementModel, IReadOnlyList<ChangeHint>>> changes)
+            {
+                return AddChangedModels(changes
+                    .Where(kv => kv.Key != null)
+                    .Select(kv => KeyValuePair.Create(kv.Key.Guid, kv.Value)));
+            }
+
+            /// <summary>
+            /// Adds models to the list of changed models, along with hints about the changes.
+            /// </summary>
+            /// <param name="changes">The models to add.</param>
+            /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
+            public bool AddChangedModels(IEnumerable<KeyValuePair<SerializableGUID, IReadOnlyList<ChangeHint>>> changes)
             {
                 var somethingChanged = false;
 
                 foreach (var change in changes)
                 {
-                    if (change.Key == null ||
-                        m_NewModels.Contains(change.Key.Guid) ||
-                        m_DeletedModels.Contains(change.Key.Guid))
+                    if (m_NewModels.Contains(change.Key) ||
+                        m_DeletedModels.Contains(change.Key))
                         continue;
 
-                    AddChangedModel(change.Key.Guid, change.Value);
+                    AddChangedModel(change.Key, change.Value);
 
                     somethingChanged = true;
                 }
@@ -415,17 +355,27 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
             public bool AddChangedModels(IEnumerable<Model> models, ChangeHint changeHint = null)
             {
+                return AddChangedModels(models.Where(m => m != null).Select(m => m.Guid), changeHint);
+            }
+
+            /// <summary>
+            /// Adds models to the list of changed models, along with hints about the changes.
+            /// </summary>
+            /// <param name="modelGuids">The guids of the models to add.</param>
+            /// <param name="changeHint">A hint about what changed on the models.</param>
+            /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
+            public bool AddChangedModels(IEnumerable<SerializableGUID> modelGuids, ChangeHint changeHint = null)
+            {
                 var somethingChanged = false;
                 changeHint ??= ChangeHint.Unspecified;
 
-                foreach (var model in models ?? Enumerable.Empty<Model>())
+                foreach (var model in modelGuids ?? Enumerable.Empty<SerializableGUID>())
                 {
-                    if (model == null ||
-                        m_NewModels.Contains(model.Guid) ||
-                        m_DeletedModels.Contains(model.Guid))
+                    if (m_NewModels.Contains(model) ||
+                        m_DeletedModels.Contains(model))
                         continue;
 
-                    AddChangedModel(model.Guid, changeHint);
+                    AddChangedModel(model, changeHint);
 
                     somethingChanged = true;
                 }
@@ -442,17 +392,27 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
             public bool AddChangedModels(IEnumerable<Model> models, IReadOnlyList<ChangeHint> changeHints)
             {
+                return AddChangedModels(models.Where(m => m != null).Select(m => m.Guid), changeHints);
+            }
+
+            /// <summary>
+            /// Adds models to the list of changed models, along with hints about the changes.
+            /// </summary>
+            /// <param name="modelGuids">The guids of the models to add.</param>
+            /// <param name="changeHints">Hints about what changed on the models. The hints apply to all models.</param>
+            /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
+            public bool AddChangedModels(IEnumerable<SerializableGUID> modelGuids, IReadOnlyList<ChangeHint> changeHints)
+            {
                 var somethingChanged = false;
                 changeHints ??= k_DefaultChangeHints;
 
-                foreach (var model in models ?? Enumerable.Empty<Model>())
+                foreach (var guid in modelGuids ?? Enumerable.Empty<SerializableGUID>())
                 {
-                    if (model == null ||
-                        m_NewModels.Contains(model.Guid) ||
-                        m_DeletedModels.Contains(model.Guid))
+                    if (m_NewModels.Contains(guid) ||
+                        m_DeletedModels.Contains(guid))
                         continue;
 
-                    AddChangedModel(model.Guid, changeHints);
+                    AddChangedModel(guid, changeHints);
 
                     somethingChanged = true;
                 }
@@ -487,6 +447,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
                 else
                 {
+                    if (ReferenceEquals(changeHints, k_DefaultChangeHints))
+                    {
+                        m_ChangedModelsAndHints[modelGuid] = changeHints.ToList();
+                        changeHints = m_ChangedModelsAndHints[modelGuid];
+                    }
+
                     foreach (var hint in changeHints)
                     {
                         if (!currentHints.Contains(hint))
@@ -504,54 +470,30 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <returns>True if at least one model was added to the list of deleted models, false otherwise.</returns>
             public bool AddDeletedModels(IEnumerable<Model> models)
             {
-                var somethingChanged = false;
-                foreach (var model in models ?? Enumerable.Empty<Model>())
-                {
-                    if (model == null)
-                        continue;
+                return AddDeletedModels(models.Where(m => m != null).Select(m => m.Guid));
+            }
 
-                    var wasNew = m_NewModels.Remove(model.Guid);
-                    m_ChangedModelsAndHints.Remove(model.Guid);
-                    m_ModelsToAutoAlign.Remove(model.Guid);
-                    m_ModelsToRepositionAtCreation.RemoveWhere(e => e.Model == model.Guid);
+            /// <summary>
+            /// Adds models to the list of deleted models.
+            /// </summary>
+            /// <param name="modelGuids">The guids of the models to add.</param>
+            /// <returns>True if at least one model was added to the list of deleted models, false otherwise.</returns>
+            public bool AddDeletedModels(IEnumerable<SerializableGUID> modelGuids)
+            {
+                var somethingChanged = false;
+                foreach (var guid in modelGuids ?? Enumerable.Empty<SerializableGUID>())
+                {
+                    var wasNew = m_NewModels.Remove(guid);
+                    m_ChangedModelsAndHints.Remove(guid);
 
                     if (!wasNew)
                     {
-                        m_DeletedModels.Add(model.Guid);
+                        m_DeletedModels.Add(guid);
                         somethingChanged = true;
                     }
                 }
 
                 return somethingChanged;
-            }
-
-            /// <summary>
-            /// Adds a model to the list of models to auto-align.
-            /// </summary>
-            /// <param name="model">The model to add.</param>
-            public void AddModelToAutoAlign(GraphElementModel model)
-            {
-                if (!m_DeletedModels.Contains(model.Guid))
-                {
-                    m_ModelsToAutoAlign.Add(model.Guid);
-                    m_ModelsToRepositionAtCreation.RemoveWhere(e => e.Model == model.Guid);
-                }
-            }
-
-            /// <summary>
-            /// Adds a model to the list of models to reposition at their creation.
-            /// </summary>
-            /// <param name="model">The model to add.</param>
-            public void AddModelToRepositionAtCreation((GraphElementModel, WireModel, WireSide) model)
-            {
-                if (!m_DeletedModels.Contains(model.Item1.Guid) && !m_ModelsToAutoAlign.Contains(model.Item1.Guid))
-                    m_ModelsToRepositionAtCreation.Add(new ModelToReposition
-                        {
-                            Model = model.Item1.Guid,
-                            WireModel = model.Item2.Guid,
-                            WireSide = model.Item3
-                        }
-                    );
             }
 
             /// <inheritdoc />
@@ -568,8 +510,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_NewModels.Clear();
                 m_ChangedModelsAndHints.Clear();
                 m_DeletedModels.Clear();
-                m_ModelsToAutoAlign.Clear();
-                m_ModelsToRepositionAtCreation.Clear();
             }
 
             /// <inheritdoc/>
@@ -628,13 +568,7 @@ namespace Unity.GraphToolsFoundation.Editor
                             m_ChangedModelsAndHints.Remove(deletedModel);
                         m_DeletedModels.Add(deletedModel);
                     }
-
-                    m_ModelsToAutoAlign.UnionWith(changeset.m_ModelsToAutoAlign);
-                    m_ModelsToRepositionAtCreation.UnionWith(changeset.m_ModelsToRepositionAtCreation);
                 }
-
-                m_ModelsToAutoAlign.RemoveWhere(m => m_DeletedModels.Contains(m));
-                m_ModelsToRepositionAtCreation.RemoveWhere(m => m_DeletedModels.Contains(m.Model) || m_ModelsToAutoAlign.Contains(m.Model));
 
                 foreach (var changeset in changesets.OfType<Changeset>())
                 {
@@ -664,8 +598,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                 }
                 m_DeletedModelList = m_DeletedModels.ToList();
-                m_ModelsToAutoAlignList = m_ModelsToAutoAlign.ToList();
-                m_ModelsToRepositionAtCreationList = m_ModelsToRepositionAtCreation.ToList();
             }
 
             /// <inheritdoc />
@@ -673,8 +605,6 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_NewModels = new HashSet<SerializableGUID>(m_NewModelList);
                 m_DeletedModels = new HashSet<SerializableGUID>(m_DeletedModelList);
-                m_ModelsToAutoAlign = new HashSet<SerializableGUID>(m_ModelsToAutoAlignList);
-                m_ModelsToRepositionAtCreation = new HashSet<ModelToReposition>(m_ModelsToRepositionAtCreationList);
 
                 var declaredHints = Enumeration.GetDeclared<ChangeHint>().ToList();
 

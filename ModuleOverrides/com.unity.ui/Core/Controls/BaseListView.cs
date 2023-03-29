@@ -37,8 +37,16 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty showBoundCollectionSizeProperty = nameof(showBoundCollectionSize);
         internal static readonly DataBindingProperty showFoldoutHeaderProperty = nameof(showFoldoutHeader);
         internal static readonly DataBindingProperty headerTitleProperty = nameof(headerTitle);
+        internal static readonly DataBindingProperty makeHeaderProperty = nameof(makeHeader);
+        internal static readonly DataBindingProperty makeFooterProperty = nameof(makeFooter);
         internal static readonly DataBindingProperty showAddRemoveFooterProperty = nameof(showAddRemoveFooter);
         internal static readonly DataBindingProperty reorderModeProperty = nameof(reorderMode);
+        internal static readonly DataBindingProperty makeNoneElementProperty = nameof(makeNoneElement);
+        internal static readonly DataBindingProperty allowAddProperty = nameof(allowAdd);
+        internal static readonly DataBindingProperty overridingAddButtonBehaviorProperty = nameof(overridingAddButtonBehavior);
+        internal static readonly DataBindingProperty onAddProperty = nameof(onAdd);
+        internal static readonly DataBindingProperty allowRemoveProperty = nameof(allowRemove);
+        internal static readonly DataBindingProperty onRemoveProperty = nameof(onRemove);
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseListView"/>.
@@ -51,6 +59,8 @@ namespace UnityEngine.UIElements
             private readonly UxmlBoolAttributeDescription m_ShowFoldoutHeader = new UxmlBoolAttributeDescription { name = "show-foldout-header", defaultValue = false };
             private readonly UxmlStringAttributeDescription m_HeaderTitle = new UxmlStringAttributeDescription() { name = "header-title", defaultValue = string.Empty };
             private readonly UxmlBoolAttributeDescription m_ShowAddRemoveFooter = new UxmlBoolAttributeDescription { name = "show-add-remove-footer", defaultValue = false };
+            private readonly UxmlBoolAttributeDescription m_AllowAdd = new UxmlBoolAttributeDescription{ name = "allow-add", defaultValue = true };
+            private readonly UxmlBoolAttributeDescription m_AllowRemove = new UxmlBoolAttributeDescription{ name = "allow-remove", defaultValue = true };
             private readonly UxmlEnumAttributeDescription<ListViewReorderMode> m_ReorderMode = new UxmlEnumAttributeDescription<ListViewReorderMode>() { name = "reorder-mode", defaultValue = ListViewReorderMode.Simple };
             private readonly UxmlBoolAttributeDescription m_ShowBoundCollectionSize = new UxmlBoolAttributeDescription { name = "show-bound-collection-size", defaultValue = true };
 
@@ -77,6 +87,8 @@ namespace UnityEngine.UIElements
                 view.showFoldoutHeader = m_ShowFoldoutHeader.GetValueFromBag(bag, cc);
                 view.headerTitle = m_HeaderTitle.GetValueFromBag(bag, cc);
                 view.showAddRemoveFooter = m_ShowAddRemoveFooter.GetValueFromBag(bag, cc);
+                view.allowAdd = m_AllowAdd.GetValueFromBag(bag, cc);
+                view.allowRemove = m_AllowRemove.GetValueFromBag(bag, cc);
                 view.showBoundCollectionSize = m_ShowBoundCollectionSize.GetValueFromBag(bag, cc);
             }
         }
@@ -94,7 +106,7 @@ namespace UnityEngine.UIElements
         /// If <see cref="showFoldoutHeader"/> is set to <c>true</c>, the collection size field is included in the header instead.
         /// You can use this property to debug a ListView because the property indicates whether the data source is
         /// linked correctly. In production, the collection size rarely displays as a line item in a ListView.
-        /// </remarks>>
+        /// </remarks>
         /// <seealso cref="UnityEditor.UIElements.BindingExtensions.Bind"/>
         [CreateProperty]
         public bool showBoundCollectionSize
@@ -126,7 +138,8 @@ namespace UnityEngine.UIElements
         /// property on the ListView.
         /// If <see cref="showBoundCollectionSize"/> is set to <c>true</c>, the header includes a TextField to control
         /// the array size, instead of using the field as part of the list.
-        /// </remarks>>
+        /// If the <see cref="makeHeader"/> callback is set, no Foldout is shown.
+        /// </remarks>
         [CreateProperty]
         public bool showFoldoutHeader
         {
@@ -138,38 +151,45 @@ namespace UnityEngine.UIElements
 
                 m_ShowFoldoutHeader = value;
 
-                EnableInClassList(listViewWithHeaderUssClassName, value);
-
                 try
                 {
+                    if (makeHeader != null)
+                        return;
+
+                    EnableInClassList(listViewWithHeaderUssClassName, value);
                     if (m_ShowFoldoutHeader)
                     {
-                        if (m_Foldout != null)
-                            return;
-
-                        m_Foldout = new Foldout() {name = foldoutHeaderUssClassName, text = m_HeaderTitle};
-
-                        var foldoutToggle = m_Foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
-                        foldoutToggle.m_Clickable.acceptClicksIfDisabled = true;
-
-                        m_Foldout.AddToClassList(foldoutHeaderUssClassName);
-                        m_Foldout.tabIndex = 1;
-                        hierarchy.Add(m_Foldout);
-                        m_Foldout.Add(scrollView);
+                        AddFoldout();
                     }
                     else if (m_Foldout != null)
                     {
-                        m_Foldout?.RemoveFromHierarchy();
-                        m_Foldout = null;
-                        hierarchy.Add(scrollView);
+                        // If present, drawnFooter would be discarded. Avoid recreating it later
+                        drawnFooter?.RemoveFromHierarchy();
+                        RemoveFoldout();
                     }
 
                     SetupArraySizeField();
                     UpdateListViewLabel();
 
-                    if (showAddRemoveFooter)
+                    if (makeFooter == null)
                     {
-                        EnableFooter(true);
+                        if (showAddRemoveFooter)
+                        {
+                            EnableFooter(true);
+                        }
+                    }
+                    else
+                    {
+                        if (m_ShowFoldoutHeader)
+                        {
+                            drawnFooter?.RemoveFromHierarchy();
+                            m_Foldout?.contentContainer.Add(drawnFooter);
+                        }
+                        else
+                        {
+                            hierarchy.Add(drawnFooter);
+                            hierarchy.BringToFront(drawnFooter);
+                        }
                     }
                 }
                 finally
@@ -179,9 +199,31 @@ namespace UnityEngine.UIElements
             }
         }
 
+        void AddFoldout()
+        {
+            if (m_Foldout != null)
+                return;
+
+            m_Foldout = new Foldout() {name = foldoutHeaderUssClassName, text = m_HeaderTitle};
+
+            var foldoutToggle = m_Foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
+            foldoutToggle.m_Clickable.acceptClicksIfDisabled = true;
+
+            m_Foldout.AddToClassList(foldoutHeaderUssClassName);
+            hierarchy.Add(m_Foldout);
+            m_Foldout.Add(scrollView);
+        }
+
+        void RemoveFoldout()
+        {
+            m_Foldout?.RemoveFromHierarchy();
+            m_Foldout = null;
+            hierarchy.Add(scrollView);
+        }
+
         void SetupArraySizeField()
         {
-            if (sourceIncludesArraySize || !showFoldoutHeader || !showBoundCollectionSize)
+            if (sourceIncludesArraySize || !showFoldoutHeader || !showBoundCollectionSize || drawnHeader != null)
             {
                 m_ArraySizeField?.RemoveFromHierarchy();
                 m_ArraySizeField = null;
@@ -203,6 +245,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// This property controls the text of the foldout header when using <see cref="showFoldoutHeader"/>.
         /// </summary>
+        /// <remarks>
+        /// If the <see cref="makeHeader"/> callback is set, this property gets overridden and the title is not shown.
+        /// </remarks>
         [CreateProperty]
         public string headerTitle
         {
@@ -221,6 +266,123 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private VisualElement drawnHeader;
+        Func<VisualElement> m_MakeHeader;
+
+        /// <summary>
+        /// This callback allows the user to make their own header for this control.
+        /// </summary>
+        /// <remarks>
+        /// Setting this callback will override the <see cref="showFoldoutHeader"/> and the <see cref="headerTitle"/> properties.
+        /// </remarks>
+        [CreateProperty]
+        public Func<VisualElement> makeHeader
+        {
+            get => m_MakeHeader;
+            set
+            {
+                if (value == m_MakeHeader)
+                    return;
+
+                RemoveFoldout();
+
+                m_MakeHeader = value;
+                if (m_MakeHeader != null)
+                {
+                    drawnHeader = m_MakeHeader.Invoke();
+                    drawnHeader.tabIndex = 1;
+                    hierarchy.Add(drawnHeader);
+                    hierarchy.SendToBack(drawnHeader);
+                }
+                else
+                {
+                    drawnHeader?.RemoveFromHierarchy();
+                    drawnHeader = null;
+
+                    // Force the foldout header state to be reset
+                    if (showFoldoutHeader)
+                    {
+                        AddFoldout();
+                        SetupArraySizeField();
+                        UpdateListViewLabel();
+                    }
+                }
+
+                // Because the presence/absence of foldout, footer (custom or not) might be affected.
+                // Ensure it is sent to the bottom of the ListView.
+                if (drawnFooter != null)
+                {
+                    if (m_Foldout != null)
+                    {
+                        drawnFooter.RemoveFromHierarchy();
+                        m_Foldout.contentContainer.hierarchy.Add(drawnFooter);
+                    }
+                    else
+                    {
+                        hierarchy.Add(drawnFooter);
+                        drawnFooter?.BringToFront();
+                    }
+                }
+                else
+                {
+                    EnableFooter(showAddRemoveFooter);
+                }
+                NotifyPropertyChanged(makeHeaderProperty);
+            }
+        }
+
+
+        private VisualElement drawnFooter;
+        Func<VisualElement> m_MakeFooter;
+
+        /// <summary>
+        /// This callback allows the user to make their own footer for this control.
+        /// </summary>
+        /// <remarks>
+        /// Setting this callback will override the <see cref="showAddRemoveFooter"/> property.
+        /// </remarks>
+        [CreateProperty]
+        public Func<VisualElement> makeFooter
+        {
+            get => m_MakeFooter;
+            set
+            {
+                if (value == m_MakeFooter)
+                    return;
+
+                m_MakeFooter = value;
+                if (m_MakeFooter != null)
+                {
+                    m_Footer?.RemoveFromHierarchy();
+                    m_Footer = null;
+
+                    drawnFooter = m_MakeFooter.Invoke();
+                    if (m_Foldout != null)
+                    {
+                        m_Foldout.contentContainer.Add(drawnFooter);
+                    }
+                    else
+                    {
+                        hierarchy.Add(drawnFooter);
+                        hierarchy.BringToFront(drawnFooter);
+                    }
+                    EnableInClassList(listViewWithFooterUssClassName,true);
+                    scrollView.EnableInClassList(scrollViewWithFooterUssClassName, true);
+                }
+                else
+                {
+                    drawnFooter?.RemoveFromHierarchy();
+                    drawnFooter = null;
+
+                    // Force the footer state to be reset
+                    EnableFooter(m_ShowAddRemoveFooter);
+                }
+
+                NotifyPropertyChanged(makeFooterProperty);
+            }
+        }
+
+        private bool m_ShowAddRemoveFooter;
         /// <summary>
         /// This property controls whether a footer will be added to the list view.
         /// </summary>
@@ -230,6 +392,7 @@ namespace UnityEngine.UIElements
         /// This footer contains two buttons:
         /// A "+" button. When clicked, it adds a single item at the end of the list view.
         /// A "-" button. When clicked, it removes all selected items, or the last item if none are selected.
+        /// If the <see cref="makeFooter"/> callback is set, it will override this property.
         /// </remarks>
         [CreateProperty]
         public bool showAddRemoveFooter
@@ -238,7 +401,10 @@ namespace UnityEngine.UIElements
             set
             {
                 var previous = showAddRemoveFooter;
-                EnableFooter(value);
+                m_ShowAddRemoveFooter = value;
+
+                if (makeFooter == null)
+                    EnableFooter(value);
 
                 if (previous != showFoldoutHeader)
                     NotifyPropertyChanged(showAddRemoveFooterProperty);
@@ -260,9 +426,11 @@ namespace UnityEngine.UIElements
                     m_Footer.AddToClassList(footerUssClassName);
 
                     m_RemoveButton = new Button(OnRemoveClicked) { name = footerRemoveButtonName, text = "-" };
+                    m_RemoveButton.SetEnabled(allowRemove);
                     m_Footer.Add(m_RemoveButton);
 
                     m_AddButton = new Button(OnAddClicked) { name = footerAddButtonName, text = "+" };
+                    m_AddButton.SetEnabled(allowAdd);
                     m_Footer.Add(m_AddButton);
                 }
 
@@ -366,12 +534,27 @@ namespace UnityEngine.UIElements
             }
             else if (noItemsCount)
             {
-                m_ListViewLabel ??= new Label();
-                m_ListViewLabel.text = k_EmptyListStr;
-                scrollView.contentViewport.Add(m_ListViewLabel);
+                if (m_MakeNoneElement != null)
+                {
+                    m_NoneElement = m_MakeNoneElement.Invoke();
+                    scrollView.contentViewport.Add(m_NoneElement);
+                    m_ListViewLabel?.RemoveFromHierarchy();
+                    m_ListViewLabel = null;
+                }
+                else
+                {
+                    m_ListViewLabel ??= new Label();
+                    m_ListViewLabel.text = k_EmptyListStr;
+                    scrollView.contentViewport.Add(m_ListViewLabel);
+                    m_NoneElement?.RemoveFromHierarchy();
+                    m_NoneElement = null;
+                }
             }
             else
             {
+                m_NoneElement?.RemoveFromHierarchy();
+                m_NoneElement = null;
+
                 m_ListViewLabel?.RemoveFromHierarchy();
                 m_ListViewLabel = null;
             }
@@ -382,14 +565,41 @@ namespace UnityEngine.UIElements
 
         void OnAddClicked()
         {
-            AddItems(1);
 
-            if (binding == null)
+            var itemsChangedByCustomCallback = false;
+            var itemsCountPreCallback = itemsSource?.Count ?? 0;
+
+            if (overridingAddButtonBehavior != null)
+            {
+                overridingAddButtonBehavior(this, m_AddButton);
+                if (itemsSource != null && itemsCountPreCallback < itemsSource.Count)
+                {
+                    itemsChangedByCustomCallback = true;
+                    OnItemsSourceSizeChanged();
+                }
+            }
+            else if (onAdd != null)
+            {
+                onAdd.Invoke(this);
+                if (itemsSource != null && itemsCountPreCallback < itemsSource?.Count)
+                {
+                    itemsChangedByCustomCallback = true;
+                    OnItemsSourceSizeChanged();
+                }
+            }
+            else
+            {
+                AddItems(1);
+                itemsChangedByCustomCallback = true;
+            }
+
+
+            if (binding == null && itemsChangedByCustomCallback)
             {
                 SetSelection(itemsSource.Count - 1);
                 ScrollToItem(-1);
             }
-            else
+            else if (itemsChangedByCustomCallback)
             {
                 schedule.Execute(() =>
                 {
@@ -404,7 +614,12 @@ namespace UnityEngine.UIElements
 
         void OnRemoveClicked()
         {
-            if (selectedIndices.Any())
+
+            if (onRemove != null)
+            {
+                onRemove.Invoke(this);
+            }
+            else if (selectedIndices.Any())
             {
                 viewController.RemoveItems(selectedIndices.ToList());
                 ClearSelection();
@@ -522,14 +737,166 @@ namespace UnityEngine.UIElements
             get => m_ReorderMode;
             set
             {
-                if (value != m_ReorderMode)
+                if (value == m_ReorderMode)
+                    return;
+
+                m_ReorderMode = value;
+                InitializeDragAndDropController(reorderable);
+                reorderModeChanged?.Invoke();
+                Rebuild();
+                NotifyPropertyChanged(reorderModeProperty);
+            }
+        }
+
+        private VisualElement m_NoneElement;
+        Func<VisualElement> m_MakeNoneElement;
+
+        /// <summary>
+        /// This callback allows the user to set a Visual Element to replace the "List is empty" Label shown when the ListView is empty.
+        /// </summary>
+        /// <remarks>
+        /// Setting this callback to anything other than <c>null</c> will remove the "List is empty" Label.
+        /// </remarks>
+        [CreateProperty]
+        public Func<VisualElement> makeNoneElement
+        {
+            get => m_MakeNoneElement;
+            set
+            {
+                if (value == m_MakeNoneElement)
+                    return;
+
+                m_MakeNoneElement = value;
+                RefreshItems();
+                NotifyPropertyChanged(makeNoneElementProperty);
+            }
+        }
+
+        bool m_AllowAdd;
+
+        /// <summary>
+        /// This property allows the user to allow or block the addition of an item when clicking on the Add Button.
+        /// It must return <c>true</c> or <c>false</c>.
+        /// </summary>
+        /// <remarks>
+        /// If the callback is not set to <c>false</c>, any Add operation will be allowed.
+        /// </remarks>
+        [CreateProperty]
+        public bool allowAdd
+        {
+            get => m_AllowAdd;
+            set
+            {
+                if (value == m_AllowAdd)
+                    return;
+
+                m_AllowAdd = value;
+                m_AddButton?.SetEnabled(m_AllowAdd);
+                RefreshItems();
+                NotifyPropertyChanged(allowAddProperty);
+            }
+        }
+
+        Action<BaseListView, Button> m_OverridingAddButtonBehavior;
+
+        /// <summary>
+        /// This callback allows the user to implement a <see cref="DropdownMenu"/> when the Add Button is clicked.
+        /// </summary>
+        /// <remarks>
+        /// This callback will only be called if <see cref="showAddRemoveFooter"/> is set to <c>true</c>.
+        /// Setting this callback to anything other than <c>null</c> will override the basic add behavior.
+        /// This callback will override the <see cref="onAdd"/> callback.
+        /// </remarks>
+        [CreateProperty]
+        public Action<BaseListView, Button> overridingAddButtonBehavior
+        {
+            get => m_OverridingAddButtonBehavior;
+            set
+            {
+                if (value == m_OverridingAddButtonBehavior)
+                    return;
+
+                m_OverridingAddButtonBehavior = value;
+                if (overridingAddButtonBehavior != null && m_AddButton != null)
                 {
-                    m_ReorderMode = value;
-                    InitializeDragAndDropController(reorderable);
-                    reorderModeChanged?.Invoke();
-                    Rebuild();
-                    NotifyPropertyChanged(reorderModeProperty);
+                    overridingAddButtonBehavior(this, m_AddButton);
                 }
+                RefreshItems();
+                NotifyPropertyChanged(overridingAddButtonBehaviorProperty);
+            }
+        }
+
+        Action<BaseListView> m_OnAdd;
+
+        /// <summary>
+        /// This callback allows the user to implement their own code to be executed when the Add Button is clicked.
+        /// </summary>
+        /// <remarks>
+        /// This callback will only be called if <see cref="showAddRemoveFooter"/> is set to <c>true</c>.
+        /// Setting this callback to anything other than <c>null</c> will override the basic add behavior.
+        /// This callback will be overriden if the <see cref="overridingAddButtonBehavior"/> callback is set.
+        /// </remarks>
+        [CreateProperty]
+        public Action<BaseListView> onAdd
+        {
+            get => m_OnAdd;
+            set
+            {
+                if (value == m_OnAdd)
+                    return;
+
+                m_OnAdd = value;
+                RefreshItems();
+                NotifyPropertyChanged(onAddProperty);
+            }
+        }
+
+        bool m_AllowRemove;
+
+        /// <summary>
+        /// This property allows the user to allow or block the removal of an item when clicking on the Remove Button.
+        /// It must return <c>true</c> or <c>false</c>.
+        /// </summary>
+        /// /// <remarks>
+        /// If the property is not set to <c>false</c>, any Remove operation will be allowed.
+        /// </remarks>
+        [CreateProperty]
+        public bool allowRemove
+        {
+            get => m_AllowRemove;
+            set
+            {
+                if (value == m_AllowRemove)
+                    return;
+
+                m_AllowRemove = value;
+                m_RemoveButton?.SetEnabled(allowRemove);
+                Rebuild();
+                NotifyPropertyChanged(allowRemoveProperty);
+            }
+        }
+
+        Action<BaseListView> m_OnRemove;
+
+        /// <summary>
+        /// This callback allows the user to implement their own code to be executed when the Remove Button is clicked.
+        /// </summary>
+        /// <remarks>
+        /// This callback will only be called if <see cref="showAddRemoveFooter"/> is set to <c>true</c>.
+        /// Setting this callback to anything other than <c>null</c> will override the basic remove behavior.
+        /// </remarks>
+        [CreateProperty]
+        public Action<BaseListView> onRemove
+        {
+            get => m_OnRemove;
+            set
+            {
+                if (value == m_OnRemove)
+                    return;
+
+                m_OnRemove = value;
+                RefreshItems();
+                NotifyPropertyChanged(onRemoveProperty);
             }
         }
 
@@ -678,6 +1045,8 @@ namespace UnityEngine.UIElements
         public BaseListView()
         {
             AddToClassList(ussClassName);
+            allowAdd = true;
+            allowRemove = true;
         }
 
         /// <summary>
@@ -689,6 +1058,8 @@ namespace UnityEngine.UIElements
             : base(itemsSource, itemHeight)
         {
             AddToClassList(ussClassName);
+            allowAdd = true;
+            allowRemove = true;
         }
 
         private protected override void PostRefresh()

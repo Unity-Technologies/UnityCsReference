@@ -171,7 +171,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (s_TextGenerationSettings.fontSize == 0)
                 return 0;
 
-            var size = TextGenerator.GetPreferredValues(s_TextGenerationSettings, TextHandle.layoutTextInfo);
+            var size = TextGenerator.GetPreferredValues(s_TextGenerationSettings, TextHandle.textInfoCommon);
 
             return size.x;
         }

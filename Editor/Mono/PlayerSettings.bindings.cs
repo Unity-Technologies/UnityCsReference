@@ -554,6 +554,9 @@ namespace UnityEditor
         // Enable receipt validation for the Mac App Store.
         public static extern bool useMacAppStoreValidation { get; set; }
 
+        // Enable advanced optimiztions for Dedicated Server builds
+        public static extern bool dedicatedServerOptimizations { get; set; }
+
         // Define how to handle fullscreen mode in Mac OS X standalones
         [Obsolete("macFullscreenMode is deprecated, use fullScreenMode instead")]
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
@@ -1780,5 +1783,7 @@ namespace UnityEditor
             [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
             set;
         }
+
+        internal static extern bool platformRequiresReadableAssets { get; set; }
     }
 }

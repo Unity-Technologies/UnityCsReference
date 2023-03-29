@@ -38,7 +38,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             m_ValueGetter = MakeFieldValueGetter(inspectedField, inspectedObjects);
 
-            switch (m_Field)
+            switch (Field)
             {
                 case null:
                     break;
@@ -81,7 +81,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (inspectedObjects.First() is GraphElementModel)
             {
-                m_Field.RegisterCallback<ChangeEvent<TCallbackValue>, ModelPropertyField<TValue>>(
+                Field.RegisterCallback<ChangeEvent<TCallbackValue>, ModelPropertyField<TValue>>(
                     (e, f) =>
                     {
                         var newValue = valueExtractor(e);
@@ -91,7 +91,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             else if (inspectedObjects.Count() == 1 && inspectedObjects.First() is GraphModel graphModel)
             {
-                m_Field.RegisterCallback<ChangeEvent<TCallbackValue>, ModelPropertyField<TValue>>(
+                Field.RegisterCallback<ChangeEvent<TCallbackValue>, ModelPropertyField<TValue>>(
                     (e, f) =>
                     {
                         var newValue = valueExtractor(e);

@@ -422,7 +422,7 @@ namespace UnityEditor
             return new Invoker(ref m_Delegates);
         }
 
-        internal readonly ref struct Invoker
+        internal readonly struct Invoker
         {
             private readonly EventWithPerformanceTracker.Entry m_Delegates;
             public Enumerator GetEnumerator() => new Enumerator(in this);

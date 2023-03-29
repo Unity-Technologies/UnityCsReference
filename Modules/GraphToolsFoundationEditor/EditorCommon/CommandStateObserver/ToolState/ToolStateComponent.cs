@@ -76,6 +76,7 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeField]
         List<OpenedGraph> m_SubGraphStack;
 
+        [NonSerialized]
         BlackboardGraphModel m_BlackboardGraphModel;
 
         /// <summary>

@@ -264,13 +264,7 @@ namespace UnityEditor
 
         internal static bool DefaultLowResolutionSettingForStandalone()
         {
-            switch (EditorUserBuildSettings.activeBuildTarget)
-            {
-                case BuildTarget.StandaloneOSX:
-                    return !PlayerSettings.macRetinaSupport; // if retina support enabled -> expecting LowRes setting disabled by default
-                default:
-                    return GUIUtility.pixelsPerPoint <= 1.0f;
-            }
+            return GUIUtility.pixelsPerPoint <= 1.0f;
         }
 
         internal static bool DefaultLowResolutionSettingForSizeGroupType(GameViewSizeGroupType sizeGroupType)

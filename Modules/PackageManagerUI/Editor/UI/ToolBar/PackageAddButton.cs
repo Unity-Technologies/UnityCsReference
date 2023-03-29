@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool TriggerAction(IPackageVersion version)
         {
-            IPackage[] packageToUninstall = null;
+            IPackage[] packagesToUninstall = null;
             if (version.HasTag(PackageTag.Feature))
             {
                 var customizedDependencies = m_PackageDatabase.GetCustomizedDependencies(version, true);
@@ -60,13 +60,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (result == 1) // Cancel
                         return false;
                     if (result == 0) // Install and reset
-                        packageToUninstall = customizedDependencies;
+                        packagesToUninstall = customizedDependencies;
                 }
             }
 
-            if (packageToUninstall?.Any() == true)
+            if (packagesToUninstall?.Any() == true)
             {
-                m_OperationDispatcher.InstallAndResetDependencies(version, packageToUninstall);
+                m_OperationDispatcher.InstallAndResetDependencies(version, packagesToUninstall);
                 PackageManagerWindowAnalytics.SendEvent("installAndReset", version);
             }
             else

@@ -126,7 +126,7 @@ namespace UnityEngine.UIElements
         {
             foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
             {
-                if (!panel.drawToCameras)
+                if (!panel.drawsInCameras)
                 {
                     RepaintOverlayPanel(panel);
                 }
@@ -185,6 +185,15 @@ namespace UnityEngine.UIElements
         {
             RenderOverlaysBeforePriority(displayIndex, float.MaxValue);
             currentOverlayIndex = -1;
+        }
+
+        public static void RepaintWorldPanels()
+        {
+            foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
+            {
+                if (panel.drawsInCameras)
+                    panel.Repaint(null);
+            }
         }
 
         internal static Object activeEventSystem { get; private set; }
@@ -252,12 +261,14 @@ namespace UnityEngine.UIElements
         {
             UIElementsRuntimeUtilityNative.RegisterPlayerloopCallback();
             UIElementsRuntimeUtilityNative.UpdateRuntimePanelsCallback = UpdateRuntimePanels;
+            UIElementsRuntimeUtilityNative.RepaintWorldPanelsCallback = RepaintWorldPanels;
         }
 
         public static void UnregisterPlayerloopCallback()
         {
             UIElementsRuntimeUtilityNative.UnregisterPlayerloopCallback();
             UIElementsRuntimeUtilityNative.UpdateRuntimePanelsCallback = null;
+            UIElementsRuntimeUtilityNative.RepaintWorldPanelsCallback = null;
         }
 
         internal static void SetPanelOrderingDirty()

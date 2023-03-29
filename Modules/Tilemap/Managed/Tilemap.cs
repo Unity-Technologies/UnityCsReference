@@ -14,6 +14,8 @@ namespace UnityEngine.Tilemaps
 
         public static event Action<Tilemap, NativeArray<Vector3Int>> tilemapPositionsChanged;
 
+        public static event Action<Tilemap, NativeArray<Vector3Int>> loopEndedForTileAnimation;
+
         private bool m_BufferSyncTile;
         internal bool bufferSyncTile
         {
@@ -23,6 +25,40 @@ namespace UnityEngine.Tilemaps
                 if (value == false && m_BufferSyncTile != value && HasSyncTileCallback())
                     SendAndClearSyncTileBuffer();
                 m_BufferSyncTile = value;
+            }
+        }
+
+        internal static bool HasLoopEndedForTileAnimationCallback()
+        {
+            return (Tilemap.loopEndedForTileAnimation != null);
+        }
+
+        private unsafe void HandleLoopEndedForTileAnimationCallback(int count, IntPtr positionsIntPtr)
+        {
+            if (!HasLoopEndedForTileAnimationCallback())
+                return;
+
+            void* positionsPtr = positionsIntPtr.ToPointer();
+            var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
+            var safety = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, safety);
+
+            SendLoopEndedForTileAnimationCallback(positions);
+
+            AtomicSafetyHandle.CheckDeallocateAndThrow(safety);
+            AtomicSafetyHandle.Release(safety);
+        }
+
+        private void SendLoopEndedForTileAnimationCallback(NativeArray<Vector3Int> positions)
+        {
+            try
+            {
+                Tilemap.loopEndedForTileAnimation(this, positions);
+            }
+            catch (Exception e)
+            {
+                // Case 1215834: Log user exception/s and ensure engine code continues to run
+                Debug.LogException(e, this);
             }
         }
 
@@ -46,7 +82,7 @@ namespace UnityEngine.Tilemaps
 
         private unsafe void HandlePositionsChangedCallback(int count, IntPtr positionsIntPtr)
         {
-            if (Tilemap.tilemapPositionsChanged == null)
+            if (!HasPositionsChangedCallback())
                 return;
 
             void* positionsPtr = positionsIntPtr.ToPointer();

@@ -20,8 +20,9 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         private bool m_EnableLayoutComparison = false;
         private bool m_ShowYogaNodeDirty = false;
 
-        const float kNumberOfLinesOfInfo = 3;
-        const float kVisualContentOffset = kNumberOfLinesOfInfo * 20;
+        const int kNumberOfLinesOfInfo = 4;
+        const float kLineHeight = 16.0f;
+        const float kVisualContentOffset = kNumberOfLinesOfInfo * kLineHeight;
 
         private LayoutDebuggerVisualElement m_LastDrawElement = null;
         private Vector2 m_LastDrawElementOffset = new Vector2(0.0f, 0.0f);
@@ -60,7 +61,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             else if (evt.keyCode == KeyCode.UpArrow)
             {
                 m_MaxItem = GotoParent();
-                m_ParentWindow.UpdateSlider(m_MaxItem);
+                m_MaxItem = m_ParentWindow.UpdateSlider(m_MaxItem);
                 evt.StopImmediatePropagation();
             }
         }
@@ -80,22 +81,19 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
         private void GotoPreviousItem()
         {
-            if (m_MaxItem > 0)
-            {
-                m_MaxItem--;
-            }
-            m_ParentWindow.UpdateSlider(m_MaxItem);
+            m_MaxItem--;
+            m_MaxItem = m_ParentWindow.UpdateSlider(m_MaxItem);
         }
 
         private void GotoNextItem()
         {
             m_MaxItem++;
-            m_ParentWindow.UpdateSlider(m_MaxItem);
+            m_MaxItem = m_ParentWindow.UpdateSlider(m_MaxItem);
         }
 
         private void GotoElement(LayoutDebuggerVisualElement currentElement, LayoutDebuggerVisualElement elementToFind, ref int count, ref int nextMaxItem)
         {
-            if (!IsVisualElementVisible(currentElement))
+            if (!currentElement.IsVisualElementVisible())
             {
                 return;
             }
@@ -169,7 +167,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
         private void SelectVisualElement(LayoutDebuggerVisualElement ve, Vector2 pos, ref int count, ref int nextMaxItem, float offset_x = 0.0f, float offset_y = 0.0f)
         {
-            if (!IsVisualElementVisible(ve))
+            if (!ve.IsVisualElementVisible())
             {
                 return;
             }
@@ -234,6 +232,20 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             MarkDirtyRepaint();
         }
 
+        public void SetItemIndex(int index)
+        {
+            if (recordLayout != null)
+            {
+                if (index < recordLayout.Count)
+                {
+                    SetIndices(
+                        recordLayout[index].m_FrameIndex,
+                        recordLayout[index].m_PassIndex,
+                        recordLayout[index].m_LayoutLoop);
+                }
+            }
+        }
+
         internal void SetIndices(int frameIndex, int passIndex, int layoutLoop)
         {
             m_FrameIndex = frameIndex;
@@ -257,14 +269,9 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             }
         }
 
-        private static bool IsVisualElementVisible(LayoutDebuggerVisualElement ve)
-        {
-            return ve.visible && ve.enable && ve.enabledInHierarchy;
-        }
-
         internal static void CountLayoutItem(Rect rectRootVE, LayoutDebuggerVisualElement ve, ref int itemCount, ref int zeroSizeCount, ref int outOfRootVE, float offset_x = 0.0f, float offset_y = 0.0f)
         {
-            if (!IsVisualElementVisible(ve))
+            if (!ve.IsVisualElementVisible())
             {
                 return;
             }
@@ -331,6 +338,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                                 rectRootVE.height = record.m_VE.layout.height;
 
                                 CountLayoutItem(rectRootVE, record.m_VE, ref count, ref countOfZeroSizeElement, ref outOfRootVE);
+
                                 int currentIndex = 0;
                                 if (m_EnableLayoutComparison)
                                 {
@@ -344,7 +352,15 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                                 int depth = 0;
                                 CountDepth(m_LastDrawElement, ref depth);
 
-                                string infoString = string.Format("CurrentElement: Local ({0} {1}, {2}, {3}) Global ({4} {5}, {6}, {7}) Depth:{8} Name: {9}",
+                                string infoString = string.Format("CurrentElement: Name: {0} Class: {1}",
+                                    m_LastDrawElement.name,
+                                    m_LastDrawElement.m_OriginalVisualElement.GetType());
+
+                                int numberOfLinesOfInfo = 0;
+
+                                mgc.DrawText(infoString, new Vector2(0.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, Color.white);
+
+                                infoString = string.Format("CurrentElement: Local ({0} {1}, {2}, {3}) Global ({4} {5}, {6}, {7}) Depth:{8}",
                                     m_LastDrawElement.layout.x,
                                     m_LastDrawElement.layout.y,
                                     m_LastDrawElement.layout.width,
@@ -353,10 +369,9 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                                     m_LastDrawElement.layout.y + m_LastDrawElementOffset.y - 0.5f,
                                     m_LastDrawElement.layout.width + m_LastDrawElementOffset.x - 0.5f,
                                     m_LastDrawElement.layout.height + m_LastDrawElementOffset.y - 0.5f,
-                                    depth,
-                                    m_LastDrawElement.name);
+                                    depth);
 
-                                mgc.DrawText(infoString, new Vector2(0.0f, 0.0f), 12.0f, Color.white);
+                                mgc.DrawText(infoString, new Vector2(0.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, Color.white);
 
                                 infoString = string.Format("CurrentElement: Visible:{0} Enable:{1} EnableInHierarchy:{2} YogaNodeDirty:{3}",
                                     m_LastDrawElement.visible,
@@ -364,19 +379,19 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                                     m_LastDrawElement.enabledInHierarchy,
                                     m_LastDrawElement.isYogaNodeDirty);
 
-                                mgc.DrawText(infoString, new Vector2(0.0f, 20.0f), 12.0f, Color.white);
+                                mgc.DrawText(infoString, new Vector2(0.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, Color.white);
 
                                 infoString = string.Format("Count of ZeroSize Element:{0} {1}%",
                                     countOfZeroSizeElement,
                                     100.0f * countOfZeroSizeElement / count);
 
-                                mgc.DrawText(infoString, new Vector2(0.0f, 40.0f), 12.0f, Color.white);
+                                mgc.DrawText(infoString, new Vector2(0.0f, numberOfLinesOfInfo * kLineHeight), 12.0f, Color.white);
 
                                 infoString = string.Format("Count of Out of Root Element:{0} {1}%",
                                     outOfRootVE,
                                     100.0f * outOfRootVE / count);
 
-                                mgc.DrawText(infoString, new Vector2(350.0f, 40.0f), 12.0f, Color.white);
+                                mgc.DrawText(infoString, new Vector2(350.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, Color.white);
 
                                 break;
                             }
@@ -446,7 +461,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 m_LastDrawElementOffset = new Vector2(offset_x, offset_y);
             }
 
-            if (!IsVisualElementVisible(ve))
+            if (!ve.IsVisualElementVisible())
             {
                 return;
             }

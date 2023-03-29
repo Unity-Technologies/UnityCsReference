@@ -106,7 +106,7 @@ namespace Unity.GraphToolsFoundation.Editor
         float m_ReferenceScale = ContentZoomer.DefaultReferenceScale;
 
         readonly VisualElement m_GraphViewContainer;
-        readonly VisualElement m_BadgesParent;
+        readonly VisualElement m_MarkersParent;
 
         SelectionDragger m_SelectionDragger;
         ContentDragger m_ContentDragger;
@@ -125,6 +125,7 @@ namespace Unity.GraphToolsFoundation.Editor
         ModelViewUpdater m_UpdateObserver;
         WireOrderObserver_Internal m_WireOrderObserver;
         DeclarationHighlighter m_DeclarationHighlighter;
+        AutoPlacementObserver m_AutoPlacementObserver;
         ViewSelection m_ViewSelection;
 
         /// <summary>
@@ -307,7 +308,7 @@ namespace Unity.GraphToolsFoundation.Editor
             // make it absolute and 0 sized so it acts as a transform to move children to and fro
             m_GraphViewContainer.Add(ContentViewContainer);
 
-            m_BadgesParent = new VisualElement { name = "badge-container" };
+            m_MarkersParent = new VisualElement { name = "marker-container" };
 
             this.AddStylesheet_Internal("GraphView.uss");
 
@@ -486,9 +487,9 @@ namespace Unity.GraphToolsFoundation.Editor
                         graphElement.SetLevelOfDetail(zoom.x, m_ZoomMode, oldMode);
                     }
 
-                    foreach (var badge in m_BadgesParent.Children().OfType<Badge>())
+                    foreach (var marker in m_MarkersParent.Children().OfType<Marker>())
                     {
-                        badge.SetLevelOfDetail(zoom.x, m_ZoomMode, oldMode);
+                        marker.SetLevelOfDetail(zoom.x, m_ZoomMode, oldMode);
                     }
 
                     k_UpdateAllUIs.Clear();
@@ -1034,7 +1035,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (m_UpdateObserver == null)
             {
-                m_UpdateObserver = new ModelViewUpdater(this, GraphViewModel.GraphViewState, GraphViewModel.GraphModelState, GraphViewModel.SelectionState, GraphTool.GraphProcessingState, GraphTool.HighlighterState);
+                m_UpdateObserver = new ModelViewUpdater(this, GraphViewModel.GraphViewState, GraphViewModel.GraphModelState, GraphViewModel.SelectionState, GraphTool.GraphProcessingState, GraphTool.HighlighterState, GraphViewModel.AutoPlacementState);
                 GraphTool.ObserverManager.RegisterObserver(m_UpdateObserver);
             }
 
@@ -1049,6 +1050,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_DeclarationHighlighter = new DeclarationHighlighter(GraphTool.ToolState, GraphViewModel.SelectionState, GraphTool.HighlighterState,
                     model => model is IHasDeclarationModel hasDeclarationModel ? hasDeclarationModel.DeclarationModel : null);
                 GraphTool.ObserverManager.RegisterObserver(m_DeclarationHighlighter);
+            }
+
+            if (m_AutoPlacementObserver == null)
+            {
+                m_AutoPlacementObserver = new AutoPlacementObserver(this, GraphViewModel.AutoPlacementState, GraphViewModel.GraphModelState);
+                GraphTool.ObserverManager.RegisterObserver(m_AutoPlacementObserver);
             }
 
             SelectionDragger?.RegisterObservers(GraphTool.ObserverManager);
@@ -1104,6 +1111,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 GraphTool?.ObserverManager?.UnregisterObserver(m_DeclarationHighlighter);
                 m_DeclarationHighlighter = null;
             }
+
+            if (m_AutoPlacementObserver != null)
+            {
+                GraphTool?.ObserverManager?.UnregisterObserver(m_AutoPlacementObserver);
+                m_AutoPlacementObserver = null;
+            }
         }
 
         internal void OnValidateCommand_Internal(ValidateCommandEvent evt)
@@ -1137,9 +1150,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public virtual void AddElement(GraphElement graphElement)
         {
-            if (graphElement is Badge)
+            if (graphElement is Marker)
             {
-                m_BadgesParent.Add(graphElement);
+                m_MarkersParent.Add(graphElement);
             }
             else if (graphElement is Placemat placemat)
             {
@@ -1604,7 +1617,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 updateType = DoUpdate(graphModelObservation, selectionObservation, highlighterObservation);
             }
 
-            DoUpdateProcessingErrorBadges(updateType);
+            DoUpdateProcessingErrorMarkers(updateType);
         }
 
         protected virtual UpdateType DoUpdate(Observation graphModelObservation, Observation selectionObservation, Observation highlighterObservation)
@@ -1704,54 +1717,24 @@ namespace Unity.GraphToolsFoundation.Editor
             if (GraphTool.Preferences.GetBool(BoolPref.ShowUnusedNodes))
                 PositionDependenciesManager_Internal.UpdateNodeState();
 
-            // PF FIXME use observer or otherwise refactor this
-            if (modelChangeSet != null && modelChangeSet.ModelsToAutoAlign.Any())
+            // Models that need repositioning are hidden until they are moved by the observer next frame.
+            using (var autoPlacementObservation = m_UpdateObserver.ObserveState(GraphViewModel.AutoPlacementState))
             {
-                // Auto placement relies on UI layout to compute node positions, so we need to
-                // schedule it to execute after the next layout pass.
-                // Furthermore, it will modify the model position, hence it must be
-                // done using an updater.
-                var elementsToAlign = modelChangeSet.ModelsToAutoAlign.ToList();
-                schedule.Execute(() =>
+                var autoPlacementChangeset = GraphViewModel.AutoPlacementState.GetAggregatedChangeset(autoPlacementObservation.LastObservedVersion);
+                if (autoPlacementChangeset?.ModelsToRepositionAtCreation.Any() ?? false)
                 {
-                    using (var graphUpdater = GraphViewModel.GraphModelState.UpdateScope)
-                    using (var changeScope = GraphModel.ChangeDescriptionScope)
+                    foreach (var elementToReposition in autoPlacementChangeset?.ModelsToRepositionAtCreation)
                     {
-                        var models = elementsToAlign.Select(GraphModel.GetModel).Where(m => m != null).ToList();
-                        PositionDependenciesManager_Internal.AlignNodes(true, models);
-                        graphUpdater.MarkUpdated(changeScope.ChangeDescription);
+                        // Since they are going to be repositioned, the node and wire's visibility are set to hidden at the first layout pass.
+                        var nodeUI = elementToReposition.Model.GetView_Internal(this);
+                        if (nodeUI is { Model: AbstractNodeModel })
+                            nodeUI.visible = false;
+
+                        var wireUI = elementToReposition.WireModel.GetView_Internal(this);
+                        if (wireUI != null)
+                            wireUI.visible = false;
                     }
-                });
-            }
-
-            if (modelChangeSet != null && modelChangeSet.ModelsToRepositionAtCreation.Any())
-            {
-                // Nodes created from wires need to recompute their position after their creation to make sure that the
-                // last hovered position corresponds to the connected port or, in the case of an incompatible connection,
-                // to the nodes' middle height or width (depending on the orientation).
-                // Similarly to auto placement, UI layout is needed to compute the nodes' new positions, so we need to
-                // schedule it to execute after the next layout pass.
-                // Furthermore, it will modify the model position, hence it must be
-                // done inside a Store.BeginStateChange block.
-                var elementsToReposition = modelChangeSet.ModelsToRepositionAtCreation.ToList();
-                foreach (var elementToReposition in elementsToReposition)
-                {
-                    // Since they are going to be repositioned, the node and wire's visibility are set to hidden at the first layout pass.
-                    var nodeUI = elementToReposition.Model.GetView_Internal(this);
-                    if (nodeUI != null && nodeUI.Model is AbstractNodeModel)
-                        nodeUI.visible = false;
-
-                    var wireUI = elementToReposition.WireModel.GetView_Internal(this);
-                    if (wireUI != null)
-                        wireUI.visible = false;
                 }
-                schedule.Execute(() =>
-                {
-                    using (var graphUpdater = GraphViewModel.GraphModelState.UpdateScope)
-                    {
-                        RepositionModelsAtCreation(elementsToReposition, graphUpdater);
-                    }
-                });
             }
 
             var lastSelectedNode = GetSelection().OfType<AbstractNodeModel>().LastOrDefault();
@@ -1803,7 +1786,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var newModels = modelChangeSet.NewModels.Select(GraphModel.GetModel).Where(m => m != null).ToList();
 
-            foreach (var model in newModels.Where(m => !(m is WireModel) && !(m is PlacematModel) && !(m is BadgeModel) && !(m is DeclarationModel)))
+            foreach (var model in newModels.Where(m => !(m is WireModel) && !(m is PlacematModel) && !(m is MarkerModel) && !(m is DeclarationModel)))
             {
                 if (model.Container != GraphModel)
                     continue;
@@ -1827,15 +1810,15 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
             }
 
-            foreach (var model in newModels.OfType<BadgeModel>())
+            foreach (var model in newModels.OfType<MarkerModel>())
             {
                 if (model.ParentModel == null)
                     continue;
 
-                var badge = ModelViewFactory.CreateUI<Badge>(this, model);
-                if (badge != null)
+                var marker = ModelViewFactory.CreateUI<Marker>(this, model);
+                if (marker != null)
                 {
-                    AddElement(badge);
+                    AddElement(marker);
                 }
             }
         }
@@ -1871,9 +1854,9 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        protected virtual void DoUpdateProcessingErrorBadges(UpdateType rebuildType)
+        protected virtual void DoUpdateProcessingErrorMarkers(UpdateType rebuildType)
         {
-            // Update processing error badges.
+            // Update processing error markers.
             using (var processingStateObservation = m_UpdateObserver.ObserveState(GraphTool.GraphProcessingState))
             {
                 if (processingStateObservation.UpdateType != UpdateType.None || rebuildType == UpdateType.Partial)
@@ -1903,14 +1886,14 @@ namespace Unity.GraphToolsFoundation.Editor
                         }
                     }
 
-                    var badgesToRemove = m_BadgesParent.Children().OfType<Badge>().Where(b => b.Model is GraphProcessingErrorModel).ToList();
+                    var markersToRemove = m_MarkersParent.Children().OfType<Marker>().Where(b => b.Model is GraphProcessingErrorModel).ToList();
 
-                    foreach (var badge in badgesToRemove)
+                    foreach (var marker in markersToRemove)
                     {
-                        RemoveElement(badge);
+                        RemoveElement(marker);
 
                         // ToList is needed to bake the dependencies.
-                        foreach (var ui in badge.GraphElementModel.GetDependencies().ToList())
+                        foreach (var ui in marker.GraphElementModel.GetDependencies().ToList())
                         {
                             ui.UpdateFromModel();
                         }
@@ -1921,10 +1904,10 @@ namespace Unity.GraphToolsFoundation.Editor
                         if (model.ParentModel == null || !GraphModel.TryGetModelFromGuid(model.ParentModel.Guid, out var _))
                             return;
 
-                        var badge = ModelViewFactory.CreateUI<Badge>(this, model);
-                        if (badge != null)
+                        var marker = ModelViewFactory.CreateUI<Marker>(this, model);
+                        if (marker != null)
                         {
-                            AddElement(badge);
+                            AddElement(marker);
                         }
                     }
                 }
@@ -2008,18 +1991,18 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
             }
 
-            ContentViewContainer.Add(m_BadgesParent);
+            ContentViewContainer.Add(m_MarkersParent);
 
-            m_BadgesParent.Clear();
-            foreach (var badgeModel in graphModel.BadgeModels)
+            m_MarkersParent.Clear();
+            foreach (var markerModel in graphModel.MarkerModels)
             {
-                if (badgeModel.ParentModel == null)
+                if (markerModel.ParentModel == null)
                     continue;
 
-                var badge = ModelViewFactory.CreateUI<Badge>(this, badgeModel);
-                if (badge != null)
+                var marker = ModelViewFactory.CreateUI<Marker>(this, markerModel);
+                if (marker != null)
                 {
-                    AddElement(badge);
+                    AddElement(marker);
                 }
             }
 
@@ -2085,7 +2068,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var invalidWireCount = GraphModel.WireModels.Count(n => n == null);
             var invalidStickyCount = GraphModel.StickyNoteModels.Count(n => n == null);
             var invalidVariableCount = GraphModel.VariableDeclarations.Count(v => v == null);
-            var invalidBadgeCount = GraphModel.BadgeModels.Count(b => b == null);
+            var invalidMarkerCount = GraphModel.MarkerModels.Count(b => b == null);
             var invalidPlacematCount = GraphModel.PlacematModels.Count(p => p == null);
             var invalidPortalCount = GraphModel.PortalDeclarations.Count(p => p == null);
             var invalidSectionCount = GraphModel.SectionModels.Count(s => s == null);
@@ -2095,7 +2078,7 @@ namespace Unity.GraphToolsFoundation.Editor
             countMessage.Append(invalidWireCount == 0 ? string.Empty : $"{invalidWireCount} invalid wire(s) found.\n");
             countMessage.Append(invalidStickyCount == 0 ? string.Empty : $"{invalidStickyCount} invalid sticky note(s) found.\n");
             countMessage.Append(invalidVariableCount == 0 ? string.Empty : $"{invalidVariableCount} invalid variable declaration(s) found.\n");
-            countMessage.Append(invalidBadgeCount == 0 ? string.Empty : $"{invalidBadgeCount} invalid badge(s) found.\n");
+            countMessage.Append(invalidMarkerCount == 0 ? string.Empty : $"{invalidMarkerCount} invalid marker(s) found.\n");
             countMessage.Append(invalidPlacematCount == 0 ? string.Empty : $"{invalidPlacematCount} invalid placemat(s) found.\n");
             countMessage.Append(invalidPortalCount == 0 ? string.Empty : $"{invalidPortalCount} invalid portal(s) found.\n");
             countMessage.Append(invalidSectionCount == 0 ? string.Empty : $"{invalidSectionCount} invalid section(s) found.\n");
@@ -2179,69 +2162,36 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        void RepositionModelsAtCreation(IEnumerable<GraphModelStateComponent.Changeset.ModelToReposition> modelsToReposition, GraphModelStateComponent.StateUpdater graphUpdater)
+        List<ModelView> k_OnFocus_GraphElementList = new List<ModelView>();
+
+        /// <inheritdoc />
+        protected override void OnFocus(FocusInEvent e)
         {
-            using var changeScope = GraphModel.ChangeDescriptionScope;
-            foreach (var modelToReposition in modelsToReposition)
+            base.OnFocus(e);
+            RefreshBorders();
+        }
+
+        /// <inheritdoc />
+        protected override void OnLostFocus(FocusOutEvent e)
+        {
+            base.OnLostFocus(e);
+            RefreshBorders();
+        }
+
+        void RefreshBorders()
+        {
+            if (GraphModel == null)
+                return;
+
+            k_OnFocus_GraphElementList.Clear();
+
+            var views = GraphModel.GraphElementModels
+                .GetAllViewsInList_Internal(this, e => e is GraphElement ge && ge.Border != null, k_OnFocus_GraphElementList);
+
+            foreach (var element in k_OnFocus_GraphElementList.OfType<GraphElement>())
             {
-                GraphModel.TryGetModelFromGuid(modelToReposition.Model, out AbstractNodeModel nodeModel);
-                GraphModel.TryGetModelFromGuid(modelToReposition.WireModel, out WireModel wireModel);
-
-                var nodeUI = nodeModel?.GetView<Node>(this);
-                if (nodeUI == null)
-                    continue;
-
-                if (wireModel != null)
-                {
-                    var portModel = modelToReposition.WireSide == WireSide.From ? wireModel.FromPort : wireModel.ToPort;
-
-                    // Get the orientation of the connection
-                    PortOrientation orientation;
-                    if (portModel == null)
-                        orientation = (modelToReposition.WireSide == WireSide.From ? wireModel.ToPort?.Orientation : wireModel.FromPort?.Orientation) ?? PortOrientation.Horizontal;
-                    else
-                        orientation = portModel.Orientation;
-
-                    // If the node is created from an input, shift the position of a node width or height, depending on the orientation
-                    var newPosX = nodeUI.layout.x - (orientation == PortOrientation.Horizontal && modelToReposition.WireSide == WireSide.From ? nodeUI.layout.width : 0);
-                    var newPosY = nodeUI.layout.y - (orientation != PortOrientation.Horizontal && modelToReposition.WireSide == WireSide.From ? nodeUI.layout.height : 0);
-
-                    var portUI = portModel?.GetView<Port>(this);
-                    var isCompatibleConnection = wireModel is IGhostWire ? portModel != null : (nodeModel as PortNodeModel)?.GetPortFitToConnectTo(modelToReposition.WireSide == WireSide.From ? wireModel.ToPort : wireModel.FromPort) != null;
-
-                    if (isCompatibleConnection && portUI != null)
-                    {
-                        // If the connection to the port is compatible, we want the last hovered position to correspond to the port.
-                        var portPos = portUI.parent.ChangeCoordinatesTo(nodeUI.parent, portUI.layout.center);
-
-                        if (orientation == PortOrientation.Horizontal)
-                            newPosY += nodeUI.layout.y - portPos.y;
-                        else
-                            newPosX += nodeUI.layout.x - portPos.x;
-                    }
-                    else
-                    {
-                        // If the connection to the port is not compatible, we want the last hovered position to correspond to the node's middle width or height, depending on the orientation.
-                        if (orientation == PortOrientation.Horizontal)
-                            newPosY -= nodeUI.layout.height * 0.5f;
-                        else
-                            newPosX -= nodeUI.layout.width * 0.5f;
-                    }
-
-                    nodeModel.Position = new Vector2(newPosX, newPosY);
-
-                    // The wire's visibility was set to hidden before the first layout pass. Now, it should be set to visible.
-                    var wireUI = wireModel.GetView<Wire>(this);
-                    if (wireUI != null)
-                    {
-                        wireUI.visible = true;
-                        graphUpdater.MarkChanged(wireModel, ChangeHint.Layout);
-                    }
-                }
-                // The node was set to hidden before the first layout pass. Now, it should be set to visible.
-                nodeUI.visible = true;
+                element.Border.MarkDirtyRepaint();
             }
-            graphUpdater.MarkUpdated(changeScope.ChangeDescription);
         }
     }
 }

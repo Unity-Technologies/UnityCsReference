@@ -438,7 +438,7 @@ namespace UnityEditor.TerrainTools
                     if (evt.newValue)
                     {
                         m_DefaultToolsVE.Clear();
-                        ToolManager.SetActiveTool<NoneTool>(); // the tool deselects
+                        ToolManager.RestorePreviousPersistentTool();
                         LoadTool((TerrainCategory) indexCopy);
                     }
 

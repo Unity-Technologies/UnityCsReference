@@ -241,7 +241,7 @@ namespace UnityEditor.ShaderFoundry
                     linkElementInternal.m_CastTypeHandle = castType.handle;
                     linkElementInternal.m_NamespaceHandle = container.AddString(namespaceName);
                     linkElementInternal.m_NameHandle = container.AddString(name);
-                    linkElementInternal.m_AccessorListHandle = FixedHandleListInternal.Build(container, m_Accessors, (a) => (a.handle));
+                    linkElementInternal.m_AccessorListHandle = HandleListInternal.Build(container, m_Accessors, (a) => (a.handle));
                     var returnTypeHandle = container.Add(linkElementInternal);
                     return new LinkElement(container, returnTypeHandle);
                 }

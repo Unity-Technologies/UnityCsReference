@@ -151,7 +151,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     new GraphBlockCreationData(graphModelState.GraphModel, guid: command.Guid, contextNodeModel: command.ContextNodeModel, orderInContext: command.OrderInContext));
 
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
-                selectionUpdaters.MainUpdateScope.SelectElements(new[] { newModel }, true);
+                selectionUpdaters.MainUpdateScope.SelectElement(newModel, true);
             }
         }
     }

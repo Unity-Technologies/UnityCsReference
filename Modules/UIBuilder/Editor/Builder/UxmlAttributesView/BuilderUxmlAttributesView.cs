@@ -450,6 +450,12 @@ namespace Unity.UI.Builder
                 }
             }
 
+            if ((attribute.name.Equals("allow-add") || attribute.name.Equals("allow-remove")) &&
+                attributesOwner is BaseListView)
+            {
+                styleRow.contentContainer.AddToClassList(BuilderConstants.InspectorListViewAllowAddRemoveFieldClassName);
+            }
+
             UpdateAttributeField(fieldElement, attribute, fieldValue);
             styleRow.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, IsAttributeOverriden(attribute));
 

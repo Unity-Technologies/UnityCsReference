@@ -1068,12 +1068,28 @@ namespace UnityEngine
         [NativeName("CalculateInterpolatedLightAndOcclusionProbes")]
         internal extern static void CalculateInterpolatedLightAndOcclusionProbes_Internal(Vector3[] positions, int positionsCount, SphericalHarmonicsL2[] lightProbes, Vector4[] occlusionProbes);
 
+        [FreeFunction]
+        [NativeName("GetSharedLightProbesForScene")]
+        public extern static LightProbes GetSharedLightProbesForScene(SceneManagement.Scene scene);
+
+        [FreeFunction]
+        [NativeName("GetInstantiatedLightProbesForScene")]
+        public extern static LightProbes GetInstantiatedLightProbesForScene(SceneManagement.Scene scene);
+
         // Positions of the baked light probes.
         public extern Vector3[] positions
         {
             [FreeFunction(HasExplicitThis = true)]
             [NativeName("GetLightProbePositions")] get;
         }
+
+        [FreeFunction(HasExplicitThis = true)]
+        [NativeName("GetLightProbePositionsSelf")]
+        public extern Vector3[] GetPositionsSelf();
+
+        [FreeFunction(HasExplicitThis = true)]
+        [NativeName("SetLightProbePositionsSelf")]
+        public extern bool SetPositionsSelf(Vector3[] positions, bool checkForDuplicatePositions);
 
         public extern UnityEngine.Rendering.SphericalHarmonicsL2[] bakedProbes
         {
@@ -1091,11 +1107,24 @@ namespace UnityEngine
             [NativeName("GetLightProbeCount")] get;
         }
 
+        public extern int countSelf
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetLightProbeCountSelf")] get;
+        }
+
         // The number of cells (tetrahedra + outer cells) the space is divided to.
         public extern int cellCount
         {
             [FreeFunction(HasExplicitThis = true)]
             [NativeName("GetTetrahedraSize")] get;
+        }
+
+        public extern int cellCountSelf
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetTetrahedraSizeSelf")]
+            get;
         }
 
         [FreeFunction]

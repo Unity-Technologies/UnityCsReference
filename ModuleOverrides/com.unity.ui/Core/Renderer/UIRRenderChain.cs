@@ -240,12 +240,13 @@ namespace UnityEngine.UIElements.UIR
 
             m_VisualChangesProcessor = new VisualChangesProcessor(this);
 
-            var rp = panel as BaseRuntimePanel;
-            if (rp != null && rp.drawToCameras)
+            if (panel is BaseRuntimePanel { drawsInCameras: true })
             {
-                drawInCameras = true;
+                device.drawsInCameras = drawInCameras = true;
                 m_StaticIndex = RenderChainStaticIndexAllocator.AllocateIndex(this);
             }
+
+            device.isFlat = isFlat = panel.isFlat;
         }
 
         #region Dispose Pattern
@@ -659,6 +660,7 @@ namespace UnityEngine.UIElements.UIR
         internal UIRVEShaderInfoAllocator shaderInfoAllocator; // Not a property because this is a struct we want to mutate
         internal bool drawStats { get; set; }
         internal bool drawInCameras { get; private set; }
+        internal bool isFlat { get; private set; }
 
         internal Shader defaultShader
         {
@@ -851,7 +853,7 @@ namespace UnityEngine.UIElements.UIR
             userData[1] = renderNodeIndex;
             UIR.Utility.RegisterIntermediateRenderer(camera, rnd.initialMaterial, rtp.panelToWorld,
                 new Bounds(Vector3.zero, new Vector3(float.MaxValue, float.MaxValue, float.MaxValue)),
-                3, 0, false, sameDistanceSortPriority, (ulong)camera.cullingMask, (int)UIR.Utility.RendererCallbacks.RendererCallback_Exec,
+                rtp.worldSpaceLayer, 0, false, sameDistanceSortPriority, (int)UIR.Utility.RendererCallbacks.RendererCallback_Exec,
                 new IntPtr(userData), sizeof(int) * 2);
         }
 

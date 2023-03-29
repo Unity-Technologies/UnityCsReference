@@ -206,7 +206,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_FetchStatusTracker, m_AssetDatabaseProxy);
             m_AssetStoreOAuth.ResolveDependencies(m_DateTimeProxy, m_UnityConnectProxy, m_UnityOAuthProxy, m_HttpClientFactory);
             m_AssetStoreRestAPI.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreOAuth, m_JsonParser, m_HttpClientFactory);
-            m_AssetStorePackageInstaller.ResolveDependencies(m_IOProxy, m_AssetStoreCache, m_AssetDatabaseProxy, m_AssetSelectionHandler);
+            m_AssetStorePackageInstaller.ResolveDependencies(m_IOProxy, m_AssetStoreCache, m_AssetDatabaseProxy, m_AssetSelectionHandler, m_ApplicationProxy);
             m_AssetStoreDownloadManager.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_UnityConnectProxy, m_IOProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCachePathProxy);
             m_BackgroundFetchHandler.ResolveDependencies(m_ApplicationProxy, m_UnityConnectProxy, m_UpmCache, m_UpmClient, m_AssetStoreClient, m_AssetStoreCache, m_FetchStatusTracker, m_PageManager, m_PageRefreshHandler);
             m_AssetSelectionHandler.ResolveDependencies(m_SelectionWindowProxy);

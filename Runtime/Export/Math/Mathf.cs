@@ -533,5 +533,30 @@ namespace UnityEngine
                 return 0;
             }
         }
+
+        public static int NextPowerOfTwo(int value)
+        {
+            value -= 1;
+            value |= value >> 16;
+            value |= value >> 8;
+            value |= value >> 4;
+            value |= value >> 2;
+            value |= value >> 1;
+            return value + 1;
+        }
+        public static int ClosestPowerOfTwo(int value)
+        {
+            int nextPower = NextPowerOfTwo(value);
+            int prevPower = nextPower >> 1;
+            if (value - prevPower < nextPower - value)
+ 
+                return prevPower;
+            else
+                return nextPower;
+        }
+        public static bool IsPowerOfTwo(int value)
+        {
+            return (value & (value - 1)) == 0;
+        }
     }
 }

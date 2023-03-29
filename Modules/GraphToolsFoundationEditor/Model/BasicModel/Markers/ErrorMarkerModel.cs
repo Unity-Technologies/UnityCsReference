@@ -8,10 +8,10 @@ using UnityEngine;
 namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
-    /// A model to hold error messages to be displayed by badges.
+    /// A model to hold error messages to be displayed by markers.
     /// </summary>
     [Serializable]
-    abstract class ErrorBadgeModel : BadgeModel
+    abstract class ErrorMarkerModel : MarkerModel
     {
         public abstract LogType ErrorType { get; }
 

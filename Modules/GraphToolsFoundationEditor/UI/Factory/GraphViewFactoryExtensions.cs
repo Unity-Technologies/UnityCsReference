@@ -99,19 +99,19 @@ namespace Unity.GraphToolsFoundation.Editor
             return ui;
         }
 
-        public static ModelView CreateErrorBadgeModelView(this ElementBuilder elementBuilder, ErrorBadgeModel model)
+        public static ModelView CreateErrorMarkerModelView(this ElementBuilder elementBuilder, ErrorMarkerModel model)
         {
-            var badge = new ErrorBadge();
-            badge.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
-            return badge;
+            var marker = new ErrorMarker();
+            marker.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
+            return marker;
         }
 
-        public static ModelView CreateGraphProcessingErrorBadgeModelView(this ElementBuilder elementBuilder, GraphProcessingErrorModel model)
+        public static ModelView CreateGraphProcessingErrorMarkerModelView(this ElementBuilder elementBuilder, GraphProcessingErrorModel model)
         {
-            var badge = new ErrorBadge();
-            badge.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
+            var marker = new ErrorMarker();
+            marker.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
 
-            Assert.IsNotNull(badge);
+            Assert.IsNotNull(marker);
             if (model.Fix != null)
             {
                 var contextualMenuManipulator = new ContextualMenuManipulator(e =>
@@ -119,9 +119,9 @@ namespace Unity.GraphToolsFoundation.Editor
                     e.menu.AppendAction("Fix Error/" + model.Fix.Description,
                         _ => model.Fix.QuickFixAction(elementBuilder.View));
                 });
-                badge.AddManipulator(contextualMenuManipulator);
+                marker.AddManipulator(contextualMenuManipulator);
             }
-            return badge;
+            return marker;
         }
 
         /// <summary>

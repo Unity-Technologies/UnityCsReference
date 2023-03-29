@@ -18,6 +18,7 @@ namespace UnityEditor.ShaderFoundry
         {
             kFlagsInput = 1 << 0,
             kFlagsOutput = 1 << 1,
+            kFlagsInputOutput = 3,
         };
 
         internal FoundryHandle m_NameHandle;
@@ -120,7 +121,7 @@ namespace UnityEditor.ShaderFoundry
                 var functionParamInternal = new FunctionParameterInternal();
                 functionParamInternal.m_NameHandle = container.AddString(name);
                 functionParamInternal.m_TypeHandle = type.handle;
-                functionParamInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, attributes, (a) => (a.handle));
+                functionParamInternal.m_AttributeListHandle = HandleListInternal.Build(container, attributes, (a) => (a.handle));
                 functionParamInternal.m_Flags = flags;
                 FoundryHandle returnHandle = container.Add(functionParamInternal);
                 return new FunctionParameter(Container, returnHandle);

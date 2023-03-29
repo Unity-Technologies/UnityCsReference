@@ -53,6 +53,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
         IState m_State;
         UndoStateRecorder m_UndoStateRecorder;
+
+        [NonSerialized]
         ToolStateComponent m_ToolStateComponent;
 
         /// <summary>

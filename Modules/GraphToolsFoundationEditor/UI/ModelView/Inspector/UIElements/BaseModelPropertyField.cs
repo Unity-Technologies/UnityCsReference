@@ -15,6 +15,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public ICommandTarget CommandTarget { get; }
 
+
+        /// <summary>
+        /// The <see cref="VisualElement"/> that is the field used to change the value.
+        /// </summary>
+        public VisualElement Field { get; protected set; }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CustomizableModelPropertyField"/> class.
         /// </summary>

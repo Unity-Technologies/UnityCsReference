@@ -317,6 +317,31 @@ namespace UnityEngine.UIElements
             }
         }
 
+        void LateUpdate()
+        {
+            if (panelSettings != null && panelSettings.panel != null && panelSettings.panel.drawsInCameras)
+            {
+                SetVisualElementFromTransform(rootVisualElement, transform);
+                panelSettings.panel.panelToWorld = Matrix4x4.identity;
+            }
+        }
+
+        static void SetVisualElementFromTransform(VisualElement visualElement, Transform transform)
+        {
+            visualElement.style.transformOrigin = new TransformOrigin(Vector3.zero);
+            visualElement.style.translate = new Translate(transform.position);
+            visualElement.style.rotate = new Rotate(transform.rotation);
+            var scale = transform.lossyScale;
+            visualElement.style.scale = new Scale(new Vector3(scale.x, -scale.y, scale.z));
+        }
+
+        static void SetNoTransform(VisualElement visualElement)
+        {
+            visualElement.style.translate = Translate.None();
+            visualElement.style.rotate = Rotate.None();
+            visualElement.style.scale = Scale.None();
+        }
+
         /// <summary>
         /// Orders UIDocument components based on the way their GameObjects are ordered in the Hierarchy View.
         /// </summary>

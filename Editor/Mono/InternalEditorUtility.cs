@@ -622,7 +622,6 @@ namespace UnityEditorInternal
             switch (System.IO.Path.GetExtension(filename).ToLower())
             {
                 case ".cs":
-                case ".boo":
                     return true;
                 case ".dll":
                 case ".exe":

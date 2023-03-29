@@ -17,9 +17,11 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_ContainingNamespaceHandle;
         internal FoundryHandle m_ExtensionsListHandle;
         internal FoundryHandle m_CustomizationPointListHandle;
+        internal FoundryHandle m_RegisteredTemplateListHandle;
 
         internal extern static BlockShaderInterfaceInternal Invalid();
         internal extern bool IsValid();
+        internal extern bool RegisterTemplate(ShaderContainer container, FoundryHandle handle);
 
         // IInternalType
         BlockShaderInterfaceInternal IInternalType<BlockShaderInterfaceInternal>.ConstructInvalid() => Invalid();
@@ -49,7 +51,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var listHandle = blockShaderInterfaceInternal.m_AttributeListHandle;
-                return FixedHandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
+                return HandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
             }
         }
         public Namespace ContainingNamespace => new Namespace(container, blockShaderInterfaceInternal.m_ContainingNamespaceHandle);
@@ -58,7 +60,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var listHandle = blockShaderInterfaceInternal.m_ExtensionsListHandle;
-                return FixedHandleListInternal.Enumerate<BlockShaderInterface>(container, listHandle);
+                return HandleListInternal.Enumerate<BlockShaderInterface>(container, listHandle);
             }
         }
         public IEnumerable<CustomizationPoint> CustomizationPoints
@@ -66,8 +68,21 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var listHandle = blockShaderInterfaceInternal.m_CustomizationPointListHandle;
-                return FixedHandleListInternal.Enumerate<CustomizationPoint>(container, listHandle);
+                return HandleListInternal.Enumerate<CustomizationPoint>(container, listHandle);
             }
+        }
+        public IEnumerable<InterfaceRegistrationStatement> RegisteredTemplates
+        {
+            get
+            {
+                var listHandle = blockShaderInterfaceInternal.m_RegisteredTemplateListHandle;
+                return HandleListInternal.Enumerate<InterfaceRegistrationStatement>(container, listHandle);
+            }
+        }
+
+        internal bool RegisterTemplate(ShaderContainer container, FoundryHandle statementHandle)
+        {
+            return blockShaderInterfaceInternal.RegisterTemplate(container, statementHandle);
         }
 
         // private
@@ -125,10 +140,11 @@ namespace UnityEditor.ShaderFoundry
                     m_NameHandle = container.AddString(Name),
                 };
 
-                blockShaderInterfaceInternal.m_AttributeListHandle = FixedHandleListInternal.Build(container, Attributes);
+                blockShaderInterfaceInternal.m_AttributeListHandle = HandleListInternal.Build(container, Attributes);
                 blockShaderInterfaceInternal.m_ContainingNamespaceHandle = containingNamespace.handle;
-                blockShaderInterfaceInternal.m_ExtensionsListHandle = FixedHandleListInternal.Build(container, Extensions);
-                blockShaderInterfaceInternal.m_CustomizationPointListHandle = FixedHandleListInternal.Build(container, CustomizationPoints);
+                blockShaderInterfaceInternal.m_ExtensionsListHandle = HandleListInternal.Build(container, Extensions);
+                blockShaderInterfaceInternal.m_CustomizationPointListHandle = HandleListInternal.Build(container, CustomizationPoints);
+                blockShaderInterfaceInternal.m_RegisteredTemplateListHandle = HandleListInternal.Build(container, new List<InterfaceRegistrationStatement>());
 
                 var returnTypeHandle = container.Add(blockShaderInterfaceInternal);
                 return new BlockShaderInterface(container, returnTypeHandle);

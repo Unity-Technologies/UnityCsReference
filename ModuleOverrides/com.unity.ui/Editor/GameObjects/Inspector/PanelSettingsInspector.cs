@@ -24,8 +24,15 @@ namespace UnityEditor.UIElements.Inspector
 
         private ObjectField m_ThemeStyleSheetField;
         private ObjectField m_UITKTextSettings;
+        private EnumField m_RenderModeField;
+        private LayerField m_WorldSpaceLayerField;
+        private HelpBox m_WorldSpaceBox;
         private ObjectField m_TargetTextureField;
+        private FloatField m_SortingOrderField;
 
+        private PopupField<int> m_TargetDisplayField;
+
+        private Foldout m_ScaleModeFoldout;
         private EnumField m_ScaleModeField;
         private EnumField m_ScreenMatchModeField;
 
@@ -37,6 +44,7 @@ namespace UnityEditor.UIElements.Inspector
 
         private VisualElement m_ScreenMatchModeMatchWidthOrHeightGroup;
 
+        private Foldout m_ClearSettingsFoldout;
         private PropertyField m_ClearColorField;
         private PropertyField m_ColorClearValueField;
 
@@ -56,9 +64,17 @@ namespace UnityEditor.UIElements.Inspector
             m_UITKTextSettings = m_RootVisualElement.MandatoryQ<ObjectField>("text-settings");
             m_UITKTextSettings.objectType = typeof(PanelTextSettings);
 
+            m_RenderModeField = m_RootVisualElement.MandatoryQ<EnumField>("render-mode");
+            m_WorldSpaceLayerField = m_RootVisualElement.MandatoryQ<LayerField>("worldspace-layer");
+            m_WorldSpaceBox = m_RootVisualElement.MandatoryQ<HelpBox>("worldspace-box");
+
             m_TargetTextureField = m_RootVisualElement.MandatoryQ<ObjectField>("target-texture");
             m_TargetTextureField.objectType = typeof(RenderTexture);
 
+            m_SortingOrderField = m_RootVisualElement.MandatoryQ<FloatField>("sorting-order");
+
+
+            m_ScaleModeFoldout = m_RootVisualElement.MandatoryQ<Foldout>("scale-mode-foldout");
             m_ScaleModeField = m_RootVisualElement.MandatoryQ<EnumField>("scale-mode");
             m_ScreenMatchModeField = m_RootVisualElement.MandatoryQ<EnumField>("screen-match-mode");
 
@@ -71,16 +87,17 @@ namespace UnityEditor.UIElements.Inspector
             m_ScreenMatchModeMatchWidthOrHeightGroup =
                 m_RootVisualElement.MandatoryQ("screen-match-mode-match-width-or-height");
 
+            m_ClearSettingsFoldout = m_RootVisualElement.MandatoryQ<Foldout>("clear-settings-foldout");
             m_ClearColorField = m_RootVisualElement.MandatoryQ<PropertyField>("clear-color");
             m_ColorClearValueField = m_RootVisualElement.MandatoryQ<PropertyField>("color-clear-value");
             m_VertexBudgetField = m_RootVisualElement.MandatoryQ<PropertyField>("vertex-budget");
 
             var choices = new List<int> {0, 1, 2, 3, 4, 5, 6, 7};
-            var targetDisplayField = new PopupField<int>("Target Display", choices, 0, i => $"Display {i + 1}", i => $"Display {i + 1}");
-            targetDisplayField.bindingPath = "m_TargetDisplay";
+            m_TargetDisplayField = new PopupField<int>("Target Display", choices, 0, i => $"Display {i + 1}", i => $"Display {i + 1}");
+            m_TargetDisplayField.bindingPath = "m_TargetDisplay";
 
-            m_TargetTextureField.parent.Add(targetDisplayField);
-            targetDisplayField.PlaceInFront(m_TargetTextureField);
+            m_TargetTextureField.parent.Add(m_TargetDisplayField);
+            m_TargetDisplayField.PlaceInFront(m_TargetTextureField);
         }
 
         private void BindFields()
@@ -91,6 +108,8 @@ namespace UnityEditor.UIElements.Inspector
                 UpdateScreenMatchModeValues((PanelScreenMatchMode)evt.newValue));
             m_ClearColorField.RegisterCallback<ChangeEvent<bool>>(evt =>
                 UpdateColorClearValue(evt.newValue));
+            m_RenderModeField.RegisterCallback<ChangeEvent<Enum>>(evt =>
+                UpdateRenderMode((PanelRenderMode)evt.newValue));
 
             m_ThemeStyleSheetField.RegisterValueChangedCallback(evt => UpdateHelpBoxDisplay());
         }
@@ -143,6 +162,40 @@ namespace UnityEditor.UIElements.Inspector
             m_MissingThemeHelpBox.EnableInClassList(k_StyleClassThemeMissing, !displayHelpBox);
         }
 
+        void UpdateRenderMode(PanelRenderMode newRenderMode)
+        {
+            DisplayStyle displayStyleForWorldProperties = DisplayStyle.None;
+            DisplayStyle displayStyleForOverlayProperties = DisplayStyle.Flex;
+
+            if (newRenderMode == PanelRenderMode.WorldSpace)
+            {
+                m_RenderModeField.style.display = DisplayStyle.Flex;
+                m_WorldSpaceBox.style.display = DisplayStyle.Flex;
+                displayStyleForWorldProperties = DisplayStyle.Flex;
+                displayStyleForOverlayProperties = DisplayStyle.None;
+            }
+            else if(Unsupported.IsDeveloperMode())
+            {
+                m_RenderModeField.style.display = DisplayStyle.Flex;
+                m_WorldSpaceBox.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                m_RenderModeField.style.display = DisplayStyle.None;
+                m_WorldSpaceBox.style.display = DisplayStyle.None;
+            }
+
+            m_WorldSpaceLayerField.style.display = displayStyleForWorldProperties;
+
+            m_TargetTextureField.style.display = displayStyleForOverlayProperties;
+            m_ScaleModeField.style.display = displayStyleForOverlayProperties;
+            m_ScaleModeFoldout.style.display = displayStyleForOverlayProperties;
+            m_ClearSettingsFoldout.style.display = displayStyleForOverlayProperties;
+            m_TargetTextureField.style.display = displayStyleForOverlayProperties;
+            m_SortingOrderField.style.display = displayStyleForOverlayProperties;
+            m_TargetDisplayField.style.display = displayStyleForOverlayProperties;
+        }
+
         public override VisualElement CreateInspectorGUI()
         {
             if (m_RootVisualElement == null)
@@ -174,6 +227,7 @@ namespace UnityEditor.UIElements.Inspector
             UpdateScreenMatchModeValues(panelSettings.screenMatchMode);
             UpdateColorClearValue(panelSettings.clearColor);
             UpdateHelpBoxDisplay();
+            UpdateRenderMode(panelSettings.renderMode);
             return m_RootVisualElement;
         }
     }

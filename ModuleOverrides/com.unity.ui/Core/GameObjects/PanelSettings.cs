@@ -50,6 +50,12 @@ namespace UnityEngine.UIElements
         Expand
     }
 
+    internal enum PanelRenderMode
+    {
+        ScreenSpaceOverlay,
+        WorldSpace
+    }
+
     /// <summary>
     /// Defines a Panel Settings asset that instantiates a panel at runtime. The panel makes it possible for Unity to display
     /// UXML-file based UI in the Game view.
@@ -217,6 +223,30 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
+        private PanelRenderMode m_RenderMode = PanelRenderMode.ScreenSpaceOverlay;
+
+        /// <summary>
+        /// Determines how the panel is rendered.
+        /// </summary>
+        internal PanelRenderMode renderMode
+        {
+            get => m_RenderMode;
+            set => m_RenderMode = value;
+        }
+
+        [SerializeField]
+        private int m_WorldSpaceLayer = 0;
+
+        /// <summary>
+        /// The layer into which the world space panel will render.
+        /// </summary>
+        internal int worldSpaceLayer
+        {
+            get => m_WorldSpaceLayer;
+            set => m_WorldSpaceLayer = value;
+        }
+
+        [SerializeField]
         private PanelScaleMode m_ScaleMode = PanelScaleMode.ConstantPhysicalSize;
 
         /// <summary>
@@ -363,7 +393,7 @@ namespace UnityEngine.UIElements
         private int m_TargetDisplay = 0;
 
         /// <summary>
-        /// Set the display intended for the panel. 
+        /// Set the display intended for the panel.
         /// </summary>
         /// <remarks>
         /// This setting is relevant only when no render texture is applied, as the renderTexture takes precedence.
@@ -732,7 +762,11 @@ namespace UnityEngine.UIElements
             float oldResolvedScaling = m_ResolvedScale;
 
             m_TargetRect = GetDisplayRect(); // Expensive to evaluate, so cache
-            m_ResolvedScale = ResolveScale(m_TargetRect, ScreenDPI); // dpi should be constant across all displays
+
+            if (renderMode == PanelRenderMode.WorldSpace)
+                m_ResolvedScale = 1.0f; // No panel scaling for world-space
+            else
+                m_ResolvedScale = ResolveScale(m_TargetRect, ScreenDPI); // dpi should be constant across all displays
 
             if (visualTree.style.width.value == 0 || // TODO is this check valid? This prevents having to resize the game view!
                 m_ResolvedScale != oldResolvedScaling ||
@@ -747,7 +781,9 @@ namespace UnityEngine.UIElements
             }
             panel.targetTexture = targetTexture;
             panel.targetDisplay = targetDisplay;
-            panel.drawToCameras = false; //we don`t support WorldSpace rendering just yet
+            panel.drawsInCameras = renderMode == PanelRenderMode.WorldSpace;
+            panel.isFlat = renderMode != PanelRenderMode.WorldSpace;
+            panel.worldSpaceLayer = worldSpaceLayer;
             panel.clearSettings = new PanelClearSettings {clearColor = m_ClearColor, clearDepthStencil = m_ClearDepthStencil, color = m_ColorClearValue};
             panel.referenceSpritePixelsPerUnit = referenceSpritePixelsPerUnit;
             panel.vertexBudget = m_VertexBudget;
@@ -849,7 +885,7 @@ namespace UnityEngine.UIElements
 
             //The device simulatior is a special game view on display 0, and the screen values are properly populated
             if( m_TargetDisplay == 0)
-                return new Rect(0,0, Screen.width, Screen.height); 
+                return new Rect(0,0, Screen.width, Screen.height);
 
             // In the Unity Editor, Display.displays is not supported; displays.Length always has a value of 1, regardless of how many displays you have connected.
             return new(Vector2.zero, GetGameViewResolution(m_TargetDisplay));

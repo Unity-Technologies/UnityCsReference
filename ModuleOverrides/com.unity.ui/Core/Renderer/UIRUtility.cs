@@ -56,7 +56,9 @@ namespace UnityEngine.UIElements
             {
                 transform = ve.worldTransform;
             }
-            transform.m22 = 1.0f; // Once world-space mode is introduced, this should become conditional
+
+            if (ve.elementPanel is { isFlat: true })
+                transform.m22 = 1.0f; // Scaling in z means nothing for 2d ui, and break masking
         }
 
         // This function is used when we detect that the dynamic transform or group transform is using a scale of zero in the x or y axis.

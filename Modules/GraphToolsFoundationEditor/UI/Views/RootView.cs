@@ -181,13 +181,21 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         protected abstract void UnregisterViewObservers();
 
-        void OnFocus(FocusInEvent e)
+        /// <summary>
+        /// Callback for the <see cref="FocusInEvent"/>.
+        /// </summary>
+        /// <param name="e">The event.</param>
+        protected virtual void OnFocus(FocusInEvent e)
         {
             // View is focused if itself or any of its descendant has focus.
             AddToClassList(focusedViewModifierUssClassName);
         }
 
-        void OnLostFocus(FocusOutEvent e)
+        /// <summary>
+        /// Callback for the <see cref="FocusOutEvent"/>.
+        /// </summary>
+        /// <param name="e">The event.</param>
+        protected virtual void OnLostFocus(FocusOutEvent e)
         {
             RemoveFromClassList(focusedViewModifierUssClassName);
         }

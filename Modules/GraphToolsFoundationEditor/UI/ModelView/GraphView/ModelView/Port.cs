@@ -202,10 +202,20 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void PostBuildUI()
         {
-            ConnectorElement = this.SafeQ(connectorPartName) ?? this;
+            var constantPart = (PortConstantEditorPart)PartList.GetPart(constantEditorPartName);
+            var connectorPart = (PortConnectorPart)PartList.GetPart(connectorPartName);
+
+            ConnectorElement = connectorPart.Root ?? this;
             WireConnector = new WireConnector(GraphView);
 
             Label = ConnectorElement.Q<Label>(PortConnectorPart.labelName);
+
+            if (constantPart.Dragger != null)
+            {
+                constantPart.Dragger.SetDragZone(Label);
+
+                Label.EnableInClassList(FloatField.labelDraggerVariantUssClassName, true);
+            }
 
             AddToClassList(ussClassName);
             this.AddStylesheet_Internal("Port.uss");

@@ -61,7 +61,7 @@ namespace UnityEditor.ShaderFoundry
         {
             if (IsStruct)
             {
-                var list = new FixedHandleListInternal(m_v0);
+                var list = new HandleListInternal(m_v0);
                 return list.Select<StructField>(container, (handle) => (new StructField(container, handle)));
             }
             return Enumerable.Empty<StructField>();
@@ -69,13 +69,13 @@ namespace UnityEditor.ShaderFoundry
 
         internal IEnumerable<ShaderAttribute> Attributes(ShaderContainer container)
         {
-            var list = new FixedHandleListInternal(m_AttributeListHandle);
+            var list = new HandleListInternal(m_AttributeListHandle);
             return list.Select<ShaderAttribute>(container, (handle) => (new ShaderAttribute(container, handle)));
         }
 
         internal IEnumerable<IncludeDescriptor> Includes(ShaderContainer container)
         {
-            var list = new FixedHandleListInternal(m_IncludeListHandle);
+            var list = new HandleListInternal(m_IncludeListHandle);
             return list.Select<IncludeDescriptor>(container, (handle) => (new IncludeDescriptor(container, handle)));
         }
 
@@ -322,9 +322,9 @@ namespace UnityEditor.ShaderFoundry
                 {
                     nameHandle = container.AddString(name),
                     containingNamespaceHandle = containingNamespace.handle,
-                    attributeListHandle = FixedHandleListInternal.Build(container, attributes),
-                    fieldListHandle = FixedHandleListInternal.Build(container, fields),
-                    includeListHandle = FixedHandleListInternal.Build(container, includes),
+                    attributeListHandle = HandleListInternal.Build(container, attributes),
+                    fieldListHandle = HandleListInternal.Build(container, fields),
+                    includeListHandle = HandleListInternal.Build(container, includes),
                     parentBlockHandle = parentBlockHandle,
                     declaredExternally = declaredExternally,
                 };

@@ -55,7 +55,7 @@ namespace UnityEditor.ShaderFoundry
 
         public StageDescription GetStageDescription(PassStageType stageType)
         {
-            var list = new FixedHandleListInternal(templatePass.m_StageDescriptionListHandle);
+            var list = new HandleListInternal(templatePass.m_StageDescriptionListHandle);
             var handle = list.GetElement(container, (uint)stageType);
             return new StageDescription(container, handle);
         }
@@ -67,7 +67,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(templatePass.m_RenderStateDescriptorListHandle);
+                var list = new HandleListInternal(templatePass.m_RenderStateDescriptorListHandle);
                 return list.Select(localContainer, (handle) => (new RenderStateDescriptor(localContainer, handle)));
             }
         }
@@ -77,7 +77,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(templatePass.m_PragmaDescriptorListHandle);
+                var list = new HandleListInternal(templatePass.m_PragmaDescriptorListHandle);
                 return list.Select(localContainer, (handle) => (new PragmaDescriptor(localContainer, handle)));
             }
         }
@@ -87,7 +87,7 @@ namespace UnityEditor.ShaderFoundry
             get
             {
                 var localContainer = Container;
-                var list = new FixedHandleListInternal(templatePass.m_TagDescriptorListHandle);
+                var list = new HandleListInternal(templatePass.m_TagDescriptorListHandle);
                 return list.Select(localContainer, (handle) => (new TagDescriptor(localContainer, handle)));
             }
         }
@@ -212,11 +212,11 @@ namespace UnityEditor.ShaderFoundry
                     m_EnableDebugging = EnableDebugging,
                 };
 
-                templatePassInternal.m_StageDescriptionListHandle = FixedHandleListInternal.Build(container, stageDescriptions, (s) => (s.handle));
-                templatePassInternal.m_RenderStateDescriptorListHandle = FixedHandleListInternal.Build(container, renderStateDescriptors, (o) => (o.handle));
-                templatePassInternal.m_PragmaDescriptorListHandle = FixedHandleListInternal.Build(container, pragmaDescriptors, (o) => (o.handle));
-                templatePassInternal.m_TagDescriptorListHandle = FixedHandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
-                templatePassInternal.m_PackageRequirementListHandle = FixedHandleListInternal.Build(container, packageRequirements, (p) => (p.handle));
+                templatePassInternal.m_StageDescriptionListHandle = HandleListInternal.Build(container, stageDescriptions, (s) => (s.handle));
+                templatePassInternal.m_RenderStateDescriptorListHandle = HandleListInternal.Build(container, renderStateDescriptors, (o) => (o.handle));
+                templatePassInternal.m_PragmaDescriptorListHandle = HandleListInternal.Build(container, pragmaDescriptors, (o) => (o.handle));
+                templatePassInternal.m_TagDescriptorListHandle = HandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));
+                templatePassInternal.m_PackageRequirementListHandle = HandleListInternal.Build(container, packageRequirements, (p) => (p.handle));
 
                 var returnTypeHandle = container.Add(templatePassInternal);
                 return new TemplatePass(container, returnTypeHandle);

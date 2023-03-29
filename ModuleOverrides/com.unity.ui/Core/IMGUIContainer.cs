@@ -224,6 +224,12 @@ namespace UnityEngine.UIElements
 
         private void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
+            if (elementPanel is BaseRuntimePanel { drawsInCameras: true })
+            {
+                Debug.LogError($"{nameof(IMGUIContainer)} cannot be used in a panel drawn by cameras.");
+                return;
+            }
+
             lastWorldClip = elementPanel.repaintData.currentWorldClip;
 
             // Access to the painter is internal and is not exposed to public

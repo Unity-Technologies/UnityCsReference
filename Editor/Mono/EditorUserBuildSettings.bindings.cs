@@ -331,6 +331,23 @@ namespace UnityEditor
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    public enum EmbeddedArchitecture
+    {
+        [UnityEngine.InspectorName("Arm64")]
+        Arm64 = 0,
+
+        [UnityEngine.InspectorName("Arm32")]
+        Arm32 = 1,
+
+        [UnityEngine.InspectorName("X64")]
+        X64 = 2,
+
+        [UnityEngine.InspectorName("X86")]
+        X86 = 3,
+    }
+
+    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [Obsolete("QNXArchitecture is deprecated. Use EmbeddedArchitecture. (UnityUpgradeable) -> EmbeddedArchitecture")]
     public enum QNXArchitecture
     {
         [UnityEngine.InspectorName("Arm64")]
@@ -347,6 +364,7 @@ namespace UnityEditor
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
+    [Obsolete("EmbeddedLinuxArchitecture is deprecated. Use EmbeddedArchitecture. (UnityUpgradeable) -> EmbeddedArchitecture")]
     public enum EmbeddedLinuxArchitecture
     {
         [UnityEngine.InspectorName("Arm64")]
@@ -396,7 +414,7 @@ namespace UnityEditor
         }
 
         // QNX Architecture
-        public static extern QNXArchitecture selectedQnxArchitecture
+        public static extern EmbeddedArchitecture selectedQnxArchitecture
         {
             [NativeMethod("GetSelectedQNXArchitecture")]
             get;
@@ -405,7 +423,7 @@ namespace UnityEditor
         }
 
         // Embedded Linux Architecture
-        public static extern EmbeddedLinuxArchitecture selectedEmbeddedLinuxArchitecture
+        public static extern EmbeddedArchitecture selectedEmbeddedLinuxArchitecture
         {
             [NativeMethod("GetSelectedEmbeddedLinuxArchitecture")]
             get;
@@ -413,7 +431,7 @@ namespace UnityEditor
             set;
         }
 
-        // Embedded Linux remote device information
+        // Embedded Linux && QNX remote device information
         public static extern bool remoteDeviceInfo { get; set; }
         public static extern string remoteDeviceAddress { get; set; }
         public static extern string remoteDeviceUsername { get; set; }

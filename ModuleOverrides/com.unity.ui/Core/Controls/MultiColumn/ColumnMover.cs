@@ -148,10 +148,7 @@ namespace UnityEngine.UIElements.Internal
         {
             if (!CanStartManipulation(evt)) return;
 
-            if (!evt.DiscardMouseEventsOnMobile())
-            {
-                ProcessDownEvent(evt, evt.localPosition, evt.pointerId);
-            }
+            ProcessDownEvent(evt, evt.localPosition, evt.pointerId);
         }
 
         /// <summary>
@@ -162,10 +159,7 @@ namespace UnityEngine.UIElements.Internal
         {
             if (!active) return;
 
-            if (!evt.DiscardMouseEventsOnMobile())
-            {
-                ProcessMoveEvent(evt, evt.localPosition);
-            }
+            ProcessMoveEvent(evt, evt.localPosition);
         }
 
         /// <summary>
@@ -176,10 +170,7 @@ namespace UnityEngine.UIElements.Internal
         {
             if (!active || !CanStopManipulation(evt)) return;
 
-            if (!evt.DiscardMouseEventsOnMobile())
-            {
-                ProcessUpEvent(evt, evt.localPosition, evt.pointerId);
-            }
+            ProcessUpEvent(evt, evt.localPosition, evt.pointerId);
         }
 
         /// <summary>

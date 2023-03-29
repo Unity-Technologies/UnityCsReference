@@ -402,11 +402,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 graphModel.DeleteNodes(command.Models, deleteConnections: true);
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
 
-                var selectedModels = changeScope.ChangeDescription.DeletedModels.Where(selectionState.IsSelected).ToList();
-                if (selectedModels.Any())
-                {
-                    selectionUpdater.SelectElements(selectedModels, false);
-                }
+                selectionUpdater.SelectElements(changeScope.ChangeDescription.DeletedModels, false);
             }
         }
     }

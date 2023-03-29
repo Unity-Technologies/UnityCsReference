@@ -75,7 +75,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public override VisualElement contentContainer => m_ContentContainer ?? this;
 
         /// The <see cref="DynamicBorder"/> used to display selection, hover and highlight. Can be null.
-        protected DynamicBorder Border { get; private set; }
+        public DynamicBorder Border { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GraphElement"/> class.

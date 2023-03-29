@@ -59,7 +59,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 && installed == version
                 && version.HasTag(PackageTag.Feature)
                 && !version.HasTag(PackageTag.Custom)
-                && version.HasTag(PackageTag.UpmFormat)
                 && m_PackageDatabase.GetCustomizedDependencies(version).Any();
         }
 

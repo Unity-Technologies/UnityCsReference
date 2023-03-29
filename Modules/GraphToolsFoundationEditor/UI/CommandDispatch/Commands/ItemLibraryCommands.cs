@@ -194,7 +194,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="preferences">The tool preferences.</param>
         /// <param name="command">The command to handle.</param>
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState,
-            Preferences preferences, CreateNodeCommand command)
+            AutoPlacementStateComponent autoPlacementState, Preferences preferences, CreateNodeCommand command)
         {
             if (command.CreationData.Count <= 0)
             {
@@ -213,6 +213,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var createdElements = new List<GraphElementModel>();
             var graphModel = graphModelState.GraphModel;
 
+            using (var autoPlacementUpdater = autoPlacementState.UpdateScope)
             using (var graphUpdater = graphModelState.UpdateScope)
             using (var changeScope = graphModel.ChangeDescriptionScope)
             {
@@ -307,7 +308,7 @@ namespace Unity.GraphToolsFoundation.Editor
                                 if (newWire != null && creationData.AutoAlign ||
                                     preferences.GetBool(BoolPref.AutoAlignDraggedWires))
                                 {
-                                    graphUpdater.MarkModelToAutoAlign(newWire);
+                                    autoPlacementUpdater.MarkModelToAutoAlign(newWire);
                                 }
                             }
                             break;
@@ -362,7 +363,7 @@ namespace Unity.GraphToolsFoundation.Editor
                                         wire.model.SetPort(wire.side, newPort);
                                     }
                                 }
-                                graphUpdater.MarkModelToRepositionAtCreation((createdElement, wireModel, wire.side));
+                                autoPlacementUpdater.MarkModelToRepositionAtCreation((createdElement, wireModel, wire.side));
                             }
                             break;
                         default:

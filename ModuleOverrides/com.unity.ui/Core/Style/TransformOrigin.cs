@@ -26,6 +26,8 @@ namespace UnityEngine.UIElements
         public TransformOrigin(Length x, Length y) : this(x, y, 0)
         { }
 
+        internal TransformOrigin(Vector3 vector) : this(vector.x, vector.y, vector.z) { }
+
         /// <summary>
         /// Returns the initial value for the TransformOrigin property.
         /// </summary>

@@ -109,16 +109,11 @@ namespace UnityEngine
         [FreeFunction("BoundsScripting::ClosestPoint", HasExplicitThis = true, IsThreadSafe = true)] extern public Vector3 ClosestPoint(Vector3 point);
     }
 
-    [NativeHeader("Runtime/Utilities/BitUtility.h")]
     [NativeHeader("Runtime/Math/ColorSpaceConversion.h")]
     [NativeHeader("Runtime/Math/FloatConversion.h")]
     [NativeHeader("Runtime/Math/PerlinNoise.h")]
     public partial struct Mathf
     {
-        [FreeFunction(IsThreadSafe = true)] extern public static int  ClosestPowerOfTwo(int value);
-        [FreeFunction(IsThreadSafe = true)] extern public static bool IsPowerOfTwo(int value);
-        [FreeFunction(IsThreadSafe = true)] extern public static int  NextPowerOfTwo(int value);
-
         [FreeFunction(IsThreadSafe = true)] extern public static float GammaToLinearSpace(float value);
         [FreeFunction(IsThreadSafe = true)] extern public static float LinearToGammaSpace(float value);
         [FreeFunction(IsThreadSafe = true)] extern public static Color CorrelatedColorTemperatureToRGB(float kelvin);

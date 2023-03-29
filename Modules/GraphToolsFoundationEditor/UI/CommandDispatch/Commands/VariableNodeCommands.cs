@@ -151,7 +151,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
 
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
-                selectionUpdater.SelectElements(changeScope.ChangeDescription.DeletedModels.ToList(), false);
+                selectionUpdater.SelectElements(changeScope.ChangeDescription.DeletedModels, false);
             }
         }
     }

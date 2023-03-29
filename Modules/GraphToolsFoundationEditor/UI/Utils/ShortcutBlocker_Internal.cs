@@ -95,15 +95,15 @@ namespace Unity.GraphToolsFoundation.Editor
             // Don't stop the propagation of the event
             if (evt.button == (int)MouseButton.LeftMouse)
             {
-                m_RegistrationTarget?.RegisterCallback<PointerCaptureEvent>(OnPointerCaptureEvent, TrickleDown.TrickleDown);
-                m_RegistrationTarget?.RegisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent, TrickleDown.TrickleDown);
+                m_DragTarget.RegisterCallback<PointerCaptureEvent>(OnPointerCaptureEvent, TrickleDown.TrickleDown);
+                m_DragTarget.RegisterCallback<MouseLeaveWindowEvent>(OnMouseLeaveWindowEvent);
                 StartBlocking();
             }
         }
 
-        void OnPointerLeaveEvent(PointerLeaveEvent evt)
+        void OnMouseLeaveWindowEvent(MouseLeaveWindowEvent evt)
         {
-            // We received a PointerLeaveEvent and the mouse was not captured, so we are likely no longer focusing the
+            // We received a MouseLeaveWindowEvent and the mouse was not captured, so we are likely no longer focusing the
             // relevant target. Consider this as a PointerUpEvent. Don't stop the propagation of the event.
             StopBlocking();
         }
@@ -112,11 +112,11 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             // PointerDown captured the pointer, so we are not going
             // to receive a PointerUp event. Register PointerCaptureOut event instead.
-            m_RegistrationTarget?.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOutEvent, TrickleDown.TrickleDown);
+            m_DragTarget.RegisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOutEvent, TrickleDown.TrickleDown);
 
             // And since we are capturing the mouse, we are probably dragging something so no
-            // need to check for OnPointerLeaveEvent (which we still receive)
-            m_RegistrationTarget?.UnregisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent, TrickleDown.TrickleDown);
+            // need to check for MouseLeaveWindowEvent
+            m_DragTarget.UnregisterCallback<MouseLeaveWindowEvent>(OnMouseLeaveWindowEvent);
         }
 
         void OnPointerUpEvent(PointerUpEvent evt)
@@ -146,13 +146,11 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void UnregisterShortcutBlockingHandlers()
         {
-            if (m_RegistrationTarget == null)
-                return;
+            m_RegistrationTarget?.UnregisterCallback<KeyDownEvent>(OnKeyDownEvent, TrickleDown.TrickleDown);
 
-            m_RegistrationTarget.UnregisterCallback<KeyDownEvent>(OnKeyDownEvent, TrickleDown.TrickleDown);
-            m_RegistrationTarget.UnregisterCallback<PointerCaptureEvent>(OnPointerCaptureEvent, TrickleDown.TrickleDown);
-            m_RegistrationTarget.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOutEvent, TrickleDown.TrickleDown);
-            m_RegistrationTarget.UnregisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent, TrickleDown.TrickleDown);
+            m_DragTarget.UnregisterCallback<PointerCaptureEvent>(OnPointerCaptureEvent, TrickleDown.TrickleDown);
+            m_DragTarget.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOutEvent, TrickleDown.TrickleDown);
+            m_DragTarget.UnregisterCallback<MouseLeaveWindowEvent>(OnMouseLeaveWindowEvent);
         }
     }
 }

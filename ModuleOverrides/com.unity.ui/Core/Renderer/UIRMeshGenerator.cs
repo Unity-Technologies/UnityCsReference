@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements.UIR
     interface IMeshGenerator
     {
         VisualElement currentElement { get; set; }
-        public void DrawText(TextInfo textInfo, Vector2 offset);
+        public void DrawText(MeshInfo[] meshInfo, Vector2 offset);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
@@ -624,9 +624,9 @@ namespace UnityEngine.UIElements.UIR
             m_MeshGenerationContext.entryRecorder.DrawGradients(vertices, indices, gradientsOwner);
         }
 
-        public void DrawText(TextInfo textInfo, Vector2 offset)
+        public void DrawText(MeshInfo[] meshInfo, Vector2 offset)
         {
-            DrawTextInfo(textInfo, offset, true);
+            DrawTextInfo(meshInfo, offset, true);
         }
 
         TextInfo m_TextInfo = new TextInfo(VertexDataLayout.VBO);
@@ -649,23 +649,23 @@ namespace UnityEngine.UIElements.UIR
             };
             TextCore.Text.TextGenerator.GenerateText(textGenerationSettings, m_TextInfo);
 
-            DrawTextInfo(m_TextInfo, pos, false);
+            DrawTextInfo(m_TextInfo.meshInfo, pos, false);
         }
 
-        void DrawTextInfo(TextInfo textInfo, Vector2 offset, bool useHints)
+        void DrawTextInfo(MeshInfo[] meshInfo, Vector2 offset, bool useHints)
         {
-            for (int i = 0; i < textInfo.materialCount; i++)
+            for (int i = 0; i < meshInfo.Length; i++)
             {
-                if (textInfo.meshInfo[i].vertexCount == 0)
+                if (meshInfo[i].vertexCount == 0)
                     continue;
 
                 // SpriteAssets and Color Glyphs use an RGBA texture
-                if(((Texture2D)textInfo.meshInfo[i].material.mainTexture).format != TextureFormat.Alpha8)
+                if(((Texture2D)meshInfo[i].material.mainTexture).format != TextureFormat.Alpha8)
                 {
                     // Assume a sprite asset or Color Glyph
                     MakeText(
-                        textInfo.meshInfo[i].material.mainTexture,
-                        textInfo.meshInfo[i],
+                        meshInfo[i].material.mainTexture,
+                        meshInfo[i],
                         offset,
                         false,
                         false,
@@ -677,10 +677,10 @@ namespace UnityEngine.UIElements.UIR
                     // SDF scale is used to differentiate between Bitmap and SDF. The Bitmap Material doesn't have the
                     // GradientScale property which results in sdfScale always being 0.
                     float sdfScale = 0;
-                    if (!TextGeneratorUtilities.IsBitmapRendering(textInfo.meshInfo[i].glyphRenderMode))
-                        sdfScale = textInfo.meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
+                    if (!TextGeneratorUtilities.IsBitmapRendering(meshInfo[i].glyphRenderMode))
+                        sdfScale = meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
                     bool isDynamicColor = useHints && RenderEvents.NeedsColorID(currentElement);
-                    var sharpness = textInfo.meshInfo[i].material.GetFloat("_Sharpness");
+                    var sharpness = meshInfo[i].material.GetFloat("_Sharpness");
                     // Set the dynamic-color hint on TextCore fancy-text or the EditorUIE shader applies the
                     // tint over the fragment output, affecting the outline/shadows.
                     if (useHints)
@@ -693,8 +693,8 @@ namespace UnityEngine.UIElements.UIR
                     }
 
                     MakeText(
-                        textInfo.meshInfo[i].material.mainTexture,
-                        textInfo.meshInfo[i],
+                        meshInfo[i].material.mainTexture,
+                        meshInfo[i],
                         offset,
                         true,
                         isDynamicColor,
