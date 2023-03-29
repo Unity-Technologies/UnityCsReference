@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Displays its contents inside a scrollable frame. For more information, see [[wiki:UIE-uxml-element-ScrollView|ScrollView]]. 
+    /// Displays its contents inside a scrollable frame. For more information, see [[wiki:UIE-uxml-element-ScrollView|ScrollView]].
     /// </summary>
     public class ScrollView : VisualElement
     {
@@ -134,6 +134,9 @@ namespace UnityEngine.UIElements
 
             UxmlFloatAttributeDescription m_VerticalPageSize = new UxmlFloatAttributeDescription
             { name = "vertical-page-size", defaultValue = k_UnsetPageSizeValue };
+
+            UxmlFloatAttributeDescription m_MouseWheelScrollSize = new UxmlFloatAttributeDescription
+            { name = "mouse-wheel-scroll-size", defaultValue = k_MouseWheelScrollSizeDefaultValue };
 
             UxmlEnumAttributeDescription<TouchScrollBehavior> m_TouchScrollBehavior = new UxmlEnumAttributeDescription<TouchScrollBehavior>
             { name = "touch-scroll-type", defaultValue = TouchScrollBehavior.Clamped };
@@ -176,6 +179,7 @@ namespace UnityEngine.UIElements
                 scrollView.nestedInteractionKind = m_NestedInteractionKind.GetValueFromBag(bag, cc);
                 scrollView.horizontalPageSize = m_HorizontalPageSize.GetValueFromBag(bag, cc);
                 scrollView.verticalPageSize = m_VerticalPageSize.GetValueFromBag(bag, cc);
+                scrollView.mouseWheelScrollSize = m_MouseWheelScrollSize.GetValueFromBag(bag, cc);
                 scrollView.scrollDecelerationRate = m_ScrollDecelerationRate.GetValueFromBag(bag, cc);
                 scrollView.touchScrollBehavior = m_TouchScrollBehavior.GetValueFromBag(bag, cc);
                 scrollView.elasticity = m_Elasticity.GetValueFromBag(bag, cc);
@@ -242,6 +246,10 @@ namespace UnityEngine.UIElements
         const float k_ScrollPageOverlapFactor = 0.1f;
         internal const float k_UnsetPageSizeValue = -1.0f;
 
+        internal const float k_MouseWheelScrollSizeDefaultValue = 18.0f;
+        internal const float k_MouseWheelScrollSizeUnset = -1.0f;
+        internal bool m_MouseWheelScrollSizeIsInline;
+
         internal bool needsHorizontal
         {
             get
@@ -294,7 +302,7 @@ namespace UnityEngine.UIElements
         private float m_HorizontalPageSize;
 
         /// <summary>
-        /// This property is controlling the scrolling speed of the horizontal scroller.
+        /// This property controls the speed of the horizontal scrolling when using a keyboard or the on-screen scrollbar buttons (arrows and handle), based on the size of the page.
         /// </summary>
         public float horizontalPageSize
         {
@@ -309,7 +317,7 @@ namespace UnityEngine.UIElements
         private float m_VerticalPageSize;
 
         /// <summary>
-        /// This property is controlling the scrolling speed of the vertical scroller.
+        /// This property controls the speed of the vertical scrolling when using a keyboard or the on-screen scrollbar buttons (arrows and handle), based on the size of the page.
         /// </summary>
         public float verticalPageSize
         {
@@ -318,6 +326,25 @@ namespace UnityEngine.UIElements
             {
                 m_VerticalPageSize = value;
                 UpdateVerticalSliderPageSize();
+            }
+        }
+
+        private float m_MouseWheelScrollSize = k_MouseWheelScrollSizeDefaultValue;
+
+        /// <summary>
+        /// This property controls the scrolling speed only when using a mouse scroll wheel, based on the size of the page. It takes precedence over the --unity-metrics-single_line-height USS variable.
+        /// </summary>
+        public float mouseWheelScrollSize
+        {
+            get { return m_MouseWheelScrollSize; }
+            set
+            {
+                var previous = m_MouseWheelScrollSize;
+                if (Math.Abs(m_MouseWheelScrollSize - value) > float.Epsilon)
+                {
+                    m_MouseWheelScrollSizeIsInline = true;
+                    m_MouseWheelScrollSize = value;
+                }
             }
         }
 
@@ -1417,11 +1444,12 @@ namespace UnityEngine.UIElements
             var canUseVerticalScroll = contentContainer.boundingBox.height - layout.height > 0;
             var canUseHorizontalScroll = contentContainer.boundingBox.width - layout.width > 0;
             var horizontalScrollDelta = canUseHorizontalScroll && !canUseVerticalScroll ? evt.delta.y : evt.delta.x;
+            var mouseScrollFactor = m_MouseWheelScrollSizeIsInline ? mouseWheelScrollSize : m_SingleLineHeight;
 
             if (canUseVerticalScroll)
             {
                 var oldVerticalValue = verticalScroller.value;
-                verticalScroller.value += evt.delta.y * (verticalScroller.lowValue < verticalScroller.highValue ? 1f : -1f) * m_SingleLineHeight;
+                verticalScroller.value += evt.delta.y * (verticalScroller.lowValue < verticalScroller.highValue ? 1f : -1f) * mouseScrollFactor;
 
                 if (nestedInteractionKind == NestedInteractionKind.StopScrolling || !Mathf.Approximately(verticalScroller.value, oldVerticalValue))
                 {
@@ -1433,7 +1461,7 @@ namespace UnityEngine.UIElements
             if (canUseHorizontalScroll)
             {
                 var oldHorizontalValue = horizontalScroller.value;
-                horizontalScroller.value += horizontalScrollDelta * (horizontalScroller.lowValue < horizontalScroller.highValue ? 1f : -1f) * m_SingleLineHeight;
+                horizontalScroller.value += horizontalScrollDelta * (horizontalScroller.lowValue < horizontalScroller.highValue ? 1f : -1f) * mouseScrollFactor;
 
                 if (nestedInteractionKind == NestedInteractionKind.StopScrolling || !Mathf.Approximately(horizontalScroller.value, oldHorizontalValue))
                 {

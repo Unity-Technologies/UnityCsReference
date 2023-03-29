@@ -293,7 +293,10 @@ namespace UnityEditor.ShortcutManagement
 
             string invalidBindingMessage;
             if (!m_BindingValidator.IsBindingValid(combinationSequence, out invalidBindingMessage))
-                throw new ArgumentException(invalidBindingMessage, nameof(combinationSequence));
+            {
+                Debug.LogError(invalidBindingMessage);
+                return;
+            }
 
             var shortcutEntry = m_Entries.FirstOrDefault(e => e.identifier.Equals(identifier));
             var oldBinding = new ShortcutBinding(shortcutEntry.combinations);

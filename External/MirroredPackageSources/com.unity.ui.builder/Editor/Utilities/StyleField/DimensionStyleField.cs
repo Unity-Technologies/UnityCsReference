@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -25,6 +24,8 @@ namespace Unity.UI.Builder
         static public string defaultUnit => s_DefaultUnit;
 
         IntegerField m_DraggerIntegerField;
+
+        bool m_IsFieldDraggerInitialized;
 
         float m_DragStep = 1;
 
@@ -208,6 +209,17 @@ namespace Unity.UI.Builder
 
         protected override void RefreshChildFields()
         {
+            if (!m_IsFieldDraggerInitialized)
+            {
+                var propName = GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
+                if (!string.IsNullOrEmpty(propName))
+                {
+                    m_IsFieldDraggerInitialized = true;
+                    if (propName == "-unity-slice-scale")
+                        dragStep = BuilderConstants.DimensionStyleFieldReducedDragStep;
+                }
+            }
+
             textField.SetValueWithoutNotify(GetTextFromValue());
             UpdateDragger();
             optionsPopup.SetValueWithoutNotify(GetOptionFromValue());
