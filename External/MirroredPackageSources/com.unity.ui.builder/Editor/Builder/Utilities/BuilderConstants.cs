@@ -154,6 +154,10 @@ namespace Unity.UI.Builder
         public static readonly string TransitionWillNotBeVisibleBecauseOfDuration = "In order to be visible, at least one transition on this element should have a duration greater than 0.";
         public static readonly string EditPropertyToAddNewTransition = "Set a property to a non-keyword value to add a new transition.";
         public static readonly string HeightIntFieldValueCannotBeNegativeMessage = "Please enter a positive number. Negative numbers will default to 0.";
+
+        // Dimension Style Field specific
+        public const float DimensionStyleFieldReducedDragStep = 0.1f;
+
         //
         // Explorer
         //
