@@ -190,9 +190,14 @@ namespace Unity.Collections
         [WriteAccessRequired]
         public void Dispose()
         {
-            if (m_Buffer == null)
+            if (m_AllocatorLabel != Allocator.None
+            && !AtomicSafetyHandle.IsDefaultValue(m_Safety))
             {
-                throw new ObjectDisposedException("The NativeArray is already disposed.");
+                AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
+            }
+            if (!IsCreated)
+            {
+                return;
             }
 
             if (m_AllocatorLabel == Allocator.Invalid)
@@ -212,14 +217,19 @@ namespace Unity.Collections
 
         public JobHandle Dispose(JobHandle inputDeps)
         {
-            if (m_AllocatorLabel == Allocator.Invalid)
+            if (m_AllocatorLabel != Allocator.None
+            && !AtomicSafetyHandle.IsDefaultValue(m_Safety))
             {
-                throw new InvalidOperationException("The NativeArray can not be Disposed because it was not allocated with a valid allocator.");
+                AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
+            }
+            if (!IsCreated)
+            {
+                return inputDeps;
             }
 
-            if (m_Buffer == null)
+            if (m_AllocatorLabel >= Allocator.FirstUserIndex)
             {
-                throw new InvalidOperationException("The NativeArray is already disposed.");
+                throw new InvalidOperationException("The NativeArray can not be Disposed because it was allocated with a custom allocator, use CollectionHelper.Dispose in com.unity.collections package.");
             }
 
             if (m_AllocatorLabel > Allocator.None)

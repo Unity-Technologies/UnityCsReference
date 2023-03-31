@@ -99,10 +99,25 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-                    for (var i = 0; i < itemCount; i++)
+                    var sourceType = itemsSource.GetType();
+                    bool IsGenericList(Type t) => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IList<>);
+                    var listType = sourceType.GetInterfaces().FirstOrDefault(IsGenericList);
+                    if (listType != null && listType.GetGenericArguments()[0].IsValueType)
                     {
-                        indices.Add(previousCount + i);
-                        itemsSource.Add(default);
+                        var elementValueType = listType.GetGenericArguments()[0];
+                        for (var i = 0; i < itemCount; i++)
+                        {
+                            indices.Add(previousCount + i);
+                            itemsSource.Add(Activator.CreateInstance(elementValueType));
+                        }
+                    }
+                    else
+                    {
+                        for (var i = 0; i < itemCount; i++)
+                        {
+                            indices.Add(previousCount + i);
+                            itemsSource.Add(default);
+                        }
                     }
                 }
 
@@ -291,9 +306,7 @@ namespace UnityEngine.UIElements
 
         void Swap(int lhs, int rhs)
         {
-            var current = itemsSource[lhs];
-            itemsSource[lhs] = itemsSource[rhs];
-            itemsSource[rhs] = current;
+            (itemsSource[lhs], itemsSource[rhs]) = (itemsSource[rhs], itemsSource[lhs]);
         }
 
         void EnsureItemSourceCanBeResized()

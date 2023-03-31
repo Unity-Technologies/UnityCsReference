@@ -673,10 +673,7 @@ namespace UnityEditor.UIElements
             }
 
             var propertyCopy = property.Copy();
-            var isReorderable = PropertyHandler.IsArrayReorderable(property);
             var listViewName = $"{listViewNamePrefix}{property.propertyPath}";
-            listView.reorderable = isReorderable;
-            listView.reorderMode = isReorderable ? ListViewReorderMode.Animated : ListViewReorderMode.Simple;
             listView.headerTitle = string.IsNullOrEmpty(label) ? propertyCopy.localizedDisplayName : label;
             listView.userData = propertyCopy;
             listView.bindingPath = property.propertyPath;

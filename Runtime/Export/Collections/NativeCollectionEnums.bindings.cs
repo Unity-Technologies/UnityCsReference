@@ -23,8 +23,19 @@ namespace Unity.Collections
     }
 
     [UsedByNativeCode]
+    public enum NativeLeakDetectionMode
+    {
+        // NOTE: Any changes to this enum must be kept in sync with Runtime\Export\Collections\NativeCollectionLeakDetectionMode.h
+        Disabled = 1,
+        Enabled = 2,
+        EnabledWithStackTrace = 3
+    }
+
+    [UsedByNativeCode]
     internal enum LeakCategory
     {
+        // NOTE: Any changes to this enum must be kept in sync with Runtime\Export\Collections\NativeCollectionLeakCategory.h
+        // and the strings in Runtime\Allocator\LeakDetection.cpp
         Invalid = 0,
         Malloc = 1,
         TempJob = 2,

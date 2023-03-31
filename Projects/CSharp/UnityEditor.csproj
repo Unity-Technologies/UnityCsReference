@@ -2773,6 +2773,9 @@
     <Compile Include="..\..\Editor\Mono\PreferencesWindow\AssetPipelinePreferences.cs">
       <Link>Editor\Mono\PreferencesWindow\AssetPipelinePreferences.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\PreferencesWindow\CollectionsPreferences.cs">
+      <Link>Editor\Mono\PreferencesWindow\CollectionsPreferences.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\PreferencesWindow\PreferencesItem.cs">
       <Link>Editor\Mono\PreferencesWindow\PreferencesItem.cs</Link>
     </Compile>
