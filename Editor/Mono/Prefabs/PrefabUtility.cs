@@ -549,8 +549,12 @@ namespace UnityEditor
             {
                 if (property.prefabOverride && property.propertyType == SerializedPropertyType.ManagedReference)
                 {
-                    allowWarnAboutApplyingPartsOfManagedReferences = false; // we should always be allowed to apply a managed reference root
-                    ApplySinglePropertyAndRemoveOverride(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, false, allowWarnAboutApplyingPartsOfManagedReferences, allowApplyDefaultOverride, serializedObjects, changedObjects, action, out _);
+                    bool skipRestOfProperties = false;
+                    ApplySinglePropertyAndRemoveOverride(property, prefabSourceSerializedObject, prefabSourceObject, isObjectOnRootInAsset, false, allowWarnAboutApplyingPartsOfManagedReferences, allowApplyDefaultOverride, serializedObjects, changedObjects, action, out skipRestOfProperties);
+                    if (skipRestOfProperties)
+                        return;
+
+                    allowWarnAboutApplyingPartsOfManagedReferences = false; // The managed reference was applied to the Asset so do not check for sub properties
                 }
 
                 var visitedManagedReferenceProperties = new HashSet<long>();

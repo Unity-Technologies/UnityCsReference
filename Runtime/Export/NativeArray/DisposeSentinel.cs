@@ -5,50 +5,27 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 namespace Unity.Collections
 {
-    public enum NativeLeakDetectionMode
-    {
-        EnabledWithStackTrace = 3,
-        Enabled = 2,
-        Disabled = 1
-    }
-
     public static class NativeLeakDetection
     {
-        // For performance reasons no assignment operator (static initializer cost in il2cpp)
-        // and flipped enabled / disabled enum value
-        static int s_NativeLeakDetectionMode;
-        const string kNativeLeakDetectionModePrefsString = "Unity.Colletions.NativeLeakDetection.Mode";
-
-        // Initialize leak detection on startup/domain reload to avoid NativeLeakDetection.Mode
-        // access on a job to trigger the initialization.
-        [RuntimeInitializeOnLoadMethod]
-        static void Initialize()
-        {
-            s_NativeLeakDetectionMode = UnityEngine.PlayerPrefs.EditorPrefsGetInt(kNativeLeakDetectionModePrefsString, (int)NativeLeakDetectionMode.Enabled);
-            if (s_NativeLeakDetectionMode < (int)NativeLeakDetectionMode.Disabled || s_NativeLeakDetectionMode > (int)NativeLeakDetectionMode.EnabledWithStackTrace)
-                s_NativeLeakDetectionMode = (int)NativeLeakDetectionMode.Enabled;
-        }
-
         public static NativeLeakDetectionMode Mode
         {
             get
             {
-                if (s_NativeLeakDetectionMode == 0)
-                    Initialize();
-                return (NativeLeakDetectionMode)s_NativeLeakDetectionMode;
+                return UnsafeUtility.GetLeakDetectionMode();
             }
             set
             {
-                var intValue = (int)value;
-                if (s_NativeLeakDetectionMode != intValue)
+                if (value < NativeLeakDetectionMode.Disabled || value > NativeLeakDetectionMode.EnabledWithStackTrace)
                 {
-                    s_NativeLeakDetectionMode = intValue;
-                    UnityEngine.PlayerPrefs.EditorPrefsSetInt(kNativeLeakDetectionModePrefsString, intValue);
+                    throw new ArgumentException("NativeLeakDetectionMode out of range");
                 }
+
+                UnsafeUtility.SetLeakDetectionMode(value);
             }
         }
     }
@@ -144,7 +121,9 @@ namespace Unity.Collections.LowLevel.Unsafe
                 }
                 else
                 {
-                    var err = "A Native Collection has not been disposed, resulting in a memory leak. Enable Full StackTraces to get more details.";
+                    var err = "A Native Collection has not been disposed, resulting in a memory leak. " +
+                        "Enable Full StackTraces to get more details. Leak tracking may be enabled via `Unity.Collections.NativeLeakDetection.Mode` " +
+                        "or from the editor preferences menu Edit > Preferences > Jobs > Leak Detection Level.";
                     UnsafeUtility.LogError(err, fileName, lineNb);
                 }
 

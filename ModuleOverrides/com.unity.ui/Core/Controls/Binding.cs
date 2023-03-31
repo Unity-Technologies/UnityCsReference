@@ -53,6 +53,4 @@ namespace UnityEngine.UIElements
             return control?.binding != null;
         }
     }
-
-    internal interface IInternalListViewBinding { }
 }

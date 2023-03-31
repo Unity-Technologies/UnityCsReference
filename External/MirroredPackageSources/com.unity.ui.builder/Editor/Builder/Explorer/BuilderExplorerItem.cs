@@ -41,7 +41,15 @@ namespace Unity.UI.Builder
                 !BuilderSharedStyles.IsSelectorElement(documentElement))
                 return;
 
+            SetReorderingZonesEnabled(false);
+                
             FocusOnRenameTextField();
+        }
+        
+        internal void SetReorderingZonesEnabled(bool value)
+        {
+            m_ReorderZoneAbove.pickingMode = value ? PickingMode.Position : PickingMode.Ignore;
+            m_ReorderZoneBelow.pickingMode = value ? PickingMode.Position : PickingMode.Ignore;
         }
 
         public bool IsRenamingActive()
@@ -67,7 +75,7 @@ namespace Unity.UI.Builder
                 // Since renameTextfield isn't attached to a panel yet, we are using DoFocusChange() to bypass canGrabFocus.
                 baseInput.focusController.DoFocusChange(baseInput);
 
-            m_RenameTextField.SelectAll();
+            baseInput.selectingManipulator.m_SelectingUtilities.OnFocus();
         }
 
         public TextField CreateRenamingTextField(VisualElement documentElement, Label nameLabel, BuilderSelection selection)
@@ -108,6 +116,12 @@ namespace Unity.UI.Builder
                 OnEditTextFinished(documentElement, nameLabel, selection);
             });
 
+            m_RenameTextField.RegisterCallback<MouseUpEvent>(e =>
+            {
+                // Stop propagation when clicking on the text field so we don't get back focus to the TreeView
+                e.StopImmediatePropagation();
+            });
+            
             return m_RenameTextField;
         }
 

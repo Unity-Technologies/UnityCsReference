@@ -166,6 +166,14 @@ namespace UnityEngine.Rendering
         LODCrossFade = 1 << 4, // Draw command instances have a 8-bit SNORM crossfade dither factor in the highest bits of their visible instance index
     }
 
+    // Match with CullLightmappedShadowCasters in C++ side
+    [Flags]
+    public enum BatchCullingFlags : int
+    {
+        None = 0,
+        CullLightmappedShadowCasters = 1,
+    }
+
     // Match with BatchCullingViewType in C++ side
     public enum BatchCullingViewType : int
     {
@@ -363,6 +371,7 @@ namespace UnityEngine.Rendering
             Matrix4x4 inLocalToWorldMatrix,
             BatchCullingViewType inViewType,
             BatchCullingProjectionType inProjectionType,
+            BatchCullingFlags inBatchCullingFlags,
             ulong inViewID,
             uint inCullingLayerMask,
             ulong inSceneCullingMask,
@@ -375,6 +384,7 @@ namespace UnityEngine.Rendering
             localToWorldMatrix = inLocalToWorldMatrix;
             viewType = inViewType;
             projectionType = inProjectionType;
+            cullingFlags = inBatchCullingFlags;
             viewID = new BatchPackedCullingViewID { handle = inViewID };
             cullingLayerMask = inCullingLayerMask;
             sceneCullingMask = inSceneCullingMask;
@@ -391,6 +401,7 @@ namespace UnityEngine.Rendering
         readonly public Matrix4x4 localToWorldMatrix;
         readonly public BatchCullingViewType viewType;
         readonly public BatchCullingProjectionType projectionType;
+        readonly public BatchCullingFlags cullingFlags;
         readonly public BatchPackedCullingViewID viewID;
         readonly public uint cullingLayerMask;
         readonly public ulong sceneCullingMask;
@@ -422,6 +433,7 @@ namespace UnityEngine.Rendering
         public int cullingSplitCount;
         public BatchCullingViewType viewType;
         public BatchCullingProjectionType projectionType;
+        public BatchCullingFlags cullingFlags;
         public ulong viewID;
         public uint  cullingLayerMask;
         public ulong sceneCullingMask;
@@ -560,6 +572,7 @@ namespace UnityEngine.Rendering
                         context.localToWorldMatrix,
                         context.viewType,
                         context.projectionType,
+                        context.cullingFlags,
                         context.viewID,
                         context.cullingLayerMask,
                         context.sceneCullingMask,

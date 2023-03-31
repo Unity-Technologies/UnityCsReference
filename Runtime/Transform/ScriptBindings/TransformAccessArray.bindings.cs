@@ -260,6 +260,7 @@ namespace UnityEngine.Jobs
         public static void Allocate(int capacity, int desiredJobCount, out TransformAccessArray array)
         {
             array.m_TransformArray = Create(capacity, desiredJobCount);
+            UnsafeUtility.LeakRecord(array.m_TransformArray, LeakCategory.TransformAccessArray, 0);
 
             AtomicSafetyHandle.CreateHandle(out array.m_Safety, Allocator.Persistent);
         }

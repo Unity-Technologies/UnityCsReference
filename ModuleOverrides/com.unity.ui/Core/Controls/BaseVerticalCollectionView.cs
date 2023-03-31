@@ -65,6 +65,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
     {
+        internal const string internalBindingKey = "__unity-collection-view-internal-binding";
+
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseVerticalCollectionView"/>.
         /// </summary>
