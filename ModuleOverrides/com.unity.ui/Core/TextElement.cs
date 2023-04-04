@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -266,8 +267,8 @@ namespace UnityEngine.UIElements
         {
             if (TextUtilities.IsFontAssigned(this))
             {
-                TextCore.Text.TextInfo textInfo = uitkTextHandle.Update();
-                mgc.meshGenerator.DrawText(textInfo, contentRect.min);
+                MeshInfo[] meshInfo = uitkTextHandle.Update();
+                mgc.meshGenerator.DrawText(meshInfo, contentRect.min);
             }
         }
 

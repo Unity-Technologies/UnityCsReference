@@ -2367,7 +2367,7 @@ namespace Unity.UI.Builder
                 case FontAsset fontAsset: return fontAsset;
                 case FontDefinition fontDefinition: return (Object)fontDefinition.fontAsset ?? fontDefinition.font;
                 case StyleFont styleFont: return styleFont.value;
-                case StyleFontDefinition styleFontDefinition: return (Object)styleFontDefinition.value.fontAsset ?? styleFontDefinition.value.font; 
+                case StyleFontDefinition styleFontDefinition: return (Object)styleFontDefinition.value.fontAsset ?? styleFontDefinition.value.font;
                 default:
                 {
                     throw new ArgumentOutOfRangeException();

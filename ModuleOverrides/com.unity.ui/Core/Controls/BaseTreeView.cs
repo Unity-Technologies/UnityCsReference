@@ -50,7 +50,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public static readonly string itemIndentsContainerUssClassName = ussClassName + "__item-indents";
         /// <summary>
-        /// The USS class name for TreeView indent elements.
+        /// The USS class name for TreeView indent element.
         /// </summary>
         /// <remarks>
         /// Unity adds this USS class to every indent element of the TreeView. Any styling applied to
@@ -225,8 +225,6 @@ namespace UnityEngine.UIElements
             viewDataKey = ussClassName;
             AddToClassList(ussClassName);
 
-            scrollView.contentContainer.RegisterCallback<NavigationMoveEvent>(OnScrollViewNavigationMove);
-
             RegisterCallback<MouseUpEvent>(OnTreeViewMouseUp, TrickleDown.TrickleDown);
         }
 
@@ -343,54 +341,58 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void OnScrollViewKeyDown(KeyDownEvent evt)
+        private protected override bool HandleItemNavigation(bool moveIn, bool altPressed)
         {
             var index = selectedIndex;
+            var hasChildren = viewController.HasChildrenByIndex(index);
 
-            bool shouldStopPropagation = true;
-
-            switch (evt.keyCode)
+            var selectionIncrement = 1;
+            if (moveIn)
             {
-                case KeyCode.RightArrow:
-                    if (evt.altKey || !IsExpandedByIndex(index))
-                        ExpandItemByIndex(index, evt.altKey);
-                    break;
-                case KeyCode.LeftArrow:
-                    if (evt.altKey || IsExpandedByIndex(index))
-                        CollapseItemByIndex(index, evt.altKey);
-                    break;
-                default:
-                    shouldStopPropagation = false;
-                    break;
+                if (hasChildren && !IsExpandedByIndex(index))
+                {
+                    ExpandItemByIndex(index, altPressed);
+                    return true;
+                }
+            }
+            else
+            {
+                if (hasChildren && IsExpandedByIndex(index))
+                {
+                    CollapseItemByIndex(index, altPressed);
+                    return true;
+                }
+
+                // Find the nearest ancestor with children in the tree and select it.
+                // If no ancestor is found, find the closest item with children before the current one.
+                var id = viewController.GetIdForIndex(index);
+                var ancestorId = viewController.GetParentId(id);
+                if (ancestorId != ReusableCollectionItem.UndefinedIndex)
+                {
+                    SetSelectionById(ancestorId);
+                    ScrollToItemById(ancestorId);
+                    return true;
+                }
+
+                selectionIncrement = -1;
             }
 
-            if (shouldStopPropagation)
-                evt.StopPropagation();
-        }
-
-        private void OnScrollViewNavigationMove(NavigationMoveEvent evt)
-        {
-            var index = selectedIndex;
-
-            bool shouldStopPropagation = true;
-
-            switch (evt.direction)
+            // Find the next item with children in the tree and select it.
+            var selectionIndex = index;
+            do
             {
-                case NavigationMoveEvent.Direction.Right:
-                    if (evt.altKey || !IsExpandedByIndex(index))
-                        ExpandItemByIndex(index, evt.altKey);
-                    break;
-                case NavigationMoveEvent.Direction.Left:
-                    if (evt.altKey || IsExpandedByIndex(index))
-                        CollapseItemByIndex(index, evt.altKey);
-                    break;
-                default:
-                    shouldStopPropagation = false;
-                    break;
+                selectionIndex += selectionIncrement;
+                hasChildren = viewController.HasChildrenByIndex(selectionIndex);
+            } while (!hasChildren && selectionIndex >= 0 && selectionIndex < itemsSource.Count);
+
+            if (hasChildren)
+            {
+                SetSelection(selectionIndex);
+                ScrollToItem(selectionIndex);
+                return true;
             }
 
-            if (shouldStopPropagation)
-                evt.StopPropagation();
+            return false;
         }
 
         /// <summary>

@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using System.Diagnostics;
 using UnityEngine.Scripting;
+using Unity.Burst;
 
 namespace Unity.Jobs.LowLevel.Unsafe
 {
@@ -176,6 +177,7 @@ namespace Unity.Jobs.LowLevel.Unsafe
         /// </remarks>
         public static extern int ThreadIndex
         {
+            [BurstAuthorizedExternalMethod]
             [FreeFunction("GetJobWorkerIndex", IsThreadSafe = true)]
             get;
         }
@@ -191,6 +193,7 @@ namespace Unity.Jobs.LowLevel.Unsafe
         /// </remarks>
         public static extern int ThreadIndexCount
         {
+            [BurstAuthorizedExternalMethod]
             [FreeFunction("GetJobWorkerIndexCount", IsThreadSafe = true)]
             get;
         }

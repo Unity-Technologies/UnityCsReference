@@ -75,7 +75,7 @@ namespace Unity.GraphToolsFoundation.Editor
             s_TextGenerationSettings.screenRect = new Rect(0, 0, 32000, 32000);
             s_TextGenerationSettings.fontSize = fontSize;
 
-            var size = TextGenerator.GetPreferredValues(s_TextGenerationSettings, TextHandle.layoutTextInfo);
+            var size = TextGenerator.GetPreferredValues(s_TextGenerationSettings, TextHandle.textInfoCommon);
 
             return size.x;
         }

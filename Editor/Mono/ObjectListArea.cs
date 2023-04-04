@@ -414,6 +414,8 @@ namespace UnityEditor
                 SetSelection(new int[0], false);
         }
 
+        internal Vector2 sizeUsedForCroppingName;
+
         public bool CanShowThumbnails()
         {
             //
@@ -1371,16 +1373,21 @@ namespace UnityEditor
                     m_Ping.m_PingStyle = Styles.miniPing;
                     var oldClipping = m_Ping.m_PingStyle.clipping;
                     m_Ping.m_PingStyle.clipping = textClipping;
-                    Vector2 pingLabelSize = m_Ping.m_PingStyle.CalcSize(cont);
-                    m_Ping.m_ContentRect.width = pingLabelSize.x;
+                    Vector2 pingLabelSize = Styles.resultsGridLabel.CalcSizeWithConstraints(cont, sizeUsedForCroppingName);
+                    m_Ping.m_ContentRect.width = pingLabelSize.x + Styles.resultsGridLabel.padding.horizontal;
                     m_Ping.m_ContentRect.height = pingLabelSize.y;
                     m_Ping.m_ContentDraw = (Rect r) =>
                     {
                         // We need to temporary adjust style to render into content rect (org anchor is middle-centered)
-                        TextAnchor orgAnchor = Styles.resultsGridLabel.alignment;
-                        Styles.resultsGridLabel.alignment = TextAnchor.UpperLeft;
+                        var orgAnchor = Styles.resultsGridLabel.alignment;
+                        var orgClipping = Styles.resultsGridLabel.clipping;
+                        // Shift the rect to match the original text position
+                        r.position -= new Vector2(5, 1);
+                        Styles.resultsGridLabel.alignment = TextAnchor.MiddleCenter;
+                        Styles.resultsGridLabel.clipping = TextClipping.Ellipsis;
                         Styles.resultsGridLabel.Draw(r, label, false, false, false, false);
                         Styles.resultsGridLabel.alignment = orgAnchor;
+                        Styles.resultsGridLabel.clipping = orgClipping;
                     };
                     m_Ping.m_PingStyle.clipping = oldClipping;
                 }

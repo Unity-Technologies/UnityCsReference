@@ -118,9 +118,9 @@ namespace UnityEngine.UIElements
 
         public override void OnScroll(Vector2 scrollOffset)
         {
-            var offset = Mathf.Max(0, scrollOffset.y);
+            var clampedOffset = Mathf.Max(0, scrollOffset.y);
             var pixelAlignedItemHeight = resolvedItemHeight;
-            var firstVisibleItemIndex = (int)(offset / pixelAlignedItemHeight);
+            var firstVisibleItemIndex = (int)(clampedOffset / pixelAlignedItemHeight);
 
             m_ScrollView.contentContainer.style.paddingTop = firstVisibleItemIndex * pixelAlignedItemHeight;
             m_ScrollView.contentContainer.style.height = itemsCount * pixelAlignedItemHeight;

@@ -233,7 +233,7 @@ namespace UnityEditor
                                 EditorGUI.LabelField(r, Styles.Mixed);
                         }
                     }), // 8: Target Sorting Layer
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Custom, Styles.ShadowIntensityEnabled, "m_ShadowIntensityEnabled", 50, (r, prop, dep) => // 9
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Custom, Styles.ShadowIntensityEnabled, "m_ShadowsEnabled", 50, (r, prop, dep) => // 9
                 {
                     if (prop != null)
                     {

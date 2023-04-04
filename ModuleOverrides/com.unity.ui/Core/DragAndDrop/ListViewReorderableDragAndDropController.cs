@@ -22,7 +22,9 @@ namespace UnityEngine.UIElements
             if (args.dragAndDropPosition == DragAndDropPosition.OverItem || !enableReordering)
                 return DragVisualMode.Rejected;
 
-            return args.dragAndDropData.userData == m_ListView ? DragVisualMode.Move : DragVisualMode.Rejected;
+            return args.dragAndDropData.source == m_ListView ?
+                DragVisualMode.Move :
+                DragVisualMode.Rejected;
         }
 
         public override void OnDrop(IListDragAndDropArgs args)
@@ -31,16 +33,17 @@ namespace UnityEngine.UIElements
 
             var insertIndexShift = 0;
             var srcIndexShift = 0;
-            for (var i = m_SelectedIndices.Count - 1; i >= 0; --i)
+            for (var i = m_SortedSelectedIds.Count - 1; i >= 0; --i)
             {
-                var index = m_SelectedIndices[i];
+                var id = m_SortedSelectedIds[i];
+                var index = m_View.viewController.GetIndexForId(id);
 
                 if (index < 0)
                     continue;
 
                 var newIndex = insertIndex - insertIndexShift;
 
-                if (index > insertIndex)
+                if (index >= insertIndex)
                 {
                     index += srcIndexShift;
                     srcIndexShift++;
@@ -58,7 +61,7 @@ namespace UnityEngine.UIElements
             {
                 var newSelection = new List<int>();
 
-                for (var i = 0; i < m_SelectedIndices.Count; ++i)
+                for (var i = 0; i < m_SortedSelectedIds.Count; ++i)
                 {
                     newSelection.Add(insertIndex - insertIndexShift + i);
                 }

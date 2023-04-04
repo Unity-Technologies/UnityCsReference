@@ -68,8 +68,8 @@ namespace UnityEditor
                     if (m_ContentDraw != null && Event.current.type == EventType.Repaint)
                     {
                         Rect backRect = m_ContentRect;
-                        backRect.x -= m_PingStyle.padding.left;
-                        backRect.y -= m_PingStyle.padding.top;
+                        backRect.x -= m_PingStyle.padding.left / 2f;
+                        backRect.y -= m_PingStyle.padding.top / 2f;
                         m_PingStyle.Draw(backRect, GUIContent.none, false, false, false, false);
                         m_ContentDraw(m_ContentRect);
                     }

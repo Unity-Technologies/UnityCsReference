@@ -341,5 +341,17 @@ namespace UnityEngine.TextCore.Text
 
             return fontAsset;
         }
+
+        internal virtual float GetEditorTextSharpness()
+        {
+            Debug.LogWarning("GetEditorTextSettings() should only be called on EditorTextSettings");
+            return 0.0f;
+        }
+
+        internal virtual Font GetEditorFont()
+        {
+            Debug.LogWarning("GetEditorTextSettings() should only be called on EditorTextSettings");
+            return null;
+        }
     }
 }

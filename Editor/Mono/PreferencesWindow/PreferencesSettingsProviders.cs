@@ -1113,6 +1113,7 @@ namespace UnityEditor
             EditorPrefs.SetBool("Editor.kEnableCompilerMessagesLocalization", m_EnableCompilerMessagesLocalization);
 
             EditorPrefs.SetFloat($"EditorTextSharpness_{EditorResources.GetFont(FontDef.Style.Normal).name}", m_EditorTextSharpness);
+            EditorTextSettings.SetCurrentEditorSharpness(m_EditorTextSharpness);
             EditorApplication.RequestRepaintAllTexts();
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
