@@ -296,12 +296,26 @@ namespace UnityEngine.UIElements
             set => selection.selectAllOnMouseUp = value;
         }
 
-        Vector2 ITextSelection.cursorPosition => uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(selection.cursorIndex) + contentRect.min;
+        Vector2 ITextSelection.cursorPosition
+        {
+            get
+            {
+                uitkTextHandle.AddTextInfoToCache();
+                return uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(selection.cursorIndex) + contentRect.min;
+            }
+        }
 
         [CreateProperty(ReadOnly = true)]
         private Vector2 cursorPosition => selection.cursorPosition;
 
-        float ITextSelection.lineHeightAtCursorPosition => uitkTextHandle.GetLineHeightFromCharacterIndex(selection.cursorIndex);
+        float ITextSelection.lineHeightAtCursorPosition
+        {
+            get
+            {
+                uitkTextHandle.AddTextInfoToCache();
+                return uitkTextHandle.GetLineHeightFromCharacterIndex(selection.cursorIndex);
+            }
+        }
 
         void ITextSelection.MoveTextEnd()
         {

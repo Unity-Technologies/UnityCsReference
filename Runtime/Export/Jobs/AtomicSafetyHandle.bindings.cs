@@ -8,6 +8,7 @@ using System.Diagnostics;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Unity.Jobs;
+using System.Runtime.CompilerServices;
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
@@ -40,6 +41,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         internal const int Read = 1 << 0;
         internal const int Write = 1 << 1;
         internal const int Dispose = 1 << 2;
+        internal const int VersionIncrement = 1 << 3;
 
         internal const int ReadCheck = ~(Write | Dispose);
         internal const int WriteCheck = ~(Read | Dispose);
@@ -107,9 +109,21 @@ namespace Unity.Collections.LowLevel.Unsafe
         // Performs CheckWriteAndThrow and then bumps the secondary version.
         // This allows for example a NativeArray that becomes invalid if the Length of a List
         // is changed to be invalidated, while the NativeList handle itself remains valid.
-        [ThreadSafe(ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
-        public static extern void CheckWriteAndBumpSecondaryVersion(AtomicSafetyHandle handle);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void CheckWriteAndBumpSecondaryVersion(AtomicSafetyHandle handle)
+        {
+            unsafe
+            {
+                int* ptr = (int*)(void*)handle.versionNode;
+                if (ptr == null || handle.version != (*ptr & WriteCheck))
+                {
+                    CheckWriteAndThrowNoEarlyOut(handle);
+                }
+
+                ptr[1] = ptr[1] + VersionIncrement;
+            }
+        }
 
         // For debugging purposes in unit tests we need to sometimes just sync
         // all jobs against an handle before shutting down.
@@ -162,6 +176,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         // Checks if the handle can be read from
         // If not (already destroyed, job currently writing to the data) throws an exception.
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void CheckReadAndThrow(AtomicSafetyHandle handle)
         {
             var versionPtr = (int*)handle.versionNode;
@@ -172,6 +187,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         // Checks if the handle can be written to
         // If not (already destroyed, job currently reading or writing to the data) throws an exception.
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void CheckWriteAndThrow(AtomicSafetyHandle handle)
         {
             var versionPtr = (int*)handle.versionNode;
@@ -202,10 +218,10 @@ namespace Unity.Collections.LowLevel.Unsafe
             return false;
         }
 
-
         // Checks if the handle is still valid.
         // If not (already destroyed) throws an exception.
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe void CheckExistsAndThrow(in AtomicSafetyHandle handle)
         {
             var versionPtr = (int*)handle.versionNode;
@@ -222,7 +238,6 @@ namespace Unity.Collections.LowLevel.Unsafe
 
             return true;
         }
-
 
         [ThreadSafe]
         public static extern string GetReaderName(AtomicSafetyHandle handle, int readerIndex);
@@ -246,6 +261,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         [NativeThrows, ThreadSafe]
         public static unsafe extern void SetCustomErrorMessage(int staticSafetyId, AtomicSafetyErrorType errorType, byte* messageBytes, int byteCount);
+
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         public static unsafe void SetStaticSafetyId(ref AtomicSafetyHandle handle, int staticSafetyId)
         {
@@ -254,7 +270,7 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         internal static void CreateHandle(out AtomicSafetyHandle safety, Allocator allocator)
         {
-            safety = (allocator == Allocator.Temp) ? AtomicSafetyHandle.GetTempMemoryHandle() : AtomicSafetyHandle.Create();
+            safety = (allocator == Allocator.Temp) ? GetTempMemoryHandle() : Create();
             if(!Unity.Jobs.LowLevel.Unsafe.JobsUtility.IsExecutingJob)
                 return;
             switch(allocator)
@@ -267,16 +283,16 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         internal static void DisposeHandle(ref AtomicSafetyHandle safety)
         {
-            AtomicSafetyHandle.CheckDeallocateAndThrow(safety);
+            CheckDeallocateAndThrow(safety);
             // If the safety handle is for a temp allocation, create a new safety handle for this instance which can be marked as invalid
             // Setting it to new AtomicSafetyHandle is not enough since the handle needs a valid node pointer in order to give the correct errors
-            if (AtomicSafetyHandle.IsTempMemoryHandle(safety))
+            if (IsTempMemoryHandle(safety))
             {
                 int staticSafetyId = safety.staticSafetyId;
-                safety = AtomicSafetyHandle.Create();
+                safety = Create();
                 safety.staticSafetyId = staticSafetyId;
             }
-            AtomicSafetyHandle.Release(safety);
+            Release(safety);
         }
 
     }

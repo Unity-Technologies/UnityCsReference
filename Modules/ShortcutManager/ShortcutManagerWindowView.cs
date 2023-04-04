@@ -186,9 +186,11 @@ namespace UnityEditor.ShortcutManagement
 
             nameElement.text = m_ViewController.GetShortcutPathList()[index];
             nameElement.tooltip = nameElement.text;
-            contextType.text = shortcutEntry.context != ContextManager.globalContextType ? shortcutEntry.context.Name : string.Empty;
+            contextType.text = shortcutEntry.context != ContextManager.globalContextType
+                ? ObjectNames.NicifyVariableName(shortcutEntry.context.Name) : string.Empty;
             tag.text = shortcutEntry.tag;
-            contextElement.tooltip = contextType.text;
+            contextElement.tooltip = shortcutEntry.context != ContextManager.globalContextType
+                ? shortcutEntry.context.Name : string.Empty;
             if (!string.IsNullOrWhiteSpace(tag.text)) contextElement.tooltip += $" ({tag.text})";
             bindingTextElement.text = KeyCombination.SequenceToString(shortcutEntry.combinations);
             bindingField.SetValueWithoutNotify(shortcutEntry.combinations.ToList());

@@ -143,6 +143,7 @@ namespace UnityEngine
         {
             var style = GUIStyle.none;
             m_TextHandle = IMGUITextHandle.GetTextHandle(style, position, textWithWhitespace, Color.white);
+            m_TextHandle.AddTextInfoToCache();
             m_TextSelecting = new TextSelectingUtilities(m_TextHandle);
             m_TextEditing = new TextEditingUtilities(m_TextSelecting, m_TextHandle, m_Content.text);
             m_Content.OnTextChanged += OnContentTextChangedHandle;
@@ -414,6 +415,7 @@ namespace UnityEngine
         internal void UpdateTextHandle()
         {
             m_TextHandle = IMGUITextHandle.GetTextHandle(style, style.padding.Remove(position), textWithWhitespace, Color.white);
+            m_TextHandle.AddTextInfoToCache();
             m_TextEditing.textHandle = m_TextHandle;
             m_TextSelecting.textHandle = m_TextHandle;
         }
@@ -477,7 +479,6 @@ namespace UnityEngine
             if (scrollOffset.x != newXOffset || scrollOffset.y != newYOffset)
                 scrollOffset = new Vector2(newXOffset, newYOffset < 0 ? 0 : newYOffset);
 
-            showCursor = false;
             lastCursorPos = localGraphicalCursorPos;
         }
 

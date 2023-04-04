@@ -1648,7 +1648,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Action<MeshGenerationContext> generateVisualContent { get; set; }
 
-        Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new Unity.Profiling.ProfilerMarker("GenerateVisualContent");
+        static readonly Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new("GenerateVisualContent");
 
         internal void InvokeGenerateVisualContent(MeshGenerationContext mgc)
         {

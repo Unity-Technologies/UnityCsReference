@@ -51,6 +51,7 @@ namespace UnityEngine.UIElements
         VisualElement m_EmptyRows;
 
         protected float lastHeight => m_CollectionView.lastHeight;
+        protected virtual bool alwaysRebindOnRefresh => true;
 
         protected VerticalVirtualizationController(BaseVerticalCollectionView collectionView)
             : base(collectionView.scrollView)
@@ -92,7 +93,7 @@ namespace UnityEngine.UIElements
                         continue;
 
                     // Rebind visible items.
-                    if (isVisible)
+                    if (isVisible || alwaysRebindOnRefresh)
                     {
                         if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
                         {
@@ -126,20 +127,16 @@ namespace UnityEngine.UIElements
                 if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
                     m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
 
-                recycledItem.isDragGhost = true;
+                recycledItem.SetDragGhost(true);
                 recycledItem.index = m_DraggedItem.index;
-                recycledItem.rootElement.style.maxHeight = 0;
                 recycledItem.rootElement.style.display = DisplayStyle.Flex;
-                recycledItem.bindableElement.style.display = DisplayStyle.None;
                 return;
             }
 
             // Restore the state of the item if it was hidden by a drag.
             if (wasGhostItem)
             {
-                recycledItem.isDragGhost = false;
-                recycledItem.rootElement.style.maxHeight = StyleKeyword.Null;
-                recycledItem.bindableElement.style.display = DisplayStyle.Flex;
+                recycledItem.SetDragGhost(false);
             }
 
             if (newIndex >= itemsCount)
@@ -154,13 +151,15 @@ namespace UnityEngine.UIElements
             }
 
             recycledItem.rootElement.style.display = DisplayStyle.Flex;
-            if (recycledItem.index == newIndex) return;
+
+            var newId = m_CollectionView.viewController.GetIdForIndex(newIndex);
+            if (recycledItem.index == newIndex && recycledItem.id == newId) 
+                return;
 
             var useAlternateUss = m_CollectionView.showAlternatingRowBackgrounds != AlternatingRowBackground.None && newIndex % 2 == 1;
             recycledItem.rootElement.EnableInClassList(BaseVerticalCollectionView.itemAlternativeBackgroundUssClassName, useAlternateUss);
 
             var previousIndex = recycledItem.index;
-            var newId = m_CollectionView.viewController.GetIdForIndex(newIndex);
 
             if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
                 m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
@@ -319,7 +318,6 @@ namespace UnityEngine.UIElements
                 {
                     // Clear index so that it doesn't get unbound since it was never bound, then restore and release it.
                     activeItem.index = ReusableCollectionItem.UndefinedIndex;
-                    activeItem.bindableElement.style.display = DisplayStyle.Flex;
                     ReleaseItem(i);
                     i--;
                 }
@@ -327,7 +325,7 @@ namespace UnityEngine.UIElements
 
             // We want to avoid releasing items in Refresh, that happens when an item is out of bounds and visible,
             // so we set the last one invisible and let the virtualization display it if necessary.
-            if (dropIndex != m_DraggedItem.index)
+            if (Math.Min(dropIndex, itemsCount - 1) != m_DraggedItem.index)
             {
                 if (lastVisibleItem != null)
                     lastVisibleItem.rootElement.style.display = DisplayStyle.None;

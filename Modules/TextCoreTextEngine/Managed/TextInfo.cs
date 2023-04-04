@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -51,8 +50,16 @@ namespace UnityEngine.TextCore.Text
         public PageInfo[] pageInfo;
         public MeshInfo[] meshInfo;
 
-        public bool isDirty;
+        public double lastTimeInCache;
+        public Action removedFromCache;
         public VertexDataLayout vertexDataLayout { get; private set; }
+
+
+        public void RemoveFromCache()
+        {
+            removedFromCache?.Invoke();
+            removedFromCache = null;
+        }
 
         // Default Constructor
         public TextInfo(VertexDataLayout vertexDataLayout)
@@ -65,8 +72,6 @@ namespace UnityEngine.TextCore.Text
             linkInfo = Array.Empty<LinkInfo>();
             meshInfo = Array.Empty<MeshInfo>();
             materialCount = 0;
-
-            isDirty = true;
         }
 
         /// <summary>

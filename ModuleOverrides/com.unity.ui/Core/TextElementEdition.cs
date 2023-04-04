@@ -387,7 +387,7 @@ namespace UnityEngine.UIElements
 
                 m_PlaceholderText = value;
                 OnPlaceholderChanged?.Invoke();
-
+                MarkDirtyRepaint();
             }
         }
 

@@ -445,7 +445,12 @@ namespace UnityEngine
         // Calculate the size of a some content if it is rendered with this style.
         internal Vector2 CalcSizeWithConstraints(GUIContent content, Vector2 constraints)
         {
-            return Internal_CalcSizeWithConstraints(content, constraints);
+            var size = Internal_CalcSizeWithConstraints(content, constraints);
+            if (constraints.x > 0)
+                size.x = Mathf.Min(size.x, constraints.x);
+            if (constraints.y > 0)
+                size.y = Mathf.Min(size.y, constraints.y);
+            return size;
         }
 
         // Calculate the size of an element formatted with this style, and a given space to content.
@@ -487,17 +492,21 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static void GetMeshInfo(GUIStyle style, Color color, string content, Rect rect, ref MeshInfoBindings[] meshInfos, ref Vector2 dimensions, ref int generationId)
         {
-            var textHandle = IMGUITextHandle.GetTextHandle(style, rect, content, color);
-            var meshInfosRaw = textHandle.GetTextInfo(ref generationId).meshInfo;
-            meshInfos = new MeshInfoBindings[meshInfosRaw.Length];
-            for (int i = 0; i < meshInfosRaw.Length; i++)
+            bool isCached = false;
+            var textHandle = IMGUITextHandle.GetTextHandle(style, rect, content, color, ref isCached);
+            generationId = TextHandle.s_Settings.GetHashCode();
+            // If not already cached on the native side, we must send the meshInfo
+            if (!isCached)
             {
-                meshInfos[i] = new MeshInfoBindings()
+                var textInfo = textHandle.textInfo;
+                meshInfos = new MeshInfoBindings[textInfo.materialCount];
+                for (int i = 0; i < textInfo.materialCount; i++)
                 {
-                    vertexCount = meshInfosRaw[i].vertexCount,
-                    vertexData = meshInfosRaw[i].vertexData,
-                    material = meshInfosRaw[i].material
-                };
+                    meshInfos[i].vertexData = new TextCoreVertex[textInfo.meshInfo[i].vertexCount];
+                    meshInfos[i].vertexCount = textInfo.meshInfo[i].vertexCount;
+                    meshInfos[i].material = textInfo.meshInfo[i].material;
+                    Array.Copy(textInfo.meshInfo[i].vertexData, meshInfos[i].vertexData, textInfo.meshInfo[i].vertexCount);
+                }
             }
             dimensions = textHandle.preferredSize;
         }
@@ -512,6 +521,12 @@ namespace UnityEngine
         internal static void GetLineHeight(GUIStyle style, ref float lineHeight)
         {
             lineHeight = style.lineHeight;
+        }
+
+        [RequiredByNativeCode]
+        internal static void EmptyManagedCache()
+        {
+            IMGUITextHandle.EmptyManagedCache();
         }
     }
 

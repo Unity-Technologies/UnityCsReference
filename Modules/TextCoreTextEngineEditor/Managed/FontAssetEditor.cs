@@ -2700,12 +2700,16 @@ namespace UnityEditor.TextCore.Text
 
             DrawAnchorPoint(baseAnchorPosition, Color.green);
 
-            Glyph markGlyph = m_fontAsset.glyphLookupTable[markGlyphIndex];
+            // Draw Mark
+            if (m_fontAsset.glyphLookupTable.ContainsKey(markGlyphIndex))
+            {
+                Glyph markGlyph = m_fontAsset.glyphLookupTable[markGlyphIndex];
 
-            Rect markGlyphPosition = new Rect(baseAnchorPosition.x + (markGlyph.metrics.horizontalBearingX - adjustmentRecord.markPositionAdjustment.xPositionAdjustment) * scale, baseAnchorPosition.y + (adjustmentRecord.markPositionAdjustment.yPositionAdjustment - markGlyph.metrics.horizontalBearingY) * scale, markGlyph.metrics.width, markGlyph.metrics.height);
+                Rect markGlyphPosition = new Rect(baseAnchorPosition.x + (markGlyph.metrics.horizontalBearingX - adjustmentRecord.markPositionAdjustment.xPositionAdjustment) * scale, baseAnchorPosition.y + (adjustmentRecord.markPositionAdjustment.yPositionAdjustment - markGlyph.metrics.horizontalBearingY) * scale, markGlyph.metrics.width, markGlyph.metrics.height);
 
-            // Draw Mark Origin
-            DrawGlyph(markGlyph, markGlyphPosition, scale);
+                // Draw Mark Origin
+                DrawGlyph(markGlyph, markGlyphPosition, scale);
+            }
         }
 
         void DrawMarkToMarkPreview(int selectedRecord, Rect rect)
@@ -2748,11 +2752,15 @@ namespace UnityEditor.TextCore.Text
 
             DrawAnchorPoint(baseAnchorPosition, Color.green);
 
-            Glyph markGlyph = m_fontAsset.glyphLookupTable[markGlyphIndex];
+            // Draw Mark Glyph
+            if (m_fontAsset.glyphLookupTable.ContainsKey(markGlyphIndex))
+            {
+                Glyph markGlyph = m_fontAsset.glyphLookupTable[markGlyphIndex];
 
-            Rect markGlyphPosition = new Rect(baseAnchorPosition.x + (markGlyph.metrics.horizontalBearingX - adjustmentRecord.combiningMarkPositionAdjustment.xPositionAdjustment) * scale, baseAnchorPosition.y + (adjustmentRecord.combiningMarkPositionAdjustment.yPositionAdjustment - markGlyph.metrics.horizontalBearingY) * scale, markGlyph.metrics.width, markGlyph.metrics.height);
+                Rect markGlyphPosition = new Rect(baseAnchorPosition.x + (markGlyph.metrics.horizontalBearingX - adjustmentRecord.combiningMarkPositionAdjustment.xPositionAdjustment) * scale, baseAnchorPosition.y + (adjustmentRecord.combiningMarkPositionAdjustment.yPositionAdjustment - markGlyph.metrics.horizontalBearingY) * scale, markGlyph.metrics.width, markGlyph.metrics.height);
 
-            DrawGlyph(markGlyph, markGlyphPosition, scale);
+                DrawGlyph(markGlyph, markGlyphPosition, scale);
+            }
         }
 
         void DrawBaseline(Vector2 position, float width, Color color)

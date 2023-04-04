@@ -12,64 +12,111 @@ namespace UnityEngine.TextCore.Text
     {
         public TextHandle()
         {
-            textGenerationSettings = new TextGenerationSettings();
+        }
+
+        internal static TextCore.Text.TextGenerationSettings s_Settings = new TextCore.Text.TextGenerationSettings();
+
+        ~TextHandle()
+        {
+            RemoveTextInfoFromCache();
         }
 
         internal Vector2 preferredSize { get; private set; }
+        private Rect screenRect;
+        private float lineHeightDefault;
+        private bool isPlaceholder;
+        private bool m_IsCached;
+        private LinkedListNode<TextInfo> m_TextInfoNode;
+
+        private static LinkedList<TextInfo> s_TextInfoPool = new LinkedList<TextInfo>();
+        private static TextInfo s_TextInfoCommon = new TextInfo(VertexDataLayout.VBO);
+        private static double s_MinTimeInCache = 1;
+
+        internal static TextInfo textInfoCommon => s_TextInfoCommon;
 
         /// <summary>
-        /// DO NOT USE m_TextInfo directly, use textInfo to guarantee lazy allocation.
-        /// </summary>
-        private TextInfo m_TextInfo;
-
-        /// <summary>
-        /// The TextInfo instance, use from this instead of the m_TextInfo member to guarantee lazy allocation.
+        /// The TextInfo instance, use from this instead of the m_TextInfo member.
+        /// References a cached textInfo if dynamic, or a static instance (textInfoCommon) if not cached. 
         /// </summary>
         internal TextInfo textInfo
         {
             get
             {
-                if (m_TextInfo == null)
-                {
-                    m_TextInfo = new TextInfo(VertexDataLayout.VBO);
-                }
 
-                return m_TextInfo;
+                if (m_TextInfoNode == null)
+                    return textInfoCommon;
+                else
+                    return m_TextInfoNode.Value;
             }
+        }
+
+        public virtual void AddTextInfoToCache()
+        {
+            if (m_IsCached)
+            {
+                RefreshCaching();
+                return;
+            }
+
+            var currentTime = Time.realtimeSinceStartup;
+            // If last textInfo in the list has not been used in a while, take it. Otherwise, create a new one.
+            if (s_TextInfoPool.Count > 0 && ((currentTime - s_TextInfoPool.Last.Value.lastTimeInCache) > s_MinTimeInCache))
+            {
+                RecycleTextInfoFromCache();
+            }
+            else
+            {
+                var textInfo = new TextInfo(VertexDataLayout.VBO);
+                m_TextInfoNode = new LinkedListNode<TextInfo>(textInfo);
+                s_TextInfoPool.AddFirst(m_TextInfoNode);
+                textInfo.lastTimeInCache = currentTime;
+                textInfo.removedFromCache += RemoveTextInfoFromCache;
+            }
+
+            m_IsCached = true;
+            SetDirty();
+            Update(s_Settings);
+        }
+
+        public virtual void RemoveTextInfoFromCache()
+        {
+            if (!m_IsCached)
+                return;
+
+            m_IsCached = false;
+            textInfo.lastTimeInCache = 0;
+            textInfo.removedFromCache = null;
+            s_TextInfoPool.Remove(m_TextInfoNode);
+            s_TextInfoPool.AddLast(m_TextInfoNode);
+            m_TextInfoNode = null;
+        }
+
+        private void RefreshCaching()
+        {
+            textInfo.lastTimeInCache = Time.realtimeSinceStartup;
+            s_TextInfoPool.Remove(m_TextInfoNode);
+            s_TextInfoPool.AddFirst(m_TextInfoNode);
+        }
+
+        private void RecycleTextInfoFromCache()
+        {
+            var currentTime = Time.realtimeSinceStartup;
+            m_TextInfoNode = s_TextInfoPool.Last;
+            m_TextInfoNode.Value.RemoveFromCache();
+            s_TextInfoPool.RemoveLast();
+            s_TextInfoPool.AddFirst(m_TextInfoNode);
+            textInfo.removedFromCache += RemoveTextInfoFromCache;
+            textInfo.lastTimeInCache = currentTime;
+            m_IsCached = false;
         }
 
         // For testing purposes
         internal bool IsTextInfoAllocated()
         {
-            return m_TextInfo != null;
+            return textInfo != null;
         }
 
-        /// <summary>
-        /// DO NOT USE m_LayoutTextInfo directly, use textInfo to guarantee lazy allocation.
-        /// </summary>
-        static TextInfo m_LayoutTextInfo;
-
-        /// <summary>
-        /// The TextInfo instance to be used for layout, use from this instead of the m_LayoutTextInfo member to guarantee lazy allocation.
-        /// </summary>
-        internal static TextInfo layoutTextInfo
-        {
-            get
-            {
-                if (m_LayoutTextInfo == null)
-                {
-                    m_LayoutTextInfo = new TextInfo(VertexDataLayout.VBO);
-                }
-
-                return m_LayoutTextInfo;
-            }
-        }
-
-        int m_PreviousGenerationSettingsHash;
-        protected TextGenerationSettings textGenerationSettings;
-
-        //static instance cached to minimize allocation
-        protected static TextGenerationSettings s_LayoutSettings = new TextGenerationSettings();
+        internal int m_PreviousGenerationSettingsHash;
 
         private bool isDirty;
         public void SetDirty()
@@ -77,9 +124,9 @@ namespace UnityEngine.TextCore.Text
             isDirty = true;
         }
 
-        public bool IsDirty()
+        public bool IsDirty(TextGenerationSettings settings)
         {
-            int hash = textGenerationSettings.GetHashCode();
+            int hash = settings.GetHashCode();
             if (m_PreviousGenerationSettingsHash == hash && !isDirty)
                 return false;
 
@@ -90,13 +137,9 @@ namespace UnityEngine.TextCore.Text
 
         public Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
-            if (textGenerationSettings == null)
-                return Vector2.zero;
-
-            var screenRect = textGenerationSettings.screenRect;
             var result = screenRect.position;
             if (textInfo.characterCount == 0)
-                return inverseYAxis ? new Vector2(0, GetLineHeightDefault(textGenerationSettings)) : result;
+                return inverseYAxis ? new Vector2(0, lineHeightDefault) : result;
 
             var validIndex = index >= textInfo.characterCount ? textInfo.characterCount - 1 : index;
             var character = textInfo.textElementInfo[validIndex];
@@ -112,13 +155,9 @@ namespace UnityEngine.TextCore.Text
 
         public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)
         {
-            if (textGenerationSettings == null)
-                return Vector2.zero;
-
-            var screenRect = textGenerationSettings.screenRect;
             var result = screenRect.position;
-            if (textInfo.characterCount == 0)
-                return inverseYAxis ? new Vector2(0, GetLineHeightDefault(textGenerationSettings)) : result;
+            if (textInfo.characterCount == 0 || index < 0)
+                return inverseYAxis ? new Vector2(0, lineHeightDefault) : result;
 
             if (index >= textInfo.characterCount)
                 index = textInfo.characterCount - 1;
@@ -145,11 +184,8 @@ namespace UnityEngine.TextCore.Text
         // Add support for world space.
         public int GetCursorIndexFromPosition(Vector2 position, bool inverseYAxis = true)
         {
-            if (textGenerationSettings == null)
-                return 0;
-
             if (inverseYAxis)
-                position.y = textGenerationSettings.screenRect.height - position.y;
+                position.y = screenRect.height - position.y;
 
             var lineNumber = 0;
             if (textInfo.lineCount > 1)
@@ -319,6 +355,8 @@ namespace UnityEngine.TextCore.Text
 
         public int FindNearestCharacterOnLine(Vector2 position, int line, bool visibleOnly)
         {
+            if (line >= textInfo.lineInfo.Length || line < 0)
+                return 0;
             int firstCharacter = textInfo.lineInfo[line].firstCharacterIndex;
             int lastCharacter = textInfo.lineInfo[line].lastCharacterIndex;
 
@@ -374,7 +412,7 @@ namespace UnityEngine.TextCore.Text
         public int FindIntersectingLink(Vector3 position, bool inverseYAxis = true)
         {
             if (inverseYAxis)
-                position.y = textGenerationSettings.screenRect.height - position.y;
+                position.y = screenRect.height - position.y;
 
             for (int i = 0; i < textInfo.linkCount; i++)
             {
@@ -456,7 +494,6 @@ namespace UnityEngine.TextCore.Text
             return -1;
         }
 
-//
         public float ComputeTextWidth(TextGenerationSettings tgs)
         {
             UpdatePreferredValues(tgs);
@@ -473,6 +510,7 @@ namespace UnityEngine.TextCore.Text
         {
             if (index <= 0)
                 return 0;
+
             return textInfo.textElementInfo[index - 1].index + textInfo.textElementInfo[index - 1].stringLength;
         }
 
@@ -543,7 +581,8 @@ namespace UnityEngine.TextCore.Text
         {
             if (index <= 0)
                 index = 0;
-            else if (index >= textInfo.characterCount)
+
+            if (index >= textInfo.characterCount)
                 index = Mathf.Max(0, textInfo.characterCount - 1);
 
             return textInfo.textElementInfo[index].lineNumber;
@@ -553,7 +592,8 @@ namespace UnityEngine.TextCore.Text
         {
             if (lineNumber <= 0)
                 lineNumber = 0;
-            else if (lineNumber >= textInfo.lineCount)
+
+            if (lineNumber >= textInfo.lineCount)
                 lineNumber = Mathf.Max(0, textInfo.lineCount - 1);
 
             return textInfo.lineInfo[lineNumber].lineHeight;
@@ -563,7 +603,8 @@ namespace UnityEngine.TextCore.Text
         {
             if (index <= 0)
                 index = 0;
-            else if (index >= textInfo.characterCount)
+
+            if (index >= textInfo.characterCount)
                 index = Mathf.Max(0, textInfo.characterCount - 1);
             return GetLineHeight(textInfo.textElementInfo[index].lineNumber);
         }
@@ -572,7 +613,8 @@ namespace UnityEngine.TextCore.Text
         {
             if (index <= 0)
                 index = 0;
-            else if (index >= textInfo.characterCount)
+
+            if (index >= textInfo.characterCount)
                 index = Mathf.Max(0, textInfo.characterCount - 1);
 
             var characterInfo = textInfo.textElementInfo[index];
@@ -581,7 +623,7 @@ namespace UnityEngine.TextCore.Text
 
         public bool IsPlaceholder
         {
-            get => textGenerationSettings.isPlaceholder;
+            get => isPlaceholder;
         }
 
         public bool IsElided()
@@ -654,30 +696,27 @@ namespace UnityEngine.TextCore.Text
 
         protected void UpdatePreferredValues(TextGenerationSettings tgs)
         {
-            preferredSize = TextGenerator.GetPreferredValues(tgs, layoutTextInfo);
-        }
-
-        internal TextInfo Update(string newText)
-        {
-            textGenerationSettings.text = newText;
-            return Update(textGenerationSettings);
+            preferredSize = TextGenerator.GetPreferredValues(tgs, textInfoCommon);
         }
 
         protected TextInfo Update(TextGenerationSettings tgs)
         {
-            if (!IsDirty())
+            screenRect = tgs.screenRect;
+            lineHeightDefault = GetLineHeightDefault(tgs);
+            isPlaceholder = tgs.isPlaceholder;
+            if (!IsDirty(tgs))
                 return textInfo;
 
-            textInfo.isDirty = true;
             TextGenerator.GenerateText(tgs, textInfo);
-            textGenerationSettings = tgs;
             return textInfo;
+
         }
 
         internal void UpdatePreferredSize(TextGenerationSettings generationSettings)
         {
             if (textInfo.characterCount <= 0)
                 return;
+          
             var maxAscender = float.MinValue;
             var maxDescender = textInfo.textElementInfo[textInfo.characterCount - 1].descender;
             var renderedWidth = 0f;
@@ -713,34 +752,6 @@ namespace UnityEngine.TextCore.Text
                 return settings.fontAsset.faceInfo.lineHeight / settings.fontAsset.faceInfo.pointSize * settings.fontSize;
             }
             return 0.0f;
-        }
-
-        public Rect[] GetHyperlinkRects(Rect content)
-        {
-            List<Rect> rects = new List<Rect>();
-
-            for (int i = 0; i < textInfo.linkCount; i++)
-            {
-                var minPos = GetCursorPositionFromStringIndexUsingLineHeight(textInfo.linkInfo[i].linkTextfirstCharacterIndex) + new Vector2(content.x, content.y);
-                var maxPos = GetCursorPositionFromStringIndexUsingLineHeight(textInfo.linkInfo[i].linkTextLength + textInfo.linkInfo[i].linkTextfirstCharacterIndex) + new Vector2(content.x, content.y);
-                var lineHeight = textInfo.lineInfo[0].lineHeight;
-
-                if (minPos.y == maxPos.y)
-                {
-                    rects.Add(new Rect(minPos.x, minPos.y - lineHeight, maxPos.x - minPos.x, lineHeight));
-                }
-                else
-                {
-                    // Rect for the first line - including end part
-                    rects.Add(new Rect(minPos.x, minPos.y - lineHeight, textInfo.lineInfo[0].width - minPos.x, lineHeight));
-                    // Rect for the middle part
-                    rects.Add(new Rect(content.x, minPos.y, textInfo.lineInfo[0].width, maxPos.y - minPos.y - lineHeight));
-                    // Rect for the bottom line - up to selection
-                    if (maxPos.x != 0f)
-                        rects.Add(new Rect(content.x, maxPos.y - lineHeight, maxPos.x, lineHeight));
-                }
-            }
-            return rects.ToArray();
         }
     }
 }

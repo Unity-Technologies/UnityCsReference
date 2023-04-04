@@ -54,7 +54,7 @@ namespace UnityEngine.TextCore.Text
             get
             {
                 if (s_LeadingCharactersLookup == null)
-                    LoadLineBreakingRules();
+                    LoadLineBreakingRules(leadingCharacters, followingCharacters);
 
                 return s_LeadingCharactersLookup;
             }
@@ -69,7 +69,7 @@ namespace UnityEngine.TextCore.Text
             get
             {
                 if (s_LeadingCharactersLookup == null)
-                    LoadLineBreakingRules();
+                    LoadLineBreakingRules(leadingCharacters, followingCharacters);
 
                 return s_FollowingCharactersLookup;
             }

@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.TextCore.Text;
+
 namespace UnityEngine.UIElements
 {
     internal class TextEditingManipulator
@@ -38,6 +40,15 @@ namespace UnityEngine.UIElements
         {
             if (m_TextElement.edition.isReadOnly)
                 return;
+
+            if (evt is BlurEvent)
+            {
+                m_TextElement.uitkTextHandle.RemoveTextInfoFromCache();
+            }
+            else if ((evt is not PointerMoveEvent && evt is not MouseMoveEvent) || m_TextElement.selectingManipulator.isClicking)
+            {
+                m_TextElement.uitkTextHandle.AddTextInfoToCache();
+            }
 
             switch (evt)
             {

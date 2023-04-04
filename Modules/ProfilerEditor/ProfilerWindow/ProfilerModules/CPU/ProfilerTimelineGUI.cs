@@ -241,7 +241,7 @@ namespace UnityEditorInternal
         {
             public int frameId = FrameDataView.invalidOrCurrentFrameIndex;
             public int threadIndex = FrameDataView.invalidThreadIndex;
-            public int nativeIndex = TimelineIndexHelper.invalidNativeTimelineEntryIndex; // Uniquely identifies the sample for the thread and frame.
+            public int sampleIndex = RawFrameDataView.invalidSampleIndex; // Uniquely identifies the sample for the thread and frame in a sense of RawFrameDataView.
             public float relativeYPos = 0.0f;
             public float time = 0.0f;
             public float duration = 0.0f;
@@ -252,16 +252,16 @@ namespace UnityEditorInternal
                 return this.name.Length > 0;
             }
 
-            public bool Equals(int frameId, int threadIndex, int nativeIndex)
+            public bool Equals(int frameId, int threadIndex, int sampleIndex)
             {
-                return frameId == this.frameId && threadIndex == this.threadIndex && nativeIndex == this.nativeIndex;
+                return frameId == this.frameId && threadIndex == this.threadIndex && sampleIndex == this.sampleIndex;
             }
 
             public virtual void Reset()
             {
                 this.frameId = FrameDataView.invalidOrCurrentFrameIndex;
                 this.threadIndex = FrameDataView.invalidThreadIndex;
-                this.nativeIndex = TimelineIndexHelper.invalidNativeTimelineEntryIndex;
+                this.sampleIndex = RawFrameDataView.invalidSampleIndex;
                 this.relativeYPos = 0.0f;
                 this.time = 0.0f;
                 this.duration = 0.0f;
@@ -319,32 +319,11 @@ namespace UnityEditorInternal
 
         struct TimelineIndexHelper
         {
-            int m_SampleIndex;
-            // m_NativeTimelineEntryIndex is m_SampleIndex -1 because the root sample is not considered as an entry in the Native timeline code
-            int m_NativeTimelineEntryIndex;
-            public const int invalidNativeTimelineEntryIndex = -1;
+            public static TimelineIndexHelper invalidIndex => new TimelineIndexHelper() { sampleIndex = RawFrameDataView.invalidSampleIndex };
 
-            public static TimelineIndexHelper invalidIndex => new TimelineIndexHelper() { m_NativeTimelineEntryIndex = invalidNativeTimelineEntryIndex, m_SampleIndex = RawFrameDataView.invalidSampleIndex };
+            public int sampleIndex { get; set; }
 
-            public int sampleIndex
-            {
-                get { return m_SampleIndex; }
-                set
-                {
-                    m_SampleIndex = value;
-                    m_NativeTimelineEntryIndex = value > 0 ? value - 1 : RawFrameDataView.invalidSampleIndex;
-                }
-            }
-            public int nativeTimelineEntryIndex
-            {
-                get { return m_NativeTimelineEntryIndex; }
-                set
-                {
-                    m_NativeTimelineEntryIndex = value;
-                    m_SampleIndex = value >= 0 ? value + 1 : invalidNativeTimelineEntryIndex;
-                }
-            }
-            public bool valid => m_NativeTimelineEntryIndex >= 0 && m_SampleIndex >= 0;
+            public bool valid => sampleIndex >= 0;
         }
 
         // a local cache of the marker Id path, which is modified in frames other than the one originally selected, in case the marker ids changed
@@ -837,8 +816,8 @@ namespace UnityEditorInternal
             // cull text that would otherwise draw over the bottom scrollbar
             drawArgs.threadRect.yMax = Mathf.Min(drawArgs.threadRect.yMax, m_TimeArea.shownArea.height - m_TimeArea.hSliderHeight);
             drawArgs.shownAreaRect = m_TimeArea.shownArea;
-            drawArgs.selectedEntryIndex = hasSelection ? m_SelectedEntry.nativeIndex : TimelineIndexHelper.invalidNativeTimelineEntryIndex;
-            drawArgs.mousedOverEntryIndex = TimelineIndexHelper.invalidNativeTimelineEntryIndex;
+            drawArgs.selectedEntryIndex = hasSelection ? m_SelectedEntry.sampleIndex : RawFrameDataView.invalidSampleIndex;
+            drawArgs.mousedOverEntryIndex = RawFrameDataView.invalidSampleIndex;
 
             NativeProfilerTimeline.Draw(ref drawArgs);
         }
@@ -988,7 +967,7 @@ namespace UnityEditorInternal
                     posArgs.position = Event.current.mousePosition;
                     NativeProfilerTimeline.GetEntryAtPosition(ref posArgs);
 
-                    indexHelper.nativeTimelineEntryIndex = posArgs.out_EntryIndex;
+                    indexHelper.sampleIndex = posArgs.out_EntryIndex;
                     relativeYPosition = posArgs.out_EntryYMaxPos + topMargin;
                     name = posArgs.out_EntryName;
                     fireSelectionChanged = true;
@@ -997,7 +976,7 @@ namespace UnityEditorInternal
 
                 if (indexHelper.valid)
                 {
-                    bool selectedChanged = !m_SelectedEntry.Equals(frameData.frameIndex, frameData.threadIndex, indexHelper.nativeTimelineEntryIndex);
+                    bool selectedChanged = !m_SelectedEntry.Equals(frameData.frameIndex, frameData.threadIndex, indexHelper.sampleIndex);
                     if (selectedChanged)
                     {
                         // Read out timing info
@@ -1005,7 +984,7 @@ namespace UnityEditorInternal
                         timingInfoArgs.Reset();
                         timingInfoArgs.frameIndex = frameData.frameIndex;
                         timingInfoArgs.threadIndex = frameData.threadIndex;
-                        timingInfoArgs.entryIndex = indexHelper.nativeTimelineEntryIndex;
+                        timingInfoArgs.entryIndex = indexHelper.sampleIndex;
                         timingInfoArgs.calculateFrameData = true;
                         NativeProfilerTimeline.GetEntryTimingInfo(ref timingInfoArgs);
 
@@ -1014,7 +993,7 @@ namespace UnityEditorInternal
                         instanceInfoArgs.Reset();
                         instanceInfoArgs.frameIndex = frameData.frameIndex;
                         instanceInfoArgs.threadIndex = frameData.threadIndex;
-                        instanceInfoArgs.entryIndex = indexHelper.nativeTimelineEntryIndex;
+                        instanceInfoArgs.entryIndex = indexHelper.sampleIndex;
                         NativeProfilerTimeline.GetEntryInstanceInfo(ref instanceInfoArgs);
 
                         if (fireSelectionChanged)
@@ -1028,7 +1007,7 @@ namespace UnityEditorInternal
                         m_SelectedEntry.Reset();
                         m_SelectedEntry.frameId = frameData.frameIndex;
                         m_SelectedEntry.threadIndex = frameData.threadIndex;
-                        m_SelectedEntry.nativeIndex = indexHelper.nativeTimelineEntryIndex;
+                        m_SelectedEntry.sampleIndex = indexHelper.sampleIndex;
                         m_SelectedEntry.instanceId = instanceInfoArgs.out_Id;
                         m_SelectedEntry.time = timingInfoArgs.out_LocalStartTime;
                         m_SelectedEntry.duration = timingInfoArgs.out_Duration;
@@ -1324,8 +1303,7 @@ namespace UnityEditorInternal
         {
             if (m_SelectedEntry.IsValid())
             {
-                // the native index is one lower than the raw index, because the thread root sample is not counted
-                ids.Add(m_SelectedEntry.nativeIndex + 1);
+                ids.Add(m_SelectedEntry.sampleIndex);
             }
         }
 
@@ -1935,7 +1913,7 @@ namespace UnityEditorInternal
 
                 // Calculate total time of the sample across visible frames
                 var selectedThreadIndex = m_SelectedEntry.threadIndex;
-                int selectedSampleIndex = m_SelectedEntry.nativeIndex + 1;
+                int selectedSampleIndex = m_SelectedEntry.sampleIndex;
                 string selectedThreadName;
                 ulong totalAsyncDurationNs;
                 int totalAsyncFramesCount;
@@ -2000,7 +1978,7 @@ namespace UnityEditorInternal
                         if (hasCallStack)
                         {
                             var callStack = new List<ulong>();
-                            frameData.GetSampleCallstack(m_SelectedEntry.nativeIndex + 1, callStack);
+                            frameData.GetSampleCallstack(m_SelectedEntry.sampleIndex, callStack);
                             CompileCallStack(text, callStack, frameData);
                         }
                     }
@@ -2020,7 +1998,7 @@ namespace UnityEditorInternal
 
             float x = m_TimeArea.TimeToPixel(m_SelectedEntry.time + m_SelectedEntry.duration * 0.5f, fullRect);
             ShowLargeTooltip(new Vector2(x, selectedY), fullRect, m_SelectedEntry.cachedSelectionTooltipContent, m_SelectedEntry.sampleStack, selectedLineHeightVisible,
-                frameIndex, m_SelectedEntry.threadIndex, hasCallStack, ref m_SelectedEntry.downwardsZoomableAreaSpaceNeeded, m_SelectedEntry.nonProxyDepthDifference != 0 ? m_SelectedEntry.nativeIndex + 1 : RawFrameDataView.invalidSampleIndex);
+                frameIndex, m_SelectedEntry.threadIndex, hasCallStack, ref m_SelectedEntry.downwardsZoomableAreaSpaceNeeded, m_SelectedEntry.nonProxyDepthDifference != 0 ? m_SelectedEntry.sampleIndex : RawFrameDataView.invalidSampleIndex);
         }
 
         void PrepareTicks()

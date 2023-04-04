@@ -48,7 +48,7 @@ namespace UnityEngine.TextCore.Text
         public bool enableKerning = true;
         public bool richText;
         public bool isRightToLeft;
-        public bool extraPadding;
+        public float extraPadding = 6.0f;
         public bool parseControlCharacters = true;
         public bool isOrthographic = true;
         public bool isPlaceholder = false;
@@ -80,52 +80,36 @@ namespace UnityEngine.TextCore.Text
         public float charWidthMaxAdj;
         internal TextInputSource inputSource = TextInputSource.TextString;
 
-        private bool m_CachedHashCodeIsIntialized = false;
-        private int m_CachedHashCode;
-        public int cachedHashCode
-        {
-            get
-            {
-                if (!m_CachedHashCodeIsIntialized)
-                {
-                    m_CachedHashCode = GetHashCode();
-                    m_CachedHashCodeIsIntialized = true;
-                }
-                return m_CachedHashCode;
-            }
-        }
-
 
 	public bool Equals(TextGenerationSettings other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return text == other.text && screenRect.Equals(other.screenRect) && margins.Equals(other.margins) &&
-                scale.Equals(other.scale) && Equals(fontAsset, other.fontAsset) && Equals(material, other.material) &&
-                Equals(spriteAsset, other.spriteAsset) && Equals(styleSheet, other.styleSheet) &&
-                fontStyle == other.fontStyle && Equals(textSettings, other.textSettings) &&
-                textAlignment == other.textAlignment && overflowMode == other.overflowMode &&
-                wordWrap == other.wordWrap && wordWrappingRatio.Equals(other.wordWrappingRatio) &&
-                color.Equals(other.color) && Equals(fontColorGradient, other.fontColorGradient) &&
-                Equals(fontColorGradientPreset, other.fontColorGradientPreset) && tintSprites == other.tintSprites &&
-                overrideRichTextColors == other.overrideRichTextColors &&
-                shouldConvertToLinearSpace == other.shouldConvertToLinearSpace && fontSize.Equals(other.fontSize) &&
-                autoSize == other.autoSize && fontSizeMin.Equals(other.fontSizeMin) &&
-                fontSizeMax.Equals(other.fontSizeMax) && enableKerning == other.enableKerning &&
-                richText == other.richText && isRightToLeft == other.isRightToLeft &&
-                extraPadding == other.extraPadding && parseControlCharacters == other.parseControlCharacters &&
-                isOrthographic == other.isOrthographic && tagNoParsing == other.tagNoParsing &&
-                characterSpacing.Equals(other.characterSpacing) && wordSpacing.Equals(other.wordSpacing) &&
-                lineSpacing.Equals(other.lineSpacing) && paragraphSpacing.Equals(other.paragraphSpacing) &&
-                lineSpacingMax.Equals(other.lineSpacingMax) && textWrappingMode == other.textWrappingMode &&
-                maxVisibleCharacters == other.maxVisibleCharacters && maxVisibleWords == other.maxVisibleWords &&
-                maxVisibleLines == other.maxVisibleLines && firstVisibleCharacter == other.firstVisibleCharacter &&
-                useMaxVisibleDescender == other.useMaxVisibleDescender && fontWeight == other.fontWeight &&
-                pageToDisplay == other.pageToDisplay && horizontalMapping == other.horizontalMapping &&
-                verticalMapping == other.verticalMapping && uvLineOffset.Equals(other.uvLineOffset) &&
-                geometrySortingOrder == other.geometrySortingOrder && inverseYAxis == other.inverseYAxis &&
-                charWidthMaxAdj.Equals(other.charWidthMaxAdj) && inputSource == other.inputSource &&
-                isOrthographic.Equals(other.isOrthographic) && isPlaceholder.Equals(other.isPlaceholder) && isIMGUI.Equals(other.isIMGUI);
+            return text == other.text && screenRect.Equals(other.screenRect) && margins.Equals(other.margins)
+                && scale.Equals(other.scale) && Equals(fontAsset, other.fontAsset) && Equals(material, other.material)
+                && Equals(spriteAsset, other.spriteAsset) && Equals(styleSheet, other.styleSheet)
+                && fontStyle == other.fontStyle && Equals(textSettings, other.textSettings)
+                && textAlignment == other.textAlignment && overflowMode == other.overflowMode
+                && wordWrap == other.wordWrap && wordWrappingRatio.Equals(other.wordWrappingRatio)
+                && color.Equals(other.color) && Equals(fontColorGradient, other.fontColorGradient)
+                && Equals(fontColorGradientPreset, other.fontColorGradientPreset) && tintSprites == other.tintSprites
+                && overrideRichTextColors == other.overrideRichTextColors
+                && shouldConvertToLinearSpace == other.shouldConvertToLinearSpace && fontSize.Equals(other.fontSize)
+                && autoSize == other.autoSize && fontSizeMin.Equals(other.fontSizeMin)
+                && fontSizeMax.Equals(other.fontSizeMax) && enableKerning == other.enableKerning && richText == other.richText
+                && isRightToLeft == other.isRightToLeft && extraPadding == other.extraPadding
+                && parseControlCharacters == other.parseControlCharacters && isOrthographic == other.isOrthographic
+                && isPlaceholder == other.isPlaceholder && tagNoParsing == other.tagNoParsing
+                && characterSpacing.Equals(other.characterSpacing) && wordSpacing.Equals(other.wordSpacing)
+                && lineSpacing.Equals(other.lineSpacing) && paragraphSpacing.Equals(other.paragraphSpacing)
+                && lineSpacingMax.Equals(other.lineSpacingMax) && textWrappingMode == other.textWrappingMode
+                && maxVisibleCharacters == other.maxVisibleCharacters && maxVisibleWords == other.maxVisibleWords
+                && maxVisibleLines == other.maxVisibleLines && firstVisibleCharacter == other.firstVisibleCharacter
+                && useMaxVisibleDescender == other.useMaxVisibleDescender && fontWeight == other.fontWeight
+                && horizontalMapping == other.horizontalMapping && verticalMapping == other.verticalMapping
+                && uvLineOffset.Equals(other.uvLineOffset) && geometrySortingOrder == other.geometrySortingOrder
+                && inverseYAxis == other.inverseYAxis && charWidthMaxAdj.Equals(other.charWidthMaxAdj)
+                && isIMGUI == other.isIMGUI;
         }
 
         public override bool Equals(object obj)
@@ -533,7 +517,6 @@ namespace UnityEngine.TextCore.Text
         bool m_IsAutoSizePointSizeSet;
         float m_StartOfLineAscender;
         float m_LineSpacingDelta;
-        bool m_IsMaskingEnabled;
         MaterialReference[] m_MaterialReferences = new MaterialReference[8];
         int m_SpriteCount = 0;
         TextProcessingStack<int> m_StyleStack = new TextProcessingStack<int>(new int[16]);
@@ -557,19 +540,14 @@ namespace UnityEngine.TextCore.Text
         protected SpecialCharacter m_Ellipsis;
         protected SpecialCharacter m_Underline;
 
-        bool m_IsUsingBold;
-        bool m_IsSdfShader;
-
         TextElementInfo[] m_InternalTextElementInfo;
+
+        // bool m_IsUsingBold;
 
         void Prepare(TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             Profiler.BeginSample("TextGenerator.Prepare");
-            // TODO: Find a way for GetPaddingForMaterial to not allocate
-            // TODO: Hard coded padding value is temporary change to avoid clipping of text geometry with small point size.
-            m_Padding = 6.0f; // generationSettings.extraPadding ? 5.5f : 1.5f;
-
-            m_IsMaskingEnabled = false;
+            m_Padding = generationSettings.extraPadding;
 
             // Set the font style that is assigned by the builder
             m_FontStyleInternal = generationSettings.fontStyle;
@@ -1016,6 +994,7 @@ namespace UnityEngine.TextCore.Text
 
                     padding = m_Padding;
                 }
+
                 #endregion
 
 
@@ -2037,32 +2016,36 @@ namespace UnityEngine.TextCore.Text
 
                 // Handle xAdvance & Tabulation Stops. Tab stops at every 25% of Font Size.
                 #region XAdvance, Tabulation & Stops
-                if (charCode == k_Tab)
-                {
-                    float tabSize = m_CurrentFontAsset.m_FaceInfo.tabWidth * m_CurrentFontAsset.tabMultiple * currentElementScale;
-                    float tabs = Mathf.Ceil(m_XAdvance / tabSize) * tabSize;
-                    m_XAdvance = tabs > m_XAdvance ? tabs : m_XAdvance + tabSize;
-                }
-                else if (m_MonoSpacing != 0)
-                {
-                    m_XAdvance += (m_MonoSpacing - monoAdvance + ((m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment) * currentEmScale) + m_CSpacing) * (1 - m_CharWidthAdjDelta);
 
-                    if (isWhiteSpace || charCode == k_ZeroWidthSpace)
-                        m_XAdvance += generationSettings.wordSpacing * currentEmScale;
-                }
-                else if (generationSettings.isRightToLeft)
+                if (charCode != k_ZeroWidthSpace)
                 {
-                    m_XAdvance -= ((glyphAdjustments.xAdvance * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta));
+                    if (charCode == k_Tab)
+                    {
+                        float tabSize = m_CurrentFontAsset.m_FaceInfo.tabWidth * m_CurrentFontAsset.tabMultiple * currentElementScale;
+                        float tabs = Mathf.Ceil(m_XAdvance / tabSize) * tabSize;
+                        m_XAdvance = tabs > m_XAdvance ? tabs : m_XAdvance + tabSize;
+                    }
+                    else if (m_MonoSpacing != 0)
+                    {
+                        m_XAdvance += (m_MonoSpacing - monoAdvance + ((m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment) * currentEmScale) + m_CSpacing) * (1 - m_CharWidthAdjDelta);
 
-                    if (isWhiteSpace || charCode == k_ZeroWidthSpace)
-                        m_XAdvance -= generationSettings.wordSpacing * currentEmScale;
-                }
-                else
-                {
-                    m_XAdvance += ((currentGlyphMetrics.horizontalAdvance * m_FXScale.x + glyphAdjustments.xAdvance) * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta);
+                        if (isWhiteSpace || charCode == k_ZeroWidthSpace)
+                            m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                    }
+                    else if (generationSettings.isRightToLeft)
+                    {
+                        m_XAdvance -= ((glyphAdjustments.xAdvance * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta));
 
-                    if (isWhiteSpace || charCode == k_ZeroWidthSpace)
-                        m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                        if (isWhiteSpace || charCode == k_ZeroWidthSpace)
+                            m_XAdvance -= generationSettings.wordSpacing * currentEmScale;
+                    }
+                    else
+                    {
+                        m_XAdvance += ((currentGlyphMetrics.horizontalAdvance * m_FXScale.x + glyphAdjustments.xAdvance) * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta);
+
+                        if (isWhiteSpace || charCode == k_ZeroWidthSpace)
+                            m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                    }
                 }
 
                 // Store xAdvance information
@@ -5081,9 +5064,7 @@ namespace UnityEngine.TextCore.Text
             }
             #endregion
 
-            // Apply stylePadding only if this is a SDF Shader.
-            if (!m_IsSdfShader)
-                stylePadding = 0;
+            stylePadding = 0;
 
             // Setup UVs for the Character
             #region Setup UVs
@@ -5617,17 +5598,6 @@ namespace UnityEngine.TextCore.Text
             textInfo.ClearMeshInfo(updateMesh);
         }
 
-        void EnableMasking()
-        {
-            m_IsMaskingEnabled = true;
-        }
-
-        // Enable Masking in the Shader
-        void DisableMasking()
-        {
-            m_IsMaskingEnabled = false;
-        }
-
         internal int SetArraySizes(TextProcessingElement[] textProcessingArray, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             TextSettings textSettings = generationSettings.textSettings;
@@ -5635,7 +5605,6 @@ namespace UnityEngine.TextCore.Text
             int spriteCount = 0;
 
             m_TotalCharacterCount = 0;
-            m_IsUsingBold = false;
             m_isTextLayoutPhase = false;
             m_TagNoParsing = false;
             m_FontStyleInternal = generationSettings.fontStyle;
@@ -5737,8 +5706,8 @@ namespace UnityEngine.TextCore.Text
                         int tagStartIndex = textProcessingArray[i].stringIndex;
                         i = endTagIndex;
 
-                        if ((m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold)
-                            m_IsUsingBold = true;
+                        // if ((m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold)
+                        //     m_IsUsingBold = true;
 
                         if (m_TextElementType == TextElementType.Sprite)
                         {
@@ -6268,24 +6237,6 @@ namespace UnityEngine.TextCore.Text
 
             if (character != null)
                 m_Underline = new SpecialCharacter(character, m_CurrentMaterialIndex);
-        }
-
-        /// <summary>
-        /// Get the padding value for the currently assigned material.
-        /// </summary>
-        /// <returns></returns>
-        float GetPaddingForMaterial(Material material, bool extraPadding)
-        {
-            TextShaderUtilities.GetShaderPropertyIDs();
-
-            if (material == null)
-                return 0;
-
-            m_Padding = TextShaderUtilities.GetPadding(material, extraPadding, m_IsUsingBold);
-            m_IsMaskingEnabled = TextShaderUtilities.IsMaskingEnabled(material);
-            m_IsSdfShader = material.HasProperty(TextShaderUtilities.ID_WeightNormal);
-
-            return m_Padding;
         }
 
         /// <summary>
@@ -7107,25 +7058,28 @@ namespace UnityEngine.TextCore.Text
 
                 // Handle xAdvance & Tabulation Stops. Tab stops at every 25% of Font Size.
                 #region XAdvance, Tabulation & Stops
-                if (charCode == k_Tab)
+                if (charCode != k_ZeroWidthSpace)
                 {
-                    float tabSize = m_CurrentFontAsset.faceInfo.tabWidth * m_CurrentFontAsset.tabMultiple * currentElementScale;
-                    float tabs = Mathf.Ceil(m_XAdvance / tabSize) * tabSize;
-                    m_XAdvance = tabs > m_XAdvance ? tabs : m_XAdvance + tabSize;
-                }
-                else if (m_MonoSpacing != 0)
-                {
-                    m_XAdvance += (m_MonoSpacing - monoAdvance + ((m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment) * currentEmScale) + m_CSpacing) * (1 - m_CharWidthAdjDelta);
+                    if (charCode == k_Tab)
+                    {
+                        float tabSize = m_CurrentFontAsset.faceInfo.tabWidth * m_CurrentFontAsset.tabMultiple * currentElementScale;
+                        float tabs = Mathf.Ceil(m_XAdvance / tabSize) * tabSize;
+                        m_XAdvance = tabs > m_XAdvance ? tabs : m_XAdvance + tabSize;
+                    }
+                    else if (m_MonoSpacing != 0)
+                    {
+                        m_XAdvance += (m_MonoSpacing - monoAdvance + ((m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment) * currentEmScale) + m_CSpacing) * (1 - m_CharWidthAdjDelta);
 
-                    if (isWhiteSpace || charCode == k_ZeroWidthSpace)
-                        m_XAdvance += generationSettings.wordSpacing * currentEmScale;
-                }
-                else
-                {
-                    m_XAdvance += ((currentGlyphMetrics.horizontalAdvance * m_FXScale.x + glyphAdjustments.xAdvance) * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta);
+                        if (isWhiteSpace || charCode == k_ZeroWidthSpace)
+                            m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                    }
+                    else
+                    {
+                        m_XAdvance += ((currentGlyphMetrics.horizontalAdvance * m_FXScale.x + glyphAdjustments.xAdvance) * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - m_CharWidthAdjDelta);
 
-                    if (isWhiteSpace || charCode == k_ZeroWidthSpace)
-                        m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                        if (isWhiteSpace || charCode == k_ZeroWidthSpace)
+                            m_XAdvance += generationSettings.wordSpacing * currentEmScale;
+                    }
                 }
                 #endregion Tabulation & Stops
 
