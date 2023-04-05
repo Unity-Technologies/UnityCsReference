@@ -15,6 +15,12 @@ namespace UnityEditor.UIElements
         const int kDefaultSplitSize = 10;
         public int splitSize = kDefaultSplitSize;
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : ImmediateModeElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new VisualSplitter();
+        }
+
         public new class UxmlFactory : UxmlFactory<VisualSplitter, UxmlTraits> {}
 
         public new class UxmlTraits : VisualElement.UxmlTraits {}

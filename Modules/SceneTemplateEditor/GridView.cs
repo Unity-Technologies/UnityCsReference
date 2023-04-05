@@ -653,6 +653,7 @@ namespace UnityEditor.SceneTemplate
                     element.style.height = listItemHeight;
                     element.style.width = Length.Percent(100);
                     icon.style.width = listItemHeight;
+                    icon.style.minWidth = listItemHeight;
                     pin.RemoveFromHierarchy();
                     element.Insert(0, pin);
                 }

@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Internal;
 using UnityEngine.UIElements.StyleSheets.Syntax;
+using static UnityEngine.UIElements.Columns;
 
 namespace UnityEngine.UIElements
 {
@@ -72,8 +74,50 @@ namespace UnityEngine.UIElements
     /// Provides the properties to define how user interacts with a column in a multi-column view, how its data and the data of each
     /// cell in this column are represented.
     /// </summary>
+    [UxmlObject]
     public class Column
     {
+        [ExcludeFromDocs, Serializable]
+        public class UxmlSerializedData : UIElements.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string name;
+            [SerializeField] private string title;
+            [SerializeField] private bool visible;
+            [SerializeField] private Length width;
+            [SerializeField] private Length minWidth;
+            [SerializeField] private Length maxWidth;
+            [SerializeField] private bool stretchable;
+            [SerializeField] private bool sortable;
+            [SerializeField] private bool optional;
+            [SerializeField] private bool resizable;
+            [SerializeField] private VisualTreeAsset headerTemplate;
+            [SerializeField] private VisualTreeAsset cellTemplate;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new Column();
+
+            public override void Deserialize(object obj)
+            {
+                var e = (Column)obj;
+                e.name = name;
+                e.title = title;
+                e.visible = visible;
+                e.width = width;
+                e.minWidth = minWidth;
+                e.maxWidth = maxWidth;
+                e.sortable = sortable;
+                e.stretchable = stretchable;
+                e.optional = optional;
+                e.resizable = resizable;
+
+                if (headerTemplate != null)
+                    e.makeHeader = () => headerTemplate.Instantiate();
+                if (cellTemplate != null)
+                    e.makeCell = () => cellTemplate.Instantiate();
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Column"/> using the data read from a UXML file.
         /// </summary>

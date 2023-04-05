@@ -116,7 +116,7 @@ namespace UnityEngine.UIElements.UIR
             if (!m_Fails)
             {
                 var parent = m_CurrentElement.hierarchy.parent;
-                bool isGroupTransform = (m_CurrentElement.renderHints & RenderHints.GroupTransform) == RenderHints.GroupTransform;
+                bool isGroupTransform = m_CurrentElement.renderChainData.isGroupTransform;
 
                 if (parent != null)
                 {

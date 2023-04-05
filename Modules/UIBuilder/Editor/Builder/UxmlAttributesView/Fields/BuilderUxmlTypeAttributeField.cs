@@ -50,7 +50,12 @@ namespace Unity.UI.Builder
             var attributeType = attribute.GetType();
             var desiredType = attributeType.GetGenericArguments()[0];
             var fieldLabel = BuilderNameUtilities.ConvertDashToHuman(attribute.name);
-            var uiField = new TextField(fieldLabel) { isDelayed = true };
+            return CreateField(desiredType, fieldLabel, attributeOwner, attributeUxmlOwner, attribute, onValueChange);
+        }
+
+        public VisualElement CreateField(Type desiredType, string label, object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute, Action<VisualElement, UxmlAttributeDescription, object, string> onValueChange)
+        {
+            var uiField = new TextField(label) { isDelayed = true };
             var completer = new FieldSearchCompleter<TypeInfo>(uiField);
 
             // When possible, the popup should have the same width as the input field, so that the auto-complete

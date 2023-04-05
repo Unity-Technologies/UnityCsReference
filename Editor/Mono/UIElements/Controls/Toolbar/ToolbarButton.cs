@@ -12,6 +12,12 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ToolbarButton : Button
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : Button.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ToolbarButton();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="ToolbarButton"/> using the data read from a UXML file.
         /// </summary>

@@ -17,6 +17,25 @@ namespace UnityEngine.UIElements
         Hash128Input integerInput => (Hash128Input)textInputBase;
         internal bool m_UpdateTextFromValue;
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextInputBaseField<Hash128>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [UxmlAttribute("value")]
+            [Delayed, SerializeField] private string valueAsString;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new Hash128Field();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (Hash128Field)obj;
+                e.valueAsString = valueAsString;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Hash128Field"/> using the data read from a UXML file.
         /// </summary>
@@ -79,6 +98,12 @@ namespace UnityEngine.UIElements
                 if (m_UpdateTextFromValue)
                     text = rawValue.ToString();
             }
+        }
+
+        internal string valueAsString
+        {
+            get => value.ToString();
+            set => this.value = Hash128.Parse(value);
         }
 
         internal override void UpdateValueFromText()

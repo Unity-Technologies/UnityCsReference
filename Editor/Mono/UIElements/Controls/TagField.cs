@@ -15,6 +15,26 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class TagField : PopupField<string>
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : PopupField<string>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [TagFieldValueDecorator]
+            [UxmlAttribute("value")]
+            [SerializeField] private string overrideValue;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new TagField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (TagField)obj;
+                e.overrideValue = overrideValue;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="TagField"/> using the data read from a UXML file.
         /// </summary>
@@ -38,6 +58,18 @@ namespace UnityEditor.UIElements
         internal override string GetValueToDisplay()
         {
             return rawValue;
+        }
+
+        internal string overrideValue
+        {
+            get => rawValue;
+            set
+            {
+                if (string.IsNullOrEmpty(value))
+                    rawValue = value; // bypass the check on m_Choices
+                else
+                    this.value = value;
+            }
         }
 
         public override string value

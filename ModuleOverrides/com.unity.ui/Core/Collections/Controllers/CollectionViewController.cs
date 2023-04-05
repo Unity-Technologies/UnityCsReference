@@ -132,7 +132,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns the item for the specified index.
+        /// Returns the item with the specified index.
         /// </summary>
         /// <param name="index">The item index.</param>
         /// <returns>The object in the source at this index.</returns>
@@ -141,6 +141,23 @@ namespace UnityEngine.UIElements
             if (m_ItemsSource == null)
                 return null;
 
+            if (index < 0 || index >= m_ItemsSource.Count)
+                return null;
+
+            return m_ItemsSource[index];
+        }
+
+        /// <summary>
+        /// Returns the item with the specified ID.
+        /// </summary>
+        /// <param name="id">The item ID.</param>
+        /// <returns>The object in the source with this ID.</returns>
+        public virtual object GetItemForId(int id)
+        {
+            if (m_ItemsSource == null)
+                return null;
+
+            var index = GetIndexForId(id);
             if (index < 0 || index >= m_ItemsSource.Count)
                 return null;
 

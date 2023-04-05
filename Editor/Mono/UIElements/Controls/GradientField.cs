@@ -23,6 +23,13 @@ namespace UnityEditor.UIElements
         static readonly GradientColorKey k_WhiteKeyEnd = new GradientColorKey(Color.white, 1);
         static readonly GradientAlphaKey k_AlphaKeyBegin = new GradientAlphaKey(1, 0);
         static readonly GradientAlphaKey k_AlphaKeyEnd = new GradientAlphaKey(1, 1);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<Gradient>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new GradientField();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="GradientField"/> using the data read from a UXML file.
         /// </summary>

@@ -9,7 +9,6 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Toolbar = UnityEditor.UIElements.Toolbar;
-using BuilderLibraryItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
 using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
 
 namespace Unity.UI.Builder
@@ -218,6 +217,7 @@ namespace Unity.UI.Builder
             projectContentTreeNoPackages.Add(fromProjectCategoryNoPackages);
 
             var customControlsCategory = CreateItem(BuilderConstants.LibraryCustomControlsSectionHeaderName, null, null, null, isHeader: true);
+            s_ProjectAssetsScanner.ImportUxmlSerializedDataFromSource(customControlsCategory);
             s_ProjectAssetsScanner.ImportFactoriesFromSource(customControlsCategory);
             if (customControlsCategory.hasChildren)
             {

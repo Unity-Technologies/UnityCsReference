@@ -244,6 +244,7 @@ namespace UnityEngine.UIElements
                     m_TextElement.RegisterCallback<PointerMoveEvent>(LinkTagOnPointerMove, TrickleDown.TrickleDown);
                     m_TextElement.RegisterCallback<PointerOutEvent>(LinkTagOnPointerOut, TrickleDown.TrickleDown);
                     hasLinkTag = true;
+                    AddTextInfoToCache();
                     return;
                 }
             }
@@ -255,6 +256,7 @@ namespace UnityEngine.UIElements
                 m_TextElement.UnregisterCallback<PointerUpEvent>(LinkTagOnPointerUp, TrickleDown.TrickleDown);
                 m_TextElement.UnregisterCallback<PointerMoveEvent>(LinkTagOnPointerMove, TrickleDown.TrickleDown);
                 m_TextElement.UnregisterCallback<PointerOutEvent>(LinkTagOnPointerOut, TrickleDown.TrickleDown);
+                RemoveTextInfoFromCache();
             }
         }
 
@@ -276,6 +278,7 @@ namespace UnityEngine.UIElements
                         m_TextElement.RegisterCallback<PointerOutEvent>(ATagOnPointerOut, TrickleDown.TrickleDown);
                     }
                     hasATag = true;
+                    AddTextInfoToCache();
                     return;
                 }
             }
@@ -290,6 +293,7 @@ namespace UnityEngine.UIElements
                     m_TextElement.UnregisterCallback<PointerOverEvent>(ATagOnPointerOver, TrickleDown.TrickleDown);
                     m_TextElement.UnregisterCallback<PointerOutEvent>(ATagOnPointerOut, TrickleDown.TrickleDown);
                 }
+                RemoveTextInfoFromCache();
             }
         }
 

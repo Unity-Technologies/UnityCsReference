@@ -46,64 +46,7 @@ namespace UnityEditor.UIElements.Debugger
 
         private static StyleLength ParseString(string str, StyleLength defaultValue)
         {
-            if (string.IsNullOrEmpty(str))
-                return defaultValue;
-
-            str = str.ToLower();
-
-            StyleLength result = defaultValue;
-            if (char.IsLetter(str[0]))
-            {
-                if (str == "auto")
-                    result = new StyleLength(StyleKeyword.Auto);
-                else if (str == "none")
-                    result = new StyleLength(StyleKeyword.None);
-            }
-            else
-            {
-                Length length = defaultValue.value;
-                float value = length.value;
-                LengthUnit unit = length.unit;
-
-                // Find unit index
-                int digitEndIndex = 0;
-                int unitIndex = -1;
-                for (int i = 0; i < str.Length; i++)
-                {
-                    var c = str[i];
-                    if (char.IsLetter(c) || c == '%')
-                    {
-                        unitIndex = i;
-                        break;
-                    }
-
-                    ++digitEndIndex;
-                }
-
-                var floatStr = str.Substring(0, digitEndIndex);
-                var unitStr = string.Empty;
-                if (unitIndex > 0)
-                    unitStr = str.Substring(unitIndex, str.Length - unitIndex).ToLower();
-
-                float v;
-                if (float.TryParse(floatStr, out v))
-                    value = v;
-
-                switch (unitStr)
-                {
-                    case "px":
-                        unit = LengthUnit.Pixel;
-                        break;
-                    case "%":
-                        unit = LengthUnit.Percent;
-                        break;
-                    default:
-                        break;
-                }
-                result = new Length(value, unit);
-            }
-
-            return result;
+            return Length.ParseString(str, defaultValue.ToLength());
         }
 
         class LengthInput : TextValueInput

@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -470,7 +471,10 @@ namespace Unity.UI.Builder
             if (string.IsNullOrEmpty(documentElement.name) ||
                 elementInfoVisibilityState.HasFlag(BuilderExplorer.BuilderElementInfoVisibilityState.TypeName))
             {
-                var typeLabel = new Label(documentElement.typeName);
+                var desc = UxmlSerializedDataRegistry.GetDescription(documentElement.fullTypeName);
+                var typeName = desc != null ? desc.uxmlName : documentElement.typeName;
+
+                var typeLabel = new Label(typeName);
                 typeLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
                 typeLabel.AddToClassList(BuilderConstants.ElementTypeClassName);
                 labelCont.Add(typeLabel);

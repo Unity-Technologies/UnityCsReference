@@ -17,6 +17,12 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         IntegerInput integerInput => (IntegerInput)textInputBase;
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextValueField<int>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new IntegerField();
+        }
+
         /// <summary>
         /// Instantiates an <see cref="IntegerField"/> using the data read from a UXML file.
         /// </summary>

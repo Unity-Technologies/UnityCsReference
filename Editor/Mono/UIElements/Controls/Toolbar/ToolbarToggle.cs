@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -11,6 +12,12 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ToolbarToggle : Toggle
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : Toggle.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ToolbarToggle();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="ToolbarToggle"/> using the data read from a UXML file.
         /// </summary>

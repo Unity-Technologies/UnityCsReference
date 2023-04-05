@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
+using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
@@ -25,9 +25,29 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// This represents a description on what column to sort and in which order.
     /// </summary>
-    [Serializable]
+    [Serializable, UxmlObject]
     public class SortColumnDescription
     {
+        [ExcludeFromDocs, Serializable]
+        public class UxmlSerializedData : UIElements.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string columnName;
+            [SerializeField] private int columnIndex;
+            [SerializeField] private SortDirection direction;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new SortColumnDescription();
+
+            public override void Deserialize(object obj)
+            {
+                var e = (SortColumnDescription)obj;
+                e.columnName = columnName;
+                e.columnIndex = columnIndex;
+                e.direction = direction;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="SortColumnDescription"/> using the data read from a UXML file.
         /// </summary>

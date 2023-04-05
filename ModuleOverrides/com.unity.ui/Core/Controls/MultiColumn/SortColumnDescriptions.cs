@@ -5,15 +5,41 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
     /// <summary>
     /// This represents a collection or SortColumnDescriptions in multi SortColumnDescription views.
     /// </summary>
-    [Serializable]
+    [UxmlObject]
     public class SortColumnDescriptions : ICollection<SortColumnDescription>
     {
+        [ExcludeFromDocs, Serializable]
+        public class UxmlSerializedData : UIElements.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField, UxmlObject] private List<SortColumnDescription.UxmlSerializedData> sortColumnDescriptions;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new SortColumnDescriptions();
+
+            public override void Deserialize(object obj)
+            {
+                var e = (SortColumnDescriptions)obj;
+
+                if (sortColumnDescriptions != null)
+                {
+                    foreach (var scdData in sortColumnDescriptions)
+                    {
+                        var scd = (SortColumnDescription)scdData.CreateInstance();
+                        scdData.Deserialize(scd);
+                        e.Add(scd);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="SortColumnDescriptions"/> using the data read from a UXML file.
         /// </summary>

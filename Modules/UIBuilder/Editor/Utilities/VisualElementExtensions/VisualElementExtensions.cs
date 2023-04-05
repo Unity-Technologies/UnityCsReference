@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
@@ -20,10 +22,18 @@ namespace Unity.UI.Builder
             "template",
         };
 
+        public static bool HasLinkedAttributeDescription(this VisualElement ve)
+        {
+            return ve.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) is UxmlAttributeDescription;
+        }
+
         public static UxmlAttributeDescription GetLinkedAttributeDescription(this VisualElement ve)
         {
-            return ve.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) as
-                    UxmlAttributeDescription;
+            // UxmlSerializedFields have a PropertyField as the parent
+            var propertyField = ve as PropertyField ?? ve.parent as PropertyField;
+            if (propertyField != null)
+                return propertyField.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) as UxmlAttributeDescription;
+            return ve.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) as UxmlAttributeDescription;
         }
 
         public static void SetLinkedAttributeDescription(this VisualElement ve, UxmlAttributeDescription attribute)
@@ -31,11 +41,15 @@ namespace Unity.UI.Builder
             ve.SetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName, attribute);
         }
 
-        public static List<UxmlAttributeDescription> GetAttributeDescriptions(this VisualElement ve)
+        public static List<UxmlAttributeDescription> GetAttributeDescriptions(this VisualElement ve, bool useTraits = false)
         {
-            var attributeList = new List<UxmlAttributeDescription>();
             var uxmlQualifiedName = GetUxmlQualifiedName(ve);
 
+            var desc = UxmlSerializedDataRegistry.GetDescription(uxmlQualifiedName);
+            if (desc != null && !useTraits)
+                return desc.serializedAttributes.ToList<UxmlAttributeDescription>();
+
+            var attributeList = new List<UxmlAttributeDescription>();
             if (!VisualElementFactoryRegistry.TryGetValue(uxmlQualifiedName, out var factoryList))
                 return attributeList;
 
@@ -89,45 +103,64 @@ namespace Unity.UI.Builder
                 if (attribute?.name == null)
                     continue;
 
-                var veType = ve.GetType();
-                var camel = BuilderNameUtilities.ConvertDashToCamel(attribute.name);
-                var fieldInfo = veType.GetProperty(camel);
-                if (fieldInfo != null)
+                if (attribute is UxmlSerializedAttributeDescription attributeDescription)
                 {
-                    var veValueAbstract = fieldInfo.GetValue(ve, null);
-                    if (veValueAbstract == null)
+                    // UxmlSerializedData
+                    if (attributeDescription.TryGetValueFromObject(ve, out var value) &&
+                        UxmlAttributeComparison.ObjectEquals(value, attributeDescription.defaultValue))
+                    {
                         continue;
+                    }
 
-                    var veValueStr = veValueAbstract.ToString();
-                    if (veValueStr == "False")
-                        veValueStr = "false";
-                    else if (veValueStr == "True")
-                        veValueStr = "true";
-
-                    // The result of Type.ToString is not enough for us to find the correct Type.
-                    if (veValueAbstract is Type type)
-                        veValueStr = $"{type.FullName}, {type.Assembly.GetName().Name}";
-
-                    var attributeValueStr = attribute.defaultValueAsString;
-                    if (veValueStr == attributeValueStr)
-                        continue;
-                    overriddenAttributes.Add(attribute.name, veValueStr);
+                    string valueAsString = null;
+                    if (value != null)
+                        UxmlAttributeConverter.TryConvertToString(value, ve.visualTreeAssetSource, out valueAsString);
+                    overriddenAttributes.Add(attribute.name, valueAsString);
                 }
-                // This is a special patch that allows to search for built-in elements' attribute specifically
-                // without needing to add to the public API.
-                // Allowing to search for internal/private properties in all cases could lead to unforeseen issues.
-                else if (ve is EnumField or EnumFlagsField && camel == "type")
+                else
                 {
-                    fieldInfo = veType.GetProperty(camel, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                    var veValueAbstract = fieldInfo.GetValue(ve, null);
-                    if (!(veValueAbstract is Type type))
-                        continue;
+                    // UxmlTraits
+                    var veType = ve.GetType();
+                    var camel = BuilderNameUtilities.ConvertDashToCamel(attribute.name);
+                    var fieldInfo = veType.GetProperty(camel);
+                    if (fieldInfo != null)
+                    {
+                        var veValueAbstract = fieldInfo.GetValue(ve, null);
+                        if (veValueAbstract == null)
+                            continue;
 
-                    var veValueStr = $"{type.FullName}, {type.Assembly.GetName().Name}";
-                    var attributeValueStr = attribute.defaultValueAsString;
-                    if (veValueStr == attributeValueStr)
-                        continue;
-                    overriddenAttributes.Add(attribute.name, veValueStr);
+                        var veValueStr = veValueAbstract.ToString();
+                        if (veValueStr == "False")
+                            veValueStr = "false";
+                        else if (veValueStr == "True")
+                            veValueStr = "true";
+
+                        // The result of Type.ToString is not enough for us to find the correct Type.
+                        if (veValueAbstract is Type type)
+                            veValueStr = $"{type.FullName}, {type.Assembly.GetName().Name}";
+
+                        var attributeValueStr = attribute.defaultValueAsString;
+                        if (veValueStr == attributeValueStr)
+                            continue;
+
+                        overriddenAttributes.Add(attribute.name, veValueStr);
+                    }
+                    // This is a special patch that allows to search for built-in elements' attribute specifically
+                    // without needing to add to the public API.
+                    // Allowing to search for internal/private properties in all cases could lead to unforeseen issues.
+                    else if (ve is EnumField or EnumFlagsField && camel == "type")
+                    {
+                        fieldInfo = veType.GetProperty(camel, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                        var veValueAbstract = fieldInfo.GetValue(ve, null);
+                        if (!(veValueAbstract is Type type))
+                            continue;
+
+                        var veValueStr = $"{type.FullName}, {type.Assembly.GetName().Name}";
+                        var attributeValueStr = attribute.defaultValueAsString;
+                        if (veValueStr == attributeValueStr)
+                            continue;
+                        overriddenAttributes.Add(attribute.name, veValueStr);
+                    }
                 }
             }
 

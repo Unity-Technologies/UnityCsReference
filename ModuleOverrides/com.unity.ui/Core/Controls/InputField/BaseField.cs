@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
@@ -21,6 +22,27 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty valueProperty = nameof(value);
         internal static readonly DataBindingProperty labelProperty = nameof(label);
         internal static readonly DataBindingProperty showMixedValueProperty = nameof(showMixedValue);
+
+        [ExcludeFromDocs, Serializable]
+        public new abstract class UxmlSerializedData : BindableElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string label;
+            [SerializeField] private TValueType value;
+            #pragma warning restore 649
+
+            /// Used by <see cref="IUxmlSerializedDataCustomAttributeHandler"/> to set the value from legacy field values
+            internal TValueType Value { set => this.value = value; get => this.value; }
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (BaseField<TValueType>)obj;
+                e.label = label;
+                e.SetValueWithoutNotify(value);
+            }
+        }
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseField"/>.

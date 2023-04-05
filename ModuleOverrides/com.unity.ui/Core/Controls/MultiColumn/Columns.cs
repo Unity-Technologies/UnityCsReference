@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
@@ -38,6 +39,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a collection of columns.
     /// </summary>
+    [UxmlObject]
     public class Columns : ICollection<Column>
     {
         /// <summary>
@@ -55,6 +57,41 @@ namespace UnityEngine.UIElements
             /// The size of stretchable columns is automatically adjusted to fill the available space within its container when this container or other columns get resized
             /// </summary>
             GrowAndFill
+        }
+
+        [ExcludeFromDocs, Serializable]
+        public class UxmlSerializedData : UIElements.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string primaryColumnName;
+            [SerializeField] private StretchMode stretchMode;
+            [SerializeField] private bool reorderable;
+            [SerializeField] private bool resizable;
+            [SerializeField] private bool resizePreview;
+            [SerializeField, UxmlObject] private List<Column.UxmlSerializedData> columns;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new Columns();
+
+            public override void Deserialize(object obj)
+            {
+                var e = (Columns)obj;
+                e.primaryColumnName = primaryColumnName;
+                e.stretchMode = stretchMode;
+                e.reorderable = reorderable;
+                e.resizable = resizable;
+                e.resizePreview = resizePreview;
+
+                if (columns != null)
+                {
+                    foreach (var columnData in columns)
+                    {
+                        var column = (Column)columnData.CreateInstance();
+                        columnData.Deserialize(column);
+                        e.Add(column);
+                    }
+                }
+            }
         }
 
         /// <summary>

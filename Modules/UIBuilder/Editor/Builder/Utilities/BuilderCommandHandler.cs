@@ -8,6 +8,7 @@ using UnityEngine.UIElements;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -490,6 +491,9 @@ namespace Unity.UI.Builder
 
                 // Move attribute overrides to new template containers
                 BuilderAssetUtilities.CopyAttributeOverridesToChildTemplateAssets(attributeOverrides, linkedVTACopy);
+
+                // Sync serialized data because attribute overrides have been updated
+                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(linkedVTACopy));
 
                 // Apply stylesheets to new element + inline rules
                 BuilderAssetUtilities.AddStyleSheetsFromTreeAsset(unpackedVEA, linkedInstancedVTA);

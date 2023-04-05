@@ -301,6 +301,8 @@ namespace Unity.UI.Builder
         public const string LibraryControlsSectionHeaderName = "Controls";
         public const string LibraryAssetsSectionHeaderName = "UI Documents (UXML)";
         public const string LibraryCustomControlsSectionHeaderName = "Custom Controls (C#)";
+        public const string LibraryCustomControlsSectionUxmlSerializedData = "UxmlSerializedData";
+        public const string LibraryCustomControlsSectionUxmTraits = "UxmlTraits";
         public const string EditorOnlyTag = "Editor Only";
 
         //

@@ -701,9 +701,6 @@ namespace UnityEditor
         [NonSerialized]
         Camera m_Camera;
 
-        [NonSerialized]
-        bool m_EditorApplicationHasFocus = true;
-
         VisualElement m_CameraViewVisualElement;
 
         static readonly string s_CameraRectVisualElementName = "unity-scene-view-camera-rect";
@@ -3159,18 +3156,11 @@ namespace UnityEditor
         void OnBecameVisible()
         {
             EditorApplication.update += UpdateAnimatedMaterials;
-            EditorApplication.focusChanged += OnEditorApplicationFocusChanged;
         }
 
         void OnBecameInvisible()
         {
             EditorApplication.update -= UpdateAnimatedMaterials;
-            EditorApplication.focusChanged -= OnEditorApplicationFocusChanged;
-        }
-
-        void OnEditorApplicationFocusChanged(bool hasFocus)
-        {
-            m_EditorApplicationHasFocus = hasFocus;
         }
 
         void UpdateAnimatedMaterials()
@@ -3178,11 +3168,15 @@ namespace UnityEditor
             var repaint = false;
 
             // Ensure that we in fact do want to paint when not in focus.
-            if (!m_EditorApplicationHasFocus && s_PreferenceIgnoreAlwaysRefreshWhenNotFocused.value)
-                return;
-
-            if (m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
+            if (!EditorApplication.isFocused && s_PreferenceIgnoreAlwaysRefreshWhenNotFocused.value)
+            {
+                // We're going to capture this condition, so that it doesnt fall through.
+            }
+            else if (m_lastRenderedTime + 0.033f < EditorApplication.timeSinceStartup)
+            {
                 repaint = sceneViewState.alwaysRefreshEnabled;
+            }
+
             repaint |= LODUtility.IsLODAnimating(m_Camera);
 
             if (repaint)

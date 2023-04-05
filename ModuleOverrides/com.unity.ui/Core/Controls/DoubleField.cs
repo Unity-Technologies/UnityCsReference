@@ -17,6 +17,12 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         DoubleInput doubleInput => (DoubleInput)textInputBase;
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextValueField<double>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new DoubleField();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="DoubleField"/> using the data read from a UXML file.
         /// </summary>

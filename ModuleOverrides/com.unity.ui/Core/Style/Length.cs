@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a distance value.
     /// </summary>
+    [Serializable]
     public partial struct Length : IEquatable<Length>
     {
         // Float clamping value (2 ^ 23).
@@ -123,7 +124,9 @@ namespace UnityEngine.UIElements
             m_Unit = unit;
         }
 
+        [SerializeField]
         private float m_Value;
+        [SerializeField]
         private Unit m_Unit;
 
         /// <undoc/>
@@ -185,6 +188,72 @@ namespace UnityEngine.UIElements
                     break;
             }
             return $"{valueStr}{unitStr}";
+        }
+
+        internal static Length ParseString(string str, Length defaultValue = default)
+        {
+            if (string.IsNullOrEmpty(str))
+                return defaultValue;
+
+            str = str.ToLower().Trim();
+
+            var result = defaultValue;
+            if (char.IsLetter(str[0]))
+            {
+                if (str == "auto")
+                    result = Auto();
+                else if (str == "none")
+                    result = None();
+            }
+            else
+            {
+                // Find unit index
+                int digitEndIndex = 0;
+                int unitIndex = -1;
+                for (int i = 0; i < str.Length; i++)
+                {
+                    var c = str[i];
+                    if (char.IsNumber(c) || c == '.')
+                    {
+                        ++digitEndIndex;
+                    }
+                    else if (char.IsLetter(c) || c == '%')
+                    {
+                        unitIndex = i;
+                        break;
+                    }
+                    else
+                    {
+                        // Invalid format
+                        return defaultValue;
+                    }
+                }
+
+                var floatStr = str.Substring(0, digitEndIndex);
+                var unitStr = string.Empty;
+                if (unitIndex > 0)
+                    unitStr = str.Substring(unitIndex, str.Length - unitIndex);
+
+                float value = defaultValue.value;
+                LengthUnit unit = defaultValue.unit;
+
+                if (float.TryParse(floatStr, out var v))
+                    value = v;
+
+                switch (unitStr)
+                {
+                    case "px":
+                        unit = LengthUnit.Pixel;
+                        break;
+                    case "%":
+                        unit = LengthUnit.Percent;
+                        break;
+                }
+
+                result = new Length(value, unit);
+            }
+
+            return result;
         }
     }
 }

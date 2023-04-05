@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Reflection;
 using UnityEditor.Modules;
 using UnityEditorInternal.VR;
 using UnityEngine.Events;
@@ -711,6 +712,8 @@ namespace UnityEditor
 
             InitReorderableScriptingDefineSymbolsList(namedBuildTarget);
             InitReorderableAdditionalCompilerArgumentsList(namedBuildTarget);
+
+            FindPlayerSettingsAttributeSections();
         }
 
         void OnDisable()
@@ -931,7 +934,7 @@ namespace UnityEditor
             OtherSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
             PublishSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
 
-            DedicatedServerSectionsGUI(platform, m_SettingsExtensions[selectedPlatformValue], ref sectionIndex);
+            PlayerSettingsAttributeSectionsGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], ref sectionIndex);
 
             EditorGUILayout.EndPlatformGrouping();
 
@@ -1772,14 +1775,20 @@ namespace UnityEditor
             EndSettingsBox();
         }
 
-        public void DedicatedServerSectionsGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension, ref int sectionIndex)
+        public void PlayerSettingsAttributeSectionsGUI(NamedBuildTarget namedBuildTarget, ISettingEditorExtension settingsExtension, ref int sectionIndex)
         {
-            if (platform.namedBuildTarget != NamedBuildTarget.Server ||
-                settingsExtension == null ||
-                !settingsExtension.HasDedicatedServerSections())
-                return;
-
-            settingsExtension.DedicatedServerSectionsGUI(ref sectionIndex);
+            foreach (var box in m_boxes)
+            {
+                if (box.TargetName == namedBuildTarget.TargetName)
+                {
+                    if (BeginSettingsBox(sectionIndex, box.title))
+                    {
+                        box.mi.Invoke(null, null);
+                    }
+                    EndSettingsBox();
+                    sectionIndex++;
+                }
+            }
         }
 
         private void OtherSectionShaderSettingsGUI(BuildPlatform platform)
@@ -2787,7 +2796,7 @@ namespace UnityEditor
                 }
 
                 // Il2Cpp Stacktrace Configuration
-                using (new EditorGUI.DisabledScope(currentBackend != ScriptingImplementation.IL2CPP))
+                using (new EditorGUI.DisabledScope(currentBackend != ScriptingImplementation.IL2CPP || platform.namedBuildTarget == NamedBuildTarget.WebGL))
                 {
                     Il2CppStacktraceInformation config = GetCurrentIl2CppStacktraceInformationOptionForTarget(platform.namedBuildTarget);
 
@@ -3721,6 +3730,70 @@ namespace UnityEditor
             additionalCompilerArgumentsReorderableList.list = additionalCompilerArgumentsList;
             additionalCompilerArgumentsReorderableList.DoLayoutList();
             hasAdditionalCompilerArgumentsBeenModified = false;
+        }
+
+        private struct PlayerSettingsBox
+        {
+            public MethodInfo mi;
+            public GUIContent title;
+            public int order;
+            public string TargetName;
+
+            public PlayerSettingsBox(MethodInfo mi, string targetName, string title, int order)
+            {
+                this.mi = mi;
+                this.title = EditorGUIUtility.TrTextContent(title);
+                this.order = order;
+                this.TargetName = targetName;
+            }
+        };
+
+        private List<PlayerSettingsBox> m_boxes;
+
+        private PlayerSettingsSectionAttribute GetSectionAttribute(MethodInfo mi)
+        {
+            foreach (var attr in mi.GetCustomAttributes())
+            {
+                if (attr is PlayerSettingsSectionAttribute)
+                    return (PlayerSettingsSectionAttribute)attr;
+            }
+            return null;
+        }
+
+        private bool IsValidSectionSetting(MethodInfo mi)
+        {
+            if (!mi.IsStatic)
+            {
+                Debug.LogError($"Method {mi.Name} with attribute PlayerSettingsSection must be static.");
+                return false;
+            }
+            if (mi.IsGenericMethod || mi.IsGenericMethodDefinition)
+            {
+                Debug.LogError($"Method {mi.Name} with attribute PlayerSettingsSection cannot be generic.");
+                return false;
+            }
+            if (mi.GetParameters().Length != 0)
+            {
+                Debug.LogError($"Method {mi.Name} with attribute PlayerSettingsSection does not have the correct signature, expected: static void {mi.Name}()");
+                return false;
+            }
+            return true;
+        }
+
+        private void FindPlayerSettingsAttributeSections()
+        {
+            m_boxes = new List<PlayerSettingsBox>();
+
+            foreach (var method in TypeCache.GetMethodsWithAttribute<PlayerSettingsSectionAttribute>())
+            {
+                if (IsValidSectionSetting(method))
+                {
+                    PlayerSettingsSectionAttribute attr = GetSectionAttribute(method);
+                    m_boxes.Add(new PlayerSettingsBox(method, attr.TargetName, attr.Title, attr.Order));
+                }        
+            }
+
+            m_boxes.Sort((a, b) => a.order.CompareTo(b.order));
         }
     }
 }

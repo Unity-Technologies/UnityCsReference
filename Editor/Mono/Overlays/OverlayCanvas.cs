@@ -17,36 +17,60 @@ namespace UnityEditor.Overlays
     [Serializable]
     class SaveData : IEquatable<SaveData>
     {
+        // Note on the obsolete fields in this class:
+        // Previously, overlays were not serialized in any form. In 2023.2, overlays are serialized via json to the
+        // SaveData.contents field. This removes the need for many state variables previously required to restore an
+        // overlay to it's last position, visibility, dock, etc. SaveData as a class is still necessary, however, as
+        // the non-obsolete fields are conditions that are not known the Overlay itself.
+        // In the interest of backwards compatibility, the obsolete fields are left here for 2023.2. In 2024.1 (or
+        // whatever the next version happens to be), consider removing these. Overlay save data is implicitly updated
+        // when closing an editor or window for all overlays known to the window.
+
         public const int k_InvalidIndex = -1;
         public DockPosition dockPosition = DockPosition.Bottom;
         public string containerId = string.Empty;
-        public bool floating;
-        public bool collapsed;
         public bool displayed;
-        public Vector2 snapOffset;
-        public Vector2 snapOffsetDelta;
-        public SnapCorner snapCorner;
         public string id;
         public int index = k_InvalidIndex;
+        public string contents;
+
+        [Obsolete]
+        public bool floating;
+        [Obsolete]
+        public bool collapsed;
+        [Obsolete]
+        public Vector2 snapOffset;
+        [Obsolete]
+        public Vector2 snapOffsetDelta;
+        [Obsolete]
+        public SnapCorner snapCorner;
+        [Obsolete]
         public Layout layout = Layout.Panel;
+        [Obsolete]
         public Vector2 size;
+        [Obsolete]
         [FormerlySerializedAs("sizeOverriden")]
         public bool sizeOverridden;
 
         public SaveData() { }
 
+#pragma warning disable 612
+
         public SaveData(SaveData other)
         {
             dockPosition = other.dockPosition;
             containerId = other.containerId;
+            id = other.id;
+            index = other.index;
+            contents = other.contents;
+
+            // obsolete
             floating = other.floating;
             collapsed = other.collapsed;
             displayed = other.displayed;
             snapOffset = other.snapOffset;
             snapOffsetDelta = other.snapOffsetDelta;
             snapCorner = other.snapCorner;
-            id = other.id;
-            index = other.index;
             layout = other.layout;
             size = other.size;
             sizeOverridden = other.sizeOverridden;
@@ -54,19 +78,23 @@ namespace UnityEditor.Overlays
 
         public SaveData(Overlay overlay, int indexInContainer = k_InvalidIndex)
         {
-            var container = overlay.container != null ? overlay.container.name : "";
-            var dock = overlay.container != null && overlay.container.ContainsOverlay(overlay, OverlayContainerSection.BeforeSpacer)
+            string container = overlay.container != null ? overlay.container.name : "";
+            DockPosition dock = overlay.container != null
+                                && overlay.container.ContainsOverlay(overlay, OverlayContainerSection.BeforeSpacer)
                 ? DockPosition.Top
                 : DockPosition.Bottom;
 
             containerId = container;
             index = indexInContainer;
             dockPosition = dock;
+            id = overlay.id;
+            displayed = overlay.displayed;
+            contents = EditorJsonUtility.ToJson(overlay);
+
+            // obsolete
             floating = overlay.floating;
             collapsed = overlay.collapsed;
-            displayed = overlay.displayed;
             layout = overlay.layout;
-            id = overlay.id;
             snapCorner = overlay.floatingSnapCorner;
             snapOffset = overlay.floatingSnapOffset - overlay.m_SnapOffsetDelta;
             snapOffsetDelta = overlay.m_SnapOffsetDelta;
@@ -81,14 +109,14 @@ namespace UnityEditor.Overlays
 
             return dockPosition == other.dockPosition
                 && containerId == other.containerId
+                && id == other.id
+                && index == other.index
+                && displayed == other.displayed
                 && floating == other.floating
                 && collapsed == other.collapsed
-                && displayed == other.displayed
                 && snapOffset.Equals(other.snapOffset)
                 && snapOffsetDelta.Equals(other.snapOffsetDelta)
                 && snapCorner == other.snapCorner
-                && id == other.id
-                && index == other.index
                 && layout == other.layout
                 && size == other.size
                 && sizeOverridden == other.sizeOverridden;
@@ -109,12 +137,12 @@ namespace UnityEditor.Overlays
                 var hashCode = (int)dockPosition;
                 hashCode = (hashCode * 397) ^ (containerId != null ? containerId.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ floating.GetHashCode();
+                hashCode = (hashCode * 397) ^ (id != null ? id.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ collapsed.GetHashCode();
                 hashCode = (hashCode * 397) ^ displayed.GetHashCode();
                 hashCode = (hashCode * 397) ^ snapOffset.GetHashCode();
                 hashCode = (hashCode * 397) ^ snapOffsetDelta.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)snapCorner;
-                hashCode = (hashCode * 397) ^ (id != null ? id.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ index;
                 hashCode = (hashCode * 397) ^ (int)layout;
                 hashCode = (hashCode * 397) ^ size.GetHashCode();
@@ -139,6 +167,7 @@ namespace UnityEditor.Overlays
                    $"\nsize: {size}" +
                    $"\nsizeOverridden: {sizeOverridden}";
         }
+#pragma warning restore 612
     }
 
     [Serializable]
@@ -198,15 +227,12 @@ namespace UnityEditor.Overlays
         static VisualTreeAsset s_DropZoneTreeAsset;
 
         static SaveData defaultSaveData => new SaveData()
-            {
-                floating = false,
-                collapsed = false,
-                containerId = null,
-                displayed = false,
-                dockPosition = DockPosition.Bottom,
-                index = int.MaxValue,
-                layout = Layout.Panel
-            };
+        {
+            containerId = null,
+            displayed = false,
+            dockPosition = DockPosition.Bottom,
+            index = int.MaxValue
+        };
 
         // order must match OverlayDockArea
         static readonly string[] k_DockZoneContainerIDs = new string[7]
@@ -586,6 +612,7 @@ namespace UnityEditor.Overlays
 
         public void OnAfterDeserialize() {}
 
+        // used by tests
         internal void CopySaveData(out SaveData[] saveData)
         {
             // Force a save of the current data
@@ -710,7 +737,8 @@ namespace UnityEditor.Overlays
             return overlay;
         }
 
-        SaveData FindSaveData(Overlay overlay)
+        // used by tests
+        internal SaveData FindSaveData(Overlay overlay)
         {
             var data = m_SaveData.FirstOrDefault(x => x.id == overlay.id);
 
@@ -725,20 +753,31 @@ namespace UnityEditor.Overlays
                     data.containerId = k_DockZoneContainerIDs[(int)attrib.defaultDockZone];
                     data.index = attrib.defaultDockIndex;
                     data.dockPosition = attrib.defaultDockPosition;
-                    data.floating = attrib.defaultDockZone == DockZone.Floating;
-                    data.snapOffset = new Vector2(48, 48);
-                    data.snapCorner = SnapCorner.TopLeft;
-                    data.layout = attrib.defaultLayout;
                     data.displayed = attrib.defaultDisplay;
+                    overlay.layout = attrib.defaultLayout;
+
+                    // also apply to obsolete SaveData fields for backwards compatibility (ie, there is no
+                    // SaveData.contents but we still want layout and size attribute values to be forwarded)
+                    #pragma warning disable 612
+                    data.layout = attrib.defaultLayout;
+                    data.floating = attrib.defaultDockZone == DockZone.Floating;
+                    #pragma warning restore 612
 
                     if (!float.IsNegativeInfinity(attrib.defaultWidth) && !float.IsNegativeInfinity(attrib.defaultHeight))
                     {
+                        overlay.size = new Vector2(attrib.defaultWidth, attrib.defaultHeight);
+                        overlay.sizeOverridden = true;
+                        #pragma warning disable 612
                         data.size = new Vector2(attrib.defaultWidth, attrib.defaultHeight);
                         data.sizeOverridden = true;
+                        #pragma warning restore 612
                     }
                     else
                     {
+                        overlay.sizeOverridden = false;
+                        #pragma warning disable 612
                         data.sizeOverridden = false;
+                        #pragma warning restore 612
                     }
                 }
             }
@@ -751,7 +790,12 @@ namespace UnityEditor.Overlays
             if(data == null)
                 data = FindSaveData(overlay);
 
-            overlay.ApplySaveData(data);
+            EditorJsonUtility.FromJsonOverwrite(data.contents, overlay);
+
+            #pragma warning disable 618
+            if(string.IsNullOrEmpty(data.contents))
+                overlay.ApplySaveData(data);
+            #pragma warning restore 618
 
             var container = containers.FirstOrDefault(x => data.containerId == x.name);
 
@@ -773,6 +817,10 @@ namespace UnityEditor.Overlays
 
             if(overlay.floating)
                 floatingContainer.Add(overlay.rootVisualElement);
+
+            // when restoring an overlay from serialized state, always start from "not shown" state so that
+            // Overlay.displayedChanged is called
+            overlay.rootVisualElement.style.display = DisplayStyle.None;
 
             if(overlay.displayed != data.displayed)
                 overlay.displayed = data.displayed;

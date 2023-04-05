@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
@@ -12,6 +11,34 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class SliderInt : BaseSlider<int>
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseSlider<int>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private int lowValue;
+            [SerializeField] private int highValue;
+            [SerializeField] private float pageSize;
+            [SerializeField] private bool showInputField;
+            [SerializeField] private SliderDirection direction;
+            [SerializeField] private bool inverted;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new SliderInt();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (SliderInt)obj;
+                e.lowValue = lowValue;
+                e.highValue = highValue;
+                e.direction = direction;
+                e.pageSize = pageSize;
+                e.showInputField = showInputField;
+                e.inverted = inverted;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="SliderInt"/> using the data read from a UXML file.
         /// </summary>

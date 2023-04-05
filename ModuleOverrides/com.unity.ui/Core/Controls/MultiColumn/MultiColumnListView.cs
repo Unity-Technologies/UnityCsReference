@@ -12,6 +12,40 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class MultiColumnListView : BaseListView
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseListView.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField, UxmlObject] private Columns.UxmlSerializedData columns;
+            [SerializeField, UxmlObject] private SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
+            [SerializeField] private bool sortingEnabled;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new MultiColumnListView();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (MultiColumnListView)obj;
+                e.sortingEnabled = sortingEnabled;
+
+                if (columns != null)
+                {
+                    var c = new Columns();
+                    columns.Deserialize(c);
+                    e.columns = c;
+                }
+
+                if (sortColumnDescriptions != null)
+                {
+                    var c = new SortColumnDescriptions();
+                    sortColumnDescriptions.Deserialize(c);
+                    e.sortColumnDescriptions = c;
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="MultiColumnListView"/> using data from a UXML file.
         /// </summary>

@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -17,6 +19,12 @@ namespace UnityEditor.UIElements
         private static readonly StyleSheet s_ToolbarDarkStyleSheet;
         private static readonly StyleSheet s_ToolbarLightStyleSheet;
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new Toolbar();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Toolbar"/> using the data read from a UXML file.
         /// </summary>
@@ -24,6 +32,8 @@ namespace UnityEditor.UIElements
 
         static Toolbar()
         {
+            if (Application.isBuildingEditorResources)
+                return;
             s_ToolbarDarkStyleSheet = EditorGUIUtility.Load(UIElementsEditorUtility.GetStyleSheetPathForCurrentFont(s_ToolbarDarkStyleSheetPath)) as StyleSheet;
             s_ToolbarDarkStyleSheet.isDefaultStyleSheet = true;
 

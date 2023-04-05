@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Properties;
 using UnityEngine.UIElements;
 
@@ -13,6 +14,12 @@ namespace UnityEditor.UIElements
     public class ToolbarPopupSearchField : ToolbarSearchField, IToolbarMenuElement
     {
         internal static readonly DataBindingProperty menuProperty = nameof(menu);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : ToolbarSearchField.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ToolbarPopupSearchField();
+        }
 
         /// <summary>
         /// Instantiates a <see cref="ToolbarPopupSearchField"/> using the data read from a UXML file.

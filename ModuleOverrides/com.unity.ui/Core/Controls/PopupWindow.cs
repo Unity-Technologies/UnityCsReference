@@ -18,6 +18,12 @@ namespace UnityEngine.UIElements
     /// </example>
     public class PopupWindow : TextElement
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new PopupWindow();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="PopupWindow"/> using the data read from a UXML file.
         /// </summary>

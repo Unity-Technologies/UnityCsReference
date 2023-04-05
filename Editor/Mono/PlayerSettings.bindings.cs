@@ -612,10 +612,10 @@ namespace UnityEditor
         public static extern bool enableOpenGLProfilerGPURecorders { get; set; }
 
         public static extern bool useHDRDisplay { get; set; }
-        
+
         [Obsolete("D3DHDRBitDepth has been replaced by hdrBitDepth. (UnityUpgradable) -> hdrBitDepth", true)]
         public static extern D3DHDRDisplayBitDepth D3DHDRBitDepth { [NativeName("GetHDRBitDepthForObseleteEnum")] get; [NativeName("SetHDRBitDepthForObseleteEnum")] set; }
-        
+
         public static extern HDRDisplayBitDepth hdrBitDepth { get; set; }
 
         // What happens with the fullscreen Window when it runs in the background
@@ -1113,7 +1113,7 @@ namespace UnityEditor
         private static extern void SetCaptureStartupLogsInternal(string buildTargetName, bool enable);
         public static void SetCaptureStartupLogs(NamedBuildTarget buildTarget, bool enable) =>
             SetCaptureStartupLogsInternal(buildTarget.TargetName, enable);
-        
+
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         internal static extern bool IsApplicationIdentifierValid(string name, BuildTargetGroup targetGroup);
 
@@ -1179,8 +1179,15 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         [NativeMethod("SetIl2CppStacktraceInformation")]
         private static extern void SetIl2CppStacktraceInformationInternal(string buildTargetName, Il2CppStacktraceInformation option);
-        public static void SetIl2CppStacktraceInformation(NamedBuildTarget buildTarget, Il2CppStacktraceInformation option) =>
+        public static void SetIl2CppStacktraceInformation(NamedBuildTarget buildTarget, Il2CppStacktraceInformation option)
+        {
+            if (buildTarget == NamedBuildTarget.WebGL && option == Il2CppStacktraceInformation.MethodFileLineNumber)
+            {
+                Debug.LogWarning("The \"Method Name, File Name, and Line Number\" option for IL2CPP stack traces is not supported on WebGL.");
+                option = Il2CppStacktraceInformation.MethodOnly;
+            }
             SetIl2CppStacktraceInformationInternal(buildTarget.TargetName, option);
+        }
 
         [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]

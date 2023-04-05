@@ -11,6 +11,24 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class RadioButton : BaseBoolField, IGroupBoxOption
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseBoolField.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string text;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new RadioButton();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (RadioButton)obj;
+                e.text = text;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="RadioButton"/> using data from a UXML file.
         /// </summary>

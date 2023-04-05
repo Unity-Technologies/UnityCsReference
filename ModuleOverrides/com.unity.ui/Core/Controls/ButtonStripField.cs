@@ -2,12 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
     class ButtonStripField : BaseField<int>
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<int>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ButtonStripField();
+        }
+
         public new class UxmlFactory : UxmlFactory<ButtonStripField, UxmlTraits> {}
         public new class UxmlTraits : BaseField<int>.UxmlTraits {}
 

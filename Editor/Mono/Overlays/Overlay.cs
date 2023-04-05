@@ -37,23 +37,33 @@ namespace UnityEditor.Overlays
         internal const string k_ToolbarVerticalLayout = "overlay-layout--toolbar-vertical";
         const string k_PanelLayout = "overlay-layout--freesize";
 
-        // Persistent State Data
         string m_Id, m_RootVisualElementName, m_DisplayName;
-        Layout m_Layout = Layout.Panel;
         Layout m_ActiveLayout = Layout.Panel;
-        bool m_Collapsed;
+
         internal bool dontSaveInLayout {get; set;}
         internal bool m_HasMenuEntry = true;
+
+        [SerializeField]
+        Layout m_Layout = Layout.Panel;
+        [SerializeField]
+        bool m_Collapsed;
+        [SerializeField]
         bool m_Floating;
+        [SerializeField]
         Vector2 m_FloatingSnapOffset;
+        [SerializeField]
         internal Vector2 m_SnapOffsetDelta = Vector2.zero;
+        [SerializeField]
+        SnapCorner m_FloatingSnapCorner = SnapCorner.TopLeft;
 
         //Min and Max being 0 means the resizing is disabled for that axis without enforcing an actual size
         //Resizing is disabled by default
+        [SerializeField]
+        Vector2 m_Size;
+        [SerializeField]
+        bool m_SizeOverridden;
         Vector2 m_MinSize = Vector2.zero;
         Vector2 m_MaxSize = Vector2.zero;
-        Vector2 m_Size;
-        bool m_SizeOverridden;
 
         // Temporary Variables
         bool m_LockAnchor = false;
@@ -332,10 +342,12 @@ namespace UnityEditor.Overlays
         }
 
         public bool isInToolbar => container is ToolbarOverlayContainer;
+
         internal bool sizeOverridden
         {
             get => m_SizeOverridden;
-            private set
+
+            set
             {
                 if (m_SizeOverridden == value)
                     return;
@@ -705,10 +717,11 @@ namespace UnityEditor.Overlays
             rootVisualElement.style.display = DisplayStyle.None;
         }
 
+        // marked obsolete by @karlh 2023/03/13
+        [Obsolete("No longer necessary, Overlay data is serialized by the OverlayCanvas.", false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal void ApplySaveData(SaveData data)
         {
-            rootVisualElement.style.display = DisplayStyle.None;
             floatingSnapCorner = data.snapCorner;
             m_Floating = data.floating;
             m_Collapsed = data.collapsed;

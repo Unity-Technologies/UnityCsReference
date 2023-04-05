@@ -11,6 +11,24 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class BindableElement : VisualElement, IBindable
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string bindingPath;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new BindableElement();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (BindableElement)obj;
+                e.bindingPath = bindingPath;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="BindableElement"/> using the data read from a UXML file.
         /// </summary>

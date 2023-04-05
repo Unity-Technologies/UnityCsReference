@@ -271,6 +271,14 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private float m_ReferenceSpritePixelsPerUnit = 100;
 
+        internal float pixelsPerUnit {
+            get { return m_PixelsPerUnit; }
+            set { m_PixelsPerUnit = value; }
+        }
+
+        [SerializeField]
+        private float m_PixelsPerUnit = 100;
+
         [SerializeField]
         private float m_Scale = k_DefaultScaleValue;
 
@@ -565,6 +573,8 @@ namespace UnityEngine.UIElements
             // This is no guarantee, but it's the best we can do at the moment.
             referenceDpi = ScreenDPI;
             scaleMode = PanelScaleMode.ConstantPhysicalSize;
+            renderMode = PanelRenderMode.ScreenSpaceOverlay;
+            pixelsPerUnit = 100.0f;
             themeUss = GetOrCreateDefaultTheme?.Invoke();
             m_AtlasBlitShader = m_RuntimeShader = m_RuntimeWorldShader = null;
 
@@ -782,6 +792,7 @@ namespace UnityEngine.UIElements
             panel.targetTexture = targetTexture;
             panel.targetDisplay = targetDisplay;
             panel.drawsInCameras = renderMode == PanelRenderMode.WorldSpace;
+            panel.pixelsPerUnit = pixelsPerUnit;
             panel.isFlat = renderMode != PanelRenderMode.WorldSpace;
             panel.worldSpaceLayer = worldSpaceLayer;
             panel.clearSettings = new PanelClearSettings {clearColor = m_ClearColor, clearDepthStencil = m_ClearDepthStencil, color = m_ColorClearValue};

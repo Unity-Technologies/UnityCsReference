@@ -46,6 +46,12 @@ namespace UnityEditor.UIElements
     /// </example>
     public class ToolbarBreadcrumbs : VisualElement
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ToolbarBreadcrumbs();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="ToolbarBreadcrumbs"/> using the data read from a UXML file.
         /// </summary>

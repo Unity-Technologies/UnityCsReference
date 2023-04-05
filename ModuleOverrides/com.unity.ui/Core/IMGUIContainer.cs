@@ -18,6 +18,12 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty cullingEnabledProperty = nameof(cullingEnabled);
         internal static readonly DataBindingProperty contextTypeProperty = nameof(contextType);
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new IMGUIContainer();
+        }
+
         /// <summary>
         /// Instantiates an <see cref="IMGUIContainer"/> using the data read from a UXML file.
         /// </summary>

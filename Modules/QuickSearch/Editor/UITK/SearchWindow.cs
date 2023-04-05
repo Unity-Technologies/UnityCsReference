@@ -58,6 +58,7 @@ namespace UnityEditor.Search
         private SearchAutoCompleteWindow m_SearchAutoCompleteWindow;
         private VisualElement m_SearchQueryPanelContainer;
         private VisualElement m_DetailsPanelContainer;
+        private IEnumerable<SearchProvider> m_AvailableProviders;
 
         [SerializeField] protected int m_ContextHash;
         [SerializeField] private float m_PreviousItemSize = -1;
@@ -481,6 +482,8 @@ namespace UnityEditor.Search
                     Dispatcher.On(SearchEvent.RefreshContent, RefreshContent)
                 };
 
+                m_AvailableProviders = (IsPicker() || !context.options.HasFlag(SearchFlags.OpenGlobal)) ? new List<SearchProvider>(context.providers) : SearchService.OrderedProviders;
+
                 s_GlobalViewState = null;
             }
         }
@@ -540,7 +543,14 @@ namespace UnityEditor.Search
             EditorApplication.delayCall -= m_SearchView.DelayTrackSelection;
             SearchSettings.providerActivationChanged -= OnProviderActivationChanged;
 
-            selectCallback?.Invoke(selection?.FirstOrDefault(), selection == null || selection.Count == 0);
+            try
+            {
+                selectCallback?.Invoke(selection?.FirstOrDefault(), selection == null || selection.Count == 0);
+            }
+            catch
+            {
+            }
+            
             selectCallback = null;
 
             SaveSessionSettings();
@@ -613,7 +623,18 @@ namespace UnityEditor.Search
             }
             if (providerId == m_SearchView.currentGroup)
                 SelectGroup(null);
+
             context.SetFilter(providerId, toggledEnabled);
+            if (toggledEnabled && provider == null && !context.providers.Any(p => p.id == providerId))
+            {
+                // Provider that are not stored in the SearchService, might only exists in the m_AvailableProviders (local providers created directly in the context).
+                var localProvider = m_AvailableProviders.FirstOrDefault(p => p.id == providerId);
+                if (localProvider != null)
+                {
+                    var newProviderList = context.GetProviders().Concat(new[] { localProvider }).ToArray();
+                    context.SetProviders(newProviderList);
+                }
+            }
 
             Dispatcher.Emit(SearchEvent.FilterToggled, new SearchEventPayload(this, providerId));
 
@@ -886,20 +907,17 @@ namespace UnityEditor.Search
 
         void ISearchWindow.AddProvidersToMenu(GenericMenu menu)
         {
-            if (IsPicker())
+            var allEnabledProviders = m_AvailableProviders.Where(p => context.IsEnabled(p.id));
+            var singleProviderEnabled = allEnabledProviders.Count() == 1 ? allEnabledProviders.First() : null;
+            foreach (var p in m_AvailableProviders)
             {
-                // Only allow customization of provider in current context.
-                foreach (var p in context.providers)
+                var filterContent = new GUIContent($"{p.name} ({p.filterId})");
+                if (singleProviderEnabled == p)
                 {
-                    var filterContent = new GUIContent($"{p.name} ({p.filterId})");
-                    menu.AddItem(filterContent, context.IsEnabled(p.id), () => ToggleFilter(p.id));
+                    menu.AddDisabledItem(filterContent, context.IsEnabled(p.id));
                 }
-            }
-            else
-            {
-                foreach (var p in SearchService.OrderedProviders)
+                else
                 {
-                    var filterContent = new GUIContent($"{p.name} ({p.filterId})");
                     menu.AddItem(filterContent, context.IsEnabled(p.id), () => ToggleFilter(p.id));
                 }
             }
@@ -1112,7 +1130,7 @@ namespace UnityEditor.Search
             }
 
             args.group = viewState.hideTabs ? null : (loadGroup ?? args.group);
-            if (viewState.hideAllGroup && (args.group == null || string.Equals("all", args.group, StringComparison.Ordinal)))
+            if (viewState.hideAllGroup && (args.group == null || string.Equals(GroupedSearchList.allGroupId, args.group, StringComparison.Ordinal)))
                 args.group = args.context?.GetProviders().FirstOrDefault()?.id;
 
             if (Utils.IsRunningTests() && !string.IsNullOrEmpty(args.searchText))

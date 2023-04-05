@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -79,6 +80,26 @@ namespace UnityEngine.UIElements
         /// The USS class name for the <see cref="HelpBoxMessageType.Error"/> state in Elements of this type.
         /// </summary>
         public static readonly string iconErrorUssClassName = iconUssClassName + "--error";
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string text;
+            [SerializeField] private HelpBoxMessageType messageType;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new HelpBox();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (HelpBox)obj;
+                e.text = text;
+                e.messageType = messageType;
+            }
+        }
 
         /// <summary>
         /// Instantiates a <see cref="HelpBox"/> with data from a UXML file.

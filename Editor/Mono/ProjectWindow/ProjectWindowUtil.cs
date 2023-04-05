@@ -20,6 +20,7 @@ using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEditor.U2D;
 using UnityEngine.Internal;
+using UnityEngine.Audio;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 using UnityEngine.U2D;
@@ -218,6 +219,20 @@ namespace UnityEditor
                     }
                 }
                 ProjectWindowUtil.ShowCreatedAsset(controller);
+            }
+        }
+
+        internal class DoCreateAudioRandomContainer : EndNameEditAction
+        {
+            public override void Action(int instanceId, string path, string resourceFile)
+            {
+                var container = new AudioRandomContainer
+                {
+                    name = Path.GetFileName(path)
+                };
+
+                AssetDatabase.CreateAsset(container, path);
+                ProjectWindowUtil.ShowCreatedAsset(container);
             }
         }
     }
@@ -475,6 +490,12 @@ namespace UnityEditor
         {
             var icon = EditorGUIUtility.IconContent<AudioMixerController>().image as Texture2D;
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", icon, null);
+        }
+
+        static private void CreateAudioRandomContainer()
+        {
+            var icon = EditorGUIUtility.IconContent<AudioRandomContainer>().image as Texture2D;
+            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAudioRandomContainer>(), "New Audio Random Container.asset", icon, null);
         }
 
         internal static string SetLineEndings(string content, LineEndingsMode lineEndingsMode)

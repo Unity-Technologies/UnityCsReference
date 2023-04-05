@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Properties;
 using UnityEngine.UIElements;
 
@@ -14,6 +15,12 @@ namespace UnityEditor.UIElements
     {
         internal static readonly DataBindingProperty menuProperty = nameof(menu);
         internal static readonly DataBindingProperty variantProperty = nameof(variant);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ToolbarMenu();
+        }
 
         /// <summary>
         /// Instantiates a <see cref="ToolbarMenu"/> using the data read from a UXML file.

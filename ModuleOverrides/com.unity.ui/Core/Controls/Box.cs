@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -9,6 +11,12 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class Box : VisualElement
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new Box();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Box"/> using the data read from a UXML file.
         /// </summary>

@@ -34,7 +34,7 @@ namespace UnityEngine.UIElements
         // Returns the transform to be applied to vertices that are in their local space
         public static void GetVerticesTransformInfo(VisualElement ve, out Matrix4x4 transform)
         {
-            if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || (ve.renderHints & (RenderHints.GroupTransform)) != 0)
+            if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.renderChainData.isGroupTransform)
             {
                 transform = Matrix4x4.identity;
             }

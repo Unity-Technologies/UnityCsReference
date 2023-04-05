@@ -25,6 +25,37 @@ namespace UnityEngine.UIElements
             };
         }
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseCompositeField<Rect, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            public override object CreateInstance() => new RectField();
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
+                int foundAttributeCounter = 0;
+                var x = UxmlUtility.TryParseFloatAttribute("x", bag, ref foundAttributeCounter);
+                var y = UxmlUtility.TryParseFloatAttribute("y", bag, ref foundAttributeCounter);
+                var w = UxmlUtility.TryParseFloatAttribute("w", bag, ref foundAttributeCounter);
+                var h = UxmlUtility.TryParseFloatAttribute("h", bag, ref foundAttributeCounter);
+
+                if (foundAttributeCounter > 0)
+                {
+                    Value = new Rect(x, y, w, h);
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("x");
+                        uxmlAsset.RemoveAttribute("y");
+                        uxmlAsset.RemoveAttribute("w");
+                        uxmlAsset.RemoveAttribute("h");
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="RectField"/> using the data read from a UXML file.
         /// </summary>
@@ -105,6 +136,37 @@ namespace UnityEngine.UIElements
             };
         }
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseCompositeField<RectInt, IntegerField, int>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            public override object CreateInstance() => new RectIntField();
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
+                int foundAttributeCounter = 0;
+                var x = UxmlUtility.TryParseIntAttribute("x", bag, ref foundAttributeCounter);
+                var y = UxmlUtility.TryParseIntAttribute("y", bag, ref foundAttributeCounter);
+                var w = UxmlUtility.TryParseIntAttribute("w", bag, ref foundAttributeCounter);
+                var h = UxmlUtility.TryParseIntAttribute("h", bag, ref foundAttributeCounter);
+
+                if (foundAttributeCounter > 0)
+                {
+                    Value = new RectInt(x, y, w, h);
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("x");
+                        uxmlAsset.RemoveAttribute("y");
+                        uxmlAsset.RemoveAttribute("w");
+                        uxmlAsset.RemoveAttribute("h");
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="RectIntField"/> using the data read from a UXML file.
         /// </summary>
@@ -183,6 +245,33 @@ namespace UnityEngine.UIElements
             };
         }
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseCompositeField<Vector2, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            public override object CreateInstance() => new Vector2Field();
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
+                int foundAttributeCounter = 0;
+                var x = UxmlUtility.TryParseFloatAttribute("x", bag, ref foundAttributeCounter);
+                var y = UxmlUtility.TryParseFloatAttribute("y", bag, ref foundAttributeCounter);
+
+                if (foundAttributeCounter > 0)
+                {
+                    Value = new Vector2(x, y);
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("x");
+                        uxmlAsset.RemoveAttribute("y");
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Vector2Field"/> using the data read from a UXML file.
         /// </summary>
@@ -257,6 +346,35 @@ namespace UnityEngine.UIElements
                 new FieldDescription("Y", "unity-y-input", r => r.y, (ref Vector3 r, float v) => r.y = v),
                 new FieldDescription("Z", "unity-z-input", r => r.z, (ref Vector3 r, float v) => r.z = v),
             };
+        }
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseCompositeField<Vector3, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            public override object CreateInstance() => new Vector3Field();
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
+                int foundAttributeCounter = 0;
+                var x = UxmlUtility.TryParseFloatAttribute("x", bag, ref foundAttributeCounter);
+                var y = UxmlUtility.TryParseFloatAttribute("y", bag, ref foundAttributeCounter);
+                var z = UxmlUtility.TryParseFloatAttribute("z", bag, ref foundAttributeCounter);
+
+                if (foundAttributeCounter > 0)
+                {
+                    Value = new Vector3(x, y, z);
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("x");
+                        uxmlAsset.RemoveAttribute("y");
+                        uxmlAsset.RemoveAttribute("z");
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -338,6 +456,37 @@ namespace UnityEngine.UIElements
             };
         }
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseCompositeField<Vector4, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            public override object CreateInstance() => new Vector4Field();
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
+                int foundAttributeCounter = 0;
+                var x = UxmlUtility.TryParseFloatAttribute("x", bag, ref foundAttributeCounter);
+                var y = UxmlUtility.TryParseFloatAttribute("y", bag, ref foundAttributeCounter);
+                var z = UxmlUtility.TryParseFloatAttribute("z", bag, ref foundAttributeCounter);
+                var w = UxmlUtility.TryParseFloatAttribute("w", bag, ref foundAttributeCounter);
+
+                if (foundAttributeCounter > 0)
+                {
+                    Value = new Vector4(x, y, z, w);
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("x");
+                        uxmlAsset.RemoveAttribute("y");
+                        uxmlAsset.RemoveAttribute("z");
+                        uxmlAsset.RemoveAttribute("w");
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Vector4Field"/> using the data read from a UXML file.
         /// </summary>
@@ -415,6 +564,34 @@ namespace UnityEngine.UIElements
             };
         }
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseCompositeField<Vector2Int, IntegerField, int>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            public override object CreateInstance() => new Vector2IntField();
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
+                int foundAttributeCounter = 0;
+                var x = UxmlUtility.TryParseIntAttribute("x", bag, ref foundAttributeCounter);
+                var y = UxmlUtility.TryParseIntAttribute("y", bag, ref foundAttributeCounter);
+
+                if (foundAttributeCounter > 0)
+                {
+                    // Upgrade the attributes
+                    Value = new Vector2Int(x, y);
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("x");
+                        uxmlAsset.RemoveAttribute("y");
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Vector2IntField"/> using the data read from a UXML file.
         /// </summary>
@@ -489,6 +666,35 @@ namespace UnityEngine.UIElements
                 new FieldDescription("Y", "unity-y-input", r => r.y, (ref Vector3Int r, int v) => r.y = v),
                 new FieldDescription("Z", "unity-z-input", r => r.z, (ref Vector3Int r, int v) => r.z = v),
             };
+        }
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseCompositeField<Vector3Int, IntegerField, int>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            public override object CreateInstance() => new Vector3IntField();
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
+                int foundAttributeCounter = 0;
+                var x = UxmlUtility.TryParseIntAttribute("x", bag, ref foundAttributeCounter);
+                var y = UxmlUtility.TryParseIntAttribute("y", bag, ref foundAttributeCounter);
+                var z = UxmlUtility.TryParseIntAttribute("z", bag, ref foundAttributeCounter);
+
+                if (foundAttributeCounter > 0)
+                {
+                    Value = new Vector3Int(x, y, z);
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("x");
+                        uxmlAsset.RemoveAttribute("y");
+                        uxmlAsset.RemoveAttribute("z");
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                    }
+                }
+            }
         }
 
         /// <summary>

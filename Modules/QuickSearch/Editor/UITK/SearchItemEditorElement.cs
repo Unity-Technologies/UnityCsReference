@@ -90,11 +90,7 @@ namespace UnityEditor.Search
         {
             var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
 
-            InspectorElement.Mode inspectorElementMode = InspectorElement.Mode.Normal;
-            if (editor is GenericInspector)
-                inspectorElementMode = InspectorElement.Mode.UIEDefault;
-
-            var inspectorElement = new InspectorElement(editor, inspectorElementMode)
+            var inspectorElement = new InspectorElement(editor, InspectorElement.DefaultInspectorFramework.UIToolkit)
             {
                 focusable = false,
                 name = editorTitle + "Inspector",

@@ -52,8 +52,7 @@ namespace UnityEngine.UIElements
             ProcessedByFocusController = 256,
         }
 
-        internal EventCategory eventCategory { get; }
-
+        internal int eventCategories { get; }
 
         static ulong s_NextEventId = 0;
 
@@ -263,7 +262,7 @@ namespace UnityEngine.UIElements
 
         // Propagation state
         /// <summary>
-        /// The current propagation phase for this event. 
+        /// The current propagation phase for this event.
         /// </summary>
         public PropagationPhase propagationPhase { get; internal set; }
 
@@ -489,7 +488,7 @@ namespace UnityEngine.UIElements
 
         internal EventBase(EventCategory category)
         {
-            eventCategory = category;
+            eventCategories = 1 << (int) category;
             m_ImguiEvent = null;
             LocalInit();
         }

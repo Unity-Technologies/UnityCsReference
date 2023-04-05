@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -19,6 +20,26 @@ namespace UnityEngine.UIElements
     {
         internal static readonly DataBindingProperty textProperty = nameof(text);
         internal static readonly DataBindingProperty valueProperty = nameof(value);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string text;
+            [SerializeField] private bool value;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new Foldout();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (Foldout)obj;
+                e.text = text;
+                e.SetValueWithoutNotify(value);
+            }
+        }
 
         /// <summary>
         /// Instantiates a <see cref="Foldout"/> using the data from a UXML file.

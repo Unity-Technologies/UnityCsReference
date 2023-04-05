@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using Unity.Properties;
 
@@ -16,6 +17,8 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty fixedPaneInitialDimensionProperty = nameof(fixedPaneInitialDimension);
         internal static readonly DataBindingProperty orientationProperty = nameof(orientation);
 
+        const float k_FixedPaneInitialDimension = 100f;
+
         static readonly string s_UssClassName = "unity-two-pane-split-view";
         static readonly string s_ContentContainerClassName = "unity-two-pane-split-view__content-container";
         static readonly string s_HandleDragLineClassName = "unity-two-pane-split-view__dragline";
@@ -26,6 +29,26 @@ namespace UnityEngine.UIElements
         static readonly string s_HandleDragLineAnchorHorizontalClassName = s_HandleDragLineAnchorClassName + "--horizontal";
         static readonly string s_VerticalClassName = "unity-two-pane-split-view--vertical";
         static readonly string s_HorizontalClassName = "unity-two-pane-split-view--horizontal";
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private int fixedPaneIndex;
+            [SerializeField] private float fixedPaneInitialDimension;
+            [SerializeField] private TwoPaneSplitViewOrientation orientation;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new TwoPaneSplitView();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (TwoPaneSplitView)obj;
+                e.Init(fixedPaneIndex, fixedPaneInitialDimension, orientation);
+            }
+        }
 
         /// <summary>
         /// Instantiates a <see cref="TwoPaneSplitView"/> using the data read from a UXML file.
@@ -38,7 +61,7 @@ namespace UnityEngine.UIElements
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
             UxmlIntAttributeDescription m_FixedPaneIndex = new UxmlIntAttributeDescription { name = "fixed-pane-index", defaultValue = 0 };
-            UxmlIntAttributeDescription m_FixedPaneInitialDimension = new UxmlIntAttributeDescription { name = "fixed-pane-initial-dimension", defaultValue = 100 };
+            UxmlIntAttributeDescription m_FixedPaneInitialDimension = new UxmlIntAttributeDescription { name = "fixed-pane-initial-dimension", defaultValue = (int)k_FixedPaneInitialDimension };
             UxmlEnumAttributeDescription<TwoPaneSplitViewOrientation> m_Orientation = new UxmlEnumAttributeDescription<TwoPaneSplitViewOrientation> { name = "orientation", defaultValue = TwoPaneSplitViewOrientation.Horizontal };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -83,7 +106,7 @@ namespace UnityEngine.UIElements
 
         TwoPaneSplitViewOrientation m_Orientation;
         int m_FixedPaneIndex;
-        float m_FixedPaneInitialDimension;
+        float m_FixedPaneInitialDimension = k_FixedPaneInitialDimension;
 
         /// <summary>
         /// 0 for setting first child as the fixed pane, 1 for the second child element.

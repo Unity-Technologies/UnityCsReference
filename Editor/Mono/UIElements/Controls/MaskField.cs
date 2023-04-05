@@ -8,6 +8,7 @@ using Unity.Properties;
 using System.Text;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
+using UnityEngine;
 
 namespace UnityEditor.UIElements
 {
@@ -522,6 +523,27 @@ namespace UnityEditor.UIElements
     {
         internal override int MaskToValue(int newMask) => newMask;
         internal override int ValueToMask(int value) => value;
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseMaskField<int>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private List<string> choices;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new MaskField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (MaskField)obj;
+
+                // Assigning null value throws.
+                if (choices != null)
+                    e.choices = choices;
+            }
+        }
 
         /// <summary>
         /// Instantiates a <see cref="MaskField"/> using the data read from a UXML file.

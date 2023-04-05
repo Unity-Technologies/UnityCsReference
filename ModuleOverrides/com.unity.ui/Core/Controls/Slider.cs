@@ -12,6 +12,34 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class Slider : BaseSlider<float>
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseSlider<float>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private float lowValue;
+            [SerializeField] private float highValue;
+            [SerializeField] private float pageSize;
+            [SerializeField] private bool showInputField;
+            [SerializeField] private SliderDirection direction;
+            [SerializeField] private bool inverted;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new Slider();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (Slider)obj;
+                e.lowValue = lowValue;
+                e.highValue = highValue;
+                e.direction = direction;
+                e.pageSize = pageSize;
+                e.showInputField = showInputField;
+                e.inverted = inverted;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Slider"/> using the data read from a UXML file.
         /// </summary>

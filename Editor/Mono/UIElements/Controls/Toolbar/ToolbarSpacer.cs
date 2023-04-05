@@ -15,6 +15,12 @@ namespace UnityEditor.UIElements
     {
         internal static readonly DataBindingProperty flexProperty = nameof(flex);
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ToolbarSpacer();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="ToolbarSpacer"/> using the data read from a UXML file.
         /// </summary>

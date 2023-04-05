@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Properties;
@@ -23,6 +24,12 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty uvProperty = nameof(uv);
         internal static readonly DataBindingProperty scaleModeProperty = nameof(scaleMode);
         internal static readonly DataBindingProperty tintColorProperty = nameof(tintColor);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new Image();
+        }
 
         /// <summary>
         /// Instantiates an <see cref="Image"/> using the data read from a UXML file.

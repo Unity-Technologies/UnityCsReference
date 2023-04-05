@@ -957,13 +957,20 @@ namespace UnityEditor
                                 if (isDropTarget)
                                     Styles.resultsLabel.Draw(new Rect(labelRect.x - 10, labelRect.y, labelRect.width + 20, labelRect.height), GUIContent.none, true, true, false, false);
 
-                                var oldClipping = Styles.resultsGridLabel.clipping;
+                                var orgClipping = Styles.resultsGridLabel.clipping;
+                                var orgAlignment = Styles.resultsLabel.alignment;
+                                var size  = Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), orgPosition.size);
+                                size.x += Styles.resultsGridLabel.padding.horizontal;
+                                labelRect.x = orgPosition.x + (orgPosition.width - size.x) / 2.0f;
+                                labelRect.width = size.x;
+                                labelRect.height = size.y;
+                                m_Owner.sizeUsedForCroppingName = orgPosition.size;
+
                                 Styles.resultsGridLabel.clipping = TextClipping.Ellipsis;
-                                var labelNewRect = Styles.resultsGridLabel.CalcSizeWithConstraints(GUIContent.Temp(labeltext), orgPosition.size);
-                                labelRect.x = orgPosition.x + (orgPosition.width - labelNewRect.x) / 2.0f;
-                                labelRect.width = labelNewRect.x + Styles.resultsGridLabel.padding.horizontal;
+                                Styles.resultsGridLabel.alignment = TextAnchor.MiddleCenter;
                                 Styles.resultsGridLabel.Draw(labelRect, labeltext, false, false, selected, m_Owner.HasFocus());
-                                Styles.resultsGridLabel.clipping = oldClipping;
+                                Styles.resultsGridLabel.clipping = orgClipping;
+                                Styles.resultsLabel.alignment = orgAlignment;
                             }
                         }
 

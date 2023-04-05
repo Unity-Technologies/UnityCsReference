@@ -4,10 +4,9 @@
 
 using System;
 using Unity.Properties;
-using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
@@ -18,6 +17,12 @@ namespace UnityEditor.UIElements
     public class CurveField : BaseField<AnimationCurve>
     {
         internal static readonly DataBindingProperty renderModeProperty = nameof(renderMode);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<AnimationCurve>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new CurveField();
+        }
 
         /// <summary>
         /// Instantiates a <see cref="CurveField"/> using the data read from a UXML file.

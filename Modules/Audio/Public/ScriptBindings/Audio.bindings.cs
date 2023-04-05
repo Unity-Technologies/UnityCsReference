@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Audio;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
+using UnityEngine.Playables;
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -15,6 +16,12 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 
 namespace UnityEngine
 {
+    [NativeHeader("Modules/Audio/Public/AudioResource.h")]
+    public abstract class AudioResource : Object 
+    {
+        protected internal AudioResource() {}
+    }
+
     // These are speaker types defined for use with [[AudioSettings.speakerMode]].
     public enum AudioSpeakerMode
     {
@@ -219,6 +226,20 @@ namespace UnityEngine
         User = 27
     }
 
+    internal struct PlayableSettings
+    {
+        public AudioContainerElement element { get; }
+        public double scheduledTime { get; }
+        public float pitchOffset { get; }
+        public float volumeOffset { get; }
+        public double triggerTimeOffset { get; }
+    }
+
+    internal struct ActivePlayable
+    {
+        public PlayableSettings settings { get; }
+    }
+
     // Controls the global audio settings from script.
     [NativeHeader("Modules/Audio/Public/ScriptBindings/Audio.bindings.h")]
     [StaticAccessor("GetAudioManager()", StaticAccessorType.Dot)]
@@ -401,7 +422,7 @@ namespace UnityEngine
     // A container for audio data.
     [NativeHeader("Modules/Audio/Public/ScriptBindings/Audio.bindings.h")]
     [StaticAccessor("AudioClipBindings", StaticAccessorType.DoubleColon)]
-    public sealed class AudioClip : Object
+    public sealed class AudioClip : AudioResource
     {
         private AudioClip() {}
 
@@ -559,6 +580,7 @@ namespace UnityEngine
         }
     }
 
+
     public class AudioBehaviour : Behaviour
     {
     }
@@ -666,6 +688,8 @@ namespace UnityEngine
         // The default [[AudioClip]] to play
         [NativeProperty("AudioClip")]
         extern public AudioClip clip { get; set; }
+
+        extern public AudioResource resource { get; set; }
 
         extern public AudioMixerGroup outputAudioMixerGroup { get; set; }
 
@@ -798,12 +822,23 @@ namespace UnityEngine
         // Unpauses the paused source, different from play in that it does not start any new playback.
         extern public void UnPause();
 
+        // Calls skip on any AudioContainers on the source
+        internal extern void SkipToNextElementIfHasContainer();
+
         // Is the ::ref::clip playing right now (RO)?
         extern public bool isPlaying
         {
             [NativeName("IsPlayingScripting")]
             get;
         }
+
+        internal extern bool isContainerPlaying
+        {
+            [NativeName("IsContainerPlaying")]
+            get;
+        }
+
+        internal extern ActivePlayable[] containerActivePlayables { get; }
 
         extern public bool isVirtual
         {

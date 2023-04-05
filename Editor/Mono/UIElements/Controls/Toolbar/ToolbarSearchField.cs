@@ -49,6 +49,13 @@ namespace UnityEditor.UIElements
         /// USS class name of elements of this type.
         /// </summary>
         public new static readonly string ussClassName = "unity-toolbar-search-field";
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : SearchFieldBase<TextField, string>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ToolbarSearchField();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="ToolbarSearchField"/> using the data read from a UXML file.
         /// </summary>

@@ -54,7 +54,7 @@ namespace UnityEngine.UIElements.UIR
 
         static Matrix4x4 GetTransformIDTransformInfo(VisualElement ve)
         {
-            Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || (ve.renderHints & (RenderHints.GroupTransform)) != 0);
+            Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.renderChainData.isGroupTransform);
             Matrix4x4 transform;
             if (ve.renderChainData.groupTransformAncestor != null)
                 VisualElement.MultiplyMatrix34(ref ve.renderChainData.groupTransformAncestor.worldTransformInverse, ref ve.worldTransformRef, out transform);
@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements.UIR
             if (resetState)
                 ve.renderChainData = new RenderChainVEData();
 
-            ve.renderChainData.isInChain = true;
+            ve.renderChainData.flags = RenderDataFlags.IsInChain;
             ve.renderChainData.verticesSpace = Matrix4x4.identity;
             ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
             ve.renderChainData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
@@ -113,9 +113,12 @@ namespace UnityEngine.UIElements.UIR
             ve.renderChainData.compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
             UpdateLocalFlipsWinding(ve);
 
+            if ((ve.renderHints & RenderHints.GroupTransform) != 0 && !renderChain.drawInCameras)
+                ve.renderChainData.flags |= RenderDataFlags.IsGroupTransform;
+
             if (parent != null)
             {
-                if ((parent.renderHints & (RenderHints.GroupTransform)) != 0)
+                if (parent.renderChainData.isGroupTransform)
                     ve.renderChainData.groupTransformAncestor = parent;
                 else ve.renderChainData.groupTransformAncestor = parent.renderChainData.groupTransformAncestor;
                 ve.renderChainData.hierarchyDepth = parent.renderChainData.hierarchyDepth + 1;
@@ -158,7 +161,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (!RenderChainVEData.AllocatesID(ve.renderChainData.transformID))
             {
-                if (parent != null && (ve.renderHints & RenderHints.GroupTransform) == 0)
+                if (parent != null && !ve.renderChainData.isGroupTransform)
                 {
                     if (RenderChainVEData.AllocatesID(parent.renderChainData.transformID))
                         ve.renderChainData.boneTransformAncestor = parent;
@@ -193,7 +196,7 @@ namespace UnityEngine.UIElements.UIR
                 renderChain.ChildWillBeRemoved(ve);
                 CommandManipulator.ResetCommands(renderChain, ve);
                 renderChain.ResetTextures(ve);
-                ve.renderChainData.isInChain = false;
+                ve.renderChainData.flags &= ~RenderDataFlags.IsInChain;
                 ve.renderChainData.clipMethod = ClipMethod.Undetermined;
 
                 if (ve.renderChainData.next != null)
@@ -342,7 +345,7 @@ namespace UnityEngine.UIElements.UIR
                     // Inherit parent's clipRectID if possible.
                     // Group transforms shouldn't inherit the clipRectID since they have a new frame of reference,
                     // they provide a new baseline with the _PixelClipRect instead.
-                    if ((ve.renderHints & RenderHints.GroupTransform) == 0)
+                    if (!ve.renderChainData.isGroupTransform)
                     {
                         newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parent != null)) ? parent.renderChainData.clipRectID : UIRVEShaderInfoAllocator.infiniteClipRect;
                         newClipRectID.ownedState = OwnedState.Inherited;
@@ -350,7 +353,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 clipRectIDChanged = !ve.renderChainData.clipRectID.Equals(newClipRectID);
-                Debug.Assert((ve.renderHints & RenderHints.GroupTransform) == 0 || !clipRectIDChanged);
+                Debug.Assert(!ve.renderChainData.isGroupTransform || !clipRectIDChanged);
                 ve.renderChainData.clipRectID = newClipRectID;
             }
 
@@ -597,7 +600,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 // Only the clip info had to be updated, we can skip the other cases which are for transform changes only.
             }
-            else if ((ve.renderHints & RenderHints.GroupTransform) != 0)
+            else if (ve.renderChainData.isGroupTransform)
             {
                 stats.groupTransformElementsChanged++;
             }
@@ -628,7 +631,7 @@ namespace UnityEngine.UIElements.UIR
             if (renderChain.drawInCameras)
                 ve.EnsureWorldTransformAndClipUpToDate();
 
-            if ((ve.renderHints & RenderHints.GroupTransform) == 0)
+            if (!ve.renderChainData.isGroupTransform)
             {
                 // Recurse on children
                 int childrenCount = ve.hierarchy.childCount;
@@ -775,7 +778,7 @@ namespace UnityEngine.UIElements.UIR
 
             // Even though GroupTransform does not formally imply the use of scissors, we prefer to use them because
             // this way, we can avoid updating nested clipping rects.
-            bool preferScissors = (ve.renderHints & (RenderHints.GroupTransform | RenderHints.ClipWithScissors)) != 0;
+            bool preferScissors = ve.renderChainData.isGroupTransform || (ve.renderHints & RenderHints.ClipWithScissors) != 0;
             ClipMethod rectClipMethod = preferScissors ? ClipMethod.Scissor : ClipMethod.ShaderDiscard;
 
             if (!renderChain.elementBuilder.RequiresStencilMask(ve))
@@ -825,8 +828,7 @@ namespace UnityEngine.UIElements.UIR
 
         static bool NeedsTransformID(VisualElement ve)
         {
-            return ((ve.renderHints & RenderHints.GroupTransform) == 0) &&
-                ((ve.renderHints & RenderHints.BoneTransform) == RenderHints.BoneTransform);
+            return !ve.renderChainData.isGroupTransform && (ve.renderHints & RenderHints.BoneTransform) != 0;
         }
 
         // Indicates whether the transform id assigned to an element has changed. It does not care who the owner is.

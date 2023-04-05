@@ -15,6 +15,12 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class LayerMaskField : MaskField
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : MaskField.UxmlSerializedData
+        {
+            public override object CreateInstance() => new LayerMaskField();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="LayerMaskField"/> using the data read from a UXML file.
         /// </summary>

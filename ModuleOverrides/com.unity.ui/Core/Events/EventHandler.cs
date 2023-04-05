@@ -275,9 +275,15 @@ namespace UnityEngine.UIElements
         [Obsolete("Use HandleEventBubbleUpDisabled.")]
         internal virtual void ExecuteDefaultActionDisabled(EventBase evt) {}
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #pragma warning disable 618
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ExecuteDefaultActionInternal(EventBase evt) => ExecuteDefaultAction(evt);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ExecuteDefaultActionDisabledInternal(EventBase evt) => ExecuteDefaultActionDisabled(evt);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void ExecuteDefaultActionAtTargetInternal(EventBase evt) => ExecuteDefaultActionAtTarget(evt);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal void ExecuteDefaultActionDisabledAtTargetInternal(EventBase evt) => ExecuteDefaultActionDisabledAtTarget(evt);
 
         internal const string ExecuteDefaultActionName = nameof(ExecuteDefaultAction);
         internal const string ExecuteDefaultActionAtTargetName = nameof(ExecuteDefaultActionAtTarget);
@@ -290,22 +296,6 @@ namespace UnityEngine.UIElements
         internal void NotifyPropertyChanged(DataBindingProperty property)
         {
             // Intentionally left empty. This will be implemented with the data binding feature.
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ExecuteDefaultActionInternal(EventBase evt)
-        {
-#pragma warning disable 618
-            ExecuteDefaultAction(evt);
-#pragma warning restore 618
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void ExecuteDefaultActionDisabledInternal(EventBase evt)
-        {
-#pragma warning disable 618
-            ExecuteDefaultActionDisabled(evt);
-#pragma warning restore 618
         }
     }
 }

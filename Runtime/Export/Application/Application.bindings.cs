@@ -162,6 +162,12 @@ namespace UnityEngine
             get;
         }
 
+        extern static internal bool isBuildingEditorResources
+        {
+            [FreeFunction("::IsBuildingEditorResources")]
+            get;
+        }
+
         extern static internal bool isHumanControllingUs
         {
             [FreeFunction("::IsHumanControllingUs")]

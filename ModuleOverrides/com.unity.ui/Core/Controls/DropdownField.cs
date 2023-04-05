@@ -12,6 +12,47 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class DropdownField : PopupField<string>
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : PopupField<string>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            // The index field is responsible for applying validation to the value entered by users.
+            // In order to ensure that users are able to enter the complete value without interruption,
+            // we need to introduce a delay before the validation is performed. 
+            [Delayed, SerializeField] private int index;
+            [SerializeField] private List<string> choices;
+
+            // This field serves the purpose of overriding the value field so we can conceal it from the UI Builder.
+            // Displaying it could result in conflicts when trying to control the dropdown value using both the value and index fields.
+            [UxmlAttribute("value")]
+            [HideInInspector]
+            [SerializeField] private int valueOverride;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new DropdownField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (DropdownField)obj;
+
+                // Assigning null value throws.
+                if (choices != null)
+                {
+                    // We must copy
+                    e.choices = new List<string>(choices);
+                }
+
+                // Index needs to be set after choices to initialize the field value
+                // Dont set the index if its default or it will revert the change that may have come from `value`.
+                if (index != DropdownField.kPopupFieldDefaultIndex)
+                    e.index = index;
+
+                e.valueOverride = valueOverride;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="DropdownField"/> using the data read from a UXML file.
         /// </summary>
@@ -36,6 +77,9 @@ namespace UnityEngine.UIElements
                 f.index = m_Index.GetValueFromBag(bag, cc);
             }
         }
+
+        // Placeholder required to prevent issues syncing UxmlSerializedData.
+        internal int valueOverride { get; set; }
 
         /// <summary>
         /// Construct a DropdownField.

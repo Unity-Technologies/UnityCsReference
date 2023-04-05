@@ -12,6 +12,40 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class MultiColumnTreeView : BaseTreeView
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseTreeView.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private bool sortingEnabled;
+            [SerializeField, UxmlObject] private Columns.UxmlSerializedData columns;
+            [SerializeField, UxmlObject] private SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new MultiColumnTreeView();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (MultiColumnTreeView)obj;
+                e.sortingEnabled = sortingEnabled;
+
+                if (columns != null)
+                {
+                    var c = new Columns();
+                    columns.Deserialize(c);
+                    e.columns = c;
+                }
+
+                if (sortColumnDescriptions != null)
+                {
+                    var c = new SortColumnDescriptions();
+                    sortColumnDescriptions.Deserialize(c);
+                    e.sortColumnDescriptions = c;
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="MultiColumnTreeView"/> using data from a UXML file.
         /// </summary>

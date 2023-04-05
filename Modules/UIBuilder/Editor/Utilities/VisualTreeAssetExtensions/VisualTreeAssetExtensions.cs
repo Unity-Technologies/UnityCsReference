@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -32,6 +33,7 @@ namespace Unity.UI.Builder
         {
             var newTreeAsset = VisualTreeAssetUtilities.CreateInstance();
 
+            UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta));
             vta.DeepOverwrite(newTreeAsset);
 
             return newTreeAsset;
@@ -397,7 +399,9 @@ namespace Unity.UI.Builder
             this VisualTreeAsset vta, VisualElementAsset parent, VisualElement visualElement, int index = -1)
         {
             var fullTypeName = visualElement.GetType().ToString();
-            var vea = new VisualElementAsset(fullTypeName);
+
+            var desc = UxmlSerializedDataRegistry.GetDescription(fullTypeName);            
+            var vea = new VisualElementAsset(desc != null ? desc.uxmlFullName : fullTypeName);
             VisualTreeAssetUtilities.InitializeElement(vea);
 
             visualElement.SetVisualElementAsset(vea);

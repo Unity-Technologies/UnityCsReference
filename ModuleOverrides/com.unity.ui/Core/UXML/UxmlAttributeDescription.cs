@@ -188,6 +188,14 @@ namespace UnityEngine.UIElements
                             {
                             }
                             sourceAsset = cc.visualTreeAsset;
+
+                            // Auto upgrade the attribute to use the correct name
+                            if (bag is UxmlAsset uxmlAsset)
+                            {
+                                uxmlAsset.RemoveAttribute(m_ObsoleteNames[i]);
+                                uxmlAsset.SetAttribute(name, value);
+                            }
+
                             return true;
                         }
                     }

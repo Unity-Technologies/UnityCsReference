@@ -53,31 +53,23 @@ namespace UnityEngine.UIElements
     static class EventDispatchUtilities
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void PropagateEvent(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement target)
+        private static void PropagateEvent(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement target, bool isCapturingTarget)
         {
             // Assume events here bubble up or trickle down, otherwise HandleEventAtTargetPhase is called directly.
-            // Early out if no callback on target or any of its parents.
-            if (target.HasParentEventInterests(evt.eventCategory) && !evt.isPropagationStopped)
+            if ((evt as IPointerEventInternal)?.compatibilityMouseEvent is EventBase compatibilityEvt)
             {
-                Debug.Assert(!evt.dispatch, "Event is being dispatched recursively.");
-                evt.dispatch = true;
-
-                if ((evt as IPointerEventInternal)?.compatibilityMouseEvent is EventBase compatibilityEvt)
-                {
-                    HandleEventAcrossPropagationPathWithCompatibilityEvent(evt, compatibilityEvt, panel, target);
-                }
-                else
-                {
-                    HandleEventAcrossPropagationPath(evt, panel, target);
-                }
-
-                evt.dispatch = false;
+                HandleEventAcrossPropagationPathWithCompatibilityEvent(evt, compatibilityEvt, panel, target, isCapturingTarget);
+            }
+            else
+            {
+                HandleEventAcrossPropagationPath(evt, panel, target, isCapturingTarget);
             }
         }
 
         public static void HandleEventAtTargetAndDefaultPhase(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement target)
         {
-            if (!target.HasSelfEventInterests(evt.eventCategory) || evt.isPropagationStopped)
+            var eventCategories = evt.eventCategories;
+            if (!target.HasSelfEventInterests(eventCategories) || evt.isPropagationStopped)
                 return;
 
             evt.currentTarget = target;
@@ -88,16 +80,16 @@ namespace UnityEngine.UIElements
                 Debug.Assert(!(evt is IPointerEventInternal pe) || pe.compatibilityMouseEvent == null, "!(evt is IPointerEventInternal pe) || pe.compatibilityMouseEvent == null");
 
                 evt.propagationPhase = PropagationPhase.TrickleDown;
-                if (target.HasTrickleDownEventCallbacks(evt.eventCategory))
+                if (target.HasTrickleDownEventCallbacks(eventCategories))
                 {
-                    target.m_CallbackRegistry?.m_TrickleDownCallbacks.Invoke(evt, panel, target);
+                    HandleEvent_TrickleDownCallbacks(evt, panel, target);
                     if (evt.isImmediatePropagationStopped)
                         return;
                 }
 
-                if (target.HasTrickleDownHandleEvent(evt.eventCategory))
+                if (target.HasTrickleDownHandleEvent(eventCategories))
                 {
-                    HandleEvent_DefaultActionTrickleDown(evt, panel, target);
+                    HandleEvent_TrickleDownHandleEvent(evt, panel, target, Disabled(evt, target));
                 }
 
                 if (evt.isPropagationStopped)
@@ -105,16 +97,19 @@ namespace UnityEngine.UIElements
 
                 evt.propagationPhase = PropagationPhase.BubbleUp;
 
-                if (target.HasBubbleUpHandleEvent(evt.eventCategory))
+                if (target.HasBubbleUpHandleEvent(eventCategories))
                 {
-                    HandleEvent_DefaultActionBubbleUp(evt, panel, target);
+                    var disabled = Disabled(evt, target);
+                    HandleEvent_DefaultActionAtTarget(evt, panel, target, disabled);
+                    HandleEvent_BubbleUpHandleEvent(evt, panel, target, disabled);
+                    HandleEvent_DefaultAction(evt, panel, target, disabled);
                     if (evt.isImmediatePropagationStopped)
                         return;
                 }
 
-                if (target.HasBubbleUpEventCallbacks(evt.eventCategory))
+                if (target.HasBubbleUpEventCallbacks(eventCategories))
                 {
-                    target.m_CallbackRegistry?.m_BubbleUpCallbacks.Invoke(evt, panel, target);
+                    HandleEvent_BubbleUpCallbacks(evt, panel, target);
                 }
             }
             finally
@@ -124,35 +119,47 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static void HandleEventAcrossPropagationPath(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement target)
+        private static void HandleEventAcrossPropagationPath(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement target, bool isCapturingTarget)
         {
-            var eventCategory = evt.eventCategory;
+            var eventCategories = evt.eventCategories;
 
-            using var path = PropagationPaths.Build(target, evt, 1 << (int) eventCategory);
+            if (!target.HasParentEventInterests(eventCategories) || evt.isPropagationStopped)
+                return;
+
+            using var path = PropagationPaths.Build(target, evt, eventCategories);
 
             try
             {
+                Debug.Assert(!evt.dispatch, "Event is being dispatched recursively.");
+                evt.dispatch = true;
+
                 // Phase 1: TrickleDown phase
                 // Propagate event from root to target
                 evt.propagationPhase = PropagationPhase.TrickleDown;
 
-                for (int i = path.trickleDownPath.Count - 1; i >= 0; i--)
+                int i = path.trickleDownPath.Count - 1;
+
+                // Skip trickle down on non-target when propagating during pointer capture
+                if (isCapturingTarget && i > 0)
+                    i = path.trickleDownPath[0] == target ? 0 : -1;
+
+                for (; i >= 0; i--)
                 {
                     var element = path.trickleDownPath[i];
 
                     evt.currentTarget = element;
 
-                    if (element.HasTrickleDownEventCallbacks(eventCategory))
+                    if (element.HasTrickleDownEventCallbacks(eventCategories))
                     {
-                        element.m_CallbackRegistry?.InvokeCallbacks(evt, panel, element, CallbackPhase.TrickleDown);
+                        HandleEvent_TrickleDownCallbacks(evt, panel, element);
 
                         if (evt.isImmediatePropagationStopped)
                             return;
                     }
 
-                    if (element.HasTrickleDownHandleEvent(eventCategory))
+                    if (element.HasTrickleDownHandleEvent(eventCategories))
                     {
-                        HandleEvent_DefaultActionTrickleDown(evt, panel, element);
+                        HandleEvent_TrickleDownHandleEvent(evt, panel, element, Disabled(evt, element));
                     }
 
                     if (evt.isPropagationStopped)
@@ -167,17 +174,17 @@ namespace UnityEngine.UIElements
                 {
                     evt.currentTarget = element;
 
-                    if (element.HasBubbleUpHandleEvent(eventCategory))
+                    if (element.HasBubbleUpHandleEvent(eventCategories))
                     {
-                        HandleEvent_DefaultActionBubbleUp(evt, panel, element);
+                        HandleEvent_BubbleUpAllDefaultActions(evt, panel, element, Disabled(evt, element), isCapturingTarget);
 
                         if (evt.isImmediatePropagationStopped)
                             return;
                     }
 
-                    if (element.HasBubbleUpEventCallbacks(eventCategory))
+                    if (element.HasBubbleUpEventCallbacks(eventCategories) && (!isCapturingTarget || element == target))
                     {
-                        element.m_CallbackRegistry?.InvokeCallbacks(evt, panel, element, CallbackPhase.BubbleUp);
+                        HandleEvent_BubbleUpCallbacks(evt, panel, element);
                     }
 
                     if (evt.isPropagationStopped)
@@ -188,34 +195,47 @@ namespace UnityEngine.UIElements
             {
                 evt.currentTarget = null;
                 evt.propagationPhase = PropagationPhase.None;
+                evt.dispatch = false;
             }
         }
 
-        private static void HandleEventAcrossPropagationPathWithCompatibilityEvent(EventBase evt, [NotNull] EventBase compatibilityEvt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement target)
+        private static void HandleEventAcrossPropagationPathWithCompatibilityEvent(EventBase evt, [NotNull] EventBase compatibilityEvt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement target, bool isCapturingTarget)
         {
+            // Match callbacks from both evt and compatibilityEvt.
+            int eventCategories = evt.eventCategories | compatibilityEvt.eventCategories;
+
+            if (!target.HasParentEventInterests(eventCategories) || evt.isPropagationStopped || compatibilityEvt.isPropagationStopped)
+                return;
+
             compatibilityEvt.elementTarget = target;
             compatibilityEvt.skipDisabledElements = evt.skipDisabledElements;
 
             if (DebuggerEventDispatchUtilities.InterceptEvent(compatibilityEvt, panel))
             {
-                HandleEventAcrossPropagationPath(evt, panel, target);
+                HandleEventAcrossPropagationPath(evt, panel, target, isCapturingTarget);
                 DebuggerEventDispatchUtilities.PostDispatch(compatibilityEvt, panel);
                 return;
             }
-
-            // Match callbacks from both evt and compatibilityEvt.
-            int eventCategories = (1 << (int) evt.eventCategory) | (1 << (int) compatibilityEvt.eventCategory);
 
             using var path = PropagationPaths.Build(target, evt, eventCategories);
 
             try
             {
+                Debug.Assert(!evt.dispatch, "Event is being dispatched recursively.");
+                evt.dispatch = true;
+
                 // Phase 1: TrickleDown phase
                 // Propagate event from root to target
                 evt.propagationPhase = PropagationPhase.TrickleDown;
                 compatibilityEvt.propagationPhase = PropagationPhase.TrickleDown;
 
-                for (int i = path.trickleDownPath.Count - 1; i >= 0; i--)
+                int i = path.trickleDownPath.Count - 1;
+
+                // Skip trickle down on non-target when propagating during pointer capture
+                if (isCapturingTarget && i > 0)
+                    i = path.trickleDownPath[0] == target ? 0 : -1;
+
+                for (; i >= 0; i--)
                 {
                     var element = path.trickleDownPath[i];
 
@@ -225,14 +245,14 @@ namespace UnityEngine.UIElements
 
                     if (element.HasTrickleDownEventCallbacks(eventCategories))
                     {
-                        element.m_CallbackRegistry?.InvokeCallbacks(evt, panel, element, CallbackPhase.TrickleDown);
+                        HandleEvent_TrickleDownCallbacks(evt, panel, element);
 
                         if (evt.isImmediatePropagationStopped)
                             return;
 
                         if (panel.ShouldSendCompatibilityMouseEvents((IPointerEvent)evt))
                         {
-                            element.m_CallbackRegistry?.InvokeCallbacks(compatibilityEvt, panel, element, CallbackPhase.TrickleDown);
+                            HandleEvent_TrickleDownCallbacks(compatibilityEvt, panel, element);
 
                             if (evt.isImmediatePropagationStopped)
                                 return;
@@ -241,14 +261,15 @@ namespace UnityEngine.UIElements
 
                     if (element.HasTrickleDownHandleEvent(eventCategories))
                     {
-                        HandleEvent_DefaultActionTrickleDown(evt, panel, element);
+                        var disabled = Disabled(evt, element);
+                        HandleEvent_TrickleDownHandleEvent(evt, panel, element, disabled);
 
                         if (evt.isImmediatePropagationStopped)
                             return;
 
                         if (panel.ShouldSendCompatibilityMouseEvents((IPointerEvent)evt))
                         {
-                            HandleEvent_DefaultActionTrickleDown(compatibilityEvt, panel, element);
+                            HandleEvent_TrickleDownHandleEvent(compatibilityEvt, panel, element, disabled);
 
                             if (compatibilityEvt.isImmediatePropagationStopped)
                                 return;
@@ -271,30 +292,31 @@ namespace UnityEngine.UIElements
 
                     if (element.HasBubbleUpHandleEvent(eventCategories))
                     {
-                        HandleEvent_DefaultActionBubbleUp(evt, panel, element);
+                        var disabled = Disabled(evt, element);
+                        HandleEvent_BubbleUpAllDefaultActions(evt, panel, element, disabled, isCapturingTarget);
 
                         if (evt.isImmediatePropagationStopped)
                             return;
 
                         if (panel.ShouldSendCompatibilityMouseEvents((IPointerEvent)evt))
                         {
-                            HandleEvent_DefaultActionBubbleUp(compatibilityEvt, panel, element);
+                            HandleEvent_BubbleUpAllDefaultActions(compatibilityEvt, panel, element, disabled, isCapturingTarget);
 
                             if (compatibilityEvt.isImmediatePropagationStopped)
                                 return;
                         }
                     }
 
-                    if (element.HasBubbleUpEventCallbacks(eventCategories))
+                    if (element.HasBubbleUpEventCallbacks(eventCategories) && (!isCapturingTarget || element == target))
                     {
-                        element.m_CallbackRegistry?.InvokeCallbacks(evt, panel, element, CallbackPhase.BubbleUp);
+                        HandleEvent_BubbleUpCallbacks(evt, panel, element);
 
                         if (evt.isImmediatePropagationStopped)
                             return;
 
                         if (panel.ShouldSendCompatibilityMouseEvents((IPointerEvent)evt))
                         {
-                            element.m_CallbackRegistry?.InvokeCallbacks(compatibilityEvt, panel, element, CallbackPhase.BubbleUp);
+                            HandleEvent_BubbleUpCallbacks(compatibilityEvt, panel, element);
 
                             if (compatibilityEvt.isImmediatePropagationStopped)
                                 return;
@@ -313,85 +335,119 @@ namespace UnityEngine.UIElements
                 compatibilityEvt.currentTarget = null;
                 compatibilityEvt.propagationPhase = PropagationPhase.None;
 
+                evt.dispatch = false;
+
                 DebuggerEventDispatchUtilities.PostDispatch(compatibilityEvt, panel);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void HandleEvent_DefaultActionTrickleDown(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement target)
+        private static void HandleEvent_DefaultActionAtTarget(EventBase evt, [NotNull] BaseVisualElementPanel panel,
+            [NotNull] VisualElement element, bool disabled)
         {
-            if (target.elementPanel != panel)
+            if (element.elementPanel != panel)
                 return;
 
             using (new EventDebuggerLogExecuteDefaultAction(evt))
             {
-                if (evt.skipDisabledElements && !target.enabledInHierarchy)
-                {
-                    target.HandleEventTrickleDownDisabled(evt);
-                }
+                if (disabled)
+                    element.ExecuteDefaultActionDisabledAtTargetInternal(evt);
                 else
-                {
-                    target.HandleEventTrickleDownInternal(evt);
-                }
+                    element.ExecuteDefaultActionAtTargetInternal(evt);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void HandleEvent_DefaultActionBubbleUp(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement target)
+        private static void HandleEvent_DefaultAction(EventBase evt, [NotNull] BaseVisualElementPanel panel,
+            [NotNull] VisualElement element, bool disabled)
         {
-            if (target.elementPanel != panel)
+            if (element.elementPanel != panel)
                 return;
 
             using (new EventDebuggerLogExecuteDefaultAction(evt))
             {
-                if (evt.skipDisabledElements && !target.enabledInHierarchy)
-                {
-                    // Offer minimal support for [Obsolete] ExecuteDefaultAction and ExecuteDefaultActionAtTarget.
-                    if (target == evt.elementTarget || target.isCompositeRoot)
-                    {
-#pragma warning disable 618
-                        target.ExecuteDefaultActionDisabledAtTarget(evt);
-#pragma warning restore 618
-                        target.HandleEventBubbleUpDisabled(evt);
-                        target.ExecuteDefaultActionDisabledInternal(evt);
-                    }
-                    else
-                    {
-                        target.HandleEventBubbleUpDisabled(evt);
-                    }
-                }
+                if (disabled)
+                    element.ExecuteDefaultActionDisabledInternal(evt);
                 else
-                {
-                    if (target == evt.elementTarget || target.isCompositeRoot)
-                    {
-                        target.ExecuteDefaultActionAtTargetInternal(evt);
-                        target.HandleEventBubbleUpInternal(evt);
-                        target.ExecuteDefaultActionInternal(evt);
-                    }
-                    else
-                    {
-                        target.HandleEventBubbleUpInternal(evt);
-                    }
-                }
+                    element.ExecuteDefaultActionInternal(evt);
             }
         }
 
-        public static void HandleEvent(EventBase evt, VisualElement target)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void HandleEvent_TrickleDownCallbacks(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement element)
+        {
+            element.m_CallbackRegistry?.m_TrickleDownCallbacks.Invoke(evt, panel, element);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void HandleEvent_BubbleUpCallbacks(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement element)
+        {
+            element.m_CallbackRegistry?.m_BubbleUpCallbacks.Invoke(evt, panel, element);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void HandleEvent_TrickleDownHandleEvent(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement element, bool disabled)
+        {
+            if (element.elementPanel != panel)
+                return;
+
+            if (disabled)
+                element.HandleEventTrickleDownDisabled(evt);
+            else
+                element.HandleEventTrickleDownInternal(evt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void HandleEvent_BubbleUpHandleEvent(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement element, bool disabled)
+        {
+            if (element.elementPanel != panel)
+                return;
+
+            if (disabled)
+                element.HandleEventBubbleUpDisabled(evt);
+            else
+                element.HandleEventBubbleUpInternal(evt);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void HandleEvent_BubbleUpAllDefaultActions(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement element, bool disabled, bool isCapturingTarget)
+        {
+            // Exclusive processing by capturing element but ExecuteDefaultActions on all composite roots.
+            var handleEvent = element == evt.target || !isCapturingTarget;
+            var executeDefault = element == evt.target || element.isCompositeRoot;
+
+            if (executeDefault)
+                HandleEvent_DefaultActionAtTarget(evt, panel, element, disabled);
+            if (handleEvent)
+                HandleEvent_BubbleUpHandleEvent(evt, panel, element, disabled);
+            if (executeDefault)
+                HandleEvent_DefaultAction(evt, panel, element, disabled);
+        }
+
+        private static bool Disabled([NotNull] EventBase evt, [NotNull] VisualElement target)
+        {
+            return evt.skipDisabledElements && !target.enabledInHierarchy;
+        }
+
+        public static void HandleEvent([NotNull] EventBase evt, [NotNull] VisualElement target)
         {
             if (evt.isPropagationStopped)
                 return;
 
+            var panel = target.elementPanel;
+            var disabled = Disabled(evt, target);
+
             switch (evt.propagationPhase)
             {
                 case PropagationPhase.TrickleDown:
-                    target.m_CallbackRegistry?.InvokeCallbacks(evt, target.elementPanel, target, CallbackPhase.TrickleDown);
+                    HandleEvent_TrickleDownCallbacks(evt, panel, target);
                     if (!evt.isImmediatePropagationStopped)
-                        HandleEvent_DefaultActionTrickleDown(evt, target.elementPanel, target);
+                        HandleEvent_TrickleDownHandleEvent(evt, panel, target, disabled);
                     break;
                 case PropagationPhase.BubbleUp:
-                    HandleEvent_DefaultActionBubbleUp(evt, target.elementPanel, target);
+                    HandleEvent_BubbleUpAllDefaultActions(evt, panel, target, disabled, false);
                     if (!evt.isImmediatePropagationStopped)
-                        target.m_CallbackRegistry?.InvokeCallbacks(evt, target.elementPanel, target, CallbackPhase.BubbleUp);
+                        HandleEvent_BubbleUpCallbacks(evt, panel, target);
                     break;
             }
         }
@@ -417,7 +473,7 @@ namespace UnityEngine.UIElements
                 // If mouse is captured, handle event at captured element if it's not already in the propagation path
                 if (panel.GetCapturingElement(PointerId.mousePointerId) is VisualElement capturingElement &&
                     capturingElement != target && !capturingElement.Contains(target) &&
-                    capturingElement.HasSelfEventInterests(evt.eventCategory))
+                    capturingElement.HasSelfEventInterests(evt.eventCategories))
                 {
                     evt.elementTarget = capturingElement;
 
@@ -430,7 +486,7 @@ namespace UnityEngine.UIElements
                 evt.elementTarget = target;
             }
 
-            PropagateEvent(evt, panel, target);
+            PropagateEvent(evt, panel, target, false);
 
             if (propagateToIMGUI && evt.propagateToIMGUI)
                 PropagateToRemainingIMGUIContainers(evt, panel.visualTree);
@@ -456,7 +512,7 @@ namespace UnityEngine.UIElements
                 evt.elementTarget = target;
             }
 
-            PropagateEvent(evt, panel, target);
+            PropagateEvent(evt, panel, target, false);
 
             if (propagateToIMGUI && evt.propagateToIMGUI)
                 PropagateToRemainingIMGUIContainers(evt, panel.visualTree);
@@ -479,7 +535,7 @@ namespace UnityEngine.UIElements
                 evt.elementTarget = target;
             }
 
-            PropagateEvent(evt, panel, target);
+            PropagateEvent(evt, panel, target, false);
 
             if (propagateToIMGUI && evt.propagateToIMGUI)
                 PropagateToRemainingIMGUIContainers(evt, panel.visualTree);
@@ -491,7 +547,7 @@ namespace UnityEngine.UIElements
             if (target == null)
                 throw new ArgumentException($"Event target not set. Event type {evt.GetType()} requires a target.");
 
-            PropagateEvent(evt, panel, target);
+            PropagateEvent(evt, panel, target, false);
         }
 
         public static void DefaultDispatch(EventBase evt, [NotNull] BaseVisualElementPanel panel)
@@ -505,7 +561,7 @@ namespace UnityEngine.UIElements
 
             // Most events will bubble up or trickle down, but custom events may not.
             if (evt.bubblesOrTricklesDown)
-                PropagateEvent(evt, panel, target);
+                PropagateEvent(evt, panel, target, false);
             else
                 HandleEventAtTargetAndDefaultPhase(evt, panel, target);
         }
@@ -557,7 +613,7 @@ namespace UnityEngine.UIElements
 
             evt.skipDisabledElements = false;
             evt.elementTarget = capturingElement;
-            PropagateEvent(evt, panel, capturingElement);
+            PropagateEvent(evt, panel, capturingElement, true);
 
             return true;
         }
@@ -566,7 +622,7 @@ namespace UnityEngine.UIElements
         {
             var target = evt.elementTarget = panel.visualTree;
 
-            PropagateEvent(evt, panel, target);
+            PropagateEvent(evt, panel, target, false);
         }
 
         internal static void PropagateToRemainingIMGUIContainers(EventBase evt, [NotNull] VisualElement root)

@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
+using System.Collections.Generic;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -14,6 +14,41 @@ namespace UnityEngine.UIElements
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class BoundsField : BaseField<Bounds>
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<Bounds>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            public override object CreateInstance() => new BoundsField();
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
+                int foundAttributeCounter = 0;
+                var cx = UxmlUtility.TryParseFloatAttribute("cx", bag, ref foundAttributeCounter);
+                var cy = UxmlUtility.TryParseFloatAttribute("cy", bag, ref foundAttributeCounter);
+                var cz = UxmlUtility.TryParseFloatAttribute("cz", bag, ref foundAttributeCounter);
+                var ex = UxmlUtility.TryParseFloatAttribute("ex", bag, ref foundAttributeCounter);
+                var ey = UxmlUtility.TryParseFloatAttribute("ey", bag, ref foundAttributeCounter);
+                var ez = UxmlUtility.TryParseFloatAttribute("ez", bag, ref foundAttributeCounter);
+
+                if (foundAttributeCounter > 0)
+                {
+                    Value = new Bounds(new Vector3(cx, cy, cz), new Vector3(ex, ey, ez));
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("cx");
+                        uxmlAsset.RemoveAttribute("cy");
+                        uxmlAsset.RemoveAttribute("cz");
+                        uxmlAsset.RemoveAttribute("ex");
+                        uxmlAsset.RemoveAttribute("ey");
+                        uxmlAsset.RemoveAttribute("ez");
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="BoundsField"/> using the data read from a UXML file.
         /// </summary>

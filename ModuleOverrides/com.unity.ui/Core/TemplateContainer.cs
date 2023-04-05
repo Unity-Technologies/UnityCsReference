@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -16,10 +18,35 @@ namespace UnityEngine.UIElements
     /// When using <see cref="VisualTreeAsset.Instantiate()"/>, a TemplateContainer instance is returned to you to represent the root of the hierarchy.
     /// When using UXML templates, a TemplateContainer is generated for the template instance and inserted into the hierarchy of the parent UXML file.
     /// </remarks>
+    [UxmlElement(UxmlFactory.k_ElementName)]
     public class TemplateContainer : BindableElement
     {
         internal static readonly DataBindingProperty templateIdProperty = nameof(templateId);
         internal static readonly DataBindingProperty templateSourceProperty = nameof(templateSource);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField]
+            private VisualTreeAsset template;
+            [SerializeField]
+            [FormerlySerializedAs("template")] // This allows reading template attribute as a string as well as VisualTreeAsset
+            [UxmlAttribute(UxmlTraits.k_TemplateAttributeName)]
+            private string templateId;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new TemplateContainer();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (TemplateContainer)obj;
+                e.templateSource = template;
+                e.templateId = templateId;
+            }
+        }
 
         /// <summary>
         /// Instantiates and clones a <see cref="TemplateContainer"/> using the data read from a UXML file.
@@ -80,7 +107,10 @@ namespace UnityEngine.UIElements
                         contextOverrides.Add(new CreationContext.AttributeOverrideRange(cc.visualTreeAsset, bagOverrides));
                     }
 
-                    vta.CloneTree(ve, cc.slotInsertionPoints, contextOverrides);
+                    // We keep track of VisualTreeAssets instantiated as Templates inside other VisualTreeAssets so that
+                    // users can find the reference and re-clone them.
+                    templateContainer.templateSource = vta;
+                    vta.CloneTree(ve, new CreationContext(cc.slotInsertionPoints, contextOverrides));
                 }
 
                 if (vta == null)
@@ -114,8 +144,13 @@ namespace UnityEngine.UIElements
 
         /// <undoc/>
         public TemplateContainer(string templateId)
+            : this(templateId, null)
+        { }
+
+        internal TemplateContainer(string templateId, VisualTreeAsset templateSource)
         {
             this.templateId = templateId;
+            this.templateSource = templateSource;
             m_ContentContainer = this;
         }
 

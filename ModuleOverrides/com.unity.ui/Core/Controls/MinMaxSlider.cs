@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -17,6 +18,46 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty rangeProperty = nameof(range);
         internal static readonly DataBindingProperty lowLimitProperty = nameof(lowLimit);
         internal static readonly DataBindingProperty highLimitProperty = nameof(highLimit);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<Vector2>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            #pragma warning disable 649
+            [SerializeField] private float lowLimit;
+            [SerializeField] private float highLimit;
+            #pragma warning restore 649
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                int foundAttributeCounter = 0;
+                var minV = UxmlUtility.TryParseFloatAttribute("min-value", bag, ref foundAttributeCounter);
+                var maxV = UxmlUtility.TryParseFloatAttribute("max-value", bag, ref foundAttributeCounter);
+
+                if (foundAttributeCounter > 0)
+                {
+                    Value = new Vector2(minV, maxV);
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("min-value");
+                        uxmlAsset.RemoveAttribute("max-value");
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                    }
+                }
+            }
+
+            public override object CreateInstance() => new MinMaxSlider();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (MinMaxSlider)obj;
+                e.lowLimit = lowLimit;
+                e.highLimit = highLimit;
+            }
+        }
 
         /// <summary>
         /// Instantiates a <see cref="MinMaxSlider"/> using the data read from a UXML file.

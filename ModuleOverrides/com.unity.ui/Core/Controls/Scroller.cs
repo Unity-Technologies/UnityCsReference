@@ -34,6 +34,32 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [UxmlAttribute("low-value", "lowValue")]
+            [SerializeField] private float lowValue;
+            [UxmlAttribute("high-value", "highValue")]
+            [SerializeField] private float highValue;
+            [SerializeField] private SliderDirection direction;
+            [SerializeField] private float value;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new Scroller();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (Scroller)obj;
+                e.slider.lowValue = lowValue;
+                e.slider.highValue = highValue;
+                e.direction = direction;
+                e.value = value;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Scroller"/> using the data read from a UXML file.
         /// </summary>
@@ -235,7 +261,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Updates the slider element size as a ratio of total range. A value greater than 1 will disable the Scroller.
+        /// Updates the slider element size as a ratio of total range. A value greater than or equal to 1 will disable the Scroller.
         /// </summary>
         /// <param name="factor">Slider size ratio.</param>
         public void Adjust(float factor)

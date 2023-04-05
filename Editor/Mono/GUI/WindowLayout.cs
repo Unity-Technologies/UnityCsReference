@@ -1738,7 +1738,13 @@ namespace UnityEditor
             EditorWindow.GetWindow<AnimationWindow>();
         }
 
-        [MenuItem("Window/Audio/Audio Mixer %8", false, 1)]
+        [MenuItem("Window/Audio/Audio Random Container", false, 1)]
+        static void ShowAudioRandomContainerWindow()
+        {
+            AudioContainerWindow.CreateAudioRandomContainerWindow();
+        }
+
+        [MenuItem("Window/Audio/Audio Mixer %8", false, 2)]
         static void ShowAudioMixer()
         {
             AudioMixerWindow.CreateAudioMixerWindow();

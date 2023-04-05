@@ -297,7 +297,7 @@ namespace UnityEditor
         {
             foreach (var asset in importedAssets)
             {
-                bool st8 = asset.EndsWith(".st", StringComparison.InvariantCultureIgnoreCase);
+                bool st8 = asset.EndsWith(".st", StringComparison.OrdinalIgnoreCase);
                 if(st8)
                 {
                     // Check the external materials in case the user has extracted

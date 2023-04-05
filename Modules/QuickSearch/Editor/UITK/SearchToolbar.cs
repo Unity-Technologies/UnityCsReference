@@ -88,7 +88,7 @@ namespace UnityEditor.Search
         private readonly UndoManager m_UndoManager;
         private readonly Label m_SearchPlaceholder;
         private readonly Label m_PressTabPlaceholder;
-        private readonly ToolbarMenu s_SaveQueryDropdown;
+        private readonly ToolbarMenu m_SaveQueryDropdown;
 
         public virtual SearchContext context => m_ViewModel.context;
         public virtual SearchViewState viewState => m_ViewModel.state;
@@ -184,8 +184,8 @@ namespace UnityEditor.Search
             // Save query dropdown
             if (window?.IsSavedSearchQueryEnabled() ?? false)
             {
-                s_SaveQueryDropdown = SearchElement.Create<ToolbarMenu, MouseUpEvent>("SearchSaveQueryMenu", OnSaveQueryDropdown, buttonClassName, dropdownClassName, saveQueryButtonClassName);
-                Add(s_SaveQueryDropdown);
+                m_SaveQueryDropdown = SearchElement.Create<ToolbarMenu, ClickEvent>("SearchSaveQueryMenu", OnSaveQueryDropdown, buttonClassName, dropdownClassName, saveQueryButtonClassName);
+                Add(m_SaveQueryDropdown);
                 UpdateSaveQueryButton();
             }
 
@@ -349,10 +349,10 @@ namespace UnityEditor.Search
             }
 
             AddSaveQueryMenuItems(window, saveQueryMenu);
-            saveQueryMenu.ShowAsContext();
+            saveQueryMenu.DropDown(m_SaveQueryDropdown.worldBound);
         }
 
-        private void OnSaveQueryDropdown(MouseUpEvent evt)
+        private void OnSaveQueryDropdown(ClickEvent evt)
         {
             if (m_ViewModel is SearchWindow window)
                 OnSaveQuery(window);
@@ -757,10 +757,10 @@ namespace UnityEditor.Search
 
         void UpdateSaveQueryButton()
         {
-            if (s_SaveQueryDropdown == null)
+            if (m_SaveQueryDropdown == null)
                 return;
 
-            s_SaveQueryDropdown.SetEnabled(!context.empty);
+            m_SaveQueryDropdown.SetEnabled(!context.empty);
         }
     }
 }

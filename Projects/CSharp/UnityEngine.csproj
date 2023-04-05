@@ -68,6 +68,12 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\CollectionViewController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\CollectionViewController.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultMultiColumnTreeViewController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultMultiColumnTreeViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultTreeViewController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultTreeViewController.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\IDefaultTreeViewController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\IDefaultTreeViewController.cs</Link>
     </Compile>
@@ -362,11 +368,11 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDrop.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDrop.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropArgs.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropArgs.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IListDragAndDropArgs.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IListDragAndDropArgs.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IReorderable.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IReorderable.cs</Link>
@@ -737,6 +743,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRAtlasManager.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRAtlasManager.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandList.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandList.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandManipulator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRCommandManipulator.cs</Link>
     </Compile>
@@ -781,6 +790,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativeList.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativeList.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativePagedList.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRNativePagedList.cs</Link>
@@ -1220,6 +1232,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UQuery.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UQuery.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\FieldRenderingAttributes.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UXML\FieldRenderingAttributes.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\IUxmlAttributes.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\IUxmlAttributes.cs</Link>
     </Compile>
@@ -1235,6 +1250,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlAttributeDescription.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlAttributeDescription.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlAttributes.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlAttributes.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlChildElementDescription.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlChildElementDescription.cs</Link>
     </Compile>
@@ -1246,6 +1264,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectFactoryRegistry.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectFactoryRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlSerializedData.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlSerializedData.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlTypeRestriction.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlTypeRestriction.cs</Link>
@@ -1615,6 +1636,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioPlayableOutput.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioPlayableOutput.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioRandomContainer.bindings.cs">
+      <Link>Modules\Audio\Public\ScriptBindings\AudioRandomContainer.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioRenderer.bindings.cs">
       <Link>Modules\Audio\Public\ScriptBindings\AudioRenderer.bindings.cs</Link>

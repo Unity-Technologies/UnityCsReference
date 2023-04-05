@@ -91,7 +91,7 @@ namespace UnityEngine.UIElements.UIR
                 UpdateWorldFlipsWinding(ve);
 
                 Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
-                Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.hierarchy.parent == null || ve.renderChainData.transformID.Equals(ve.hierarchy.parent.renderChainData.transformID) || (ve.renderHints & RenderHints.GroupTransform) != 0);
+                Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.hierarchy.parent == null || ve.renderChainData.transformID.Equals(ve.hierarchy.parent.renderChainData.transformID) || ve.renderChainData.isGroupTransform);
 
                 if (ve is TextElement)
                     RenderEvents.UpdateTextCoreSettings(m_RenderChain, ve);

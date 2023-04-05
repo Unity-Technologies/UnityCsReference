@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Profiling;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -15,11 +16,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseTreeViewController : CollectionViewController
     {
-        Dictionary<int, TreeItem> m_TreeItems = new Dictionary<int, TreeItem>();
-        List<int> m_RootIndices = new List<int>();
-        List<TreeViewItemWrapper> m_ItemWrappers = new List<TreeViewItemWrapper>();
-        HashSet<int> m_TreeItemIdsWithItemWrappers = new HashSet<int>();
-        List<TreeViewItemWrapper> m_WrapperInsertionList = new List<TreeViewItemWrapper>();
+        Dictionary<int, TreeItem> m_TreeItems = new();
+        List<int> m_RootIndices = new();
+        List<TreeViewItemWrapper> m_ItemWrappers = new();
+        HashSet<int> m_TreeItemIdsWithItemWrappers = new();
+        List<TreeViewItemWrapper> m_WrapperInsertionList = new();
 
         /// <summary>
         /// View for this controller, cast as a <see cref="BaseTreeView"/>.
@@ -58,37 +59,37 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns the root items of the tree, by ids.
+        /// Returns the root items of the tree, by IDs.
         /// </summary>
-        /// <returns>The root item ids.</returns>
+        /// <returns>The root item IDs.</returns>
         public IEnumerable<int> GetRootItemIds()
         {
             return m_RootIndices;
         }
 
         /// <summary>
-        /// Returns all item ids that can be found in the tree, optionally specifying root ids from where to start.
+        /// Returns all item IDs that can be found in the tree, optionally specifying root IDs from where to start.
         /// </summary>
-        /// <param name="rootIds">Root ids to start from. If null, will use the tree root ids.</param>
-        /// <returns>All items ids in the tree, starting from the specified ids.</returns>
+        /// <param name="rootIds">Root IDs to start from. If null, will use the tree root ids.</param>
+        /// <returns>All items IDs in the tree, starting from the specified IDs.</returns>
         public abstract IEnumerable<int> GetAllItemIds(IEnumerable<int> rootIds = null);
         /// <summary>
-        /// Returns the parent id of an item, by id.
+        /// Returns the parent ID of an item, by ID.
         /// </summary>
-        /// <param name="id">The id of the item to fetch the parent from.</param>
-        /// <returns>The parent id, or -1 if the item is at the root of the tree.</returns>
+        /// <param name="id">The ID of the item to fetch the parent from.</param>
+        /// <returns>The parent ID, or -1 if the item is at the root of the tree.</returns>
         public abstract int GetParentId(int id);
         /// <summary>
-        /// Get all children of a specific id in the tree.
+        /// Get all children of a specific ID in the tree.
         /// </summary>
-        /// <param name="id">The item id.</param>
-        /// <returns>The children ids.</returns>
+        /// <param name="id">The item ID.</param>
+        /// <returns>The children IDs.</returns>
         public abstract IEnumerable<int> GetChildrenIds(int id);
         /// <summary>
-        /// Moves an item by id, to a new parent and child index.
+        /// Moves an item by ID, to a new parent and child index.
         /// </summary>
-        /// <param name="id">The id of the item to move.</param>
-        /// <param name="newParentId">The new parent id. -1 if moved at the root.</param>
+        /// <param name="id">The ID of the item to move.</param>
+        /// <param name="newParentId">The new parent ID. -1 if moved at the root.</param>
         /// <param name="childIndex">The child index to insert at under the parent. -1 will add as the last child.</param>
         /// <param name="rebuildTree">Whether we need to rebuild tree data. Set to false when doing multiple operations.</param>
         public abstract void Move(int id, int newParentId, int childIndex = -1, bool rebuildTree = true);
@@ -96,8 +97,8 @@ namespace UnityEngine.UIElements
         /// Removes an item by id.
         /// </summary>
         /// <param name="id">The item id.</param>
-        /// <param name="rebuildTree">Whether we need to rebuild tree data. Set to false when doing multiple operations.</param>
-        /// <returns>Whether or not the item was successfully found and removed.</returns>
+        /// <param name="rebuildTree">Whether we need to rebuild tree data. Set to <c>false</c> when doing multiple operations and call <see cref="TreeViewController.RebuildTree()"/>.</param>
+        /// <returns>Whether the item was successfully found and removed.</returns>
         public abstract bool TryRemoveItem(int id, bool rebuildTree = true);
 
         internal override void InvokeMakeItem(ReusableCollectionItem reusableItem)
@@ -113,7 +114,7 @@ namespace UnityEngine.UIElements
         {
             if (reusableItem is ReusableTreeViewItem treeItem)
             {
-                treeItem.Indent(GetIndentationDepth(index));
+                treeItem.Indent(GetIndentationDepthByIndex(index));
                 treeItem.SetExpandedWithoutNotify(IsExpandedByIndex(index));
                 treeItem.SetToggleVisibility(HasChildrenByIndex(index));
             }
@@ -210,9 +211,9 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns the index in the source of the item, by id.
+        /// Returns the index in the source of the item, by ID.
         /// </summary>
-        /// <param name="id">The id of the item to look for.</param>
+        /// <param name="id">The ID of the item to look for.</param>
         /// <returns>The index of the item in the expanded items source. Returns -1 if the item is not visible.</returns>
         public override int GetIndexForId(int id)
         {
@@ -232,7 +233,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns the id for a specified index in the visible items source.
+        /// Returns the ID for a specified index in the visible items source.
         /// </summary>
         /// <param name="index"></param>
         /// <returns></returns>
@@ -242,10 +243,10 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns whether or not the item with the specified id has one or more child.
+        /// Return whether the item with the specified ID has one or more child.
         /// </summary>
         /// <param name="id">The item id.</param>
-        /// <returns>Whether or not the item with the specified id has one or more child.</returns>
+        /// <returns>Whether the item with the specified ID has one or more child.</returns>
         public virtual bool HasChildren(int id)
         {
             if (m_TreeItems.TryGetValue(id, out var item))
@@ -255,29 +256,39 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns whether or not the item with the specified index has one or more child.
+        /// Checks if an ID exists within this tree.
+        /// </summary>
+        /// <param name="id">The id to look for.</param>
+        /// <returns>Whether an item with this id exists in the tree.</returns>
+        public bool Exists(int id)
+        {
+            return m_TreeItems.ContainsKey(id);
+        }
+
+        /// <summary>
+        /// Return whether the item with the specified index has one or more child.
         /// </summary>
         /// <param name="index">The item index.</param>
-        /// <returns>Whether or not the item with the specified id has one or more child.</returns>
+        /// <returns>Whether the item with the specified ID has one or more child.</returns>
         public bool HasChildrenByIndex(int index)
         {
             return IsIndexValid(index) && m_ItemWrappers[index].hasChildren;
         }
 
         /// <summary>
-        /// Gets the children ids of the item with the specified index.
+        /// Gets the children IDs of the item with the specified index.
         /// </summary>
         /// <param name="index">The item index.</param>
-        /// <returns>The children ids.</returns>
+        /// <returns>The children IDs.</returns>
         public IEnumerable<int> GetChildrenIdsByIndex(int index)
         {
             return IsIndexValid(index) ? m_ItemWrappers[index].childrenIds : null;
         }
 
         /// <summary>
-        /// Gets the child index under the parent of the item with the specified id.
+        /// Gets the child index under the parent of the item with the specified ID.
         /// </summary>
-        /// <param name="id">The item id.</param>
+        /// <param name="id">The item ID.</param>
         /// <returns>The child index under the parent. Returns -1 if the item has no parent or doesn't exist in the tree.</returns>
         public int GetChildIndexForId(int id)
         {
@@ -297,26 +308,58 @@ namespace UnityEngine.UIElements
             return -1;
         }
 
-        int GetIndentationDepth(int index)
+        /// <summary>
+        /// Returns the depth of the element at that ID.
+        /// </summary>
+        /// <param name="id">The item ID.</param>
+        /// <returns>The depth of the element.</returns>
+        public int GetIndentationDepth(int id)
         {
-            return IsIndexValid(index) ? m_ItemWrappers[index].depth : 0;
+            var depth = 0;
+            var parentId = GetParentId(id);
+            while (parentId != -1)
+            {
+                parentId = GetParentId(parentId);
+                depth++;
+            }
+
+            return depth;
         }
 
         /// <summary>
-        /// Returns whether or not the item with the specified id is expanded in the tree.
+        /// Return the depth of the element at that index.
         /// </summary>
-        /// <param name="id">The item id</param>
-        /// <returns>Whether or not the item with the specified id is expanded in the tree.</returns>
+        /// <param name="index">The item index.</param>
+        /// <returns>The depth of the element.</returns>
+        public int GetIndentationDepthByIndex(int index)
+        {
+            var id = GetIdForIndex(index);
+            return GetIndentationDepth(id);
+        }
+
+        /// <summary>
+        /// Determines whether the item with the specified ID can be expanded or collapsed.
+        /// </summary>
+        public virtual bool CanChangeExpandedState(int id)
+        {
+            return true;
+        }
+
+        /// <summary>
+        /// Return whether the item with the specified ID is expanded in the tree.
+        /// </summary>
+        /// <param name="id">The item ID</param>
+        /// <returns>Whether the item with the specified ID is expanded in the tree.</returns>
         public bool IsExpanded(int id)
         {
             return baseTreeView.expandedItemIds.Contains(id);
         }
 
         /// <summary>
-        /// Returns whether or not the item with the specified index is expanded in the tree.
+        /// Return whether the item with the specified index is expanded in the tree.
         /// </summary>
         /// <param name="index">The item index</param>
-        /// <returns>Whether or not the item with the specified id is expanded in the tree. Will return false if the index is not valid.</returns>
+        /// <returns>Whether the item with the specified index is expanded in the tree. Will return false if the index is not valid.</returns>
         public bool IsExpandedByIndex(int index)
         {
             if (!IsIndexValid(index))
@@ -330,7 +373,7 @@ namespace UnityEngine.UIElements
         /// Expands the item with the specified index, making his children visible. Allows to expand the whole hierarchy under that item.
         /// </summary>
         /// <param name="index">The item index.</param>
-        /// <param name="expandAllChildren">Whether or not to expand the whole hierarchy under that item.</param>
+        /// <param name="expandAllChildren">Whether the whole hierarchy under that item will be expanded.</param>
         /// <param name="refresh">Whether to refresh items or not. Set to false when doing multiple operations on the tree, to only do one RefreshItems once all operations are done.</param>
         public void ExpandItemByIndex(int index, bool expandAllChildren, bool refresh = true)
         {
@@ -338,7 +381,11 @@ namespace UnityEngine.UIElements
             if (!HasChildrenByIndex(index))
                 return;
 
-            if (!baseTreeView.expandedItemIds.Contains(GetIdForIndex(index)) || expandAllChildren)
+            var id = GetIdForIndex(index);
+            if (!CanChangeExpandedState(id))
+                return;
+
+            if (!baseTreeView.expandedItemIds.Contains(id) || expandAllChildren)
             {
                 var childrenIds = GetChildrenIdsByIndex(index);
                 var childrenIdsList = new List<int>();
@@ -348,7 +395,7 @@ namespace UnityEngine.UIElements
                         childrenIdsList.Add(childId);
                 }
 
-                CreateWrappers(childrenIdsList, GetIndentationDepth(index) + 1, ref m_WrapperInsertionList);
+                CreateWrappers(childrenIdsList, GetIndentationDepth(id) + 1, ref m_WrapperInsertionList);
                 m_ItemWrappers.InsertRange(index + 1, m_WrapperInsertionList);
                 if (!baseTreeView.expandedItemIds.Contains(m_ItemWrappers[index].id))
                     baseTreeView.expandedItemIds.Add(m_ItemWrappers[index].id);
@@ -357,7 +404,6 @@ namespace UnityEngine.UIElements
 
             if (expandAllChildren)
             {
-                var id = GetIdForIndex(index);
                 var childrenIds = GetChildrenIds(id);
                 foreach (var childId in GetAllItemIds(childrenIds))
                     if (!baseTreeView.expandedItemIds.Contains(childId))
@@ -369,14 +415,14 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Expands the item with the specified id, making its children visible. Allows to expand the whole hierarchy under that item.
+        /// Expands the item with the specified ID, making its children visible. Allows to expand the whole hierarchy under that item.
         /// </summary>
-        /// <param name="id">The item id.</param>
-        /// <param name="expandAllChildren">Whether or not to expand the whole hierarchy under that item.</param>
+        /// <param name="id">The item ID.</param>
+        /// <param name="expandAllChildren">Whether the whole hierarchy under that item will be expanded.</param>
         /// <param name="refresh">Whether to refresh items or not. Set to false when doing multiple operations on the tree, to only do one RefreshItems once all operations are done.</param>
         public void ExpandItem(int id, bool expandAllChildren, bool refresh = true)
         {
-            if (!HasChildren(id))
+            if (!HasChildren(id) || !CanChangeExpandedState(id))
                 return;
 
             // Try to find it in the currently visible list.
@@ -398,26 +444,29 @@ namespace UnityEngine.UIElements
         /// Collapses the item with the specified index, hiding its children. Allows to collapse the whole hierarchy under that item.
         /// </summary>
         /// <param name="index">The item index.</param>
-        /// <param name="collapseAllChildren">Whether or not to collapse the whole hierarchy under that item.</param>
+        /// <param name="collapseAllChildren">Whether the whole hierarchy under that item will be collapsed.</param>
         public void CollapseItemByIndex(int index, bool collapseAllChildren)
         {
             if (!HasChildrenByIndex(index))
                 return;
 
+            var id = GetIdForIndex(index);
+            if (!CanChangeExpandedState(id))
+             return;
+
             if (collapseAllChildren)
             {
-                var id = GetIdForIndex(index);
                 var childrenIds = GetChildrenIds(id);
                 foreach (var childId in GetAllItemIds(childrenIds))
                     baseTreeView.expandedItemIds.Remove(childId);
             }
 
-            baseTreeView.expandedItemIds.Remove(GetIdForIndex(index));
+            baseTreeView.expandedItemIds.Remove(id);
 
             var recursiveChildCount = 0;
             var currentIndex = index + 1;
-            var currentDepth = GetIndentationDepth(index);
-            while (currentIndex < m_ItemWrappers.Count && GetIndentationDepth(currentIndex) > currentDepth)
+            var currentDepth = GetIndentationDepthByIndex(index);
+            while (currentIndex < m_ItemWrappers.Count && GetIndentationDepthByIndex(currentIndex) > currentDepth)
             {
                 recursiveChildCount++;
                 currentIndex++;
@@ -433,12 +482,15 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Collapses the item with the specified id, hiding its children. Allows to collapse the whole hierarchy under that item.
+        /// Collapses the item with the specified ID, hiding its children. Allows to collapse the whole hierarchy under that item.
         /// </summary>
-        /// <param name="id">The item id.</param>
-        /// <param name="collapseAllChildren">Whether or not to collapse the whole hierarchy under that item.</param>
+        /// <param name="id">The item ID.</param>
+        /// <param name="collapseAllChildren">Whether the whole hierarchy under that item will be collapsed.</param>
         public void CollapseItem(int id, bool collapseAllChildren)
         {
+            if (!CanChangeExpandedState(id))
+                return;
+
             // Try to find it in the currently visible list.
             for (var i = 0; i < m_ItemWrappers.Count; ++i)
             {
@@ -465,8 +517,13 @@ namespace UnityEngine.UIElements
         public void ExpandAll()
         {
             foreach (var itemId in GetAllItemIds())
+            {
+                if (!CanChangeExpandedState(itemId))
+                    continue;
+
                 if (!baseTreeView.expandedItemIds.Contains(itemId))
                     baseTreeView.expandedItemIds.Add(itemId);
+            }
 
             RegenerateWrappers();
             baseTreeView.RefreshItems();
@@ -480,7 +537,20 @@ namespace UnityEngine.UIElements
             if (baseTreeView.expandedItemIds.Count == 0)
                 return;
 
-            baseTreeView.expandedItemIds.Clear();
+            using (ListPool<int>.Get(out var list))
+            {
+                foreach (var itemId in baseTreeView.expandedItemIds)
+                {
+                    if (!CanChangeExpandedState(itemId))
+                    {
+                        list.Add(itemId);
+                    }
+                }
+
+                baseTreeView.expandedItemIds.Clear();
+                baseTreeView.expandedItemIds.AddRange(list);
+            }
+
             RegenerateWrappers();
             baseTreeView.RefreshItems();
         }
@@ -497,7 +567,7 @@ namespace UnityEngine.UIElements
             CreateWrappers(rootItemIds, 0, ref m_ItemWrappers);
             SetItemsSourceWithoutNotify(m_ItemWrappers);
         }
-        
+
         static readonly ProfilerMarker k_CreateWrappers = new ProfilerMarker("BaseTreeViewController.CreateWrappers");
         void CreateWrappers(IEnumerable<int> treeViewItemIds, int depth, ref List<TreeViewItemWrapper> wrappers)
         {
@@ -525,6 +595,11 @@ namespace UnityEngine.UIElements
         bool IsIndexValid(int index)
         {
             return index >= 0 && index < m_ItemWrappers.Count;
+        }
+
+        internal void RaiseItemParentChanged(int id, int newParentId)
+        {
+            RaiseItemIndexChanged(id, newParentId);
         }
     }
 }

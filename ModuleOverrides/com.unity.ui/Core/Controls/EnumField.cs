@@ -4,7 +4,7 @@
 
 using System;
 using Unity.Properties;
-using UnityEngine;
+using UnityEditor.UIElements;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -48,6 +48,30 @@ namespace UnityEngine.UIElements
     public class EnumField : BaseField<Enum>
     {
         internal static readonly DataBindingProperty textProperty = nameof(text);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<Enum>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [UxmlTypeReference(typeof(Enum))]
+            [SerializeField, UxmlAttribute("type")] private string typeAsString;
+            [EnumFieldValueDecorator]
+            [SerializeField, UxmlAttribute("value")] private string valueAsString;
+            [SerializeField] private bool includeObsoleteValues;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new EnumField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (EnumField)obj;
+                e.includeObsoleteValues = includeObsoleteValues;
+                e.typeAsString = typeAsString;
+                e.valueAsString = valueAsString;
+            }
+        }
 
         /// <summary>
         /// Instantiates an <see cref="EnumField"/> using the data read from a UXML file.
@@ -107,7 +131,55 @@ namespace UnityEngine.UIElements
 
         // These properties exist so that the UIBuilder can read them.
         internal Type type => m_EnumType;
-        internal bool includeObsoleteValues => m_IncludeObsoleteValues;
+        internal bool includeObsoleteValues {  get => m_IncludeObsoleteValues; set => m_IncludeObsoleteValues = value; }
+
+        internal string typeAsString
+        {
+            get => UxmlUtility.TypeToString(m_EnumType);
+            set
+            {
+                m_EnumType = UxmlUtility.ParseType(value);
+                if (m_EnumType == null)
+                {
+                    this.value = null;
+                    m_TextElement.text = string.Empty;
+                }
+            }
+        }
+
+        internal string valueAsString
+        {
+            get => value?.ToString();
+            set
+            {
+                if (type != null)
+                {
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        if (Enum.TryParse(type, value, false, out var result) && result is Enum enumValue)
+                        {
+                            Init(enumValue, includeObsoleteValues);
+                            return;
+                        }
+                        else
+                        {
+                            // If we didn't have a valid value, try to set the type.
+                            PopulateDataFromType(type);
+                            this.value = null;
+                        }
+                    }
+                    else
+                    {
+                        var enumValue = (Enum)Enum.ToObject(type, 0);
+                        Init(enumValue, includeObsoleteValues);
+                    }
+                }
+                else
+                {
+                    this.value = null;
+                }
+            }
+        }
 
         // Set this callback to provide a specific implementation of the menu.
         internal Func<IGenericMenu> createMenuCallback;

@@ -48,7 +48,7 @@ namespace Unity.UI.Builder
             fieldsContainer.contentContainer.SetEnabled(false);
         }
 
-        protected override void UpdateFieldStatus(BindableElement fieldElement)
+        protected override void UpdateFieldStatus(VisualElement fieldElement)
         {
             m_Inspector.UpdateFieldStatus(fieldElement, null);
 

@@ -17,6 +17,12 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         LongInput longInput => (LongInput)textInputBase;
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextValueField<long>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new LongField();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="LongField"/> using the data read from a UXML file.
         /// </summary>

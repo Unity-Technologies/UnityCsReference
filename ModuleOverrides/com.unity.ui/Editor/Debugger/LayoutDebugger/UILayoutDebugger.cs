@@ -19,6 +19,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         private int m_MaxItem = 1;
         private bool m_EnableLayoutComparison = false;
         private bool m_ShowYogaNodeDirty = false;
+        private VisualElement m_LockSelectedVisualElement = null;
 
         const int kNumberOfLinesOfInfo = 4;
         const float kLineHeight = 16.0f;
@@ -34,6 +35,19 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             m_ShowYogaNodeDirty = show;
             MarkDirtyRepaint();
         }
+
+        public void LockSelectedElement(bool lockSelectedElement)
+        {
+            if (lockSelectedElement)
+            {
+                m_LockSelectedVisualElement = m_LastDrawElement.m_OriginalVisualElement;
+            }
+            else
+            {
+                m_LockSelectedVisualElement = null;
+            }
+        }
+
 
         void OnPointerUpEvent(PointerUpEvent evt)
         {
@@ -146,20 +160,23 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             {
                 if (record.m_FrameIndex == m_FrameIndex)
                 {
-                    if (record.m_LayoutLoop == m_LayoutLoop)
+                    if (record.m_PassIndex == m_PassIndex)
                     {
-                        int count = 0;
-                        int nextMaxItem = 0;
-                        SelectVisualElement(record.m_VE, pos, ref count, ref nextMaxItem);
-                        m_MaxItem = nextMaxItem;
-                        MarkDirtyRepaint();
-
-                        if (m_ParentWindow != null)
+                        if (record.m_LayoutLoop == m_LayoutLoop)
                         {
-                            m_ParentWindow.UpdateSlider(m_MaxItem);
-                        }
+                            int count = 0;
+                            int nextMaxItem = 0;
+                            SelectVisualElement(record.m_VE, pos, ref count, ref nextMaxItem);
+                            m_MaxItem = nextMaxItem;
+                            MarkDirtyRepaint();
 
-                        return;
+                            if (m_ParentWindow != null)
+                            {
+                                m_ParentWindow.UpdateSlider(m_MaxItem);
+                            }
+
+                            return;
+                        }
                     }
                 }
             }
@@ -202,6 +219,11 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             focusable = true;
             generateVisualContent += OnGenerateVisualContent;
 
+            style.marginRight = 2;
+            style.marginLeft = 2;
+            style.marginBottom = 2;
+            style.marginTop = 2;
+
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
@@ -229,6 +251,30 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         internal void SetMaxItem(int maxItem)
         {
             m_MaxItem = maxItem;
+
+            if (m_LockSelectedVisualElement != null)
+            {
+                if (recordLayout != null)
+                {
+                    for (int i = 0; i < recordLayout.Count; i++)
+                    {
+                        var record = recordLayout[i];
+                        if (record.m_FrameIndex == m_FrameIndex)
+                        {
+                            if (record.m_PassIndex == m_PassIndex)
+                            {
+                                if (record.m_LayoutLoop == m_LayoutLoop)
+                                {
+                                    // Update MaxItem
+                                    int findLockedCurrentIndex = 0;
+                                    FindLockedItem(record.m_VE, ref findLockedCurrentIndex);
+                                }
+                            }
+                        }
+                    }
+                }
+                m_ParentWindow.UpdateSlider(m_MaxItem, false);
+            }
             MarkDirtyRepaint();
         }
 
@@ -311,6 +357,32 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             }
         }
 
+        private void FindLockedItem(LayoutDebuggerVisualElement ve, ref int currentIndex)
+        {
+            if (ve.m_OriginalVisualElement == m_LockSelectedVisualElement)
+            {
+                m_MaxItem = currentIndex;
+                return;
+            }
+
+            if (!ve.IsVisualElementVisible())
+            {
+                return;
+            }
+
+            currentIndex++;
+
+            if (ve.m_Children != null)
+            {
+                var childCount = ve.m_Children.Count;
+                for (int i = 0; i < childCount; ++i)
+                {
+                    var child = ve.m_Children[i];
+                    FindLockedItem(child, ref currentIndex);
+                }
+            }
+        }
+
         // Note: Can draw pass the bound of the VisualElement
         public void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
@@ -337,6 +409,13 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                                 rectRootVE.width = record.m_VE.layout.width;
                                 rectRootVE.height = record.m_VE.layout.height;
 
+                                if (m_LockSelectedVisualElement != null)
+                                {
+                                    // Update MaxItem
+                                    int findLockedCurrentIndex = 0;
+                                    FindLockedItem(record.m_VE, ref findLockedCurrentIndex);
+                                }
+
                                 CountLayoutItem(rectRootVE, record.m_VE, ref count, ref countOfZeroSizeElement, ref outOfRootVE);
 
                                 int currentIndex = 0;
@@ -352,13 +431,30 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                                 int depth = 0;
                                 CountDepth(m_LastDrawElement, ref depth);
 
+                                string className = m_LastDrawElement.m_OriginalVisualElement.GetType().ToString();
+
+                                Color textColor = Color.white;
+
+                                if (m_LockSelectedVisualElement != null)
+                                {
+                                    if (m_LockSelectedVisualElement != m_LastDrawElement.m_OriginalVisualElement)
+                                    {
+                                        textColor = Color.red;
+                                        className += string.Format(" - Locked item not found (Name: {0} Class: {1})",
+                                            m_LockSelectedVisualElement.name,
+                                            m_LockSelectedVisualElement.GetType().ToString());
+                                    }
+                                }
+
                                 string infoString = string.Format("CurrentElement: Name: {0} Class: {1}",
                                     m_LastDrawElement.name,
-                                    m_LastDrawElement.m_OriginalVisualElement.GetType());
+                                    className
+                                    );
 
                                 int numberOfLinesOfInfo = 0;
 
-                                mgc.DrawText(infoString, new Vector2(0.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, Color.white);
+                                mgc.DrawText(infoString, new Vector2(0.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, textColor);
+
 
                                 infoString = string.Format("CurrentElement: Local ({0} {1}, {2}, {3}) Global ({4} {5}, {6}, {7}) Depth:{8}",
                                     m_LastDrawElement.layout.x,
@@ -367,8 +463,8 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                                     m_LastDrawElement.layout.height,
                                     m_LastDrawElement.layout.x + m_LastDrawElementOffset.x - 0.5f,
                                     m_LastDrawElement.layout.y + m_LastDrawElementOffset.y - 0.5f,
-                                    m_LastDrawElement.layout.width + m_LastDrawElementOffset.x - 0.5f,
-                                    m_LastDrawElement.layout.height + m_LastDrawElementOffset.y - 0.5f,
+                                    m_LastDrawElement.layout.width,
+                                    m_LastDrawElement.layout.height,
                                     depth);
 
                                 mgc.DrawText(infoString, new Vector2(0.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, Color.white);

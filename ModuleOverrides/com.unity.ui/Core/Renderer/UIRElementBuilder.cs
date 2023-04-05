@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements.UIR
             var ve = mgc.visualElement;
             Debug.Assert(ve.areAncestorsAndSelfDisplayed);
 
-            bool isGroupTransform = (ve.renderHints & RenderHints.GroupTransform) == RenderHints.GroupTransform;
+            bool isGroupTransform = ve.renderChainData.isGroupTransform;
             if (isGroupTransform)
                 mgc.entryRecorder.PushGroupMatrix();
 

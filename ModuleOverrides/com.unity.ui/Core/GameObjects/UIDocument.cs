@@ -228,6 +228,7 @@ namespace UnityEngine.UIElements
         }
 
         private VisualElement m_RootVisualElement;
+        private BaseRuntimePanel m_RuntimePanel;
 
         /// <summary>
         /// The root visual element where the UI hierarchy starts.
@@ -315,24 +316,72 @@ namespace UnityEngine.UIElements
             {
                 AddRootVisualElementToTree();
             }
+
+            ResolveRuntimePanel();
+        }
+
+        void ResolveRuntimePanel()
+        {
+            if (m_RuntimePanel == null)
+                m_RuntimePanel = rootVisualElement.panel as BaseRuntimePanel;
         }
 
         void LateUpdate()
         {
             if (panelSettings != null && panelSettings.panel != null && panelSettings.panel.drawsInCameras)
             {
-                SetVisualElementFromTransform(rootVisualElement, transform);
+                // TODO: In editor we may loose the m_RuntimePanel connection when manipulation
+                // the hierarchy. This is weird and should be investigated.
+                ResolveRuntimePanel();
+
+                SetTransformOnVisualElement(rootVisualElement, transform);
                 panelSettings.panel.panelToWorld = Matrix4x4.identity;
             }
         }
 
-        static void SetVisualElementFromTransform(VisualElement visualElement, Transform transform)
+        void SetTransformOnVisualElement(VisualElement visualElement, Transform transform)
         {
+            Matrix4x4 matrix;
+            ComputeTransform(transform, out matrix);
+
             visualElement.style.transformOrigin = new TransformOrigin(Vector3.zero);
-            visualElement.style.translate = new Translate(transform.position);
-            visualElement.style.rotate = new Rotate(transform.rotation);
-            var scale = transform.lossyScale;
-            visualElement.style.scale = new Scale(new Vector3(scale.x, -scale.y, scale.z));
+            visualElement.style.translate = new Translate(matrix.GetPosition());
+            visualElement.style.rotate = new Rotate(matrix.rotation);
+            visualElement.style.scale = new Scale(matrix.lossyScale);
+        }
+
+        void ComputeTransform(Transform transform, out Matrix4x4 matrix)
+        {
+            // This is the root, apply the pixels-per-unit scaling, and the y-flip.
+            float ppu = m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
+            float ppuScale = 1.0f / ppu;
+
+            if (parentUI == null)
+            {
+                var scale = transform.lossyScale;
+                scale *= ppuScale;
+
+                var q = transform.rotation;
+                q *= Quaternion.AngleAxis(180.0f, Vector3.right); // Y-axis flip
+
+                matrix = Matrix4x4.TRS(transform.position, q, scale);
+            }
+            else
+            {
+                var scale = Vector3.one * ppuScale;
+                var q = Quaternion.AngleAxis(180.0f, Vector3.right); // Y-axis flip
+
+                var ui2World = Matrix4x4.TRS(Vector3.zero, q, scale);
+                var world2UI = ui2World.inverse;
+
+                var childGoToWorld = transform.localToWorldMatrix;
+                var worldToParentGo = parentUI.transform.worldToLocalMatrix;
+
+                // (GOa - To - World) * (UI2W) * (VEb - Space - To - VEa - Space) = (GOb - To - World) * (UI2W)
+                // (VEb - Space - To - VEa - Space) = (UI2W) ^ -1 * (GOa - To - World) ^ -1 * (GOb - To - World) * (UI2W)
+
+                matrix = world2UI * worldToParentGo * childGoToWorld * ui2World;
+            }
         }
 
         static void SetNoTransform(VisualElement visualElement)

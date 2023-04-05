@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -15,10 +16,29 @@ namespace UnityEngine.UIElements
     {
         internal static readonly DataBindingProperty choicesProperty = nameof(choices);
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<int>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [UxmlAttribute("choices")]
+            [SerializeField] private List<string> choicesList;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new RadioButtonGroup();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (RadioButtonGroup)obj;
+                e.choicesList = choicesList;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="RadioButtonGroup"/> using data from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<RadioButtonGroup, UxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<RadioButtonGroup, UxmlTraits> { }
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="RadioButtonGroup"/>.
@@ -113,6 +133,12 @@ namespace UnityEngine.UIElements
                 UpdateRadioButtons();
                 NotifyPropertyChanged(choicesProperty);
             }
+        }
+
+        internal List<string> choicesList
+        {
+            get => choices.ToList();
+            set => choices = value;
         }
 
         VisualElement m_RadioButtonContainer;

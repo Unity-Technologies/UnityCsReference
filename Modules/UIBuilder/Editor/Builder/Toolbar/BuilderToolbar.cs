@@ -779,6 +779,18 @@ namespace Unity.UI.Builder
                 a => m_Viewport.notifications.ResetNotifications(),
                 a => m_Viewport.notifications.hasPendingNotifications ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
+            if (Unsupported.IsDeveloperMode())
+            {
+                m_SettingsMenu.menu.AppendAction(
+                    "Always Use UxmlTraits Attribute fields",
+                a =>
+                {
+                    BuilderUxmlAttributesView.AlwaysUseUxmlTraits = !BuilderUxmlAttributesView.AlwaysUseUxmlTraits;
+                    builder.inspector.RefreshUI();
+                },
+                a => BuilderUxmlAttributesView.AlwaysUseUxmlTraits ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+            }
+
             AddBuilderProjectSettingsMenu();
         }
 

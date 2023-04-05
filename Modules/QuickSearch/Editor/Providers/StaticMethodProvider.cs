@@ -31,7 +31,7 @@ namespace UnityEditor.Search.Providers
             return new SearchProvider(type, displayName)
             {
                 priority = 85,
-                filterId = "#",
+                filterId = "api:",
                 isExplicitProvider = true,
                 fetchItems = (context, items, provider) => FetchItems(context, provider),
                 fetchThumbnail = (item, context) => Icons.staticAPI

@@ -11,6 +11,25 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class RepeatButton : TextElement
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private long delay;
+            [SerializeField] private long interval;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new RepeatButton();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (RepeatButton)obj;
+                e.SetAction(null, delay, interval);
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="RepeatButton"/> using the data read from a UXML file.
         /// </summary>

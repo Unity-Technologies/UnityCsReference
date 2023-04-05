@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
+using static UnityEngine.Bindings.ManagedListWrapper;
 
 namespace UnityEngine
 {
@@ -15,25 +17,26 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Scripting/NoAllocHelpers.bindings.h")]
     internal sealed class NoAllocHelpers
     {
-        public static void ResizeList<T>(List<T> list, int size)
+        public static void EnsureListElemCount<T>(List<T> list, int count)
         {
             if (list == null)
                 throw new ArgumentNullException("list");
-            if (size < 0 || size > list.Capacity)
-                throw new ArgumentException("invalid size to resize.", "list");
-            if (size != list.Count)
-                Internal_ResizeList(list, size);
-        }
 
-        public static void EnsureListElemCount<T>(List<T> list, int count)
-        {
+            if (count < 0)
+                throw new ArgumentException("invalid size to resize.", "list");
+
             list.Clear();
 
             // make sure capacity is enough (that's where alloc WILL happen if needed)
             if (list.Capacity < count)
                 list.Capacity = count;
 
-            ResizeList(list, count);
+            if (count != list.Count)
+            {
+                ListPrivateFieldAccess<T> tListAccess = UnsafeUtility.As<List<T>, ListPrivateFieldAccess<T>>(ref list);
+                tListAccess._size = count;
+                tListAccess._version++;
+            }
         }
 
         // tiny helpers

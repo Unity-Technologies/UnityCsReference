@@ -1046,20 +1046,10 @@ namespace UnityEngine
                 throw new ArgumentException("Argument lightProbes and occlusionProbes cannot both be null.");
 
             if (lightProbes != null)
-            {
-                if (lightProbes.Capacity < positions.Count)
-                    lightProbes.Capacity = positions.Count;
-                if (lightProbes.Count < positions.Count)
-                    NoAllocHelpers.ResizeList(lightProbes, positions.Count);
-            }
+                NoAllocHelpers.EnsureListElemCount(lightProbes, positions.Count);
 
             if (occlusionProbes != null)
-            {
-                if (occlusionProbes.Capacity < positions.Count)
-                    occlusionProbes.Capacity = positions.Count;
-                if (occlusionProbes.Count < positions.Count)
-                    NoAllocHelpers.ResizeList(occlusionProbes, positions.Count);
-            }
+                NoAllocHelpers.EnsureListElemCount(occlusionProbes, positions.Count);
 
             CalculateInterpolatedLightAndOcclusionProbes_Internal(NoAllocHelpers.ExtractArrayFromListT(positions), positions.Count, NoAllocHelpers.ExtractArrayFromListT(lightProbes), NoAllocHelpers.ExtractArrayFromListT(occlusionProbes));
         }

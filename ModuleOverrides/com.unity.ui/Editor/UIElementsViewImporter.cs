@@ -23,7 +23,7 @@ using StyleSheet = UnityEngine.UIElements.StyleSheet;
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 12, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 13, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -436,6 +436,24 @@ namespace UnityEditor.UIElements
             }
 
             LoadXml(elt, null, vta, 0);
+            SyncVisualTreeAssetSerializedData(vta);
+        }
+
+        void SyncVisualTreeAssetSerializedData(VisualTreeAsset vta)
+        {
+            UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta));
+
+            // Setup dependencies
+            if (m_Context != null)
+            {
+                var veaCount = vta.visualElementAssets?.Count ?? 0;
+                for (var i = 1; i < veaCount; i++)
+                {
+                    var vea = vta.visualElementAssets[i];
+                    var dependencyKeyName = UxmlSerializedDataRegistry.GetDependencyKeyName(vea.fullTypeName);
+                    m_Context.DependsOnCustomDependency(dependencyKeyName);
+                }
+            }
         }
 
         void LoadTemplateNode(VisualTreeAsset vta, XElement elt, XElement child)
@@ -654,7 +672,7 @@ namespace UnityEditor.UIElements
                             var src = xAttribute.Value;
                             URIHelpers.ValidAssetURL(rootAssetPath, src, out _, out var projectRelativePath);
                             hasCircularDependencies = HasTemplateCircularDependencies(projectRelativePath, templateDependencies);
-        
+
                             if (!hasCircularDependencies)
                             {
                                 templateDependencies.Remove(projectRelativePath);
@@ -704,7 +722,7 @@ namespace UnityEditor.UIElements
 
         void LoadXml(XElement elt, UxmlAsset parent, VisualTreeAsset vta, int orderInDocument)
         {
-            var uxmlAsset = ResolveType(elt, vta);
+            var uxmlAsset = ResolveType(elt, parent, vta);
             if (uxmlAsset == null)
             {
                 return;
@@ -886,10 +904,26 @@ namespace UnityEditor.UIElements
             return (elementNamespaceName, fullName);
         }
 
-        UxmlAsset ResolveType(XElement elt, VisualTreeAsset visualTreeAsset)
+        UxmlAsset ResolveType(XElement elt, UxmlAsset parent, VisualTreeAsset visualTreeAsset)
         {
             var (elementNamespaceName, fullName) = ResolveFullType(elt);
 
+            // Is the element a UxmlObject?
+            if (UxmlSerializedDataRegistry.GetDescription(fullName) is UxmlSerializedDataDescription desc &&
+                desc.isUxmlObject)
+            {
+                return new UxmlObjectAsset(fullName);
+            }
+
+            // Does the element contain values for a field marked with the UxmlObjectAttribute?
+            if (parent != null &&
+                UxmlSerializedDataRegistry.GetDescription(parent.fullTypeName) is UxmlSerializedDataDescription descParent &&
+                descParent.IsUxmlObjectField(fullName))
+            {
+                return new UxmlObjectFieldAsset(fullName);
+            }
+
+            // Check for "legacy" UxmlObject
             if (UxmlObjectFactoryRegistry.factories.ContainsKey(fullName))
             {
                 return new UxmlObjectAsset(fullName);
@@ -1003,25 +1037,37 @@ namespace UnityEditor.UIElements
             }
 
             var vea = res as VisualElementAsset;
+            UxmlSerializedDataDescription uxmlSerializedDataDescription = null;
             foreach (var xattr in elt.Attributes())
             {
                 var attrName = xattr.Name.LocalName;
+                uxmlSerializedDataDescription ??= UxmlSerializedDataRegistry.GetDescription(res.fullTypeName);
+                Type assetType = null;
 
-                if (s_UxmlAssetAttributeCache.GetAssetAttributeType(res.fullTypeName, attrName, out var assetType))
+                // Extract the asset type from the UxmlSerializedData
+                if (uxmlSerializedDataDescription?.FindAttributeWithUxmlName(attrName) is UxmlSerializedAttributeDescription attributeDescription &&
+                    attributeDescription.isUnityObject)
+                    assetType = attributeDescription.type;
+
+                if (assetType != null || s_UxmlAssetAttributeCache.GetAssetAttributeType(res.fullTypeName, attrName, out assetType))
                 {
                     res.SetAttribute(xattr.Name.LocalName, xattr.Value);
 
-                    var (response, asset) = ValidateAndLoadResource(elt, vta, xattr.Value, true);
-
-                    if (response.result == URIValidationResult.OK && !vta.AssetEntryExists(xattr.Value, assetType))
+                    if (assetType != typeof(VisualTreeAsset) || !vta.TemplateExists(xattr.Value))
                     {
-                        if (asset)
+                        var (response, asset) = ValidateAndLoadResource(elt, vta, xattr.Value, true);
+
+                        if (response.result == URIValidationResult.OK && !vta.AssetEntryExists(xattr.Value, assetType))
                         {
-                            // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
-                            asset = AssetDatabase.LoadAssetAtPath(response.resolvedProjectRelativePath, assetType);
+                            if (asset)
+                            {
+                                // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
+                                asset = AssetDatabase.LoadAssetAtPath(response.resolvedProjectRelativePath, assetType);
+                            }
+                            vta.RegisterAssetEntry(xattr.Value, assetType, asset);
                         }
-                        vta.RegisterAssetEntry(xattr.Value, assetType, asset);
                     }
+
                     continue;
                 }
 

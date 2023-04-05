@@ -96,7 +96,7 @@ namespace UnityEngine.UIElements.UIR
             return slot;
         }
 
-        public void Bind(TextureId id, float sdfScale, float sharpness, int slot, MaterialPropertyBlock mat)
+        public void Bind(TextureId id, float sdfScale, float sharpness, int slot, MaterialPropertyBlock mat, CommandList commandList = null)
         {
             Texture tex = textureRegistry.GetTexture(id);
             if (tex == null) // Case 1364578: Texture may have been destroyed
@@ -105,8 +105,16 @@ namespace UnityEngine.UIElements.UIR
             m_Textures[slot] = id;
             MarkUsed(slot);
             SetGpuData(slot, id, tex.width, tex.height, sdfScale, sharpness);
-            mat.SetTexture(slotIds[slot], tex);
-            mat.SetVectorArray(textureTableId, m_GpuTextures);
+            if (commandList == null)
+            {
+                mat.SetTexture(slotIds[slot], tex);
+                mat.SetVectorArray(textureTableId, m_GpuTextures);
+            }
+            else
+            {
+                int offset = slot * k_SlotSize;
+                commandList.SetTexture(slotIds[slot], tex, offset, m_GpuTextures[offset], m_GpuTextures[offset+1]);
+            }
         }
 
         public void SetGpuData(int slotIndex, TextureId id, int textureWidth, int textureHeight, float sdfScale, float sharpness)

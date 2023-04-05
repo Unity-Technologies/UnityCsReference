@@ -50,8 +50,11 @@ namespace UnityEditor.Search
             labels.Add(m_Description);
             Add(labels);
 
-            m_ActionDropdown = CreateButton("SearchItemActionsDropdown", moreActionsTooltip, OnActionDropdownClicked, baseIconButtonClassName, moreActionButtonClassName);
-            Add(m_ActionDropdown);
+            if (!viewModel.IsPicker())
+            {
+                m_ActionDropdown = CreateButton("SearchItemActionsDropdown", moreActionsTooltip, OnActionDropdownClicked, baseIconButtonClassName, moreActionButtonClassName);
+                Add(m_ActionDropdown);
+            }
 
             Add(m_FavoriteButton);
         }

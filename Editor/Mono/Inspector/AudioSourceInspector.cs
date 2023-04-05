@@ -10,9 +10,9 @@ namespace UnityEditor
 {
     [CustomEditor(typeof(AudioSource))]
     [CanEditMultipleObjects]
-    class AudioSourceInspector : Editor
+    sealed class AudioSourceInspector : Editor
     {
-        SerializedProperty m_AudioClip;
+        SerializedProperty m_AudioResource;
         SerializedProperty m_PlayOnAwake;
         SerializedProperty m_Volume;
         SerializedProperty m_Pitch;
@@ -30,7 +30,6 @@ namespace UnityEditor
         SerializedProperty m_BypassListenerEffects;
         SerializedProperty m_BypassReverbZones;
         SerializedProperty m_OutputAudioMixerGroup;
-
         SerializedObject m_LowpassObject;
 
         class AudioCurveWrapper
@@ -86,7 +85,7 @@ namespace UnityEditor
             public static GUIStyle labelStyle = "ProfilerBadge";
             public static GUIContent rolloffLabel =  EditorGUIUtility.TrTextContent("Volume Rolloff", "Which type of rolloff curve to use");
             public static string controlledByCurveLabel = "Controlled by curve";
-            public static GUIContent audioClipLabel = EditorGUIUtility.TrTextContent("AudioClip", "The AudioClip asset played by the AudioSource. Can be undefined if the AudioSource is generating a live stream of audio via OnAudioFilterRead.");
+            public static GUIContent audioResourceLabel = EditorGUIUtility.TrTextContent("Audio Resource", "The AudioResource asset played by the AudioSource. Can be undefined if the AudioSource is generating a live stream of audio via OnAudioFilterRead.");
             public static GUIContent panStereoLabel = EditorGUIUtility.TrTextContent("Stereo Pan", "Only valid for Mono and Stereo AudioClips. Mono sounds will be panned at constant power left and right. Stereo sounds will have each left/right value faded up and down according to the specified pan value.");
             public static GUIContent spatialBlendLabel = EditorGUIUtility.TrTextContent("Spatial Blend", "Sets how much this AudioSource is treated as a 3D source. 3D sources are affected by spatial position and spread. If 3D Pan Level is 0, all spatial attenuation is ignored.");
             public static GUIContent reverbZoneMixLabel = EditorGUIUtility.TrTextContent("Reverb Zone Mix", "Sets how much of the signal this AudioSource is mixing into the global reverb associated with the zones. [0, 1] is a linear range (like volume) while [1, 1.1] lets you boost the reverb mix by 10 dB.");
@@ -117,7 +116,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
-            m_AudioClip = serializedObject.FindProperty("m_audioClip");
+            m_AudioResource = serializedObject.FindProperty("m_Resource");
             m_PlayOnAwake = serializedObject.FindProperty("m_PlayOnAwake");
             m_Volume = serializedObject.FindProperty("m_Volume");
             m_Pitch = serializedObject.FindProperty("m_Pitch");
@@ -353,13 +352,17 @@ namespace UnityEditor
             if (m_LowpassObject != null)
                 m_LowpassObject.Update();
 
-
             UpdateWrappersAndLegend();
 
-            EditorGUILayout.PropertyField(m_AudioClip, Styles.audioClipLabel);
             EditorGUILayout.Space();
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(m_AudioResource, Styles.audioResourceLabel);
+
+            var refreshAudioContainerWindow = EditorGUI.EndChangeCheck() && AudioContainerWindow.Instance != null;
+
             EditorGUILayout.PropertyField(m_OutputAudioMixerGroup, Styles.outputMixerGroupLabel);
             EditorGUILayout.PropertyField(m_Mute);
+
             if (AudioUtil.canUseSpatializerEffect)
             {
                 EditorGUILayout.PropertyField(m_Spatialize, Styles.spatializeLabel);
@@ -420,8 +423,14 @@ namespace UnityEditor
             }
 
             serializedObject.ApplyModifiedProperties();
+
             if (m_LowpassObject != null)
                 m_LowpassObject.ApplyModifiedProperties();
+
+            if (refreshAudioContainerWindow)
+            {
+                AudioContainerWindow.Instance.Refresh();
+            }
         }
 
         private static void SetRolloffToTarget(SerializedProperty property, Object target)

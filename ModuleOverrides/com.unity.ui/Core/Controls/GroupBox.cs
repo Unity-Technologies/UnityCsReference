@@ -17,6 +17,24 @@ namespace UnityEngine.UIElements
     {
         internal static readonly DataBindingProperty textProperty = nameof(text);
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string text;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new GroupBox();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (GroupBox)obj;
+                e.text = text;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="GroupBox"/> using data from a UXML file.
         /// </summary>

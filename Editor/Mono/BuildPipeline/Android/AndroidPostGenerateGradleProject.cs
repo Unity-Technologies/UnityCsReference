@@ -11,6 +11,7 @@ namespace UnityEditor.Android
 {
     public interface IPostGenerateGradleAndroidProject : IOrderedCallback
     {
+        [Obsolete("OnPostGenerateGradleAndroidProject is deprecated. Use AndroidProjectFilesModifier.OnModifyAndroidProjectFiles instead.")]
         void OnPostGenerateGradleAndroidProject(string path);
     }
 }

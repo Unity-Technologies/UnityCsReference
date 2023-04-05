@@ -26,7 +26,11 @@ namespace UnityEditor.Overlays
             }
         }
 
-        internal SnapCorner floatingSnapCorner { get; private set; } = SnapCorner.TopLeft;
+        internal SnapCorner floatingSnapCorner
+        {
+            get => m_FloatingSnapCorner;
+            private set => m_FloatingSnapCorner = value;
+        }
 
         internal Vector2 floatingSnapOffset
         {

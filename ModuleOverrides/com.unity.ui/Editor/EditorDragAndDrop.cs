@@ -6,12 +6,13 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
-    internal class EditorDragAndDrop : IDragAndDrop, IDragAndDropData
+    internal class EditorDragAndDrop : DragAndDropData, IDragAndDrop
     {
         [InitializeOnLoadMethod]
         private static void RegisterEditorClient()
@@ -19,28 +20,52 @@ namespace UnityEditor.UIElements
             DragAndDropUtility.RegisterMakeClientFunc(() => new EditorDragAndDrop());
         }
 
-        private const string k_UserDataKey = "user_data";
+        public override object source => DragAndDrop.GetGenericData(dragSourceKey);
+        public override IEnumerable<Object> unityObjectReferences => DragAndDrop.objectReferences;
 
-        public object userData => DragAndDrop.GetGenericData(k_UserDataKey);
-        public IEnumerable<Object> unityObjectReferences => DragAndDrop.objectReferences;
+        public override DragVisualMode visualMode
+        {
+            get
+            {
+                return DragAndDrop.visualMode switch
+                {
+                    DragAndDropVisualMode.Copy => DragVisualMode.Copy,
+                    DragAndDropVisualMode.None => DragVisualMode.None,
+                    DragAndDropVisualMode.Move => DragVisualMode.Move,
+                    DragAndDropVisualMode.Rejected => DragVisualMode.Rejected,
+                    _ => throw new ArgumentException($"Visual mode {DragAndDrop.visualMode} is not supported", nameof(visualMode), null)
+                };
+            }
+        }
 
-        public object GetGenericData(string key)
+        public override object GetGenericData(string key)
         {
             return DragAndDrop.GetGenericData(key);
         }
 
-        public void StartDrag(StartDragArgs args)
+        public override void SetGenericData(string key, object data)
+        {
+            DragAndDrop.SetGenericData(key, data);
+        }
+
+        public void StartDrag(StartDragArgs args, Vector3 pointerPosition)
         {
             DragAndDrop.PrepareStartDrag();
 
             if (args.unityObjectReferences != null)
                 DragAndDrop.objectReferences = args.unityObjectReferences.ToArray();
 
-            DragAndDrop.SetGenericData(k_UserDataKey, args.userData);
+            SetVisualMode(args.visualMode);
             foreach (DictionaryEntry entry in args.genericData)
                 DragAndDrop.SetGenericData((string)entry.Key, entry.Value);
 
-            DragAndDrop.StartDrag(args.title);
+            if (Event.current != null)
+                DragAndDrop.StartDrag(args.title);
+        }
+
+        public void UpdateDrag(Vector3 pointerPosition)
+        {
+            // Nothing to do here, DragAndDrop handles the title position.
         }
 
         public void AcceptDrag()
@@ -48,30 +73,23 @@ namespace UnityEditor.UIElements
             DragAndDrop.AcceptDrag();
         }
 
-        public void SetVisualMode(DragVisualMode visualMode)
+        public void SetVisualMode(DragVisualMode mode)
         {
-            switch (visualMode)
+            DragAndDrop.visualMode = mode switch
             {
-                case DragVisualMode.Copy:
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-                    break;
-                case DragVisualMode.None:
-                    DragAndDrop.visualMode = DragAndDropVisualMode.None;
-                    break;
-                case DragVisualMode.Move:
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Move;
-                    break;
-                case DragVisualMode.Rejected:
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
-                    break;
-                default:
-                    throw new ArgumentException($"Visual mode {visualMode} is not supported", nameof(visualMode), null);
-            }
+                DragVisualMode.Copy => DragAndDropVisualMode.Copy,
+                DragVisualMode.None => DragAndDropVisualMode.None,
+                DragVisualMode.Move => DragAndDropVisualMode.Move,
+                DragVisualMode.Rejected => DragAndDropVisualMode.Rejected,
+                _ => throw new ArgumentException($"Visual mode {visualMode} is not supported", nameof(visualMode), null)
+            };
         }
 
-        public IDragAndDropData data
+        public void DragCleanup()
         {
-            get { return this; }
+            // Nothing to do here.
         }
+
+        public DragAndDropData data => this;
     }
 }

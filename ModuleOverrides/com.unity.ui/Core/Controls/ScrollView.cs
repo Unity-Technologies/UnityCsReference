@@ -113,12 +113,63 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty nestedInteractionKindProperty = nameof(nestedInteractionKind);
         internal static readonly DataBindingProperty modeProperty = nameof(mode);
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private ScrollViewMode mode;
+            [SerializeField] private NestedInteractionKind nestedInteractionKind;
+            [UxmlAttribute("show-horizontal-scroller"), HideInInspector]
+            [SerializeField] private bool showHorizontal;
+            [UxmlAttribute("show-vertical-scroller"), HideInInspector]
+            [SerializeField] private bool showVertical;
+            [SerializeField] private ScrollerVisibility horizontalScrollerVisibility;
+            [SerializeField] private ScrollerVisibility verticalScrollerVisibility;
+            [SerializeField] private float horizontalPageSize;
+            [SerializeField] private float verticalPageSize;
+            [SerializeField] private float mouseWheelScrollSize;
+            [UxmlAttribute("touch-scroll-type")]
+            [SerializeField] private TouchScrollBehavior touchScrollBehavior;
+            [SerializeField] private float scrollDecelerationRate;
+            [SerializeField] private float elasticity;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new ScrollView();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (ScrollView)obj;
+                e.mode = mode;
+
+                // Remove once showHorizontal and showVertical are fully deprecated.
+                #pragma warning disable 618
+                if (horizontalScrollerVisibility != default)
+                    e.horizontalScrollerVisibility = horizontalScrollerVisibility;
+                else
+                    e.showHorizontal = showHorizontal;
+
+                if (verticalScrollerVisibility != default)
+                    e.verticalScrollerVisibility = verticalScrollerVisibility;
+                else
+                    e.showVertical = showVertical;
+                #pragma warning restore 618
+
+                e.nestedInteractionKind = nestedInteractionKind;
+                e.horizontalPageSize = horizontalPageSize;
+                e.verticalPageSize = verticalPageSize;
+                e.mouseWheelScrollSize = mouseWheelScrollSize;
+                e.scrollDecelerationRate = scrollDecelerationRate;
+                e.touchScrollBehavior = touchScrollBehavior;
+                e.elasticity = elasticity;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="ScrollView"/> using the data read from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<ScrollView, UxmlTraits>
-        {
-        }
+        public new class UxmlFactory : UxmlFactory<ScrollView, UxmlTraits> {}
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="ScrollView"/>.

@@ -134,6 +134,9 @@ namespace UnityEngine.UIElements
         IVisualElementScheduledItem m_ScrollResetScheduledItem;
         Predicate<int> m_IndexOutOfBoundsPredicate;
 
+        // Dynamic height virtualization handles the refresh binding with the scheduled Fill call.
+        protected override bool alwaysRebindOnRefresh => false;
+
         public DynamicHeightVirtualizationController(BaseVerticalCollectionView collectionView)
             : base(collectionView)
         {

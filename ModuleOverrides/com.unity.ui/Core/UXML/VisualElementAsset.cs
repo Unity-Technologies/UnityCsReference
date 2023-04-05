@@ -59,6 +59,15 @@ namespace UnityEngine.UIElements
 
         public bool hasStylesheets => m_Stylesheets != null;
 
+        [SerializeReference]
+        private UxmlSerializedData m_SerializedData;
+
+        public UxmlSerializedData serializedData
+        {
+            get => m_SerializedData;
+            set => m_SerializedData = value;
+        }
+
         public VisualElementAsset(string fullTypeName)
             : base(fullTypeName)
         {
@@ -87,5 +96,40 @@ namespace UnityEngine.UIElements
                 SetAttribute("picking-mode", m_PickingMode.ToString());
             }
         }
+
+        internal virtual VisualElement Instantiate(CreationContext cc)
+        {
+            if (!cc.TryGetSerializedDataOverride(id, out var data))
+                data = serializedData;
+
+            var instance = data.CreateInstance();
+            data.Deserialize(instance);
+
+            var ve = (VisualElement)instance;
+            if (hasStylesheetPaths)
+            {
+                for (var i = 0; i < stylesheetPaths.Count; i++)
+                    ve.AddStyleSheetPath(stylesheetPaths[i]);
+            }
+
+            if (hasStylesheets)
+            {
+                for (var i = 0; i < stylesheets.Count; ++i)
+                {
+                    if (stylesheets[i] != null)
+                        ve.styleSheets.Add(stylesheets[i]);
+                }
+            }
+
+            if (classes != null)
+            {
+                for (var i = 0; i < classes.Length; i++)
+                    ve.AddToClassList(classes[i]);
+            }
+
+            return ve;
+        }
+
+        public override string ToString() => $"{m_Name}({fullTypeName})";
     }
 }

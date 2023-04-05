@@ -32,13 +32,13 @@ namespace UnityEditor.UIElements.Inspector
 
         private PopupField<int> m_TargetDisplayField;
 
-        private Foldout m_ScaleModeFoldout;
         private EnumField m_ScaleModeField;
         private EnumField m_ScreenMatchModeField;
 
         private VisualElement m_ScaleModeConstantPixelSizeGroup;
         private VisualElement m_ScaleModeScaleWithScreenSizeGroup;
         private VisualElement m_ScaleModeContantPhysicalSizeGroup;
+        private VisualElement m_ScaleModeWorldSpace;
 
         private VisualElement m_ReferencePixelsPerUnit;
 
@@ -73,14 +73,13 @@ namespace UnityEditor.UIElements.Inspector
 
             m_SortingOrderField = m_RootVisualElement.MandatoryQ<FloatField>("sorting-order");
 
-
-            m_ScaleModeFoldout = m_RootVisualElement.MandatoryQ<Foldout>("scale-mode-foldout");
             m_ScaleModeField = m_RootVisualElement.MandatoryQ<EnumField>("scale-mode");
             m_ScreenMatchModeField = m_RootVisualElement.MandatoryQ<EnumField>("screen-match-mode");
 
             m_ScaleModeConstantPixelSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-constant-pixel-size");
             m_ScaleModeScaleWithScreenSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-scale-with-screen-size");
             m_ScaleModeContantPhysicalSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-constant-physical-size");
+            m_ScaleModeWorldSpace = m_RootVisualElement.MandatoryQ("scale-mode-world-space");
 
             m_ReferencePixelsPerUnit = m_RootVisualElement.MandatoryQ("reference-pixels-per-unit");
 
@@ -189,11 +188,29 @@ namespace UnityEditor.UIElements.Inspector
 
             m_TargetTextureField.style.display = displayStyleForOverlayProperties;
             m_ScaleModeField.style.display = displayStyleForOverlayProperties;
-            m_ScaleModeFoldout.style.display = displayStyleForOverlayProperties;
             m_ClearSettingsFoldout.style.display = displayStyleForOverlayProperties;
             m_TargetTextureField.style.display = displayStyleForOverlayProperties;
             m_SortingOrderField.style.display = displayStyleForOverlayProperties;
             m_TargetDisplayField.style.display = displayStyleForOverlayProperties;
+
+            if (newRenderMode == PanelRenderMode.WorldSpace)
+            {
+                m_ScaleModeConstantPixelSizeGroup.style.display = DisplayStyle.None;
+                m_ScaleModeScaleWithScreenSizeGroup.style.display = DisplayStyle.None;
+                m_ScaleModeContantPhysicalSizeGroup.style.display = DisplayStyle.None;
+                m_ScaleModeWorldSpace.style.display = DisplayStyle.Flex;
+            }
+            else
+            {
+                PanelScaleMode scaleMode = PanelScaleMode.ConstantPixelSize;
+
+                if (m_ScaleModeField.value != null)
+                    scaleMode = (PanelScaleMode)m_ScaleModeField.value;
+
+                UpdateScaleModeValues(scaleMode);
+
+                m_ScaleModeWorldSpace.style.display = DisplayStyle.None;
+            }
         }
 
         public override VisualElement CreateInspectorGUI()

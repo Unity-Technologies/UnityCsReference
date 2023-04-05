@@ -21,6 +21,26 @@ namespace UnityEditor.UIElements
         internal static readonly string decoratorDrawersContainerClassName = "unity-decorator-drawers-container";
         static readonly string listViewNamePrefix = "unity-list-";
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : VisualElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string bindingPath;
+            [SerializeField] private string label;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new PropertyField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (PropertyField)obj;
+                e.bindingPath = bindingPath;
+                e.label = label;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="PropertyField"/> using the data read from a UXML file.
         /// </summary>
@@ -73,16 +93,17 @@ namespace UnityEditor.UIElements
         /// </summary>
         public string label { get; set; }
 
-        private SerializedProperty m_SerializedProperty;
-        private string m_SerializedPropertyReferenceTypeName;
-        private PropertyField m_ParentPropertyField;
-        private int m_FoldoutDepth;
-        private VisualElement m_InspectorElement;
-        private VisualElement m_ContextWidthElement;
+        SerializedObject m_SerializedObject;
+        SerializedProperty m_SerializedProperty;
+        string m_SerializedPropertyReferenceTypeName;
+        PropertyField m_ParentPropertyField;
+        int m_FoldoutDepth;
+        VisualElement m_InspectorElement;
+        VisualElement m_ContextWidthElement;
 
-        private int m_DrawNestingLevel;
-        private PropertyField m_DrawParentProperty;
-        private VisualElement m_DecoratorDrawersContainer;
+        int m_DrawNestingLevel;
+        PropertyField m_DrawParentProperty;
+        VisualElement m_DecoratorDrawersContainer;
 
         SerializedProperty serializedProperty => m_SerializedProperty;
 
@@ -203,8 +224,9 @@ namespace UnityEditor.UIElements
 
             bool newPropertyTypeIsDifferent = true;
 
+            var serializedObjectIsValid = m_SerializedObject != null && m_SerializedObject.m_NativeObjectPtr != IntPtr.Zero && m_SerializedObject.isValid;
 
-            if (m_SerializedProperty != null && m_SerializedProperty.isValid && newPropertyType == m_SerializedProperty.propertyType)
+            if (serializedObjectIsValid && m_SerializedProperty != null && m_SerializedProperty.isValid && newPropertyType == m_SerializedProperty.propertyType)
             {
                 if(newPropertyType == SerializedPropertyType.ManagedReference)
                 {
@@ -218,7 +240,7 @@ namespace UnityEditor.UIElements
 
             m_SerializedProperty = newProperty;
             m_SerializedPropertyReferenceTypeName = newPropertyTypeName;
-
+            m_SerializedObject = newProperty.serializedObject;
 
             // if we already have a serialized property, determine if the property field can be reused without reset
             // this is only supported for non propertydrawer types
@@ -686,6 +708,12 @@ namespace UnityEditor.UIElements
             listView.bindingPath = property.propertyPath;
             listView.viewDataKey = listViewName;
             listView.name = listViewName;
+
+            // Make list view foldout react even when disabled, like EditorGUILayout.Foldout.
+            var toggle = listView.Q<Toggle>(className: Foldout.toggleUssClassName);
+            if (toggle != null)
+                toggle.m_Clickable.acceptClicksIfDisabled = true;
+
             return listView;
         }
 

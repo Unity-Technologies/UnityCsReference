@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,6 +17,28 @@ namespace UnityEditor.UIElements
         internal static readonly DataBindingProperty showEyeDropperProperty = nameof(showEyeDropper);
         internal static readonly DataBindingProperty showAlphaProperty = nameof(showAlpha);
         internal static readonly DataBindingProperty hdrProperty = nameof(hdr);
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<Color>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private bool showEyeDropper;
+            [SerializeField] private bool showAlpha;
+            [SerializeField] private bool hdr;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new ColorField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (ColorField)obj;
+                e.showEyeDropper = showEyeDropper;
+                e.showAlpha = showAlpha;
+                e.hdr = hdr;
+            }
+        }
 
         /// <summary>
         /// Instantiates a <see cref="ColorField"/> using the data read from a UXML file.

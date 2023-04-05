@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -15,6 +14,41 @@ namespace UnityEngine.UIElements
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class BoundsIntField : BaseField<BoundsInt>
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<BoundsInt>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            public override object CreateInstance() => new BoundsIntField();
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                // Its possible to only specify 1 attribute so we need to check them all and if we get at least 1 match then we can proceed.
+                int foundAttributeCounter = 0;
+                var px = UxmlUtility.TryParseIntAttribute("px", bag, ref foundAttributeCounter);
+                var py = UxmlUtility.TryParseIntAttribute("py", bag, ref foundAttributeCounter);
+                var pz = UxmlUtility.TryParseIntAttribute("pz", bag, ref foundAttributeCounter);
+                var sx = UxmlUtility.TryParseIntAttribute("sx", bag, ref foundAttributeCounter);
+                var sy = UxmlUtility.TryParseIntAttribute("sy", bag, ref foundAttributeCounter);
+                var sz = UxmlUtility.TryParseIntAttribute("sz", bag, ref foundAttributeCounter);
+
+                if (foundAttributeCounter > 0)
+                {
+                    Value = new BoundsInt(new Vector3Int(px, py, pz), new Vector3Int(sx, sy, sz));
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("px");
+                        uxmlAsset.RemoveAttribute("py");
+                        uxmlAsset.RemoveAttribute("pz");
+                        uxmlAsset.RemoveAttribute("sx");
+                        uxmlAsset.RemoveAttribute("sy");
+                        uxmlAsset.RemoveAttribute("sz");
+                        uxmlAsset.SetAttribute("value", UxmlUtility.ValueToString(Value));
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="BoundsIntField"/> using the data read from a UXML file.
         /// </summary>

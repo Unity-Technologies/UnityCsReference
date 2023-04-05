@@ -19,6 +19,27 @@ namespace UnityEditor.UIElements
         internal static readonly DataBindingProperty objectTypeProperty = nameof(objectType);
         internal static readonly DataBindingProperty allowSceneObjectsProperty = nameof(allowSceneObjects);
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private bool allowSceneObjects;
+            [UxmlAttribute("type"), UxmlTypeReference(typeof(Object))]
+            [SerializeField] private string objectType;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new ObjectField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (ObjectField)obj;
+                e.allowSceneObjects = allowSceneObjects;
+                e.objectType = UxmlUtility.ParseType(objectType, typeof(Object));
+            }
+        }
+
         /// <summary>
         /// Instantiates an <see cref="ObjectField"/> using the data read from a UXML file.
         /// </summary>
@@ -148,7 +169,10 @@ namespace UnityEditor.UIElements
                 m_ObjectLabel.AddToClassList(labelUssClassName);
                 m_ObjectField = objectField;
 
-                Update();
+                // While building editor resources ObjectField are instantiated to serialize default values in
+                // the Uxml asset. If EditorGUIUtility.ObjectContent is called during that time the editor will crash.
+                if (!Application.isBuildingEditorResources)
+                    Update();
 
                 Add(m_ObjectIcon);
                 Add(m_ObjectLabel);

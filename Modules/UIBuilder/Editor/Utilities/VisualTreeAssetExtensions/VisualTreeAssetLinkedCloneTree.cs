@@ -10,6 +10,7 @@ using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -21,6 +22,11 @@ namespace Unity.UI.Builder
         static VisualElement CloneSetupRecursively(VisualTreeAsset vta, VisualElementAsset root,
             Dictionary<int, List<VisualElementAsset>> idToChildren, CreationContext context)
         {
+            if (root.serializedData == null && UxmlSerializedDataRegistry.GetDescription(root.fullTypeName) is UxmlSerializedDataDescription desc)
+            {
+                root.serializedData = UxmlSerializer.Serialize(desc, root, context);
+            }
+
             var ve = VisualTreeAsset.Create(root, context);
 
             // Linking the new element with its VisualElementAsset.

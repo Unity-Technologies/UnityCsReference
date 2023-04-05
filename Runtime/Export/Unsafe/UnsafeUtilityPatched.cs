@@ -42,24 +42,28 @@ namespace Unity.Collections.LowLevel.Unsafe
             throw new NotImplementedException("Patching this method failed");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe public static T ReadArrayElement<T>(void* source, int index)
         {
             // @patched at compile time
             throw new NotImplementedException("Patching this method failed");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe public static T ReadArrayElementWithStride<T>(void* source, int index, int stride)
         {
             // @patched at compile time
             throw new NotImplementedException("Patching this method failed");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe public static void WriteArrayElement<T>(void* destination, int index, T value)
         {
             // @patched at compile time
             throw new NotImplementedException("Patching this method failed");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe public static void WriteArrayElementWithStride<T>(void* destination, int index, int stride, T value)
         {
             // @patched at compile time
@@ -67,6 +71,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         // The address of the memory where the struct resides in memory
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe public static void* AddressOf<T>(ref T output) where T : struct
         {
             // @patched at compile time
@@ -74,6 +79,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         // The size of a struct
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int SizeOf<T>() where T : struct
         {
             // @patched at compile time
@@ -89,6 +95,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         // The address of the memory where the struct resides in memory
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe public static ref T AsRef<T>(void* ptr) where T : struct
         {
             // @patched at compile time
@@ -103,6 +110,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         // The address of the memory where the struct resides in memory
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe public static ref T ArrayElementAsRef<T>(void* ptr, int index) where T : struct
         {
             // @patched at compile time
@@ -110,6 +118,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
 
         // converts generic enum to int without boxing
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int EnumToInt<T>(T enumValue) where T : struct, IConvertible
         {
             var value = 0;
@@ -117,12 +126,14 @@ namespace Unity.Collections.LowLevel.Unsafe
             return value;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void InternalEnumToInt<T>(ref T enumValue, ref int intValue)
         {
             throw new NotImplementedException("Patching this method failed");
         }
 
         // generic enum equals check without boxing
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool EnumEquals<T>(T lhs, T rhs) where T : struct, IConvertible
         {
             throw new NotImplementedException("Patching this method failed");

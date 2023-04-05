@@ -6,8 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using Unity.Properties;
-using JetBrains.Annotations;
-using UnityEngine.Assertions;
+using UnityEngine.Internal;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
@@ -144,6 +143,41 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public partial class VisualElement : Focusable, ITransform
     {
+        /// <summary>
+        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>.
+        /// </summary>
+        [Serializable]
+        public class UxmlSerializedData : UIElements.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField, HideInInspector] private string name;
+            [SerializeField] private string viewDataKey;
+            [UxmlAttribute(obsoleteNames = new[] { "pickingMode" })]
+            [SerializeField] private PickingMode pickingMode;
+            [SerializeField] private string tooltip;
+            [SerializeField] private UsageHints usageHints;
+            [UxmlAttribute("tabindex")]
+            [SerializeField] private int tabIndex;
+            [SerializeField] private bool focusable;
+            #pragma warning restore 649
+
+            [ExcludeFromDocs]
+            public override object CreateInstance() => new VisualElement();
+
+            [ExcludeFromDocs]
+            public override void Deserialize(object obj)
+            {
+                var e = (VisualElement)obj;
+                e.name = name;
+                e.viewDataKey = viewDataKey;
+                e.pickingMode = pickingMode;
+                e.tooltip = tooltip;
+                e.usageHints = usageHints;
+                e.tabIndex = tabIndex;
+                e.focusable = focusable;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="VisualElement"/> using the data read from a UXML file.
         /// </summary>
@@ -389,6 +423,10 @@ namespace UnityEngine.UIElements
         }
 
         private RenderHints m_RenderHints;
+        /// <summary>
+        /// Requested render hints and change flags. Note that the renderer can ignore them: reading them does not
+        /// guarantee that they are effective.
+        /// </summary>
         internal RenderHints renderHints
         {
             get { return m_RenderHints; }
@@ -1614,7 +1652,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Action<MeshGenerationContext> generateVisualContent { get; set; }
 
-        Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new Unity.Profiling.ProfilerMarker("GenerateVisualContent");
+        static readonly Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new("GenerateVisualContent");
 
         internal void InvokeGenerateVisualContent(MeshGenerationContext mgc)
         {

@@ -4,6 +4,7 @@
 
 using System;
 using Unity.Properties;
+using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
@@ -38,6 +39,60 @@ namespace UnityEngine.UIElements
         static CustomStyleProperty<Color> s_CursorColorProperty = new CustomStyleProperty<Color>("--unity-cursor-color");
         internal const int kMaxLengthNone = -1;
         internal const char kMaskCharDefault = '*';
+
+        [ExcludeFromDocs, Serializable]
+        public new abstract class UxmlSerializedData : BaseField<TValueType>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [UxmlAttribute(obsoleteNames = new[] { "maxLength" })]
+            [SerializeField] private int maxLength;
+            [UxmlAttribute("password")]
+            [SerializeField] private bool isPasswordField;
+            [UxmlAttribute("mask-character", obsoleteNames = new[] { "maskCharacter" })]
+            [SerializeField] private char maskChar;
+            [SerializeField] private string placeholderText;
+            [SerializeField] private bool hidePlaceholderOnFocus;
+            [UxmlAttribute("readonly")]
+            [SerializeField] private bool isReadOnly;
+            [SerializeField] private bool isDelayed;
+            [SerializeField] private ScrollerVisibility verticalScrollerVisibility;
+            [SerializeField] private bool selectAllOnMouseUp;
+            [SerializeField] private bool selectAllOnFocus;
+            [UxmlAttribute("select-word-by-double-click")]
+            [SerializeField] private bool doubleClickSelectsWord;
+            [UxmlAttribute("select-line-by-triple-click")]
+            [SerializeField] private bool tripleClickSelectsLine;
+            [SerializeField] private bool emojiFallbackSupport;
+            [SerializeField] private bool hideMobileInput;
+            [SerializeField] private TouchScreenKeyboardType keyboardType;
+            [SerializeField] private bool autoCorrection;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => throw new MissingMethodException();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (TextInputBaseField<TValueType>)obj;
+                e.maxLength = maxLength;
+                e.isPasswordField = isPasswordField;
+                e.maskChar = maskChar;
+                e.placeholderText = placeholderText;
+                e.hidePlaceholderOnFocus = hidePlaceholderOnFocus;
+                e.isReadOnly = isReadOnly;
+                e.isDelayed = isDelayed;
+                e.verticalScrollerVisibility = verticalScrollerVisibility;
+                e.textSelection.selectAllOnMouseUp = selectAllOnMouseUp;
+                e.textSelection.selectAllOnFocus = selectAllOnFocus;
+                e.doubleClickSelectsWord = doubleClickSelectsWord;
+                e.tripleClickSelectsLine = tripleClickSelectsLine;
+                e.emojiFallbackSupport = emojiFallbackSupport;
+                e.hideMobileInput = hideMobileInput;
+                e.keyboardType = keyboardType;
+                e.autoCorrection = autoCorrection;
+            }
+        }
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for <see cref="TextInputFieldBase"/>.

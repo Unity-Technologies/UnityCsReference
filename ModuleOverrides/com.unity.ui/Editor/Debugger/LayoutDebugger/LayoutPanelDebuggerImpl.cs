@@ -83,10 +83,17 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             m_Display.SetRecord(_recordLayout);
             m_Histogram.m_Graph.SetRecord(_recordLayout);
         }
-        public int UpdateSlider(int value)
+        public int UpdateSlider(int value, bool notify = true)
         {
-            m_Slider.value = value;
-            return m_Slider.value;
+            if (notify)
+            {
+                m_Slider.value = value;
+            }
+            else
+            {
+                m_Slider.SetValueWithoutNotify(value);
+            }
+            return (int)m_Slider.value;
         }
 
         public void UpdateLabel()
@@ -323,7 +330,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             m_Display = new UILayoutDebugger();
             m_Display.m_ParentWindow = this;
             m_Display.style.flexDirection = FlexDirection.Column;
-            m_Display.style.flexGrow = 0;
+            m_Display.style.flexGrow = 1;
             m_Display.style.flexShrink = 0;
 
             row = createNewRow();
@@ -578,6 +585,15 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             {
                 m_Display.SetShowYogaNodeDirty(e.newValue);
             });
+            row.Add(toggle);
+
+            toggle = new Toggle() { name = "lockVisualElementToggle" };
+            toggle.text = "Lock the currently selected VisualElement";
+            toggle.value = false;
+            toggle.RegisterValueChangedCallback((e) =>
+            {
+                m_Display.LockSelectedElement(e.newValue);
+            });
 
             row.Add(toggle);
             m_Interface.Add(row);
@@ -586,7 +602,12 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             root.Add(m_Interface);
 
-            root.Add(m_Display);
+            row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Column;
+            row.style.flexGrow = 1;
+            row.Add(m_Display);
+
+            root.Add(row);
         }
 
         private void SetupIndices()

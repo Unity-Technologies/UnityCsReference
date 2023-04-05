@@ -31,6 +31,38 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty displayTooltipWhenElidedProperty = nameof(displayTooltipWhenElided);
         internal static readonly DataBindingProperty valueProperty = nameof(value);
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BindableElement.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [SerializeField] private string text;
+            [SerializeField] private bool enableRichText;
+            [SerializeField] private bool emojiFallbackSupport;
+            [SerializeField] private bool parseEscapeSequences;
+            [SerializeField] private bool selectable;
+            [SerializeField] private bool selectWordByDoubleClick;
+            [SerializeField] private bool selectLineByTripleClick;
+            [SerializeField] private bool displayTooltipWhenElided;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new TextElement();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (TextElement)obj;
+                e.text = text;
+                e.enableRichText = enableRichText;
+                e.emojiFallbackSupport = emojiFallbackSupport;
+                e.parseEscapeSequences = parseEscapeSequences;
+                e.selectable = selectable;
+                e.selectWordByDoubleClick = selectWordByDoubleClick;
+                e.selectLineByTripleClick = selectLineByTripleClick;
+                e.displayTooltipWhenElided = displayTooltipWhenElided;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="TextElement"/> using the data read from a UXML file.
         /// </summary>

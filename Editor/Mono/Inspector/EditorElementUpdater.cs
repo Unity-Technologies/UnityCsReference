@@ -34,10 +34,25 @@ namespace UnityEditor
         /// <summary>
         /// Adds the specified <see cref="IEditorElement"/> to the updater.
         /// </summary>
-        /// <param name="element"></param>
+        /// <param name="element">The editor element to add.</param>
         public void Add(IEditorElement element)
         {
             m_EditorElements.Add(element);
+        }
+
+        /// <summary>
+        /// Removes the specified <see cref="IEditorElement"/> from the updater.
+        /// </summary>
+        /// <param name="element">The editor element to remove.</param>
+        public void Remove(IEditorElement element)
+        {
+            var index = m_EditorElements.IndexOf(element);
+
+            if (index == -1)
+                return;
+
+            if (m_Index > index)
+                m_Index--;
         }
 
         /// <summary>

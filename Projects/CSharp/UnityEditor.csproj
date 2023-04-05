@@ -473,6 +473,15 @@
     <Compile Include="..\..\Editor\Mono\AttributeHelper.cs">
       <Link>Editor\Mono\AttributeHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\AudioContainerListDragAndDropManipulator.cs">
+      <Link>Editor\Mono\Audio\AudioContainerListDragAndDropManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\AudioContainerWindow.cs">
+      <Link>Editor\Mono\Audio\AudioContainerWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\AudioContainerWindowState.cs">
+      <Link>Editor\Mono\Audio\AudioContainerWindowState.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Audio\Bindings\AudioUtil.bindings.cs">
       <Link>Editor\Mono\Audio\Bindings\AudioUtil.bindings.cs</Link>
     </Compile>
@@ -619,9 +628,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\DesktopStandalonePostProcessor.cs">
       <Link>Editor\Mono\BuildPipeline\DesktopStandalonePostProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\DesktopStandaloneSettingsEditorExtension.cs">
-      <Link>Editor\Mono\BuildPipeline\DesktopStandaloneSettingsEditorExtension.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\DesktopStandaloneUserBuildSettings.cs">
       <Link>Editor\Mono\BuildPipeline\DesktopStandaloneUserBuildSettings.cs</Link>
@@ -1858,6 +1864,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AudioMixerGroupEditor.cs">
       <Link>Editor\Mono\Inspector\AudioMixerGroupEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\AudioRandomContainerInspector.cs">
+      <Link>Editor\Mono\Inspector\AudioRandomContainerInspector.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\AudioReverbFilterEditor.cs">
       <Link>Editor\Mono\Inspector\AudioReverbFilterEditor.cs</Link>
@@ -4150,6 +4159,21 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXMLSchemaGenerator.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\UXMLSchemaGenerator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXML\UxmlAttributeComparison.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UXML\UxmlAttributeComparison.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXML\UxmlAttributeConverter.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UXML\UxmlAttributeConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializedDataDescription.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializedDataDescription.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializedDataRegistry.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializedDataRegistry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializer.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\UXML\UxmlSerializer.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\UxmlCodeDependencies.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\UxmlCodeDependencies.cs</Link>
@@ -7952,6 +7976,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\AssetStoreProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\AssetStoreProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\BasePerformanceProvider.cs">
+      <Link>Modules\QuickSearch\Editor\Providers\BasePerformanceProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\Calculator.cs">
       <Link>Modules\QuickSearch\Editor\Providers\Calculator.cs</Link>
     </Compile>
@@ -7972,6 +7999,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\PerformanceProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\PerformanceProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\ProfilerMarkersProvider.cs">
+      <Link>Modules\QuickSearch\Editor\Providers\ProfilerMarkersProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SceneProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\SceneProvider.cs</Link>
@@ -9427,6 +9457,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlTypeAttributeField.cs">
       <Link>Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlTypeAttributeField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\UxmlAttributeFieldPropertyDrawers.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\UxmlAttributeFieldPropertyDrawers.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Viewport\BuilderCanvas.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Viewport\BuilderCanvas.cs</Link>

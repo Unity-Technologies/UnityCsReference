@@ -6,15 +6,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Xml;
 using UnityEditor;
 using UnityEditor.PackageManager;
+using UnityEditor.UIElements;
 using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.UIElements;
-using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 using BuilderLibraryItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
+using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
 
 namespace Unity.UI.Builder
@@ -77,11 +79,107 @@ namespace Unity.UI.Builder
             return true;
         }
 
+        public void ImportUxmlSerializedDataFromSource(BuilderLibraryItem sourceCategory)
+        {
+            var categoryStack = new List<BuilderLibraryItem>();
+            var emptyNamespaceControls = new List<TreeViewItem>();
+
+            if (Unsupported.IsDeveloperMode())
+            {
+                var customControlsCategory = BuilderLibraryContent.CreateItem(BuilderConstants.LibraryCustomControlsSectionUxmlSerializedData, null, null, null);
+                sourceCategory.AddChild(customControlsCategory);
+                sourceCategory = customControlsCategory;
+            }
+
+            var shownTypes = new HashSet<Type>();
+            foreach (var kvp in UxmlSerializedDataRegistry.SerializedDataTypes)
+            {
+                var fullname = kvp.Key;
+                var type = kvp.Value;
+                var elementType = type.DeclaringType;
+                var hasNamespace = !string.IsNullOrEmpty(elementType.Namespace);
+
+                // Avoid adding our own internal factories (like Package Manager templates).
+                if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Any(n => elementType.Namespace.StartsWith(n)))
+                    continue;
+
+                // Avoid adding UI Builder's own types, even in internal mode.
+                if (hasNamespace && type.Namespace.StartsWith("Unity.UI.Builder"))
+                    continue;
+
+                // Ignore UxmlObjects
+                if (!typeof(VisualElement).IsAssignableFrom(elementType))
+                    continue;
+
+                // Ignore elements with HideInInspector
+                if (elementType.GetCustomAttribute<HideInInspector>() != null)
+                    continue;
+
+                // UxmlElements with a custom name appear in SerializedDataTypes twice, we only need 1 item with the custom name.
+                if (shownTypes.Contains(type))
+                    continue;
+
+                var description = UxmlSerializedDataRegistry.GetDescription(fullname);
+                Debug.AssertFormat(description != null, "Expected to find a description for {0}", elementType.FullName);
+
+                shownTypes.Add(type);
+
+                string name;
+                var elementAttribute = elementType.GetCustomAttribute<UxmlElementAttribute>();
+                if (elementAttribute != null && !string.IsNullOrEmpty(elementAttribute.name))
+                    name =  elementAttribute.name;
+                else
+                    name = elementType.Name;
+
+                // Generate a unique id.
+                // We prepend the name as its possible the same Type may be displayed for both UxmlSerializedData and UxmlTraits so we need to ensure the ids do not conflict.
+                var idCode = ("uxml-serialized-data" + kvp.Key + elementType.FullName).GetHashCode();
+
+                var newItem = BuilderLibraryContent.CreateItem(name, "CustomCSharpElement", elementType, () =>
+                {
+                    var data = description.CreateDefaultSerializedData();
+                    var instance = data.CreateInstance();
+
+                    // Special case for the TwoPaneSplitView as we need to add two children to not get an error log.
+                    if (instance is TwoPaneSplitView splitView)
+                    {
+                        splitView.Add(new VisualElement());
+                        splitView.Add(new VisualElement());
+                    }
+
+                    data.Deserialize(instance);
+                    return instance as VisualElement;
+                }, id:idCode);
+                newItem.data.hasPreview = true;
+
+                if (!hasNamespace)
+                {
+                    emptyNamespaceControls.Add(newItem);
+                }
+                else
+                {
+                    AddCategoriesToStack(sourceCategory, categoryStack, elementType.Namespace.Split('.'), "csharp-uxml-serialized-data-");
+                    if (categoryStack.Count == 0)
+                        sourceCategory.AddChild(newItem);
+                    else
+                        categoryStack.Last().AddChild(newItem);
+                }
+            }
+            sourceCategory.AddChildren(emptyNamespaceControls);
+        }
+
         public void ImportFactoriesFromSource(BuilderLibraryItem sourceCategory)
         {
             var deferredFactories = new List<IUxmlFactory>();
             var processingData = new FactoryProcessingHelper();
             var emptyNamespaceControls = new List<TreeViewItem>();
+
+            if (Unsupported.IsDeveloperMode())
+            {
+                var customControlsCategory = BuilderLibraryContent.CreateItem(BuilderConstants.LibraryCustomControlsSectionUxmTraits, null, null, null);
+                sourceCategory.AddChild(customControlsCategory);
+                sourceCategory = customControlsCategory;
+            }
 
             foreach (var factories in VisualElementFactoryRegistry.factories)
             {
@@ -187,7 +285,7 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    AddCategoriesToStack(sourceCategory, categoryStack, split, "csharp-");
+                    AddCategoriesToStack(sourceCategory, categoryStack, split, "csharp-uxml-traits-");
                     if (categoryStack.Count == 0)
                         sourceCategory.AddChild(newItem);
                     else

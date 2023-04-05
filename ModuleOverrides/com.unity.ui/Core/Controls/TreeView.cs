@@ -38,6 +38,12 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty unbindItemProperty = nameof(unbindItem);
         internal static readonly DataBindingProperty destroyItemProperty = nameof(destroyItem);
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseTreeView.UxmlSerializedData
+        {
+            public override object CreateInstance() => new TreeView();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="TreeView"/> using data from a UXML file.
         /// </summary>

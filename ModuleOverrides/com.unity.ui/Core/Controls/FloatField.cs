@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Globalization;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -15,6 +16,12 @@ namespace UnityEngine.UIElements
     {
         // This property to alleviate the fact we have to cast all the time
         FloatInput floatInput => (FloatInput)textInputBase;
+
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextValueField<float>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new FloatField();
+        }
 
         /// <summary>
         /// Instantiates a <see cref="FloatField"/> using the data read from a UXML file.

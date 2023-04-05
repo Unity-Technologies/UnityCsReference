@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEditor.UIElements.Debugger;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -435,7 +436,7 @@ namespace Unity.UI.Builder
         {
             var draggerLabel = GetDraggerLabel(field);
             var tooltipValue = GetFieldTooltip(field, valueInfo);
-            var fieldLabel = field.GetValueByReflection("labelElement") as Label;
+            var fieldLabel = field as PropertyField ?? field.GetValueByReflection("labelElement") as VisualElement;
 
             if (draggerLabel != null)
             {
@@ -473,7 +474,7 @@ namespace Unity.UI.Builder
             };
         }
 
-        static string GetFieldTooltip(VisualElement field, FieldValueInfo info)
+        internal static string GetFieldTooltip(VisualElement field, FieldValueInfo info, string description = null)
         {
             if (info.type == FieldValueInfoType.None)
                 return "";
@@ -497,7 +498,10 @@ namespace Unity.UI.Builder
             if (info.valueSource.type.IsFromUSSSelector())
                 valueDefinitionDataText = $"\n{GetMatchingStyleSheetRuleSourceTooltip(info.valueSource.matchedRule)}";
 
-            return string.Format(tooltipFormat, info.type.ToDisplayString(), info.name, info.valueBinding.type.ToDisplayString(), valueDataText, info.valueSource.type.ToDisplayString(), valueDefinitionDataText);
+            var value = string.Format(tooltipFormat, info.type.ToDisplayString(), info.name, info.valueBinding.type.ToDisplayString(), valueDataText, info.valueSource.type.ToDisplayString(), valueDefinitionDataText);
+            if (!string.IsNullOrEmpty(description))
+                value += "\n\n" + description;
+            return value;
         }
 
         static string GetMatchingStyleSheetRuleSourceTooltip(MatchedRule matchedRule)

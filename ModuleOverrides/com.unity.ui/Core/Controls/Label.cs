@@ -11,6 +11,12 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class Label : TextElement
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new Label();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Label"/> using the data read from a UXML file.
         /// </summary>

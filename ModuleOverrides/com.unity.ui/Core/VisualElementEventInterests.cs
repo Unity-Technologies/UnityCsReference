@@ -218,6 +218,8 @@ namespace UnityEngine.UIElements
         // Use this to skip an event that affects only its target, if the target has no interest for it.
         internal bool HasSelfEventInterests(EventCategory eventCategory) =>
             0 != (m_EventInterestSelfCategories & (1 << (int)eventCategory));
+        internal bool HasSelfEventInterests(int eventCategories) =>
+            0 != (m_EventInterestSelfCategories & eventCategories);
         internal bool HasTrickleDownEventInterests(int eventCategories) =>
             0 != ((m_TrickleDownHandleEventCategories | m_TrickleDownEventCallbackCategories) & eventCategories);
         internal bool HasBubbleUpEventInterests(int eventCategories) =>
@@ -225,12 +227,8 @@ namespace UnityEngine.UIElements
 
         // Returns true if this element might have TrickleDown or BubbleUp callbacks on an event of the given category.
         // The EventDispatcher uses this to skip InvokeCallbacks.
-        internal bool HasTrickleDownEventCallbacks(EventCategory eventCategory) =>
-            0 != (m_TrickleDownEventCallbackCategories & (1 << (int)eventCategory));
         internal bool HasTrickleDownEventCallbacks(int eventCategories) =>
             0 != (m_TrickleDownEventCallbackCategories & eventCategories);
-        internal bool HasBubbleUpEventCallbacks(EventCategory eventCategory) =>
-            0 != (m_BubbleUpEventCallbackCategories & (1 << (int)eventCategory));
         internal bool HasBubbleUpEventCallbacks(int eventCategories) =>
             0 != (m_BubbleUpEventCallbackCategories & eventCategories);
 

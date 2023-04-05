@@ -15,6 +15,12 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class LayerField : PopupField<int>
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : PopupField<int>.UxmlSerializedData
+        {
+            public override object CreateInstance() => new LayerField();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="LayerField"/> using the data read from a UXML file.
         /// </summary>

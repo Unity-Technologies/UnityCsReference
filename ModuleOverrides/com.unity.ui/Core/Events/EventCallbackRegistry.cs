@@ -316,7 +316,7 @@ namespace UnityEngine.UIElements
                 InvokeCallbacks(evt, panel, target, CallbackPhase.BubbleUp);
         }
 
-        public void InvokeCallbacks(EventBase evt, [NotNull] BaseVisualElementPanel panel,
+        private void InvokeCallbacks(EventBase evt, [NotNull] BaseVisualElementPanel panel,
             [NotNull] VisualElement target, CallbackPhase phase)
         {
             ref var dynamicCallbackList = ref GetDynamicCallbackList(phase);

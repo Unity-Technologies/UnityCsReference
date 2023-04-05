@@ -112,6 +112,12 @@ namespace UnityEngine.UIElements
         internal static readonly DataBindingProperty unbindItemProperty = nameof(unbindItem);
         internal static readonly DataBindingProperty destroyItemProperty = nameof(destroyItem);
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseListView.UxmlSerializedData
+        {
+            public override object CreateInstance() => new ListView();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="ListView"/> using data from a UXML file.
         /// </summary>

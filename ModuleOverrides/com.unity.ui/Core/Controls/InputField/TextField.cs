@@ -18,6 +18,39 @@ namespace UnityEngine.UIElements
         // This property to alleviate the fact we have to cast all the time
         TextInput textInput => (TextInput)textInputBase;
 
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextInputBaseField<string>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
+        {
+            #pragma warning disable 649
+            [SerializeField] private bool multiline;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new TextField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (TextField)obj;
+                e.multiline = multiline;
+            }
+
+            void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
+            {
+                if (bag.TryGetAttributeValue("text", out var text))
+                {
+                    Value = text;
+                    handledAttributes.Add("value");
+
+                    if (bag is UxmlAsset uxmlAsset)
+                    {
+                        uxmlAsset.RemoveAttribute("text");
+                        uxmlAsset.SetAttribute("value", Value);
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="TextField"/> using the data read from a UXML file.
         /// </summary>

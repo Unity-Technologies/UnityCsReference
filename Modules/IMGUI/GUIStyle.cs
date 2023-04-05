@@ -445,7 +445,12 @@ namespace UnityEngine
         // Calculate the size of a some content if it is rendered with this style.
         internal Vector2 CalcSizeWithConstraints(GUIContent content, Vector2 constraints)
         {
-            return Internal_CalcSizeWithConstraints(content, constraints);
+            var size = Internal_CalcSizeWithConstraints(content, constraints);
+            if (constraints.x > 0)
+                size.x = Mathf.Min(size.x, constraints.x);
+            if (constraints.y > 0)
+                size.y = Mathf.Min(size.y, constraints.y);
+            return size;
         }
 
         // Calculate the size of an element formatted with this style, and a given space to content.

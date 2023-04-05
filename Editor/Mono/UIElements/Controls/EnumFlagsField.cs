@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -19,6 +20,30 @@ namespace UnityEditor.UIElements
     /// </description>
     public class EnumFlagsField : BaseMaskField<Enum>
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : BaseField<Enum>.UxmlSerializedData
+        {
+            #pragma warning disable 649
+            [UxmlTypeReference(typeof(Enum))]
+            [SerializeField, UxmlAttribute("type")] private string typeAsString;
+            [EnumFlagsFieldValueDecorator]
+            [SerializeField, UxmlAttribute("value")] private string valueAsString;
+            [SerializeField] private bool includeObsoleteValues;
+            #pragma warning restore 649
+
+            public override object CreateInstance() => new EnumFlagsField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (EnumFlagsField)obj;
+                e.includeObsoleteValues = includeObsoleteValues;
+                e.typeAsString = typeAsString;
+                e.valueAsString = valueAsString;
+            }
+        }
+
         /// <summary>
         /// Instantiates a <see cref="EnumFlagsField"/> using the data read from a UXML file.
         /// </summary>
@@ -83,7 +108,55 @@ namespace UnityEditor.UIElements
 
         // These properties exist so that the UIBuilder can read them.
         internal Type type => m_EnumType;
-        internal bool includeObsoleteValues => m_IncludeObsoleteValues;
+        internal bool includeObsoleteValues { get => m_IncludeObsoleteValues; set => m_IncludeObsoleteValues = value; }
+
+        internal string typeAsString
+        {
+            get => UxmlUtility.TypeToString(m_EnumType);
+            set
+            {
+                m_EnumType = UxmlUtility.ParseType(value);
+                if (m_EnumType == null)
+                {
+                    this.value = null;
+                    textElement.text = string.Empty;
+                }
+            }
+        }
+
+        internal string valueAsString
+        {
+            get => value?.ToString();
+            set
+            {
+                if (type != null)
+                {
+                    if (!string.IsNullOrEmpty(value))
+                    {
+                        if (Enum.TryParse(type, value, false, out var result) && result is Enum enumValue)
+                        {
+                            Init(enumValue, includeObsoleteValues);
+                            return;
+                        }
+                        else
+                        {
+                            // If we didn't have a valid value, try to set the type.
+                            PopulateDataFromType(type);
+                            this.value = null;
+                        }
+                    }
+                    else
+                    {
+                        var enumValue = (Enum)Enum.ToObject(type, 0);
+                        Init(enumValue, includeObsoleteValues);
+                    }
+                }
+                else
+                {
+                    this.value = null;
+                }
+            }
+        }
 
         /// <summary>
         /// Constructs an EnumFlagsField with a default value, and initializes its underlying type.

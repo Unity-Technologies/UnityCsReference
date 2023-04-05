@@ -333,19 +333,7 @@ namespace UnityEngine.UIElements
             m_AssetEntries.Add(new AssetEntry(path, type, asset));
         }
 
-        internal T GetAsset<T>(string path) where T : Object
-        {
-            if (m_AssetEntries == null)
-                return null;
-
-            foreach (var entry in m_AssetEntries)
-            {
-                if (entry.path.Equals(path) && entry.asset is T asset)
-                    return asset;
-            }
-
-            return null;
-        }
+        internal T GetAsset<T>(string path) where T : Object => GetAsset(path, typeof(T)) as T;
 
         internal Object GetAsset(string path, Type type)
         {
@@ -354,7 +342,7 @@ namespace UnityEngine.UIElements
 
             foreach (var entry in m_AssetEntries)
             {
-                if (entry.path.Equals(path) && entry.type == type)
+                if (entry.path == path && type.IsAssignableFrom(entry.type))
                     return entry.asset;
             }
 
@@ -386,7 +374,7 @@ namespace UnityEngine.UIElements
             }
 
             IBaseUxmlObjectFactory factory = null;
-            var ctx = new CreationContext(null, this, null);
+            var ctx = new CreationContext(this);
             foreach (var f in factories)
             {
                 if (f.AcceptsAttributeBag(uxmlObjectAsset, ctx))
@@ -428,10 +416,10 @@ namespace UnityEngine.UIElements
         /// <returns>The root of the tree of VisualElements that was just cloned.</returns>
         public TemplateContainer Instantiate()
         {
-            TemplateContainer target = new TemplateContainer(name);
+            TemplateContainer target = new TemplateContainer(name, this);
             try
             {
-                CloneTree(target, s_TemporarySlotInsertionPoints, null);
+                CloneTree(target, new CreationContext(s_TemporarySlotInsertionPoints));
             }
             finally
             {
@@ -500,7 +488,7 @@ namespace UnityEngine.UIElements
             firstElementIndex = target.childCount;
             try
             {
-                CloneTree(target, s_TemporarySlotInsertionPoints, null);
+                CloneTree(target, new CreationContext(s_TemporarySlotInsertionPoints));
             }
             finally
             {
@@ -509,8 +497,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void CloneTree(VisualElement target, Dictionary<string, VisualElement> slotInsertionPoints,
-            List<CreationContext.AttributeOverrideRange> attributeOverrides)
+        internal void CloneTree(VisualElement target, CreationContext cc)
         {
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
@@ -518,13 +505,6 @@ namespace UnityEngine.UIElements
             if ((visualElementAssets == null || visualElementAssets.Count <= 0) &&
                 (templateAssets == null || templateAssets.Count <= 0))
                 return;
-
-            if (target is TemplateContainer templateContainer)
-            {
-                // We keep track of VisualTreeAssets instantiated as Templates inside other VisualTreeAssets so that
-                // users can find the reference and re-clone them.
-                templateContainer.templateSource = this;
-            }
 
             Dictionary<int, List<VisualElementAsset>> idToChildren = new Dictionary<int, List<VisualElementAsset>>();
             int eltcount = visualElementAssets == null ? 0 : visualElementAssets.Count;
@@ -571,7 +551,7 @@ namespace UnityEngine.UIElements
             {
                 Assert.IsNotNull(rootElement);
                 var rootVe = CloneSetupRecursively(rootElement, idToChildren,
-                    new CreationContext(slotInsertionPoints, attributeOverrides, this, target));
+                    new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides, this, target));
 
                 // Save reference to the visualElementAsset so elements can be reinitialized when
                 // we set their attributes in the editor
@@ -613,17 +593,6 @@ namespace UnityEngine.UIElements
             if (context.slotInsertionPoints != null && TryGetSlotInsertionPoint(root.id, out slotName))
             {
                 context.slotInsertionPoints.Add(slotName, ve);
-            }
-
-            if (root.ruleIndex != -1)
-            {
-                if (inlineSheet == null)
-                    Debug.LogWarning("VisualElementAsset has a RuleIndex but no inlineStyleSheet");
-                else
-                {
-                    StyleRule r = inlineSheet.rules[root.ruleIndex];
-                    ve.SetInlineRule(inlineSheet, r);
-                }
             }
 
             if (root.ruleIndex != -1)
@@ -696,7 +665,7 @@ namespace UnityEngine.UIElements
             return ve;
         }
 
-        static int CompareForOrder(VisualElementAsset a, VisualElementAsset b) => a.orderInDocument.CompareTo(b.orderInDocument);
+        internal static int CompareForOrder(VisualElementAsset a, VisualElementAsset b) => a.orderInDocument.CompareTo(b.orderInDocument);
 
         internal bool SlotDefinitionExists(string slotName)
         {
@@ -841,9 +810,13 @@ namespace UnityEngine.UIElements
         {
             VisualElement CreateError()
             {
-                Debug.LogErrorFormat("Element '{0}' has no registered factory method.", asset.fullTypeName);
+                Debug.LogErrorFormat("Element '{0}' is missing a UxmlElementAttribute and has no registered factory method.", asset.fullTypeName);
                 return new Label(string.Format("Unknown type: '{0}'", asset.fullTypeName));
             }
+
+            // The type is known by UxmlSerializedData system use that instead to create the element.
+            if (asset.serializedData != null)
+                return asset.Instantiate(ctx);
 
             if (!VisualElementFactoryRegistry.TryGetValue(asset.fullTypeName, out var factoryList))
             {
@@ -994,21 +967,64 @@ namespace UnityEngine.UIElements
 
         internal List<AttributeOverrideRange> attributeOverrides { get; private set; }
 
+        internal List<TemplateAsset.UxmlSerializedDataOverride> serializedDataOverrides { get; private set; }
+
+        internal CreationContext(VisualTreeAsset vta)
+            : this((Dictionary<string, VisualElement>) null, vta, null)
+        { }
+
+        internal CreationContext(Dictionary<string, VisualElement> slotInsertionPoints)
+            : this(slotInsertionPoints, null, null, null)
+        { }
+
+        internal CreationContext(
+            Dictionary<string, VisualElement> slotInsertionPoints,
+            List<AttributeOverrideRange> attributeOverrides)
+            : this(slotInsertionPoints, attributeOverrides, null, null)
+        { }
+
         internal CreationContext(
             Dictionary<string, VisualElement> slotInsertionPoints,
             VisualTreeAsset vta, VisualElement target)
             : this(slotInsertionPoints, null, vta, target)
-        {}
+        { }
 
         internal CreationContext(
             Dictionary<string, VisualElement> slotInsertionPoints,
-            List<CreationContext.AttributeOverrideRange> attributeOverrides,
+            List<AttributeOverrideRange> attributeOverrides,
+            VisualTreeAsset vta, VisualElement target)
+            : this(slotInsertionPoints, attributeOverrides, null, vta, target)
+        { }
+
+        internal CreationContext(
+            Dictionary<string, VisualElement> slotInsertionPoints,
+            List<AttributeOverrideRange> attributeOverrides,
+            List<TemplateAsset.UxmlSerializedDataOverride> serializedDataOverrides,
             VisualTreeAsset vta, VisualElement target)
         {
             this.target = target;
             this.slotInsertionPoints = slotInsertionPoints;
             this.attributeOverrides = attributeOverrides;
+            this.serializedDataOverrides = serializedDataOverrides;
             visualTreeAsset = vta;
+        }
+
+        internal bool TryGetSerializedDataOverride(int elementId, out UxmlSerializedData serializedDataOverride)
+        {
+            serializedDataOverride = null;
+            if (serializedDataOverrides == null)
+                return false;
+
+            for (var i = 0; i < serializedDataOverrides.Count; i++)
+            {
+                if (serializedDataOverrides[i].m_ElementId == elementId)
+                {
+                    serializedDataOverride = serializedDataOverrides[i].m_SerializedData;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public override bool Equals(object obj)

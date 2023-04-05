@@ -24,6 +24,12 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class Button : TextElement
     {
+        [UnityEngine.Internal.ExcludeFromDocs, Serializable]
+        public new class UxmlSerializedData : TextElement.UxmlSerializedData
+        {
+            public override object CreateInstance() => new Button();
+        }
+
         /// <summary>
         /// Instantiates a <see cref="Button"/> using data from a UXML file.
         /// </summary>

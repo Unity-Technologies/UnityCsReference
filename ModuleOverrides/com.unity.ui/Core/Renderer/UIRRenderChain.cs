@@ -5,6 +5,7 @@
 //#define UIR_DEBUG_CHAIN_BUILDER
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Profiling;
 
@@ -171,6 +172,8 @@ namespace UnityEngine.UIElements.UIR
             public UIRenderDevice device;
             public Texture vectorAtlas, shaderInfoAtlas;
             public float dpiScale;
+
+            public uint frameIndex;
         };
 
         RenderChainCommand m_FirstCommand;
@@ -482,13 +485,13 @@ namespace UnityEngine.UIElements.UIR
                     var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -0.001f, 1.001f);
                     GL.LoadProjectionMatrix(projection);
                     GL.modelview = Matrix4x4.identity;
-
-                    //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
-                    //m_BlockDirtyRegistration = true;
-                    device.EvaluateChain(m_FirstCommand, standardMaterial, standardMaterial, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
-                        panel.scaledPixelsPerPoint, m_RenderNodesData[0].matPropBlock, true, ref immediateException);
-                    //m_BlockDirtyRegistration = false;
                 }
+
+                //TODO: Reactivate this guard check once InspectorWindow is fixed to stop adding VEs during OnGUI
+                //m_BlockDirtyRegistration = true;
+                device.EvaluateChain(m_FirstCommand, standardMaterial, standardMaterial, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
+                    panel.scaledPixelsPerPoint, ref immediateException);
+                //m_BlockDirtyRegistration = false;
             }
 
             if (immediateException != null)
@@ -659,8 +662,8 @@ namespace UnityEngine.UIElements.UIR
         internal JobManager jobManager { get; private set; }
         internal UIRVEShaderInfoAllocator shaderInfoAllocator; // Not a property because this is a struct we want to mutate
         internal bool drawStats { get; set; }
-        internal bool drawInCameras { get; private set; }
-        internal bool isFlat { get; private set; }
+        internal bool drawInCameras { get; }
+        internal bool isFlat { get; }
 
         internal Shader defaultShader
         {
@@ -760,10 +763,7 @@ namespace UnityEngine.UIElements.UIR
         private unsafe static void OnRenderNodeExecute(IntPtr obj)
         {
             RenderNodeData rnd = AccessRenderNodeData(obj);
-            Exception immediateException = null;
-            rnd.device.EvaluateChain(rnd.firstCommand, rnd.initialMaterial, rnd.standardMaterial,
-                rnd.vectorAtlas, rnd.shaderInfoAtlas,
-                rnd.dpiScale, rnd.matPropBlock, false, ref immediateException);
+            rnd.device.ExecuteCommandList(rnd.frameIndex);
         }
 
         private static void OnRegisterIntermediateRenderers(Camera camera)
@@ -785,6 +785,7 @@ namespace UnityEngine.UIElements.UIR
                 rndSource.vectorAtlas = renderChain.vectorImageManager?.atlas;
                 rndSource.shaderInfoAtlas = renderChain.shaderInfoAllocator.atlas;
                 rndSource.dpiScale = rtp.scaledPixelsPerPoint;
+                rndSource.frameIndex = renderChain.device.frameIndex;
 
                 if (renderChain.m_CustomMaterialCommands == 0)
                 {
@@ -984,42 +985,61 @@ namespace UnityEngine.UIElements.UIR
         Count
     }
 
-    internal struct RenderChainVEData
+    [Flags]
+    enum RenderDataFlags
     {
-        internal VisualElement prev, next; // This is a flattened view of the visual element hierarchy
-        internal VisualElement groupTransformAncestor, boneTransformAncestor;
-        internal VisualElement prevDirty, nextDirty; // Embedded doubly-linked list for dirty updates
-        internal int hierarchyDepth; // 0 is for the root
-        internal RenderDataDirtyTypes dirtiedValues;
-        internal uint dirtyID;
-        internal RenderChainCommand firstHeadCommand, lastHeadCommand; // Sequential for the same owner
-        internal RenderChainCommand firstTailCommand, lastTailCommand; // Sequential for the same owner
-        internal bool isInChain;
-        internal bool localFlipsWinding;
-        internal bool localTransformScaleZero;
-        internal bool worldFlipsWinding;
+        IsInChain = 1 << 0,
+        IsGroupTransform = 1 << 1,
+    }
 
-        internal ClipMethod clipMethod; // Self
-        internal int childrenStencilRef;
-        internal int childrenMaskDepth;
+    struct RenderChainVEData
+    {
+        public VisualElement prev, next; // This is a flattened view of the visual element hierarchy
+        public VisualElement groupTransformAncestor, boneTransformAncestor;
+        public VisualElement prevDirty, nextDirty; // Embedded doubly-linked list for dirty updates
+        public RenderDataFlags flags;
+        public int hierarchyDepth; // 0 is for the root
+        public RenderDataDirtyTypes dirtiedValues;
+        public uint dirtyID;
+        public RenderChainCommand firstHeadCommand, lastHeadCommand; // Sequential for the same owner
+        public RenderChainCommand firstTailCommand, lastTailCommand; // Sequential for the same owner
+        public bool localFlipsWinding;
+        public bool localTransformScaleZero;
+        public bool worldFlipsWinding;
 
-        internal MeshHandle headMesh, tailMesh;
-        internal Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to
-        internal BMPAlloc transformID, clipRectID, opacityID, textCoreSettingsID;
-        internal BMPAlloc colorID, backgroundColorID, borderLeftColorID, borderTopColorID, borderRightColorID, borderBottomColorID, tintColorID;
-        internal float compositeOpacity;
-        internal Color backgroundColor;
+        public ClipMethod clipMethod; // Self
+        public int childrenStencilRef;
+        public int childrenMaskDepth;
 
-        internal BasicNode<TextureEntry> textures;
+        public MeshHandle headMesh, tailMesh;
+        public Matrix4x4 verticesSpace; // Transform describing the space which the vertices in 'data' are relative to
+        public BMPAlloc transformID, clipRectID, opacityID, textCoreSettingsID;
+        public BMPAlloc colorID, backgroundColorID, borderLeftColorID, borderTopColorID, borderRightColorID, borderBottomColorID, tintColorID;
+        public float compositeOpacity;
+        public Color backgroundColor;
 
-        internal RenderChainCommand lastTailOrHeadCommand { get { return lastTailCommand ?? lastHeadCommand; } }
-        static internal bool AllocatesID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Owned) && alloc.IsValid(); }
-        static internal bool InheritsID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Inherited) && alloc.IsValid(); }
+        public BasicNode<TextureEntry> textures;
+
+        public RenderChainCommand lastTailOrHeadCommand { get { return lastTailCommand ?? lastHeadCommand; } }
+        public static bool AllocatesID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Owned) && alloc.IsValid(); }
+        public static bool InheritsID(BMPAlloc alloc) { return (alloc.ownedState == OwnedState.Inherited) && alloc.IsValid(); }
 
         // This is set whenever there is repaint requested when HierarchyDisplayed == false and is used to trigger the repaint when it finally get displayed
-        internal bool pendingRepaint;
+        public bool pendingRepaint;
         // This is set whenever a hierarchical repaint was needed when HierarchyDisplayed == false.
-        internal bool pendingHierarchicalRepaint;
+        public bool pendingHierarchicalRepaint;
+
+        public bool isInChain
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => (flags & RenderDataFlags.IsInChain) == RenderDataFlags.IsInChain;
+        }
+
+        public bool isGroupTransform
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => (flags & RenderDataFlags.IsGroupTransform) == RenderDataFlags.IsGroupTransform;
+        }
     }
 
     struct TextureEntry

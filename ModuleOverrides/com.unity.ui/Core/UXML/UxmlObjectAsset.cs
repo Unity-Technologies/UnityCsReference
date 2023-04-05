@@ -147,12 +147,31 @@ namespace UnityEngine.UIElements
         {
             return m_DirtyCount;
         }
+
+        public override string ToString() => $"{id}({fullTypeName})";
     }
 
     [Serializable]
-    internal sealed class UxmlObjectAsset : UxmlAsset
+    internal class UxmlObjectAsset : UxmlAsset
     {
         public UxmlObjectAsset(string fullTypeName)
             : base(fullTypeName) {}
+    }
+
+    [Serializable]
+    internal class UxmlObjectFieldAsset : UxmlObjectAsset
+    {
+        [SerializeField]
+        private string m_FieldName;
+
+        public string fieldName => m_FieldName;
+
+        public UxmlObjectFieldAsset(string fieldName)
+            : base(string.Empty)
+        {
+            m_FieldName = fieldName;
+        }
+
+        public override string ToString() => $"Reference: {fieldName}";
     }
 }
