@@ -1552,6 +1552,12 @@ namespace UnityEditor
 
             for (int editorIndex = 0; editorIndex < editors.Length; editorIndex++)
             {
+                // If there is multiple inspector for the same Canvas object, entering play mode
+                // results in a NullReference Exception. Fix for UUM-1150
+                if (!editors[editorIndex])
+                {
+                    return;
+                }
                 editors[editorIndex].propertyViewer = this;
                 VisualElement prefabsComponentElement = new VisualElement() { name = "PrefabComponentElement" };
                 if (checkForRemovedComponents && editorIndex > targetGameObjectIndex)
