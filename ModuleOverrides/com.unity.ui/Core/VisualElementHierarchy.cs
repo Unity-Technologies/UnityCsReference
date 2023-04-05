@@ -711,12 +711,8 @@ namespace UnityEngine.UIElements
             {
                 m_Owner.m_PhysicalParent = value;
                 m_Owner.m_LogicalParent = value;
-                var newPanel = value?.elementPanel;
-                if (newPanel != null)
-                {
-                    m_Owner.DirtyNextParentWithEventCallback();
-                }
-                m_Owner.SetPanel(newPanel);
+                m_Owner.DirtyNextParentWithEventCallback();
+                m_Owner.SetPanel(value?.elementPanel);
             }
 
             /// <summary>

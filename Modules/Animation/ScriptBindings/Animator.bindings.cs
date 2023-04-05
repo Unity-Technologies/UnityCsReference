@@ -65,6 +65,13 @@ namespace UnityEngine
         Trigger = 9,
     }
 
+    internal static class AnimatorControllerParameterTypeConstants
+    {
+        // Users should never have to deal with this type, so exposing it is actually counter-productive.
+        // Instead, we put it into a constant so that we can still reap the readability benefits.
+        public const int InvalidType = 0;
+    }
+
     internal enum TransitionType
     {
         Normal = 1 << 0,
@@ -701,12 +708,15 @@ namespace UnityEngine
             get;
         }
 
+        [FreeFunction(Name = "AnimatorBindings::GetParameterInternal", HasExplicitThis = true)]
+        extern private AnimatorControllerParameter GetParameterInternal(int index);
+
         public AnimatorControllerParameter GetParameter(int index)
         {
-            AnimatorControllerParameter[] param = parameters;
-            if (index < 0 || index >= parameters.Length)
-                throw new IndexOutOfRangeException("Index must be between 0 and " + parameters.Length);
-            return param[index];
+            var parameter = GetParameterInternal(index);
+            if ((int)parameter.m_Type == AnimatorControllerParameterTypeConstants.InvalidType)
+                throw new IndexOutOfRangeException("Index must be between 0 and " + parameterCount);
+            return parameter;
         }
 
         // Blends pivot point between body center of mass and feet pivot. At 0%, the blending point is body center of mass. At 100%, the blending point is feet pivot

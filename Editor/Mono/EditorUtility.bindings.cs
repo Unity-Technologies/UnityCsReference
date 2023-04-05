@@ -95,6 +95,7 @@ namespace UnityEditor
         public static extern bool IsPersistent(Object target);
         public static extern bool IsValidUnityYAML(string yaml);
         public static extern string SaveFilePanel(string title, string directory, string defaultName, string extension);
+        [ThreadSafe]
         public static extern int NaturalCompare(string a, string b);
         public static extern Object InstanceIDToObject(int instanceID);
         public static extern void CompressTexture([NotNull] Texture2D texture, TextureFormat format, int quality);

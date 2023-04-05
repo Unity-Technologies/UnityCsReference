@@ -129,7 +129,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         private static AssemblyData AssemblyDataFrom(ScriptAssembly a, ScriptAssembly[] allAssemblies, int index)
         {
-            Array.Sort(a.Files, StringComparer.InvariantCulture);
+            Array.Sort(a.Files, StringComparer.Ordinal);
             var references = a.ScriptAssemblyReferences.Select(r => Array.IndexOf(allAssemblies, r)).ToArray();
             Array.Sort(references);
             return new AssemblyData

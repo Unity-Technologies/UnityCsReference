@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
         public int id { get; set; }
 
         // Identifies an item as an invisible duplicate of the dragged item.
-        internal bool isDragGhost { get; set; }
+        internal bool isDragGhost { get; private set; }
 
         public event Action<ReusableCollectionItem> onGeometryChanged;
 
@@ -49,8 +49,8 @@ namespace UnityEngine.UIElements
 
             rootElement?.RemoveFromHierarchy();
             SetSelected(false);
+            SetDragGhost(false);
             index = id = UndefinedIndex;
-            isDragGhost = false;
         }
 
         public virtual void SetSelected(bool selected)
@@ -65,6 +65,13 @@ namespace UnityEngine.UIElements
                 rootElement.RemoveFromClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassName);
                 rootElement.pseudoStates &= ~PseudoStates.Checked;
             }
+        }
+
+        public virtual void SetDragGhost(bool dragGhost)
+        {
+            isDragGhost = dragGhost;
+            rootElement.style.maxHeight = isDragGhost ? 0 : StyleKeyword.Initial;
+            bindableElement.style.display = isDragGhost ? DisplayStyle.None : DisplayStyle.Flex;
         }
 
         protected void OnGeometryChanged(GeometryChangedEvent evt)

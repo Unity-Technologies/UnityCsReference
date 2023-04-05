@@ -134,6 +134,9 @@ namespace UnityEngine.UIElements
         IVisualElementScheduledItem m_ScrollResetScheduledItem;
         Predicate<int> m_IndexOutOfBoundsPredicate;
 
+        // Dynamic height virtualization handles the refresh binding with the scheduled Fill call.
+        protected override bool alwaysRebindOnRefresh => false;
+
         public DynamicHeightVirtualizationController(BaseVerticalCollectionView collectionView)
             : base(collectionView)
         {
@@ -296,12 +299,14 @@ namespace UnityEngine.UIElements
                 m_LastChange = VirtualizationChange.ForcedScroll;
                 return;
             }
+            else if (m_ScheduledItem == null)
 
             // As we resize, the geometry changed event of the ScrollView tries to change the scroll offset as it
             // updates the scrollers. We want to keep our cached values, so we reassign them and early out until we're
             // in an idle state where we receive true user input.
             if (m_LastChange is VirtualizationChange.Resize or VirtualizationChange.ForcedScroll)
             {
+                m_ScheduledItem = m_CollectionView.schedule.Execute(m_FillCallback);
                 var viewportHeight = m_ScrollView.contentViewport.layout.height;
                 var scrollableHeight = Mathf.Max(0, contentHeight - viewportHeight);
                 var offset = Mathf.Min(serializedData.scrollOffset.y, scrollableHeight);

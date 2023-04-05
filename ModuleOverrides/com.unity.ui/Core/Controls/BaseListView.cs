@@ -10,7 +10,7 @@ using System.Linq;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Options to change the drag and drop mode for items in the ListView.
+    /// Options to change the drag-and-drop mode for items in the ListView.
     /// </summary>
     /// <remarks>
     /// Using @@Animated@@ will affect the layout of the ListView, by adding drag handles before every item.
@@ -71,6 +71,16 @@ namespace UnityEngine.UIElements
                 view.headerTitle = m_HeaderTitle.GetValueFromBag(bag, cc);
                 view.showAddRemoveFooter = m_ShowAddRemoveFooter.GetValueFromBag(bag, cc);
                 view.showBoundCollectionSize = m_ShowBoundCollectionSize.GetValueFromBag(bag, cc);
+            }
+
+            /// <summary>
+            /// Constructor.
+            /// </summary>
+            protected UxmlTraits()
+            {
+                // Ignore by default, because the ListView content can have empty space when using footer for example.
+                // PointerEvents are registered on the ScrollView, which is pickingMode = PickingMode.Position.
+                m_PickingMode.defaultValue = PickingMode.Ignore;
             }
         }
 
@@ -622,13 +632,24 @@ namespace UnityEngine.UIElements
         /// The USS class name for scroll view when add/remove footer is enabled.
         /// </summary>
         /// <remarks>
-        /// Unity adds this USS class to ListView's scroll view when <see cref="showAddRemoveFooter"/> is set to <c>true</c>.
+        /// Unity adds this USS class  scroll view of <see cref="BaseListView"/>when <see cref="showAddRemoveFooter"/> is set to <c>true</c>.
         /// Any styling applied to this class affects every list located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string scrollViewWithFooterUssClassName = ussClassName + "__scroll-view--with-footer";
-
-        internal static readonly string footerAddButtonName = ussClassName + "__add-button";
-        internal static readonly string footerRemoveButtonName = ussClassName + "__remove-button";
+        /// <summary>
+        /// The name of the add button element in the footer.
+        /// </summary>
+        /// <remarks>
+        /// Unity uses this name of <see cref="BaseListView"/> add button when <see cref="showAddRemoveFooter"/> is set to <c>true</c>.
+        /// </remarks>
+        public static readonly string footerAddButtonName = ussClassName + "__add-button";
+        /// <summary>
+        /// The name of the remove button element in the footer.
+        /// </summary>
+        /// <remarks>
+        /// Unity uses this name of <see cref="BaseListView"/> remove button when <see cref="showAddRemoveFooter"/> is set to <c>true</c>.
+        /// </remarks>
+        public static readonly string footerRemoveButtonName = ussClassName + "__remove-button";
 
         string m_MaxMultiEditStr;
         static readonly string k_EmptyListStr = "List is empty";
@@ -640,6 +661,7 @@ namespace UnityEngine.UIElements
         public BaseListView()
         {
             AddToClassList(ussClassName);
+            pickingMode = PickingMode.Ignore;
         }
 
         /// <summary>
@@ -651,6 +673,7 @@ namespace UnityEngine.UIElements
             : base(itemsSource, itemHeight)
         {
             AddToClassList(ussClassName);
+            pickingMode = PickingMode.Ignore;
         }
 
         private protected override void PostRefresh()

@@ -16,6 +16,7 @@ namespace UnityEngine.UIElements
         private uint m_NextParentCachedVersion;
 
         // The version that children need to have to use this element as their m_CachedNextParentWithEventCallback.
+        // This should be 0 if this element has no event callback, and non-0 if it has any.
         private uint m_NextParentRequiredVersion;
 
         // The last computed nextParentWithEventCallback for this element.
@@ -74,43 +75,37 @@ namespace UnityEngine.UIElements
                     return nextParent;
                 }
 
-                // No panel or this is the top element, just return null and don't store the reference
-                var topParent = elementPanel?.visualTree;
-                if (topParent == null || this == topParent)
-                {
-                    return null;
-                }
-
-                nextParent = topParent;
-                var stopParent = topParent;
-
                 // Search for the next parent by climbing up until we find a suitable candidate
-                for (var candidate = hierarchy.parent; candidate != topParent; candidate = candidate.hierarchy.parent)
+                for (var candidate = hierarchy.parent; candidate != null; candidate = candidate.hierarchy.parent)
                 {
                     // Candidate is a proper next parent
                     if (candidate.m_NextParentRequiredVersion != 0u)
                     {
-                        nextParent = stopParent = candidate;
-                        break;
+                        PropagateCachedNextParentWithEventCallback(candidate, candidate);
+                        return candidate;
                     }
 
                     // Candidate has a fast path to a suitable parent
                     if (candidate.GetCachedNextParentWithEventCallback(out var candidateNextParent))
                     {
-                        nextParent = candidateNextParent;
-                        stopParent = candidate;
-                        break;
+                        PropagateCachedNextParentWithEventCallback(candidateNextParent, candidate);
+                        return candidateNextParent;
                     }
                 }
 
-                // Set new next parent across the hierarchy between this and the new parent
-                for (var ve = this; ve != stopParent; ve = ve.hierarchy.parent)
-                {
-                    ve.m_CachedNextParentWithEventCallback = nextParent;
-                    ve.m_NextParentCachedVersion = nextParent.m_NextParentRequiredVersion;
-                }
+                // This is the top element, return null and clear the cached reference (to allow the GC to do its work)
+                m_CachedNextParentWithEventCallback = null;
+                return null;
+            }
+        }
 
-                return nextParent;
+        // Sets new next parent across the hierarchy between this and the new parent
+        private void PropagateCachedNextParentWithEventCallback(VisualElement nextParent, VisualElement stopParent)
+        {
+            for (var ve = this; ve != stopParent; ve = ve.hierarchy.parent)
+            {
+                ve.m_CachedNextParentWithEventCallback = nextParent;
+                ve.m_NextParentCachedVersion = nextParent.m_NextParentRequiredVersion;
             }
         }
 
@@ -352,6 +347,7 @@ namespace UnityEngine.UIElements
         Command,
         Tooltip,
         IMGUI,
+        Reserved = 31   // used by Panel.m_RootContainer to force it to be a nextParentWithEventCallback
     }
 
     // Event category aggregator and useful shorthands for internal use.

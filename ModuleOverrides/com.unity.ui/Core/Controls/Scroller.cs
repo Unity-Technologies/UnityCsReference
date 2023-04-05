@@ -200,7 +200,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Updates the slider element size as a ratio of total range. A value greater than 1 will disable the Scroller.
+        /// Updates the slider element size as a ratio of total range. A value greater than or equal to 1 will disable the Scroller.
         /// </summary>
         /// <param name="factor">Slider size ratio.</param>
         public void Adjust(float factor)
