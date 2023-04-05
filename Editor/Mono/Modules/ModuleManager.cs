@@ -211,8 +211,15 @@ namespace UnityEditor.Modules
                     continue;
                 }
 
-                var platformSupportModule = Activator.CreateInstance(type) as IPlatformSupportModule;
-                s_PlatformModules.Add(platformSupportModule.TargetName, platformSupportModule);
+                try
+                {
+                    var platformSupportModule = Activator.CreateInstance(type) as IPlatformSupportModule;
+                    s_PlatformModules.Add(platformSupportModule.TargetName, platformSupportModule);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"Could not add platformSupportModule {type.FullName}, try rebuilding the module: {ex.Message}");
+                }
             }
         }
 

@@ -1264,6 +1264,8 @@ namespace UnityEditor.ShortcutManagement
             input.RegisterCallback<FocusEvent>((evt) => {
                 StartNewCombination();
                 evt.StopPropagation();
+                evt.propagation |= EventBase.EventPropagation.Cancellable;
+                evt.PreventDefault();
                 textInputBase.editorEngine.MoveTextEnd();
             });
             input.RegisterCallback<BlurEvent>((evt) =>
