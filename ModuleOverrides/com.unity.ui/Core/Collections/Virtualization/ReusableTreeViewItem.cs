@@ -10,28 +10,29 @@ namespace UnityEngine.UIElements
     {
         Toggle m_Toggle;
         VisualElement m_Container;
-        VisualElement m_IndentContainer;
+        VisualElement m_IndentElement;
         VisualElement m_BindableContainer;
+        VisualElement m_Checkmark;
 
         public override VisualElement rootElement => m_Container ?? bindableElement;
         public event Action<PointerUpEvent> onPointerUp;
         public event Action<ChangeEvent<bool>> onToggleValueChanged;
 
-        static Pool.ObjectPool<VisualElement> s_IndentPool = new Pool.ObjectPool<VisualElement>(
-            () =>
-            {
-                var indentElement = new VisualElement();
-                indentElement.AddToClassList(BaseTreeView.itemIndentUssClassName);
-                return indentElement;
-            });
+        int m_Depth;
+        float m_IndentWidth;
+
+        // Internal for tests.
+        internal float indentWidth => m_IndentWidth;
 
         EventCallback<PointerUpEvent> m_PointerUpCallback;
         EventCallback<ChangeEvent<bool>> m_ToggleValueChangedCallback;
+        EventCallback<GeometryChangedEvent> m_ToggleGeometryChangedCallback;
 
         public ReusableTreeViewItem()
         {
             m_PointerUpCallback = OnPointerUp;
             m_ToggleValueChangedCallback = OnToggleValueChanged;
+            m_ToggleGeometryChangedCallback = OnToggleGeometryChanged;
         }
 
         public override void Init(VisualElement item)
@@ -49,20 +50,23 @@ namespace UnityEngine.UIElements
             m_Container = root;
             m_Container.style.flexDirection = FlexDirection.Row;
 
-            m_IndentContainer = new VisualElement()
+            m_IndentElement = new VisualElement()
             {
-                name = BaseTreeView.itemIndentsContainerUssClassName,
+                name = BaseTreeView.itemIndentUssClassName,
                 style = { flexDirection = FlexDirection.Row },
             };
-            m_IndentContainer.AddToClassList(BaseTreeView.itemIndentsContainerUssClassName);
-            m_Container.hierarchy.Add(m_IndentContainer);
+            m_Container.hierarchy.Add(m_IndentElement);
 
-            m_Toggle = new Toggle { name = BaseTreeView.itemToggleUssClassName };
-            m_Toggle.userData = this;
+            m_Toggle = new Toggle
+            {
+                name = BaseTreeView.itemToggleUssClassName,
+                userData = this
+            };
             m_Toggle.AddToClassList(Foldout.toggleUssClassName);
             m_Toggle.AddToClassList(BaseTreeView.itemToggleUssClassName);
             m_Toggle.visualInput.AddToClassList(Foldout.inputUssClassName);
-            m_Toggle.visualInput.Q(className: Toggle.checkmarkUssClassName).AddToClassList(Foldout.checkmarkUssClassName);
+            m_Checkmark = m_Toggle.visualInput.Q(className: Toggle.checkmarkUssClassName);
+            m_Checkmark.AddToClassList(Foldout.checkmarkUssClassName);
             m_Container.hierarchy.Add(m_Toggle);
 
             m_BindableContainer = new VisualElement()
@@ -81,6 +85,7 @@ namespace UnityEngine.UIElements
             base.PreAttachElement();
             rootElement.AddToClassList(BaseTreeView.itemUssClassName);
             m_Container?.RegisterCallback(m_PointerUpCallback);
+            m_Toggle?.visualInput.Q(className: Toggle.checkmarkUssClassName).RegisterCallback(m_ToggleGeometryChangedCallback);
             m_Toggle?.RegisterValueChangedCallback(m_ToggleValueChangedCallback);
         }
 
@@ -89,28 +94,17 @@ namespace UnityEngine.UIElements
             base.DetachElement();
             rootElement.RemoveFromClassList(BaseTreeView.itemUssClassName);
             m_Container?.UnregisterCallback(m_PointerUpCallback);
+            m_Toggle?.visualInput.Q(className: Toggle.checkmarkUssClassName).UnregisterCallback(m_ToggleGeometryChangedCallback);
             m_Toggle?.UnregisterValueChangedCallback(m_ToggleValueChangedCallback);
         }
 
         public void Indent(int depth)
         {
-            if (m_IndentContainer == null)
+            if (m_IndentElement == null)
                 return;
 
-            for (var i = 0; i < m_IndentContainer.childCount; i++)
-            {
-                s_IndentPool.Release(m_IndentContainer[i]);
-            }
-
-            m_IndentContainer.Clear();
-
-            for (var i = 0; i < depth; ++i)
-            {
-                var indentElement = s_IndentPool.Get();
-                m_IndentContainer.Add(indentElement);
-            }
-
-            m_IndentContainer.EnableInClassList(BaseTreeView.itemIndentsContainerUssClassName, depth > 0);
+            m_Depth = depth;
+            UpdateIndentLayout();
         }
 
         public void SetExpandedWithoutNotify(bool expanded)
@@ -122,6 +116,22 @@ namespace UnityEngine.UIElements
         {
             if (m_Toggle != null)
                 m_Toggle.visible = visible;
+        }
+
+        void OnToggleGeometryChanged(GeometryChangedEvent evt)
+        {
+            var width = m_Checkmark.resolvedStyle.width + m_Checkmark.resolvedStyle.marginLeft + m_Checkmark.resolvedStyle.marginRight;
+            if (Math.Abs(width - m_IndentWidth) < float.Epsilon)
+                return;
+
+            m_IndentWidth = width;
+            UpdateIndentLayout();
+        }
+
+        void UpdateIndentLayout()
+        {
+            m_IndentElement.style.width = m_IndentWidth * m_Depth;
+            m_IndentElement.EnableInClassList(BaseTreeView.itemIndentUssClassName, m_Depth > 0);
         }
 
         void OnPointerUp(PointerUpEvent evt)

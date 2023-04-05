@@ -121,6 +121,7 @@ namespace Unity.Collections
 
         public int Length
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 return m_Length;
@@ -148,35 +149,35 @@ namespace Unity.Collections
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void CheckElementReadAccess(int index)
         {
             if (index < m_MinIndex || index > m_MaxIndex)
                 FailOutOfRangeError(index);
 
-            var versionPtr = (int*)m_Safety.versionNode;
-            if (m_Safety.version != ((*versionPtr) & AtomicSafetyHandle.ReadCheck))
-                AtomicSafetyHandle.CheckReadAndThrowNoEarlyOut(m_Safety);
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         void CheckElementWriteAccess(int index)
         {
             if (index < m_MinIndex || index > m_MaxIndex)
                 FailOutOfRangeError(index);
 
-            var versionPtr = (int*)m_Safety.versionNode;
-            if (m_Safety.version != ((*versionPtr) & AtomicSafetyHandle.WriteCheck))
-                AtomicSafetyHandle.CheckWriteAndThrowNoEarlyOut(m_Safety);
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
         }
 
         public T this[int index]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
                 CheckElementReadAccess(index);
                 return UnsafeUtility.ReadArrayElement<T>(m_Buffer, index);
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [WriteAccessRequired]
             set
             {
@@ -185,7 +186,11 @@ namespace Unity.Collections
             }
         }
 
-        public bool IsCreated => m_Buffer != null;
+        public bool IsCreated
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => m_Buffer != null;
+        }
 
         [WriteAccessRequired]
         public void Dispose()
@@ -317,21 +322,31 @@ namespace Unity.Collections
         {
             NativeArray<T> m_Array;
             int m_Index;
+            T value;
 
             public Enumerator(ref NativeArray<T> array)
             {
                 m_Array = array;
                 m_Index = -1;
+                value = default;
             }
 
             public void Dispose()
             {
             }
 
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public bool MoveNext()
             {
                 m_Index++;
-                return m_Index < m_Array.Length;
+                if (m_Index < m_Array.m_Length)
+                {
+                    AtomicSafetyHandle.CheckReadAndThrow(m_Array.m_Safety);
+                    value = UnsafeUtility.ReadArrayElement<T>(m_Array.m_Buffer, m_Index);
+                    return true;
+                }
+                value = default;
+                return false;
             }
 
             public void Reset()
@@ -340,9 +355,23 @@ namespace Unity.Collections
             }
 
             // Let NativeArray indexer check for out of range.
-            public T Current => m_Array[m_Index];
+            public T Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    return value;
+                }
+            }
 
-            object IEnumerator.Current => Current;
+            object IEnumerator.Current
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get
+                {
+                    return Current;
+                }
+            }
         }
 
         public bool Equals(NativeArray<T> other)
@@ -723,6 +752,7 @@ namespace Unity.Collections
 
             public int Length
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
                     return m_Length;
@@ -748,6 +778,7 @@ namespace Unity.Collections
 
             public T this[int index]
             {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 get
                 {
                     CheckElementReadAccess(index);
@@ -756,40 +787,53 @@ namespace Unity.Collections
             }
 
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void CheckElementReadAccess(int index)
             {
-                if (index < 0 || index >= m_Length)
+                if ((uint)index >= (uint)m_Length)
                 {
                     throw new IndexOutOfRangeException($"Index {index} is out of range (must be between 0 and {m_Length-1}).");
                 }
 
-                var versionPtr = (int*)m_Safety.versionNode;
-                if (m_Safety.version != ((*versionPtr) & AtomicSafetyHandle.ReadCheck))
-                    AtomicSafetyHandle.CheckReadAndThrowNoEarlyOut(m_Safety);
+                AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             }
 
-            public bool IsCreated => m_Buffer != null;
+            public bool IsCreated
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => m_Buffer != null;
+            }
 
             [ExcludeFromDocs]
             public struct Enumerator : IEnumerator<T>
             {
                 ReadOnly m_Array;
                 int m_Index;
+                T value;
 
                 public Enumerator(in ReadOnly array)
                 {
                     m_Array = array;
                     m_Index = -1;
+                    value = default;
                 }
 
                 public void Dispose()
                 {
                 }
 
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
                 public bool MoveNext()
                 {
                     m_Index++;
-                    return m_Index < m_Array.Length;
+                    if (m_Index < m_Array.m_Length)
+                    {
+                        AtomicSafetyHandle.CheckReadAndThrow(m_Array.m_Safety);
+                        value = UnsafeUtility.ReadArrayElement<T>(m_Array.m_Buffer, m_Index);
+                        return true;
+                    }
+                    value = default;
+                    return false;
                 }
 
                 public void Reset()
@@ -798,7 +842,11 @@ namespace Unity.Collections
                 }
 
                 // Let NativeArray indexer check for out of range.
-                public T Current => m_Array[m_Index];
+                public T Current
+                {
+                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                    get => value;
+                }
 
                 object IEnumerator.Current => Current;
             }

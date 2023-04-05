@@ -65,6 +65,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
     {
+        static readonly ProfilerMarker k_RefreshMarker = new ("BaseVerticalCollectionView.RefreshItems");
+        static readonly ProfilerMarker k_RebuildMarker = new ("BaseVerticalCollectionView.Rebuild");
+
         internal const string internalBindingKey = "__unity-collection-view-internal-binding";
 
         /// <summary>
@@ -200,6 +203,48 @@ namespace UnityEngine.UIElements
         internal event Action selectionNotChanged;
 
         /// <summary>
+        /// Called when a drag operation wants to start in this collection view.
+        /// </summary>
+        internal event Func<CanStartDragArgs, bool> canStartDrag;
+
+        internal bool HasCanStartDrag() => canStartDrag != null;
+
+        internal bool RaiseCanStartDrag(ReusableCollectionItem item, IEnumerable<int> ids)
+        {
+            return canStartDrag?.Invoke(new CanStartDragArgs(item?.rootElement, item?.id ?? TreeItem.invalidId, ids)) ?? true;
+        }
+
+        /// <summary>
+        /// Called when a drag operation starts in this collection view.
+        /// </summary>
+        internal event Func<SetupDragAndDropArgs, StartDragArgs> setupDragAndDrop;
+
+        internal StartDragArgs RaiseSetupDragAndDrop(ReusableCollectionItem item, IEnumerable<int> ids, StartDragArgs args)
+        {
+            return setupDragAndDrop?.Invoke(new SetupDragAndDropArgs(item?.rootElement, ids, args)) ?? args;
+        }
+
+        /// <summary>
+        /// Called when a drag operation updates in this collection view.
+        /// </summary>
+        internal event Func<HandleDragAndDropArgs, DragVisualMode> dragAndDropUpdate;
+
+        internal DragVisualMode RaiseHandleDragAndDrop(Vector2 pointerPosition, DragAndDropArgs dragAndDropArgs)
+        {
+            return dragAndDropUpdate?.Invoke(new HandleDragAndDropArgs(pointerPosition, dragAndDropArgs)) ?? DragVisualMode.None;
+        }
+
+        /// <summary>
+        /// Called when a drag operation is released in this collection view.
+        /// </summary>
+        internal event Func<HandleDragAndDropArgs, DragVisualMode> handleDrop;
+
+        internal DragVisualMode RaiseDrop(Vector2 pointerPosition, DragAndDropArgs dragAndDropArgs)
+        {
+            return handleDrop?.Invoke(new HandleDragAndDropArgs(pointerPosition, dragAndDropArgs)) ?? DragVisualMode.None;
+        }
+
+        /// <summary>
         /// The data source for collection items.
         /// </summary>
         /// <remarks>
@@ -214,7 +259,7 @@ namespace UnityEngine.UIElements
         internal virtual bool sourceIncludesArraySize => false;
 
         /// <summary>
-        /// Obsolete. Use <see cref="ListView.makeItem"> or <see cref="TreeView.makeItem"/> instead.
+        /// Obsolete. Use <see cref="ListView.makeItem"/> or <see cref="TreeView.makeItem"/> instead.
         /// </summary>
         [Obsolete("makeItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Func<VisualElement> makeItem
@@ -224,7 +269,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete. Use <see cref="ListView.bindItem"> or <see cref="TreeView.bindItem"/> instead.
+        /// Obsolete. Use <see cref="ListView.bindItem"/> or <see cref="TreeView.bindItem"/> instead.
         /// </summary>
         [Obsolete("bindItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Action<VisualElement, int> bindItem
@@ -234,7 +279,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete. Use <see cref="ListView.unbindItem"> or <see cref="TreeView.unbindItem"/> instead.
+        /// Obsolete. Use <see cref="ListView.unbindItem"/> or <see cref="TreeView.unbindItem"/> instead.
         /// </summary>
         [Obsolete("unbindItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Action<VisualElement, int> unbindItem
@@ -244,7 +289,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete. Use <see cref="ListView.destroyItem"> or <see cref="TreeView.destroyItem"/> instead.
+        /// Obsolete. Use <see cref="ListView.destroyItem"/> or <see cref="TreeView.destroyItem"/> instead.
         /// </summary>
         [Obsolete("destroyItem has been moved to ListView and TreeView. Use these ones instead.")]
         public Action<VisualElement> destroyItem
@@ -315,9 +360,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public IEnumerable<int> selectedIndices => m_SelectedIndices;
 
-        internal List<int> currentSelectionIds => m_SelectedIds;
+        internal IEnumerable<int> selectedIds => m_SelectedIds;
 
-        static readonly List<ReusableCollectionItem> k_EmptyItems = new List<ReusableCollectionItem>();
+        static readonly List<ReusableCollectionItem> k_EmptyItems = new();
         internal IEnumerable<ReusableCollectionItem> activeItems => m_VirtualizationController?.activeItems ?? k_EmptyItems;
         internal ScrollView scrollView => m_ScrollView;
         internal ListViewDragger dragger => m_Dragger;
@@ -361,25 +406,15 @@ namespace UnityEngine.UIElements
         /// Gets or sets a value that indicates whether the user can drag list items to reorder them.
         /// </summary>
         /// <remarks>
-        /// The default value is <c>false</c>.
-        /// Set this value to <c>true</c> to allow the user to drag and drop the items in the list. The collection view
-        /// provides a default controller to allow standard behavior. It also automatically handles reordering
-        /// the items in the data source.
+        /// The default value is <c>false</c> which allows the user to drag items to and from other views
+        /// when you implement <see cref="canStartDrag"/>, <see cref="setupDragAndDrop"/>, <see cref="dragAndDropUpdate"/>, and <see cref="handleDrop"/>.
+        /// Set this value to <c>true</c> to allow the user to reorder items in the list.
         /// </remarks>
         public bool reorderable
         {
             get => m_Dragger?.dragAndDropController?.enableReordering ?? false;
             set
             {
-                if (m_Dragger?.dragAndDropController == null)
-                {
-                    if (value)
-                    {
-                        InitializeDragAndDropController(true);
-                    }
-
-                    return;
-                }
 
                 var controller = m_Dragger.dragAndDropController;
                 if (controller != null && controller.enableReordering != value)
@@ -464,7 +499,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete.  Use <see cref="BaseVerticalCollectionView.fixedItemHeight"> instead.
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.fixedItemHeight"/> instead.
         /// </summary>
         /// <remarks>
         /// This property must be set when using the <see cref="virtualizationMethod"/> is set to <c>FixedHeight</c>, for the collection view to function.
@@ -617,6 +652,9 @@ namespace UnityEngine.UIElements
 
             m_Dragger = CreateDragger();
             m_Dragger.dragAndDropController = CreateDragAndDropController();
+            if (m_Dragger.dragAndDropController == null)
+                return;
+
             m_Dragger.dragAndDropController.enableReordering = enableReordering;
         }
 
@@ -657,18 +695,24 @@ namespace UnityEngine.UIElements
         /// The USS class name of the drag hover bar.
         /// </summary>
         /// <remarks>
-        /// Unity adds this USS class to the bar that appears when an item element is dragged. The
-        /// <see cref="BaseVerticalCollectionView.reorderable"/> property must be true in order for items to be dragged.
+        /// Unity adds this USS class to the bar that appears when the user drags an item in the list.
         /// Any styling applied to this class affects every BaseVerticalCollectionView located beside, or below the stylesheet in the
         /// visual tree.
         /// </remarks>
         public static readonly string dragHoverBarUssClassName = ussClassName + "__drag-hover-bar";
         /// <summary>
+        /// The USS class name of the drag hover circular marker used to indicate depth.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to the bar that appears when the user drags an item in the list. Any styling applied to this class affects
+        /// every BaseVerticalCollectionView located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
+        public static readonly string dragHoverMarkerUssClassName = ussClassName + "__drag-hover-marker";
+        /// <summary>
         /// The USS class name applied to an item element on drag hover.
         /// </summary>
         /// <remarks>
-        /// Unity adds this USS class to the list element that is dragged. The <see cref="BaseVerticalCollectionView.reorderable"/>
-        /// property must be set to true for items to be draggable. Any styling applied to this class affects
+        /// Unity adds this USS class to the item element when it's being dragged. Any styling applied to this class affects
         /// every BaseVerticalCollectionView item located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public static readonly string itemDragHoverUssClassName = itemUssClassName + "--drag-hover";
@@ -735,6 +779,8 @@ namespace UnityEngine.UIElements
 
             m_ItemIndexChangedCallback = OnItemIndexChanged;
             m_ItemsSourceChangedCallback = OnItemsSourceChanged;
+
+            InitializeDragAndDropController(false);
         }
 
         /// <summary>
@@ -794,7 +840,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Gets the root element the specified collection view item.
+        /// Gets the root element of the specified collection view item.
         /// </summary>
         /// <param name="index">The item index.</param>
         /// <returns>The item's root element.</returns>
@@ -847,7 +893,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public void RefreshItems()
         {
-            using (new ProfilerMarker("BaseVerticalCollectionView.RefreshItems").Auto())
+            using (k_RefreshMarker.Auto())
             {
                 if (m_ViewController == null)
                     return;
@@ -859,7 +905,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete. Use <see cref="BaseVerticalCollectionView.Rebuild"> instead.
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.Rebuild"/> instead.
         /// </summary>
         [Obsolete("Refresh() has been deprecated. Use Rebuild() instead. (UnityUpgradable) -> Rebuild()", false)]
         public void Refresh()
@@ -875,7 +921,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public void Rebuild()
         {
-            using (new ProfilerMarker("BaseVerticalCollectionView.Rebuild").Auto())
+            using (k_RebuildMarker.Auto())
             {
                 if (m_ViewController == null)
                     return;
@@ -945,7 +991,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete. Use <see cref="BaseVerticalCollectionView.ScrollToItemById"> instead.
+        /// Obsolete. Use <see cref="BaseVerticalCollectionView.ScrollToItemById"/> instead.
         /// </summary>
         /// <param name="id">Item id to scroll to.</param>
         [Obsolete("ScrollToId() has been deprecated. Use ScrollToItemById() instead. (UnityUpgradable) -> ScrollToItemById(*)", false)]
@@ -1014,7 +1060,7 @@ namespace UnityEngine.UIElements
             m_NavigationManipulator.OnKeyDown(evt);
         }
 
-        private bool Apply(KeyboardNavigationOperation op, bool shiftKey)
+        private bool Apply(KeyboardNavigationOperation op, bool shiftKey, bool altKey)
         {
             if (selectionType == SelectionType.None || !HasValidDataAndBindings())
             {
@@ -1084,6 +1130,20 @@ namespace UnityEngine.UIElements
                         HandleSelectionAndScroll(Mathf.Max(0, selectionUp - (virtualizationController.visibleItemCount - 1)));
                     }
                     return true;
+                case KeyboardNavigationOperation.MoveRight:
+                    if (m_SelectedIndices.Count > 0)
+                    {
+                        return HandleItemNavigation(true, altKey);
+                    }
+                    break;
+                case KeyboardNavigationOperation.MoveLeft:
+                    if (m_SelectedIndices.Count > 0)
+                    {
+                        return HandleItemNavigation(false, altKey);
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(op), op, null);
             }
 
             return false;
@@ -1091,13 +1151,19 @@ namespace UnityEngine.UIElements
 
         private void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
         {
-            var shiftKey = sourceEvent is KeyDownEvent kde && kde.shiftKey ||
-                           sourceEvent is INavigationEvent ne && ne.shiftKey;
-            if (Apply(op, shiftKey))
+            var shiftKey = sourceEvent is KeyDownEvent { shiftKey: true } or INavigationEvent { shiftKey: true };
+            var altKey = sourceEvent is KeyDownEvent { altKey: true } or INavigationEvent { altKey: true };
+            if (Apply(op, shiftKey, altKey))
             {
                 sourceEvent.StopPropagation();
                 sourceEvent.PreventDefault();
             }
+        }
+
+        private protected virtual bool HandleItemNavigation(bool moveIn, bool altKey)
+        {
+            // We could possibly want to expand child items here.
+            return false;
         }
 
         private void OnPointerMove(PointerMoveEvent evt)

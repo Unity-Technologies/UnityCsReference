@@ -157,6 +157,12 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\CollectionViewController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\CollectionViewController.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultMultiColumnTreeViewController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultMultiColumnTreeViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultTreeViewController.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\DefaultTreeViewController.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Collections\Controllers\IDefaultTreeViewController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Collections\Controllers\IDefaultTreeViewController.cs</Link>
     </Compile>
@@ -442,11 +448,11 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDrop.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDrop.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropArgs.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropArgs.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropController.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IDragAndDropController.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IListDragAndDropArgs.cs">
-      <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IListDragAndDropArgs.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DragAndDrop\IReorderable.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\DragAndDrop\IReorderable.cs</Link>

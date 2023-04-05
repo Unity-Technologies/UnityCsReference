@@ -85,6 +85,7 @@ namespace UnityEditor
 
             m_LockTracker.tracker = tracker;
             m_LockTracker.lockStateChanged.AddListener(LockStateChanged);
+            m_Tracker.dataMode = GetDataModeController_Internal().dataMode;
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
             Selection.selectionChanged += OnSelectionChanged;

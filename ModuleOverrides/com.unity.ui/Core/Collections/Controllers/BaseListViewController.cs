@@ -49,6 +49,7 @@ namespace UnityEngine.UIElements
             listItem.bindableElement.style.flexBasis = StyleKeyword.Initial;
             listItem.bindableElement.style.marginTop = 0f;
             listItem.bindableElement.style.marginBottom = 0f;
+            listItem.bindableElement.style.paddingTop = 0f;
             listItem.bindableElement.style.flexGrow = 0f;
             listItem.bindableElement.style.flexShrink = 0f;
         }
@@ -139,6 +140,9 @@ namespace UnityEngine.UIElements
         public virtual void Move(int index, int newIndex)
         {
             if (itemsSource == null)
+                return;
+
+            if (index == newIndex)
                 return;
 
             var minIndex = Mathf.Min(index, newIndex);

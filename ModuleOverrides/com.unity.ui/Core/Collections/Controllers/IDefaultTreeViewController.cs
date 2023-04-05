@@ -6,6 +6,11 @@ using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
+    internal interface IDefaultTreeViewController
+    {
+        object GetItemDataForId(int id);
+    }
+
     internal interface IDefaultTreeViewController<T>
     {
         void SetRootItems(IList<TreeViewItemData<T>> items);

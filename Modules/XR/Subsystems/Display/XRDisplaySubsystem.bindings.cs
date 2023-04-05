@@ -248,6 +248,10 @@ namespace UnityEngine.XR
             extern public void GetBlitParameter(int blitParameterIndex, out XRBlitParams blitParameter);
         }
 
+        [NativeMethod(Name = "UnityXRRenderTextureIdToRenderTexture", IsThreadSafe = false)]
+        [NativeConditional("ENABLE_XR")]
+        extern public RenderTexture GetRenderTexture(uint unityXrRenderTextureId);
+
         [NativeMethod(Name = "GetTextureForRenderPass", IsThreadSafe = false)]
         [NativeConditional("ENABLE_XR")]
         extern public RenderTexture GetRenderTextureForRenderPass(int renderPass);

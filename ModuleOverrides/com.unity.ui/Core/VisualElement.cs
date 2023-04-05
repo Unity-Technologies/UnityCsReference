@@ -1321,9 +1321,6 @@ namespace UnityEngine.UIElements
 
                     VisualElementFlags flagToAdd = p != null ? VisualElementFlags.NeedsAttachToPanelEvent : 0;
 
-                    // Just making sure nothing strange happened during the DetachFromPanel event dispatching
-                    DirtyNextParentWithEventCallback();
-
                     foreach (var e in elements)
                     {
                         e.elementPanel = p;
@@ -1590,7 +1587,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public Action<MeshGenerationContext> generateVisualContent { get; set; }
 
-        Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new Unity.Profiling.ProfilerMarker("GenerateVisualContent");
+        static readonly Unity.Profiling.ProfilerMarker k_GenerateVisualContentMarker = new("GenerateVisualContent");
 
         internal void InvokeGenerateVisualContent(MeshGenerationContext mgc)
         {

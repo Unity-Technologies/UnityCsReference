@@ -31,19 +31,27 @@ namespace UnityEngine.UIElements
         /// </summary>
         Submit,
         /// <summary>
-        /// Selects the previous item.
+        /// Moves up to the previous item.
         /// </summary>
         Previous,
         /// <summary>
-        /// Selects the next item.
+        /// Moves down to the next item.
         /// </summary>
         Next,
         /// <summary>
-        /// Moves the selection up one page (in a list which has scrollable area).
+        /// Moves to the right.
+        /// </summary>
+        MoveRight,
+        /// <summary>
+        /// Moves to the left.
+        /// </summary>
+        MoveLeft,
+        /// <summary>
+        /// Moves the selection up one page (in a list that has a scrollable area).
         /// </summary>
         PageUp,
         /// <summary>
-        /// Moves the selection down one page (in a list which has scrollable area).
+        /// Moves the selection down one page (in a list that has a scrollable area).
         /// </summary>
         PageDown,
         /// <summary>
@@ -102,6 +110,14 @@ namespace UnityEngine.UIElements
                     case KeyCode.End: return KeyboardNavigationOperation.End;
                     case KeyCode.PageUp: return KeyboardNavigationOperation.PageUp;
                     case KeyCode.PageDown: return KeyboardNavigationOperation.PageDown;
+                    // Workaround for navigation with arrow keys. It will trigger the sound of an incorrect key being pressed.
+                    // Since we use navigation events, the input system should already prevent the sound. See case UUM-26264.
+                    case KeyCode.DownArrow:
+                    case KeyCode.UpArrow:
+                    case KeyCode.LeftArrow:
+                    case KeyCode.RightArrow:
+                        evt.StopPropagation();
+                        break;
                 }
                 return KeyboardNavigationOperation.None;
             }
@@ -132,6 +148,12 @@ namespace UnityEngine.UIElements
                     break;
                 case NavigationMoveEvent.Direction.Down:
                     Invoke(KeyboardNavigationOperation.Next, evt);
+                    break;
+                case NavigationMoveEvent.Direction.Left:
+                    Invoke(KeyboardNavigationOperation.MoveLeft, evt);
+                    break;
+                case NavigationMoveEvent.Direction.Right:
+                    Invoke(KeyboardNavigationOperation.MoveRight, evt);
                     break;
             }
         }

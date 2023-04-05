@@ -86,7 +86,7 @@ namespace UnityEngine.UIElements
             else
             {
                 var rootItemIdsPositionForId = m_RootItemIds.IndexOf(id);
-                if (rootItemIdsPositionForId < childIndex)
+                if (newParentId == ReusableCollectionItem.UndefinedIndex && rootItemIdsPositionForId < childIndex)
                     childIndex--;
 
                 m_RootItemIds.Remove(id);

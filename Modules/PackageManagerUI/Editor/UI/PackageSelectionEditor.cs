@@ -148,7 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             var previousEnabled = GUI.enabled;
-            GUI.enabled = m_ShouldBeEnabled;
+            GUI.enabled = true;
 
             // Package information
             GUILayout.Label(Styles.information, EditorStyles.boldLabel);

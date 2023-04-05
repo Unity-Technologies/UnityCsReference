@@ -780,7 +780,12 @@ namespace UnityEngine.UIElements
             {
                 name = VisualElementUtils.GetUniqueName("unity-panel-container"),
                 viewDataKey = "PanelContainer",
-                pickingMode = contextType == ContextType.Editor ? PickingMode.Position : PickingMode.Ignore
+                pickingMode = contextType == ContextType.Editor ? PickingMode.Position : PickingMode.Ignore,
+
+                // Setting eventCallbackCategories will ensure panel.visualTree is always a valid next parent.
+                // This allows deeper elements to have an active tracking version based on their panel
+                // if they would not otherwise have a next parent with callbacks.
+                eventCallbackCategories = 1 << (int)EventCategory.Reserved
             };
 
             // Required!

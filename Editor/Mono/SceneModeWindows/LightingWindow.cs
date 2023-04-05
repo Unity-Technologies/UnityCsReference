@@ -626,7 +626,7 @@ namespace UnityEditor
         internal static LightingWindow s_Window;
         internal static bool isShown => s_Window && !s_Window.docked;
 
-        [MenuItem("Window/Rendering/Lighting", false, 1)]
+        [MenuItem("Window/Rendering/Lighting %9", false, 1)]
         internal static void CreateLightingWindow()
         {
             LightingWindow window = EditorWindow.GetWindow<LightingWindow>();
