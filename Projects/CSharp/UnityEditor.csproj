@@ -7874,6 +7874,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\AssetStoreProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\AssetStoreProvider.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\BasePerformanceProvider.cs">
+      <Link>Modules\QuickSearch\Editor\Providers\BasePerformanceProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\Calculator.cs">
       <Link>Modules\QuickSearch\Editor\Providers\Calculator.cs</Link>
     </Compile>
@@ -7894,6 +7897,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\PerformanceProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\PerformanceProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\ProfilerMarkersProvider.cs">
+      <Link>Modules\QuickSearch\Editor\Providers\ProfilerMarkersProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Providers\SceneProvider.cs">
       <Link>Modules\QuickSearch\Editor\Providers\SceneProvider.cs</Link>

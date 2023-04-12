@@ -61,5 +61,8 @@ namespace UnityEditor.SceneManagement
 
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static void CallAwakeFromLoadOnSubHierarchyInternal([NotNull("NullExceptionObject")] GameObject prefabInstanceRoot);
+
+        [StaticAccessor("StageUtility", StaticAccessorType.DoubleColon)]
+        extern internal static bool IsGizmoCulledBySceneCullingMasksOrFocusedScene([NotNull] GameObject gameObject, [NotNull] Camera camera);
     }
 }

@@ -1012,15 +1012,6 @@ namespace UnityEditor
             if (folderInstanceID == kPackagesFolderInstanceId)
                 folderPath = PackageManager.Folders.GetPackagesPath();
 
-
-            if (m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing)
-            {
-                if (m_SearchFilter.folders.Length == 1 && m_SearchFilter.folders[0] == folderPath)
-                {
-                    return; // Already showing folder
-                }
-            }
-
             if (!m_SkipHiddenPackages || PackageManagerUtilityInternal.IsPathInVisiblePackage(folderPath))
             {
                 m_SearchFilter.ClearSearch();

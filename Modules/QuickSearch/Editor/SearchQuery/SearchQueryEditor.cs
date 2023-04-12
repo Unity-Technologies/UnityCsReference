@@ -19,8 +19,9 @@ namespace UnityEditor.Search
         private SerializedProperty m_IconProperty;
         private SerializedProperty m_ViewStateProperty;
         private ScrollView m_InspectorScrollView;
+        private VisualElement m_EditorContainer;
         private VisualElement m_HeaderElement;
-
+        private bool m_HasPreview;
         private SearchQueryAsset query => target as SearchQueryAsset;
 
         public override bool RequiresConstantRepaint() => false;
@@ -43,6 +44,8 @@ namespace UnityEditor.Search
             newViewState.Assign(query.GetViewState());
             newViewState.flags |= UnityEngine.Search.SearchViewFlags.DisableQueryHelpers;
             m_ResultView = new SearchView(newViewState, GetInstanceID());
+            m_ResultView.AddToClassList("result-view");
+            m_HasPreview = true;
         }
 
         public override VisualElement CreateInspectorGUI()
@@ -89,6 +92,9 @@ namespace UnityEditor.Search
             // the available space in the inspector. Therefore, we query the scrollview of the inspector
             // and resize the result view based its size.
             m_InspectorScrollView = body?.GetFirstAncestorOfType<ScrollView>();
+            var searchDetails = body?.GetFirstAncestorWhere(el => el.name == "SearchDetailViewContainer");
+            m_EditorContainer = searchDetails ?? m_InspectorScrollView;
+            m_HasPreview = searchDetails == null;
             if (m_InspectorScrollView != null)
             {
                 m_InspectorScrollView.RegisterCallback<GeometryChangedEvent>(ResizeResultView);
@@ -100,6 +106,7 @@ namespace UnityEditor.Search
 
         private void OnBodyDetached(DetachFromPanelEvent evt)
         {
+            m_EditorContainer = null;
             if (m_InspectorScrollView != null)
             {
                 m_InspectorScrollView.UnregisterCallback<GeometryChangedEvent>(ResizeResultView);
@@ -116,14 +123,16 @@ namespace UnityEditor.Search
 
         private void ResizeResultView()
         {
-            if (m_InspectorScrollView == null || m_ResultView == null || m_HeaderElement == null)
+            if (m_EditorContainer == null || m_ResultView == null || m_HeaderElement == null)
                 return;
 
             // To avoid the 2 scrollbars situation, we resize the result view according to the size available in the scrollview.
-            m_ResultView.style.height = m_InspectorScrollView.worldBound.yMax - m_HeaderElement.worldBound.yMax;
+            var newHeight = Mathf.Max(m_EditorContainer.worldBound.yMax - m_HeaderElement.worldBound.yMax, 100);
+            if (m_ResultView.style.height != newHeight)
+                m_ResultView.style.height = newHeight;
         }
 
-        public override bool HasPreviewGUI() => true;
+        public override bool HasPreviewGUI() => m_HasPreview;
 
         public override void DrawPreview(Rect previewArea)
         {

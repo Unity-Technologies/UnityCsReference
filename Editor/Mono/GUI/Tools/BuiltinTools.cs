@@ -44,7 +44,7 @@ namespace UnityEditor
             if (!view || !Selection.activeTransform || Tools.s_Hidden)
                 return;
 
-            if (!StageUtility.IsGameObjectRenderedByCameraAndPartOfEditableScene(Selection.activeTransform.gameObject, Camera.current))
+            if (StageUtility.IsGizmoCulledBySceneCullingMasksOrFocusedScene(Selection.activeTransform.gameObject, Camera.current))
                 return;
 
             GUIContent disabledLabel;

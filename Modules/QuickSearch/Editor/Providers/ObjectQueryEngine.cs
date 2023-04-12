@@ -91,6 +91,22 @@ namespace UnityEditor.Search.Providers
             return m_GODS.Remove(instanceId);
         }
 
+        public bool InvalidateObjectAndRefs(int instanceId)
+        {
+            // Invalidate all refs because depending on the topology changed it becomes costly and
+            // difficult to compute what needs to be updated. Example of Topology changed:
+            // - Reparent NodeA: invalidate every node referencing nodeA
+            // - Reparent NodeA which is the parent of a whole hierarchy: invalidate every node referencing nodeA AND any of
+            //   the moved children since their TransformPath has changed as well
+
+            // TODO: Should we store scene dependency as GlobalObjectId in the query instead of path?
+            foreach (var god in m_GODS.Values)
+            {
+                god.refs = null;
+            }
+            return m_GODS.Remove(instanceId);
+        }
+
         public ObjectQueryEngine()
             : this(new T[0])
         {
@@ -463,7 +479,13 @@ namespace UnityEditor.Search.Providers
             if (god.refs.Count == 0)
                 return false;
 
-            if (Utils.TryParse(value, out int instanceId))
+            // Account for legacy ref:<InstanceID>: query that can be emitted by the various Find Reference in Scene menu items.
+            var potentialId = value;
+            if (value.EndsWith(":"))
+            {
+                potentialId = value.TrimEnd(':');
+            }
+            if (Utils.TryParse(potentialId, out int instanceId))
                 return god.refs.Contains(instanceId);
 
             return god.refs.Contains(value.ToLowerInvariant().GetHashCode());

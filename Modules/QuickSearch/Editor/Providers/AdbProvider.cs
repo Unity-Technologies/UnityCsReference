@@ -26,6 +26,7 @@ namespace UnityEditor.Search.Providers
                 SearchUtility.ParseSearchString(searchQuery, searchFilter);
             if (filterType != null && searchFilter.classNames.Length == 0)
                 searchFilter.classNames = new[] { filterType.Name };
+            searchFilter.filterByTypeIntersection = true;
             return EnumeratePaths(searchFilter);
         }
 
@@ -53,7 +54,10 @@ namespace UnityEditor.Search.Providers
             if (context.filterType == null && context.empty)
                 return Enumerable.Empty<string>();
             if (context.userData is SearchFilter legacySearchFilter)
+            {
+                legacySearchFilter.filterByTypeIntersection = true;
                 return EnumeratePaths(legacySearchFilter);
+            }
             return EnumeratePaths(context.searchQuery, context.filterType, context.options);
         }
 

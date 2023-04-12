@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -76,15 +77,15 @@ namespace UnityEditor
                         continue;
                     }
 
-                    List<Type> types;
-
-                    if (!previewableTypes.TryGetValue(previewAttr.m_Type, out types))
+                    foreach (var customPreviewType in new[] { previewAttr.m_Type }.Concat(TypeCache.GetTypesDerivedFrom(previewAttr.m_Type)))
                     {
-                        types = new List<Type>();
-                        previewableTypes.Add(previewAttr.m_Type, types);
+                        if (!previewableTypes.TryGetValue(customPreviewType, out var types))
+                        {
+                            types = new List<Type>();
+                            previewableTypes.Add(customPreviewType, types);
+                        }
+                        types.Add(type);
                     }
-
-                    types.Add(type);
                 }
             }
         }
