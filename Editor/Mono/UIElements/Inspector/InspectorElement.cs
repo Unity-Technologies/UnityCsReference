@@ -3,13 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
-using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 
 namespace UnityEditor.UIElements
 {
@@ -22,13 +20,33 @@ namespace UnityEditor.UIElements
     public class InspectorElement : BindableElement
     {
         /// <summary>
+        /// The framework that should be used to build and run the UI. This is only used for default inspectors (i.e. editors of type <see cref="GenericInspector"/>)
+        /// </summary>
+        internal enum DefaultInspectorFramework
+        {
+            /// <summary>
+            /// UIToolkit should be used to generate property fields for default inspectors.
+            /// </summary>
+            UIToolkit,
+
+            /// <summary>
+            /// IMGUI should be used to generate property fields for default inspectors. These will be placed inside of a <see cref="IMGUIContainer"/>.
+            /// </summary>
+            IMGUI
+        }
+
+        static readonly ProfilerMarker k_CreateInspectorElementFromSerializedObject = new ProfilerMarker("InspectorElement.CreateInspectorElementFromSerializedObject");
+
+        /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
         public static readonly string ussClassName = "unity-inspector-element";
+
         /// <summary>
         /// USS class name of custom inspector elements in elements of this type.
         /// </summary>
         public static readonly string customInspectorUssClassName = ussClassName + "__custom-inspector-container";
+
         /// <summary>
         /// USS class name of IMGUI containers in elements of this type.
         /// </summary>
@@ -38,6 +56,7 @@ namespace UnityEditor.UIElements
         /// USS class name of elements of this type, when they are displayed in IMGUI inspector mode.
         /// </summary>
         public static readonly string iMGUIInspectorVariantUssClassName = ussClassName + "--imgui";
+
         /// <summary>
         /// USS class name of elements of this type, when they are displayed in UIElements inspector mode.
         /// </summary>
@@ -47,31 +66,40 @@ namespace UnityEditor.UIElements
         /// USS class name of elements of this type, when no inspector is found.
         /// </summary>
         public static readonly string noInspectorFoundVariantUssClassName = ussClassName + "--no-inspector-found";
+
         /// <summary>
         /// USS class name of elements of this type, when they are displayed in UIElements custom mode.
         /// </summary>
         public static readonly string uIECustomVariantUssClassName = ussClassName + "--uie-custom";
+
         /// <summary>
         /// USS class name of elements of this type, when they are displayed in IMGUI custom mode.
         /// </summary>
         public static readonly string iMGUICustomVariantUssClassName = ussClassName + "--imgui-custom";
+
         /// <summary>
         /// USS class name of elements of this type, when they are displayed in IMGUI default mode.
         /// </summary>
         public static readonly string iMGUIDefaultVariantUssClassName = ussClassName + "--imgui-default";
+
         /// <summary>
         /// USS class name of elements of this type, when they are displayed in UIElements default mode.
         /// </summary>
         public static readonly string uIEDefaultVariantUssClassName = ussClassName + "--uie-default";
+
         /// <summary>
         /// USS class name of elements of this type, when they are displayed in debug USS mode.
         /// </summary>
         public static readonly string debugVariantUssClassName = ussClassName + "--debug";
+
         /// <summary>
         /// USS class name of elements of this type, when they are displayed in debug internal mode.
         /// </summary>
         public static readonly string debugInternalVariantUssClassName = ussClassName + "--debug-internal";
 
+        /// <summary>
+        /// USS class name of elements of this type, when they are displayed without a missing script type.
+        /// </summary>
         internal static readonly string noScriptErrorContainerName = "unity-inspector-no-script-error-container";
 
         internal static bool disabledThrottling { get; set; } = false;
@@ -95,140 +123,211 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [Flags]
-        internal enum Mode
+        /// <summary>
+        /// Gets the default backend to use based on the current editor settings.
+        /// </summary>
+        /// <returns>The default backend type to use.</returns>
+        static DefaultInspectorFramework GetDefaultInspectorFramework() => EditorSettings.inspectorUseIMGUIDefaultInspector ? DefaultInspectorFramework.IMGUI : DefaultInspectorFramework.UIToolkit;
+
+        /// <summary>
+        /// The editor this element is inspecting.
+        /// <remarks>
+        /// An <see cref="InspectorElement"/> must ALWAYS be backed by an <see cref="Editor"/>. If one does not exist the inspector will create and manage one.
+        /// </remarks>
+        /// </summary>
+        Editor m_Editor;
+
+        /// <summary>
+        /// Flag indicating if the InspectorElement is managing it's own editor instance.
+        /// </summary>
+        bool m_OwnsEditor;
+
+        /// <summary>
+        /// The currently bound serialized object.
+        /// </summary>
+        SerializedObject m_BoundObject;
+
+        /// <summary>
+        /// The currently bound object type, this can be used as an optional optimization to avoid rebuilding the UI if the type doesn't change.
+        /// </summary>
+        Type m_BoundObjectType;
+
+        /// <summary>
+        /// The root element of this inspector. This can either be a full visual hierarchy or an IMGUIContainer.
+        /// </summary>
+        VisualElement m_InspectorElement;
+
+        /// <summary>
+        /// The default framework to use for generic inspectors.
+        /// </summary>
+        DefaultInspectorFramework m_DefaultInspectorFramework;
+
+        /// <summary>
+        /// The cached tracker name.
+        /// </summary>
+        string m_TrackerName;
+
+        bool m_IgnoreOnInspectorGUIErrors;
+        bool m_IsOpenForEdit;
+        bool m_InvalidateGUIBlockCache = true;
+        bool m_Rebind;
+
+        /// <summary>
+        /// Gets or sets the editor backing this inspector element.
+        /// </summary>
+        internal Editor editor => m_Editor;
+
+        /// <summary>
+        /// Returns true if the inspector element owns and manages it's own editor instance.
+        /// </summary>
+        internal bool ownsEditor => m_OwnsEditor;
+
+        /// <summary>
+        /// Returns the current tracker name for this element. This is used for editor performance tracking.
+        /// </summary>
+        internal string trackerName => m_TrackerName ??= GetInspectorTrackerName(this);
+
+        /// <summary>
+        /// The currently bound object.
+        /// </summary>
+        internal SerializedObject boundObject => m_BoundObject;
+
+        /// <summary>
+        /// Visual element reference for prefab override bar.
+        /// </summary>
+        internal VisualElement prefabOverrideBlueBarsContainer { get; private set; }
+
+        /// <summary>
+        /// Visual element reference for live property bar.
+        /// </summary>
+        internal VisualElement livePropertyYellowBarsContainer { get; private set; }
+
+        /// <summary>
+        /// Gets or sets the default inspector framework to use for this inspector. This will take affect during the next bind.
+        /// </summary>
+        internal DefaultInspectorFramework defaultInspectorFramework
         {
-            UIECustom = 1 << 0,
-            IMGUICustom = 1 << 1,
-            IMGUIDefault = 1 << 2,
-            UIEDefault = 1 << 3,
-
-            DebugMod = 1 << 4,
-            DebugInternalMod = 1 << 5,
-
-            Normal = UIECustom | IMGUICustom | IMGUIDefault | UIEDefault,
-            Default = IMGUIDefault | UIEDefault,
-            Custom = UIECustom | IMGUICustom,
-            IMGUI = IMGUICustom | IMGUIDefault,
-            UIE = UIECustom | UIEDefault,
-
-            Debug = Default | DebugMod,
-            DebugInternal = Default | DebugInternalMod
-        }
-
-        internal Mode mode { get; private set; }
-
-        internal Editor editor
-        {
-            get { return m_Editor; }
-            private set
+            get => m_DefaultInspectorFramework;
+            set
             {
-                if (m_Editor != value)
-                {
-                    DestroyOwnedEditor();
-                    m_Editor = value;
-                    ownsEditor = false;
-                }
+                m_Rebind = true;
+                m_DefaultInspectorFramework = value;
             }
         }
 
-        private string m_TrackerName;
-        internal string trackerName => m_TrackerName ?? (m_TrackerName = GetInspectorTrackerName(this));
+        /// <summary>
+        /// Returns the editor performance tracker name for this inspector element.
+        /// </summary>
+        /// <param name="element">The element to generate a name for.</param>
+        /// <returns>The generated performance tracker name.</returns>
+        internal static string GetInspectorTrackerName(VisualElement element)
+        {
+            var editorElementParent = element.parent as EditorElement;
 
-        internal bool ownsEditor { get; private set; } = false;
-
-        internal SerializedObject boundObject { get; private set; }
-
-        internal VisualElement prefabOverrideBlueBarsContainer { get; private set; }
-        internal VisualElement livePropertyYellowBarsContainer { get; private set; }
-
-        private bool m_IgnoreOnInspectorGUIErrors;
-
-        static readonly ProfilerMarker k_Reset = new ProfilerMarker("InspectorElement.Reset");
-        static readonly ProfilerMarker k_CreateInspectorGUI = new ProfilerMarker("InspectorElement.CreateInspectorGUI");
+            return editorElementParent == null
+                ? $"Editor.Unknown.OnInspectorGUI"
+                : $"Editor.{editorElementParent.name}.OnInspectorGUI";
+        }
 
         /// <summary>
-        /// InspectorElement constructor.
+        /// Constructs a <see cref="SerializedObject"/> instance for a given target.
+        /// </summary>
+        static SerializedObject CreateSerializedObjectForTarget(Object target)
+        {
+            if (target == null)
+            {
+                // ReSharper disable once ExpressionIsAlwaysNull
+                // Check if this is a 'fake null' object (i.e. equals operator reports null but the object still exists)
+                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(target))
+                    return null;
+            }
+
+            return new SerializedObject(target);
+        }
+
+        /// <summary>
+        /// Initialized a new instance of <see cref="InspectorElement"/>.
         /// </summary>
         public InspectorElement() : this(null as Object) {}
 
         /// <summary>
-        /// InspectorElement constructor.
+        /// Initialized a new instance of <see cref="InspectorElement"/> for the specified <see cref="Object"/>.
         /// </summary>
-        /// <param name="obj">Create a SerializedObject from given obj and automatically Bind() to it.</param>
-        public InspectorElement(Object obj) : this(obj, Mode.Normal) {}
-
-        internal InspectorElement(Object obj, Mode mode)
-        {
-            m_IgnoreOnInspectorGUIErrors = false;
-
-            pickingMode = PickingMode.Ignore;
-            AddToClassList(ussClassName);
-
-            this.mode = mode;
-            if (obj == null)
-            {
-                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(obj))
-                {
-                    return;
-                }
-            }
-
-            this.Bind(new SerializedObject(obj));
-        }
+        /// <param name="obj">The object to bind to.</param>
+        public InspectorElement(Object obj) : this(CreateSerializedObjectForTarget(obj), GetDefaultInspectorFramework()) {}
 
         /// <summary>
-        /// InspectorElement constructor.
+        /// Initialized a new instance of <see cref="InspectorElement"/> for the specified <see cref="SerializedObject"/>.
         /// </summary>
-        /// <param name="obj">Create a SerializedObject from given obj and automatically Bind() to it.</param>
-        public InspectorElement(SerializedObject obj) : this(obj, Mode.Normal) {}
+        /// <param name="obj">The object to bind to.</param>
+        public InspectorElement(SerializedObject obj) : this(obj, GetDefaultInspectorFramework()) {}
 
-        internal InspectorElement(SerializedObject obj, Mode mode)
+        /// <summary>
+        /// Initialized a new instance of <see cref="InspectorElement"/> for the specified <see cref="Editor"/>.
+        /// </summary>
+        /// <param name="editor">The editor to bind to.</param>
+        public InspectorElement(Editor editor) : this(editor, GetDefaultInspectorFramework()) {}
+
+        internal InspectorElement(Object obj, DefaultInspectorFramework defaultInspectorFramework) : this(new SerializedObject(obj), null, defaultInspectorFramework) { }
+        internal InspectorElement(SerializedObject serializedObject, DefaultInspectorFramework defaultInspectorFramework) : this(serializedObject, null, defaultInspectorFramework) {}
+        internal InspectorElement(Editor editor, DefaultInspectorFramework defaultInspectorFramework) : this(editor.serializedObject, editor, defaultInspectorFramework) {}
+
+        InspectorElement(SerializedObject obj, Editor editor, DefaultInspectorFramework defaultInspectorFramework)
         {
             pickingMode = PickingMode.Ignore;
             AddToClassList(ussClassName);
 
-            this.mode = mode;
-            if (obj.targetObject == null)
+            // Register ui callbacks
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+            prefabOverrideBlueBarsContainer = new VisualElement
             {
-                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(obj.targetObject))
-                {
+                name = BindingExtensions.prefabOverrideBarContainerName,
+                style = { position = Position.Absolute }
+            };
+
+            livePropertyYellowBarsContainer = new VisualElement
+            {
+                name = BindingExtensions.livePropertyBarContainerName,
+                style = { position = Position.Absolute }
+            };
+
+            Add(prefabOverrideBlueBarsContainer);
+            Add(livePropertyYellowBarsContainer);
+
+            m_DefaultInspectorFramework = defaultInspectorFramework;
+
+            // Find or construct an editor for this object.
+            if (editor == null)
+            {
+                if (obj == null)
                     return;
-                }
+
+                m_Editor = Editor.CreateEditor(obj.targetObject);
+                m_OwnsEditor = true;
+            }
+            else
+            {
+                m_Editor = editor;
+
+                // If an editor was provided but the targets are not set.
+                // This should never happen in normal operation since all multi argument constructors are internal/private.
+                if (m_Editor.targets.Length == 0)
+                    return;
             }
 
+            // We have a valid target, initiate binding.
             this.Bind(obj);
         }
 
-        /// <summary>
-        /// InspectorElement constructor.
-        /// </summary>
-        public InspectorElement(Editor editor) : this(editor, Mode.Normal) {}
-
-        internal InspectorElement(Editor editor, Mode mode)
+        void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            pickingMode = PickingMode.Ignore;
-            AddToClassList(ussClassName);
-
-            this.mode = mode;
-
-            this.editor = editor;
-
-            if (editor.targets.Length == 0)
+            if (boundObject != null && m_Editor == null)
             {
-                return;
+                m_Rebind = true;
+                this.Bind(boundObject);
             }
-
-            var targetObject = editor.targets[0];
-            if (targetObject == null)
-            {
-                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(targetObject))
-                {
-                    return;
-                }
-            }
-
-            this.Bind(editor.serializedObject);
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -236,128 +335,18 @@ namespace UnityEditor.UIElements
             DestroyOwnedEditor();
         }
 
-        internal void AssignExistingEditor(Editor value)
-        {
-            if (m_Editor != value)
-            {
-                editor = value;
-                PartialReset(m_Editor.serializedObject);
-            }
-        }
-
+        /// <summary>
+        /// Destroys and cleans up the editor instance managed by this inspector element. If any.
+        /// </summary>
         void DestroyOwnedEditor()
         {
-            if (ownsEditor && editor != null)
-            {
-                Object.DestroyImmediate(editor);
-                editor = null;
-                ownsEditor = false;
-                RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            }
-
-            UnregisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-        }
-
-        void OnAttachToPanel(AttachToPanelEvent evt)
-        {
-            Reset(boundObject);
-            UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-        }
-
-        internal static Mode GetModeFromInspectorMode(InspectorMode mode)
-        {
-            switch (mode)
-            {
-                case InspectorMode.Debug:
-                    return Mode.Debug;
-                case InspectorMode.DebugInternal:
-                    return Mode.DebugInternal;
-                default:
-                    return Mode.Normal;
-            }
-        }
-
-        private void Reset(SerializedObject bindObject)
-        {
-            k_Reset.Begin();
-
-            Clear();
-
-            prefabOverrideBlueBarsContainer = new VisualElement();
-            prefabOverrideBlueBarsContainer.name = BindingExtensions.prefabOverrideBarContainerName;
-            prefabOverrideBlueBarsContainer.style.position = Position.Absolute;
-            Add(prefabOverrideBlueBarsContainer);
-
-            livePropertyYellowBarsContainer = new VisualElement();
-            livePropertyYellowBarsContainer.name = BindingExtensions.livePropertyBarContainerName;
-            livePropertyYellowBarsContainer.style.position = Position.Absolute;
-            Add(livePropertyYellowBarsContainer);
-
-            RemoveFromClassList(iMGUIInspectorVariantUssClassName);
-            RemoveFromClassList(uIEInspectorVariantUssClassName);
-            RemoveFromClassList(noInspectorFoundVariantUssClassName);
-            RemoveFromClassList(uIECustomVariantUssClassName);
-            RemoveFromClassList(iMGUICustomVariantUssClassName);
-            RemoveFromClassList(iMGUIDefaultVariantUssClassName);
-            RemoveFromClassList(uIEDefaultVariantUssClassName);
-            RemoveFromClassList(debugVariantUssClassName);
-            RemoveFromClassList(debugInternalVariantUssClassName);
-
-            if (bindObject == null)
+            if (!m_OwnsEditor || m_Editor == null)
                 return;
 
-            var editor = GetOrCreateEditor(bindObject);
-            if (editor == null)
-            {
-                return;
-            }
+            Object.DestroyImmediate(m_Editor);
 
-            boundObject = bindObject;
-
-            CreateInspectorGUI(false);
-
-            k_Reset.End();
-        }
-
-        private void PartialReset(SerializedObject bindObject)
-        {
-            boundObject = bindObject;
-            if (boundObject == null)
-            {
-                Reset(null);
-                return;
-            }
-
-            CreateInspectorGUI(true);
-        }
-
-        void CreateInspectorGUI(bool updateBinding)
-        {
-            k_CreateInspectorGUI.Begin();
-
-            Clear();
-
-            // Add prefabOverrideBlueBarsContainer again.
-            if (prefabOverrideBlueBarsContainer != null)
-            {
-                Add(prefabOverrideBlueBarsContainer);
-            }
-
-            // Add livePropertyYellowBarsContainer again.
-            if (livePropertyYellowBarsContainer != null)
-            {
-                Add(livePropertyYellowBarsContainer);
-            }
-
-            var element = CreateInspectorElementFromEditor(editor, true) ?? CreateDefaultInspector(boundObject);
-
-            if (element != null && element != this)
-                hierarchy.Add(element);
-
-            if (updateBinding)
-                element?.Bind(boundObject);
-
-            k_CreateInspectorGUI.End();
+            m_Editor = null;
+            m_OwnsEditor = false;
         }
 
         [EventInterest(typeof(SerializedObjectBindEvent))]
@@ -373,56 +362,149 @@ namespace UnityEditor.UIElements
             // so we need to ignore SerializedObjectBindEvent that aren't meant for them.
             // We use the DataSource property to store a reference to the target object that is being bound
             // so we can ignore the binding process that targets a parent inspector.
-            var dataSource = this.GetProperty(BindingExtensions.s_DataSourceProperty);
+            var dataSource = GetProperty(BindingExtensions.s_DataSourceProperty);
             if (dataSource != null && dataSource != bindEvent.bindObject)
             {
                 evt.StopPropagation();
                 return;
             }
 
-            Reset(bindEvent.bindObject);
+            // Determine if we need to rebuild. This should only be done when our serialized object target changes or something forces us to rebuild (i.e. backend changing).
+            var shouldRebuildElements = m_Rebind || m_BoundObject != bindEvent.bindObject;
+
+            if (shouldRebuildElements)
+            {
+                m_Rebind = false;
+                CreateInspectorElementFromSerializedObject(bindEvent.bindObject);
+            }
         }
 
-        private Editor GetOrCreateEditor(SerializedObject serializedObject)
+        /// <summary>
+        /// Assigns the given editor to this inspector element instance. This will trigger a re-bind.
+        /// </summary>
+        /// <param name="value">The editor to assign.</param>
+        internal void SetEditor(Editor value)
         {
-            Object target = null;
-            if (serializedObject != null && serializedObject.m_NativeObjectPtr != IntPtr.Zero) {
-                target = serializedObject.targetObject;
+            // NOTE: We need a special check here for undo/redo cases when the script is changing.
+            var targetTypeMatches = value.target && value.target.GetType() == m_BoundObjectType;
+            var editorInstanceMatches = m_Editor == value;
+
+            if (targetTypeMatches && editorInstanceMatches)
+                return;
+
+            DestroyOwnedEditor();
+
+            m_Editor = value;
+            m_Rebind = true;
+
+            this.Bind(m_Editor.serializedObject);
+        }
+
+        void ClearInspectorElement()
+        {
+            // Clear any previously generated element.
+            m_InspectorElement?.RemoveFromHierarchy();
+
+            // Clear all top level styles
+            RemoveFromClassList(iMGUIInspectorVariantUssClassName);
+            RemoveFromClassList(uIEInspectorVariantUssClassName);
+            RemoveFromClassList(noInspectorFoundVariantUssClassName);
+            RemoveFromClassList(uIECustomVariantUssClassName);
+            RemoveFromClassList(iMGUICustomVariantUssClassName);
+            RemoveFromClassList(iMGUIDefaultVariantUssClassName);
+            RemoveFromClassList(uIEDefaultVariantUssClassName);
+            RemoveFromClassList(debugVariantUssClassName);
+            RemoveFromClassList(debugInternalVariantUssClassName);
+        }
+
+        void CreateInspectorElementFromSerializedObject(SerializedObject bindObject)
+        {
+            k_CreateInspectorElementFromSerializedObject.Begin();
+
+            // Unpack the given serialized object. We want to cache the target type to facilitate re-using UI later down the pipeline.
+            var targetObject = bindObject?.targetObject;
+            var targetObjectType = targetObject != null ? targetObject.GetType() : null;
+
+            var bindObjectTypeMatches = m_BoundObjectType == targetObjectType;
+
+            m_BoundObject = bindObject;
+            m_BoundObjectType = targetObjectType;
+
+            if (m_BoundObject == null)
+            {
+                ClearInspectorElement();
+                return;
             }
 
+            m_Editor = GetOrCreateEditor(bindObject);
 
-            if (editor != null)
+            if (m_Editor != null)
             {
-                if (editor.target == target || editor.serializedObject == serializedObject)
-                    return editor;
-
-                if (ownsEditor)
+                if (m_Editor is GenericInspector)
                 {
-                    DestroyOwnedEditor();
-                }
-            }
-
-            foreach (var inspectorWindow in InspectorWindow.GetInspectors())
-            {
-                foreach (var trackerEditor in inspectorWindow.tracker.activeEditors)
-                {
-                    if (trackerEditor.target == target || trackerEditor.serializedObject == serializedObject)
+                    // Only re-build default inspectors when the type changes or when using the IMGUI backend.
+                    // NOTE: When using IMGUI the delegate captures locals so we must rebuild it.
+                    if (!bindObjectTypeMatches || m_InspectorElement == null || m_DefaultInspectorFramework == DefaultInspectorFramework.IMGUI)
                     {
-                        return editor = trackerEditor;
+                        ClearInspectorElement();
+
+                        // When looking at a generic inspector we choose the backend based on a user provided default.
+                        switch (m_DefaultInspectorFramework)
+                        {
+                            case DefaultInspectorFramework.UIToolkit:
+                                m_InspectorElement = CreateInspectorElementUsingUIToolkit(m_Editor);
+                                break;
+                            case DefaultInspectorFramework.IMGUI:
+                                m_InspectorElement = CreateInspectorElementUsingIMGUI(m_Editor);
+                                break;
+                        }
                     }
                 }
+                else
+                {
+                    // Always clear and re-build when dealing with custom inspectors. User code is assumed to take a reference to the ScriptableObject in `CreateInspectorGUI()`.
+                    ClearInspectorElement();
+
+                    // This is a custom editor type. Try to use UI toolkit first with an IMGUI fallback.
+                    m_InspectorElement = CreateInspectorElementUsingUIToolkit(m_Editor) ?? CreateInspectorElementUsingIMGUI(m_Editor);
+                    m_InspectorElement.AddToClassList(customInspectorUssClassName);
+                }
+
+                // Re-add the generated element if it was re-created.
+                if (m_InspectorElement != null && m_InspectorElement.parent != this)
+                    hierarchy.Add(m_InspectorElement);
             }
 
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            k_CreateInspectorElementFromSerializedObject.End();
+        }
 
-            if (serializedObject != null && serializedObject.m_NativeObjectPtr != IntPtr.Zero) {
+        /// <summary>
+        /// This method handles all the internals of getting a <see cref="Editor"/> object for the given serialized object.
+        /// </summary>
+        /// <param name="serializedObject">The serialized object to get an editor for.</param>
+        /// <returns>The found or created instance.</returns>
+        Editor GetOrCreateEditor(SerializedObject serializedObject)
+        {
+            Object target = null;
+
+            if (serializedObject != null && serializedObject.m_NativeObjectPtr != IntPtr.Zero)
                 target = serializedObject.targetObject;
-            }
-            var ed = Editor.CreateEditor(target);
-            editor = ed;
-            ownsEditor = true;
 
-            return ed;
+            if (m_Editor != null)
+            {
+                // First try to re-use the instance we have on hand. If this matches our given object we can simply re-use it.
+                if (m_Editor.target == target || m_Editor.serializedObject == serializedObject)
+                    return m_Editor;
+
+                // We need to generate a new editor instance, first cleanup any owned editor resources we have.
+                DestroyOwnedEditor();
+            }
+
+            // Fallback to creating our own editor instance for the given object.
+            m_Editor = Editor.CreateEditor(target);
+            m_OwnsEditor = true;
+
+            return m_Editor;
         }
 
         /// <summary>
@@ -443,12 +525,17 @@ namespace UnityEditor.UIElements
             {
                 do
                 {
-                    var field = new PropertyField(property);
-                    field.name = "PropertyField:" + property.propertyPath;
+                    var field = new PropertyField(property)
+                    {
+                        name = "PropertyField:" + property.propertyPath
+                    };
 
                     if (property.propertyPath == "m_Script")
                     {
-                        if (serializedObject.targetObject != null || property.objectReferenceValue != null || isPartOfPrefabInstance)
+                        // Allow script re-assignment in debug mode.
+                        var isDebugMode = editor != null && (editor.inspectorMode == InspectorMode.Debug || editor.inspectorMode == InspectorMode.DebugInternal);
+
+                        if (!isDebugMode && (serializedObject.targetObject != null || property.objectReferenceValue != null || isPartOfPrefabInstance))
                             field.SetEnabled(false);
                     }
 
@@ -458,44 +545,220 @@ namespace UnityEditor.UIElements
             }
 
             if (serializedObject.targetObject == null)
-                AddMissingScriptLabel(container, serializedObject, isPartOfPrefabInstance);
+            {
+                var scriptProperty = serializedObject.FindProperty("m_Script");
+
+                if (scriptProperty != null)
+                {
+                    var noScriptErrorContainer = new IMGUIContainer(() =>
+                    {
+                        if (scriptProperty.isValid)
+                            GenericInspector.ShowScriptNotLoadedWarning(scriptProperty, isPartOfPrefabInstance);
+                    });
+                    noScriptErrorContainer.name = noScriptErrorContainerName;
+                    container.Add(noScriptErrorContainer);
+                }
+            }
         }
 
-        private VisualElement CreateDefaultInspector(SerializedObject serializedObject)
+        VisualElement CreateInspectorElementUsingUIToolkit(Editor targetEditor)
         {
-            if (serializedObject == null)
-                return null;
+            var element = targetEditor.CreateInspectorGUI();
 
-            if (GenericInspector.MissingSerializeReference(editor.target))
+            if (element != null)
             {
-                Add(new HelpBox(GenericInspector.GetMissingSerializeRefererenceMessageContainer(), HelpBoxMessageType.Warning));
+                // Decorate the InspectorElement based on the editor type (i.e. custom vs generic).
+                if (targetEditor is GenericInspector)
+                {
+                    AddToClassList(uIEDefaultVariantUssClassName);
+                    AddToClassList(uIEInspectorVariantUssClassName);
+
+                    switch (targetEditor.inspectorMode)
+                    {
+                        case InspectorMode.Debug:
+                            AddToClassList(debugVariantUssClassName);
+                            break;
+                        case InspectorMode.DebugInternal:
+                            AddToClassList(debugInternalVariantUssClassName);
+                            break;
+                    }
+                }
+                else
+                {
+                    AddToClassList(uIECustomVariantUssClassName);
+
+                    if (editor.UseDefaultMargins())
+                        AddToClassList(uIEInspectorVariantUssClassName);
+                }
             }
 
-            FillDefaultInspector(this, serializedObject, editor);
-
-            if ((mode & Mode.DebugMod) > 0)
-                AddToClassList(debugVariantUssClassName);
-            else if ((mode & Mode.DebugInternalMod) > 0)
-                AddToClassList(debugInternalVariantUssClassName);
-
-            AddToClassList(uIEDefaultVariantUssClassName);
-            AddToClassList(uIEInspectorVariantUssClassName);
-
-            return this;
+            return element;
         }
 
-        static bool AddMissingScriptLabel(VisualElement container, SerializedObject serializedObject, bool isPartOfPrefabInstance)
+        VisualElement CreateInspectorElementUsingIMGUI(Editor targetEditor)
         {
-            SerializedProperty scriptProperty = serializedObject.FindProperty("m_Script");
-            if (scriptProperty != null)
+            if (targetEditor is GenericInspector)
             {
-                var noScriptErrorContainer = new IMGUIContainer(() => GenericInspector.ShowScriptNotLoadedWarning(scriptProperty, isPartOfPrefabInstance));
-                noScriptErrorContainer.name = noScriptErrorContainerName;
-                container.Add(noScriptErrorContainer);
-                return true;
+                AddToClassList(iMGUIDefaultVariantUssClassName);
+
+                switch (targetEditor.inspectorMode)
+                {
+                    case InspectorMode.Debug:
+                        AddToClassList(debugVariantUssClassName);
+                        break;
+                    case InspectorMode.DebugInternal:
+                        AddToClassList(debugInternalVariantUssClassName);
+                        break;
+                }
+            }
+            else
+            {
+                AddToClassList(iMGUICustomVariantUssClassName);
             }
 
-            return false;
+            // Always try to re-use the imgui container if possible.
+            var inspector = m_InspectorElement as IMGUIContainer ?? new IMGUIContainer();
+
+            m_IgnoreOnInspectorGUIErrors = false;
+            inspector.onGUIHandler = () =>
+            {
+                // It's possible to run 2-3 frames after the tracker of this inspector window has
+                // been recreated, and with it the Editor and its SerializedObject. One example of
+                // when this happens is when the Preview window is detached from a *second* instance
+                // of an InspectorWindow and re-attached.
+                //
+                // This is only a problem for the *second* (or third, forth, etc) instance of
+                // the InspectorWindow because only the first instance can use the
+                // ActiveEditorTracker.sharedTracker in InspectorWindow.CreateTracker(). The
+                // other instances have to create a new tracker...each time.
+                //
+                // Not an ideal solution, but basically we temporarily hold the printing to console
+                // for errors for which GUIUtility.ShouldRethrowException(e) returns false.
+                // The errors that may occur during this brief "bad state" are SerializedProperty
+                // errors. If the custom Editor created and remembered references to some
+                // SerializedProperties during its OnEnable(), those references will be invalid
+                // when the tracker is refreshed, until this GUIHandler is reassigned. This fix
+                // just ignores those errors.
+                //
+                // We don't simply early return here because that can break some tests that
+                // rely heavily on yields and timing of UI redraws. Yes..
+                //
+                // case 1119612
+                if (targetEditor.m_SerializedObject == null)
+                {
+                    targetEditor.Repaint();
+                    m_IgnoreOnInspectorGUIErrors = true;
+                }
+
+                if ((targetEditor.target == null && !GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(targetEditor.target)) ||
+                    !targetEditor.serializedObject.isValid)
+                {
+                    return;
+                }
+
+                EditorGUIUtility.ResetGUIState();
+                using (new EditorGUI.DisabledScope(!targetEditor.IsEnabled() || !enabledInHierarchy))
+                {
+                    //set the current PropertyHandlerCache to the current editor
+                    ScriptAttributeUtility.propertyHandlerCache = targetEditor.propertyHandlerCache;
+
+                    var originalViewWidth = EditorGUIUtility.currentViewWidth;
+                    var originalHierarchyMode = EditorGUIUtility.hierarchyMode;
+                    EditorGUIUtility.hierarchyMode = true;
+
+                    var originalWideMode = SetWideModeForWidth(inspector);
+
+                    GUIStyle editorWrapper = (targetEditor.UseDefaultMargins() && targetEditor.CanBeExpandedViaAFoldoutWithoutUpdate()
+                        ? EditorStyles.inspectorDefaultMargins
+                        : GUIStyle.none);
+                    try
+                    {
+                        GUI.changed = false;
+
+                        using (new InspectorWindowUtils.LayoutGroupChecker())
+                        {
+                            EditorGUILayout.BeginVertical(editorWrapper);
+                            {
+                                // we have no guarantees regarding what happens in the try/catch block below,
+                                // so we need to save state here and restore it afterwards,
+                                // the natural thing to do would be using SavedGUIState,
+                                // but it implicitly resets keyboards bindings and it breaks functionality.
+                                // We have identified issues with layout so we just save that for the time being.
+                                var layoutCacheState = GUILayoutUtility.current.State;
+                                try
+                                {
+                                    var rebuildOptimizedGUIBlocks = GetRebuildOptimizedGUIBlocks(targetEditor.target);
+                                    rebuildOptimizedGUIBlocks |= targetEditor.isInspectorDirty;
+
+                                    if (targetEditor.GetOptimizedGUIBlock(rebuildOptimizedGUIBlocks, visible, out var height))
+                                    {
+                                        var contentHeightRect = GUILayoutUtility.GetRect(0, visible ? height : 0);
+
+                                        // Layout events are ignored in the optimized code path
+                                        // The exception is when we are drawing a GenericInspector, they always use the optimized path and must therefore run at least one layout calculation in it
+                                        if (Event.current.type == EventType.Layout && !(targetEditor is GenericInspector))
+                                        {
+                                            return;
+                                        }
+
+                                        InspectorWindowUtils.DrawAddedComponentBackground(contentHeightRect, targetEditor.targets);
+
+                                        // Draw content
+                                        if (visible)
+                                        {
+                                            GUI.changed = false;
+                                            targetEditor.OnOptimizedInspectorGUI(contentHeightRect);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        InspectorWindowUtils.DrawAddedComponentBackground(contentRect, targetEditor.targets);
+                                        using (new EditorPerformanceTracker(trackerName))
+                                            targetEditor.OnInspectorGUI();
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    if (GUIUtility.ShouldRethrowException(e))
+                                    {
+                                        throw;
+                                    }
+
+                                    if (!m_IgnoreOnInspectorGUIErrors)
+                                        Debug.LogException(e);
+                                }
+                                finally
+                                {
+                                    GUILayoutUtility.current.CopyState(layoutCacheState);
+                                }
+                            }
+                            EditorGUILayout.EndVertical();
+                        }
+                    }
+                    finally
+                    {
+                        if (GUI.changed)
+                        {
+                            // This forces a re-layout of all imgui containers in this inspector window.
+                            // fixes part of case 1148706
+                            var element = inspector.GetFirstAncestorOfType<EditorElement>();
+                            if (element != null)
+                                EditorElement.InvalidateIMGUILayouts(element.parent);
+                        }
+                        EditorGUIUtility.wideMode = originalWideMode;
+                        EditorGUIUtility.hierarchyMode = originalHierarchyMode;
+                        EditorGUIUtility.currentViewWidth = originalViewWidth;
+                    }
+                }
+            };
+
+            inspector.style.overflow = Overflow.Visible;
+
+            inspector.AddToClassList(iMGUIContainerUssClassName);
+
+            AddToClassList(iMGUIInspectorVariantUssClassName);
+
+            return inspector;
         }
 
         internal static bool SetWideModeForWidth(VisualElement displayElement)
@@ -527,276 +790,7 @@ namespace UnityEditor.UIElements
             return previousWideMode;
         }
 
-        IMGUIContainer m_IMGUIContainer;
-
-        private VisualElement CreateIMGUIInspectorFromEditor(SerializedObject serializedObject, Editor editor,
-            bool reuseIMGUIContainer)
-        {
-            if ((mode & (Mode.IMGUICustom | Mode.IMGUIDefault)) == 0)
-                return null;
-
-            if ((mode & Mode.IMGUICustom) > 0 && (mode & Mode.IMGUIDefault) == 0 && editor is GenericInspector)
-                return null;
-
-            if ((mode & Mode.IMGUICustom) == 0 && (mode & Mode.IMGUIDefault) > 0 && !(editor is GenericInspector) && !(editor is AssetImporterEditor) && !(editor is GameObjectInspector))
-            {
-                editor = ScriptableObject.CreateInstance<GenericInspector>();
-                editor.hideFlags = HideFlags.HideAndDontSave;
-                editor.InternalSetTargets(new[] { serializedObject.targetObject });
-            }
-
-            if (editor is GenericInspector)
-            {
-                AddToClassList(iMGUIDefaultVariantUssClassName);
-                if ((mode & Mode.DebugMod) > 0)
-                {
-                    AddToClassList(debugVariantUssClassName);
-                    editor.inspectorMode = InspectorMode.Debug;
-                }
-                else if ((mode & Mode.DebugInternalMod) > 0)
-                {
-                    AddToClassList(debugInternalVariantUssClassName);
-                    editor.inspectorMode = InspectorMode.DebugInternal;
-                }
-            }
-            else
-            {
-                AddToClassList(iMGUICustomVariantUssClassName);
-            }
-
-            IMGUIContainer inspector;
-            // Reusing the existing IMGUIContainer allows us to re-use the existing gui state, when we are drawing the same inspector this will let us keep the same control ids
-            if (reuseIMGUIContainer && m_IMGUIContainer != null)
-            {
-                inspector = m_IMGUIContainer;
-            }
-            else
-            {
-                inspector = new IMGUIContainer();
-            }
-
-            m_IgnoreOnInspectorGUIErrors = false;
-            inspector.onGUIHandler = () =>
-            {
-                // It's possible to run 2-3 frames after the tracker of this inspector window has
-                // been recreated, and with it the Editor and its SerializedObject. One example of
-                // when this happens is when the Preview window is detached from a *second* instance
-                // of an InspectorWindow and re-attached.
-                //
-                // This is only a problem for the *second* (or third, forth, etc) instance of
-                // the InspectorWindow because only the first instance can use the
-                // ActiveEditorTracker.sharedTracker in InspectorWindow.CreateTracker(). The
-                // other instances have to create a new tracker...each time.
-                //
-                // Not an ideal solution, but basically we temporarily hold the printing to console
-                // for errors for which GUIUtility.ShouldRethrowException(e) returns false.
-                // The errors that may occur during this brief "bad state" are SerializedProperty
-                // errors. If the custom Editor created and remembered references to some
-                // SerializedProperties during its OnEnable(), those references will be invalid
-                // when the tracker is refreshed, until this GUIHandler is reassigned. This fix
-                // just ignores those errors.
-                //
-                // We don't simply early return here because that can break some tests that
-                // rely heavily on yields and timing of UI redraws. Yes..
-                //
-                // case 1119612
-                if (editor.m_SerializedObject == null)
-                {
-                    editor.Repaint();
-                    m_IgnoreOnInspectorGUIErrors = true;
-                }
-
-                if ((editor.target == null && !GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(editor.target)) ||
-                    !editor.serializedObject.isValid)
-                {
-                    return;
-                }
-
-                EditorGUIUtility.ResetGUIState();
-                using (new EditorGUI.DisabledScope(!editor.IsEnabled() || !enabledInHierarchy))
-                {
-                    var genericEditor = editor as GenericInspector;
-                    if (genericEditor != null)
-                    {
-                        switch (mode)
-                        {
-                            case Mode.Normal:
-                                genericEditor.inspectorMode = InspectorMode.Normal;
-                                break;
-                            case Mode.Default:
-                                genericEditor.inspectorMode = InspectorMode.Debug;
-                                break;
-                            case Mode.Custom:
-                                genericEditor.inspectorMode = InspectorMode.DebugInternal;
-                                break;
-                            case Mode.IMGUI:
-                                break;
-                        }
-                    }
-
-                    //set the current PropertyHandlerCache to the current editor
-                    ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
-
-                    var originalViewWidth = EditorGUIUtility.currentViewWidth;
-                    var originalHierarchyMode = EditorGUIUtility.hierarchyMode;
-                    EditorGUIUtility.hierarchyMode = true;
-
-                    var originalWideMode = SetWideModeForWidth(inspector);
-
-                    GUIStyle editorWrapper = (editor.UseDefaultMargins() && editor.CanBeExpandedViaAFoldoutWithoutUpdate()
-                        ? EditorStyles.inspectorDefaultMargins
-                        : GUIStyle.none);
-                    try
-                    {
-                        GUI.changed = false;
-
-                        using (new InspectorWindowUtils.LayoutGroupChecker())
-                        {
-                            EditorGUILayout.BeginVertical(editorWrapper);
-                            {
-                                // we have no guarantees regarding what happens in the try/catch block below,
-                                // so we need to save state here and restore it afterwards,
-                                // the natural thing to do would be using SavedGUIState,
-                                // but it implicitly resets keyboards bindings and it breaks functionality.
-                                // We have identified issues with layout so we just save that for the time being.
-                                var layoutCacheState = GUILayoutUtility.current.State;
-                                try
-                                {
-                                    var rebuildOptimizedGUIBlocks = GetRebuildOptimizedGUIBlocks(editor.target);
-                                    rebuildOptimizedGUIBlocks |= editor.isInspectorDirty;
-                                    float height;
-                                    if (editor.GetOptimizedGUIBlock(rebuildOptimizedGUIBlocks, visible, out height))
-                                    {
-                                        var contentRect = GUILayoutUtility.GetRect(0, visible ? height : 0);
-
-                                        // Layout events are ignored in the optimized code path
-                                        // The exception is when we are drawing a GenericInspector, they always use the optimized path and must therefore run at least one layout calculation in it
-                                        if (Event.current.type == EventType.Layout && !(editor is GenericInspector))
-                                        {
-                                            return;
-                                        }
-
-                                        InspectorWindowUtils.DrawAddedComponentBackground(contentRect, editor.targets);
-
-                                        // Draw content
-                                        if (visible)
-                                        {
-                                            GUI.changed = false;
-                                            editor.OnOptimizedInspectorGUI(contentRect);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        InspectorWindowUtils.DrawAddedComponentBackground(contentRect, editor.targets);
-                                        using (new EditorPerformanceTracker(trackerName))
-                                            editor.OnInspectorGUI();
-                                    }
-                                }
-                                catch (Exception e)
-                                {
-                                    if (GUIUtility.ShouldRethrowException(e))
-                                    {
-                                        throw;
-                                    }
-
-                                    if (!m_IgnoreOnInspectorGUIErrors)
-                                        Debug.LogException(e);
-                                }
-                                finally
-                                {
-                                    GUILayoutUtility.current.CopyState(layoutCacheState);
-                                }
-                            }
-                            EditorGUILayout.EndVertical();
-                        }
-                    }
-                    finally
-                    {
-                        if (GUI.changed)
-                        {
-                            // This forces a relayout of all imguicontainers in this inspector window.
-                            // fixes part of case 1148706
-                            var element = inspector.GetFirstAncestorOfType<EditorElement>();
-                            if (element != null)
-                                EditorElement.InvalidateIMGUILayouts(element.parent);
-                        }
-                        EditorGUIUtility.wideMode = originalWideMode;
-                        EditorGUIUtility.hierarchyMode = originalHierarchyMode;
-                        EditorGUIUtility.currentViewWidth = originalViewWidth;
-                    }
-                }
-            };
-
-            inspector.style.overflow = Overflow.Visible;
-            m_IMGUIContainer = inspector;
-
-            if (!(editor is GenericInspector))
-                inspector.AddToClassList(customInspectorUssClassName);
-
-            inspector.AddToClassList(iMGUIContainerUssClassName);
-
-            AddToClassList(iMGUIInspectorVariantUssClassName);
-
-            return inspector;
-        }
-
-        internal static string GetInspectorTrackerName(VisualElement el)
-        {
-            var editorElementParent = el.parent as EditorElement;
-            if (editorElementParent == null)
-                return $"Editor.Unknown.OnInspectorGUI";
-
-            return $"Editor.{editorElementParent.name}.OnInspectorGUI";
-        }
-
-        private VisualElement CreateInspectorElementFromEditor(Editor editor, bool reuseIMGUIContainer = false)
-        {
-            var serializedObject = editor.serializedObject;
-            var target = editor.targets[0];
-            if (target == null)
-            {
-                if (!GenericInspector.ObjectIsMonoBehaviourOrScriptableObjectWithoutScript(target))
-                {
-                    return null;
-                }
-            }
-
-            VisualElement inspectorElement = null;
-
-            if ((mode & Mode.UIECustom) > 0)
-            {
-                inspectorElement = editor.CreateInspectorGUI();
-
-                if (inspectorElement != null)
-                {
-                    AddToClassList(uIECustomVariantUssClassName);
-                    if (editor.UseDefaultMargins())
-                        AddToClassList(uIEInspectorVariantUssClassName);
-                    inspectorElement.AddToClassList(customInspectorUssClassName);
-                }
-            }
-
-            if (inspectorElement == null)
-                inspectorElement = CreateIMGUIInspectorFromEditor(serializedObject, editor, reuseIMGUIContainer);
-
-            if (inspectorElement == null && (mode & Mode.UIEDefault) > 0)
-                inspectorElement = CreateDefaultInspector(serializedObject);
-
-            if (inspectorElement == null)
-            {
-                AddToClassList(noInspectorFoundVariantUssClassName);
-                AddToClassList(uIEInspectorVariantUssClassName);
-                inspectorElement = new Label("No inspector found given the current Inspector.Mode.");
-            }
-
-            return inspectorElement;
-        }
-
-        bool m_IsOpenForEdit;
-        bool m_InvalidateGUIBlockCache = true;
-        Editor m_Editor;
-
-        private bool GetRebuildOptimizedGUIBlocks(Object inspectedObject)
+        bool GetRebuildOptimizedGUIBlocks(Object inspectedObject)
         {
             var rebuildOptimizedGUIBlocks = false;
 

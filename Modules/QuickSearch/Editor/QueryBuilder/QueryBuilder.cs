@@ -294,7 +294,7 @@ namespace UnityEditor.Search
                         break;
 
                     var wordBlock = newBlocks[w] as QueryWordBlock;
-                    if (!wordBlock.explicitQuotes && newBlocks.Remove(wordBlock))
+                    if (!wordBlock.explicitQuotes && !wordBlock.excluded && newBlocks.Remove(wordBlock))
                         wordText = (wordBlock.value + " " + wordText).Trim();
                 }
                 if (!string.IsNullOrEmpty(wordText))

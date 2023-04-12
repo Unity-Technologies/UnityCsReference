@@ -369,9 +369,29 @@ namespace UnityEditor.Search
             if (m_ViewModel != null)
             {
                 var providers = m_ViewModel.context.GetProviders();
-                var provider = providers.Count == 1 ? providers.FirstOrDefault() : SearchService.GetProvider(m_ViewModel.currentGroup);
-                if (provider?.tableConfig != null)
-                    return provider.tableConfig(context);
+                if (providers.Count == 1 || m_ViewModel.currentGroup != GroupedSearchList.allGroupId)
+                {
+                    var provider = providers.Count == 1 ? providers.FirstOrDefault() : SearchService.GetProvider(m_ViewModel.currentGroup);
+                    if (provider?.tableConfig != null)
+                        return provider.tableConfig(context);
+                }
+                else
+                {
+                    IEnumerable<SearchColumn> columns = null;
+                    foreach (var searchProvider in providers)
+                    {
+                        if (searchProvider?.tableConfig != null)
+                        {
+                            var tc = searchProvider.tableConfig(context);
+                            columns = columns == null ? tc.columns : columns.Intersect(tc.columns);
+                        }
+                    }
+
+                    if (columns != null && columns.Any())
+                    {
+                        return new SearchTable("Default", columns);
+                    }
+                }
             }
 
             return defaultConfig ?? SearchTable.CreateDefault();

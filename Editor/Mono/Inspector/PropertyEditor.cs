@@ -126,13 +126,14 @@ namespace UnityEditor
         protected bool m_HasPreview;
         protected HashSet<int> m_DrawnSelection = new HashSet<int>();
 
+        readonly List<Type> m_EditorTargetTypes = new List<Type>();
+
         List<DataMode> m_SupportedDataModes = new(4);
         static readonly List<DataMode> k_DisabledDataModes = new() {DataMode.Disabled};
 
         public GUIView parent => m_Parent;
         public HashSet<int> editorsWithImportedObjectLabel { get; } = new HashSet<int>();
         public EditorDragging editorDragging { get; }
-        internal int inspectorElementModeOverride { get; set; } = 0;
         public Editor lastInteractedEditor { get; set; }
         internal static PropertyEditor HoveredPropertyEditor { get; private set; }
         internal static PropertyEditor FocusedPropertyEditor { get; private set; }
@@ -738,8 +739,23 @@ namespace UnityEditor
             Repaint();
         }
 
-        private void OnUndoRedoPerformed(in UndoRedoInfo info)
+        void OnUndoRedoPerformed(in UndoRedoInfo info)
         {
+            // Fix for a swapping an `m_Script` field in debug mode followed by an undo/redo. This causes the serialized object
+            // to be reset back to it's previous type. The editor instance remains the same, the serialized object remains the same and property iterators return
+            // the previous type properties. This breaks most assumptions in the inspectors and property drawers and causes numerous errors. As a patch we do a nuclear
+            // rebuild of everything if this state is detected.
+            var editors = tracker.activeEditors;
+            for (var i = 0; i < m_EditorTargetTypes.Count && i < editors.Length; i++)
+            {
+                var targetType = editors[i].target ? editors[i].target.GetType() : null;
+
+                if (targetType == m_EditorTargetTypes[i])
+                    continue;
+
+                ActiveEditorTracker.sharedTracker.ForceRebuild();
+            }
+
             // We need to detect and rebuild removed or suppressed component titlebars if the
             // backend changes. Situations where this detection is needed is when:
             // 1) Undo could cause a removed component to become a suppressed component and vice versa
@@ -1014,6 +1030,13 @@ namespace UnityEditor
                 previewAndLabelElement.Clear();
 
             Editor[] editors = tracker.activeEditors;
+
+            // Fix for a swapping an `m_Script` field in debug mode followed by an undo/redo. This causes the serialized object to be reset back to it's previous type.
+            // The editor instance remains the same, the serialized object remains the same and property iterators return the previous type properties.
+            // Here we track the last built editor types which is compared during the next undo-redo operation.
+            m_EditorTargetTypes.Clear();
+            foreach (var editor in editors)
+                m_EditorTargetTypes.Add(editor.target ? editor.target.GetType() : null);
 
             if (editors.Any() && versionControlElement != null)
             {
@@ -2278,6 +2301,7 @@ namespace UnityEditor
                     return null;
                 }
 
+                editors[newEditorsIndex].propertyViewer = this;
                 currentElement.Reinit(newEditorsIndex, editors);
                 editorToElementMap[ed.target.GetInstanceID()] = currentElement;
                 ++newEditorsIndex;
@@ -2288,6 +2312,7 @@ namespace UnityEditor
             for (int j = previousEditorsIndex; j < currentElements.Count; ++j)
             {
                 currentElements[j].RemoveFromHierarchy();
+                m_EditorElementUpdater.Remove(currentElements[j]);
             }
 
             return editorToElementMap;

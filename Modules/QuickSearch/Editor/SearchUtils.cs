@@ -56,7 +56,7 @@ namespace UnityEditor.Search
         {
             return Utils.GetSceneObjectPreview(null, obj, size, options, thumbnail);
         }
-        
+
         public static Texture2D GetSceneObjectPreview(SearchContext ctx, GameObject obj, Vector2 size, FetchPreviewOptions options, Texture2D thumbnail)
         {
             return GetSceneObjectPreview(null, obj, size, options, thumbnail);
@@ -1035,12 +1035,12 @@ namespace UnityEditor.Search
         {
             return Utils.GetAssetThumbnailFromPath(context, path);
         }
-        
+
         public static Texture2D GetAssetThumbnailFromPath(string path)
         {
             return GetAssetThumbnailFromPath(null, path);
         }
-        
+
         public static Texture2D GetAssetPreviewFromPath(string path, FetchPreviewOptions previewOptions)
         {
             return GetAssetPreviewFromPath(null, path, previewOptions);
@@ -1175,7 +1175,7 @@ namespace UnityEditor.Search
             return OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
         }
 
-        internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null)
+        internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null, bool useExplicitProvidersAsNormalProviders = false)
         {
             var providers = SearchService.GetProviders(providerIds).ToArray();
             if (providers.Length != providerIds.Length)
@@ -1185,6 +1185,7 @@ namespace UnityEditor.Search
                 return SearchWindow.OpenDefaultQuickSearch();
 
             var context = SearchService.CreateContext(providers, searchQuery, flags);
+            context.useExplicitProvidersAsNormalProviders = useExplicitProvidersAsNormalProviders;
             topic = topic ?? string.Join(", ", providers.Select(p => p.name.ToLower()));
             var qsWindow = SearchWindow.Create<SearchWindow>(context, topic);
 

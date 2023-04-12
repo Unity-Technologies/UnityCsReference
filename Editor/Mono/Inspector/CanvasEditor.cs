@@ -28,6 +28,7 @@ namespace UnityEditor
         SerializedProperty m_OverrideSorting;
         SerializedProperty m_ShaderChannels;
         SerializedProperty m_UpdateRectTransformForStandalone;
+        SerializedProperty m_VertexColorAlwaysGammaSpace;
 
         AnimBool m_OverlayMode;
         AnimBool m_CameraMode;
@@ -47,6 +48,7 @@ namespace UnityEditor
             public static GUIContent m_ShaderChannel = EditorGUIUtility.TrTextContent("Additional Shader Channels");
             public static GUIContent pixelPerfectContent = EditorGUIUtility.TrTextContent("Pixel Perfect");
             public static GUIContent standaloneRenderResize = EditorGUIUtility.TrTextContent("Resize Canvas", "For manual Camera.Render calls should the canvas resize to match the destination target.");
+            public static GUIContent vertexColorAlwaysGammaSpace = EditorGUIUtility.TrTextContent("Vertex Color Always In Gamma Color Space", "UI vertex colors are always in gamma color space disregard of the player settings");
         }
 
         private bool m_AllNested = false;
@@ -81,6 +83,7 @@ namespace UnityEditor
             m_PixelPerfectOverride = serializedObject.FindProperty("m_OverridePixelPerfect");
             m_ShaderChannels = serializedObject.FindProperty("m_AdditionalShaderChannelsFlag");
             m_UpdateRectTransformForStandalone = serializedObject.FindProperty("m_UpdateRectTransformForStandalone");
+            m_VertexColorAlwaysGammaSpace = serializedObject.FindProperty("m_VertexColorAlwaysGammaSpace");
 
             m_OverlayMode = new AnimBool(m_RenderMode.intValue == 0);
             m_OverlayMode.valueChanged.AddListener(Repaint);
@@ -316,6 +319,14 @@ namespace UnityEditor
                         rect = GUILayoutUtility.GetRect(EditorGUIUtility.TempContent(helpMessage, EditorGUIUtility.GetHelpIcon(MessageType.Warning)), EditorStyles.helpBox);
                         EditorGUI.HelpBox(rect, helpMessage, MessageType.Warning);
                     }
+                }
+
+                EditorGUILayout.PropertyField(m_VertexColorAlwaysGammaSpace, Styles.vertexColorAlwaysGammaSpace);
+
+                if (PlayerSettings.colorSpace == ColorSpace.Linear)
+                {
+                    if (!m_VertexColorAlwaysGammaSpace.boolValue)
+                        EditorGUILayout.HelpBox( "Keep vertex color in Gamma space to allow gamma to linear color space conversion to happen in UI shaders. This will enhance UI color precision in linear color space.", MessageType.Warning);
                 }
             }
             else

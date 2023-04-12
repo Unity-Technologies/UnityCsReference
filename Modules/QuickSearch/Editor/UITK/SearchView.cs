@@ -117,7 +117,7 @@ namespace UnityEditor.Search
 
         public SearchView(SearchViewState viewState, int viewId)
         {
-            using (new EditorPerformanceTracker("SearchView.ctror"))
+            using (new EditorPerformanceTracker("SearchView.ctor"))
             {
                 m_ViewId = viewId;
                 m_ViewState = viewState;

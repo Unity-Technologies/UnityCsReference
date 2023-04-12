@@ -105,6 +105,8 @@ namespace UnityEditor.Search
             if (settings.options.dependencies)
                 AddProperty("ref", containerPath.ToLowerInvariant(), subObjDocumentIndex);
 
+            IndexLabels(subObjDocumentIndex, subObj);
+
             if (hasCustomIndexers)
                 IndexCustomProperties(id, subObjDocumentIndex, subObj);
 
@@ -335,6 +337,13 @@ namespace UnityEditor.Search
         {
             var guid = AssetDatabase.GUIDFromAssetPath(path);
             var labels = AssetDatabase.GetLabels(guid);
+            foreach (var label in labels)
+                IndexPropertyComponents(documentIndex, "l", label);
+        }
+
+        private void IndexLabels(in int documentIndex, in UnityEngine.Object obj)
+        {
+            var labels = AssetDatabase.GetLabels(obj);
             foreach (var label in labels)
                 IndexPropertyComponents(documentIndex, "l", label);
         }

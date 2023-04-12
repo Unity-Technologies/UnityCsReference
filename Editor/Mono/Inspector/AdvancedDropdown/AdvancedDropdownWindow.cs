@@ -56,7 +56,7 @@ namespace UnityEditor.IMGUI.Controls
             set
             {
                 m_Search = value;
-                m_DataSource.RebuildSearch(m_Search);
+                m_DataSource.RebuildSearch(m_Search, m_CurrentlyRenderedTree);
                 m_CurrentlyRenderedTree = m_DataSource.mainTree;
                 if (hasSearch)
                 {
@@ -273,7 +273,7 @@ namespace UnityEditor.IMGUI.Controls
             m_DataSource.ReloadData();
             if (hasSearch)
             {
-                m_DataSource.RebuildSearch(searchString);
+                m_DataSource.RebuildSearch(searchString, m_CurrentlyRenderedTree);
                 if (state.GetSelectedIndex(m_CurrentlyRenderedTree) < 0)
                 {
                     state.SetSelectedIndex(m_CurrentlyRenderedTree, 0);

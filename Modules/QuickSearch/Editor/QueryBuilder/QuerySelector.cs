@@ -174,6 +174,7 @@ namespace UnityEditor.Search
             maximumSize = new Vector2(Mathf.Max(rect.width, 400f), 450f);
 
             m_DataSource = new CallbackDataSource(BuildRoot);
+            m_DataSource.CurrentFolderContextualSearch = true;
             m_Gui = new QuerySelectorItemGUI(m_DataSource, this);
         }
 

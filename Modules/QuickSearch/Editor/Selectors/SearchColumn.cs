@@ -275,7 +275,7 @@ namespace UnityEditor.Search
 
             // In case there is a valid search group selected in the search view, lets use that instead.
             var currentGroup = context.searchView?.currentGroup;
-            if (!string.IsNullOrEmpty(currentGroup) && !string.Equals(currentGroup, "all", StringComparison.Ordinal))
+            if (!string.IsNullOrEmpty(currentGroup) && !string.Equals(currentGroup, GroupedSearchList.allGroupId, StringComparison.Ordinal))
             {
                 providerTypes.Clear();
                 providerTypes.Add(currentGroup);

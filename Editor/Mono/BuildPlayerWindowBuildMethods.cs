@@ -313,7 +313,7 @@ namespace UnityEditor
                 EditorBuildSettingsScene[] editorScenes = EditorBuildSettings.scenes;
                 foreach (EditorBuildSettingsScene scene in editorScenes)
                 {
-                    if (scene.enabled)
+                    if (scene.enabled && !string.IsNullOrEmpty(scene.path))
                         scenesList.Add(scene.path);
                 }
 

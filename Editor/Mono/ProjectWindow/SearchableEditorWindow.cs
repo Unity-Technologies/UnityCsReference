@@ -72,18 +72,7 @@ namespace UnityEditor
         {
             var component = command.context as Component;
             if (component)
-            {
-                var searchFilter = "ref:" + component.GetInstanceID() + ":";
-                foreach (SearchableEditorWindow sw in searchableWindows)
-                {
-                    if (sw.m_HierarchyType == HierarchyType.GameObjects)
-                    {
-                        sw.SetSearchFilter(searchFilter, SearchMode.All, false, false);
-                        sw.m_HasSearchFilterFocus = true;
-                        sw.Repaint();
-                    }
-                }
-            }
+                SearchForReferencesToInstanceID(component.GetInstanceID());
         }
 
         [MenuItem("CONTEXT/Component/Properties...", false, 99999)]

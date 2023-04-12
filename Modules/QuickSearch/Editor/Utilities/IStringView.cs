@@ -18,6 +18,7 @@ namespace UnityEditor.Search
         IStringView Substring(int start);
         IStringView Substring(int start, int length);
         IStringView Trim(params char[] chrs);
+        IStringView TrimEnd(params char[] chrs);
         int IndexOf(IStringView other, StringComparison sc = StringComparison.Ordinal);
         int IndexOf(string other, StringComparison sc = StringComparison.Ordinal);
         int IndexOf(char other, StringComparison sc = StringComparison.Ordinal);
