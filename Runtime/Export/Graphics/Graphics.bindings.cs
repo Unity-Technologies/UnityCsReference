@@ -1051,7 +1051,7 @@ namespace UnityEngine
             if (occlusionProbes != null)
                 NoAllocHelpers.EnsureListElemCount(occlusionProbes, positions.Count);
 
-            CalculateInterpolatedLightAndOcclusionProbes_Internal(NoAllocHelpers.ExtractArrayFromListT(positions), positions.Count, NoAllocHelpers.ExtractArrayFromListT(lightProbes), NoAllocHelpers.ExtractArrayFromListT(occlusionProbes));
+            CalculateInterpolatedLightAndOcclusionProbes_Internal(NoAllocHelpers.ExtractArrayFromList(positions), positions.Count, NoAllocHelpers.ExtractArrayFromList(lightProbes), NoAllocHelpers.ExtractArrayFromList(occlusionProbes));
         }
 
         [FreeFunction]

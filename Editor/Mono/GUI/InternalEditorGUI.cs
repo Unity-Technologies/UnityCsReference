@@ -197,7 +197,7 @@ namespace UnityEditor
 
         private static GUIStyle s_LargeSplitLeftStyle;
         private static GUIStyle s_LargeSplitRightStyle;
-        internal static bool LargeSplitButtonWithDropdownList(GUIContent content, string[] buttonNames, GenericMenu.MenuFunction2 callback)
+        public static bool LargeSplitButtonWithDropdownList(GUIContent content, string[] buttonNames, GenericMenu.MenuFunction2 callback)
         {
             // Load required styles
             if (s_LargeSplitLeftStyle == null)

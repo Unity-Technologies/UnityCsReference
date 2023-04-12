@@ -3623,6 +3623,9 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Inspector\EditorElement.cs">
       <Link>Editor\Mono\UIElements\Inspector\EditorElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Inspector\IEditorElementDecorator.cs">
+      <Link>Editor\Mono\UIElements\Inspector\IEditorElementDecorator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Inspector\InspectorElement.cs">
       <Link>Editor\Mono\UIElements\Inspector\InspectorElement.cs</Link>
     </Compile>
@@ -6422,6 +6425,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\FetchStatusTracker.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\FetchStatusTracker.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\OperationFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\OperationFactory.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Package.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\Package.cs</Link>
     </Compile>
@@ -6544,6 +6550,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\InProjectPage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\InProjectPage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\InProjectUpdatesPage.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\InProjectUpdatesPage.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\MyAssetsPage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\MyAssetsPage.cs</Link>
@@ -9578,6 +9587,18 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\AngleStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\AngleStyleField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BorderBoxModelView.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BorderBoxModelView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BoxModelElement.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BoxModelElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BoxModelStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BoxModelStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BoxType.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BoxType.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\DimensionStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\DimensionStyleField.cs</Link>
     </Compile>
@@ -9619,6 +9640,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\ScaleStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\ScaleStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\SpacingBoxModelView.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\SpacingBoxModelView.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\StyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\StyleField.cs</Link>

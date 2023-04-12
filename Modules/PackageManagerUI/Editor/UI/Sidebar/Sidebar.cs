@@ -55,6 +55,7 @@ internal class Sidebar : ScrollView
     {
         CreateAndAddSeparator();
         CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectPage.k_Id));
+        CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectUpdatesPage.k_Id), isIndented: true);
         CreateAndAddSeparator();
         CreateAndAddSidebarRow(m_PageManager.GetPage(UnityRegistryPage.k_Id));
         CreateAndAddSidebarRow(m_PageManager.GetPage(MyAssetsPage.k_Id));

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using static UnityEngine.Bindings.ManagedListWrapper;
@@ -14,7 +15,6 @@ namespace UnityEngine
     //   on il2cpp/mono we can "resize" List<T> (up to Capacity, sure, but this is/should-be handled higher level)
     //   also we can easily "convert" List<T> to System.Array
     // NB .net backend is treated as second-class citizen going through ToArray call
-    [NativeHeader("Runtime/Export/Scripting/NoAllocHelpers.bindings.h")]
     internal sealed class NoAllocHelpers
     {
         public static void EnsureListElemCount<T>(List<T> list, int count)
@@ -42,12 +42,18 @@ namespace UnityEngine
         // tiny helpers
         public static int SafeLength(System.Array values)           { return values != null ? values.Length : 0; }
         public static int SafeLength<T>(List<T> values)             { return values != null ? values.Count : 0; }
-        public static T[] ExtractArrayFromListT<T>(List<T> list)    { return (T[])ExtractArrayFromList(list); }
 
-        [FreeFunction("NoAllocHelpers_Bindings::Internal_ResizeList")]
-        extern internal static void Internal_ResizeList(object list, int size);
+        [Obsolete("Use ExtractArrayFromList", false)]
+        public static T[] ExtractArrayFromListT<T>(List<T> list) { return ExtractArrayFromList(list); }
 
-        [FreeFunction("NoAllocHelpers_Bindings::ExtractArrayFromList")]
-        extern public static System.Array ExtractArrayFromList(object list);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T[] ExtractArrayFromList<T>(List<T> list)
+        {
+            if (list == null)
+                return null;
+
+            ListPrivateFieldAccess<T> tListAccess = UnsafeUtility.As<List<T>, ListPrivateFieldAccess<T>>(ref list);
+            return tListAccess._items;
+        }
     }
 }

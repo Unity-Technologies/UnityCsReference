@@ -111,18 +111,18 @@ namespace UnityEngine
         public static void SetGlobalRayTracingAccelerationStructure(string name, RayTracingAccelerationStructure value) { SetGlobalRayTracingAccelerationStructureImpl(Shader.PropertyToID(name), value); }
         public static void SetGlobalRayTracingAccelerationStructure(int nameID, RayTracingAccelerationStructure value) { SetGlobalRayTracingAccelerationStructureImpl(nameID, value); }
 
-        public static void SetGlobalFloatArray(string name, List<float> values) { SetGlobalFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public static void SetGlobalFloatArray(string name, List<float> values) { SetGlobalFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
+        public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public static void SetGlobalFloatArray(string name, float[] values)     { SetGlobalFloatArray(Shader.PropertyToID(name), values, values.Length); }
         public static void SetGlobalFloatArray(int nameID, float[] values)      { SetGlobalFloatArray(nameID, values, values.Length); }
 
-        public static void SetGlobalVectorArray(string name, List<Vector4> values)  { SetGlobalVectorArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public static void SetGlobalVectorArray(int nameID, List<Vector4> values)   { SetGlobalVectorArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public static void SetGlobalVectorArray(string name, List<Vector4> values)  { SetGlobalVectorArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
+        public static void SetGlobalVectorArray(int nameID, List<Vector4> values)   { SetGlobalVectorArray(nameID, NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public static void SetGlobalVectorArray(string name, Vector4[] values)      { SetGlobalVectorArray(Shader.PropertyToID(name), values, values.Length); }
         public static void SetGlobalVectorArray(int nameID, Vector4[] values)       { SetGlobalVectorArray(nameID, values, values.Length); }
 
-        public static void SetGlobalMatrixArray(string name, List<Matrix4x4> values) { SetGlobalMatrixArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public static void SetGlobalMatrixArray(int nameID, List<Matrix4x4> values) { SetGlobalMatrixArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public static void SetGlobalMatrixArray(string name, List<Matrix4x4> values) { SetGlobalMatrixArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
+        public static void SetGlobalMatrixArray(int nameID, List<Matrix4x4> values) { SetGlobalMatrixArray(nameID, NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public static void SetGlobalMatrixArray(string name, Matrix4x4[] values)    { SetGlobalMatrixArray(Shader.PropertyToID(name), values, values.Length); }
         public static void SetGlobalMatrixArray(int nameID, Matrix4x4[] values)     { SetGlobalMatrixArray(nameID, values, values.Length); }
 

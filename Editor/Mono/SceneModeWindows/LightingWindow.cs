@@ -61,6 +61,9 @@ namespace UnityEditor
                 "Bake Reflection Probes",
                 "Clear Baked Data"
             };
+
+            public static readonly string BakingPausedWarning = $"{bakeLabel.text} cannot be started. Waiting for asynchronous shader compilation to finish...";
+            public static readonly string BakingPausedHelpText = $"{Styles.bakeLabel.text} is currently unavailable. Waiting for asynchronous shader compilation to finish...";
         }
 
         public interface WindowTab
@@ -537,6 +540,16 @@ namespace UnityEditor
             }
         }
 
+        // We only want to show the warning when we first detect that shaders are compiling
+        private static bool _wasCompilingShaders;
+        private static bool WarnWhenShaderCompilationIsDetected()
+        {
+            bool isCompilingShaders = ShaderUtil.anythingCompiling;
+            if (!_wasCompilingShaders && isCompilingShaders)
+                Debug.LogWarning(Styles.BakingPausedWarning);
+            return _wasCompilingShaders = isCompilingShaders;
+        }
+
         void DrawBottomBarGUI(Mode selectedMode)
         {
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
@@ -576,16 +589,21 @@ namespace UnityEditor
                     bool showBakeButton = resultingIterative || !Lightmapping.isRunning;
                     if (showBakeButton)
                     {
-                        var customTab = m_Tabs[selectedMode] as LightingWindowTab;
-                        if (customTab != null)
-                            customTab.OnBakeButtonGUI();
-                        else if (EditorGUI.LargeSplitButtonWithDropdownList(Styles.bakeLabel, Styles.BakeModeStrings, BakeDropDownCallback))
+                        bool anyShaderCompiling = WarnWhenShaderCompilationIsDetected();
+                        using (new EditorGUI.DisabledScope(anyShaderCompiling))
                         {
-                            DoBake();
+                            var customTab = m_Tabs[selectedMode] as LightingWindowTab;
+                            if (customTab != null)
+                                customTab.OnBakeButtonGUI();
+                            else if (EditorGUI.LargeSplitButtonWithDropdownList(Styles.bakeLabel,
+                                         Styles.BakeModeStrings, BakeDropDownCallback))
+                            {
+                                DoBake();
 
-                            // DoBake could've spawned a save scene dialog. This breaks GUI on mac (Case 490388).
-                            // We work around this with an ExitGUI here.
-                            GUIUtility.ExitGUI();
+                                // DoBake could've spawned a save scene dialog. This breaks GUI on mac (Case 490388).
+                                // We work around this with an ExitGUI here.
+                                GUIUtility.ExitGUI();
+                            }
                         }
                     }
                     // Cancel button if we are currently baking
@@ -627,6 +645,13 @@ namespace UnityEditor
         internal static void Summary()
         {
             bool autoGenerate = Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
+            bool anyShaderCompiling = WarnWhenShaderCompilationIsDetected();
+            
+            if (anyShaderCompiling)
+            {
+                EditorGUILayout.HelpBox(Styles.BakingPausedHelpText, MessageType.Warning);
+                return;
+            }
 
             // Show the number of lightmaps:
             {

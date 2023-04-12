@@ -39,6 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<IPage> onListRebuild;
         event Action<PageFilters> onFiltersChange;
         event Action<string> onTrimmedSearchTextChanged;
+        event Action<IPage> onSupportedStatusFiltersChanged;
 
         string id { get; }
         string displayName { get; }

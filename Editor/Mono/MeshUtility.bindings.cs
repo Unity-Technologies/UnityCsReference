@@ -64,7 +64,7 @@ namespace UnityEditor
         {
             if (meshes == null)
                 throw new ArgumentNullException(nameof(meshes), "Mesh list is null");
-            return new Mesh.MeshDataArray(NoAllocHelpers.ExtractArrayFromListT(meshes), meshes.Count, false);
+            return new Mesh.MeshDataArray(NoAllocHelpers.ExtractArrayFromList(meshes), meshes.Count, false);
         }
     }
 }

@@ -92,7 +92,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "GameObjectBindings::GetComponentsInternal", HasExplicitThis = true, ThrowsException = true)]
-        private extern System.Array GetComponentsInternal(Type type, bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, object resultList);
+        private extern Component[] GetComponentsInternal(Type type, bool useSearchTypeAsArrayReturnType, bool recursive, bool includeInactive, bool reverse, object resultList);
 
         public Component[] GetComponents(Type type)
         {
@@ -101,7 +101,7 @@ namespace UnityEngine
 
         public T[] GetComponents<T>()
         {
-            return (T[])GetComponentsInternal(typeof(T), true, false, true, false, null);
+            return (T[])(Array)GetComponentsInternal(typeof(T), true, false, true, false, null);
         }
 
         public void GetComponents(Type type, List<Component> results)
@@ -128,7 +128,7 @@ namespace UnityEngine
 
         public T[] GetComponentsInChildren<T>(bool includeInactive)
         {
-            return (T[])GetComponentsInternal(typeof(T), true, true, includeInactive, false, null);
+            return (T[])(Array)GetComponentsInternal(typeof(T), true, true, includeInactive, false, null);
         }
 
         public void GetComponentsInChildren<T>(bool includeInactive, List<T> results)
@@ -165,7 +165,7 @@ namespace UnityEngine
 
         public T[] GetComponentsInParent<T>(bool includeInactive)
         {
-            return (T[])GetComponentsInternal(typeof(T), true, true, includeInactive, true, null);
+            return (T[])(Array)GetComponentsInternal(typeof(T), true, true, includeInactive, true, null);
         }
 
         public T[] GetComponentsInParent<T>()

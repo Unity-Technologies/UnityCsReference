@@ -533,6 +533,19 @@ namespace UnityEngine
         }
     }
 
+    public struct MipmapLimitDescriptor
+    {
+        public bool useMipmapLimit { get; }
+        public string groupName { get; }
+
+        public MipmapLimitDescriptor(bool useMipmapLimit, string groupName)
+        {
+            this.useMipmapLimit = useMipmapLimit;
+            this.groupName = groupName;
+        }
+    }
+     
+
     public partial class Texture : Object
     {
         public static readonly int GenerateAllMips = -1;
@@ -602,6 +615,13 @@ namespace UnityEngine
             );
         }
 
+        internal UnityException IgnoreMipmapLimitCannotBeToggledException(Texture t)
+        {
+            return new UnityException(
+                String.Format("Failed to toggle ignoreMipmapLimit, Texture '{0}' is not readable. You can make the texture readable in the Texture Import Settings.", t.name)
+            );
+        }
+
         internal UnityException CreateNativeArrayLengthOverflowException()
         {
             return new UnityException("Failed to create NativeArray, length exceeds the allowed maximum of Int32.MaxValue. Use a larger type as template argument to reduce the array length.");
@@ -635,10 +655,19 @@ namespace UnityEngine
             return isValid;
         }
 
-        internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, int mipCount, IntPtr nativeTex, string mipmapLimitGroupName)
+        internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, int mipCount, IntPtr nativeTex, MipmapLimitDescriptor mipmapLimitDescriptor)
         {
+            bool useMipmapLimit = mipmapLimitDescriptor.useMipmapLimit;
+            string mipmapLimitGroupName = mipmapLimitDescriptor.groupName;
+
+            // Obsolete, see TextureCreationFlags::IgnoreMipmapLimit (1 << 11)
+            // No additional warning, deprecation warning was already shown
+            bool deprecatedIgnoreFlagWasSet = ((int)flags & (1 << 11)) != 0;
+            if (deprecatedIgnoreFlagWasSet) useMipmapLimit = false;
+
+
             if (ValidateFormat(format, width, height))
-                Internal_Create(this, width, height, mipCount, format, flags, nativeTex, mipmapLimitGroupName);
+                Internal_Create(this, width, height, mipCount, format, flags, nativeTex, !useMipmapLimit, mipmapLimitGroupName);
         }
 
         [uei.ExcludeFromDocs]
@@ -649,35 +678,51 @@ namespace UnityEngine
 
         [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, DefaultFormat format, int mipCount, TextureCreationFlags flags)
-           : this(width, height, SystemInfo.GetGraphicsFormat(format), flags, mipCount, IntPtr.Zero, null)
+           : this(width, height, SystemInfo.GetGraphicsFormat(format), flags, mipCount, IntPtr.Zero, default)
         {
         }
 
         [uei.ExcludeFromDocs]
+        // In theory, users were able to create a group without actually having mipmap limits enabled (and to enable it later on, at runtime);
+        // this will no longer be supported (which allows us to rename that boolean flag)
+        [Obsolete("Please provide mipmap limit information using a MipmapLimitDescriptor argument", false)]
         public Texture2D(int width, int height, DefaultFormat format, int mipCount, string mipmapLimitGroupName, TextureCreationFlags flags)
-           : this(width, height, SystemInfo.GetGraphicsFormat(format), flags, mipCount, IntPtr.Zero, mipmapLimitGroupName)
+            : this(width, height, SystemInfo.GetGraphicsFormat(format), flags, mipCount, IntPtr.Zero, new MipmapLimitDescriptor(true, mipmapLimitGroupName))
+        {
+        }
+
+        [uei.ExcludeFromDocs]
+        public Texture2D(int width, int height, DefaultFormat format, int mipCount, TextureCreationFlags flags, MipmapLimitDescriptor mipmapLimitDescriptor)
+            : this(width, height, SystemInfo.GetGraphicsFormat(format), flags, mipCount, IntPtr.Zero, mipmapLimitDescriptor)
         {
         }
 
         [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags)
-            : this(width, height, format, flags, Texture.GenerateAllMips, IntPtr.Zero, null)
+            : this(width, height, format, flags, Texture.GenerateAllMips, IntPtr.Zero, default)
         {
         }
 
         [uei.ExcludeFromDocs]
         public Texture2D(int width, int height, GraphicsFormat format, int mipCount, TextureCreationFlags flags)
-            : this(width, height, format, flags, mipCount, IntPtr.Zero, null)
+            : this(width, height, format, flags, mipCount, IntPtr.Zero, default)
         {
         }
 
         [uei.ExcludeFromDocs]
+        [Obsolete("Please provide mipmap limit information using a MipmapLimitDescriptor argument", false)]
         public Texture2D(int width, int height, GraphicsFormat format, int mipCount, string mipmapLimitGroupName, TextureCreationFlags flags)
-            : this(width, height, format, flags, mipCount, IntPtr.Zero, mipmapLimitGroupName)
+            : this(width, height, format, flags, mipCount, IntPtr.Zero, new MipmapLimitDescriptor(true, mipmapLimitGroupName))
         {
         }
 
-        internal Texture2D(int width, int height, TextureFormat textureFormat, int mipCount, bool linear, IntPtr nativeTex, bool createUninitialized, bool ignoreMipmapLimit, string mipmapLimitGroupName)
+        [uei.ExcludeFromDocs]
+        public Texture2D(int width, int height, GraphicsFormat format, int mipCount, TextureCreationFlags flags, MipmapLimitDescriptor mipmapLimitDescriptor)
+            : this(width, height, format, flags, mipCount, IntPtr.Zero, mipmapLimitDescriptor)
+        {
+        }
+
+        internal Texture2D(int width, int height, TextureFormat textureFormat, int mipCount, bool linear, IntPtr nativeTex, bool createUninitialized, MipmapLimitDescriptor mipmapLimitDescriptor)
         {
             if (!ValidateFormat(textureFormat, width, height))
                 return;
@@ -688,38 +733,44 @@ namespace UnityEngine
                 flags |= TextureCreationFlags.Crunch;
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
-            if (ignoreMipmapLimit)
-                flags |= TextureCreationFlags.IgnoreMipmapLimit;
-            Internal_Create(this, width, height, mipCount, format, flags, nativeTex, mipmapLimitGroupName);
+            Internal_Create(this, width, height, mipCount, format, flags, nativeTex, !mipmapLimitDescriptor.useMipmapLimit, mipmapLimitDescriptor.groupName);
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear)
-            : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, false, false, null)
+            : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, false, default)
         {
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear, [uei.DefaultValue("false")] bool createUninitialized)
-           : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, createUninitialized, false, null)
+           : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, createUninitialized, default)
         {
         }
 
-        public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear, [uei.DefaultValue("false")] bool createUninitialized, [uei.DefaultValue("false")] bool ignoreMipmapLimit, [uei.DefaultValue("null")] string mipmapLimitGroupName)
-           : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, createUninitialized, ignoreMipmapLimit, mipmapLimitGroupName)
+        public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear, [uei.DefaultValue("false")] bool createUninitialized, MipmapLimitDescriptor mipmapLimitDescriptor)
+            : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, createUninitialized, mipmapLimitDescriptor)
+        {
+        }
+
+        // In theory, users were able to create a group without actually having mipmap limits enabled (and to enable it later on, at runtime);
+        // this will no longer be supported (which allows us to rename that boolean flag)
+        [Obsolete("Please provide mipmap limit information using a MipmapLimitDescriptor argument", false)]
+        public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear, [uei.DefaultValue("false")] bool createUninitialized, [uei.DefaultValue("true")] bool ignoreMipmapLimit, [uei.DefaultValue("null")] string mipmapLimitGroupName)
+           : this(width, height, textureFormat, mipCount, linear, IntPtr.Zero, createUninitialized, new MipmapLimitDescriptor(!ignoreMipmapLimit, mipmapLimitGroupName))
         {
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("true")] bool mipChain, [uei.DefaultValue("false")] bool linear)
-            : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, linear, IntPtr.Zero, false, false, null)
+            : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, linear, IntPtr.Zero, false, default)
         {
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("true")] bool mipChain, [uei.DefaultValue("false")] bool linear, [uei.DefaultValue("false")] bool createUninitialized)
-           : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, linear, IntPtr.Zero, createUninitialized, false, null)
+           : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, linear, IntPtr.Zero, createUninitialized, default)
         {
         }
 
         public Texture2D(int width, int height, TextureFormat textureFormat, bool mipChain)
-            : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, false, IntPtr.Zero, false, false, null)
+            : this(width, height, textureFormat, mipChain ? Texture.GenerateAllMips : 1, false, IntPtr.Zero, false, default)
         {
         }
 
@@ -729,14 +780,14 @@ namespace UnityEngine
             if (width == 0 && height == 0)
                 Internal_CreateEmptyImpl(this);
             else if (ValidateFormat(format, width, height))
-                Internal_Create(this, width, height, Texture.GenerateAllMips, GraphicsFormatUtility.GetGraphicsFormat(format, true), TextureCreationFlags.MipChain, IntPtr.Zero, null);
+                Internal_Create(this, width, height, Texture.GenerateAllMips, GraphicsFormatUtility.GetGraphicsFormat(format, true), TextureCreationFlags.MipChain, IntPtr.Zero, true, null);
         }
 
         public static Texture2D CreateExternalTexture(int width, int height, TextureFormat format, bool mipChain, bool linear, IntPtr nativeTex)
         {
             if (nativeTex == IntPtr.Zero)
                 throw new ArgumentException("nativeTex can not be null");
-            return new Texture2D(width, height, format, mipChain ? -1 : 1, linear, nativeTex, false, false, null);
+            return new Texture2D(width, height, format, mipChain ? -1 : 1, linear, nativeTex, false, default);
         }
 
         [uei.ExcludeFromDocs]
@@ -833,7 +884,8 @@ namespace UnityEngine
 
             if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
-            SetPixelDataImplArray(data, mipLevel, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
+            var elemSize = System.Runtime.InteropServices.Marshal.SizeOf(data[0]);
+            SetPixelDataImplArray(UnsafeUtility.GetByteSpanFromArray(data, elemSize), mipLevel, elemSize, data.Length, sourceDataStartIndex);
         }
 
         unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
@@ -950,7 +1002,7 @@ namespace UnityEngine
                 return true;
 
             NoAllocHelpers.EnsureListElemCount(results, sizes.Length);
-            GenerateAtlasImpl(sizes, padding, atlasSize, NoAllocHelpers.ExtractArrayFromListT(results));
+            GenerateAtlasImpl(sizes, padding, atlasSize, NoAllocHelpers.ExtractArrayFromList(results));
             return results.Count != 0;
         }
 
@@ -987,6 +1039,16 @@ namespace UnityEngine
         public Color[] GetPixels()
         {
             return GetPixels(0);
+        }
+
+        public bool ignoreMipmapLimit
+        {
+            get { return IgnoreMipmapLimit();}
+            set
+            {
+                if (!isReadable) throw IgnoreMipmapLimitCannotBeToggledException(this);
+                SetIgnoreMipmapLimitAndReload(value);
+            }
         }
 
         [Flags]
@@ -1105,7 +1167,8 @@ namespace UnityEngine
 
             if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
-            SetPixelDataImplArray(data, mipLevel, (int)face, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
+            var elemSize = System.Runtime.InteropServices.Marshal.SizeOf(data[0]);
+            SetPixelDataImplArray(UnsafeUtility.GetByteSpanFromArray(data, elemSize), mipLevel, (int)face, elemSize, data.Length, sourceDataStartIndex);
         }
 
         unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, CubemapFace face, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
@@ -1314,7 +1377,8 @@ namespace UnityEngine
 
             if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
-            SetPixelDataImplArray(data, mipLevel, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
+            var elemSize = System.Runtime.InteropServices.Marshal.SizeOf(data[0]);
+            SetPixelDataImplArray(UnsafeUtility.GetByteSpanFromArray(data, elemSize), mipLevel, elemSize, data.Length, sourceDataStartIndex);
         }
 
         unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
@@ -1388,34 +1452,39 @@ namespace UnityEngine
 
         [uei.ExcludeFromDocs]
         public Texture2DArray(int width, int height, int depth, DefaultFormat format, TextureCreationFlags flags, int mipCount)
-           : this(width, height, depth, SystemInfo.GetGraphicsFormat(format), flags)
+           : this(width, height, depth, SystemInfo.GetGraphicsFormat(format), flags, mipCount)
         {
-            var gfxFormat = SystemInfo.GetGraphicsFormat(format);
-            if (!ValidateFormat(gfxFormat, width, height))
-                return;
-
-            ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, gfxFormat, flags);
         }
 
+        [uei.ExcludeFromDocs]
+        public Texture2DArray(int width, int height, int depth, DefaultFormat format, TextureCreationFlags flags, int mipCount, MipmapLimitDescriptor mipmapLimitDescriptor)
+            : this(width, height, depth, SystemInfo.GetGraphicsFormat(format), flags, mipCount, mipmapLimitDescriptor)
+        {
+        }
 
         [RequiredByNativeCode] // used to create builtin textures
         public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags)
-            : this(width, height, depth, format, flags, Texture.GenerateAllMips)
+            : this(width, height, depth, format, flags, Texture.GenerateAllMips, new MipmapLimitDescriptor())
         {
         }
 
         [uei.ExcludeFromDocs]
         public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount)
+            : this(width, height, depth, format, flags, mipCount, new MipmapLimitDescriptor())
+        {
+        }
+
+        [uei.ExcludeFromDocs]
+        public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, int mipCount, MipmapLimitDescriptor mipmapLimitDescriptor)
         {
             if (!ValidateFormat(format, width, height))
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags);
+            Internal_Create(this, width, height, depth, mipCount, format, flags, !mipmapLimitDescriptor.useMipmapLimit, mipmapLimitDescriptor.groupName);
         }
 
-        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear, bool createUninitialized)
+        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear, bool createUninitialized, MipmapLimitDescriptor mipmapLimitDescriptor)
         {
             if (!ValidateFormat(textureFormat, width, height))
                 return;
@@ -1427,16 +1496,21 @@ namespace UnityEngine
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags);
+            Internal_Create(this, width, height, depth, mipCount, format, flags, !mipmapLimitDescriptor.useMipmapLimit, mipmapLimitDescriptor.groupName);
+        }
+
+        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear, bool createUninitialized)
+            : this(width, height, depth, textureFormat, mipCount, linear, createUninitialized, default)
+        {
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear)
-            : this(width, height, depth, textureFormat, mipCount,linear, false)
+            : this(width, height, depth, textureFormat, mipCount,linear, false, default)
         {
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("false")] bool linear, [uei.DefaultValue("false")] bool createUninitialized)
-          : this(width, height, depth, textureFormat, mipChain ? Texture.GenerateAllMips : 1, linear, createUninitialized)
+          : this(width, height, depth, textureFormat, mipChain ? Texture.GenerateAllMips : 1, linear, createUninitialized, default)
         {
         }
 
@@ -1466,7 +1540,8 @@ namespace UnityEngine
 
             if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
-            SetPixelDataImplArray(data, mipLevel, element, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
+            var elemSize = System.Runtime.InteropServices.Marshal.SizeOf(data[0]);
+            SetPixelDataImplArray(UnsafeUtility.GetByteSpanFromArray(data, elemSize), mipLevel, element, elemSize, data.Length, sourceDataStartIndex);
         }
 
         unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, int element, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct
@@ -1498,6 +1573,16 @@ namespace UnityEngine
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, this.GetSafetyHandleForSlice(mipLevel, element));
             return array;
+        }
+
+        public bool ignoreMipmapLimit
+        {
+            get { return IgnoreMipmapLimit(); }
+            set
+            {
+                if (!isReadable) throw IgnoreMipmapLimitCannotBeToggledException(this);
+                SetIgnoreMipmapLimitAndReload(value);
+            }
         }
 
         private static void ValidateIsNotCrunched(TextureCreationFlags flags)
@@ -1588,7 +1673,8 @@ namespace UnityEngine
             if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) throw new UnityException("No texture data provided to SetPixelData.");
 
-            SetPixelDataImplArray(data, mipLevel, (int)face, element, System.Runtime.InteropServices.Marshal.SizeOf(data[0]), data.Length, sourceDataStartIndex);
+            var elemSize = System.Runtime.InteropServices.Marshal.SizeOf(data[0]);
+            SetPixelDataImplArray(UnsafeUtility.GetByteSpanFromArray(data, elemSize), mipLevel, (int)face, element, elemSize, data.Length, sourceDataStartIndex);
         }
 
         unsafe public void SetPixelData<T>(NativeArray<T> data, int mipLevel, CubemapFace face, int element, [uei.DefaultValue("0")] int sourceDataStartIndex = 0) where T : struct

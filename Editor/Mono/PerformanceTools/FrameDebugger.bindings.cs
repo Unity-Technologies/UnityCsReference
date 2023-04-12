@@ -25,8 +25,8 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         public extern static Object GetFrameEventObject(int index);
         [FreeFunction("FrameDebuggerBindings::GetBatchBreakCauseStrings")] public extern static string[] GetBatchBreakCauseStrings();
 
-        public static FrameDebuggerEvent[] GetFrameEvents() { return (FrameDebuggerEvent[])GetFrameEventsImpl(); }
-        [NativeName("GetFrameEvents")] extern private static System.Array GetFrameEventsImpl();
+        public static FrameDebuggerEvent[] GetFrameEvents() { return GetFrameEventsImpl(); }
+        [NativeName("GetFrameEvents")] extern private static FrameDebuggerEvent[] GetFrameEventsImpl();
 
         // Returns false, if frameEventData holds data from previous selected frame
         public static bool GetFrameEventData(int index, FrameDebuggerEventData frameDebuggerEventData)

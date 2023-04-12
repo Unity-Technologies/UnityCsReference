@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Experimental.Rendering;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using System;
 
 namespace UnityEngine
 {
@@ -60,16 +61,40 @@ namespace UnityEngine
         }
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToTGA", true)]
-        extern public static byte[] EncodeArrayToTGA(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
+        extern private static byte[] EncodeArrayToTGA_Internal(Span<byte> span, GraphicsFormat format, uint width, uint height, uint rowBytes);
+
+        public static byte[] EncodeArrayToTGA(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0)
+        {
+            var elemSize = array != null ? UnsafeUtility.SizeOf(array.GetType().GetElementType()) : 1;
+            return EncodeArrayToTGA_Internal(UnsafeUtility.GetByteSpanFromArray(array, elemSize), format, width, height, rowBytes);
+        }
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToPNG", true)]
-        extern public static byte[] EncodeArrayToPNG(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
+        extern private static byte[] EncodeArrayToPNG_Internal(Span<byte> span, GraphicsFormat format, uint width, uint height, uint rowBytes);
+
+        public static byte[] EncodeArrayToPNG(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0)
+        {
+            var elemSize = array != null ? UnsafeUtility.SizeOf(array.GetType().GetElementType()) : 1;
+            return EncodeArrayToPNG_Internal(UnsafeUtility.GetByteSpanFromArray(array, elemSize), format, width, height, rowBytes);
+        }
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToJPG", true)]
-        extern public static byte[] EncodeArrayToJPG(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, int quality = 75);
+        extern private static byte[] EncodeArrayToJPG_Internal(Span<byte> span, GraphicsFormat format, uint width, uint height, uint rowBytes, int quality);
+
+        public static byte[] EncodeArrayToJPG(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, int quality = 75)
+        {
+            var elemSize = array != null ? UnsafeUtility.SizeOf(array.GetType().GetElementType()) : 1;
+            return EncodeArrayToJPG_Internal(UnsafeUtility.GetByteSpanFromArray(array, elemSize), format, width, height, rowBytes, quality);
+        }
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToEXR", true)]
-        extern public static byte[] EncodeArrayToEXR(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None);
+        extern private static byte[] EncodeArrayToEXR_Internal(Span<byte> span, GraphicsFormat format, uint width, uint height, uint rowBytes, Texture2D.EXRFlags flags);
+
+        public static byte[] EncodeArrayToEXR(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None)
+        {
+            var elemSize = array != null ? UnsafeUtility.SizeOf(array.GetType().GetElementType()) : 1;
+            return EncodeArrayToEXR_Internal(UnsafeUtility.GetByteSpanFromArray(array, elemSize), format, width, height, rowBytes, flags);
+        }
 
         public static NativeArray<byte> EncodeNativeArrayToTGA<T>(NativeArray<T> input, GraphicsFormat format, uint width, uint height, uint rowBytes = 0) where T : struct
         {

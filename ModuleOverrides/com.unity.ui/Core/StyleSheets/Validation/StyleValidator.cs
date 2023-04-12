@@ -74,7 +74,7 @@ namespace UnityEngine.UIElements.StyleSheets
                             result.hint = $"Property expects a unit. Did you forget to add {unitHint}?";
                         else if (IsUnsupportedColor(syntax))
                             result.hint = $"Unsupported color '{value}'.";
-                        result.message = $"Expected ({syntax}) but found '{matchResult.errorValue}'";
+                        result.message = $"Expected ({syntax}) but found '{value}'"; //The error may be after matchResult.errorValue when group are involved: not pointing to a specific token but to the whole value is more accurate
                         break;
                     case MatchResultErrorCode.EmptyValue:
                         result.status = StyleValidationStatus.Error;
@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements.StyleSheets
         private bool IsUnitMissing(string propertySyntax, string propertyValue, out string unitHint)
         {
             unitHint = null;
-            if (!float.TryParse(propertyValue, out _))
+            if (!float.TryParse(propertyValue, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out _))
                 return false;
 
             if (propertySyntax.Contains("<length>") || propertySyntax.Contains("<length-percentage>"))

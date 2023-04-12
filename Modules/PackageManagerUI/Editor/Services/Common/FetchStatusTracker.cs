@@ -67,14 +67,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             return status;
         }
 
-        public void SetFetchInProgress(long productId, FetchType fetchType)
+        public virtual void SetFetchInProgress(long productId, FetchType fetchType)
         {
             var status = GetOrCreateFetchStatus(productId);
             status.fetchingInProgress |= fetchType;
             onFetchStatusChanged?.Invoke(status);
         }
 
-        public void SetFetchSuccess(long productId, FetchType fetchType)
+        public virtual void SetFetchSuccess(long productId, FetchType fetchType)
         {
             var status = GetOrCreateFetchStatus(productId);
             status.fetchingInProgress &= ~fetchType;
@@ -83,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onFetchStatusChanged?.Invoke(status);
         }
 
-        public void SetFetchError(long productId, FetchType fetchType, UIError error)
+        public virtual void SetFetchError(long productId, FetchType fetchType, UIError error)
         {
             var status = GetOrCreateFetchStatus(productId);
             status.fetchingInProgress &= ~fetchType;

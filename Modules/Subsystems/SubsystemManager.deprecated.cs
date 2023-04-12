@@ -9,6 +9,7 @@ namespace UnityEngine
 {
     public static partial class SubsystemManager
     {
+        [Obsolete("Use GetSubsystems instead. (UnityUpgradable) -> GetSubsystems<T>(*)", false)]
         public static void GetInstances<T>(List<T> subsystems)
             where T : ISubsystem
         {
@@ -34,7 +35,10 @@ namespace UnityEngine
 
 // event never invoked warning (invoked indirectly from native code)
 #pragma warning disable CS0067
+        [Obsolete("Use beforeReloadSubsystems instead. (UnityUpgradable) -> beforeReloadSubsystems", false)]
         public static event Action reloadSubsytemsStarted;
+
+        [Obsolete("Use afterReloadSubsystems instead. (UnityUpgradable) -> afterReloadSubsystems", false)]
         public static event Action reloadSubsytemsCompleted;
 #pragma warning restore CS0067
     }

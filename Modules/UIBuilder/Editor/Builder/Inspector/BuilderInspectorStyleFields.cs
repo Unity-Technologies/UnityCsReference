@@ -271,6 +271,10 @@ namespace Unity.UI.Builder
                     return;
                 }
             }
+            else if (fieldElement is BoxModel)
+            {
+                // Nothing to do here.
+            }
             else
             {
                 // Unsupported style value type.
@@ -726,6 +730,12 @@ namespace Unity.UI.Builder
                         uiField.length = value;
                     }
                 }
+            }
+            else if (fieldElement is BoxModel boxModel)
+            {
+                boxModel.UpdateUnitFromFields();
+                // return so that UpdateFieldStatus isn't called on BoxModel since it's not applicable
+                return;
             }
             else if (IsComputedStyleColor(val) && fieldElement is ColorField)
             {
@@ -1640,6 +1650,13 @@ namespace Unity.UI.Builder
             if (isNewValue && updateStyleCategoryFoldoutOverrides != null)
                 updateStyleCategoryFoldoutOverrides();
             m_Inspector.UpdateFieldStatus(target, styleProperty);
+            
+            var list = m_StyleFields[styleName];
+            
+            foreach (var item in list.Where(item => item != target))
+            {
+                RefreshStyleField(styleName, item);
+            }
         }
 
         bool IsNewValue(StyleProperty styleProperty, params StyleValueType[] supportedValueTypes)

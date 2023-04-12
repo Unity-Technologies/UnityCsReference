@@ -40,7 +40,7 @@ namespace UnityEditor
 
             var array = new NativeArray<int>(list.Count, allocator, NativeArrayOptions.UninitializedMemory);
             // Use explicit copy length because the internal list might be longer than Count, which causes an error
-            NativeArray<int>.Copy(NoAllocHelpers.ExtractArrayFromListT(list), array, list.Count);
+            NativeArray<int>.Copy(NoAllocHelpers.ExtractArrayFromList(list), array, list.Count);
             return array;
         }
     }

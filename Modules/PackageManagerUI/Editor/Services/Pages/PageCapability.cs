@@ -9,9 +9,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Flags]
     internal enum PageCapability : uint
     {
-        None                    = 0,
-        RequireUserLoggedIn     = 1 << 0,
-        RequireNetwork          = 1 << 1,
-        SupportLocalReordering  = 1 << 2,
+        None                          = 0,
+        RequireUserLoggedIn           = 1 << 0,
+        RequireNetwork                = 1 << 1,
+        SupportLocalReordering        = 1 << 2,
+        DynamicEntitlementStatus      = 1 << 3
     }
 }

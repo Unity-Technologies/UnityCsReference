@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected bool m_IsInProgress;
-        public bool isInProgress => m_IsInProgress;
+        public virtual bool isInProgress => m_IsInProgress;
 
         public bool isProgressVisible => false;
 
@@ -41,8 +41,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public float progressPercentage => 0;
 
         public event Action<IOperation, UIError> onOperationError = delegate {};
-        public event Action<IOperation> onOperationSuccess = delegate {};
-        public event Action<IOperation> onOperationFinalized = delegate {};
+        public virtual event Action<IOperation> onOperationSuccess = delegate {};
+        public virtual event Action<IOperation> onOperationFinalized = delegate {};
         public event Action<IOperation> onOperationProgress = delegate {};
 
         [SerializeField]
@@ -52,7 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private AssetStorePurchases m_Result;
-        public AssetStorePurchases result => m_Result;
+        public virtual AssetStorePurchases result => m_Result;
 
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
@@ -76,7 +76,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             ResolveDependencies(unityConnect, assetStoreRestAPI, assetStoreCache);
         }
 
-        public void Start(PurchasesQueryArgs queryArgs)
+        public virtual void Start(PurchasesQueryArgs queryArgs)
         {
             SetQueryArgs(queryArgs);
             m_IsInProgress = true;
@@ -102,7 +102,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreRestAPI.GetPurchases(m_AdjustedQueryArgs, purchases => GetPurchasesCallback(purchases, localTimestamp), OnOperationError);
         }
 
-        public void Stop()
+        public virtual void Stop()
         {
             m_Timestamp = DateTime.Now.Ticks;
             m_AssetStoreRestAPI.AbortGetPurchases(m_AdjustedQueryArgs);

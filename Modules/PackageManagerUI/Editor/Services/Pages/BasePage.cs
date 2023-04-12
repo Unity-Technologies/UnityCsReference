@@ -13,12 +13,13 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class BasePage : IPage
     {
-        public event Action<PageSelectionChangeArgs> onSelectionChanged = delegate { };
-        public event Action<VisualStateChangeArgs> onVisualStateChange = delegate { };
-        public event Action<ListUpdateArgs> onListUpdate = delegate { };
-        public event Action<IPage> onListRebuild = delegate { };
-        public event Action<PageFilters> onFiltersChange = delegate { };
-        public event Action<string> onTrimmedSearchTextChanged = delegate { };
+        public event Action<PageSelectionChangeArgs> onSelectionChanged = delegate {};
+        public event Action<VisualStateChangeArgs> onVisualStateChange = delegate {};
+        public event Action<ListUpdateArgs> onListUpdate = delegate {};
+        public event Action<IPage> onListRebuild = delegate {};
+        public event Action<PageFilters> onFiltersChange = delegate {};
+        public event Action<string> onTrimmedSearchTextChanged = delegate {};
+        public event Action<IPage> onSupportedStatusFiltersChanged = delegate {};
 
         [SerializeField]
         private PageSelection m_Selection = new();
@@ -96,7 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void OnDisable()
         {
-            m_PackageDatabase.onPackageUniqueIdFinalize += OnPackageUniqueIdFinalize;
+            m_PackageDatabase.onPackageUniqueIdFinalize -= OnPackageUniqueIdFinalize;
         }
 
         public bool ClearFilters(bool resetSortOptionToDefault = false)
@@ -145,6 +146,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 TriggerOnListUpdate(addList, updateList, removeList);
 
+                CheckEntitlementStatusAndTriggerEvents(addList, updateList, removeList);
+
                 UpdateVisualStateVisibilityWithSearchText();
             }
         }
@@ -188,7 +191,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public abstract void RebuildAndReorderVisualStates();
 
-        protected void TriggerOnListUpdate(IList<IPackage> added = null, IList<IPackage> updated = null, IList<IPackage> removed = null)
+        // Returns true if SupportedStatusFilter changed
+        public virtual bool RefreshSupportedStatusFiltersOnEntitlementPackageChange() => false;
+
+        protected virtual void TriggerOnListUpdate(IList<IPackage> added = null, IList<IPackage> updated = null, IList<IPackage> removed = null)
         {
             added ??= Array.Empty<IPackage>();
             updated ??= Array.Empty<IPackage>();
@@ -198,12 +204,42 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var reorder = (capability & PageCapability.SupportLocalReordering) != 0 && anyAddedOrUpdated;
-            onListUpdate?.Invoke(new ListUpdateArgs { page = this, added = added, updated = updated, removed = removed, reorder = reorder });
+            onListUpdate?.Invoke(new ListUpdateArgs
+                { page = this, added = added, updated = updated, removed = removed, reorder = reorder });
+        }
+
+        protected void CheckEntitlementStatusAndTriggerEvents(IList<IPackage> added = null, IList<IPackage> updated = null, IList<IPackage> removed = null)
+        {
+            if ((capability & PageCapability.DynamicEntitlementStatus) == 0)
+                return;
+
+            added ??= Array.Empty<IPackage>();
+            updated ??= Array.Empty<IPackage>();
+            removed ??= Array.Empty<IPackage>();
+            if (!added.Concat(updated).Concat(removed).Any(p => p.hasEntitlements))
+                return;
+
+            if (!RefreshSupportedStatusFiltersOnEntitlementPackageChange())
+                return;
+
+            // For now, this will only happens if the last entitlement package is removed and the Subscription Based filter was selected
+            if (!supportedStatusFilters.Contains(filters.status) && filters.status != PageFilters.Status.None)
+            {
+                var newFilters = filters.Clone();
+                newFilters.status = PageFilters.Status.None;
+                UpdateFilters(newFilters);
+            }
+            TriggerSupportedFiltersChanged();
         }
 
         protected void TriggerListRebuild()
         {
             onListRebuild?.Invoke(this);
+        }
+
+        protected void TriggerSupportedFiltersChanged()
+        {
+            onSupportedStatusFiltersChanged?.Invoke(this);
         }
 
         protected void TriggerOnVisualStateChange(IEnumerable<VisualState> changedVisualStates)

@@ -169,7 +169,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (status == StatusType.Loading)
             {
                 loadingSpinner.Start();
-                UIUtils.SetElementDisplay(refreshButton,false);
+                UIUtils.SetElementDisplay(refreshButton, false);
             }
             else
             {
@@ -205,7 +205,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var menu = new DropdownMenu();
                 menu.AppendAction(L10n.Tr("Check for updates"),
-                    _ =>m_BackgroundFetchHandler.ForceCheckUpdateForAllLocalInfos(),
+                    _ => m_BackgroundFetchHandler.ForceCheckUpdateForAllLocalInfos(),
                     _ => m_BackgroundFetchHandler.isCheckUpdateInProgress ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
                 refreshButton.menu = menu;
             }

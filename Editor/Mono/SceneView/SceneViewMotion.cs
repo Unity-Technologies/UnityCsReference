@@ -100,8 +100,8 @@ namespace UnityEditor
             {
                 get
                 {
-                    var sceneViewFocus = EditorWindow.focusedWindow?.GetType() == typeof(SceneView);
-                    
+                    var sceneViewFocus = EditorWindow.focusedWindow is SceneView;
+
                     return sceneViewFocus && s_ViewportsUnderMouse;
                 }
             }

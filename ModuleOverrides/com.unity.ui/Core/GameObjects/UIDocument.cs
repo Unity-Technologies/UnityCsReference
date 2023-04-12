@@ -326,28 +326,43 @@ namespace UnityEngine.UIElements
                 m_RuntimePanel = rootVisualElement.panel as BaseRuntimePanel;
         }
 
+        bool m_RootHasWorldTransform;
+
         void LateUpdate()
         {
-            if (panelSettings != null && panelSettings.panel != null && panelSettings.panel.drawsInCameras)
+            if (m_RootVisualElement == null || panelSettings == null || panelSettings.panel == null)
+                return;
+
+            if (!panelSettings.panel.isFlat)
             {
                 // TODO: In editor we may loose the m_RuntimePanel connection when manipulation
                 // the hierarchy. This is weird and should be investigated.
                 ResolveRuntimePanel();
-
-                SetTransformOnVisualElement(rootVisualElement, transform);
-                panelSettings.panel.panelToWorld = Matrix4x4.identity;
+                SetTransform();
             }
+            else if (m_RootHasWorldTransform)
+                ClearTransform();
         }
 
-        void SetTransformOnVisualElement(VisualElement visualElement, Transform transform)
+        void SetTransform()
         {
             Matrix4x4 matrix;
             ComputeTransform(transform, out matrix);
 
-            visualElement.style.transformOrigin = new TransformOrigin(Vector3.zero);
-            visualElement.style.translate = new Translate(matrix.GetPosition());
-            visualElement.style.rotate = new Rotate(matrix.rotation);
-            visualElement.style.scale = new Scale(matrix.lossyScale);
+            m_RootVisualElement.style.transformOrigin = new TransformOrigin(Vector3.zero);
+            m_RootVisualElement.style.translate = new Translate(matrix.GetPosition());
+            m_RootVisualElement.style.rotate = new Rotate(matrix.rotation);
+            m_RootVisualElement.style.scale = new Scale(matrix.lossyScale);
+            m_RootHasWorldTransform = true;
+        }
+
+        void ClearTransform()
+        {
+            m_RootVisualElement.style.transformOrigin = StyleKeyword.Null;
+            m_RootVisualElement.style.translate = StyleKeyword.Null;
+            m_RootVisualElement.style.rotate = StyleKeyword.Null;
+            m_RootVisualElement.style.scale = StyleKeyword.Null;
+            m_RootHasWorldTransform = false;
         }
 
         void ComputeTransform(Transform transform, out Matrix4x4 matrix)

@@ -1220,9 +1220,12 @@ namespace UnityEditor
             if (EditorGUILayout.BeginFadeGroup(m_ShowMipMapSettings.faded))
             {
                 EditorGUI.indentLevel++;
+                
+                bool supportsMipmapLimits =
+                    ((TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.Texture2D && !m_VTOnly.boolValue) // If VTOnly, then we don't show the MipmapLimits GUI since its values are ignored anyway
+                    || (TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.Texture2DArray;
 
-                // If VTOnly, then we don't show the MipmapLimits GUI since its values are ignored anyway
-                if ((TextureImporterShape)m_TextureShape.intValue == TextureImporterShape.Texture2D && !m_VTOnly.boolValue)
+                if (supportsMipmapLimits)
                 {
                     DoMipmapLimitsGUI(m_IgnoreMipmapLimit, m_MipmapLimitGroupName);
                 }

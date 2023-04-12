@@ -852,7 +852,7 @@ namespace UnityEngine.UIElements.UIR
             int* userData = stackalloc int[2];
             userData[0] = renderChain.m_StaticIndex;
             userData[1] = renderNodeIndex;
-            UIR.Utility.RegisterIntermediateRenderer(camera, rnd.initialMaterial, rtp.panelToWorld,
+            UIR.Utility.RegisterIntermediateRenderer(camera, rnd.initialMaterial, Matrix4x4.identity,
                 new Bounds(Vector3.zero, new Vector3(float.MaxValue, float.MaxValue, float.MaxValue)),
                 rtp.worldSpaceLayer, 0, false, sameDistanceSortPriority, (int)UIR.Utility.RendererCallbacks.RendererCallback_Exec,
                 new IntPtr(userData), sizeof(int) * 2);

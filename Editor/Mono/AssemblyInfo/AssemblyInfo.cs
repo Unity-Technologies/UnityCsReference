@@ -139,4 +139,9 @@ using UnityEngine;
 
 [assembly: InternalsVisibleTo("Unity.Scenes")]
 
+// This should move with the AnimationWindow to a module at some point
+[assembly: InternalsVisibleTo("UnityEditor.Modules.Animation.tests.AnimationWindow")]
+
+[assembly: InternalsVisibleTo("UnityEditor.Modules.Physics.Tests")]
+
 [assembly: AssemblyIsEditorAssembly]

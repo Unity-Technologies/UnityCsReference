@@ -13,9 +13,8 @@ namespace Unity.UI.Builder
     {
         public new class UxmlFactory : UxmlFactory<FoldoutField, UxmlTraits> {}
 
-        public new class UxmlTraits : BindableElement.UxmlTraits
+        public new class UxmlTraits : PersistedFoldout.UxmlTraits
         {
-            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
             UxmlStringAttributeDescription m_BindingPaths = new UxmlStringAttributeDescription { name = "binding-paths" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -26,8 +25,6 @@ namespace Unity.UI.Builder
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ((FoldoutField)ve).text = m_Text.GetValueFromBag(bag, cc);
-
                 var separator = ' ';
                 ((FoldoutField)ve).bindingPathArray = m_BindingPaths.GetValueFromBag(bag, cc).Split(separator);
 

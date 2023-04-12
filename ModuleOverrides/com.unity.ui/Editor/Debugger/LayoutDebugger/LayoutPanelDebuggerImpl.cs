@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements.Debugger;
@@ -38,6 +39,28 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         Label m_Label = null;
         UILayoutDebugger m_Display = null;
         SliderInt m_Slider = null;
+        TextField m_SearchTextField;
+        EnumFlagsField m_SearchModeEnumField;
+
+        [Flags]
+        enum SearchMode
+        {
+            ByName = 1,
+            ByClass = 2
+        };
+
+        struct SearchInfo
+        {
+            public SearchMode m_SearchMode;
+            public int m_FrameIndex;
+            public int m_PassIndex;
+            public int m_LayoutLoop;
+            public bool m_FoundStartVE;
+            public LayoutDebuggerVisualElement m_StartVE;
+            public LayoutDebuggerVisualElement m_FoundVE;
+        };
+
+        SearchInfo m_SearchInfo;
 
         static UIRLayoutUpdater GetLayoutUpdater(IPanel panel)
         {
@@ -509,6 +532,35 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             row.Add(column);
             histogramCol.Add(row);
 
+            row = createNewRow();
+
+            m_SearchTextField = new TextField();
+            m_SearchTextField.style.flexGrow = 1;
+            row.Add(m_SearchTextField);
+
+            m_SearchModeEnumField = new EnumFlagsField("Search mode", SearchMode.ByClass);
+
+            row.Add(m_SearchModeEnumField);
+
+            Button button = new Button();
+            button.text = "Search";
+            button.clicked += () =>
+            {
+                SearchVE();
+            };
+
+            row.Add(button);
+
+            button = new Button();
+            button.text = "Search Next";
+            row.Add(button);
+            button.clicked += () =>
+            {
+                SearchNextVE();
+            };
+
+            histogramCol.Add(row);
+
             VisualElement histogramRow = createNewRow();
             histogramRow.Add(histogramCol);
             m_Histogram = new UILayoutDebuggerHistogram();
@@ -620,6 +672,117 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         {
             UpdateLabel();
             SetupIndices();
+        }
+
+        private void SearchVE()
+        {
+            m_SearchInfo.m_SearchMode = (SearchMode)m_SearchModeEnumField.value;
+            m_SearchInfo.m_StartVE = null;
+            Search();
+        }
+
+        private void SearchNextVE()
+        {
+            m_SearchInfo.m_StartVE = m_Display.lastDrawElement;
+            Search();
+        }
+
+        private void Search()
+        {
+            if (m_RecordLayout == null)
+            {
+                Debug.LogWarning("No recorded data to search.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(m_SearchTextField.text))
+            {
+                Debug.LogWarning("Search field empty.");
+                return;
+            }
+
+            m_SearchInfo.m_FoundStartVE = false;
+            m_SearchInfo.m_FoundVE = null;
+
+            bool startSearch = m_SearchInfo.m_StartVE == null;
+
+            for (int i = 0; i < m_RecordLayout.Count; i++)
+            {
+                if (!startSearch)
+                {
+                    if ((m_RecordLayout[i].m_FrameIndex == m_SearchInfo.m_FrameIndex) &&
+                         (m_RecordLayout[i].m_PassIndex == m_SearchInfo.m_PassIndex) &&
+                         (m_RecordLayout[i].m_LayoutLoop == m_SearchInfo.m_LayoutLoop))
+                    {
+                        startSearch = true;
+                    }
+                }
+
+                if (startSearch)
+                {
+                    SearchElement(m_RecordLayout[i].m_VE);
+                    if (m_SearchInfo.m_FoundVE != null)
+                    {
+                        m_FrameIndex = m_RecordLayout[i].m_FrameIndex;
+                        m_PassIndex = m_RecordLayout[i].m_PassIndex;
+                        m_LayoutLoop = m_RecordLayout[i].m_LayoutLoop;
+
+                        m_SearchInfo.m_FrameIndex = m_FrameIndex;
+                        m_SearchInfo.m_PassIndex = m_PassIndex;
+                        m_SearchInfo.m_LayoutLoop = m_LayoutLoop;
+
+                        UpdateLabelsAndSetupIndices();
+                        m_Display.lastDrawElement = m_SearchInfo.m_FoundVE;
+                        break;
+                    }
+                }
+            }
+
+            if (m_SearchInfo.m_FoundVE == null)
+            {
+                Debug.LogWarning("Last item reached.");
+            }
+
+        }
+
+        private void SearchElement(LayoutDebuggerVisualElement ve)
+        {
+            if (m_SearchInfo.m_FoundVE != null)
+            {
+                return;
+            }
+
+            if (!ve.IsVisualElementVisible())
+            {
+                return;
+            }
+
+            if (m_SearchInfo.m_StartVE != null && m_SearchInfo.m_FoundStartVE == false)
+            {
+                if (ve == m_SearchInfo.m_StartVE)
+                {
+                    m_SearchInfo.m_FoundStartVE = true;
+                }
+            }
+            else
+            {
+                var compareInfo = CultureInfo.InvariantCulture.CompareInfo;
+                var options = CompareOptions.IgnoreCase;
+
+                if ((ve.m_OriginalVisualElement != null) && (ve.m_OriginalVisualElement.name != null) &&
+                    (((m_SearchInfo.m_SearchMode & SearchMode.ByName) != 0) && ((compareInfo.IndexOf(ve.m_OriginalVisualElement.name, m_SearchTextField.text, options) != -1))) ||
+                    (((m_SearchInfo.m_SearchMode & SearchMode.ByClass) != 0) && ((compareInfo.IndexOf(ve.m_OriginalVisualElement.GetType().ToString(), m_SearchTextField.text, options) != -1))))
+                {
+                    m_SearchInfo.m_FoundVE = ve;
+                    return;
+                }
+            }
+
+            for (int i = 0; i < ve.m_Children.Count; ++i)
+            {
+                var child = ve.m_Children[i];
+                SearchElement(child);
+            }
         }
 
         private void HistogramOnMouseMove(MouseMoveEvent evt)

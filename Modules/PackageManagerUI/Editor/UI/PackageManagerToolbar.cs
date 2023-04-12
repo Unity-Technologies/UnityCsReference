@@ -23,7 +23,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private IOProxy m_IOProxy;
-        private PageRefreshHandler m_PageRefreshHandler;
 
         private void ResolveDependencies()
         {
@@ -38,7 +37,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
             m_IOProxy = container.Resolve<IOProxy>();
-            m_PageRefreshHandler = container.Resolve<PageRefreshHandler>();
         }
 
         public PackageManagerToolbar()
@@ -66,6 +64,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onFiltersChange += OnFiltersChange;
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange += OnInternetReachabilityChange;
+            m_PageManager.onSupportedStatusFiltersChanged += OnSupportedStatusFiltersChanged;
 
             RefreshInProgressSpinner();
         }
@@ -77,6 +76,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onFiltersChange -= OnFiltersChange;
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
             m_Application.onInternetReachabilityChange -= OnInternetReachabilityChange;
+            m_PageManager.onSupportedStatusFiltersChanged -= OnSupportedStatusFiltersChanged;
 
             RefreshInProgressSpinner(false);
         }
@@ -92,18 +92,28 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackagesChanged(PackagesChangeArgs args)
         {
-            if (args.progressUpdated.Any() || args.added.Any() || args.removed.Any())
-                RefreshInProgressSpinner();
+            if (!args.progressUpdated.Any() && !args.added.Any() && !args.removed.Any())
+                return;
+
+            RefreshInProgressSpinner();
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
-            UpdateMenuEnableStatus(m_PageManager.activePage.capability);
+            UpdateMenuEnableStatusAndTooltip(m_PageManager.activePage);
         }
 
         private void OnInternetReachabilityChange(bool value)
         {
-            UpdateMenuEnableStatus(m_PageManager.activePage.capability);
+            UpdateMenuEnableStatusAndTooltip(m_PageManager.activePage);
+        }
+
+        private void OnSupportedStatusFiltersChanged(IPage page)
+        {
+            if (!page.isActivePage)
+                return;
+
+            UpdateMenuEnableStatusAndTooltip(page);
         }
 
         private void UpdateFilterMenuText(PageFilters filters)
@@ -111,16 +121,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             var filtersSet = new[] { filters.status.GetDisplayName() }.Concat(filters.categories).Concat(filters.labels)
                 .Where(s => !string.IsNullOrEmpty(s)).ToArray();
             filtersMenu.text = filtersSet.Any() ? string.Format(L10n.Tr("Filters ({0})"), string.Join(", ", filtersSet)) : L10n.Tr("Filters");
-        }
-
-        private void UpdateFiltersMenu(IPage page)
-        {
-            var showFiltersMenu = page.supportedStatusFilters.Any();
-            UIUtils.SetElementDisplay(filtersMenu, showFiltersMenu);
-            UIUtils.SetElementDisplay(clearFiltersButton, showFiltersMenu);
-            if (!showFiltersMenu)
-                return;
-            UpdateFilterMenuText(page.filters);
         }
 
         private void UpdateSortMenuText(PageSortOption sortOption)
@@ -145,26 +145,47 @@ namespace UnityEditor.PackageManager.UI.Internal
                     filters.sortOption = sortOption;
                     if (page.UpdateFilters(filters))
                         PackageManagerFiltersAnalytics.SendEvent(filters);
-                },a => page.filters.sortOption == sortOption
+                }, a => page.filters.sortOption == sortOption
                     ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
             }
             UpdateSortMenuText(page.filters.sortOption);
         }
 
-        private void UpdateMenuEnableStatus(PageCapability capability)
+        private void UpdateMenuEnableStatusAndTooltip(IPage page)
         {
-            var enable = (m_UnityConnect.isUserLoggedIn || (capability & PageCapability.RequireUserLoggedIn) == 0) &&
-                         (m_Application.isInternetReachable || (capability & PageCapability.RequireNetwork) == 0);
-            sortingMenu.SetEnabled(enable);
-            filtersMenu.SetEnabled(enable);
-            clearFiltersButton.SetEnabled(enable);
+            SetEnabledStatusAndTooltip(true, string.Empty, sortingMenu, filtersMenu, clearFiltersButton);
+
+            if (!m_Application.isInternetReachable && (page.capability & PageCapability.RequireNetwork) != 0)
+            {
+                var tooltipText = L10n.Tr("You need to be online before you can sort or filter packages.");
+                SetEnabledStatusAndTooltip(false, tooltipText, sortingMenu, filtersMenu, clearFiltersButton);
+            }
+            else if (!m_UnityConnect.isUserLoggedIn && (page.capability & PageCapability.RequireUserLoggedIn) != 0)
+            {
+                var tooltipText = L10n.Tr("You need to sign in before you can sort or filter packages.");
+                SetEnabledStatusAndTooltip(false, tooltipText, sortingMenu, filtersMenu, clearFiltersButton);
+            }
+            else if (!page.supportedStatusFilters.Any())
+            {
+                var tooltipText = L10n.Tr("There are no applicable filters to display for this context.");
+                SetEnabledStatusAndTooltip(false, tooltipText, filtersMenu, clearFiltersButton);
+            }
+        }
+
+        private static void SetEnabledStatusAndTooltip(bool enabled, string tooltip, params VisualElement[] elements)
+        {
+            foreach (var e in elements)
+            {
+                e.SetEnabled(enabled);
+                e.tooltip = tooltip;
+            }
         }
 
         private void OnActivePageChanged(IPage page)
         {
             UpdateSortingMenu(page);
-            UpdateFiltersMenu(page);
-            UpdateMenuEnableStatus(page.capability);
+            UpdateFilterMenuText(page.filters);
+            UpdateMenuEnableStatusAndTooltip(page);
         }
 
         private void OnFiltersChange(IPage page, PageFilters filters)

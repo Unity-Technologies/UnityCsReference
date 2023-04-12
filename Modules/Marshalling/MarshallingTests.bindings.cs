@@ -782,16 +782,6 @@ namespace UnityEngine
         public static extern int StaticAccessorProp { get; set; }
     }
 
-
-    // --------------------------------------------------------------------
-    // System.Array tests
-    [NativeType("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
-    internal class SystemArrayTests
-    {
-        [NativeThrows] public static extern void ParameterIntArray(System.Array param);
-        public static extern System.Array ReturnIntArray();
-    }
-
     [NativeHeader("Runtime/Scripting/Marshalling/Test/OutArrayMarshallingTests.h")]
     [ExcludeFromDocs]
     internal static class OutArrayMarshallingTests

@@ -509,7 +509,7 @@ namespace UnityEngine
                 throw new ArgumentNullException("instanceData");
             RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
             uint count = Math.Min((uint)instanceCount, (uint)Math.Max(0, instanceData.Count - startInstance));
-            fixed(T *data = NoAllocHelpers.ExtractArrayFromListT(instanceData)) {Internal_RenderMeshInstanced(rparams, mesh, submeshIndex, (IntPtr)(data + startInstance), layout, count);}
+            fixed(T *data = NoAllocHelpers.ExtractArrayFromList(instanceData)) {Internal_RenderMeshInstanced(rparams, mesh, submeshIndex, (IntPtr)(data + startInstance), layout, count);}
         }
 
         public unsafe static void RenderMeshInstanced<T>(RenderParams rparams, Mesh mesh, int submeshIndex, NativeArray<T> instanceData, [uei.DefaultValue("-1")] int instanceCount = -1, [uei.DefaultValue("0")] int startInstance = 0) where T : unmanaged
@@ -641,7 +641,7 @@ namespace UnityEngine
             if (matrices == null)
                 throw new ArgumentNullException("matrices");
 
-            DrawMeshInstanced(mesh, submeshIndex, material, NoAllocHelpers.ExtractArrayFromListT(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
+            DrawMeshInstanced(mesh, submeshIndex, material, NoAllocHelpers.ExtractArrayFromList(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
         }
 
         public static void DrawMeshInstancedProcedural(Mesh mesh, int submeshIndex, Material material, Bounds bounds, int count, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0, Camera camera = null, LightProbeUsage lightProbeUsage = LightProbeUsage.BlendProbes, LightProbeProxyVolume lightProbeProxyVolume = null)

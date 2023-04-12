@@ -27,6 +27,7 @@ namespace UnityEngine.UIElements.StyleSheets
     internal enum StyleEnumType
     {
         Align,
+        Axis,
         BackgroundPositionKeyword,
         BackgroundSizeType,
         DisplayStyle,

@@ -7,6 +7,9 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using Unity.Burst;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using UnityEngine;
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
@@ -125,6 +128,24 @@ namespace Unity.Collections.LowLevel.Unsafe
         public static int AlignOf<T>() where T : struct
         {
             return SizeOf<AlignOfHelper<T>>() - SizeOf<T>();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe Span<byte> GetByteSpanFromArray(System.Array array, int elementSize)
+        {
+            if (array == null || array.Length == 0)
+                return new Span<byte>();
+
+            System.Diagnostics.Debug.Assert(UnsafeUtility.SizeOf(array.GetType().GetElementType()) == elementSize);
+
+            var bArray = UnsafeUtility.As<System.Array, byte[]>(ref array);
+            return new Span<byte>(UnsafeUtility.AddressOf(ref bArray[0]), array.Length * elementSize);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Span<byte> GetByteSpanFromList<T>(List<T> list) where T : struct
+        {
+            return MemoryMarshal.AsBytes(NoAllocHelpers.ExtractArrayFromList(list).AsSpan());
         }
     }
 }

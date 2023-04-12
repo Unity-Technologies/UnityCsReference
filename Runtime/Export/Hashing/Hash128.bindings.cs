@@ -63,8 +63,8 @@ namespace UnityEngine
         static extern void ComputeFromString(string data, ref Hash128 hash);
         [FreeFunction("ComputeHash128FromScriptPointer", IsThreadSafe = true)]
         static extern void ComputeFromPtr(IntPtr data, int start, int count, int elemSize, ref Hash128 hash);
-        [FreeFunction("ComputeHash128FromScriptArray", IsThreadSafe = true)]
-        static extern void ComputeFromArray(Array data, int start, int count, int elemSize, ref Hash128 hash);
+        [FreeFunction("ComputeHash128FromScriptSpan", IsThreadSafe = true)]
+        static extern void ComputeFromSpan(ReadOnlySpan<byte> data, int start, int count, int elemSize, ref Hash128 hash);
 
         public static Hash128 Compute(string data)
         {
@@ -94,7 +94,7 @@ namespace UnityEngine
             if (!UnsafeUtility.IsArrayBlittable(data))
                 throw new ArgumentException($"Array passed to {nameof(Compute)} must be blittable.\n{UnsafeUtility.GetReasonForArrayNonBlittable(data)}");
             var h = new Hash128();
-            ComputeFromArray(data, 0, data.Length, UnsafeUtility.SizeOf<T>(), ref h);
+            ComputeFromSpan(MemoryMarshal.AsBytes(data.AsSpan()), 0, data.Length, UnsafeUtility.SizeOf<T>(), ref h);
             return h;
         }
 
@@ -105,7 +105,7 @@ namespace UnityEngine
             if (start < 0 || count < 0 || start + count > data.Length)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count})");
             var h = new Hash128();
-            ComputeFromArray(data, start, count, UnsafeUtility.SizeOf<T>(), ref h);
+            ComputeFromSpan(MemoryMarshal.AsBytes(data.AsSpan()), start, count, UnsafeUtility.SizeOf<T>(), ref h);
             return h;
         }
 
@@ -114,7 +114,7 @@ namespace UnityEngine
             if (!UnsafeUtility.IsGenericListBlittable<T>())
                 throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Compute)} must be blittable.\n{UnsafeUtility.GetReasonForGenericListNonBlittable<T>()}");
             var h = new Hash128();
-            ComputeFromArray(NoAllocHelpers.ExtractArrayFromList(data), 0, data.Count, UnsafeUtility.SizeOf<T>(), ref h);
+            ComputeFromSpan(UnsafeUtility.GetByteSpanFromList(data), 0, data.Count, UnsafeUtility.SizeOf<T>(), ref h);
             return h;
         }
 
@@ -125,7 +125,7 @@ namespace UnityEngine
             if (start < 0 || count < 0 || start + count > data.Count)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count})");
             var h = new Hash128();
-            ComputeFromArray(NoAllocHelpers.ExtractArrayFromList(data), start, count, UnsafeUtility.SizeOf<T>(), ref h);
+            ComputeFromSpan(UnsafeUtility.GetByteSpanFromList(data), start, count, UnsafeUtility.SizeOf<T>(), ref h);
             return h;
         }
 
@@ -181,7 +181,7 @@ namespace UnityEngine
         {
             if (!UnsafeUtility.IsArrayBlittable(data))
                 throw new ArgumentException($"Array passed to {nameof(Append)} must be blittable.\n{UnsafeUtility.GetReasonForArrayNonBlittable(data)}");
-            ComputeFromArray(data, 0, data.Length, UnsafeUtility.SizeOf<T>(), ref this);
+            ComputeFromSpan(MemoryMarshal.AsBytes(data.AsSpan()), 0, data.Length, UnsafeUtility.SizeOf<T>(), ref this);
         }
 
         public void Append<T>(T[] data, int start, int count) where T : struct
@@ -190,14 +190,14 @@ namespace UnityEngine
                 throw new ArgumentException($"Array passed to {nameof(Append)} must be blittable.\n{UnsafeUtility.GetReasonForArrayNonBlittable(data)}");
             if (start < 0 || count < 0 || start + count > data.Length)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count})");
-            ComputeFromArray(data, start, count, UnsafeUtility.SizeOf<T>(), ref this);
+            ComputeFromSpan(MemoryMarshal.AsBytes(data.AsSpan()), start, count, UnsafeUtility.SizeOf<T>(), ref this);
         }
 
         public void Append<T>(List<T> data) where T : struct
         {
             if (!UnsafeUtility.IsGenericListBlittable<T>())
                 throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Append)} must be blittable.\n{UnsafeUtility.GetReasonForGenericListNonBlittable<T>()}");
-            ComputeFromArray(NoAllocHelpers.ExtractArrayFromList(data), 0, data.Count, UnsafeUtility.SizeOf<T>(), ref this);
+            ComputeFromSpan(UnsafeUtility.GetByteSpanFromList(data), 0, data.Count, UnsafeUtility.SizeOf<T>(), ref this);
         }
 
         public void Append<T>(List<T> data, int start, int count) where T : struct
@@ -206,7 +206,7 @@ namespace UnityEngine
                 throw new ArgumentException($"List<{typeof(T)}> passed to {nameof(Append)} must be blittable.\n{UnsafeUtility.GetReasonForGenericListNonBlittable<T>()}");
             if (start < 0 || count < 0 || start + count > data.Count)
                 throw new ArgumentOutOfRangeException($"Bad start/count arguments (start:{start} count:{count})");
-            ComputeFromArray(NoAllocHelpers.ExtractArrayFromList(data), start, count, UnsafeUtility.SizeOf<T>(), ref this);
+            ComputeFromSpan(UnsafeUtility.GetByteSpanFromList(data), start, count, UnsafeUtility.SizeOf<T>(), ref this);
         }
 
         public unsafe void Append<T>(ref T val) where T : unmanaged

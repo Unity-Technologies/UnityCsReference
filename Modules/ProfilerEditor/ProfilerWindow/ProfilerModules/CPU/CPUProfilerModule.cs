@@ -115,24 +115,18 @@ namespace UnityEditorInternal.Profiling
                 return;
 
             var content = selectionHighlightLabel;
+            var prevClipping = Styles.whiteLabel.clipping;
+            Styles.whiteLabel.clipping = TextClipping.Ellipsis;
             var size = EditorStyles.whiteLabel.CalcSize(content);
+            const float marginLeft = 120;
             const float marginRight = 3;
             const float textMarginRight = 2;
-            // the FPS label could get in the way, "0.1ms (10000FPS)" being the longest.
-            const float marginLeft = 120;
             var maxWidth = chartRect.width - (marginRight + marginLeft);
-            if (Event.current.type == EventType.Repaint && size.x > maxWidth)
-            {
-                var length = selectionHighlightLabel.text.Length - 3;
-                content = GUIContent.Temp(selectionHighlightLabel.text, selectionHighlightLabel.tooltip);
-                while (length > 0 && size.x > maxWidth)
-                {
-                    content.text = content.text.Substring(0, --length) + "...";
-                    size = EditorStyles.whiteLabel.CalcSize(content);
-                }
-            }
+            size.x = Mathf.Min(maxWidth, size.x + 1f);
+
             var r = new Rect(chartRect.x + chartRect.width - size.x - marginRight - textMarginRight, chartRect.y + marginRight, size.x + textMarginRight, size.y);
             EditorGUI.DoDropShadowLabel(r, content, Styles.whiteLabel, Styles.labelDropShadowOpacity);
+            Styles.whiteLabel.clipping = prevClipping;
         }
 
         public override void DrawDetailsView(Rect position)

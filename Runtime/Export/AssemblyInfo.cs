@@ -48,6 +48,9 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Tiny.Authoring")]
 [assembly: InternalsVisibleTo("Unity.ImageConversionTests")]
 
+// This should move with the AnimationWindow to a module at some point
+[assembly: InternalsVisibleTo("UnityEditor.Modules.Animation.tests.AnimationWindow")]
+
 // Required for the type forwarder UnityEngine.dll
 [assembly: InternalsVisibleTo("UnityEngine")]
 

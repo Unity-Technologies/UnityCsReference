@@ -112,6 +112,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmPackageFactory m_UpmPackageFactory;
         private UpmOnAssetStorePackageFactory m_UpmOnAssetStorePackageFactory;
 
+        private OperationFactory m_OperationFactory;
+
         private Dictionary<Type, object> m_RegisteredObjects;
 
         [NonSerialized]
@@ -187,6 +189,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmPackageFactory = new UpmPackageFactory();
             m_UpmOnAssetStorePackageFactory = new UpmOnAssetStorePackageFactory();
 
+            m_OperationFactory = new OperationFactory();
+
             // Since dictionaries doesn't survive through serialization, we always re-create the default registration
             m_RegisteredObjects = new Dictionary<Type, object>();
             RegisterDefaultServices();
@@ -203,7 +207,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ResourceLoader.ResolveDependencies(m_ApplicationProxy);
 
             m_AssetStoreCache.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_IOProxy, m_UniqueIdMapper);
-            m_AssetStoreClient.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_FetchStatusTracker, m_AssetDatabaseProxy);
+            m_AssetStoreClient.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreUtils, m_AssetStoreRestAPI, m_FetchStatusTracker, m_AssetDatabaseProxy, m_OperationFactory);
             m_AssetStoreOAuth.ResolveDependencies(m_DateTimeProxy, m_UnityConnectProxy, m_UnityOAuthProxy, m_HttpClientFactory);
             m_AssetStoreRestAPI.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreOAuth, m_JsonParser, m_HttpClientFactory);
             m_AssetStorePackageInstaller.ResolveDependencies(m_IOProxy, m_AssetStoreCache, m_AssetDatabaseProxy, m_AssetSelectionHandler, m_ApplicationProxy);
@@ -225,6 +229,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStorePackageFactory.ResolveDependencies(m_UniqueIdMapper, m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_FetchStatusTracker, m_IOProxy, m_BackgroundFetchHandler);
             m_UpmPackageFactory.ResolveDependencies(m_UniqueIdMapper, m_UpmCache, m_UpmClient, m_BackgroundFetchHandler, m_PackageDatabase, m_SettingsProxy);
             m_UpmOnAssetStorePackageFactory.ResolveDependencies(m_UniqueIdMapper, m_UnityConnectProxy, m_AssetStoreCache, m_BackgroundFetchHandler, m_PackageDatabase, m_FetchStatusTracker, m_UpmCache, m_UpmClient);
+
+            m_OperationFactory.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreRestAPI, m_AssetStoreCache);
 
             m_ExtensionManager.ResolveDependencies(m_PackageManagerPrefs);
 

@@ -21,6 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual event Action<PageSelectionChangeArgs> onSelectionChanged = delegate {};
         public virtual event Action<VisualStateChangeArgs> onVisualStateChange = delegate {};
         public virtual event Action<ListUpdateArgs> onListUpdate = delegate {};
+        public virtual event Action<IPage> onSupportedStatusFiltersChanged = delegate {};
 
         private Dictionary<string, IPage> m_Pages = new();
 
@@ -132,6 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 UnityRegistryPage.k_Id => new UnityRegistryPage(m_PackageDatabase),
                 InProjectPage.k_Id => new InProjectPage(m_PackageDatabase),
+                InProjectUpdatesPage.k_Id => new InProjectUpdatesPage(m_PackageDatabase),
                 BuiltInPage.k_Id => new BuiltInPage(m_PackageDatabase),
                 MyRegistriesPage.k_Id => new MyRegistriesPage(m_PackageDatabase),
                 MyAssetsPage.k_Id => new MyAssetsPage(m_PackageDatabase, m_PackageManagerPrefs, m_UnityConnect, m_AssetStoreClient),
@@ -156,6 +158,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             page.onListRebuild += p => onListRebuild?.Invoke(p);
             page.onFiltersChange += filters => onFiltersChange?.Invoke(page, filters);
             page.onTrimmedSearchTextChanged += text => onTrimmedSearchTextChanged?.Invoke(page, text);
+            page.onSupportedStatusFiltersChanged += p => onSupportedStatusFiltersChanged?.Invoke(p);
         }
 
         public virtual void AddExtensionPage(ExtensionPageArgs args)

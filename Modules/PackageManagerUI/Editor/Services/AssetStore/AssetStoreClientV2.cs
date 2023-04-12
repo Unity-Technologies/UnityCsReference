@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine;
 
@@ -34,12 +35,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         private FetchStatusTracker m_FetchStatusTracker;
         [NonSerialized]
         private AssetDatabaseProxy m_AssetDatabase;
+        [NonSerialized]
+        private OperationFactory m_OperationFactory;
+        [ExcludeFromCodeCoverage]
         public void ResolveDependencies(UnityConnectProxy unityConnect,
             AssetStoreCache assetStoreCache,
             AssetStoreUtils assetStoreUtils,
             AssetStoreRestAPI assetStoreRestAPI,
             FetchStatusTracker fetchStatusTracker,
-            AssetDatabaseProxy assetDatabase)
+            AssetDatabaseProxy assetDatabase,
+            OperationFactory operationFactory)
         {
             m_UnityConnect = unityConnect;
             m_AssetStoreCache = assetStoreCache;
@@ -49,7 +54,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_FetchStatusTracker = fetchStatusTracker;
             m_AssetDatabase = assetDatabase;
 
-            m_ListOperation?.ResolveDependencies(unityConnect, assetStoreRestAPI, assetStoreCache);
+            m_OperationFactory = operationFactory;
+
+            m_OperationFactory.ResolveDependencies(m_ListOperation);
         }
 
         public virtual void ExtraFetch(long productId)
@@ -91,7 +98,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // we'll try to fetch the purchase info first and then call the `FetchInternal`.
             // In the case where a package not purchased, `purchaseInfo` will still be null,
             // but the generated `Package` in the end will not contain an error.
-            var fetchOperation = new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
+            var fetchOperation = m_OperationFactory.CreateAssetStoreListOperation();
             var queryArgs = new PurchasesQueryArgs { productIds = productIdsWithoutPurchaseInfo, status = checkHiddenPurchases ? PageFilters.Status.Hidden : PageFilters.Status.None };
             var fetchHiddenProductsRequired = false;
             fetchOperation.onOperationSuccess += op =>
@@ -121,7 +128,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             CancelListPurchases();
             RefreshLocal();
 
-            m_ListOperation = m_ListOperation ?? new AssetStoreListOperation(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
+            m_ListOperation ??= m_OperationFactory.CreateAssetStoreListOperation();
+
             m_ListOperation.onOperationSuccess += op =>
             {
                 var result = m_ListOperation.result;

@@ -194,11 +194,9 @@ namespace UnityEngine
     public sealed partial class Texture2D : Texture
     {
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
-
-        extern public bool ignoreMipmapLimit {
-            [NativeName("IgnoreMipmapLimit")] get;
-            [NativeName("SetIgnoreMipmapLimitAndReload")] set;
-        }
+        
+        extern private bool IgnoreMipmapLimit();
+        extern private void SetIgnoreMipmapLimitAndReload(bool value);
 
         extern public string mipmapLimitGroup
         {
@@ -222,10 +220,10 @@ namespace UnityEngine
         [FreeFunction("Texture2DScripting::CreateEmpty")]
         extern private static bool Internal_CreateEmptyImpl([Writable] Texture2D mono);
         [FreeFunction("Texture2DScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex, string mipmapLimitGroupName);
-        private static void Internal_Create([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex, string mipmapLimitGroupName)
+        extern private static bool Internal_CreateImpl([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex, bool ignoreMipmapLimit, string mipmapLimitGroupName);
+        private static void Internal_Create([Writable] Texture2D mono, int w, int h, int mipCount, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex, bool ignoreMipmapLimit, string mipmapLimitGroupName)
         {
-            if (!Internal_CreateImpl(mono, w, h, mipCount, format, flags, nativeTex, mipmapLimitGroupName))
+            if (!Internal_CreateImpl(mono, w, h, mipCount, format, flags, nativeTex, ignoreMipmapLimit, mipmapLimitGroupName))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
@@ -257,7 +255,7 @@ namespace UnityEngine
         extern private bool LoadRawTextureDataImplArray(byte[] data);
 
         [FreeFunction(Name = "Texture2DScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+        extern private bool SetPixelDataImplArray(ReadOnlySpan<byte> data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "Texture2DScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
@@ -428,7 +426,7 @@ namespace UnityEngine
         extern public void SetPixels(Color[] colors, CubemapFace face, int miplevel);
 
         [FreeFunction(Name = "CubemapScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int face, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+        extern private bool SetPixelDataImplArray(ReadOnlySpan<byte> data, int mipLevel, int face, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "CubemapScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int face, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
@@ -548,7 +546,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "Texture3DScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+        extern private bool SetPixelDataImplArray(ReadOnlySpan<byte> data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "Texture3DScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
@@ -565,13 +563,26 @@ namespace UnityEngine
         extern public int depth { [NativeName("GetTextureLayerCount")] get; }
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
+        extern private bool IgnoreMipmapLimit();
+        extern private void SetIgnoreMipmapLimitAndReload(bool value);
+
+        extern public string mipmapLimitGroup
+        {
+            [NativeName("GetMipmapLimitGroupName")] get;
+        }
+
+        extern public int activeMipmapLimit
+        {
+            [NativeName("GetMipmapLimit")] get;
+        }
+
         extern override public bool isReadable { get; }
 
         [FreeFunction("Texture2DArrayScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture2DArray mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags);
-        private static void Internal_Create([Writable] Texture2DArray mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags)
+        extern private static bool Internal_CreateImpl([Writable] Texture2DArray mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags, bool ignoreMipmapLimit, string mipmapLimitGroupName);
+        private static void Internal_Create([Writable] Texture2DArray mono, int w, int h, int d, int mipCount, GraphicsFormat format, TextureCreationFlags flags, bool ignoreMipmapLimit, string mipmapLimitGroupName)
         {
-            if (!Internal_CreateImpl(mono, w, h, d, mipCount, format, flags))
+            if (!Internal_CreateImpl(mono, w, h, d, mipCount, format, flags, ignoreMipmapLimit, mipmapLimitGroupName))
                 throw new UnityException("Failed to create 2D array texture because of invalid parameters.");
         }
 
@@ -588,7 +599,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "Texture2DArrayScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+        extern private bool SetPixelDataImplArray(ReadOnlySpan<byte> data, int mipLevel, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "Texture2DArrayScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
@@ -677,7 +688,7 @@ namespace UnityEngine
         }
 
         [FreeFunction(Name = "CubemapArrayScripting::SetPixelDataArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private bool SetPixelDataImplArray(System.Array data, int mipLevel, int face, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
+        extern private bool SetPixelDataImplArray(ReadOnlySpan<byte> data, int mipLevel, int face, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);
 
         [FreeFunction(Name = "CubemapArrayScripting::SetPixelData", HasExplicitThis = true, ThrowsException = true)]
         extern private bool SetPixelDataImpl(IntPtr data, int mipLevel, int face, int element, int elementSize, int dataArraySize, int sourceDataStartIndex = 0);

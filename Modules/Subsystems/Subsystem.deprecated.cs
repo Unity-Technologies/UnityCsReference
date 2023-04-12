@@ -2,8 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine
 {
+    [Obsolete("Use SubsystemWithProvider instead.", false)]
     public abstract class Subsystem : ISubsystem
     {
         abstract public bool running { get; }
@@ -22,6 +25,7 @@ namespace UnityEngine
         internal ISubsystemDescriptor m_SubsystemDescriptor;
     }
 
+    [Obsolete("Use SubsystemWithProvider<> instead.", false)]
     public abstract class Subsystem<TSubsystemDescriptor>
 #pragma warning disable CS0618
         : Subsystem

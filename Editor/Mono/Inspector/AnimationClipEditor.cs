@@ -1780,6 +1780,7 @@ namespace UnityEditor
         private AnimationWindowEvent[] m_Events;
 
         private TimeArea m_Timeline;
+        private AnimationEventEditorState m_EventEditorState = new();
 
         public EventManipulationHandler(TimeArea timeArea)
         {
@@ -2062,7 +2063,7 @@ namespace UnityEditor
         {
             EditorGUI.indentLevel++;
             if (m_Events != null && m_Events.Length > 0)
-                AnimationWindowEventInspector.OnEditAnimationEvents(m_Events);
+                AnimationWindowEventInspector.OnEditAnimationEvents(m_Events, m_EventEditorState);
             else
                 AnimationWindowEventInspector.OnDisabledAnimationEvent();
 

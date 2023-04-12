@@ -72,9 +72,9 @@ namespace UnityEditor.Scripting.Compilers
             }
         }
 
-        private static readonly Version kMinimumSupportedUWPVersion = new Version(10, 0, 10240, 0);
+        private static readonly Version kMinimumSupportedUWPVersion = new Version(10, 0, 19041, 0);
         private static readonly PreviousUWPSDK kMinimumSupportedPreviousUWPSDK = new PreviousUWPSDK(kMinimumSupportedUWPVersion, true);
-        private static readonly UWPSDK kMinimumSupportedUWPSDK = new UWPSDK(kMinimumSupportedUWPVersion, new Version(14, 0), new[] { kMinimumSupportedPreviousUWPSDK });
+        private static readonly UWPSDK kMinimumSupportedUWPSDK = new UWPSDK(kMinimumSupportedUWPVersion, new Version(16, 0), new[] { kMinimumSupportedPreviousUWPSDK });
 
         public static UWPSDK MinimumSupportedUWPSDK { get { return kMinimumSupportedUWPSDK; } }
 

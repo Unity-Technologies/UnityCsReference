@@ -174,7 +174,7 @@ namespace UnityEngine
                 throw new InvalidOperationException("Not allowed to access Renderer.materials on prefab object. Use Renderer.sharedMaterials instead");
 
             NoAllocHelpers.EnsureListElemCount(m, GetMaterialCount());
-            CopyMaterialArray(NoAllocHelpers.ExtractArrayFromListT(m));
+            CopyMaterialArray(NoAllocHelpers.ExtractArrayFromList(m));
         }
 
         public void SetSharedMaterials(List<Material> materials)
@@ -182,7 +182,7 @@ namespace UnityEngine
             if (materials == null)
                 throw new ArgumentNullException("The material list to set cannot be null.", "materials");
 
-            SetMaterialArray(NoAllocHelpers.ExtractArrayFromListT(materials));
+            SetMaterialArray(NoAllocHelpers.ExtractArrayFromList(materials));
         }
 
         public void SetMaterials(List<Material> materials)
@@ -190,7 +190,7 @@ namespace UnityEngine
             if (materials == null)
                 throw new ArgumentNullException("The material list to set cannot be null.", "materials");
 
-            SetMaterialArray(NoAllocHelpers.ExtractArrayFromListT(materials));
+            SetMaterialArray(NoAllocHelpers.ExtractArrayFromList(materials));
         }
 
         public void GetSharedMaterials(List<Material> m)
@@ -199,7 +199,7 @@ namespace UnityEngine
                 throw new ArgumentNullException("The result material list cannot be null.", "m");
 
             NoAllocHelpers.EnsureListElemCount(m, GetMaterialCount());
-            CopySharedMaterialArray(NoAllocHelpers.ExtractArrayFromListT(m));
+            CopySharedMaterialArray(NoAllocHelpers.ExtractArrayFromList(m));
         }
 
         public void GetClosestReflectionProbes(List<ReflectionProbeBlendInfo> result)

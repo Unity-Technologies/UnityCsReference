@@ -1241,7 +1241,8 @@ namespace UnityEditor
                     if (importer is TextureImporter)
                     {
                         TextureImporter texImporter = importer as TextureImporter;
-                        if (texImporter.textureShape == TextureImporterShape.Texture2D && texImporter.mipmapLimitGroupName == oldName)
+                        bool supportsMipmapLimits = texImporter.textureShape == TextureImporterShape.Texture2D || texImporter.textureShape == TextureImporterShape.Texture2DArray;
+                        if (supportsMipmapLimits && texImporter.mipmapLimitGroupName == oldName)
                         {
                             texImporter.mipmapLimitGroupName = newName;
                             if (!isPreset)
@@ -1302,7 +1303,7 @@ namespace UnityEditor
             for (int i = 0; i < guids.Length; ++i)
             {
                 TextureImporter importer = AssetImporter.GetAtPath(AssetDatabase.GUIDToAssetPath(guids[i])) as TextureImporter;
-                if (importer is not null && importer.textureShape == TextureImporterShape.Texture2D && importer.mipmapLimitGroupName == groupNameToIdentify)
+                if (importer is not null && (importer.textureShape == TextureImporterShape.Texture2D || importer.textureShape == TextureImporterShape.Texture2DArray) && importer.mipmapLimitGroupName == groupNameToIdentify)
                 {
                     newSelection.Add(AssetDatabase.LoadAssetAtPath<Object>(importer.assetPath));
                 }

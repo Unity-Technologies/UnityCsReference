@@ -27,6 +27,7 @@ namespace Unity.UI.Builder
         static public string defaultUnit => s_DefaultUnit;
 
         IntegerField m_DraggerIntegerField;
+        protected IntegerField draggerIntegerField => m_DraggerIntegerField;
 
         bool m_IsFieldDraggerInitialized;
 

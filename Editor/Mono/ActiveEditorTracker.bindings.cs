@@ -55,8 +55,8 @@ namespace UnityEditor
         public void Destroy() { Internal_Destroy(this); }
 
         [FreeFunction]
-        static extern Array Internal_GetActiveEditors(ActiveEditorTracker self);
-        public Editor[] activeEditors { get { return (Editor[])Internal_GetActiveEditors(this); } }
+        static extern Editor[] Internal_GetActiveEditors(ActiveEditorTracker self);
+        public Editor[] activeEditors { get { return Internal_GetActiveEditors(this); } }
 
         [FreeFunction]
         internal static extern void Internal_GetActiveEditorsNonAlloc(ActiveEditorTracker self, Editor[] editors);

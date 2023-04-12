@@ -591,7 +591,7 @@ namespace UnityEditor
             TransformManipulator.BeginManipulationHandling(false);
             // Move handle
             EditorGUI.BeginChangeCheck();
-            Vector3 newPos = MoveHandlesGUI(rect, rectRotation * rect.center + handlePosition, rectRotation);
+            Vector3 newPos = MoveHandlesGUI(rect, handlePosition, rectRotation);
             if (EditorGUI.EndChangeCheck() && !isStatic)
             {
                 if (GridSnapping.active)
@@ -932,10 +932,13 @@ namespace UnityEditor
                     }
                     else
                     {
+                        // https://jira.unity3d.com/browse/UUM-30232
+                        // https://jira.unity3d.com/browse/UUM-18037
+                        var repaintPivot = rotation * rect.center + pivot;
                         Handles.color = Handles.secondaryColor * new Color(1, 1, 1, 1.5f * discOpacity);
-                        Handles.CircleHandleCap(id, pivot, rotation, discSize, EventType.Repaint);
+                        Handles.CircleHandleCap(id, repaintPivot, rotation, discSize, EventType.Repaint);
                         Handles.color = Handles.secondaryColor * new Color(1, 1, 1, 0.3f * discOpacity);
-                        Handles.DrawSolidDisc(pivot, rotation * Vector3.forward, discSize);
+                        Handles.DrawSolidDisc(repaintPivot, rotation * Vector3.forward, discSize);
                     }
                     break;
                 }

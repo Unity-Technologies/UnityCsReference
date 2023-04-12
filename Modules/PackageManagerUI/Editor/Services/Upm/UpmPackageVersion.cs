@@ -132,6 +132,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IsDirectDependency = packageInfo.isDirectDependency;
             m_Name = packageInfo.name;
             m_VersionInManifest = packageInfo.projectDependenciesEntry;
+            m_Entitlements = packageInfo.entitlements;
 
             RefreshTags(packageInfo);
 
@@ -153,7 +154,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 m_Dependencies = packageInfo.dependencies;
                 m_ResolvedDependencies = packageInfo.resolvedDependencies;
-                m_Entitlements = packageInfo.entitlements;
                 m_ResolvedPath = packageInfo.resolvedPath;
                 m_DeprecationMessage = packageInfo.deprecationMessage;
 
@@ -170,7 +170,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Errors.Clear();
                 m_Dependencies = Array.Empty<DependencyInfo>();
                 m_ResolvedDependencies = Array.Empty<DependencyInfo>();
-                m_Entitlements = new EntitlementsInfo();
                 m_ResolvedPath = string.Empty;
                 m_Description = string.Empty;
             }
@@ -259,7 +258,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string GetDescriptor(bool isFirstLetterCapitalized = false)
         {
             if (HasTag(PackageTag.Feature))
-                return isFirstLetterCapitalized? L10n.Tr("Feature") : L10n.Tr("feature");
+                return isFirstLetterCapitalized ? L10n.Tr("Feature") : L10n.Tr("feature");
             if (HasTag(PackageTag.BuiltIn))
                 return isFirstLetterCapitalized ? L10n.Tr("Built-in package") : L10n.Tr("built-in package");
             return isFirstLetterCapitalized ? L10n.Tr("Package") : L10n.Tr("package");

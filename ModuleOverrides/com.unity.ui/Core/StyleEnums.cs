@@ -399,4 +399,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         Contain = 2,
     }
+
+    internal enum Axis
+    {
+        X,Y,Z
+    }
 }

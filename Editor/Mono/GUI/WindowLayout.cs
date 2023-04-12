@@ -286,6 +286,7 @@ namespace UnityEditor
                 InitContainerWindow(ref window, windowId, layoutData);
                 window.m_IsMppmCloneWindow = true;
                 GenerateLayout(window, ShowMode.Utility, availableEditorWindowTypes, centerViewInfo, topViewInfo, bottomViewInfo, layoutData);
+                window.m_DontSaveToLayout = !Convert.ToBoolean(layoutData["restore_saved_layout"]);
                 return window;
             }
             finally
@@ -1218,11 +1219,38 @@ namespace UnityEditor
             return false;
         }
 
+        [Flags]
+        public enum LoadWindowLayoutFlags
+        {
+            None = 0,
+            NewProjectCreated = 1 << 0,
+            SetLastLoadedLayoutName = 1 << 1,
+            KeepMainWindow = 1 << 2,
+            LogsErrorToConsole = 1 << 3,
+            NoMainWindowSupport = 1 << 4,
+            SaveLayoutPreferences = 1 << 5
+        }
+
         public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow, bool logErrorsToConsole)
         {
-            Console.WriteLine($"[LAYOUT] About to load {path}, keepMainWindow={keepMainWindow}");
+            var flags = LoadWindowLayoutFlags.SaveLayoutPreferences;
+            if (newProjectLayoutWasCreated)
+                flags |= LoadWindowLayoutFlags.NewProjectCreated;
+            if (setLastLoadedLayoutName)
+                flags |= LoadWindowLayoutFlags.SetLastLoadedLayoutName;
+            if (keepMainWindow)
+                flags |= LoadWindowLayoutFlags.KeepMainWindow;
+            if (logErrorsToConsole)
+                flags |= LoadWindowLayoutFlags.LogsErrorToConsole;
 
-            if (!Application.isTestRun && Application.isHumanControllingUs && !ContainerWindow.InternalRequestCloseAll(keepMainWindow))
+            return LoadWindowLayout(path, flags);
+        }
+
+        public static bool LoadWindowLayout(string path, LoadWindowLayoutFlags flags)
+        {
+            Console.WriteLine($"[LAYOUT] About to load {path}, keepMainWindow={flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow)}");
+
+            if (!Application.isTestRun && Application.isHumanControllingUs && !ContainerWindow.InternalRequestCloseAll(flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow)))
                 return false;
 
             bool mainWindowMaximized = ContainerWindow.mainWindow?.maximized ?? false;
@@ -1233,7 +1261,7 @@ namespace UnityEditor
             {
                 ContainerWindow.SetFreezeDisplay(true);
 
-                CloseWindows(keepMainWindow);
+                CloseWindows(flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow));
 
                 ContainerWindow mainWindowToSetSize = null;
                 ContainerWindow mainWindow = null;
@@ -1330,7 +1358,7 @@ namespace UnityEditor
                     if (!o)
                         continue;
 
-                    if (newProjectLayoutWasCreated)
+                    if (flags.HasFlag(LoadWindowLayoutFlags.NewProjectCreated))
                     {
                         MethodInfo method = o.GetType().GetMethod("OnNewProjectLayoutWasCreated", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
                         method?.Invoke(o, null);
@@ -1342,17 +1370,21 @@ namespace UnityEditor
 
                 // Always show main window before other windows. So that other windows can
                 // get their parent/owner.
-                if (!mainWindow)
+                if (mainWindow)
+                {
+                    mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
+                    if (mainWindowToSetSize && mainWindow.maximized != mainWindowMaximized)
+                        mainWindow.ToggleMaximize();
+
+                    // Make sure to restore the save to layout flag when loading a layout from a file.
+                    if (flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow))
+                        mainWindow.m_DontSaveToLayout = false;
+                }
+                else if (!flags.HasFlag(LoadWindowLayoutFlags.NoMainWindowSupport))
+                {
                     throw new LayoutException("Error while reading window layout: no main window found");
-
-                mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
-                if (mainWindowToSetSize && mainWindow.maximized != mainWindowMaximized)
-                    mainWindow.ToggleMaximize();
-
-                // Make sure to restore the save to layout flag when loading a layout from a file.
-                if (keepMainWindow)
-                    mainWindow.m_DontSaveToLayout = false;
-
+                }
+                
                 // Show other windows
                 for (int i = 0; i < newWindows.Count; i++)
                 {
@@ -1365,7 +1397,13 @@ namespace UnityEditor
 
                     ContainerWindow containerWindow = newWindows[i] as ContainerWindow;
                     if (containerWindow && containerWindow != mainWindow)
+                    {
                         containerWindow.Show(containerWindow.showMode, loadPosition: false, displayImmediately: true, setFocus: true);
+                        if (flags.HasFlag(LoadWindowLayoutFlags.NoMainWindowSupport))
+                        {
+                            containerWindow.m_DontSaveToLayout = mainWindow != null;
+                        }
+                    }
                 }
 
                 // Un-maximize maximized PlayModeView window if maximize on play is enabled
@@ -1381,7 +1419,7 @@ namespace UnityEditor
                 // problems because they can act on it by either deleting the layout or importing whatever asset is
                 // missing.
                 var error = $"Failed to load window layout \"{path}\": {ex}";
-                if(logErrorsToConsole)
+                if(flags.HasFlag(LoadWindowLayoutFlags.LogsErrorToConsole))
                     Debug.LogError(error);
                 else
                     Console.WriteLine($"[LAYOUT] {error}");
@@ -1391,13 +1429,14 @@ namespace UnityEditor
             {
                 ContainerWindow.SetFreezeDisplay(false);
 
-                if (setLastLoadedLayoutName && Path.GetExtension(path) == ".wlt")
+                if (flags.HasFlag(LoadWindowLayoutFlags.SetLastLoadedLayoutName) && Path.GetExtension(path) == ".wlt")
                     Toolbar.lastLoadedLayoutName = Path.GetFileNameWithoutExtension(path);
                 else
                     Toolbar.lastLoadedLayoutName = null;
             }
 
-            SaveDefaultWindowPreferences();
+            if (flags.HasFlag(LoadWindowLayoutFlags.SaveLayoutPreferences))
+                SaveDefaultWindowPreferences();
 
             return true;
         }
@@ -1481,7 +1520,12 @@ namespace UnityEditor
             }
         }
 
-        public static void SaveWindowLayout(string path)
+        internal static void SaveWindowLayout(string path)
+        {
+            SaveWindowLayout(path, true);
+        }
+
+        public static void SaveWindowLayout(string path, bool reportErrors)
         {
             if (!EnsureDirectoryCreated(path))
                 return;
@@ -1518,14 +1562,15 @@ namespace UnityEditor
                 // skip EditorWindows that belong to "dont save me" container
                 if (!w || !w.m_Parent || ignoredViews.Contains(w.m_Parent))
                 {
-                    if (w)
+                    if (reportErrors && w)
                         Debug.LogWarning($"Cannot save invalid window {w.titleContent.text} {w} to layout.");
                     continue;
                 }
                 all.Add(w);
             }
 
-            InternalEditorUtility.SaveToSerializedFileAndForget(all.Where(o => o).ToArray(), path, true);
+            if (all.Any())
+                InternalEditorUtility.SaveToSerializedFileAndForget(all.Where(o => o).ToArray(), path, true);
         }
 
         // ReSharper disable once MemberCanBePrivate.Global - used by SaveLayoutTests.cs

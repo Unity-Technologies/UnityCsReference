@@ -633,6 +633,8 @@ namespace UnityEngine
                 //IsNativeTexture = 1 << 8, // this is only used internally.
                 //DontCheckGraphicsCaps = 1 << 9, // this is only used internally.
                 DontUploadUponCreate = 1 << 10,
+                [Internal.ExcludeFromDocs]
+                [Obsolete("IgnoreMipmapLimit flag is no longer used since this is now the default behavior for all Texture shapes. Please provide mipmap limit information using a MipmapLimitDescriptor argument.", false)]
                 IgnoreMipmapLimit = 1 << 11,
             }
 

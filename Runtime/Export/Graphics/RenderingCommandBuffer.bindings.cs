@@ -1165,7 +1165,9 @@ namespace UnityEngine.Rendering
                     string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be blittable.\n{0}",
                         UnsafeUtility.GetReasonForArrayNonBlittable(data)));
             }
-            InternalSetComputeBufferData(buffer, data, 0, 0, data.Length, UnsafeUtility.SizeOf(data.GetType().GetElementType()));
+
+            var elemSize = UnsafeUtility.SizeOf(data.GetType().GetElementType());
+            InternalSetComputeBufferData(buffer, UnsafeUtility.GetByteSpanFromArray(data, elemSize), 0, 0, data.Length, elemSize);
         }
 
         // Set buffer data.
@@ -1181,7 +1183,7 @@ namespace UnityEngine.Rendering
                     string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be blittable.\n{1}",
                         typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
             }
-            InternalSetComputeBufferData(buffer, NoAllocHelpers.ExtractArrayFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), Marshal.SizeOf(typeof(T)));
+            InternalSetComputeBufferData(buffer, UnsafeUtility.GetByteSpanFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), Marshal.SizeOf(typeof(T)));
         }
 
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
@@ -1208,7 +1210,8 @@ namespace UnityEngine.Rendering
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
                 throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
 
-            InternalSetComputeBufferData(buffer, data, managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
+            var elemSize = Marshal.SizeOf(data.GetType().GetElementType());
+            InternalSetComputeBufferData(buffer, UnsafeUtility.GetByteSpanFromArray(data, elemSize), managedBufferStartIndex, graphicsBufferStartIndex, count, elemSize);
         }
 
         // Set partial buffer data
@@ -1228,7 +1231,7 @@ namespace UnityEngine.Rendering
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)
                 throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
 
-            InternalSetComputeBufferData(buffer, NoAllocHelpers.ExtractArrayFromList(data), managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(typeof(T)));
+            InternalSetComputeBufferData(buffer, UnsafeUtility.GetByteSpanFromList(data), managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(typeof(T)));
         }
 
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
@@ -1250,7 +1253,7 @@ namespace UnityEngine.Rendering
         extern private void InternalSetComputeBufferNativeData([NotNull] ComputeBuffer buffer, IntPtr data, int nativeBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferData", HasExplicitThis = true, ThrowsException = true)]
-        extern void InternalSetComputeBufferData([NotNull] ComputeBuffer buffer, Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
+        extern void InternalSetComputeBufferData([NotNull] ComputeBuffer buffer, ReadOnlySpan<byte> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferCounterValue", HasExplicitThis = true)]
         extern private void InternalSetComputeBufferCounterValue([NotNull] ComputeBuffer buffer, uint counterValue);
@@ -1268,7 +1271,9 @@ namespace UnityEngine.Rendering
                     string.Format("Array passed to RenderingCommandBuffer.SetBufferData(array) must be blittable.\n{0}",
                         UnsafeUtility.GetReasonForArrayNonBlittable(data)));
             }
-            InternalSetGraphicsBufferData(buffer, data, 0, 0, data.Length, UnsafeUtility.SizeOf(data.GetType().GetElementType()));
+
+            var elemSize = UnsafeUtility.SizeOf(data.GetType().GetElementType());
+            InternalSetGraphicsBufferData(buffer, UnsafeUtility.GetByteSpanFromArray(data, elemSize), 0, 0, data.Length, elemSize);
         }
 
         // Set buffer data.
@@ -1284,7 +1289,7 @@ namespace UnityEngine.Rendering
                     string.Format("List<{0}> passed to RenderingCommandBuffer.SetBufferData(List<>) must be blittable.\n{1}",
                         typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
             }
-            InternalSetGraphicsBufferData(buffer, NoAllocHelpers.ExtractArrayFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), Marshal.SizeOf(typeof(T)));
+            InternalSetGraphicsBufferData(buffer, UnsafeUtility.GetByteSpanFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), Marshal.SizeOf(typeof(T)));
         }
 
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
@@ -1311,7 +1316,8 @@ namespace UnityEngine.Rendering
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
                 throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
 
-            InternalSetGraphicsBufferData(buffer, data, managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(data.GetType().GetElementType()));
+            var elemSize = Marshal.SizeOf(data.GetType().GetElementType());
+            InternalSetGraphicsBufferData(buffer, UnsafeUtility.GetByteSpanFromArray(data, elemSize), managedBufferStartIndex, graphicsBufferStartIndex, count, elemSize);
         }
 
         // Set partial buffer data
@@ -1331,7 +1337,7 @@ namespace UnityEngine.Rendering
             if (managedBufferStartIndex < 0 || graphicsBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)
                 throw new ArgumentOutOfRangeException(string.Format("Bad indices/count arguments (managedBufferStartIndex:{0} graphicsBufferStartIndex:{1} count:{2})", managedBufferStartIndex, graphicsBufferStartIndex, count));
 
-            InternalSetGraphicsBufferData(buffer, NoAllocHelpers.ExtractArrayFromList(data), managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(typeof(T)));
+            InternalSetGraphicsBufferData(buffer, UnsafeUtility.GetByteSpanFromList(data), managedBufferStartIndex, graphicsBufferStartIndex, count, Marshal.SizeOf(typeof(T)));
         }
 
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
@@ -1354,7 +1360,7 @@ namespace UnityEngine.Rendering
 
         [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferData", HasExplicitThis = true, ThrowsException = true)]
-        extern private void InternalSetGraphicsBufferData([NotNull] GraphicsBuffer buffer, Array data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
+        extern private void InternalSetGraphicsBufferData([NotNull] GraphicsBuffer buffer, ReadOnlySpan<byte> data, int managedBufferStartIndex, int graphicsBufferStartIndex, int count, int elemSize);
 
         [FreeFunction(Name = "RenderingCommandBuffer_Bindings::InternalSetGraphicsBufferCounterValue", HasExplicitThis = true)]
         extern private void InternalSetGraphicsBufferCounterValue([NotNull] GraphicsBuffer buffer, uint counterValue);

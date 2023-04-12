@@ -23,6 +23,7 @@ sealed class AudioContainerWindowState
     internal AudioContainerWindowState()
     {
         EditorApplication.playModeStateChanged += OnEditorPlayModeStateChanged;
+        Selection.selectionChanged += OnSelectionChanged;
     }
 
     internal AudioRandomContainer AudioContainer
@@ -75,6 +76,7 @@ sealed class AudioContainerWindowState
     {
         Stop();
         EditorApplication.playModeStateChanged -= OnEditorPlayModeStateChanged;
+        Selection.selectionChanged -= OnSelectionChanged;
 
         if (m_PreviewAudioSource != null) Object.DestroyImmediate(m_PreviewAudioSource.gameObject);
     }
@@ -162,7 +164,7 @@ sealed class AudioContainerWindowState
             }
         }
 
-        if (!audioClipSelected && newTarget != m_AudioContainer)
+        if (!audioClipSelected && (newTarget != null && newTarget != m_AudioContainer))
         {
             if (m_AudioContainer != null)
             {
@@ -181,8 +183,6 @@ sealed class AudioContainerWindowState
             OnTargetChanged?.Invoke(this, EventArgs.Empty);
         }
     }
-
-    // Set up a hidden audio source in the scene for preview purposes
 
     /// <summary>
     /// This method creates a hidden game object in the scene with an audio source for editor previewing purposes.
@@ -231,5 +231,10 @@ sealed class AudioContainerWindowState
         {
             Stop();
         }
+    }
+
+    void OnSelectionChanged()
+    {
+        UpdateTarget();
     }
 }

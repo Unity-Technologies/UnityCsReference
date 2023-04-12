@@ -216,6 +216,30 @@ namespace UnityEditor
             }
         }
 
+        // Ensure sprite mesh is a rect (we don't support non-rectangular sprites)
+        internal static bool ValidateSpriteUVs(Vector2[] uvs)
+        {
+            if (uvs.Length != 4)
+                return false;
+
+            Vector2Int secondUnique = new Vector2Int(-1, -1);
+            for (int j = 1; j < uvs.Length; j++)
+            {
+                for (int k = 0; k < 2; k++)
+                {
+                    if (!Mathf.Approximately(uvs[j][k], uvs[0][k]))
+                    {
+                        if (secondUnique[k] == -1)
+                            secondUnique[k] = j;
+                        else if (!Mathf.Approximately(uvs[j][k], uvs[secondUnique[k]][k]))
+                            return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
         private void ValidateSpriteList()
         {
             if (m_Sprites.hasMultipleDifferentValues)
@@ -240,6 +264,14 @@ namespace UnityEditor
                             EditorGUILayout.HelpBox("Tightly packed Sprite Atlases are not supported.", MessageType.Error, true);
                             break;
                         }
+                    }
+
+                    // Ensure sprite mesh is a rect (we don't support non-rectangular sprites)
+                    bool uvsOk = ValidateSpriteUVs(sprite.uv);
+                    if (!uvsOk)
+                    {
+                        EditorGUILayout.HelpBox("Sprites must use rectangles. Change the Atlas Mesh Type to Full Rect instead of Tight, if applicable.", MessageType.Error, true);
+                        break;
                     }
 
                     if (texture == null)

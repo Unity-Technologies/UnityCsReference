@@ -77,7 +77,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"padding-top", "<length-percentage>"},
             {"position", "relative | absolute"},
             {"right", "<length-percentage> | auto"},
-            {"rotate", "none | <angle>"},
+            {"rotate", "none | [ x | y | z | <number>{3} ] && <angle> | <angle>"},
             {"scale", "none | <number>{1,3}"},
             {"text-overflow", "clip | ellipsis"},
             {"text-shadow", "<length>{2,3} && <color>?"},

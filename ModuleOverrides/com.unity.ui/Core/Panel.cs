@@ -1311,7 +1311,6 @@ namespace UnityEngine.UIElements
         }
 
         internal RenderTexture targetTexture = null; // Render panel to a texture
-        internal Matrix4x4 panelToWorld = Matrix4x4.identity;
         internal int worldSpaceLayer = 0;
 
         internal int targetDisplay { get; set;}

@@ -25,6 +25,31 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         const float kLineHeight = 16.0f;
         const float kVisualContentOffset = kNumberOfLinesOfInfo * kLineHeight;
 
+        public LayoutDebuggerVisualElement lastDrawElement
+        {
+            get { return m_LastDrawElement; }
+            set
+            {
+                m_LastDrawElement = value;
+                foreach (var record in recordLayout)
+                {
+                    if (record.m_FrameIndex == m_FrameIndex)
+                    {
+                        if (record.m_PassIndex == m_PassIndex)
+                        {
+                            if (record.m_LayoutLoop == m_LayoutLoop)
+                            {
+                                int temp = 0;
+                                FindLastDrawnItem(record.m_VE, ref temp);
+                            }
+                        }
+                    }
+                }
+
+                m_MaxItem = m_ParentWindow.UpdateSlider(m_MaxItem);
+            }
+        }
+
         private LayoutDebuggerVisualElement m_LastDrawElement = null;
         private Vector2 m_LastDrawElementOffset = new Vector2(0.0f, 0.0f);
 
@@ -379,6 +404,32 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 {
                     var child = ve.m_Children[i];
                     FindLockedItem(child, ref currentIndex);
+                }
+            }
+        }
+
+        private void FindLastDrawnItem(LayoutDebuggerVisualElement ve, ref int currentIndex)
+        {
+            if (ve == m_LastDrawElement)
+            {
+                m_MaxItem = currentIndex;
+                return;
+            }
+
+            if (!ve.IsVisualElementVisible())
+            {
+                return;
+            }
+
+            currentIndex++;
+
+            if (ve.m_Children != null)
+            {
+                var childCount = ve.m_Children.Count;
+                for (int i = 0; i < childCount; ++i)
+                {
+                    var child = ve.m_Children[i];
+                    FindLastDrawnItem(child, ref currentIndex);
                 }
             }
         }

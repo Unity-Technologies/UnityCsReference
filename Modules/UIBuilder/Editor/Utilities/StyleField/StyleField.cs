@@ -49,6 +49,7 @@ namespace Unity.UI.Builder
         List<string> m_StyleKeywords;
         List<string> m_CachedRegularOptionsList;
         List<string> m_AllOptionsList;
+        bool m_PreventFocus;
 
         protected List<string> styleKeywords => m_StyleKeywords;
 
@@ -120,6 +121,9 @@ namespace Unity.UI.Builder
 
             m_TextField.RegisterValueChangedCallback(OnTextFieldValueChange);
             m_OptionsPopup.RegisterValueChangedCallback(OnPopupFieldValueChange);
+
+            RegisterCallback<PointerDownEvent>(OnPointerDown, TrickleDown.TrickleDown);
+            RegisterCallback<FocusEvent>(OnFocus, TrickleDown.TrickleDown);
         }
 
         protected virtual bool SetInnerValueFromValue(string val)
@@ -203,6 +207,23 @@ namespace Unity.UI.Builder
             value = evt.newValue;
 
             evt.StopImmediatePropagation();
+        }
+
+        void OnFocus(FocusEvent evt)
+        {
+            if (m_PreventFocus)
+            {
+                Blur();
+                evt.StopPropagation();
+                evt.elementTarget.focusController?.IgnoreEvent(evt);
+            }
+
+            m_PreventFocus = false;
+        }
+
+        void OnPointerDown(PointerDownEvent evt)
+        {
+            m_PreventFocus = evt.button == (int)MouseButton.RightMouse;
         }
 
         [EventInterest(typeof(AttachToPanelEvent))]

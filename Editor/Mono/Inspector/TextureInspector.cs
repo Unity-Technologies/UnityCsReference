@@ -289,11 +289,15 @@ namespace UnityEditor
 
         public int GetMipmapLimit(Texture t)
         {
-            if (t is Texture2D)
+            switch (t)
             {
-                return (t as Texture2D).activeMipmapLimit;
+                case Texture2D tex:
+                    return tex.activeMipmapLimit;
+                case Texture2DArray tex:
+                    return tex.activeMipmapLimit;
+                default:
+                    return 0;
             }
-            return 0;
         }
 
         public float mipLevel

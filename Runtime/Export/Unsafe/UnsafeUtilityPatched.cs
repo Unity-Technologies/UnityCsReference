@@ -94,6 +94,13 @@ namespace Unity.Collections.LowLevel.Unsafe
             throw new NotImplementedException("Patching this method failed");
         }
 
+        // Reinterprets reference type as different reference type.
+        internal static T As<T>(object from) where T : class
+        {
+            // @patched at compile time
+            throw new NotImplementedException("Patching this method failed");
+        }
+
         // The address of the memory where the struct resides in memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         unsafe public static ref T AsRef<T>(void* ptr) where T : struct

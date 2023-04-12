@@ -421,6 +421,12 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
                 token = tokenizer.MoveNext();
             }
 
+            // For brace range with a single value, the min and max quantity is the same.
+            if (!foundComma)
+            {
+                max = min;
+            }
+
             tokenizer.MoveNext();
         }
 

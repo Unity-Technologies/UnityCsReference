@@ -133,8 +133,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (val3.handle.valueType == StyleValueType.Dimension || val3.handle.valueType == StyleValueType.Float)
                     {
                         var dimension = val3.sheet.ReadDimension(val3.handle);
-                        if (dimension.unit != Dimension.Unit.Pixel && dimension.unit != Dimension.Unit.Unitless)
-                            z = dimension.value;
+                        z = dimension.value;
                     }
                     goto case 2; //Parse the first 2 parameters
             }
@@ -179,7 +178,6 @@ namespace UnityEngine.UIElements.StyleSheets
             }
             return new Scale(scale);
         }
-
         static public Rotate ReadRotate(int valCount, StylePropertyValue val1, StylePropertyValue val2, StylePropertyValue val3, StylePropertyValue val4)
         {
             if (val1.handle.valueType == StyleValueType.Keyword && (StyleValueKeyword)val1.handle.valueIndex == StyleValueKeyword.None)
@@ -188,7 +186,7 @@ namespace UnityEngine.UIElements.StyleSheets
             }
 
             var rot = Rotate.Initial();
-
+            
             switch (valCount)
             {
                 case 1: // If only one argument, the only argument is an angle and the rotation is in Z
@@ -198,7 +196,26 @@ namespace UnityEngine.UIElements.StyleSheets
                         //we leave axis to the default value;
                     }
                     break;
-                    //other rotations are not supported
+                case 2:// axis by name and an angle
+                    rot.angle = ReadAngle(val2);
+                    var enumValue = (Axis)ReadEnum(StyleEnumType.Axis, val1);
+                    switch (enumValue)
+                    {
+                        case Axis.X:
+                            rot.axis = new Vector3(1, 0, 0);
+                            break;
+                        case Axis.Y:
+                            rot.axis = new Vector3(0, 1, 0);
+                            break;
+                        case Axis.Z:
+                            rot.axis = new Vector3(0, 0, 1);
+                            break;
+                    }
+                    break;
+                case 4://vector+angle
+                    rot.angle = ReadAngle(val4);
+                    rot.axis = new(val1.sheet.ReadFloat(val1.handle), val1.sheet.ReadFloat(val2.handle), val1.sheet.ReadFloat(val3.handle)); ;
+                    break;
             }
             return rot;
         }

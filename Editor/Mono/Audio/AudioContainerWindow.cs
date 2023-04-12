@@ -66,6 +66,8 @@ sealed class AudioContainerWindow : EditorWindow
     Texture2D m_DiceIconOff;
     Texture2D m_DiceIconOn;
 
+    bool m_IsLoading;
+
     List<AudioContainerElement> m_CachedElements;
 
     List<AudioContainerElement> CachedElements
@@ -83,8 +85,7 @@ sealed class AudioContainerWindow : EditorWindow
     }
 
     /// <summary>
-    /// Updates the state to reflect selection changes,
-    /// which will implicitly refresh the window content if necessary.
+    /// Updates the state, which will implicitly refresh the window content if needed.
     /// </summary>
     internal void Refresh()
     {
@@ -142,22 +143,36 @@ sealed class AudioContainerWindow : EditorWindow
 
     void CreateGUI()
     {
-        rootVisualElement.Unbind();
-        rootVisualElement.Clear();
-
-        if (m_State.AudioContainer == null)
+        try
         {
-            return;
+            if (m_IsLoading)
+            {
+                return;
+            }
+
+            m_IsLoading = true;
+
+            rootVisualElement.Unbind();
+            rootVisualElement.Clear();
+
+            if (m_State.AudioContainer == null)
+            {
+                return;
+            }
+
+            var rootAsset = LoadUxml("UXML/Audio/AudioRandomContainer.uxml");
+            rootAsset.CloneTree(rootVisualElement);
+
+            var styleSheet = LoadStyleSheet("StyleSheets/Audio/AudioRandomContainer.uss");
+            rootVisualElement.styleSheets.Add(styleSheet);
+
+            CreateBindings();
+            UpdateTransportButtonStates();
         }
-
-        var rootAsset = LoadUxml("UXML/Audio/AudioRandomContainer.uxml");
-        rootAsset.CloneTree(rootVisualElement);
-
-        var styleSheet = LoadStyleSheet("StyleSheets/Audio/AudioRandomContainer.uss");
-        rootVisualElement.styleSheets.Add(styleSheet);
-
-        CreateBindings();
-        UpdateTransportButtonStates();
+        finally
+        {
+            m_IsLoading = false;
+        }
     }
 
     void CreateBindings()
@@ -629,7 +644,8 @@ sealed class AudioContainerWindow : EditorWindow
         {
             var element = new AudioContainerElement
             {
-                audioClip = audioClip
+                audioClip = audioClip,
+                hideFlags = HideFlags.HideInHierarchy
             };
             elements.Add(element);
             AssetDatabase.AddObjectToAsset(element, m_State.AudioContainer);
@@ -638,11 +654,6 @@ sealed class AudioContainerWindow : EditorWindow
         }
 
         m_State.AudioContainer.elements = elements.ToArray();
-    }
-
-    void OnSelectionChange()
-    {
-        m_State.UpdateTarget();
     }
 
     static VisualTreeAsset LoadUxml(string filePath)

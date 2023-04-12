@@ -1112,8 +1112,8 @@ namespace UnityEditor
                 uint pickingID = Internal_GetClosestPickingID(cam,
                         layers,
                         screenPosition,
-                        NoAllocHelpers.ExtractArrayFromListT(ignore),
-                        NoAllocHelpers.ExtractArrayFromListT(filter),
+                        NoAllocHelpers.ExtractArrayFromList(ignore),
+                        NoAllocHelpers.ExtractArrayFromList(filter),
                         drawGizmos,
                         ref materialIndex,
                         ref isEntity);

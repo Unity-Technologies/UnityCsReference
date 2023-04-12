@@ -1199,12 +1199,21 @@ namespace UnityEditor
         // Converts a GraphicsDeviceType to a string, along with visual modifiers for given target platform
         static private string GraphicsDeviceTypeToString(BuildTarget target, GraphicsDeviceType graphicsDeviceType)
         {
-            if (target == BuildTarget.WebGL)
+            switch (target) 
             {
-                if (graphicsDeviceType == GraphicsDeviceType.OpenGLES3) return "WebGL 2";
+                case BuildTarget.WebGL:
+                    if (graphicsDeviceType == GraphicsDeviceType.OpenGLES3)
+                        return "WebGL 2";
+                    break;
+
+                case BuildTarget.StandaloneWindows:
+                case BuildTarget.StandaloneWindows64:
+                    if (graphicsDeviceType == GraphicsDeviceType.OpenGLCore) 
+                        return graphicsDeviceType.ToString() + " (Deprecated)";
+                    break;
             }
-            string name = graphicsDeviceType.ToString();
-            return name;
+
+            return graphicsDeviceType.ToString();
         }
 
         // Parses a GraphicsDeviceType from a string.
@@ -1223,9 +1232,7 @@ namespace UnityEditor
             if (apis == null)
                 return;
             var apiToAdd = GraphicsDeviceTypeFromString(options[selected]);
-            var apiList = apis.ToList();
-            apiList.Add(apiToAdd);
-            apis = apiList.ToArray();
+            apis = apis.Append(apiToAdd).ToArray();
             PlayerSettings.SetGraphicsAPIs(target, apis);
         }
 

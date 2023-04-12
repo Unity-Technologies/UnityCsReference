@@ -332,7 +332,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (shouldProcessPredefinedCustomTargets && assemblies.PredefinedAssembliesCustomTargetReferences != null)
                 predefinedCustomTargetReferences = assemblies.PredefinedAssembliesCustomTargetReferences;
 
-            var unityReferences = Array.Empty<PrecompiledAssembly>();
+            var unityReferences = new HashSet<string>();
 
             // Add Unity assemblies (UnityEngine.dll, UnityEditor.dll) references, as long as the target
             // doesn't specify that it doesn't want them.
@@ -340,8 +340,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 // Add predefined custom target references in a hash-set for fast lookup
                 var predefinedCustomTargetRefs = new HashSet<string>(predefinedCustomTargetReferences.Select(x => x.Filename));
-                unityReferences = GetUnityReferences(scriptAssembly, targetAssembly, assemblies.UnityAssemblies, predefinedCustomTargetRefs, settings.CompilationOptions, UnityReferencesOptions.None);
-                references.AddRange(unityReferences.Select(r => r.Path));
+                foreach (var unityReference in GetUnityReferences(scriptAssembly, targetAssembly,
+                             assemblies.UnityAssemblies, predefinedCustomTargetRefs, settings.CompilationOptions,
+                             UnityReferencesOptions.None))
+                {
+                    unityReferences.Add(Path.GetFileName(unityReference.Path));
+                    references.Add(unityReference.Path);
+                }
             }
 
             AddTestRunnerCustomReferences(ref targetAssembly, assemblies.CustomTargetAssemblies);
@@ -354,7 +359,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 // If the assembly already showed up in the unity references, don't reference it here.
                 // This can happen when an assembly is configured as a unity assembly override, but
                 // overrides are disabled. The Unity assembly should take precedence in that case.
-                if (unityReferences.Any(r => Path.GetFileName(r.Path) == reference.Filename))
+                if (unityReferences.Contains(reference.Filename))
                     continue;
 
                 // Add ScriptAssembly references to other dirty script assemblies that also need to be rebuilt.

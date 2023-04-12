@@ -59,9 +59,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IPackage m_Package;
 
         [NonSerialized]
-        private bool m_ShouldBeEnabled;
-
-        [NonSerialized]
         private IPackageVersion m_Version;
 
         private SelectionProxy m_Selection;
@@ -130,11 +127,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     EditorGUILayout.HelpBox(k_PackageNotAccessibleMessage, MessageType.Error);
                     return;
                 }
-
-                var immutable = true;
-                m_ShouldBeEnabled = true;
-                if (!m_Version.isInstalled || m_AssetDatabase.TryGetAssetFolderInfo("Packages/" + m_Package.name, out var rootFolder, out immutable))
-                    m_ShouldBeEnabled = !immutable;
             }
 
             var dependencies = new List<DependencyInfo>();
@@ -148,7 +140,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             };
 
             var previousEnabled = GUI.enabled;
-            GUI.enabled = m_ShouldBeEnabled;
+            GUI.enabled = true;
 
             // Package information
             GUILayout.Label(Styles.information, EditorStyles.boldLabel);

@@ -361,7 +361,7 @@ namespace UnityEngine.Rendering
             if (instanceCount > Graphics.kMaxDrawMeshInstanceCount)
                 throw new InvalidOperationException(String.Format("Instance count cannot exceed {0}.", Graphics.kMaxDrawMeshInstanceCount));
 
-            fixed (T* data = NoAllocHelpers.ExtractArrayFromListT(instanceData)) { return AddMeshInstances(config, (IntPtr)(data + startInstance), layout, (uint)instanceCount, id); }
+            fixed (T* data = NoAllocHelpers.ExtractArrayFromList(instanceData)) { return AddMeshInstances(config, (IntPtr)(data + startInstance), layout, (uint)instanceCount, id); }
         }
 
         public unsafe int AddInstances<T>(in RayTracingMeshInstanceConfig config, NativeArray<T> instanceData, [DefaultValue("-1")] int instanceCount = -1, [DefaultValue("0")] int startInstance = 0, uint id = 0xFFFFFFFF) where T : unmanaged

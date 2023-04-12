@@ -140,23 +140,23 @@ namespace UnityEngine
         public void SetConstantBuffer(string name, GraphicsBuffer value, int offset, int size) { SetConstantGraphicsBufferImpl(Shader.PropertyToID(name), value, offset, size); }
         public void SetConstantBuffer(int nameID, GraphicsBuffer value, int offset, int size) { SetConstantGraphicsBufferImpl(nameID, value, offset, size); }
 
-        public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetFloatArray(int nameID,    List<float> values) { SetFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
+        public void SetFloatArray(int nameID,    List<float> values) { SetFloatArray(nameID, NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetFloatArray(string name, float[] values)      { SetFloatArray(Shader.PropertyToID(name), values, values.Length); }
         public void SetFloatArray(int nameID,    float[] values)    { SetFloatArray(nameID, values, values.Length); }
 
-        public void SetColorArray(string name, List<Color> values)  { SetColorArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetColorArray(int nameID,    List<Color> values) { SetColorArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetColorArray(string name, List<Color> values)  { SetColorArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
+        public void SetColorArray(int nameID,    List<Color> values) { SetColorArray(nameID, NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetColorArray(string name, Color[] values)      { SetColorArray(Shader.PropertyToID(name), values, values.Length); }
         public void SetColorArray(int nameID,    Color[] values)    { SetColorArray(nameID, values, values.Length); }
 
-        public void SetVectorArray(string name, List<Vector4> values)   { SetVectorArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetVectorArray(int nameID,    List<Vector4> values) { SetVectorArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetVectorArray(string name, List<Vector4> values)   { SetVectorArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
+        public void SetVectorArray(int nameID,    List<Vector4> values) { SetVectorArray(nameID, NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetVectorArray(string name, Vector4[] values)       { SetVectorArray(Shader.PropertyToID(name), values, values.Length); }
         public void SetVectorArray(int nameID,    Vector4[] values)     { SetVectorArray(nameID, values, values.Length); }
 
-        public void SetMatrixArray(string name, List<Matrix4x4> values)   { SetMatrixArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetMatrixArray(int nameID,    List<Matrix4x4> values) { SetMatrixArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetMatrixArray(string name, List<Matrix4x4> values)   { SetMatrixArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
+        public void SetMatrixArray(int nameID,    List<Matrix4x4> values) { SetMatrixArray(nameID, NoAllocHelpers.ExtractArrayFromList(values), values.Count); }
         public void SetMatrixArray(string name, Matrix4x4[] values)       { SetMatrixArray(Shader.PropertyToID(name), values, values.Length); }
         public void SetMatrixArray(int nameID,    Matrix4x4[] values)     { SetMatrixArray(nameID, values, values.Length); }
 

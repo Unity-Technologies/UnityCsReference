@@ -266,6 +266,26 @@ namespace UnityEngine.UIElements.StyleSheets
                     }
 
                     break;
+                case StyleEnumType.Axis:
+                    if (string.Equals(value, "x", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Axis.X;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "y", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Axis.Y;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "z", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)Axis.Z;
+                        return true;
+                    }
+
+                    break;
                 case StyleEnumType.BackgroundPositionKeyword:
                     if (string.Equals(value, "center", StringComparison.OrdinalIgnoreCase))
                     {

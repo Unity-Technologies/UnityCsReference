@@ -26,14 +26,12 @@ namespace UnityEditorInternal
         protected const int k_MinimumHeight = 130;
         private const float k_LineWidth = 2f;
         private const int k_LabelLayoutMaxIterations = 5;
-        const string k_Ellipsis = "...";
         private Vector3[] m_LineDrawingPoints;
         private float[] m_StackedSampleSums;
         private static readonly Color s_OverlayBackgroundDimFactor = new Color(0.9f, 0.9f, 0.9f, 0.4f);
         protected Action<bool> onDoSeriesToggle;
         string m_ChartSettingsName;
         int m_chartControlID;
-        string m_TrimmedHeaderLabelText;
 
         public void LoadAndBindSettings(string chartSettingsName, ChartViewData cdata)
         {
@@ -177,6 +175,7 @@ namespace UnityEditorInternal
 
         protected virtual void DoLegendGUI(Rect position, ProfilerModuleChartType type, ChartViewData cdata, EventType evtType, bool active)
         {
+            Styles.legendHeaderLabel.clipping = TextClipping.Ellipsis;
             if (Event.current.type == EventType.Repaint)
                 Styles.legendBackground.Draw(position, GUIContent.none, false, false, active, false);
 
@@ -187,15 +186,6 @@ namespace UnityEditorInternal
             // Leave space for the GPU Profiler's Warning Icon, 16 pixels wide, 2 pixels margin = 20 pixels.
             // Without this spacer, the tooltip of the header would be displayed instead of the one for the Warning Icon.
             headerRect.xMax -= 20;
-            if (headerSize.x > headerRect.width)
-            {
-                if (string.IsNullOrEmpty(m_TrimmedHeaderLabelText))
-                {
-                    m_TrimmedHeaderLabelText = TrimContentTextInStyleToFitWidth(headerLabel, Styles.legendHeaderLabel, headerRect.width);
-                }
-
-                headerLabel.text = m_TrimmedHeaderLabelText;
-            }
 
             GUI.Label(headerRect, headerLabel, Styles.legendHeaderLabel);
 
@@ -1171,28 +1161,6 @@ namespace UnityEditorInternal
                 str += cdata.series[i].enabled ? '1' : '0';
 
             EditorPrefs.SetString(visiblePreferenceKey, str);
-        }
-
-        /// Trim the provided content's text to fit within maxWidth, including an added ellipsis.
-        string TrimContentTextInStyleToFitWidth(GUIContent content, GUIStyle style, float maxWidth)
-        {
-            var trimmedText = string.Empty;
-
-            var stringBuilder = new System.Text.StringBuilder();
-            stringBuilder.Append(k_Ellipsis);
-            foreach (var character in content.text)
-            {
-                var previousContentText = content.text;
-                stringBuilder.Insert(stringBuilder.Length - k_Ellipsis.Length, character);
-                content.text = stringBuilder.ToString();
-                if (style.CalcSize(content).x >= maxWidth)
-                {
-                    trimmedText = previousContentText;
-                    break;
-                }
-            }
-
-            return trimmedText;
         }
     }
 

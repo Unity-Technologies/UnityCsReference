@@ -100,8 +100,13 @@ namespace UnityEditor
                 var prevWidth = EditorGUIUtility.labelWidth;
                 var prevIndent = EditorGUI.indentLevel;
                 EditorGUI.indentLevel = 0;
+                SerializedProperty rotation = m_Rotation.Copy();
+
                 for (int i = 0; i < m_EulerFloats.Length; i++)
                 {
+                    rotation.Next(true);
+                    EditorGUI.BeginProperty(nr, s_XYZLabels[i], rotation);
+
                     EditorGUIUtility.labelWidth = EditorGUI.GetLabelWidth(s_XYZLabels[i]);
                     EditorGUI.BeginChangeCheck();
                     EditorGUI.showMixedValue = (differentRotationMask & (1 << i)) != 0;
@@ -125,6 +130,8 @@ namespace UnityEditor
                     }
 
                     nr.x += w + EditorGUI.kSpacingSubLabel;
+
+                    EditorGUI.EndProperty();
                 }
                 EditorGUIUtility.labelWidth = prevWidth;
                 EditorGUI.indentLevel = prevIndent;

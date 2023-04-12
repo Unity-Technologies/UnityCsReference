@@ -104,12 +104,17 @@ namespace UnityEditor
 
             TextureUtil.SetFilterModeNoDirty(t, oldFilter);
 
+            int mipmapLimit = (t as Texture2DArray).activeMipmapLimit;
+            int cpuMipLevel = Mathf.Min(TextureUtil.GetMipmapCount(t) - 1, (int)mipLevel + mipmapLimit);
             m_Pos = PreviewGUI.EndScrollView();
-            if (effectiveSlice != 0 || (int)effectiveMipLevel != 0)
-            {
-                EditorGUI.DropShadowLabel(new Rect(r.x, r.y + 10, r.width, 30),
-                    "Slice " + effectiveSlice + "\nMip " + effectiveMipLevel);
-            }
+
+            GUIContent sliceAndMipLevelTextContent = new GUIContent($"Slice {effectiveSlice}");
+            if (cpuMipLevel != 0)
+                sliceAndMipLevelTextContent.text += cpuMipLevel != (int)effectiveMipLevel
+                    ? $" | Mip {cpuMipLevel}\nMip {mipLevel} on GPU (Texture Limit)"
+                    : $" | Mip {mipLevel}";
+
+            EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 40), sliceAndMipLevelTextContent);
         }
 
         int GetEffectiveSlice(Texture t)

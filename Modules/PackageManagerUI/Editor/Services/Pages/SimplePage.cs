@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override PageCapability capability => PageCapability.SupportLocalReordering;
 
-        public SimplePage(PackageDatabase packageDatabase) :base(packageDatabase) {}
+        public SimplePage(PackageDatabase packageDatabase) : base(packageDatabase) {}
 
         public override bool UpdateFilters(PageFilters newFilters)
         {
@@ -66,6 +66,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void RebuildVisualStatesAndUpdateVisibilityWithSearchText()
         {
             RebuildAndReorderVisualStates();
+            RefreshSupportedStatusFiltersOnEntitlementPackageChange();
             TriggerListRebuild();
             UpdateVisualStateVisibilityWithSearchText();
         }
@@ -119,9 +120,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         // All the following load functions do nothing, because for a SimplePage we already know the complete list and there's no more to load
-        public override void LoadMore(long numberOfPackages) { }
-        public override void Load(string packageUniqueId) { }
-        public override void LoadExtraItems(IEnumerable<IPackage> packages) { }
+        public override void LoadMore(long numberOfPackages) {}
+        public override void Load(string packageUniqueId) {}
+        public override void LoadExtraItems(IEnumerable<IPackage> packages) {}
 
         private class PackageComparer : IComparer<IPackage>
         {

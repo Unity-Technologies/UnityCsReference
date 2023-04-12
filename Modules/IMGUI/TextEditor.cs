@@ -479,7 +479,6 @@ namespace UnityEngine
             if (scrollOffset.x != newXOffset || scrollOffset.y != newYOffset)
                 scrollOffset = new Vector2(newXOffset, newYOffset < 0 ? 0 : newYOffset);
 
-            showCursor = false;
             lastCursorPos = localGraphicalCursorPos;
         }
 

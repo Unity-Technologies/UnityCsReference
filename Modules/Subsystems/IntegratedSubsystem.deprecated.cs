@@ -9,6 +9,7 @@ namespace UnityEngine
     public partial class IntegratedSubsystem<TSubsystemDescriptor> : IntegratedSubsystem
         where TSubsystemDescriptor : ISubsystemDescriptor
     {
+        [Obsolete("The property 'SubsystemDescriptor' is deprecated. Use `subsystemDescriptor` instead. UnityUpgradeable -> subsystemDescriptor", false)]
         public TSubsystemDescriptor SubsystemDescriptor => subsystemDescriptor;
     }
 }

@@ -9,6 +9,7 @@ using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEditor;
+using UnityEngine;
 
 namespace Unity.UI.Builder
 {
@@ -49,7 +50,7 @@ namespace Unity.UI.Builder
                     var bindingPath = styleRow.bindingPath;
                     var currentStyleFields = styleRow.Query<BindableElement>().ToList();
 
-                    if (styleRow.ClassListContains("unity-builder-composite-field-row"))
+                    if (styleRow.ClassListContains(BuilderConstants.InspectorMultiFieldsRowClassName))
                         m_StyleFields.BindDoubleFieldRow(styleRow);
 
                     foreach (var styleField in currentStyleFields)
@@ -70,6 +71,13 @@ namespace Unity.UI.Builder
                         {
                             GenerateTransitionPropertiesContent();
                             m_StyleFields.BindStyleField(styleRow, transitionsListView);
+                        }
+                        else if (styleField is BoxModel boxModel)
+                        {
+                            foreach (var bindingPathName in boxModel.bindingPathArray)
+                            {
+                                m_StyleFields.BindStyleField(styleRow, bindingPathName, styleField);
+                            }
                         }
                         else if (!string.IsNullOrEmpty(styleField.bindingPath))
                         {
@@ -174,6 +182,13 @@ namespace Unity.UI.Builder
                     else if (styleField is TransitionsListView transitionsListView)
                     {
                         m_StyleFields.RefreshStyleField(transitionsListView);
+                    }
+                    else if (styleField is BoxModel boxModel)
+                    {
+                        foreach (var bindingPathName in boxModel.bindingPathArray)
+                        {
+                            m_StyleFields.RefreshStyleField(bindingPathName, styleField);
+                        }
                     }
                     else if (!string.IsNullOrEmpty(styleField.bindingPath))
                     {
