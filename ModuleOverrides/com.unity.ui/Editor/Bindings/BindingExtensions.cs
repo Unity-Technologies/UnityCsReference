@@ -375,6 +375,9 @@ namespace UnityEditor.UIElements.Bindings
                         DefaultBind(element, prop, SerializedPropertyHelper.GetCharacterPropertyValue, SerializedPropertyHelper.SetCharacterPropertyValue, SerializedPropertyHelper.ValueEquals);
                     }
                     break;
+                case SerializedPropertyType.Hash128:
+                    DefaultBind(element, prop, SerializedPropertyHelper.GetHash128PropertyValue, SerializedPropertyHelper.SetHash128PropertyValue, SerializedPropertyHelper.ValueEquals);
+                    break;
                 case SerializedPropertyType.ExposedReference:
                 case SerializedPropertyType.Generic:
                     // nothing to bind here

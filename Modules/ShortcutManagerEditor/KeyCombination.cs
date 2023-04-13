@@ -14,11 +14,14 @@ namespace UnityEditor.ShortcutManagement
     public struct KeyCombination : IEquatable<KeyCombination>
     {
         [SerializeField]
-        KeyCode m_KeyCode;
+        internal KeyCode m_KeyCode;
         [SerializeField]
         ShortcutModifiers m_Modifiers;
 
-        public KeyCode keyCode => m_KeyCode;
+        // Linux may send key masks and they will be greater than the shortcut index length.
+        // Check implemented at getter and not at assignment because binding validator
+        // should be able to work out what the original key code was by accessing internal field.
+        public KeyCode keyCode => (int)m_KeyCode < Directory.MaxIndexedEntries ? m_KeyCode : KeyCode.None;
         public ShortcutModifiers modifiers => m_Modifiers;
 
         static Dictionary<KeyCode, string> s_KeyCodeToMenuItemKeyCodeString = new Dictionary<KeyCode, string>()

@@ -77,7 +77,7 @@ namespace UnityEditor.TextCore.Text
         /// <returns></returns>
         internal static void CopyMaterialProperties(Material source, Material destination)
         {
-            destination.CopyPropertiesFromMaterial(source);
+            destination.CopyMatchingPropertiesFromMaterial(source);
         }
     }
 }

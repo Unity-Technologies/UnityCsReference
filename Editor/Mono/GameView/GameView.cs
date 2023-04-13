@@ -943,6 +943,9 @@ namespace UnityEditor
             {
                 GUI.Box(m_ZoomArea.drawRect, GUIContent.none, Styles.gameViewBackgroundStyle);
 
+                // Tonemapping for HDR targets
+                EditorGUIUtility.PerformTonemappingForGameView();
+
                 Vector2 oldOffset = GUIUtility.s_EditorScreenPointOffset;
                 GUIUtility.s_EditorScreenPointOffset = Vector2.zero;
                 SavedGUIState oldState = SavedGUIState.Create();
@@ -983,7 +986,7 @@ namespace UnityEditor
                     Rect drawRect = deviceFlippedTargetInView;
                     drawRect.x = Mathf.Round(drawRect.x);
                     drawRect.y = Mathf.Round(drawRect.y);
-                    Graphics.DrawTexture(drawRect, m_RenderTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
+                    EditorGUIUtility.DrawTextureHdrSupport(drawRect, m_RenderTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial, -1, true);
                     GUI.EndGroup();
                 }
             }

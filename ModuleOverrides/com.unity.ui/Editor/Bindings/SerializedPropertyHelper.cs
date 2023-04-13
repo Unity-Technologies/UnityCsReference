@@ -111,6 +111,11 @@ namespace UnityEditor.UIElements.Bindings
             return p.boundsIntValue;
         }
 
+        public static Hash128 GetHash128PropertyValue(SerializedProperty p)
+        {
+            return p.hash128Value;
+        }
+
         public static Gradient GetGradientPropertyValue(SerializedProperty p)
         {
             return p.gradientValue;
@@ -252,6 +257,11 @@ namespace UnityEditor.UIElements.Bindings
         public static void SetBoundsIntPropertyValue(SerializedProperty p, BoundsInt v)
         {
             p.boundsIntValue = v;
+        }
+
+        public static void SetHash128PropertyValue(SerializedProperty p, Hash128 v)
+        {
+            p.hash128Value = v;
         }
 
         public static void SetGradientPropertyValue(SerializedProperty p, Gradient v)
