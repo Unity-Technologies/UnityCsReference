@@ -208,6 +208,7 @@ namespace UnityEditor
                     RenderTexture.active = rt;
                 }
 
+                previewCamera.cameraType = CameraType.Preview;
                 previewCamera.Render();
 
                 Graphics.DrawTexture(previewRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);

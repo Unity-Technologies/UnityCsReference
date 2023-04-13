@@ -4517,11 +4517,19 @@ namespace UnityEditor
             GUIContent copy = label;
             Rect fullLabelRect = position;
 
-            if(proportionalScaleProperty != null)
-                BeginPropertyInternal(fullLabelRect, label, proportionalScaleProperty);
+            BeginChangeCheck();
 
+            if (proportionalScaleProperty != null)
+            {
+                BeginPropertyInternal(fullLabelRect, label, proportionalScaleProperty);
+            }
+
+            var scalePropertyId = -1;
             if (property != null)
+            {
                 label = BeginPropertyInternal(position, label, property);
+                scalePropertyId = GUIUtility.keyboardControl;
+            }
 
             SerializedProperty copiedProperty = property == null ? property : property.Copy();
             var toggle = EditorStyles.toggle.CalcSize(GUIContent.none);
@@ -4550,13 +4558,26 @@ namespace UnityEditor
             position.width -= toggle.x + kDefaultSpacing;
             position.height = kSingleLineHeight;
 
-            var newValue = LinkedVector3Field(position, value, proportionalScale, mixedValues, initialScale, ref axisModified, copiedProperty);
+            if (proportionalScaleProperty != null)
+            {
+                EndProperty();
+            }
 
             if (property != null)
-                EndProperty();
+            {
+                // Note: due to how both the scale + constrainScale property drawn and handled in a custom fashion, the lastcontrolId never correspond
+                // to the scaleProperty. Also s_PendingPropertyKeyboardHandling is nullifed by the constrainScale property.
+                // Make it work for now but I feel this whole system is super brittle.
+                // This will be hopefully fixed up when we use uitk to create these editors.
 
-            if(proportionalScaleProperty != null)
+                var lastId = EditorGUIUtility.s_LastControlID;
+                EditorGUIUtility.s_LastControlID = scalePropertyId;
+                s_PendingPropertyKeyboardHandling = property;
                 EndProperty();
+                EditorGUIUtility.s_LastControlID = lastId;
+            }
+
+            var newValue = LinkedVector3Field(position, value, proportionalScale, mixedValues, initialScale, ref axisModified, copiedProperty);
 
             return newValue;
         }
@@ -4575,7 +4596,6 @@ namespace UnityEditor
             s_Vector3Floats[1] = value.y;
             s_Vector3Floats[2] = value.z;
             position.height = kSingleLineHeight;
-            BeginChangeCheck();
             LockingMultiFloatFieldInternal(position, proportionalScale, mixedValues, s_XYZLabels, s_Vector3Floats, new float[] {initialScale.x, initialScale.y, initialScale.z}, property, EditorGUI.CalcPrefixLabelWidth(s_XYZLabels[0]) + 3);
             if (EndChangeCheck())
             {
@@ -6911,6 +6931,8 @@ namespace UnityEditor
             // Copy & Paste
             if (evt.commandName == EventCommandNames.Copy || evt.commandName == EventCommandNames.Paste)
             {
+                if (evt.commandName == EventCommandNames.Paste)
+                    GUI.changed = true;
                 ClipboardContextMenu.SetupPropertyCopyPaste(property, menu: null, evt: evt);
             }
         }

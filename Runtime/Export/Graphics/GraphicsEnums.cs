@@ -281,6 +281,35 @@ namespace UnityEngine
         HDR10 = 4,
         DolbyHDR = 5
     }
+    
+    [UsedByNativeCode]
+    [NativeHeader("Runtime/Graphics/ColorGamut.h")]
+    public enum ColorPrimaries
+    {
+        Unknown = -1,
+        Rec709 = 0,
+        Rec2020 = 1,
+        P3 = 2,
+    }
+
+    [UsedByNativeCode]
+    [NativeHeader("Runtime/Graphics/ColorGamut.h")]
+    public enum WhitePoint
+    {
+        Unknown = -1,
+        D65 = 0
+    }
+    
+    [UsedByNativeCode]
+    [NativeHeader("Runtime/Graphics/ColorGamut.h")]
+    public enum TransferFunction
+    {
+        Unknown = -1,
+        sRGB = 0,
+        BT1886 = 1,
+        PQ = 2,
+        Linear = 3
+    }
 
     public enum ScreenOrientation
     {
@@ -554,6 +583,12 @@ namespace UnityEngine
         Supported = 1 << 0,
         RuntimeSwitchable = 1 << 1,
         AutomaticTonemapping = 1 << 2
+    }
+
+    public enum HDRDisplayBitDepth 
+    {
+        BitDepth10 = 0,
+        BitDepth16 = 1
     }
 
     namespace Rendering

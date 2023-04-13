@@ -187,6 +187,7 @@ namespace UnityEngine
         [FreeFunction("MaterialScripting::Lerp", HasExplicitThis = true)] extern public void Lerp(Material start, Material end, float t);
         [FreeFunction("MaterialScripting::SetPass", HasExplicitThis = true)] extern public bool SetPass(int pass);
         [FreeFunction("MaterialScripting::CopyPropertiesFrom", HasExplicitThis = true)] extern public void CopyPropertiesFromMaterial(Material mat);
+        [FreeFunction("MaterialScripting::CopyMatchingPropertiesFrom", HasExplicitThis = true)] extern public void CopyMatchingPropertiesFromMaterial(Material mat);
 
         [FreeFunction("MaterialScripting::GetShaderKeywords", HasExplicitThis = true)] extern private string[] GetShaderKeywords();
         [FreeFunction("MaterialScripting::SetShaderKeywords", HasExplicitThis = true)] extern private void SetShaderKeywords(string[] names);

@@ -2,18 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Reflection;
-using UnityEngine.Scripting;
 // Use this define to debug who grabs and releases hotcontrol
 //#define DEBUG_HOTCONTROL
-
 // Use this define to debug controlID consistency together with 's_LogControlID' (default false) to enable logging in
 // a codepath thats needs tested for consistency. E.g:
 //  if (Event.current.rawType == EventType.MouseUp)
 //      GUIUtility.s_LogControlID = true;
 // And remember to set s_LogControlID to false at end of section of interest.
 //#define DEBUG_CONTROLID
+using System;
+using System.Reflection;
+using UnityEngine.Scripting;
+
+
 
 namespace UnityEngine
 {

@@ -2848,6 +2848,9 @@
     <Compile Include="..\..\Runtime\Export\Graphics\Graphics_BindingsOverloads.cs">
       <Link>Runtime\Export\Graphics\Graphics_BindingsOverloads.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\HDROutputFaking.bindings.cs">
+      <Link>Runtime\Export\Graphics\HDROutputFaking.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\LOD.bindings.cs">
       <Link>Runtime\Export\Graphics\LOD.bindings.cs</Link>
     </Compile>

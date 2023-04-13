@@ -804,7 +804,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete.  Use <see cref="ListView"> or <see cref="TreeView"> constructor directly.
+        /// Obsolete.  Use <see cref="ListView"/> or <see cref="TreeView"/> constructor directly.
         /// </summary>
         /// <param name="itemsSource">The list of items to use as a data source.</param>
         /// <param name="itemHeight">The height of each item, in pixels. For <c>FixedHeight</c> virtualization only.</param>

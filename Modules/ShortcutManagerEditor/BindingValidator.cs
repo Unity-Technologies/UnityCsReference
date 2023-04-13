@@ -49,7 +49,7 @@ namespace UnityEditor.ShortcutManagement
         {
             foreach (var keyCombination in keyCombinations)
             {
-                if (!IsKeyValid(keyCombination.keyCode, out invalidBindingMessage)) return false;
+                if (!IsKeyValid(keyCombination.m_KeyCode, out invalidBindingMessage)) return false;
 
                 for (int i = 0; i < 32; i++)
                 {
