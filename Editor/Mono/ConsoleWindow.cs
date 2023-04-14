@@ -4,9 +4,13 @@
 
 using System;
 using System.Globalization;
-using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Reflection;
 using System.Text;
 using JetBrains.Annotations;
+using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Networking.PlayerConnection;
 using UnityEditor.Networking.PlayerConnection;
@@ -17,9 +21,12 @@ namespace UnityEditor
     internal class ConsoleWindow : EditorWindow, IHasCustomMenu
     {
         internal delegate void EntryDoubleClickedDelegate(LogEntry entry);
+        private static bool s_StripLoggingCallstack;
         private static bool m_UseMonospaceFont;
         private static Font m_MonospaceFont;
         private static int m_DefaultFontSize;
+        private static List<MethodInfo> s_MethodsToHideInCallstack = null;
+        private static Dictionary<MethodInfo, Regex> s_GenericMethodSignatureRegex = null;
 
         //TODO: move this out of here
         internal class Constants
@@ -59,6 +66,7 @@ namespace UnityEditor
             public static readonly GUIContent StopForAssert = EditorGUIUtility.TrTextContent("Stop for Assert");
             public static readonly GUIContent StopForError = EditorGUIUtility.TrTextContent("Stop for Error");
             public static readonly GUIContent UseMonospaceFont = EditorGUIUtility.TrTextContent("Use Monospace font");
+            public static readonly GUIContent StripLoggingCallstack = EditorGUIUtility.TrTextContent("Strip logging callstack");
 
             public static int LogStyleLineCount
             {
@@ -111,8 +119,10 @@ namespace UnityEditor
 
                 m_MonospaceFont = EditorGUIUtility.Load("Fonts/RobotoMono/RobotoMono-Regular.ttf") as Font;
                 m_UseMonospaceFont = HasFlag(ConsoleFlags.UseMonospaceFont);
+                s_StripLoggingCallstack = HasFlag(ConsoleFlags.StripLoggingCallstack);
                 m_DefaultFontSize = LogStyle.fontSize;
                 SetFont();
+                (s_MethodsToHideInCallstack, s_GenericMethodSignatureRegex) = InitializeHideInCallstackMethodsCache();
             }
 
             internal static void UpdateLogStyleFixedHeights()
@@ -136,6 +146,7 @@ namespace UnityEditor
         private int m_ActiveInstanceID = 0;
         bool m_DevBuild;
         int m_CallstackTextStart = 0;
+        private Mode m_ActiveMode = Mode.None;
 
         Vector2 m_TextScroll = Vector2.zero;
 
@@ -193,6 +204,7 @@ namespace UnityEditor
         [Flags]
         internal enum Mode
         {
+            None = 0,
             Error = 1 << 0,
             Assert = 1 << 1,
             Log = 1 << 2,
@@ -233,6 +245,7 @@ namespace UnityEditor
             ClearOnBuild = 1 << 11,
             ClearOnRecompile = 1 << 12,
             UseMonospaceFont = 1 << 13,
+            StripLoggingCallstack = 1 << 14,
         }
 
         static ConsoleWindow ms_ConsoleWindow = null;
@@ -421,6 +434,7 @@ namespace UnityEditor
             if (entry != null)
             {
                 m_ActiveText = entry.message;
+                m_ActiveMode = (Mode)entry.mode;
                 entry.callstackTextStartUTF8 = entry.message.Length;
                 m_CallstackTextStart = entry.callstackTextStartUTF16;
                 // ping object referred by the log entry
@@ -438,6 +452,7 @@ namespace UnityEditor
                 m_ActiveInstanceID = 0;
                 m_ListView.row = -1;
                 m_CopyString.Clear();
+                m_ActiveMode = Mode.None;
             }
         }
 
@@ -688,7 +703,6 @@ namespace UnityEditor
                     SetActiveEntry(entry);
                     m_LastActiveEntryIndex = entry.globalLineIndex;
 
-
                     // see if selected entry changed. if so - clear additional info
                     LogEntries.GetEntryInternal(m_ListView.row, entry);
                     if (m_ListView.selectionChanged || !m_ActiveText.Equals(entry.message))
@@ -696,7 +710,6 @@ namespace UnityEditor
                         SetActiveEntry(entry);
                         m_LastActiveEntryIndex = entry.globalLineIndex;
                     }
-
 
                     // If copy, get the messages from selected rows
                     if (e.type == EventType.ExecuteCommand && e.commandName == EventCommandNames.Copy && m_ListView.selectedItems != null)
@@ -712,6 +725,7 @@ namespace UnityEditor
                         }
                     }
                 }
+
                 // Open entry using return key
                 if ((GUIUtility.keyboardControl == m_ListView.ID) && (e.type == EventType.KeyDown) &&
                     (e.keyCode == KeyCode.Return) && (m_ListView.row != 0))
@@ -735,11 +749,10 @@ namespace UnityEditor
             if (rowDoubleClicked != -1)
                 LogEntries.RowGotDoubleClicked(rowDoubleClicked);
 
-
             // Display active text (We want word wrapped text with a vertical scrollbar)
             m_TextScroll = GUILayout.BeginScrollView(m_TextScroll, Constants.Box);
 
-            string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText, m_CallstackTextStart);
+            string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText, m_CallstackTextStart, s_StripLoggingCallstack, m_ActiveMode);
             float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(stackWithHyperlinks), position.width);
             EditorGUILayout.SelectableLabel(stackWithHyperlinks, Constants.MessageStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height + 10));
 
@@ -803,11 +816,15 @@ namespace UnityEditor
             }
         }
 
-        internal static string StacktraceWithHyperlinks(string stacktraceText, int callstackTextStart)
+        internal static string StacktraceWithHyperlinks(string stacktraceText, int callstackTextStart, bool shouldStripCallstack, Mode mode)
         {
             StringBuilder textWithHyperlinks = new StringBuilder();
             textWithHyperlinks.Append(stacktraceText.Substring(0, callstackTextStart));
             var lines = stacktraceText.Substring(callstackTextStart).Split(new string[] { "\n" }, StringSplitOptions.None);
+
+            if (shouldStripCallstack)
+                lines = StripCallstack(mode, s_GenericMethodSignatureRegex, s_MethodsToHideInCallstack, lines);
+
             for (int i = 0; i < lines.Length; ++i)
             {
                 string textBeforeFilePath = ") (at ";
@@ -846,6 +863,136 @@ namespace UnityEditor
                 textWithHyperlinks.Remove(textWithHyperlinks.Length - 1, 1);
 
             return textWithHyperlinks.ToString();
+        }
+
+        internal static string GetCallstackFormattedSignatureFromGenericMethod(Dictionary<MethodInfo, Regex> methodSignatureRegex, MethodInfo method, string line)
+        {
+            if (string.IsNullOrEmpty(line) || method == null || methodSignatureRegex == null)
+                return null;
+
+            var classType = method.DeclaringType;
+            if (classType == null)
+                return null;
+
+            if (!methodSignatureRegex.TryGetValue(method, out Regex regex))
+                return null;
+
+            if (regex == null)
+                return null;
+
+            var match = regex.Match(line);
+            if (!match.Success)
+                return null;
+
+            var parameterStrings = match.Groups[match.Groups.Count - 1].Value.Split(',');
+            var methodParameters = method.GetParameters();
+            if (parameterStrings == null || parameterStrings.Length != methodParameters.Length)
+                return null;
+
+            var dict = new Dictionary<string, string>();
+            for (int i = 0; i < methodParameters.Length; i++)
+            {
+                var param = methodParameters[i].ParameterType.ToString();
+                parameterStrings[i] = parameterStrings[i].Trim(' ');
+                if (!dict.ContainsKey(param))
+                {
+                    dict.Add(param, parameterStrings[i]);
+                    continue;
+                }
+
+                if (methodParameters[i].ParameterType.IsByRef)
+                {
+                    var trimmedParam = param.Trim('&');
+                    if (!dict.ContainsKey(trimmedParam))
+                    {
+                        dict.Add(trimmedParam, parameterStrings[i].Trim('&'));
+                        continue;
+                    }
+                }
+
+                var nextParam = dict[param];
+                if (!nextParam.Equals(parameterStrings[i], StringComparison.Ordinal))
+                    return null;
+            }
+
+            return match.Value;
+        }
+
+        internal static string GetCallstackFormattedScriptingExceptionSignature(MethodInfo method)
+        {
+            if (method == null)
+                return null;
+
+            var classType = method.DeclaringType;
+            if (classType == null)
+                return null;
+
+            var sb = new StringBuilder(255);
+            var ns = classType.Namespace;
+            if (!string.IsNullOrEmpty(ns))
+            {
+                sb.Append(ns);
+                sb.Append(".");
+            }
+
+            sb.Append(classType.Name);
+            sb.Append(":");
+            sb.Append(method.Name);
+            sb.Append("(");
+
+            var pi = method.GetParameters();
+            if (pi.Length > 0)
+                sb.Append(pi[0].ParameterType.Name);
+
+            for (int i = 1; i < pi.Length; i++)
+            {
+                sb.Append(", ");
+                sb.Append(pi[i].ParameterType.Name);
+            }
+
+            sb.Append(")");
+            return sb.ToString();
+        }
+
+        internal static string[] StripCallstack(Mode mode, Dictionary<MethodInfo, Regex> methodSignatureRegex, List<MethodInfo> methodsToHideInCallstack, string[] lines)
+        {
+            if (methodsToHideInCallstack == null || methodSignatureRegex == null || lines == null)
+                return lines;
+
+            var strippedLines = lines.ToList();
+            var isException = HasMode((int)mode, Mode.ScriptingException);
+            strippedLines.RemoveAll(line =>
+            {
+                foreach (var method in methodsToHideInCallstack)
+                {
+                    if (line.IndexOf(method.Name, StringComparison.Ordinal) == -1)
+                        continue;
+
+                    if (method.IsGenericMethod)
+                    {
+                        var genericMethodSignature = GetCallstackFormattedSignatureFromGenericMethod(methodSignatureRegex, method, line);
+                        if (genericMethodSignature == null)
+                            continue;
+
+                        return true;
+                    }
+
+                    var logMethodSignature = LogEntries.GetCallstackFormattedSignatureInternal(method);
+                    if (logMethodSignature != null && line.IndexOf(logMethodSignature, StringComparison.Ordinal) != -1)
+                        return true;
+
+                    if (isException)
+                    {
+                        var exceptionMethodSignature = GetCallstackFormattedScriptingExceptionSignature(method);
+                        if (exceptionMethodSignature != null && line.IndexOf(exceptionMethodSignature, StringComparison.Ordinal) != -1)
+                            return true;
+                    }
+                }
+
+                return false;
+            });
+
+            return strippedLines.ToArray();
         }
 
         [UsedImplicitly]
@@ -900,6 +1047,7 @@ namespace UnityEditor
             }
 
             menu.AddItem(Constants.UseMonospaceFont, m_UseMonospaceFont, OnFontButtonValueChange);
+            menu.AddItem(Constants.StripLoggingCallstack, s_StripLoggingCallstack, OnStripLoggingCallstackButtonValueChange);
 
             AddStackTraceLoggingMenu(menu);
         }
@@ -934,6 +1082,41 @@ namespace UnityEditor
 
             // Make sure to update the fixed height so the entries do not get cropped incorrectly.
             Constants.UpdateLogStyleFixedHeights();
+        }
+
+        private static void OnStripLoggingCallstackButtonValueChange()
+        {
+            s_StripLoggingCallstack = !s_StripLoggingCallstack;
+            SetFlag(ConsoleFlags.StripLoggingCallstack, s_StripLoggingCallstack);
+        }
+
+        internal static (List<MethodInfo>, Dictionary<MethodInfo, Regex>) InitializeHideInCallstackMethodsCache()
+        {
+            var methods = TypeCache.GetMethodsWithAttribute<HideInCallstackAttribute>();
+            if (methods.Count == 0)
+                return (null, null);
+
+            var methodsToHideInCallstack = new List<MethodInfo>();
+            var genericMethodSignatureRegexes = new Dictionary<MethodInfo, Regex>();
+            foreach (var method in methods)
+            {
+                methodsToHideInCallstack.Add(method);
+                if (method.IsGenericMethod)
+                {
+                    var classType = method.DeclaringType;
+                    if (classType == null)
+                        continue;
+
+                    var ns = classType.Namespace;
+                    var pattern = $"{(string.IsNullOrEmpty(ns) ? "" : $@"({ns})\.")}(" + classType.Name +
+                                  @")\:(" + method.Name + @")([^\(]*)\s*\(([^\)]+)\)";
+                    var regex = new Regex(pattern, RegexOptions.Compiled);
+                    if (!genericMethodSignatureRegexes.ContainsKey(method))
+                        genericMethodSignatureRegexes.Add(method, regex);
+                }
+            }
+
+            return (methodsToHideInCallstack, genericMethodSignatureRegexes);
         }
 
         private void SetTimestamp()

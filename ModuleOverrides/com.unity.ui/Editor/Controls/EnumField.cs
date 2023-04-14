@@ -192,24 +192,38 @@ namespace UnityEditor.UIElements
             m_EnumType = defaultValue.GetType();
             m_EnumData = EnumDataUtility.GetCachedEnumData(m_EnumType, !includeObsoleteValues);
 
-            SetValueWithoutNotify(defaultValue);
+            // If the value is the same then we just need to ensure that the value label is
+            // updated as m_EnumType may have been null when the value was set. (UUM-28904)
+            if (!Enum.Equals(rawValue, defaultValue))
+                SetValueWithoutNotify(defaultValue);
+            else
+                UpdateValueLabel(defaultValue);
         }
 
         public override void SetValueWithoutNotify(Enum newValue)
         {
-            if (rawValue != newValue)
+            if (!Enum.Equals(rawValue, newValue))
             {
                 base.SetValueWithoutNotify(newValue);
 
                 if (m_EnumType == null)
                     return;
 
-                int idx = Array.IndexOf(m_EnumData.values, newValue);
+                UpdateValueLabel(newValue);
+            }
+        }
 
-                if (idx >= 0 & idx < m_EnumData.values.Length)
-                {
-                    m_TextElement.text = m_EnumData.displayNames[idx];
-                }
+        void UpdateValueLabel(Enum value)
+        {
+            int idx = Array.IndexOf(m_EnumData.values, value);
+
+            if (idx >= 0 & idx < m_EnumData.values.Length)
+            {
+                m_TextElement.text = m_EnumData.displayNames[idx];
+            }
+            else
+            {
+                m_TextElement.text = string.Empty;
             }
         }
 

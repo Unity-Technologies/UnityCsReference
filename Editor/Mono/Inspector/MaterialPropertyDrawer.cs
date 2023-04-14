@@ -84,7 +84,7 @@ namespace UnityEditor
             var toDelete = new List<string>();
             foreach (string key in s_PropertyHandlers.Keys)
             {
-                if (key.StartsWith(keyStart))
+                if (key.StartsWith(keyStart, StringComparison.Ordinal))
                     toDelete.Add(key);
             }
             foreach (string key in toDelete)

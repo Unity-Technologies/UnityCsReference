@@ -93,6 +93,10 @@ namespace UnityEngine
     [UsedByNativeCode]
     public sealed class HideInInspector : Attribute {}
 
+    // Makes a method not show up in the detail view of the console.
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class HideInCallstackAttribute : Attribute {}
+
     // Sets a custom help URL for a script.
     [UsedByNativeCode]
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
