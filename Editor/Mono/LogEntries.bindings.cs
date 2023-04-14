@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
 using UnityEngine.Bindings;
+using System.Reflection;
 
 namespace UnityEditor
 {
@@ -60,6 +61,9 @@ namespace UnityEditor
 
         [FreeFunction]
         public static extern bool GetEntryInternal(int row, [Out] LogEntry outputEntry);
+
+        [FreeFunction]
+        internal static extern string GetCallstackFormattedSignatureInternal(MethodBase methodInfo);
 
         [FreeFunction(ThrowsException = true)]
         public static extern int GetEntryCount(int row);

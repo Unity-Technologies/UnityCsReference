@@ -711,7 +711,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Gets the root element the specified collection view item.
+        /// Gets the root element of the specified collection view item.
         /// </summary>
         /// <param name="index">The item index.</param>
         /// <returns>The item's root element.</returns>
