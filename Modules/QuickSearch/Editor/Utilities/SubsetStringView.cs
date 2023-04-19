@@ -202,10 +202,32 @@ namespace UnityEditor.Search
             return Trim(chrs);
         }
 
+        public SubsetStringView TrimEnd(params char[] chrs)
+        {
+            FindTrimEnd(0, length, chrs, out var end);
+
+            var indexes = new List<int>(end);
+            for (var i = 0; i < end; ++i)
+            {
+                indexes.Add(m_Indexes[i]);
+            }
+            return new SubsetStringView(m_BaseString, indexes, m_Counts);
+        }
+
+        IStringView IStringView.TrimEnd(params char[] chrs)
+        {
+            return TrimEnd(chrs);
+        }
+
         void FindTrimStartEnd(int localStart, int localEnd, char[] chrs, out int trimStart, out int trimEnd)
         {
+            FindTrimStart(localStart, localEnd, chrs, out trimStart);
+            FindTrimEnd(trimStart, localEnd, chrs, out trimEnd);
+        }
+
+        void FindTrimStart(int localStart, int localEnd, char[] chrs, out int trimStart)
+        {
             trimStart = localStart;
-            trimEnd = localEnd;
             for (; trimStart < localEnd;)
             {
                 var globalIndex = m_Indexes[trimStart];
@@ -215,8 +237,12 @@ namespace UnityEditor.Search
                 else
                     break;
             }
+        }
 
-            for (; trimEnd > trimStart;)
+        void FindTrimEnd(int localStart, int localEnd, char[] chrs, out int trimEnd)
+        {
+            trimEnd = localEnd;
+            for (; trimEnd > localStart;)
             {
                 var globalIndex = m_Indexes[trimEnd - 1];
                 var c = baseString[globalIndex];

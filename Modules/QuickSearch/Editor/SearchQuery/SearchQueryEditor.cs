@@ -165,6 +165,7 @@ namespace UnityEditor.Search
 
                 contentPosition.xMin += kDropDownArrowMargin;
                 contentPosition.xMax -= kDropDownArrowMargin + kDropDownArrowWidth / 2;
+
                 contentPosition.yMin += kDropDownArrowMargin;
                 contentPosition.yMax -= kDropDownArrowMargin + kDropDownArrowWidth / 2;
 

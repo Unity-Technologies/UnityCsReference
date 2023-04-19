@@ -13,11 +13,13 @@ namespace UnityEditor.IMGUI.Controls
 
         private AdvancedDropdownItem m_MainTree;
         private AdvancedDropdownItem m_SearchTree;
+        private AdvancedDropdownItem m_CurrentContextTree;
         private List<int> m_SelectedIDs = new List<int>();
 
         public AdvancedDropdownItem mainTree { get { return m_MainTree; }}
         public AdvancedDropdownItem searchTree { get { return m_SearchTree; }}
         public List<int> selectedIDs { get { return m_SelectedIDs; }}
+        public bool CurrentFolderContextualSearch { get; set; }
 
         protected AdvancedDropdownItem root { get { return m_MainTree; }}
         protected List<AdvancedDropdownItem> m_SearchableElements;
@@ -34,8 +36,13 @@ namespace UnityEditor.IMGUI.Controls
 
         protected abstract AdvancedDropdownItem FetchData();
 
-        public void RebuildSearch(string search)
+        public void RebuildSearch(string search, AdvancedDropdownItem currentTree)
         {
+            if (CurrentFolderContextualSearch && m_CurrentContextTree != currentTree && currentTree != searchTree)
+            {
+                m_SearchableElements = null;
+            }
+            m_CurrentContextTree = currentTree;
             m_SearchTree = Search(search);
         }
 
@@ -126,7 +133,7 @@ namespace UnityEditor.IMGUI.Controls
         void BuildSearchableElements()
         {
             m_SearchableElements = new List<AdvancedDropdownItem>();
-            BuildSearchableElements(root);
+            BuildSearchableElements(CurrentFolderContextualSearch && m_CurrentContextTree != null ? m_CurrentContextTree : root);
         }
 
         void BuildSearchableElements(AdvancedDropdownItem item)

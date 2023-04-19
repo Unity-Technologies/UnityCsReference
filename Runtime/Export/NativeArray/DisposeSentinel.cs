@@ -55,7 +55,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             if (AtomicSafetyHandle.IsTempMemoryHandle(safety))
             {
                 int staticSafetyId = safety.staticSafetyId;
-                safety = AtomicSafetyHandle.Create();
+                safety = AtomicSafetyHandle.GetTempMemoryHandle();
                 safety.staticSafetyId = staticSafetyId;
             }
             AtomicSafetyHandle.Release(safety);

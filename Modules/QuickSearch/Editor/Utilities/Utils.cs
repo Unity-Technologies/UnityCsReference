@@ -983,9 +983,15 @@ namespace UnityEditor.Search
         public static bool TryParse<T>(string expression, out T result, bool supportNamedNumber = true)
         {
             expression = expression.Replace(',', '.');
-            expression = expression.TrimEnd('f');
             expression = expression.ToLowerInvariant();
 
+            return TryParseLowerInvariant(expression.GetStringView(), out result, supportNamedNumber);
+        }
+
+        public static bool TryParseLowerInvariant<T>(StringView sv, out T result, bool supportNamedNumber = true)
+        {
+            sv = sv.TrimEnd('f');
+            var expression = sv.ToReadOnlySpan();
             bool success = false;
             result = default;
             if (typeof(T) == typeof(float))

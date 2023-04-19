@@ -53,6 +53,7 @@ namespace UnityEditor.Search
         public static Texture2D GetSceneObjectPreview(GameObject obj, Vector2 size, FetchPreviewOptions options, Texture2D thumbnail)
         {
             return Utils.GetSceneObjectPreview(obj, size, options, thumbnail);
+        
         }
 
         /// <summary>
@@ -1043,6 +1044,7 @@ namespace UnityEditor.Search
             return Utils.GetMainWindowCenteredPosition(size);
         }
 
+        
         public static Texture2D GetAssetThumbnailFromPath(string path)
         {
             return Utils.GetAssetThumbnailFromPath(path);
@@ -1068,7 +1070,7 @@ namespace UnityEditor.Search
             return OpenWithContextualProvider(null, providerIds, SearchFlags.OpenContextual);
         }
 
-        internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null)
+        internal static ISearchView OpenWithContextualProvider(string searchQuery, string[] providerIds, SearchFlags flags, string topic = null, bool useExplicitProvidersAsNormalProviders = false)
         {
             var providers = SearchService.GetProviders(providerIds).ToArray();
             if (providers.Length != providerIds.Length)
@@ -1078,6 +1080,7 @@ namespace UnityEditor.Search
                 return QuickSearch.OpenDefaultQuickSearch();
 
             var context = SearchService.CreateContext(providers, searchQuery, flags);
+            context.useExplicitProvidersAsNormalProviders = useExplicitProvidersAsNormalProviders;
             topic = topic ?? string.Join(", ", providers.Select(p => p.name.ToLower()));
             var qsWindow = QuickSearch.Create<QuickSearch>(context, topic);
 

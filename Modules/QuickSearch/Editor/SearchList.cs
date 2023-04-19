@@ -494,6 +494,7 @@ namespace UnityEditor.Search
             }
         }
 
+        internal const string allGroupId = "all";
         private int m_CurrentGroupIndex = 0;
         private string m_CurrentGroupId;
         private readonly List<IGroup> m_Groups = new List<IGroup>();
@@ -623,7 +624,7 @@ namespace UnityEditor.Search
             if (m_Groups.Count == 0)
             {
                 m_CurrentGroupIndex = 0;
-                m_Groups.Add(new Group("all", "all", "All", m_DefaultComparer, int.MinValue));
+                m_Groups.Add(new Group(allGroupId, allGroupId, "All", m_DefaultComparer, int.MinValue));
                 AddDefaultGroups();
             }
             else
@@ -657,7 +658,7 @@ namespace UnityEditor.Search
         {
             get
             {
-                return m_CurrentGroupId ?? "all";
+                return m_CurrentGroupId ?? allGroupId;
             }
 
             set

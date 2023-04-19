@@ -16,6 +16,8 @@ namespace UnityEngine.UIElements
 
         const int k_DragThresholdSqr = 16;
 
+        private int m_ConsecutiveMouseDownCount;
+        private long m_LastMouseDownTimeStamp = 0;
         private bool isClicking
         {
             get => m_IsClicking;
@@ -148,13 +150,18 @@ namespace UnityEngine.UIElements
             if (m_SelectingUtilities.HandleKeyEvent(m_ImguiEvent))
                 evt.StopPropagation();
         }
-
         void OnPointerDownEvent(PointerDownEvent evt)
         {
             var pointerPosition = evt.localPosition - (Vector3)m_TextElement.contentRect.min;
             if (evt.button == (int)MouseButton.LeftMouse)
             {
-                if (evt.clickCount == 2 && m_TextElement.selection.doubleClickSelectsWord)
+                //only move cursor to position if it wasnt a double or triple click.
+                if (evt.timestamp - m_LastMouseDownTimeStamp < Event.GetDoubleClickTime())
+                    m_ConsecutiveMouseDownCount++;
+                else
+                    m_ConsecutiveMouseDownCount = 1;
+
+                if (m_ConsecutiveMouseDownCount == 2 && m_TextElement.selection.doubleClickSelectsWord)
                 {
                     // We need to assign the correct cursor and select index to the current cursor position
                     // prior to selecting the current word. Because selectAllOnMouseUp is true, it'll always
@@ -164,7 +171,7 @@ namespace UnityEngine.UIElements
 
                     m_SelectingUtilities.SelectCurrentWord();
                 }
-                else if (evt.clickCount == 3 && m_TextElement.selection.tripleClickSelectsLine)
+                else if (m_ConsecutiveMouseDownCount == 3 && m_TextElement.selection.tripleClickSelectsLine)
                     m_SelectingUtilities.SelectCurrentParagraph();
                 else
                 {
@@ -172,6 +179,7 @@ namespace UnityEngine.UIElements
                     m_TextElement.edition.UpdateScrollOffset?.Invoke(false);
                 }
 
+                m_LastMouseDownTimeStamp = evt.timestamp;
                 isClicking = true;
                 m_TextElement.CapturePointer(evt.pointerId);
                 m_ClickStartPosition = pointerPosition;
