@@ -74,6 +74,22 @@ namespace UnityEditor
         private static DropInfo s_DropInfo = null;
         private static Dictionary<GUIContentKey, GUIContent> s_GUIContents = new Dictionary<GUIContentKey, GUIContent>();
 
+        private static bool s_IsCapabilitySet;
+        private static bool s_HasCapabilityCached;
+        private static bool s_HasCapability
+        {
+            get
+            {
+                if (s_IsCapabilitySet)
+                    return s_HasCapabilityCached;
+
+                s_IsCapabilitySet = true;
+                s_HasCapabilityCached = ModeService.HasCapability(ModeCapability.StaticTabs, false);
+                ModeService.modeChanged += (_) => s_HasCapabilityCached = ModeService.HasCapability(ModeCapability.StaticTabs, false);
+                return s_HasCapabilityCached;
+            }
+        }
+
         [SerializeField] internal List<EditorWindow> m_Panes = new List<EditorWindow>();
         [SerializeField] internal int m_Selected;
         [SerializeField] internal int m_LastSelected;
@@ -400,7 +416,7 @@ namespace UnityEditor
                     tabStyle = Styles.dragTab;
 
                 var firstTabStyle = Styles.dragTabFirst;
-                if (ModeService.HasCapability(ModeCapability.StaticTabs, false))
+                if (s_HasCapability)
                 {
                     firstTabStyle = Styles.tabLabel;
                 }
@@ -796,7 +812,7 @@ namespace UnityEditor
             {
                 case EventType.TouchDown:
                 case EventType.MouseDown:
-                    if (ModeService.HasCapability(ModeCapability.StaticTabs, false))
+                    if (s_HasCapability)
                     {
                         break;
                     }
@@ -828,7 +844,7 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.ContextClick:
-                    if (ModeService.HasCapability(ModeCapability.StaticTabs, false))
+                    if (s_HasCapability)
                     {
                         break;
                     }
@@ -845,7 +861,7 @@ namespace UnityEditor
                 case EventType.TouchMove:
                 case EventType.MouseDrag:
 
-                    if (ModeService.HasCapability(ModeCapability.StaticTabs, false))
+                    if (s_HasCapability)
                     {
                         break;
                     }
@@ -953,7 +969,7 @@ namespace UnityEditor
                     break;
                 case EventType.TouchUp:
                 case EventType.MouseUp:
-                    if (ModeService.HasCapability(ModeCapability.StaticTabs, false))
+                    if (s_HasCapability)
                     {
                         break;
                     }

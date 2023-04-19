@@ -381,6 +381,12 @@ namespace UnityEditor
             {
                 return BuildPlayerInternal(scenes, locationPathName, assetBundleManifestPath, buildTargetGroup, target, subtarget, options, extraScriptingDefines);
             }
+            catch (System.ArgumentException argumentException)
+            {
+                Debug.LogException(argumentException);
+                EditorApplication.Exit(1);
+                return null;
+            }
             catch (System.Exception exception)
             {
                 // In some case BuildPlayer might let a null reference exception fall through. Prevent data loss by just exiting.
@@ -498,8 +504,8 @@ namespace UnityEditor
 
         private static BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, int subtarget, BuildOptions options, string[] extraScriptingDefines)
         {
-            if (!BuildPlayerWindow.DefaultBuildMethods.IsBuildPathValid(locationPathName))
-                throw new Exception("Invalid Build Path: " + locationPathName);
+            if (!BuildPlayerWindow.DefaultBuildMethods.IsBuildPathValid(locationPathName, out var msg))
+                throw new ArgumentException($"Invalid build path: '{locationPathName}'. {msg}");
 
             return BuildPlayerInternalNoCheck(levels, locationPathName, assetBundleManifestPath, buildTargetGroup, target, subtarget, options, extraScriptingDefines, false);
         }

@@ -38,10 +38,13 @@ namespace Unity.Collections.LowLevel.Unsafe
     [NativeHeader("Runtime/Jobs/JobsDebugger.h")]
     public struct AtomicSafetyHandle
     {
+        // These bit flag constants need to be in sync with
+        // the bit flag enums in AtomicSafetyHandle.h
         internal const int Read = 1 << 0;
         internal const int Write = 1 << 1;
         internal const int Dispose = 1 << 2;
-        internal const int VersionIncrement = 1 << 3;
+        internal const int TempVersion = 1 << 3;
+        internal const int VersionIncrement = 1 << 4;
 
         internal const int ReadCheck = ~(Write | Dispose);
         internal const int WriteCheck = ~(Read | Dispose);
@@ -284,17 +287,16 @@ namespace Unity.Collections.LowLevel.Unsafe
         internal static void DisposeHandle(ref AtomicSafetyHandle safety)
         {
             CheckDeallocateAndThrow(safety);
-            // If the safety handle is for a temp allocation, create a new safety handle for this instance which can be marked as invalid
+            // If the safety handle is for a temp allocation, get a new safety handle for this instance which can be marked as invalid
             // Setting it to new AtomicSafetyHandle is not enough since the handle needs a valid node pointer in order to give the correct errors
             if (IsTempMemoryHandle(safety))
             {
                 int staticSafetyId = safety.staticSafetyId;
-                safety = Create();
+                safety = AtomicSafetyHandle.GetTempMemoryHandle();
                 safety.staticSafetyId = staticSafetyId;
             }
             Release(safety);
         }
-
     }
 }
 
