@@ -235,6 +235,15 @@ namespace UnityEngine.UIElements
         /// The Contextual menu manager for the panel.
         /// </summary>
         ContextualMenuManager contextualMenuManager { get; }
+
+
+        /// <summary>
+        /// This method returns true if any state was changed on an element of this panel since the last render of the panel.
+        /// </summary>
+        /// <remarks>
+        /// This method does not currently check for any binding that has to be updated, any currently pending transition, any referenced asset modified (like renderTexture, panelSettings or textSettings) 
+        /// </remarks>
+        bool isDirty { get; }
     }
 
     abstract class BaseVisualElementPanel : IPanel, IGroupBox
@@ -421,7 +430,7 @@ namespace UnityEngine.UIElements
 
         internal bool duringLayoutPhase { get; set; }
 
-        internal bool isDirty
+        public bool isDirty
         {
             get
             {
