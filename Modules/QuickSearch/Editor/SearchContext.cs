@@ -140,6 +140,7 @@ namespace UnityEditor.Search
         [SerializeField] private List<SearchProvider> m_SerializedProviders;
         [SerializeField] private int m_SerializedSearchViewInstanceID;
         [SerializeField] private string m_SerializedFilterType;
+        [SerializeField] private bool m_UseExplicitProvidersAsNormalProviders;
 
         /// <summary>
         /// Progress handle to set the search current progress.
@@ -289,7 +290,7 @@ namespace UnityEditor.Search
                 if (m_Providers.Count == 1)
                     return m_Providers;
 
-                return m_Providers.Where(p => !p.isExplicitProvider);
+                return m_Providers.Where(p => !p.isExplicitProvider || useExplicitProvidersAsNormalProviders);
             }
         }
 
@@ -335,6 +336,12 @@ namespace UnityEditor.Search
         /// Can be null
         /// </summary>
         public string filterId { get; private set; }
+
+        internal bool useExplicitProvidersAsNormalProviders
+        {
+            get => m_UseExplicitProvidersAsNormalProviders;
+            set => m_UseExplicitProvidersAsNormalProviders = value;
+        }
 
         /// <summary>
         /// This event is used to receive any async search result.
@@ -555,14 +562,14 @@ namespace UnityEditor.Search
             UpdateProviders(() => m_Providers.Remove(provider));
         }
 
-        internal void SetProviders(IEnumerable<SearchProvider> providers = null)
+        internal void SetProviders(IEnumerable<SearchProvider> newProviders = null)
         {
             CheckDisposed();
             UpdateProviders(() =>
             {
                 m_Providers.Clear();
-                if (providers != null)
-                    m_Providers.AddRange(FilterProviders(providers));
+                if (newProviders != null)
+                    m_Providers.AddRange(FilterProviders(newProviders));
             });
         }
 

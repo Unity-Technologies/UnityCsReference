@@ -173,12 +173,20 @@ namespace UnityEditor.Search.Providers
             Refresh();
         }
 
-        private void InvalidateObject(int instanceId, RefreshFlags flags = RefreshFlags.Default)
+        private void InvalidateObject(int instanceId)
         {
             if (UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c)
                 queryEngine.InvalidateObject(c.gameObject.GetInstanceID());
             else
                 queryEngine.InvalidateObject(instanceId);
+        }
+
+        private void InvalidateObjectAndRefs(int instanceId)
+        {
+            if (UnityEngine.Object.FindObjectFromInstanceID(instanceId) is Component c)
+                queryEngine.InvalidateObjectAndRefs(c.gameObject.GetInstanceID());
+            else
+                queryEngine.InvalidateObjectAndRefs(instanceId);
         }
 
         private void OnObjectChanged(ref ObjectChangeEventStream stream)
@@ -206,19 +214,19 @@ namespace UnityEditor.Search.Providers
                     case ObjectChangeKind.ChangeGameObjectStructureHierarchy:
                     {
                         stream.GetChangeGameObjectStructureHierarchyEvent(i, out var e);
-                        InvalidateObject(e.instanceId, RefreshFlags.StructureChanged);
+                        InvalidateObjectAndRefs(e.instanceId);
                     }
                     break;
                     case ObjectChangeKind.ChangeGameObjectStructure:
                     {
                         stream.GetChangeGameObjectStructureEvent(i, out var e);
-                        InvalidateObject(e.instanceId, RefreshFlags.StructureChanged);
+                        InvalidateObjectAndRefs(e.instanceId);
                     }
                     break;
                     case ObjectChangeKind.ChangeGameObjectParent:
                     {
                         stream.GetChangeGameObjectParentEvent(i, out var e);
-                        InvalidateObject(e.instanceId);
+                        InvalidateObjectAndRefs(e.instanceId);
                     }
                     break;
                     case ObjectChangeKind.ChangeGameObjectOrComponentProperties:
@@ -313,7 +321,6 @@ namespace UnityEditor.Search.Providers
                 using (SearchMonitor.GetView())
                 {
                     yield return queryEngine.Search(context, provider, subset)
-                        .Where(go => go)
                         .Select(go => AddResult(context, provider, go));
                 }
             }
@@ -326,16 +333,20 @@ namespace UnityEditor.Search.Providers
                             return c.gameObject;
                         return obj as GameObject;
                     })
-                    .Where(go => go)
                     .Select(go => AddResult(context, provider, go));
             }
         }
 
         public static SearchItem AddResult(SearchContext context, SearchProvider provider, GameObject go)
         {
-            var instanceId = go.GetHashCode();
-            var item = provider.CreateItem(context, instanceId.ToString(), ~instanceId, null, null, null, new GameObjectData(go));
-            return SetItemDescriptionFormat(item, useFuzzySearch: false);
+            if (go)
+            {
+                var instanceId = go.GetHashCode();
+                var item = provider.CreateItem(context, instanceId.ToString(), ~instanceId, null, null, null, new GameObjectData(go));
+                return SetItemDescriptionFormat(item, useFuzzySearch: false);
+            }
+
+            return null;
         }
 
         private static SearchItem SetItemDescriptionFormat(SearchItem item, bool useFuzzySearch)

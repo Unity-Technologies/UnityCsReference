@@ -1202,6 +1202,18 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public bool HasCharacter(char character, bool searchFallbacks = false, bool tryAddCharacter = false)
         {
+            return HasCharacter(character, searchFallbacks, tryAddCharacter);
+        }
+
+        /// <summary>
+        /// Function to check if a character is contained in the font asset with the option to also check potential local fallbacks.
+        /// </summary>
+        /// <param name="character"></param>
+        /// <param name="searchFallbacks"></param>
+        /// <param name="tryAddCharacter"></param>
+        /// <returns></returns>
+        public bool HasCharacter(uint character, bool searchFallbacks = false, bool tryAddCharacter = false)
+        {
             // Read font asset definition if it hasn't already been done.
             if (m_CharacterLookupDictionary == null)
             {
@@ -2766,7 +2778,7 @@ namespace UnityEngine.TextCore.Text
 
             // Add new texture as sub asset to font asset
             Texture2D tex = m_AtlasTextures[m_AtlasTextureIndex];
-            tex.name = m_AtlasTexture.name + " " + m_AtlasTextureIndex;
+            tex.name = atlasTexture.name + " " + m_AtlasTextureIndex;
 
             OnFontAssetTextureChanged?.Invoke(tex, this);
         }

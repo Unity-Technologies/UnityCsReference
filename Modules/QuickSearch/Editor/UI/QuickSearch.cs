@@ -65,6 +65,7 @@ namespace UnityEditor.Search
         private bool m_ShowSideBar;
         private bool m_ShowDetails;
         private Action m_WaitAsyncResults;
+        private IEnumerable<SearchProvider> m_AvailableProviders;
 
         private SearchMonitorView m_SearchMonitorView;
 
@@ -553,6 +554,9 @@ namespace UnityEditor.Search
 
         public void ShowItemContextualMenu(SearchItem item, Rect position)
         {
+            if (IsPicker())
+                return;
+
             SendEvent(SearchAnalytics.GenericEventType.QuickSearchShowActionMenu, item.provider.id);
             var menu = new GenericMenu();
             var shortcutIndex = 0;
@@ -614,6 +618,8 @@ namespace UnityEditor.Search
 
             SearchSettings.providerActivationChanged += OnProviderActivationChanged;
 
+            m_AvailableProviders = (IsPicker() || !context.options.HasFlag(SearchFlags.OpenGlobal)) ? new List<SearchProvider>(context.providers) : SearchService.OrderedProviders;
+
             s_GlobalViewState = null;
         }
 
@@ -661,7 +667,13 @@ namespace UnityEditor.Search
             EditorApplication.delayCall -= DelayTrackSelection;
             SearchSettings.providerActivationChanged -= OnProviderActivationChanged;
 
-            selectCallback?.Invoke(selection?.FirstOrDefault(), selection == null || selection.Count == 0);
+            try
+            {
+                selectCallback?.Invoke(selection?.FirstOrDefault(), selection == null || selection.Count == 0);
+            }
+            catch
+            {
+            }
 
             SaveSessionSettings();
 
@@ -985,6 +997,17 @@ namespace UnityEditor.Search
             if (providerId == m_FilteredItems.currentGroup)
                 SelectGroup(null);
             context.SetFilter(providerId, toggledEnabled);
+            if (toggledEnabled && provider == null && !context.providers.Any(p => p.id == providerId))
+            {
+                // Provider that are not stored in the SearchService, might only exists in the m_AvailableProviders (local providers created directly in the context).
+                var localProvider = m_AvailableProviders.FirstOrDefault(p => p.id == providerId);
+                if (localProvider != null)
+                {
+                    var newProviderList = context.GetProviders().Concat(new[] { localProvider }).ToArray();
+                    context.SetProviders(newProviderList);
+                }
+            }
+
             ClearQueryHelper();
             SendEvent(SearchAnalytics.GenericEventType.FilterWindowToggle, providerId, context.IsEnabled(providerId).ToString());
             Refresh();
@@ -1826,25 +1849,22 @@ namespace UnityEditor.Search
 
         private void AddProvidersToMenu(GenericMenu menu)
         {
-            if (IsPicker())
+            var allEnabledProviders = m_AvailableProviders.Where(p => context.IsEnabled(p.id));
+            var singleProviderEnabled = allEnabledProviders.Count() == 1 ? allEnabledProviders.First() : null;
+            foreach (var p in m_AvailableProviders)
             {
-                // Only allow customization of provider in current context.
-                foreach (var p in context.providers)
+                var filterContent = new GUIContent($"{p.name} ({p.filterId})");
+                if (singleProviderEnabled == p)
                 {
-                    var filterContent = new GUIContent($"{p.name} ({p.filterId})");
-                    menu.AddItem(filterContent, context.IsEnabled(p.id), () => ToggleFilter(p.id));
+                    menu.AddDisabledItem(filterContent, context.IsEnabled(p.id));
                 }
-            }
-            else
-            {
-                foreach (var p in SearchService.OrderedProviders)
+                else
                 {
-                    var filterContent = new GUIContent($"{p.name} ({p.filterId})");
                     menu.AddItem(filterContent, context.IsEnabled(p.id), () => ToggleFilter(p.id));
                 }
             }
         }
-
+    
         private void ToggleIndexEnabled(SearchDatabase db)
         {
             db.settings.options.disabled = !db.settings.options.disabled;

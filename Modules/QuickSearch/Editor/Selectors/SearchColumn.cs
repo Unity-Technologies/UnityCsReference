@@ -270,7 +270,7 @@ namespace UnityEditor.Search
                 currentGroup = ((QuickSearch)context.searchView).currentGroup;
             }
             
-            if (!string.IsNullOrEmpty(currentGroup) && !string.Equals(currentGroup, "all", StringComparison.Ordinal))
+            if (!string.IsNullOrEmpty(currentGroup) && !string.Equals(currentGroup, GroupedSearchList.allGroupId, StringComparison.Ordinal))
             {
                 providerTypes.Clear();
                 providerTypes.Add(currentGroup);

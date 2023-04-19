@@ -4,6 +4,7 @@
 
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -380,6 +381,23 @@ namespace UnityEditor
             }
 
             base.OnInspectorGUI();
+        }
+
+        public override VisualElement CreateInspectorGUI()
+        {
+            if (serializedObject == null)
+                return null;
+
+            var root = new VisualElement();
+
+            if (MissingSerializeReference(target))
+            {
+                root.Add(new HelpBox(GetMissingSerializeRefererenceMessageContainer(), HelpBoxMessageType.Warning));
+            }
+
+            UIElements.InspectorElement.FillDefaultInspector(root, serializedObject, this);
+
+            return root;
         }
     }
 }

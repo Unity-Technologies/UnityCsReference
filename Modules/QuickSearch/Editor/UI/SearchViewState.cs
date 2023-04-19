@@ -93,6 +93,9 @@ namespace UnityEditor.Search
         public bool hasWindowSize => position.width > 0f && position.height > 0;
         public Vector2 windowSize => hasWindowSize ? position.size : defaultSize;
 
+
+        [SerializeField] bool m_ContextUseExplicitProvidersAsNormalProviders;
+
         public SearchContext context
         {
             get
@@ -256,6 +259,7 @@ namespace UnityEditor.Search
                 m_Context = SearchService.CreateContext(providerIds, searchText ?? string.Empty, searchFlags);
             else
                 m_Context = SearchService.CreateContext(searchText ?? string.Empty, searchFlags | SearchFlags.OpenDefault);
+            m_Context.useExplicitProvidersAsNormalProviders = m_ContextUseExplicitProvidersAsNormalProviders;
             m_WasDeserialized = false;
         }
 
@@ -313,6 +317,7 @@ namespace UnityEditor.Search
             searchText = context.searchText;
             providerIds = GetProviderIds().ToArray();
             m_ActiveQueryGuid = m_ActiveQuery?.guid;
+            m_ContextUseExplicitProvidersAsNormalProviders = context.useExplicitProvidersAsNormalProviders;
         }
 
         public void OnAfterDeserialize()

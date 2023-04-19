@@ -149,23 +149,7 @@ namespace UnityEditor.UIElements
             var editors = PopulateCache();
             var editorTitle = ObjectNames.GetInspectorTitle(m_EditorTarget);
 
-            InspectorElement.Mode inspectorElementMode;
-
-            var propertyEditor = inspectorWindow as PropertyEditor;
-
-            if (null == propertyEditor || propertyEditor.inspectorElementModeOverride == 0)
-            {
-                inspectorElementMode = InspectorElement.GetModeFromInspectorMode(inspectorWindow.inspectorMode);
-
-                if (!EditorSettings.inspectorUseIMGUIDefaultInspector)
-                    inspectorElementMode &= ~(InspectorElement.Mode.IMGUIDefault);
-            }
-            else
-            {
-                inspectorElementMode = (InspectorElement.Mode) propertyEditor.inspectorElementModeOverride;
-            }
-
-            var inspectorElement = new InspectorElement(editor, inspectorElementMode)
+            var inspectorElement = new InspectorElement(editor)
             {
                 focusable = false,
                 name = editorTitle + "Inspector",
@@ -231,7 +215,7 @@ namespace UnityEditor.UIElements
 
             if (m_InspectorElement != null)
             {
-                m_InspectorElement.AssignExistingEditor(editor);
+                m_InspectorElement.SetEditor(editor);
                 m_InspectorElement.name = editorTitle + "Inspector";
 
                 // InspectorElement should be enabled only if the Editor is open for edit.

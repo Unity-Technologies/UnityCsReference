@@ -322,6 +322,7 @@ namespace UnityEngine.UIElements
             tgs.material = tgs.fontAsset.material;
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             tgs.screenRect = new Rect(0, 0, m_TextElement.contentRect.width, m_TextElement.contentRect.height);
+            tgs.extraPadding = GetTextEffectPadding(tgs.fontAsset);
             tgs.text = m_TextElement.isElided && !TextLibraryCanElide() ? m_TextElement.elidedText : m_TextElement.renderedText;
 
             tgs.fontSize = style.fontSize.value > 0
@@ -354,6 +355,37 @@ namespace UnityEngine.UIElements
         {
             // TextCore can only elide at the end
             return m_TextElement.computedStyle.unityTextOverflowPosition == TextOverflowPosition.End;
+        }
+
+        internal static readonly float k_MinPadding = 6.0f;
+        // Function to determine how much extra padding is required as a result of text effect like outline thickness, shadow etc... (see UUM-9524).
+        internal float GetTextEffectPadding(FontAsset fontAsset)
+        {
+            float horizontalPadding;
+            float verticalPadding;
+
+            var style = m_TextElement.computedStyle;
+
+            // Grow half inside and half outside
+            float outlineThickness = style.unityTextOutlineWidth / 2.0f;
+
+            // Text Shadow is not additive to outline thickness
+            float offsetX = Mathf.Abs(style.textShadow.offset.x);
+            float offsetY = Mathf.Abs(style.textShadow.offset.y);
+            float blurRadius = Mathf.Abs(style.textShadow.blurRadius);
+
+            if (outlineThickness <= 0.0f && offsetX <= 0.0f && offsetY <= 0.0f && blurRadius <= 0.0f)
+                return k_MinPadding;
+
+            horizontalPadding = Mathf.Max(offsetX + blurRadius, outlineThickness);
+            verticalPadding = Mathf.Max(offsetY + blurRadius, outlineThickness);
+
+            var padding = Mathf.Max(horizontalPadding, verticalPadding) + k_MinPadding;
+
+            var factor = TextUtilities.ConvertPixelUnitsToTextCoreRelativeUnits(m_TextElement, fontAsset);
+            var gradientScale = fontAsset.atlasPadding + 1;
+
+            return Mathf.Min(padding * factor * gradientScale, gradientScale);
         }
 
     }
@@ -448,6 +480,14 @@ namespace UnityEngine.UIElements
             return PanelTextSettings.defaultPanelTextSettings;
         }
 
+        internal static float ConvertPixelUnitsToTextCoreRelativeUnits(VisualElement ve, FontAsset fontAsset)
+        {
+            // Convert the text settings pixel units to TextCore relative units
+            float paddingPercent = 1.0f / fontAsset.atlasPadding;
+            float pointSizeRatio = ((float)fontAsset.faceInfo.pointSize) / ve.computedStyle.fontSize.value;
+            return paddingPercent * pointSizeRatio;
+        }
+
         internal static TextCoreSettings GetTextCoreSettingsForElement(VisualElement ve)
         {
             var fontAsset = GetFontAsset(ve);
@@ -457,14 +497,14 @@ namespace UnityEngine.UIElements
             var resolvedStyle = ve.resolvedStyle;
             var computedStyle = ve.computedStyle;
 
-            // Convert the text settings pixel units to TextCore relative units
-            float paddingPercent = 1.0f / fontAsset.atlasPadding;
-            float pointSizeRatio = ((float)fontAsset.faceInfo.pointSize) / ve.computedStyle.fontSize.value;
-            float factor = paddingPercent * pointSizeRatio;
+            float factor = ConvertPixelUnitsToTextCoreRelativeUnits(ve, fontAsset);
 
-            float outlineWidth = Mathf.Max(0.0f, resolvedStyle.unityTextOutlineWidth * factor);
-            float underlaySoftness = Mathf.Max(0.0f, computedStyle.textShadow.blurRadius * factor);
-            Vector2 underlayOffset = computedStyle.textShadow.offset * factor;
+            float outlineWidth = Mathf.Clamp(resolvedStyle.unityTextOutlineWidth * factor, 0.0f, 1.0f);
+            float underlaySoftness = Mathf.Clamp(computedStyle.textShadow.blurRadius * factor, 0.0f, 1.0f);
+
+            float underlayOffsetX = computedStyle.textShadow.offset.x < 0 ? Mathf.Max(computedStyle.textShadow.offset.x * factor, -1.0f) : Mathf.Min(computedStyle.textShadow.offset.x * factor, 1.0f);
+            float underlayOffsetY = computedStyle.textShadow.offset.y < 0 ? Mathf.Max(computedStyle.textShadow.offset.y * factor, -1.0f) : Mathf.Min(computedStyle.textShadow.offset.y * factor, 1.0f);
+            Vector2 underlayOffset = new Vector2(underlayOffsetX, underlayOffsetY);
 
             var faceColor = resolvedStyle.color;
             var outlineColor = resolvedStyle.unityTextOutlineColor;

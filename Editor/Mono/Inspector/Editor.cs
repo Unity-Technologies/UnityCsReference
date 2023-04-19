@@ -445,7 +445,33 @@ namespace UnityEditor
         // used internally to know if this the first editor in the inspector window
         internal bool firstInspectedEditor { get; set; }
 
-        internal IPropertyView propertyViewer { get; set; }
+        IPropertyView m_PropertyViewer;
+
+        internal IPropertyView propertyViewer
+        {
+            get
+            {
+                return m_PropertyViewer;
+            }
+            set
+            {
+                if (m_PropertyViewer != value)
+                {
+                    m_PropertyViewer = value;
+
+                    // We are being assigned a new property view with different inspector mode to what our serialized object was built with.
+                    if (null != m_PropertyViewer && m_PropertyViewer.inspectorMode != m_InspectorMode)
+                    {
+                        // Keep the local inspector mode in sync.
+                        m_InspectorMode = m_PropertyViewer.inspectorMode;
+
+                        // Trash the local serialized object and property cache to force a rebuild.
+                        m_SerializedObject = null;
+                        m_EnabledProperty = null;
+                    }
+                }
+            }
+        }
 
         internal virtual bool HasLargeHeader()
         {
@@ -1328,7 +1354,10 @@ namespace UnityEditor
                 return true;
 
             if (m_SerializedObject == null)
+            {
                 m_SerializedObject = new SerializedObject(targets, m_Context);
+                m_SerializedObject.inspectorMode = m_InspectorMode;
+            }
             else
                 m_SerializedObject.Update();
             m_SerializedObject.inspectorMode = inspectorMode;
@@ -1344,7 +1373,10 @@ namespace UnityEditor
                 return true;
 
             if (m_SerializedObject == null)
+            {
                 m_SerializedObject = new SerializedObject(targets, m_Context);
+                m_SerializedObject.inspectorMode = m_InspectorMode;
+            }
             SerializedProperty property = m_SerializedObject.GetIterator();
 
             bool analyzePropertyChildren = true;

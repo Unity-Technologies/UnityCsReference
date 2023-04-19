@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -391,13 +392,24 @@ namespace UnityEditor.Search
                 return objValue != null;
             }
 
-            var guid = AssetDatabase.AssetPathToGUID(value);
-            if (!string.IsNullOrEmpty(guid))
+            // ADB prints a warning if the path starts with /
+            if (!value.StartsWith("/") && File.Exists(value))
             {
-                objValue = AssetDatabase.LoadMainAssetAtPath(value);
-                return true;
+                var guid = AssetDatabase.AssetPathToGUID(value);
+                if (!string.IsNullOrEmpty(guid))
+                {
+                    objValue = AssetDatabase.LoadMainAssetAtPath(value);
+                    return true;
+                }
             }
 
+            // Try to get the corresponding gameObject from the scene.
+            var go = GameObject.Find(value);
+            if (go)
+            {
+                objValue = go;
+                return true;
+            }
             return false;
         }
 

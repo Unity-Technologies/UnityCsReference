@@ -74,16 +74,16 @@ namespace UnityEditor.UIElements
         /// </summary>
         public string label { get; set; }
 
-        private SerializedProperty m_SerializedProperty;
-        private string m_SerializedPropertyReferenceTypeName;
-        private PropertyField m_ParentPropertyField;
-        private int m_FoldoutDepth;
-        private VisualElement m_InspectorElement;
-        private VisualElement m_ContextWidthElement;
-
-        private int m_DrawNestingLevel;
-        private PropertyField m_DrawParentProperty;
-        private VisualElement m_DecoratorDrawersContainer;
+        SerializedObject m_SerializedObject;
+        SerializedProperty m_SerializedProperty;
+        string m_SerializedPropertyReferenceTypeName;
+        PropertyField m_ParentPropertyField;
+        int m_FoldoutDepth;
+        VisualElement m_InspectorElement;
+        VisualElement m_ContextWidthElement;
+        int m_DrawNestingLevel;
+        PropertyField m_DrawParentProperty;
+        VisualElement m_DecoratorDrawersContainer;
 
         SerializedProperty serializedProperty => m_SerializedProperty;
 
@@ -201,7 +201,9 @@ namespace UnityEditor.UIElements
 
             bool newPropertyTypeIsDifferent = true;
 
-            if (m_SerializedProperty != null && m_SerializedProperty.isValid && newPropertyType == m_SerializedProperty.propertyType)
+            var serializedObjectIsValid = m_SerializedObject != null && m_SerializedObject.m_NativeObjectPtr != IntPtr.Zero && m_SerializedObject.isValid;
+
+            if (serializedObjectIsValid && m_SerializedProperty != null && m_SerializedProperty.isValid && newPropertyType == m_SerializedProperty.propertyType)
             {
                 if(newPropertyType == SerializedPropertyType.ManagedReference)
                 {
@@ -215,6 +217,7 @@ namespace UnityEditor.UIElements
 
             m_SerializedProperty = newProperty;
             m_SerializedPropertyReferenceTypeName = newPropertyTypeName;
+            m_SerializedObject = newProperty.serializedObject;
 
             // if we already have a serialized property, determine if the property field can be reused without reset
             // this is only supported for non propertydrawer types
@@ -679,6 +682,12 @@ namespace UnityEditor.UIElements
             listView.bindingPath = property.propertyPath;
             listView.viewDataKey = listViewName;
             listView.name = listViewName;
+
+            // Make list view foldout react even when disabled, like EditorGUILayout.Foldout.
+            var toggle = listView.Q<Toggle>(className: Foldout.toggleUssClassName);
+            if (toggle != null)
+                toggle.m_Clickable.acceptClicksIfDisabled = true;
+
             return listView;
         }
 

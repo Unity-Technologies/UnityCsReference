@@ -1814,7 +1814,10 @@ namespace UnityEngine.TextCore.Text
 
         internal static bool IsCJK(uint c)
         {
-            return c >= 0x3100  && c <= 0x312F  || /* Bopomofo */
+            return
+                   c >= 0x3000  && c <= 0x303F  || /* CJK Symbols and Punctuation */
+                   c >= 0x16FE0 && c <= 0x16FF  || /* CJK Ideographic Symbols and Punctuation */
+                   c >= 0x3100  && c <= 0x312F  || /* Bopomofo */
                    c >= 0x31A0  && c <= 0x31BF  || /* Bopomofo Extended */
                    c >= 0x4E00  && c <= 0x9FFF  || /* CJK Unified Ideographs (Han) */
                    c >= 0x3400  && c <= 0x4DBF  || /* CJK Extension A */

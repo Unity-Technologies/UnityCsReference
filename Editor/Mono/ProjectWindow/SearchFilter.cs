@@ -67,6 +67,9 @@ namespace UnityEditor
         [SerializeField]
         private ImportLogFlags m_ImportLogFlags;
 
+        [SerializeField]
+        private bool m_FilterByTypeIntersection;
+
         // Interface
         public string nameFilter { get { return m_NameFilter; } set { m_NameFilter = value; }}
         public string[] classNames { get { return m_ClassNames; } set { m_ClassNames = value; }}
@@ -83,6 +86,7 @@ namespace UnityEditor
         public string[] globs { get { return m_Globs; } set { m_Globs = value; }}
         public string originalText { get => m_OriginalText; set => m_OriginalText = value; }
         public ImportLogFlags importLogFlags { get => m_ImportLogFlags; set => m_ImportLogFlags = value; }
+        internal bool filterByTypeIntersection { get => m_FilterByTypeIntersection; set => m_FilterByTypeIntersection = value; }
 
         public void ClearSearch()
         {
@@ -99,6 +103,7 @@ namespace UnityEditor
             m_ShowAllHits = false;
             m_SkipHidden = false;
             m_ImportLogFlags = ImportLogFlags.None;
+            m_FilterByTypeIntersection = false;
         }
 
         bool IsNullOrEmpty<T>(T[] list)
@@ -238,6 +243,13 @@ namespace UnityEditor
                 m_Globs = newFilter.m_Globs;
                 changed = true;
             }
+            
+            if (newFilter.m_FilterByTypeIntersection != m_FilterByTypeIntersection)
+            {
+                m_FilterByTypeIntersection = newFilter.m_FilterByTypeIntersection;
+                changed = true;
+            }
+
 
             return changed;
         }
@@ -290,6 +302,11 @@ namespace UnityEditor
             else if (m_ImportLogFlags == ImportLogFlags.Warning)
             {
                 result += $"[ImportLog: {ImportLog.Filters.WarningsStr}]";
+            }
+
+            if (m_FilterByTypeIntersection)
+            {
+                result += $"[FilterByTypeIntersection]";
             }
 
             return result;
