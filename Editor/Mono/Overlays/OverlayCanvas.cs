@@ -726,7 +726,7 @@ namespace UnityEditor.Overlays
                 return overlay;
 
             overlay = new T();
-            overlay.Initialize(id, attrib.ussName, attrib.displayName);
+            overlay.Initialize(id, attrib.ussName, attrib.displayName, attrib.defaultSize, attrib.minSize, attrib.maxSize);
 
             if (overlay is LegacyOverlay legacy)
                 legacy.dontSaveInLayout = true;
@@ -762,23 +762,6 @@ namespace UnityEditor.Overlays
                     data.layout = attrib.defaultLayout;
                     data.floating = attrib.defaultDockZone == DockZone.Floating;
                     #pragma warning restore 612
-
-                    if (!float.IsNegativeInfinity(attrib.defaultWidth) && !float.IsNegativeInfinity(attrib.defaultHeight))
-                    {
-                        overlay.size = new Vector2(attrib.defaultWidth, attrib.defaultHeight);
-                        overlay.sizeOverridden = true;
-                        #pragma warning disable 612
-                        data.size = new Vector2(attrib.defaultWidth, attrib.defaultHeight);
-                        data.sizeOverridden = true;
-                        #pragma warning restore 612
-                    }
-                    else
-                    {
-                        overlay.sizeOverridden = false;
-                        #pragma warning disable 612
-                        data.sizeOverridden = false;
-                        #pragma warning restore 612
-                    }
                 }
             }
 

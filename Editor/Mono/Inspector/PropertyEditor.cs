@@ -2138,7 +2138,7 @@ namespace UnityEditor
             {
                 if (inspector.tracker.Equals(tracker))
                 {
-                    return ContainerWindow.PrivateRequestClose(new List<EditorWindow>() {inspector});
+                    return ContainerWindow.CanClose(inspector);
                 }
             }
 

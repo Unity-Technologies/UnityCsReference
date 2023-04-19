@@ -69,7 +69,7 @@ namespace Unity.UI.Builder
         }
 
         /// <summary>
-        /// Returns the factory that can create a ui field for the specified uxml attribute. 
+        /// Returns the factory that can create a ui field for the specified uxml attribute.
         /// </summary>
         /// <param name="attributeOwner">An instance created from the uxml element that owns the related xml attribute.</param>
         /// <param name="attributeUxmlOwner">The uxml element that owns the uxml attribute related to field factory to seek.</param>

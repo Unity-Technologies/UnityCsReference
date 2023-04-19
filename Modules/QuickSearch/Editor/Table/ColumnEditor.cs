@@ -10,6 +10,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.Search
 {
     [EditorWindowTitle(title = "Edit Search Column Settings")]
+    [UIFramework(UIFrameworkUsage.Mixed)]
     class ColumnEditor : EditorWindow
     {
         const int k_Width = 180;

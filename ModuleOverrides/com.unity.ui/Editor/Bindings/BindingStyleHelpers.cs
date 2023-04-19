@@ -335,7 +335,7 @@ namespace UnityEditor.UIElements.Bindings
 
             if (barContainer == null)
                 return;
-            
+
             // If the userData parent has been removed then we should remove all bars as the component has been removed.
             for (var i = 0; i < barContainer.childCount; i++)
             {
@@ -405,7 +405,7 @@ namespace UnityEditor.UIElements.Bindings
             if (evt.button != (int)MouseButton.RightMouse)
                 return;
 
-            VisualElement element = evt.elementTarget;
+            var element = evt.currentTarget as VisualElement;
 
             var property = element?.userData as SerializedProperty;
             if (property == null)

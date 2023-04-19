@@ -6515,9 +6515,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageTag.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageTag.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\RefreshOptions.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\RegistryType.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\RegistryType.cs</Link>
     </Compile>
@@ -6526,6 +6523,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageCapability.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageCapability.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageFactory.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageFilters.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageFilters.cs</Link>
@@ -6568,6 +6568,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PaginatedVisualStateList.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PaginatedVisualStateList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\RefreshOptions.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Pages\RefreshOptions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\SimplePage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\SimplePage.cs</Link>

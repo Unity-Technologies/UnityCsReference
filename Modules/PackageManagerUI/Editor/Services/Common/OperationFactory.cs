@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager.UI.Internal;
 
@@ -24,8 +25,13 @@ internal class OperationFactory
     }
 
     [ExcludeFromCodeCoverage]
-    public void ResolveDependencies(AssetStoreListOperation operation)
+    public virtual void ResolveDependenciesForOperation(AssetStoreListOperation operation)
     {
+        if (m_UnityConnect == null || m_AssetStoreRestAPI == null || m_AssetStoreCache == null)
+        {
+            Debug.LogError("OperationFactory's dependencies need to resolved before ResolveDependenciesForOperation is called.");
+            return;
+        }
         operation?.ResolveDependencies(m_UnityConnect, m_AssetStoreRestAPI, m_AssetStoreCache);
     }
 

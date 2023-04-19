@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine;
 
@@ -27,10 +28,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         // a reverse look up table such that we can find an visual state easily through package unique id
         protected Dictionary<string, int> m_UniqueIdToIndexLookup = new();
 
+        public VisualStateList() : this(Enumerable.Empty<string>()) {}
+
+        public VisualStateList(IEnumerable<string> packageUniqueIds)
+        {
+            Rebuild(packageUniqueIds ?? Enumerable.Empty<string>());
+        }
+
+        [ExcludeFromCodeCoverage]
         public void OnBeforeSerialize()
         {
         }
 
+        [ExcludeFromCodeCoverage]
         public void OnAfterDeserialize()
         {
             SetupLookupTable();
@@ -81,6 +91,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     yield return v;
         }
 
+        [ExcludeFromCodeCoverage]
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();

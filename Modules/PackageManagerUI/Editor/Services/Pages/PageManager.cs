@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine;
 
@@ -65,48 +66,28 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
         [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        [NonSerialized]
-        private AssetStoreClientV2 m_AssetStoreClient;
-        [NonSerialized]
         private PackageDatabase m_PackageDatabase;
-        [NonSerialized]
-        private UpmCache m_UpmCache;
         [NonSerialized]
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         [NonSerialized]
         private UpmRegistryClient m_UpmRegistryClient;
+        [NonSerialized]
+        private PageFactory m_PageFactory;
+
         public void ResolveDependencies(UnityConnectProxy unityConnect,
-                                        PackageManagerPrefs packageManagerPrefs,
-                                        AssetStoreClientV2 assetStoreClient,
                                         PackageDatabase packageDatabase,
-                                        UpmCache upmCache,
                                         PackageManagerProjectSettingsProxy settingsProxy,
-                                        UpmRegistryClient upmRegistryClient)
+                                        UpmRegistryClient upmRegistryClient,
+                                        PageFactory pageFactory)
         {
             m_UnityConnect = unityConnect;
-            m_PackageManagerPrefs = packageManagerPrefs;
-            m_AssetStoreClient = assetStoreClient;
             m_PackageDatabase = packageDatabase;
-            m_UpmCache = upmCache;
             m_SettingsProxy = settingsProxy;
             m_UpmRegistryClient = upmRegistryClient;
+            m_PageFactory = pageFactory;
 
             foreach (var page in m_Pages.Values)
-            {
-                switch (page)
-                {
-                    case MyAssetsPage myAssetsPage:
-                        myAssetsPage.ResolveDependencies(packageDatabase, packageManagerPrefs, unityConnect, assetStoreClient);
-                        break;
-                    case ScopedRegistryPage scopedRegistryPage:
-                        scopedRegistryPage.ResolveDependencies(packageDatabase, upmCache);
-                        break;
-                    case SimplePage simplePage:
-                        simplePage.ResolveDependencies(packageDatabase);
-                        break;
-                }
-            }
+                m_PageFactory.ResolveDependenciesForPage(page);
         }
 
         public void OnBeforeSerialize()
@@ -129,16 +110,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private IPage CreatePageFromId(string pageId)
         {
-            IPage page = pageId switch
-            {
-                UnityRegistryPage.k_Id => new UnityRegistryPage(m_PackageDatabase),
-                InProjectPage.k_Id => new InProjectPage(m_PackageDatabase),
-                InProjectUpdatesPage.k_Id => new InProjectUpdatesPage(m_PackageDatabase),
-                BuiltInPage.k_Id => new BuiltInPage(m_PackageDatabase),
-                MyRegistriesPage.k_Id => new MyRegistriesPage(m_PackageDatabase),
-                MyAssetsPage.k_Id => new MyAssetsPage(m_PackageDatabase, m_PackageManagerPrefs, m_UnityConnect, m_AssetStoreClient),
-                _ => null
-            };
+            var page = m_PageFactory.CreatePageFromId(pageId);
             return page != null ? OnNewPageCreated(page) : null;
         }
 
@@ -184,7 +156,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Pages.Get(ExtensionPage.GetIdFromName(args.name)) is ExtensionPage existingPage)
                 existingPage.UpdateArgs(args);
             else
-                OnNewPageCreated(new ExtensionPage(m_PackageDatabase, args));
+                OnNewPageCreated(m_PageFactory.CreateExtensionPage(args));
         }
 
         public virtual IPage GetPage(string pageId)
@@ -197,10 +169,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (registryInfo == null)
                 return null;
             var pageId = ScopedRegistryPage.GetIdFromRegistry(registryInfo);
-            if (m_Pages.TryGetValue(pageId, out var page))
-                return page;
-            var newPage = new ScopedRegistryPage(m_PackageDatabase, m_UpmCache, registryInfo);
-            return OnNewPageCreated(newPage);
+            return m_Pages.TryGetValue(pageId, out var page) ? page : OnNewPageCreated(m_PageFactory.CreateScopedRegistryPage(registryInfo));
         }
 
         private void OnPackagesChanged(PackagesChangeArgs args)
@@ -246,7 +215,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual IPage FindPage(IList<IPackageVersion> packageVersions)
         {
-            if (packageVersions?.Any() != true || packageVersions.All(v => activePage.visualStates.Contains(v.package.uniqueId)))
+            if (packageVersions?.Any() != true || packageVersions.All(v => activePage.visualStates.Contains(v.package.uniqueId) || activePage.ShouldInclude(v.package)))
                 return activePage;
 
             var pageIdsToCheck = new[] { BuiltInPage.k_Id, InProjectPage.k_Id, UnityRegistryPage.k_Id, MyAssetsPage.k_Id, MyRegistriesPage.k_Id};
@@ -255,10 +224,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return page;
 
             if (!m_SettingsProxy.enablePreReleasePackages && packageVersions.Any(v => v.version?.Prerelease.StartsWith("pre.") == true))
-                Debug.Log("You must check \"Enable Pre-release Packages\" in Project Settings > Package Manager in order to see this package.");
+                Debug.Log(L10n.Tr("You must check \"Enable Pre-release Packages\" in Project Settings > Package Manager in order to see this package."));
             return null;
         }
 
+        [ExcludeFromCodeCoverage]
         public void OnEnable()
         {
             foreach (var page in m_Pages.Values)
@@ -269,6 +239,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
         }
 
+        [ExcludeFromCodeCoverage]
         public void OnDisable()
         {
             foreach (var page in m_Pages.Values)

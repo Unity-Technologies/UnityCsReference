@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private Dictionary<long, AssetStoreUpdateInfo> m_UpdateInfos = new Dictionary<long, AssetStoreUpdateInfo>();
 
-        // We use the guid string as the key for each imported asset
+        // We use the path string as the key for each imported asset
         private Dictionary<string, Asset> m_ImportedAssets = new Dictionary<string, Asset>();
         private Dictionary<long, AssetStoreImportedPackage> m_ImportedPackages = new Dictionary<long, AssetStoreImportedPackage>();
 
@@ -56,6 +56,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual IEnumerable<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
 
         public virtual IEnumerable<AssetStoreImportedPackage> importedPackages => m_ImportedPackages.Values;
+        public virtual IEnumerable<Asset> importedAssets => m_ImportedAssets.Values;
 
         [NonSerialized]
         private ApplicationProxy m_Application;
@@ -99,7 +100,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_LocalInfos = m_SerializedLocalInfos.ToDictionary(info => info.productId, info => info);
             m_UpdateInfos = m_SerializedUpdateInfos.ToDictionary(info => info.productId, info => info);
 
-            m_ImportedAssets = m_SerializedImportedAssets.ToDictionary(asset => asset.guid, asset => asset);
+            m_ImportedAssets = m_SerializedImportedAssets.ToDictionary(asset => asset.importedPath, asset => asset);
 
             // We don't serialize imported packages, because the list of imported packages can be constructed from imported assets
             foreach (var asset in m_SerializedImportedAssets)
@@ -310,23 +311,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onUpdateInfosChanged?.Invoke(updateInfosChanged);
         }
 
-        public virtual void SetImportedAssets(IEnumerable<Asset> importedAssets)
+        public virtual void UpdateImportedAssets(IEnumerable<Asset> addedOrUpdatedAssets, IEnumerable<string> removedAssetPaths)
         {
-            var oldImportedAssets = m_ImportedAssets;
-            m_ImportedAssets = importedAssets.ToDictionary(asset => asset.guid, asset => asset);
-
             var modifiedProductIds = new HashSet<long>();
-            foreach (var asset in m_ImportedAssets.Values)
+            foreach (var path in removedAssetPaths ?? Enumerable.Empty<string>())
             {
-                var oldAsset = oldImportedAssets.Get(asset.guid);
-                if (oldAsset != null)
-                    oldImportedAssets.Remove(asset.guid);
-                if (oldAsset == null || !oldAsset.Equals(asset))
-                    modifiedProductIds.Add(asset.origin.productId);
-            }
+                if (!m_ImportedAssets.ContainsKey(path))
+                    continue;
 
-            foreach (var asset in oldImportedAssets.Values)
+                modifiedProductIds.Add(m_ImportedAssets[path].origin.productId);
+                m_ImportedAssets.Remove(path);
+            }
+            foreach (var asset in addedOrUpdatedAssets ?? Enumerable.Empty<Asset>())
+            {
                 modifiedProductIds.Add(asset.origin.productId);
+                m_ImportedAssets[asset.importedPath] = asset;
+            }
 
             if (modifiedProductIds.Any())
                 RefreshImportedPackageList(modifiedProductIds);

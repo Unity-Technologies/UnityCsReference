@@ -168,6 +168,33 @@ namespace UnityEngine.UIElements
             }
         }
 
+        /// <summary>
+        /// Retrieves the selected asset which can be of a type of Texture, Sprite, RenderTexture or VectorImage.
+        /// </summary>
+        /// <returns>An asset as an object.</returns>
+        public Object GetSelectedImage()
+        {
+            if (texture != null)
+                return texture;
+            if (sprite != null)
+                return sprite;
+            if (renderTexture != null)
+                return renderTexture;
+            if (vectorImage != null)
+                return vectorImage;
+
+            return null;
+        }
+
+        /// <summary>
+        /// Help verify whether an asset has been assigned or not.
+        /// </summary>
+        /// <returns>True if no asset is assigned.</returns>
+        public bool IsEmpty()
+        {
+            return texture == null && sprite == null && vectorImage == null && renderTexture == null;
+        }
+
         /// <undoc/>
         public static bool operator==(Background lhs, Background rhs)
         {

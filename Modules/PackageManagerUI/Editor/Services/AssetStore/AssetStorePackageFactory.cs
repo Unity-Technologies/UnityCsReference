@@ -122,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void SetPackagesProgress(IEnumerable<IPackage> packages, PackageProgress progress)
         {
-            var packagesUpdated = packages.OfType<Package>().Where(p => p != null && p.progress != progress).ToList();
+            var packagesUpdated = packages.OfType<Package>().Where(p => p.progress != progress).ToArray();
             foreach (var package in packagesUpdated)
                 SetProgress(package, progress);
             if (packagesUpdated.Any())

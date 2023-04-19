@@ -32,9 +32,22 @@ namespace UnityEditor
             useTopView = useBottomView = true;
         }
 
-        void OnEnable()
+        private void OnEnable()
         {
             SetMinMaxSizes(kMinSize, kMaxSize);
+        }
+
+        private bool OnUnityWantsToQuit() => ContainerWindow.CanCloseAll(includeMainWindow: true);
+
+        private void Awake()
+        {
+            EditorApplication.wantsToQuit += OnUnityWantsToQuit;
+        }
+
+        protected override void OnDestroy()
+        {
+            EditorApplication.wantsToQuit -= OnUnityWantsToQuit;
+            base.OnDestroy();
         }
 
         protected override void SetPosition(Rect newPos)

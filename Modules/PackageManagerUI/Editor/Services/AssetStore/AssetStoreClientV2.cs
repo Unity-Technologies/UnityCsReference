@@ -56,7 +56,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_OperationFactory = operationFactory;
 
-            m_OperationFactory.ResolveDependencies(m_ListOperation);
+            m_OperationFactory.ResolveDependenciesForOperation(m_ListOperation);
         }
 
         public virtual void ExtraFetch(long productId)
@@ -145,7 +145,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ListOperation.Start(queryArgs);
         }
 
-        public void CancelListPurchases()
+        public virtual void CancelListPurchases()
         {
             m_ListOperation?.Stop();
         }
@@ -222,9 +222,33 @@ namespace UnityEditor.PackageManager.UI.Internal
             });
         }
 
+        public virtual void OnPostProcessAllAssets(string[] importedAssetPaths, string[] deletedAssetPaths, string[] movedAssetPaths, string[] movedFromAssetPaths)
+        {
+            var addedOrUpdatedAssets = new List<Asset>();
+            var removedAssetPaths = deletedAssetPaths.Union(movedFromAssetPaths).ToHashSet();
+
+            var pathsToCheckForOrigin = importedAssetPaths.Union(movedAssetPaths).ToArray();
+            foreach (var path in pathsToCheckForOrigin)
+            {
+                var guid = m_AssetDatabase.AssetPathToGUID(path);
+                var assetOrigin = m_AssetDatabase.GetAssetOrigin(guid);
+                if (assetOrigin?.IsValid() == true)
+                    addedOrUpdatedAssets.Add(new Asset
+                    {
+                        guid = guid,
+                        importedPath = path,
+                        origin = assetOrigin
+                    });
+                else
+                    removedAssetPaths.Add(path);
+            }
+
+            m_AssetStoreCache.UpdateImportedAssets(addedOrUpdatedAssets, removedAssetPaths);
+        }
+
         public virtual void RefreshImportedAssets()
         {
-            m_AssetStoreCache.SetImportedAssets(ListImportedAssets());
+            m_AssetStoreCache.UpdateImportedAssets(ListImportedAssets(), m_AssetStoreCache.importedAssets.Select(a => a.importedPath));
         }
     }
 }

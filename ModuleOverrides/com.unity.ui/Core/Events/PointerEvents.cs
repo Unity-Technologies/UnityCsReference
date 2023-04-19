@@ -1066,8 +1066,6 @@ namespace UnityEngine.UIElements
     [EventCategory(EventCategory.PointerDown)]
     public sealed class PointerDownEvent : PointerEventBase<PointerDownEvent>
     {
-        private bool m_PreventCompatibilityMouseEventsOnPropagationStopped = true;
-
         static PointerDownEvent()
         {
             SetCreateFunction(() => new PointerDownEvent());
@@ -1087,7 +1085,6 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                           EventPropagation.SkipDisabledElements;
             ((IPointerEventInternal)this).triggeredByOS = true;
-            m_PreventCompatibilityMouseEventsOnPropagationStopped = true;
         }
 
         /// <summary>
@@ -1110,19 +1107,9 @@ namespace UnityEngine.UIElements
 
         protected internal override void PostDispatch(IPanel panel)
         {
-            if (m_PreventCompatibilityMouseEventsOnPropagationStopped && isPropagationStopped)
-            {
-                panel.PreventCompatibilityMouseEvents(pointerId);
-            }
-
             panel.focusController.SwitchFocusOnEvent(panel.focusController.GetLeafFocusedElement(), this);
 
             base.PostDispatch(panel);
-        }
-
-        internal void DontPreventCompatibilityMouseEventsOnPropagationStopped()
-        {
-            m_PreventCompatibilityMouseEventsOnPropagationStopped = false;
         }
     }
 

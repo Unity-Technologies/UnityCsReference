@@ -75,9 +75,8 @@ namespace UnityEditor
         [FreeFunction(k_ScriptingPrefix + "SendCaptionEvent", HasExplicitThis = true)]
         public extern void SendCaptionEvent(bool mouseDown);
 
-        // Close the editor window.
-        [FreeFunction(k_ScriptingPrefix + "InternalClose", HasExplicitThis = true)]
-        public extern void InternalClose();
+        [FreeFunction(k_ScriptingPrefix + "Internal_Destroy", HasExplicitThis = true)]
+        public extern void Internal_Destroy();
 
         [FreeFunction(k_ScriptingPrefix + "Internal_SetMinMaxSizes", HasExplicitThis = true)]
         private extern void Internal_SetMinMaxSizes(Vector2 minSize, Vector2 maxSize);

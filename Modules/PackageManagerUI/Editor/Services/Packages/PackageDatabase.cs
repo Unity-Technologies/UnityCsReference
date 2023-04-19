@@ -10,15 +10,15 @@ using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal struct PackagesChangeArgs
+    internal class PackagesChangeArgs
     {
-        public IEnumerable<IPackage> added;
-        public IEnumerable<IPackage> removed;
-        public IEnumerable<IPackage> updated;
+        public IList<IPackage> added = Array.Empty<IPackage>();
+        public IList<IPackage> removed = Array.Empty<IPackage>();
+        public IList<IPackage> updated = Array.Empty<IPackage>();
 
         // To avoid unnecessary cloning of packages, preUpdate is now set to be optional, the list is either empty or the same size as the the postUpdate list
-        public IEnumerable<IPackage> preUpdate;
-        public IEnumerable<IPackage> progressUpdated;
+        public IList<IPackage> preUpdate = Array.Empty<IPackage>();
+        public IList<IPackage> progressUpdated = Array.Empty<IPackage>();
     }
 
     [Serializable]
@@ -32,14 +32,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual event Action<PackagesChangeArgs> onPackagesChanged = delegate {};
 
-        private readonly Dictionary<string, IPackage> m_Packages = new Dictionary<string, IPackage>();
+        private readonly Dictionary<string, IPackage> m_Packages = new();
         // we added m_Feature to speed up reverse dependencies lookup
-        private readonly Dictionary<string, IPackage> m_Features = new Dictionary<string, IPackage>();
+        private readonly Dictionary<string, IPackage> m_Features = new();
 
-        private readonly Dictionary<string, IEnumerable<Sample>> m_ParsedSamples = new Dictionary<string, IEnumerable<Sample>>();
+        private readonly Dictionary<string, IEnumerable<Sample>> m_ParsedSamples = new();
 
         [SerializeField]
-        private Package[] m_SerializedPackages = new Package[0];
+        private Package[] m_SerializedPackages = Array.Empty<Package>();
 
         [NonSerialized]
         private UniqueIdMapper m_UniqueIdMapper;
@@ -61,8 +61,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public virtual bool isEmpty => !m_Packages.Any();
-
-        private static readonly IPackage[] k_EmptyList = new IPackage[0] { };
 
         public virtual IEnumerable<IPackage> allPackages => m_Packages.Values;
 
@@ -147,8 +145,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // and the two cases are handled differently.
             if (!string.IsNullOrEmpty(info.version) && char.IsDigit(info.version.First()))
             {
-                SemVersion? parsedVersion;
-                SemVersionParser.TryParse(info.version, out parsedVersion);
+                SemVersionParser.TryParse(info.version, out var parsedVersion);
                 version = package.versions.FirstOrDefault(v => v.version == parsedVersion);
             }
             else
@@ -218,29 +215,29 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedPackages = m_Packages.Values.Cast<Package>().ToArray();
         }
 
-        private void TriggerOnPackagesChanged(IEnumerable<IPackage> added = null, IEnumerable<IPackage> removed = null, IEnumerable<IPackage> updated = null, IEnumerable<IPackage> preUpdate = null, IEnumerable<IPackage> progressUpdated = null)
+        private void TriggerOnPackagesChanged(IList<IPackage> added = null, IList<IPackage> removed = null, IList<IPackage> updated = null, IList<IPackage> preUpdate = null, IList<IPackage> progressUpdated = null)
         {
-            added ??= k_EmptyList;
-            updated ??= k_EmptyList;
-            removed ??= k_EmptyList;
-            preUpdate ??= k_EmptyList;
-            progressUpdated ??= k_EmptyList;
+            added ??= Array.Empty<IPackage>();
+            updated ??= Array.Empty<IPackage>();
+            removed ??= Array.Empty<IPackage>();
+            preUpdate ??= Array.Empty<IPackage>();
+            progressUpdated ??= Array.Empty<IPackage>();
 
-            if (!added.Any() && !updated.Any() && !removed.Any() && !preUpdate.Any() && !progressUpdated.Any())
+            if (added.Count + updated.Count + removed.Count + preUpdate.Count + progressUpdated.Count <= 0)
                 return;
 
             onPackagesChanged?.Invoke(new PackagesChangeArgs { added = added, updated = updated, removed = removed, preUpdate = preUpdate, progressUpdated = progressUpdated });
         }
 
-        public virtual void OnPackagesModified(IEnumerable<IPackage> modified, bool isProgressUpdated = false)
+        public virtual void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false)
         {
             TriggerOnPackagesChanged(updated: modified, progressUpdated: isProgressUpdated ? modified : null);
         }
 
-        public virtual void UpdatePackages(IEnumerable<IPackage> toAddOrUpdate = null, IEnumerable<string> toRemove = null)
+        public virtual void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null)
         {
-            toAddOrUpdate ??= Enumerable.Empty<IPackage>();
-            toRemove ??= Enumerable.Empty<string>();
+            toAddOrUpdate ??= Array.Empty<IPackage>();
+            toRemove ??= Array.Empty<string>();
             if (!toAddOrUpdate.Any() && !toRemove.Any())
                 return;
 

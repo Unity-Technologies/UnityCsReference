@@ -30,6 +30,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private List<VisualState> m_ExtraVisualStates = new();
         protected override IEnumerable<VisualState> orderedListBeforeGrouping => m_OrderedVisualStates.Concat(m_ExtraVisualStates);
 
+        public PaginatedVisualStateList() {}
+
+        public PaginatedVisualStateList(IEnumerable<string> packageUniqueIds) : base(packageUniqueIds) {}
+
         public override bool Contains(string packageUniqueId)
         {
             return base.Contains(packageUniqueId) || m_ExtraVisualStates.Any(v => v.packageUniqueId == packageUniqueId);
@@ -56,10 +60,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ExtraVisualStates.Clear();
         }
 
-        public void ClearList()
+        public void ClearAll()
         {
             m_OrderedVisualStates.Clear();
             m_UniqueIdToIndexLookup.Clear();
+            ClearExtraItems();
         }
     }
 }

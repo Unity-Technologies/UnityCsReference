@@ -8,6 +8,7 @@ using UnityEditorInternal;
 
 namespace UnityEditor
 {
+    [UIFramework(UIFrameworkUsage.IMGUI)]
     internal class SpriteUtilityWindow : EditorWindow
     {
         protected class Styles

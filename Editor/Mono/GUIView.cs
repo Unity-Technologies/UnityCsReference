@@ -310,5 +310,14 @@ namespace UnityEditor
         {
             visualTree.Query<TextElement>().ForEach(k_QueryMarkDirty);
         }
+
+        [RequiredByNativeCode]
+        private void SetActiveWindowAsPresented()
+        {
+            if ((this is HostView h) && h.actualView)
+            {
+                h.actualView.m_IsPresented = true;
+            }
+        }
     }
 } //namespace

@@ -10,6 +10,7 @@ using uei = UnityEngine.Internal;
 namespace UnityEditor
 {
     // Derive from this class to create an editor wizard.
+    [UIFramework(UIFrameworkUsage.IMGUI)]
     public class ScriptableWizard : EditorWindow
     {
         GenericInspector m_Inspector;

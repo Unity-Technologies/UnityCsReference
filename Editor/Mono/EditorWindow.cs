@@ -147,6 +147,8 @@ namespace UnityEditor
             m_ViewDataDictionary = null;
         }
 
+        [NonSerialized] internal bool m_IsPresented = false;
+
         // The GameView rect is in GUI space of the view
         Rect m_GameViewRect;
         Rect m_GameViewClippedRect;
@@ -236,6 +238,8 @@ namespace UnityEditor
             }
             Repaint();
         }
+
+        internal CustomYieldInstruction WaitUntilPresented() => new WaitUntil(() => m_IsPresented);
 
         internal GUIContent GetLocalizedTitleContent()
         {
@@ -1411,6 +1415,83 @@ namespace UnityEditor
         public string title { get; set; }
         public string icon { get; set; }
         public bool useTypeNameAsIconName { get; set; }
+    }
+
+    /// <summary>
+    /// This enumeration is used for creating instances of <see cref="UIFrameworkAttribute"/>.
+    /// Values of this enumeration tell external tools which UI Framework is used on a given type of Editor UI
+    /// (that is, a specific type of EditorWindow, Editor or PropertyDrawer).
+    /// </summary>
+    internal enum UIFrameworkUsage
+    {
+        /// <summary>
+        /// By default, the usage of a UI Framework is auto-detected by reflection
+        /// </summary>
+        /// <remarks>
+        /// <para>In many cases, the UI Framework of an Editor UI type can be auto-detected.</para>
+        /// <para>If a custom EditorWindow only overrides <see cref="EditorWindow.CreateGUI"/>, it will be classified as using
+        /// UI Toolkit. Similarly, if it only overrides <see cref="EditorWindow.OnGUI"/>, it will be classified as using
+        /// IMGUI. Finally, if a custom EditorWindow overrides <see cref="EditorWindow.OnEnable"/> but does not override
+        /// <see cref="EditorWindow.OnGUI"/>, it is classified as using UI Toolkit (this was often the usage pattern until
+        /// the introduction of <see cref="EditorWindow.CreateGUI"/>).
+        /// In any other case, the usage of the <see cref="UIFrameworkAttribute"/> is required.</para>
+        /// <para>If a custom Editor only overrides <see cref="Editor.CreateInspectorGUI"/>, it will be classified as using
+        /// UI Toolkit. Similarly, if it only overrides <see cref="EditorWindow.OnInspectorGUI"/>, it will be classified as using
+        /// IMGUI. In any other case, the usage of the <see cref="UIFrameworkAttribute"/> is required.</para>
+        /// </remarks>
+        AutoDetected,
+        /// <summary>
+        /// This type of Editor UI uses IMGUI
+        /// </summary>
+        IMGUI,
+        /// <summary>
+        /// This type of Editor UI uses UI Toolkit
+        /// </summary>
+        UITK,
+        /// <summary>
+        /// This type of Editor UI uses a mix of IMGUI and UI Toolkit.
+        /// </summary>
+        /// <remarks>
+        /// This value is appropriate when a type of Editor UI uses <see cref="IMGUIContainer"/> because it is only
+        /// partially migrated to UI Toolkit, or because it supports immediate-mode callbacks for backwards
+        /// compatibility with existing public APIs.
+        /// </remarks>
+        Mixed,
+        /// <summary>
+        /// This type of Editor UI should not be accounted for by tooling.
+        /// </summary>
+        /// <remarks>
+        /// This value is appropriate when a type of Editor UI is not exposed to end-users.
+        /// </remarks>
+        Excluded
+    }
+
+    /// <summary>
+    /// <para>This attribute tells external tools which UI Framework is used on a given type of Editor UI
+    /// (that is, a specific type of EditorWindow, Editor or PropertyDrawer).</para>
+    ///
+    /// <para>To use this attribute, add to a custom EditorWindow or Editor class by giving it a value from the
+    /// <see cref="UIFrameworkUsage"/> enumeration.</para>
+    ///
+    /// <para>In many cases, the UI Framework of an Editor UI type can be auto-detected without this attribute
+    /// (see <see cref="UIFrameworkUsage.AutoDetected"/>).</para>
+    /// </summary>.
+    [AttributeUsage(AttributeTargets.Class)]
+    internal class UIFrameworkAttribute : Attribute
+    {
+        /// <summary>
+        /// UI framework used by the target type of the attribute
+        /// </summary>
+        public UIFrameworkUsage frameworkUsage { get; private set; }
+
+        /// <summary>
+        /// Constructs an instance of this class
+        /// </summary>
+        /// <param name="frameworkUsage">UI framework used by the target type of the attribute</param>
+        public UIFrameworkAttribute(UIFrameworkUsage frameworkUsage)
+        {
+            this.frameworkUsage = frameworkUsage;
+        }
     }
 
     namespace UIElements

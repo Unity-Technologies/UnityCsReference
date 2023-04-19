@@ -94,6 +94,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private PackageManagerPrefs m_PackageManagerPrefs;
 
+        private PageFactory m_PageFactory;
+
         [SerializeField]
         private PageManager m_PageManager;
 
@@ -181,6 +183,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PackageDatabase = new PackageDatabase();
             m_OperationDispatcher = new PackageOperationDispatcher();
+            m_PageFactory = new PageFactory();
             m_PageManager = new PageManager();
             m_InspectorSelectionHandler = new InspectorSelectionHandler();
             m_PageRefreshHandler = new PageRefreshHandler();
@@ -204,6 +207,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_DependenciesResolved)
                 return;
 
+            // We want the following factories to have their dependencies resolved first, because other services will potentially use their dependencies in ResolveDependencies
+            m_OperationFactory.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreRestAPI, m_AssetStoreCache);
+            m_PageFactory.ResolveDependencies(m_UnityConnectProxy, m_PackageManagerPrefs, m_AssetStoreClient, m_PackageDatabase, m_UpmCache);
+
             m_ResourceLoader.ResolveDependencies(m_ApplicationProxy);
 
             m_AssetStoreCache.ResolveDependencies(m_ApplicationProxy, m_HttpClientFactory, m_IOProxy, m_UniqueIdMapper);
@@ -223,14 +230,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase.ResolveDependencies(m_UniqueIdMapper, m_AssetDatabaseProxy, m_UpmCache, m_IOProxy);
             m_OperationDispatcher.ResolveDependencies(m_AssetStorePackageInstaller, m_AssetStoreDownloadManager, m_UpmClient, m_IOProxy);
             m_InspectorSelectionHandler.ResolveDependencies(m_SelectionProxy, m_PackageDatabase, m_PageManager);
-            m_PageManager.ResolveDependencies(m_UnityConnectProxy, m_PackageManagerPrefs, m_AssetStoreClient, m_PackageDatabase, m_UpmCache, m_SettingsProxy, m_UpmRegistryClient);
+            m_PageManager.ResolveDependencies(m_UnityConnectProxy, m_PackageDatabase, m_SettingsProxy, m_UpmRegistryClient, m_PageFactory);
             m_PageRefreshHandler.ResolveDependencies(m_PageManager, m_ApplicationProxy, m_UnityConnectProxy, m_AssetDatabaseProxy, m_PackageManagerPrefs, m_UpmClient, m_UpmRegistryClient, m_AssetStoreClient);
 
             m_AssetStorePackageFactory.ResolveDependencies(m_UniqueIdMapper, m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_FetchStatusTracker, m_IOProxy, m_BackgroundFetchHandler);
             m_UpmPackageFactory.ResolveDependencies(m_UniqueIdMapper, m_UpmCache, m_UpmClient, m_BackgroundFetchHandler, m_PackageDatabase, m_SettingsProxy);
             m_UpmOnAssetStorePackageFactory.ResolveDependencies(m_UniqueIdMapper, m_UnityConnectProxy, m_AssetStoreCache, m_BackgroundFetchHandler, m_PackageDatabase, m_FetchStatusTracker, m_UpmCache, m_UpmClient);
-
-            m_OperationFactory.ResolveDependencies(m_UnityConnectProxy, m_AssetStoreRestAPI, m_AssetStoreCache);
 
             m_ExtensionManager.ResolveDependencies(m_PackageManagerPrefs);
 

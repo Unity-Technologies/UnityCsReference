@@ -1134,7 +1134,7 @@ namespace UnityEditor
             if (oldDockIndex == -1)
                 return false;
 
-            if (!parentWindow.InternalRequestCloseAllExcept(win))
+            if (!parentWindow.CanCloseAllExcept(win))
                 return false;
 
             dockArea.selected = oldDockIndex;
@@ -1250,7 +1250,7 @@ namespace UnityEditor
         {
             Console.WriteLine($"[LAYOUT] About to load {path}, keepMainWindow={flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow)}");
 
-            if (!Application.isTestRun && Application.isHumanControllingUs && !ContainerWindow.InternalRequestCloseAll(flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow)))
+            if (!Application.isTestRun && !ContainerWindow.CanCloseAll(flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow)))
                 return false;
 
             bool mainWindowMaximized = ContainerWindow.mainWindow?.maximized ?? false;

@@ -11,7 +11,7 @@ using UnityEditor.UIElements.Debugger;
 
 namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 {
-    class LayoutPanelDebuggerImpl : PanelDebugger
+    class LayoutPanelDebuggerImpl : PanelDebugger, StopRecordingInterface
     {
         const string k_DefaultStyleSheetPath = "UIPackageResources/StyleSheets/UILayoutDebugger/UILayoutDebugger.uss";
 
@@ -31,6 +31,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         int m_MaxLayoutLoop = 0;
 
         ToolbarToggle m_RecordLayoutToggle;
+        ToolbarToggle m_StopRecordingOnError;
         Toggle m_FrameResetPassIndexLayoutLoop;
         Toggle m_PassResetLayoutLoop;
         Toggle m_LayoutLoopAllowFrameIndexPassIndexUpdate;
@@ -302,6 +303,11 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             }
         }
 
+        public void StopRecording()
+        {
+            m_RecordLayoutToggle.value = false;
+        }
+
         public void Initialize(EditorWindow debuggerWindow, VisualElement root)
         {
             base.Initialize(debuggerWindow);
@@ -338,6 +344,22 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 }
             });
             m_Toolbar.Add(m_RecordLayoutToggle);
+
+            m_StopRecordingOnError = new ToolbarToggle();
+            m_StopRecordingOnError.text = "Stop recording on 'Layout update is struggling' error";
+            m_StopRecordingOnError.RegisterValueChangedCallback((e) =>
+            {
+                if (e.newValue)
+                {
+                    UIRLayoutUpdater.s_StopRecording = this;
+                }
+                else
+                {
+                    UIRLayoutUpdater.s_StopRecording = null;
+                }
+            });
+
+            m_Toolbar.Add(m_StopRecordingOnError);
 
             root.Add(m_Toolbar);
 

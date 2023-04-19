@@ -298,13 +298,13 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnFocus()
         {
-            if (!rightContainer.classList.Contains(k_FocusedClassName) && !sidebar.classList.Contains(k_FocusedClassName))
-                rightContainer.AddToClassList(k_FocusedClassName);
             AddToClassList(k_FocusedClassName);
         }
 
         public void OnLostFocus()
         {
+            rightContainer.RemoveFromClassList(k_FocusedClassName);
+            sidebar.RemoveFromClassList(k_FocusedClassName);
             RemoveFromClassList(k_FocusedClassName);
         }
 

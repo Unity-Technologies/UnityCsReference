@@ -12,6 +12,11 @@ using UnityEngine;
 namespace UnityEngine.UIElements
 {
 
+    internal interface StopRecordingInterface
+    {
+        public void StopRecording();
+    }
+
     internal class LayoutDebuggerItem
     {
         public LayoutDebuggerItem(int frameIndex, int passIndex, int layoutLoop, LayoutDebuggerVisualElement ve)
@@ -87,6 +92,8 @@ namespace UnityEngine.UIElements
 
 
         private bool m_CurrentlyRecordingLayout = false;
+
+        internal static StopRecordingInterface s_StopRecording = null;
 
         public bool recordLayout
         {
@@ -231,6 +238,10 @@ namespace UnityEngine.UIElements
                     if (validateLayoutCount++ >= kMaxValidateLayoutCount)
                     {
                         Debug.LogError("Layout update is struggling to process current layout (consider simplifying to avoid recursive layout): " + visualTree);
+                        if (s_StopRecording != null)
+                        {
+                            s_StopRecording.StopRecording();
+                        }
                         break;
                     }
                 }

@@ -4,7 +4,6 @@
 
 using System;
 using Unity.Properties;
-using UnityEditor.UIElements;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements

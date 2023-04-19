@@ -176,7 +176,7 @@ namespace UnityEditor.Modules
                 .Select(file => file.path.ToNPath())
                 .GroupBy(file => file.FileName)
                 .Select(group => group.First());
-        
+
         LinkerConfig LinkerConfigFor(BuildPostProcessArgs args)
         {
             var namedBuildTarget = GetNamedBuildTarget(args);
@@ -194,16 +194,16 @@ namespace UnityEditor.Modules
                 additionalArgs.Add(diagArgs.Trim('\''));
 
             var linkerInputDirectory = DagDirectory.Combine($"artifacts/UnityLinkerInputs").CreateDirectory();
-            
+
             // In Disabled mode, we pass all generated and engine assemblies to the linker as roots, as the linker
-            // will only perform a simple assembly reference traversal, ignoring link.xml files and attributes which 
+            // will only perform a simple assembly reference traversal, ignoring link.xml files and attributes which
             // would otherwise find dependent assemblies to preserve.
             // In other modes (when stripping is desired), we pass only a smaller set of user assemblies (assemblies from
             // packages if used in any scenes, as well as any assembly from the Assets folder) as roots.
             var assembliesToProcess = strippingLevel == ManagedStrippingLevel.Disabled
                 ? GetFilesWithRoleFromBuildReport(args.report, "ManagedLibrary", "ManagedEngineAPI").Select(f => f.FileName)
                 : args.usedClassRegistry.GetUserAssemblies();
-            
+
             return new LinkerConfig
             {
                 LinkXmlFiles = AssemblyStripper.GetLinkXmlFiles(args, linkerInputDirectory),
@@ -688,7 +688,7 @@ namespace UnityEditor.Modules
 
                 buildStep = args.report.BeginBuildStep("Incremental player build");
 
-                var cancellationTokenSource = new CancellationTokenSource();
+                using var cancellationTokenSource = new CancellationTokenSource();
 
                 buildRequest.Target = "Player";
                 buildRequest.RegisterRPCCallback<GenerateNativePluginsForAssembliesArgs>(nameof(GenerateNativePluginsForAssemblies), GenerateNativePluginsForAssemblies);
@@ -716,9 +716,9 @@ namespace UnityEditor.Modules
                     args.report.EndBuildStep(buildStep);
 
                     BeeDriverResult = activeBuild.TaskObject.Result;
-                    
+
                     UnityBeeDriverProfilerSession.AddTaskToWaitForBeforeFinishing(BeeDriverResult.ProfileOutputWritingTask);
-                    
+
                     if (BeeDriverResult.Success)
                     {
                         PostProcessCompletedBuild(args);

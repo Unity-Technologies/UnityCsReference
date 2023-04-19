@@ -652,7 +652,7 @@ namespace Unity.UI.Builder
             var newValue = description.GetSerializedValue(m_SerializedDataDescriptionData.serializedData);
 
             // Unity serializes null values as default objects, so we need to do the same to compare.
-            if (previousValue == null && description.type.GetConstructor(Type.EmptyTypes) != null)
+            if (previousValue == null && !typeof(Object).IsAssignableFrom(description.type) && description.type.GetConstructor(Type.EmptyTypes) != null)
                 previousValue = Activator.CreateInstance(description.type);
 
             if (UxmlAttributeComparison.ObjectEquals(previousValue, newValue))
@@ -1182,7 +1182,7 @@ namespace Unity.UI.Builder
 
             if (value is Object asset)
             {
-                var assetType = attributeType.GetGenericArguments()[0];
+                var assetType = attributeType.IsGenericType ? attributeType.GetGenericArguments()[0] : (attribute as IUxmlAssetAttributeDescription)?.assetType;
 
                 if (!string.IsNullOrEmpty(uxmlValue) && !uxmlDocument.AssetEntryExists(uxmlValue, assetType))
                     uxmlDocument.RegisterAssetEntry(uxmlValue, assetType, asset);

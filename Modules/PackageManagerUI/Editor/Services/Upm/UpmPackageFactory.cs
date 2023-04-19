@@ -95,9 +95,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (package == null && item.progress == PackageProgress.Installing)
                 {
                     var version = new PlaceholderPackageVersion(item.packageIdOrName, L10n.Tr("Installing a new package"), tag: PackageTag.UpmFormat | PackageTag.SpecialInstall);
-                    var placeholerPackage = CreatePackage(item.packageIdOrName, new PlaceholderVersionList(version));
-                    SetProgress(placeholerPackage, PackageProgress.Installing);
-                    m_PackageDatabase.UpdatePackages(new[] { placeholerPackage });
+                    var placeholderPackage = CreatePackage(item.packageIdOrName, new PlaceholderVersionList(version));
+                    SetProgress(placeholderPackage, PackageProgress.Installing);
+                    m_PackageDatabase.UpdatePackages(new[] { placeholderPackage });
                     continue;
                 }
 
@@ -147,7 +147,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageNames?.Any() != true)
                 return;
 
-            var updatedPackages = new List<Package>();
+            var updatedPackages = new List<IPackage>();
             var packagesToRemove = new List<string>();
             var showPreRelease = m_SettingsProxy.enablePreReleasePackages;
             var seeAllVersions = m_SettingsProxy.seeAllPackageVersions;

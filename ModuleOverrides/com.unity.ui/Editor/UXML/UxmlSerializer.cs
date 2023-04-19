@@ -63,7 +63,7 @@ namespace UnityEditor.UIElements
                 value = UxmlUtility.CloneObject(value);
                 SetSerializedValue(uxmlSerializedData, value);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Debug.LogException(new Exception($"Failed to sync {name} to {serializedField.Name}", ex));
             }
@@ -203,36 +203,60 @@ namespace UnityEditor.UIElements
                 // Extract values.
                 if (entry.uxmlObjectAssets != null)
                 {
-                    IList list = null;
                     Type objectType = type;
-                    if (typeof(IList).IsAssignableFrom(type) && type.IsGenericType && type.GenericTypeArguments.Length == 1)
+                    using (ListPool<(UxmlObjectAsset, UxmlSerializedDataDescription)>.Get(out var foundObjects))
                     {
-                        list = (IList)Activator.CreateInstance(type);
-                        objectType = type.GenericTypeArguments[0];
-                    }
+                        bool isCollection = typeof(IList).IsAssignableFrom(type) && (type.IsArray || type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>));
 
-                    foreach (var asset in entry.uxmlObjectAssets)
-                    {
-                        var assetDescription = UxmlSerializedDataRegistry.GetDescription(asset.fullTypeName);
-                        if (assetDescription == null)
+                        if (isCollection)
                         {
-                            Debug.LogError("Could not find a UxmlObject type for " + asset.fullTypeName, cc.visualTreeAsset);
+                            objectType = type.GetArrayOrListElementType();
                         }
-                        else if (objectType.IsAssignableFrom(assetDescription.serializedDataType))
+
+                        foreach (var asset in entry.uxmlObjectAssets)
                         {
-                            var nestedData = UxmlSerializer.Serialize(assetDescription, asset, cc);
-                            if (nestedData != null)
+                            var assetDescription = UxmlSerializedDataRegistry.GetDescription(asset.fullTypeName);
+                            if (assetDescription == null)
                             {
-                                if (list != null)
-                                    list.Add(nestedData);
-                                else
-                                    return nestedData;
+                                Debug.LogError("Could not find a UxmlObject type for " + asset.fullTypeName, cc.visualTreeAsset);
+                            }
+                            else if (objectType.IsAssignableFrom(assetDescription.serializedDataType))
+                            {
+                                foundObjects.Add((asset, assetDescription));
                             }
                         }
-                    }
 
-                    if (list != null)
-                        return list;
+                        IList list = null;
+                        if (foundObjects.Count > 0)
+                        {
+                            if (isCollection)
+                            {
+                                list = type.IsArray ? Array.CreateInstance(objectType, foundObjects.Count) : (IList)Activator.CreateInstance(type);
+                            }
+
+                            for (int i = 0; i < foundObjects.Count; ++i)
+                            {
+                                (var asset, var assetDescription) = foundObjects[i];
+                                var nestedData = UxmlSerializer.Serialize(assetDescription, asset, cc);
+                                if (nestedData != null)
+                                {
+                                    if (isCollection)
+                                    {
+                                        if (type.IsArray)
+                                            list[i] = nestedData;
+                                        else
+                                            list.Add(nestedData);
+                                    }
+                                    else
+                                    {
+                                        return nestedData;
+                                    }
+                                }
+                            }
+                        }
+                        if (list != null)
+                            return list;
+                    }
                 }
             }
 

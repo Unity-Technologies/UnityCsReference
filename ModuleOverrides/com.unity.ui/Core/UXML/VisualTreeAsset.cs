@@ -349,6 +349,20 @@ namespace UnityEngine.UIElements
             return null;
         }
 
+        internal Type GetAssetType(string path)
+        {
+            if (m_AssetEntries == null)
+                return null;
+
+            foreach (var entry in m_AssetEntries)
+            {
+                if (entry.path == path)
+                    return entry.type;
+            }
+
+            return null;
+        }
+
         internal UxmlObjectEntry GetUxmlObjectEntry(int id)
         {
             if (m_UxmlObjectEntries != null)

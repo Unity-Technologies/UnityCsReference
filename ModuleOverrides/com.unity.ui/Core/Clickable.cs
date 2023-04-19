@@ -2,11 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-// NOTE: We do a lot of work in this class to avoid treating pointer events in all cases. This is done to keep
-// compatibility with previous propagation behaviour of mouse/pointer events and avoid introducing breaking changes.
-// We moved pointer events support in this class and removed PointerClickable.cs in a first step towards handling
-// only pointer events as the default, and slowly moving away from mouse events which are not touch screen friendly.
-
 using System;
 
 namespace UnityEngine.UIElements

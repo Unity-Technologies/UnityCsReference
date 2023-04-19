@@ -66,7 +66,7 @@ namespace UnityEditorInternal
         }
 
         [FreeFunction("VisualStudioUtilities::FindVisualStudioDevEnvPaths")]
-        [NativeConditional("UNITY_WIN")]
+        [NativeConditional("PLATFORM_WIN")]
         internal extern static string[] FindVisualStudioDevEnvPaths(int visualStudioVersion, string[] requiredWorkloadsAndComponents);
     }
 }

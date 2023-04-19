@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -11,9 +12,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// A Button has a text label element that can respond to pointer and mouse events.
-    /// You can customize a button by adding child elements to its hierarchy.
-    /// For example, to use a separate image as an icon for the button, you can add an <see cref="Image"/>
-    /// element as a child of the button.
+    /// You can add an icon to pair it with the text by assigning a Background (Texture, RenderTexture, Sprite or Vector Image)
+    /// to the iconImage API or icon-image UXML property. Please note that by providing an icon image, this will
+    /// automatically update the Button's hierarchy to contain an <see cref="Image"/> and a text label element.
     ///
     /// By default, a single left mouse click activates the Button's <see cref="Clickable"/> property button.
     /// To remove this activator, or add more activators, modify the <c>clickable.activators</c> property.
@@ -24,10 +25,25 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class Button : TextElement
     {
+        internal static readonly DataBindingProperty iconImageProperty = nameof(iconImage);
+
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : TextElement.UxmlSerializedData
         {
+            #pragma warning disable 649
+            [ImageFieldValueDecorator]
+            [SerializeField, UxmlAttribute("icon-image")] private Object iconImageReference;
+            #pragma warning restore 649
+
             public override object CreateInstance() => new Button();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (Button)obj;
+                e.iconImageReference = iconImageReference;
+            }
         }
 
         /// <summary>
@@ -64,6 +80,27 @@ namespace UnityEngine.UIElements
         /// this class affects every button located beside, or below the stylesheet in the visual tree.
         /// </remarks>
         public new static readonly string ussClassName = "unity-button";
+
+        /// <summary>
+        /// The USS class name for Button elements with an icon.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to an instance of the Button element if the instance's
+        /// <see cref="Button.iconImage"/> property contains a valid Texture. Any styling applied to this class
+        /// affects every button with an icon located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
+        public static readonly string iconUssClassName = ussClassName + "--with-icon";
+
+        /// <summary>
+        /// The USS class name of the image element that will be used to display the icon texture.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to an instance of the Image element that will be used to display the
+        /// <see cref="Button.iconImage"/> property value. Any styling applied to this class will affect
+        /// image elements inside a Button that contains this class.
+        /// </remarks>
+        public static readonly string imageUSSClassName = ussClassName + "__image";
+
         private Clickable m_Clickable;
 
         /// <summary>
@@ -148,11 +185,103 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Used privately to help the serializer convert the Unity Object to the appropriate asset type.
+        Object iconImageReference
+        {
+            get => iconImage.GetSelectedImage();
+            set => iconImage = Background.FromObject(value);
+        }
+
+        // The element designed to hold the Button's text when an icon is preset (sibling of image).
+        TextElement m_TextElement;
+
+        // The element that will hold and render the icon within the button (sibling of text element).
+        Image m_ImageElement;
+
+        // Holds the corresponding icon value of said type (Texture, Sprite, VectorImage).
+        Background m_IconImage;
+
+        /// <summary>
+        /// The Texture, Sprite, or VectorImage that will represent an icon within a Button element.
+        /// </summary>
+        [CreateProperty]
+        public Background iconImage
+        {
+            get => m_IconImage;
+            set
+            {
+                if (value.IsEmpty() && m_ImageElement == null || value == m_IconImage)
+                    return;
+
+                if (value.IsEmpty())
+                {
+                    ResetButtonHierarchy();
+                    m_IconImage = value;
+                    NotifyPropertyChanged(iconImageProperty);
+
+                    return;
+                }
+
+                if (m_ImageElement == null)
+                    UpdateButtonHierarchy();
+
+                // The image control will reset the other values to null
+                if (value.texture)
+                    m_ImageElement.image = value.texture;
+                else if (value.sprite)
+                    m_ImageElement.sprite = value.sprite;
+                else if (value.renderTexture)
+                    m_ImageElement.image = value.renderTexture;
+                else
+                    m_ImageElement.vectorImage = value.vectorImage;
+
+                m_IconImage = value;
+                NotifyPropertyChanged(iconImageProperty);
+            }
+        }
+
+        private string m_Text = String.Empty;
+        public override string text
+        {
+            get => m_Text;
+            set
+            {
+                m_Text = value;
+                if (m_TextElement != null)
+                {
+                    // Make sure we clear the Button's text, otherwise it will show the same string twice
+                    base.text = String.Empty;
+
+                    if (m_TextElement.text == m_Text)
+                        return;
+
+                    m_TextElement.text = m_Text;
+                    return;
+                }
+
+                if (base.text == m_Text)
+                    return;
+
+                base.text = m_Text;
+            }
+        }
+
         /// <summary>
         /// Constructs a Button.
         /// </summary>
-        public Button() : this(null)
+        public Button() : this(default, null)
         {
+        }
+
+        /// <summary>
+        /// Constructs a button with an <see cref="Background"/> and an Action. The image definition will be used
+        /// to represent an icon while the Action is triggered when the button is clicked.
+        /// </summary>
+        /// <param name="iconImage">The image value that will be rendered as an icon.</param>
+        /// <param name="clickEvent">The action triggered when the button is clicked.</param>
+        public Button(Background iconImage, Action clickEvent = null) : this(clickEvent)
+        {
+            this.iconImage = iconImage;
         }
 
         /// <summary>
@@ -190,6 +319,42 @@ namespace UnityEngine.UIElements
                 textToMeasure = NonEmptyString;
             }
             return MeasureTextSize(textToMeasure, desiredWidth, widthMode, desiredHeight, heightMode);
+        }
+
+        private void UpdateButtonHierarchy()
+        {
+            if (m_ImageElement == null)
+            {
+                m_ImageElement = new Image { classList = { imageUSSClassName } };
+                Add(m_ImageElement);
+                AddToClassList(iconUssClassName);
+            }
+
+            if (m_TextElement == null)
+            {
+                m_TextElement = new TextElement {text = text};
+                m_Text = text;
+                base.text = String.Empty;
+                Add(m_TextElement);
+            }
+        }
+
+        private void ResetButtonHierarchy()
+        {
+            if (m_ImageElement != null)
+            {
+                m_ImageElement.RemoveFromHierarchy();
+                m_ImageElement = null;
+                RemoveFromClassList(iconUssClassName);
+            }
+
+            if (m_TextElement != null)
+            {
+                var restoredText = m_TextElement.text;
+                m_TextElement.RemoveFromHierarchy();
+                m_TextElement = null;
+                text = restoredText;
+            }
         }
     }
 }

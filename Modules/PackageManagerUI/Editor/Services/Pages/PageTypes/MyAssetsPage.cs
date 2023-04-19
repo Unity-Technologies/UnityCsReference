@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine;
 
@@ -75,14 +76,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             ListPurchases();
-            ClearListAndTriggerRebuildEvent();
+            ClearAllAndTriggerRebuildEvent();
             return true;
         }
 
         protected override void RefreshListOnSearchTextChange()
         {
             ListPurchases();
-            ClearListAndTriggerRebuildEvent();
+            ClearAllAndTriggerRebuildEvent();
         }
 
         private void ListPurchases()
@@ -92,10 +93,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreClient.ListPurchases(queryArgs);
         }
 
-        private void ClearListAndTriggerRebuildEvent()
+        private void ClearAllAndTriggerRebuildEvent()
         {
-            m_VisualStateList.ClearList();
-            m_VisualStateList.ClearExtraItems();
+            m_VisualStateList.ClearAll();
             TriggerListRebuild();
         }
 
@@ -243,7 +243,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!loggedIn)
             {
                 // When users log out, even when we are not on `My Assets` page we should still clear the Asset Store page properly
-                ClearListAndTriggerRebuildEvent();
+                ClearAllAndTriggerRebuildEvent();
             }
         }
 
@@ -265,16 +265,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
         }
 
+        [ExcludeFromCodeCoverage]
         public override void RebuildAndReorderVisualStates()
         {
             // do nothing because for paginated pages, the order of visual states is pre-determined
         }
 
+        [ExcludeFromCodeCoverage]
         public override void SetPackagesUserUnlockedState(IEnumerable<string> packageUniqueIds, bool unlocked)
         {
             // do nothing, only simple page needs implementation right now
         }
 
+        [ExcludeFromCodeCoverage]
         public override void ResetUserUnlockedState()
         {
             // do nothing, only simple page needs implementation right now

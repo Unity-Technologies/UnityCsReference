@@ -36,7 +36,7 @@ namespace UnityEditor
         {
             minSize = new Vector2(40, 40);
             maxSize = new Vector2(4000, 4000);
-            sizeOverridenChanged += UpdateSize;
+            defaultSize = new Vector2(240, 135);
             m_SelectedCamera = camera;
             displayName = selectedCamera == null || string.IsNullOrEmpty(selectedCamera.name)
                 ? "Camera Preview"
@@ -104,22 +104,8 @@ namespace UnityEditor
             return m_PreviewTexture;
         }
 
-        void UpdateSize()
-        {
-            if (!sizeOverridden)
-                size = new Vector2(240, 135);
-        }
-
         public override void OnGUI()
         {
-            UpdateSize();
-
-            imguiContainer.style.minWidth = collapsed ? new StyleLength(240) : new StyleLength(StyleKeyword.Auto);
-            imguiContainer.style.minHeight = collapsed ? new StyleLength(135) : new StyleLength(StyleKeyword.Auto);
-
-            imguiContainer.style.flexGrow = collapsed ? 0 : 1;
-            imguiContainer.parent.style.flexGrow = collapsed ? 0 : 1;
-
             if (selectedCamera == null)
             {
                 GUILayout.Label("No camera selected", EditorStyles.centeredGreyMiniLabel);
@@ -129,6 +115,7 @@ namespace UnityEditor
             if (!CameraEditorUtils.IsViewportRectValidToRender(selectedCamera.rect))
                 return;
 
+            imguiContainer.style.flexGrow = 1;
             var sceneView = SceneView.lastActiveSceneView;
 
             // Do not render the Camera Preview overlay if the target camera GameObject is not part of the objects the

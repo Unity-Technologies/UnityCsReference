@@ -166,11 +166,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var package = m_PackageDatabase.GetPackage(state.packageUniqueId);
                 var visible = package?.versions.primary.MatchesSearchText(trimmedSearchText) == true;
-                if (state.visible != visible)
-                {
-                    state.visible = visible;
-                    changedVisualStates.Add(state);
-                }
+                if (state.visible == visible)
+                    continue;
+                state.visible = visible;
+                changedVisualStates.Add(state);
             }
 
             if (changedVisualStates.Any())
@@ -280,7 +279,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIds, bool isExplicitUserSelection = false)
         {
-            if (!m_Selection.SetNewSelection(packageAndVersionIds))
+            if (!m_Selection.SetNewSelection(packageAndVersionIds) && !isExplicitUserSelection)
                 return false;
 
             TriggerOnSelectionChanged(isExplicitUserSelection);
@@ -297,7 +296,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove, bool isExplicitUserSelection = false)
         {
-            if (!m_Selection.AmendSelection(toAddOrUpdate, toRemove))
+            if (!m_Selection.AmendSelection(toAddOrUpdate, toRemove) && !isExplicitUserSelection)
                 return false;
 
             TriggerOnSelectionChanged(isExplicitUserSelection);
@@ -306,7 +305,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool ToggleSelection(string packageUniqueId, bool isExplicitUserSelection = false)
         {
-            if (!m_Selection.ToggleSelection(packageUniqueId))
+            if (!m_Selection.ToggleSelection(packageUniqueId) && !isExplicitUserSelection)
                 return false;
 
             TriggerOnSelectionChanged(isExplicitUserSelection);
@@ -347,11 +346,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void SetGroupExpanded(string groupName, bool value)
         {
-            var groupExpanded = !m_CollapsedGroups.Contains(groupName);
-            if (groupExpanded == value)
-                return;
             if (value)
-                m_CollapsedGroups.Remove(groupName);
+                m_CollapsedGroups.RemoveAll(i => i == groupName);
             else
                 m_CollapsedGroups.Add(groupName);
         }

@@ -132,7 +132,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_SortOption = sortOption;
             }
 
-            public static int CompareByDisplayName(IPackageVersion x, IPackageVersion y)
+            private static int CompareByDisplayName(IPackageVersion x, IPackageVersion y)
             {
                 return string.Compare(x.displayName, y.displayName, StringComparison.CurrentCultureIgnoreCase);
             }

@@ -9,6 +9,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Profiling
 {
+    [UIFramework(UIFrameworkUsage.UITK)]
     internal class ProfilerModulesDropdownWindow : EditorWindow
     {
         const string k_UxmlResourceName = "ProfilerModulesDropdownWindow.uxml";

@@ -15,6 +15,7 @@ using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor.UIElements
 {
+    [UIFramework(UIFrameworkUsage.UITK)]
     class UIElementsEditorWindowCreator : EditorWindow
     {
         const string k_UIElementsEditorWindowCreatorStyleSheetPath = "UIPackageResources/StyleSheets/UIElementsEditorWindowCreator.uss";

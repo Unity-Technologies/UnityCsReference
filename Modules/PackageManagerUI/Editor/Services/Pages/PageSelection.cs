@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using UnityEngine;
 
@@ -123,11 +124,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_SelectionsLookup.TryGetValue(packageUniqueId, out value);
         }
 
+        [ExcludeFromCodeCoverage]
         public IEnumerator<PackageAndVersionIdPair> GetEnumerator()
         {
             return m_SelectionsLookup.Values.Cast<PackageAndVersionIdPair>().GetEnumerator();
         }
 
+        [ExcludeFromCodeCoverage]
         IEnumerator IEnumerable.GetEnumerator()
         {
             return m_SelectionsLookup.Values.GetEnumerator();

@@ -4,9 +4,10 @@
 
 using UnityEngine;
 
-namespace UnityEditor.UIElements
+namespace UnityEngine.UIElements
 {
     class EnumFieldValueDecoratorAttribute : PropertyAttribute { }
     class EnumFlagsFieldValueDecoratorAttribute : PropertyAttribute { }
     class TagFieldValueDecoratorAttribute : PropertyAttribute { }
+    class ImageFieldValueDecoratorAttribute : PropertyAttribute { }
 }

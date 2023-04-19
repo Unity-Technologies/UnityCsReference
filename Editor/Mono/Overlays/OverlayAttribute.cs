@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 
 namespace UnityEditor.Overlays
 {
@@ -20,6 +21,10 @@ namespace UnityEditor.Overlays
         Layout m_DefaultLayout;
         float m_DefaultWidth;
         float m_DefaultHeight;
+        float m_MinWidth;
+        float m_MinHeight;
+        float m_MaxWidth;
+        float m_MaxHeight;
 
         public Type editorWindowType
         {
@@ -87,6 +92,34 @@ namespace UnityEditor.Overlays
             set => m_DefaultHeight = value;
         }
 
+        public float minWidth
+        {
+            get => m_MinWidth;
+            set => m_MinWidth = value;
+        }
+
+        public float minHeight
+        {
+            get => m_MinHeight;
+            set => m_MinHeight = value;
+        }
+
+        public float maxWidth
+        {
+            get => m_MaxWidth;
+            set => m_MaxWidth = value;
+        }
+
+        public float maxHeight
+        {
+            get => m_MaxHeight;
+            set => m_MaxHeight = value;
+        }
+
+        internal Vector2 defaultSize => new Vector2(defaultWidth, defaultHeight);
+        internal Vector2 minSize => new Vector2(minWidth, minHeight);
+        internal Vector2 maxSize => new Vector2(maxWidth, maxHeight);
+
         public OverlayAttribute()
         {
             m_EditorWindowType = null;
@@ -100,6 +133,10 @@ namespace UnityEditor.Overlays
             m_DefaultLayout = Layout.Panel;
             m_DefaultWidth = float.NegativeInfinity;
             m_DefaultHeight = float.NegativeInfinity;
+            m_MinWidth = float.NegativeInfinity;
+            m_MinHeight = float.NegativeInfinity;
+            m_MaxWidth = float.NegativeInfinity;
+            m_MaxHeight = float.NegativeInfinity;
             if (string.IsNullOrEmpty(m_UssName)) m_UssName = m_Id;
         }
 

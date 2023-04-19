@@ -347,37 +347,35 @@ namespace UnityEditor
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
-    [Obsolete("QNXArchitecture is deprecated. Use EmbeddedArchitecture. (UnityUpgradeable) -> EmbeddedArchitecture")]
     public enum QNXArchitecture
     {
         [UnityEngine.InspectorName("Arm64")]
-        Arm64 = 0,
+        Arm64 = EmbeddedArchitecture.Arm64,
 
         [UnityEngine.InspectorName("Arm32")]
-        Arm32 = 1,
+        Arm32 = EmbeddedArchitecture.Arm32,
 
         [UnityEngine.InspectorName("X64")]
-        X64 = 2,
+        X64 = EmbeddedArchitecture.X64,
 
         [UnityEngine.InspectorName("X86")]
-        X86 = 3,
+        X86 = EmbeddedArchitecture.X86,
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
-    [Obsolete("EmbeddedLinuxArchitecture is deprecated. Use EmbeddedArchitecture. (UnityUpgradeable) -> EmbeddedArchitecture")]
     public enum EmbeddedLinuxArchitecture
     {
         [UnityEngine.InspectorName("Arm64")]
-        Arm64 = 0,
+        Arm64 = EmbeddedArchitecture.Arm64,
 
         [UnityEngine.InspectorName("Arm32")]
-        Arm32 = 1,
+        Arm32 = EmbeddedArchitecture.Arm32,
 
         [UnityEngine.InspectorName("X64")]
-        X64 = 2,
+        X64 = EmbeddedArchitecture.X64,
 
         [UnityEngine.InspectorName("X86")]
-        X86 = 3,
+        X86 = EmbeddedArchitecture.X86,
     }
 
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
@@ -414,7 +412,7 @@ namespace UnityEditor
         }
 
         // QNX Architecture
-        public static extern EmbeddedArchitecture selectedQnxArchitecture
+        public static extern QNXArchitecture selectedQnxArchitecture
         {
             [NativeMethod("GetSelectedQNXArchitecture")]
             get;
@@ -423,7 +421,7 @@ namespace UnityEditor
         }
 
         // Embedded Linux Architecture
-        public static extern EmbeddedArchitecture selectedEmbeddedLinuxArchitecture
+        public static extern EmbeddedLinuxArchitecture selectedEmbeddedLinuxArchitecture
         {
             [NativeMethod("GetSelectedEmbeddedLinuxArchitecture")]
             get;

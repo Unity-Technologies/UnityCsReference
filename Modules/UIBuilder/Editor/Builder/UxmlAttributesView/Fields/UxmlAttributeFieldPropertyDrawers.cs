@@ -127,4 +127,15 @@ namespace UnityEditor.UIElements
             return tagField;
         }
     }
+
+    [CustomPropertyDrawer(typeof(ImageFieldValueDecoratorAttribute))]
+    class ImageFieldValueDecoratorAttributePropertyDrawer : PropertyDrawer
+    {
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            var imageField = new ImageStyleField("Icon Image");
+            imageField.BindProperty(property);
+            return imageField;
+        }
+    }
 }

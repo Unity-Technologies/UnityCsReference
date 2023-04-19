@@ -64,6 +64,7 @@ namespace UnityEditor.Overlays
         bool m_SizeOverridden;
         Vector2 m_MinSize = Vector2.zero;
         Vector2 m_MaxSize = Vector2.zero;
+        Vector2 m_DefaultSize = Vector2.zero;
 
         // Temporary Variables
         bool m_LockAnchor = false;
@@ -93,6 +94,7 @@ namespace UnityEditor.Overlays
         internal event Action<OverlayContainer> containerChanged;
         internal event Action minSizeChanged;
         internal event Action maxSizeChanged;
+        internal event Action defaultSizeChanged;
         internal event Action sizeOverridenChanged;
 
         // Invoked in partial class OverlayPlacement.cs
@@ -363,12 +365,7 @@ namespace UnityEditor.Overlays
         {
             get
             {
-                if (!ShouldUseSizeValue())
-                    return m_ResizeTarget.layout.size;
-
-                return new Vector2(
-                    IsSizeAuto(m_MinSize.x, m_MaxSize.x) ? m_ResizeTarget.layout.width : m_Size.x,
-                    IsSizeAuto(m_MinSize.y, m_MaxSize.y) ? m_ResizeTarget.layout.height : m_Size.y);
+                return m_ResizeTarget.layout.size;
             }
             set
             {
@@ -405,6 +402,20 @@ namespace UnityEditor.Overlays
 
                 m_MaxSize = value;
                 maxSizeChanged?.Invoke();
+                UpdateSize();
+            }
+        }
+
+        public Vector2 defaultSize
+        {
+            get => m_DefaultSize;
+            set
+            {
+                if (m_DefaultSize == value)
+                    return;
+
+                m_DefaultSize = value;
+                defaultSizeChanged?.Invoke();
                 UpdateSize();
             }
         }
@@ -522,38 +533,44 @@ namespace UnityEditor.Overlays
                 layoutChanged?.Invoke(m_ActiveLayout);
         }
 
-        bool ShouldUseSizeValue()
+        internal bool IsResizable()
         {
-            return sizeOverridden && layout == Layout.Panel && !collapsed && !(container is ToolbarOverlayContainer);
+            return activeLayout == Layout.Panel && !collapsed;
         }
 
-        bool IsSizeAuto(float min, float max)
+        bool IsSizeAuto(float size)
         {
-            return Mathf.Approximately(min, 0) && Mathf.Approximately(max, 0);
+            return size <= 0 || float.IsNegativeInfinity(size);
         }
 
         void UpdateSize()
         {
-            m_Size.x = Mathf.Clamp(m_Size.x, m_MinSize.x, m_MaxSize.x);
-            m_Size.y = Mathf.Clamp(m_Size.y, m_MinSize.y, m_MaxSize.y);
-
             if (m_ResizeTarget == null)
                 return;
 
-            if (!ShouldUseSizeValue())
-            {
-                m_ResizeTarget.style.width = new StyleLength(StyleKeyword.Auto);
-                m_ResizeTarget.style.height = new StyleLength(StyleKeyword.Auto);
-            }
-            else
-            {
-                //If both min-max for one axis are 0, disable resizing for that axis
-                m_ResizeTarget.style.width = IsSizeAuto(m_MinSize.x, m_MaxSize.x) ? new StyleLength(StyleKeyword.Auto) : m_Size.x;
-                m_ResizeTarget.style.height = IsSizeAuto(m_MinSize.y, m_MaxSize.y) ? new StyleLength(StyleKeyword.Auto) : m_Size.y;
-            }
+            ApplySize(m_ResizeTarget, IsResizable(), sizeOverridden);
 
             var position = canvas.ClampToOverlayWindow(new Rect(floatingPosition, m_Size)).position;
             UpdateSnapping(position);
+        }
+
+        void ApplySize(VisualElement element, bool resizableLayout, bool sizeOverridden)
+        {
+            element.style.minWidth = resizableLayout && !IsSizeAuto(m_MinSize.x) ? m_MinSize.x : new StyleLength(StyleKeyword.Auto);
+            element.style.minHeight = resizableLayout && !IsSizeAuto(m_MinSize.y) ? m_MinSize.y : new StyleLength(StyleKeyword.Auto);
+            element.style.maxWidth = resizableLayout && !IsSizeAuto(m_MaxSize.x) ? m_MaxSize.x : new StyleLength(StyleKeyword.Auto);
+            element.style.maxHeight = resizableLayout && !IsSizeAuto(m_MaxSize.y) ? m_MaxSize.y : new StyleLength(StyleKeyword.Auto);
+
+            if (resizableLayout && sizeOverridden)
+            {
+                element.style.width = m_Size.x;
+                element.style.height = m_Size.y;
+            }
+            else
+            {
+                element.style.width = defaultSize.x > 0 && resizableLayout ? defaultSize.x : new StyleLength(StyleKeyword.Auto);
+                element.style.height = defaultSize.y > 0 && resizableLayout ? defaultSize.y : new StyleLength(StyleKeyword.Auto);
+            }
         }
 
         // CreateContent always returns a new VisualElement tree with the Overlay contents. It does not modify the
@@ -640,6 +657,7 @@ namespace UnityEditor.Overlays
             }
 
             m_ModalPopup = new OverlayPopup(this);
+            ApplySize(m_ModalPopup.Q(className: "overlay-box-background"), true, sizeOverridden);
 
             m_ModalPopup.RegisterCallback<FocusOutEvent>(evt =>
             {
@@ -706,15 +724,25 @@ namespace UnityEditor.Overlays
             rootVisualElement.EnableInClassList(k_Highlight, highlight);
         }
 
-        internal void Initialize(OverlayAttribute attrib) => Initialize(attrib.id, attrib.ussName, attrib.displayName);
+        internal void Initialize(OverlayAttribute attrib) => Initialize(attrib.id, attrib.ussName, attrib.displayName, attrib.defaultSize, attrib.minSize, attrib.maxSize);
 
-        internal void Initialize(string _id, string _uss, string _display)
+        internal void Initialize(string _id, string _uss, string _display, Vector2 defaultSize, Vector2 minSize, Vector2 maxSize)
         {
             m_RootVisualElementName = _uss;
             string name = string.IsNullOrEmpty(_display) ? m_RootVisualElementName : _display;
             m_Id = string.IsNullOrEmpty(_id) ? name : _id;
             displayName = L10n.Tr(name);
             rootVisualElement.style.display = DisplayStyle.None;
+
+            // Taking into account the case where the user modifies the sizes in their overlay constructor.
+            if (!float.IsNegativeInfinity(defaultSize.x) && !float.IsNegativeInfinity(defaultSize.y))
+                m_DefaultSize = defaultSize;
+
+            if (!float.IsNegativeInfinity(minSize.x) && !float.IsNegativeInfinity(minSize.y))
+                m_MinSize = minSize;
+
+            if (!float.IsNegativeInfinity(maxSize.x) && !float.IsNegativeInfinity(maxSize.y))
+                m_MaxSize = maxSize;
         }
 
         // marked obsolete by @karlh 2023/03/13

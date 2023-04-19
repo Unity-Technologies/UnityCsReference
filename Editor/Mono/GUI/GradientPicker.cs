@@ -157,7 +157,7 @@ namespace UnityEditor
             if (m_GradientLibraryEditorState != null)
                 m_GradientLibraryEditorState.TransferEditorPrefsState(false);
 
-            s_GradientPicker.UnregisterEvents();
+            s_GradientPicker?.UnregisterEvents();
             s_GradientPicker = null;
         }
 

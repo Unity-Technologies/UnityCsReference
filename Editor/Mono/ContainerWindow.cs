@@ -7,7 +7,8 @@ using UnityEditor.StyleSheets;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using System;
-using System.Linq;
+using System.Text;
+using UnityEngine.Pool;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -64,6 +65,11 @@ namespace UnityEditor
         internal void __internalAwake()
         {
             hideFlags = HideFlags.DontSave;
+        }
+
+        private void OnDestroy()
+        {
+            Internal_Destroy();
         }
 
         internal ShowMode showMode => (ShowMode)m_ShowMode;
@@ -225,60 +231,69 @@ namespace UnityEditor
             Internal_SetMinMaxSizes(min, max);
         }
 
-        static internal bool InternalRequestCloseAll(bool keepMainWindow)
+        static internal bool CanCloseAll(bool includeMainWindow)
         {
-            var unsaved = windows
-                .Where(w => keepMainWindow || w.showMode != ShowMode.MainWindow)
-                .SelectMany(w => w.m_UnsavedEditorWindows)
-                .ToList();
+            using (var pooledObject = ListPool<EditorWindow>.Get(out List<EditorWindow> unsaved))
+            {
+                foreach (var window in windows)
+                {
+                    if (includeMainWindow || window.showMode != ShowMode.MainWindow)
+                    {
+                        unsaved.AddRange(window.m_UnsavedEditorWindows);
+                    }
+                }
 
-            if (unsaved.Any())
-                return PrivateRequestClose(unsaved);
+                if (unsaved.Count > 0)
+                    return AskToClose(unsaved);
+
+                return true;
+            }
+        }
+
+        private bool CanClose()
+        {
+            if (Application.isHumanControllingUs && hasUnsavedChanges)
+            {
+                return AskToClose(m_UnsavedEditorWindows);
+            }
 
             return true;
         }
 
-        internal bool InternalRequestClose()
+        internal static bool CanClose(EditorWindow dockedTab)
         {
-            if (IsMainWindow())
-            {
-                var UnsavedWindows = windows.Where(w => w != s_MainWindow).SelectMany(w => w.m_UnsavedEditorWindows).ToList();
-
-                if (UnsavedWindows.Any())
-                    return PrivateRequestClose(UnsavedWindows);
-            }
-            if (hasUnsavedChanges)
-            {
-                return PrivateRequestClose(m_UnsavedEditorWindows);
-            }
-
-            return true;
-        }
-
-        internal bool InternalRequestClose(EditorWindow dockedTab)
-        {
-            if (dockedTab.hasUnsavedChanges)
+            if (Application.isHumanControllingUs && dockedTab.hasUnsavedChanges)
             {
                 var unsaved = new List<EditorWindow>() { dockedTab };
-                return PrivateRequestClose(unsaved);
+                return AskToClose(unsaved);
             }
 
             return true;
         }
 
-        internal bool InternalRequestCloseAllExcept(EditorWindow editorWindow)
+        internal bool CanCloseAllExcept(EditorWindow editorWindow)
         {
-            var unsaved = m_UnsavedEditorWindows.Where(w => w != editorWindow);
+            if (!Application.isHumanControllingUs)
+                return true;
 
-            if (unsaved.Any())
-                return PrivateRequestClose(unsaved.ToList());
+            using (var pooledObject = ListPool<EditorWindow>.Get(out List<EditorWindow> unsaved))
+            {
+                foreach (var w in m_UnsavedEditorWindows)
+                {
+                    if (w != editorWindow)
+                        unsaved.Add(w);
+                }
+
+                if (unsaved.Count > 0)
+                    return AskToClose(unsaved);
+            }
 
             return true;
         }
 
-        internal static bool PrivateRequestClose(List<EditorWindow> allUnsaved)
+        private static bool AskToClose(List<EditorWindow> allUnsaved)
         {
-            Debug.Assert(allUnsaved.Count > 0);
+            Debug.Assert(Application.isHumanControllingUs && allUnsaved.Count > 0);
 
             const int kSave = 0;
             const int kCancel = 1;
@@ -288,20 +303,28 @@ namespace UnityEditor
 
             if (allUnsaved.Count == 1)
             {
-                var title = allUnsaved.First().titleContent.text;
+                var title = allUnsaved[0].titleContent.text;
 
                 option = EditorUtility.DisplayDialogComplex((string.IsNullOrEmpty(title) ? "" : (title + " - ")) + L10n.Tr("Unsaved Changes Detected"),
-                    allUnsaved.First().saveChangesMessage,
+                    allUnsaved[0].saveChangesMessage,
                     L10n.Tr("Save"),
                     L10n.Tr("Cancel"),
                     L10n.Tr("Discard"));
             }
             else
             {
-                string unsavedChangesMessage = string.Join("\n", allUnsaved.Select(v => v.saveChangesMessage).ToArray());
+                var savedChangesBuilder = new StringBuilder();
+
+                int last = allUnsaved.Count - 1;
+                for (int i = 0; i < last; ++i)
+                {
+                    savedChangesBuilder.Append(allUnsaved[i].saveChangesMessage);
+                    savedChangesBuilder.Append('\n');
+                }
+                savedChangesBuilder.Append(allUnsaved[last]);
 
                 option = EditorUtility.DisplayDialogComplex(L10n.Tr("Unsaved Changes Detected"),
-                    unsavedChangesMessage,
+                    savedChangesBuilder.ToString(),
                     L10n.Tr("Save All"),
                     L10n.Tr("Cancel"),
                     L10n.Tr("Discard All"));
@@ -342,11 +365,17 @@ namespace UnityEditor
             }
         }
 
-        internal void InternalCloseWindow()
+        // Closes the Window _without prompting_
+        public void Close()
         {
+            // Because this is a UnityObject, DestroyImmediate _will_ nullify the this pointer.
+            // This can guard against double-close
+            if (this == null)
+                return;
+
             Save();
 
-            if (m_ShowMode == (int)ShowMode.MainWindow && s_MainWindow == this)
+            if (s_MainWindow == this)
                 s_MainWindow = null;
 
             if (m_RootView)
@@ -356,6 +385,15 @@ namespace UnityEditor
             }
 
             DestroyImmediate(this, true);
+        }
+
+        [RequiredByNativeCode]
+        private void RequestCloseSentByNativeCode()
+        {
+            if (CanClose())
+            {
+                Close();
+            }
         }
 
         [RequiredByNativeCode]
@@ -373,7 +411,7 @@ namespace UnityEditor
                 switch (v)
                 {
                     case DockArea dockArea:
-                        foreach (var windowClose in dockArea.m_Panes.OfType<EditorWindow>())
+                        foreach (var windowClose in dockArea.m_Panes)
                             if (windowClose.hasUnsavedChanges)
                                 unsavedChanges.Add(windowClose);
                         break;
@@ -393,16 +431,6 @@ namespace UnityEditor
         {
             m_UnsavedEditorWindows = FindUnsavedChanges(rootView);
             hasUnsavedChanges = m_UnsavedEditorWindows.Count > 0;
-        }
-
-        public void Close()
-        {
-            Save();
-
-            // Guard against destroy window or window in the process of being destroyed.
-            if (this && m_WindowPtr.m_IntPtr != IntPtr.Zero)
-                InternalClose();
-            DestroyImmediate(this, true);
         }
 
         internal bool IsNotDocked()
@@ -433,7 +461,17 @@ namespace UnityEditor
 
             if (rootView.children.Length > 0)
             {
-                var dockArea = rootView.children.FirstOrDefault(c => c is DockArea) as DockArea;
+                DockArea dockArea = null;
+
+                foreach (var child in rootView.children)
+                {
+                    if (child is DockArea)
+                    {
+                        dockArea = (DockArea)child;
+                        break;
+                    }
+                }
+
                 if (dockArea && dockArea.m_Panes.Count > 0)
                 {
                     return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
@@ -642,6 +680,5 @@ namespace UnityEditor
         {
             return PopupLocationHelper.GetDropDownRect(buttonRect, minSize, maxSize, this);
         }
-
     }
 } //namespace

@@ -42,11 +42,6 @@ namespace UnityEngine.UIElements
             if (UIElementsUtility.isOSXContextualMenuPlatform)
             {
                 displayMenuHandledOSX = true;
-
-                // The pointer up will likely happen on the menu itself. Since we won't get a chance to call
-                // ActivateCompatibilityMouseEvents until the next pointer down, we need to not prevent them.
-                if (triggerEvent is PointerDownEvent p)
-                    p.DontPreventCompatibilityMouseEventsOnPropagationStopped();
             }
         }
 

@@ -218,6 +218,8 @@ namespace UnityEditor.Overlays
 
             overlay.containerChanged += OnOverlayContainerChanged;
             overlay.layoutChanged += OnOverlayLayoutChanged;
+            overlay.floatingPositionChanged += OnOverlayPositionChanged;
+            overlay.collapsedChanged += OnOverlayCollaspedChanged;
             m_Overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnOverlayGeometryChanged);
             UpdateResizerVisibility();
         }
@@ -233,6 +235,16 @@ namespace UnityEditor.Overlays
         }
 
         void OnOverlayGeometryChanged(GeometryChangedEvent evt)
+        {
+            UpdateResizerVisibility();
+        }
+
+        void OnOverlayPositionChanged(Vector3 position)
+        {
+            UpdateResizerVisibility();
+        }
+
+        void OnOverlayCollaspedChanged(bool collapsed)
         {
             UpdateResizerVisibility();
         }
@@ -269,14 +281,15 @@ namespace UnityEditor.Overlays
 
         void UpdateResizerVisibility()
         {
-            bool globalHide = m_Overlay.layout != Layout.Panel;
+            bool globalHide = !m_Overlay.IsResizable();
             foreach (var resizer in m_Resizers)
             {
                 bool hide = globalHide || !ContainerCanShowResizer(resizer);
 
                 if (resizer.HasMultipleDirections())
                 {
-                    hide |= m_Overlay.minSize == m_Overlay.maxSize;
+                    hide |= Mathf.Approximately(m_Overlay.minSize.x, m_Overlay.maxSize.x);
+                    hide |= Mathf.Approximately(m_Overlay.minSize.y, m_Overlay.maxSize.y);
                 }
                 else
                 {

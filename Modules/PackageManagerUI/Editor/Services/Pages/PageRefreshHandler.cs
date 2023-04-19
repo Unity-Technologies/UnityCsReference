@@ -101,7 +101,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void Refresh(RefreshOptions options)
         {
-            if ((options & RefreshOptions.UpmSearch) != 0)
+            if (options.Contains(RefreshOptions.UpmSearch))
             {
                 m_UpmClient.SearchAll();
                 // Since the SearchAll online call now might return error and an empty list, we want to trigger a `SearchOffline` call if
@@ -109,52 +109,56 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (GetRefreshTimestampSingleFlag(RefreshOptions.UpmSearchOffline) == 0)
                     options |= RefreshOptions.UpmSearchOffline;
             }
-            if ((options & RefreshOptions.UpmSearchOffline) != 0)
+            if (options.Contains(RefreshOptions.UpmSearchOffline))
                 m_UpmClient.SearchAll(true);
-            if ((options & RefreshOptions.UpmList) != 0)
+            if (options.Contains(RefreshOptions.UpmList))
             {
                 m_UpmClient.List();
                 // Do the same logic for the List operations as the Search operations
                 if (GetRefreshTimestampSingleFlag(RefreshOptions.UpmListOffline) == 0)
                     options |= RefreshOptions.UpmListOffline;
             }
-            if ((options & RefreshOptions.UpmListOffline) != 0)
+            if (options.Contains(RefreshOptions.UpmListOffline))
                 m_UpmClient.List(true);
-            if ((options & RefreshOptions.Purchased) != 0)
+            if (options.Contains(RefreshOptions.Purchased))
             {
                 var page = m_PageManager.GetPage(MyAssetsPage.k_Id);
                 var numItems = Math.Max((int)page.visualStates.countLoaded, m_PackageManagerPrefs.numItemsPerPage ?? PackageManagerPrefs.k_DefaultPageSize);
                 var queryArgs = new PurchasesQueryArgs(0, numItems, page.trimmedSearchText, page.filters);
                 m_AssetStoreClient.ListPurchases(queryArgs);
             }
-            if ((options & RefreshOptions.PurchasedOffline) != 0)
+            if (options.Contains(RefreshOptions.PurchasedOffline))
                 m_AssetStoreClient.RefreshLocal();
-            if ((options & RefreshOptions.ImportedAssets) != 0)
+            if (options.Contains(RefreshOptions.ImportedAssets))
                 RefreshImportedAssets();
         }
 
         private void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            RefreshImportedAssets(true);
+            // if a full scan was never done, it needs to be done now
+            // otherwise, we want to avoid doing a full scan on every OnPostprocessAllAssets trigger for performance, so
+            //  if a full scan was done already, just modify the cached assets according to the parameters passed by the event
+            if (RefreshImportedAssets())
+                return;
+
+            m_AssetStoreClient.OnPostProcessAllAssets(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
         }
 
-        private void RefreshImportedAssets(bool forceRefresh = false)
+        // returns true if a full scan was done, false if not
+        private bool RefreshImportedAssets()
         {
-            // When `OnPostprocessAllAssets` call `RefreshImportedAssets` because asset changes are detected, we set the
-            // forceRefresh to true so we don't missed any potential modified asset
-            // When `RefreshImportedAssets` is triggered by a user page refresh, we only want to actually call the refresh
-            // if it was never called before, because we don't want to scan through Asset Database all the time and `OnPostprocessAllAssets`
-            // will catch all the changes anyways.
-            if (forceRefresh || GetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets) == 0)
+            if (GetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets) == 0)
             {
                 m_AssetStoreClient.RefreshImportedAssets();
-                m_RefreshTimestamps[RefreshOptions.ImportedAssets] = DateTime.Now.Ticks;
+                SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, DateTime.Now.Ticks);
+                return true;
             }
+            return false;
         }
 
         public virtual void CancelRefresh(RefreshOptions options)
         {
-            if ((options & RefreshOptions.Purchased) != 0)
+            if (options.Contains(RefreshOptions.Purchased))
                 m_AssetStoreClient.CancelListPurchases();
         }
 
@@ -164,20 +168,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 // We also want to clear the refresh time stamp here so that the next time users visit the Asset Store page,
                 // we'll call refresh properly
-                m_RefreshTimestamps[RefreshOptions.Purchased] = 0;
+                m_RefreshTimestamps.Remove(RefreshOptions.Purchased);
                 m_RefreshErrors.Remove(RefreshOptions.Purchased);
             }
-            else if (m_PageManager.activePage?.id == MyAssetsPage.k_Id &&
+            else if (m_PageManager.activePage.refreshOptions.Contains(RefreshOptions.Purchased)  &&
                 m_Application.isInternetReachable &&
-                !EditorApplication.isCompiling &&
+                !m_Application.isCompiling &&
                 !IsRefreshInProgress(RefreshOptions.Purchased))
                 Refresh(RefreshOptions.Purchased);
         }
 
         public void OnEnable()
         {
-            InitializeRefreshTimestamps();
-
             m_AssetDatabase.onPostprocessAllAssets += OnPostprocessAllAssets;
 
             m_UpmClient.onListOperation += OnRefreshOperation;
@@ -202,17 +204,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager.onActivePageChanged -= OnActivePageChanged;
         }
 
-        // Gets called in Reload as well
-        public void InitializeRefreshTimestamps()
-        {
-            foreach (RefreshOptions option in Enum.GetValues(typeof(RefreshOptions)))
-            {
-                if (option == RefreshOptions.None || m_RefreshTimestamps.ContainsKey(option))
-                    continue;
-                m_RefreshTimestamps[option] = 0;
-            }
-        }
-
         private void OnRegistriesModified()
         {
             Refresh(RefreshOptions.UpmSearch);
@@ -231,27 +222,24 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnRefreshOperationSuccess(IOperation operation)
         {
-            m_RefreshTimestamps[operation.refreshOptions] = operation.timestamp;
-            if (operation.refreshOptions == RefreshOptions.UpmSearch)
+            SetRefreshTimestampSingleFlag(operation.refreshOptions, operation.timestamp);
+            switch (operation.refreshOptions)
             {
                 // when an online operation successfully returns with a timestamp newer than the offline timestamp, we update the offline timestamp as well
                 // since we merge the online & offline result in the PackageDatabase and it's the newer ones that are being shown
-                if (GetRefreshTimestampSingleFlag(RefreshOptions.UpmSearchOffline) < operation.timestamp)
-                    m_RefreshTimestamps[RefreshOptions.UpmSearchOffline] = operation.timestamp;
+                case RefreshOptions.UpmSearch when GetRefreshTimestampSingleFlag(RefreshOptions.UpmSearchOffline) < operation.timestamp:
+                    SetRefreshTimestampSingleFlag(RefreshOptions.UpmSearchOffline, operation.timestamp);
+                    break;
+                case RefreshOptions.UpmList when GetRefreshTimestampSingleFlag(RefreshOptions.UpmListOffline) < operation.timestamp:
+                    SetRefreshTimestampSingleFlag(RefreshOptions.UpmListOffline, operation.timestamp);
+                    break;
             }
-            else if (operation.refreshOptions == RefreshOptions.UpmList)
-            {
-                // Do the same logic for the List operations as the Search operations
-                if (GetRefreshTimestampSingleFlag(RefreshOptions.UpmListOffline) < operation.timestamp)
-                    m_RefreshTimestamps[RefreshOptions.UpmListOffline] = operation.timestamp;
-            }
-            if (m_RefreshErrors.ContainsKey(operation.refreshOptions))
-                m_RefreshErrors.Remove(operation.refreshOptions);
+            m_RefreshErrors.Remove(operation.refreshOptions);
         }
 
         private void OnRefreshOperationError(IOperation operation, UIError error)
         {
-            m_RefreshErrors[operation.refreshOptions] = error;
+            SetRefreshErrorSingleFlag(operation.refreshOptions, error);
             onRefreshOperationError?.Invoke(error);
         }
 
@@ -263,36 +251,24 @@ namespace UnityEditor.PackageManager.UI.Internal
             onRefreshOperationFinish?.Invoke();
         }
 
-        public virtual bool IsRefreshInProgress(RefreshOptions option)
+        public virtual bool IsRefreshInProgress(RefreshOptions options)
         {
-            return m_RefreshOperationsInProgress.Any(operation => (operation.refreshOptions & option) != 0);
+            return m_RefreshOperationsInProgress.Any(i => options.Contains(i.refreshOptions));
         }
 
-        public virtual bool IsInitialFetchingDone(RefreshOptions option)
+        public virtual bool IsInitialFetchingDone(RefreshOptions options)
         {
-            foreach (var item in m_RefreshTimestamps)
-            {
-                if ((option & item.Key) == 0)
-                    continue;
-                if (item.Value == 0 && !m_RefreshErrors.ContainsKey(item.Key))
-                    return false;
-            }
-            return true;
+            return options.Split().All(o => GetRefreshTimestampSingleFlag(o) != 0 || m_RefreshErrors.ContainsKey(o));
         }
 
-        public virtual long GetRefreshTimestamp(RefreshOptions option)
+        public virtual void SetRefreshTimestampSingleFlag(RefreshOptions option, long timestamp)
         {
-            var result = 0L;
-            foreach (var item in m_RefreshTimestamps)
-            {
-                if ((option & item.Key) == 0)
-                    continue;
-                if (result == 0)
-                    result = item.Value;
-                else if (result > item.Value)
-                    result = item.Value;
-            }
-            return result;
+            m_RefreshTimestamps[option] = timestamp;
+        }
+
+        public virtual long GetRefreshTimestamp(RefreshOptions options)
+        {
+            return options == RefreshOptions.None ? 0 : options.Split().Min(GetRefreshTimestampSingleFlag);
         }
 
         // This function only work with single flag (e.g. `RefreshOption.UpmList`) refresh option.
@@ -303,13 +279,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_RefreshTimestamps.TryGetValue(option, out var value) ? value : 0;
         }
 
-        public virtual UIError GetRefreshError(RefreshOptions option)
+        public virtual void SetRefreshErrorSingleFlag(RefreshOptions option, UIError error)
         {
-            // only return the first one when there are multiple errors
-            foreach (var item in m_RefreshErrors)
-                if ((option & item.Key) != 0)
-                    return item.Value;
-            return null;
+            m_RefreshErrors[option] = error;
+        }
+
+        public virtual UIError GetRefreshError(RefreshOptions options)
+        {
+            return options.Split()
+                .Select(o => m_RefreshErrors.TryGetValue(o, out var error) ? error : null)
+                .FirstOrDefault(e => e != null);
         }
 
         public virtual long GetRefreshTimestamp(IPage page)
