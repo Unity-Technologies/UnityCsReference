@@ -21,6 +21,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private string m_SubPageToSelectAfterLoad;
 
+        private const string k_SelectedInInspectorClassName = "selectedInInspector";
+        public const string k_FocusedClassName = "focus";
+
         private ResourceLoader m_ResourceLoader;
         private ExtensionManager m_ExtensionManager;
         private SelectionProxy m_Selection;
@@ -33,6 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmClient m_UpmClient;
         private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
         private PageRefreshHandler m_PageRefreshHandler;
+
         private void ResolveDependencies(ResourceLoader resourceLoader,
             ExtensionManager extensionManager,
             SelectionProxy selection,
@@ -307,20 +311,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnFocus()
         {
-            AddToClassList("focus");
+            AddToClassList(k_FocusedClassName);
         }
 
         public void OnLostFocus()
         {
-            RemoveFromClassList("focus");
+            RemoveFromClassList(k_FocusedClassName);
         }
 
         private void RefreshSelectedInInspectorClass()
         {
             if (m_Selection.activeObject is PackageSelectionObject)
-                AddToClassList("selectedInInspector");
+                AddToClassList(k_SelectedInInspectorClassName);
             else
-                RemoveFromClassList("selectedInInspector");
+                RemoveFromClassList(k_SelectedInInspectorClassName);
         }
 
         public void SelectFilterSubPage(string filterTabOrSubPage = "")

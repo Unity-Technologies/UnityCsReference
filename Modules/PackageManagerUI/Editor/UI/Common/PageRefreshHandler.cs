@@ -150,21 +150,25 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
-            RefreshImportedAssets(true);
+            // if a full scan was never done, it needs to be done now
+            // otherwise, we want to avoid doing a full scan on every OnPostprocessAllAssets trigger for performance, so
+            //  if a full scan was done already, just modify the cached assets according to the parameters passed by the event
+            if (RefreshImportedAssets())
+                return;
+
+            m_AssetStoreClient.OnPostProcessAllAssets(importedAssets, deletedAssets, movedAssets, movedFromAssetPaths);
         }
 
-        private void RefreshImportedAssets(bool forceRefresh = false)
+        // returns true if a full scan was done, false if not
+        private bool RefreshImportedAssets()
         {
-            // When `OnPostprocessAllAssets` call `RefreshImportedAssets` because asset changes are detected, we set the
-            // forceRefresh to true so we don't missed any potential modified asset
-            // When `RefreshImportedAssets` is triggered by a user page refresh, we only want to actually call the refresh
-            // if it was never called before, because we don't want to scan through Asset Database all the time and `OnPostprocessAllAssets`
-            // will catch all the changes anyways.
-            if (forceRefresh || GetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets) == 0)
+            if (GetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets) == 0)
             {
                 m_AssetStoreClient.RefreshImportedAssets();
                 m_RefreshTimestamps[RefreshOptions.ImportedAssets] = DateTime.Now.Ticks;
+                return true;
             }
+            return false;
         }
 
         public virtual void CancelRefresh(PackageFilterTab? tab = null)
