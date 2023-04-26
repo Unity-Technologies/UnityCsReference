@@ -223,7 +223,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool SetNewSelection(IEnumerable<PackageAndVersionIdPair> packageAndVersionIds, bool isExplicitUserSelection = false)
         {
-            if (!m_Selection.SetNewSelection(packageAndVersionIds))
+            if (!m_Selection.SetNewSelection(packageAndVersionIds) && !isExplicitUserSelection)
                 return false;
 
             TriggerOnSelectionChanged(isExplicitUserSelection);
@@ -240,7 +240,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool AmendSelection(IEnumerable<PackageAndVersionIdPair> toAddOrUpdate, IEnumerable<PackageAndVersionIdPair> toRemove, bool isExplicitUserSelection = false)
         {
-            if (!m_Selection.AmendSelection(toAddOrUpdate, toRemove))
+            if (!m_Selection.AmendSelection(toAddOrUpdate, toRemove) && !isExplicitUserSelection)
                 return false;
 
             TriggerOnSelectionChanged(isExplicitUserSelection);
@@ -249,7 +249,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool ToggleSelection(string packageUniqueId, bool isExplicitUserSelection = false)
         {
-            if (!m_Selection.ToggleSelection(packageUniqueId))
+            if (!m_Selection.ToggleSelection(packageUniqueId) && !isExplicitUserSelection)
                 return false;
 
             TriggerOnSelectionChanged(isExplicitUserSelection);

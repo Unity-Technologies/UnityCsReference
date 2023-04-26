@@ -769,7 +769,7 @@ namespace UnityEngine.UIElements
             var newValue = GetClampedValue(ParseStringToValue(evt.newValue));
             if (!EqualityComparer<TValueType>.Default.Equals(newValue, value))
             {
-                value = newValue;
+                base.SetValueWithoutNotify(newValue);
                 evt.StopPropagation();
 
                 if (elementPanel != null)

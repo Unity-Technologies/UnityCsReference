@@ -38,5 +38,7 @@ namespace UnityEditor
         }
 
         public AssetOrigin() {}
+
+        public bool IsValid() => productId > 0;
     }
 }
