@@ -13,12 +13,7 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class RenderTextureEditor : TextureInspector
     {
-        private Material m_Material;
-        private int m_Slice;
-
-        static readonly int s_ShaderColorMask = Shader.PropertyToID("_ColorMaskBits");
-        static readonly int s_ShaderSliceIndex = Shader.PropertyToID("_SliceIndex");
-        static readonly int s_ShaderToSrgb = Shader.PropertyToID("_ToSRGB");
+        private int m_RepaintDelay = 0;
 
         private class Styles
         {
@@ -30,9 +25,7 @@ namespace UnityEditor
             public readonly GUIContent enableCompatibleFormat = EditorGUIUtility.TrTextContent("Enable Compatible Format", "Lets the color and depth stencil formats be changed to compatible and supported formats for the target platform automatically, if the target platform doesn't support the input format.");
             public readonly GUIContent dimension = EditorGUIUtility.TrTextContent("Dimension", "Is the texture 2D, Cube or 3D?");
             public readonly GUIContent enableMipmaps = EditorGUIUtility.TrTextContent("Enable Mip Maps", "This render texture will have Mip Maps.");
-            public readonly GUIContent bindMS = EditorGUIUtility.TrTextContent("Bind multisampled", "If enabled, the texture will not go through an AA resolve if bound to a shader.");
             public readonly GUIContent autoGeneratesMipmaps = EditorGUIUtility.TrTextContent("Auto generate Mip Maps", "This render texture automatically generates its Mip Maps.");
-            public readonly GUIContent sRGBTexture = EditorGUIUtility.TrTextContent("sRGB (Color RenderTexture)", "RenderTexture content is stored in gamma space. Non-HDR color textures should enable this flag.");
             public readonly GUIContent useDynamicScale = EditorGUIUtility.TrTextContent("Dynamic Scaling", "Allow the texture to be automatically resized by ScalableBufferManager, to support dynamic resolution.");
             public readonly GUIContent shadowSamplingMode = EditorGUIUtility.TrTextContent("Shadow Sampling Mode", "Enable/disable shadow depth-compare sampling and percentage closer filtering.");
 
@@ -93,25 +86,26 @@ namespace UnityEditor
             m_sRGB = serializedObject.FindProperty("m_SRGB");
             m_UseDynamicScale = serializedObject.FindProperty("m_UseDynamicScale");
             m_ShadowSamplingMode = serializedObject.FindProperty("m_ShadowSamplingMode");
-
-            InitPreview();
-            SetShaderColorMask();
         }
 
         protected void OnRenderTextureGUI(GUIElements guiElements)
         {
             GUI.changed = false;
 
-            bool isTexture3D = (m_Dimension.intValue == (int)UnityEngine.Rendering.TextureDimension.Tex3D);
-
             EditorGUILayout.IntPopup(m_Dimension, styles.dimensionStrings, styles.dimensionValues, styles.dimension);
+
+            // Note that TextureInspector.IsTexture3D/Cube/2DArray/etc. exist. Those functions will use the actual target object to determine the dimension.
+            // This because they are drawing preview settings based on the selected target objects.
+            // Here we are drawing the one and only Render Texture GUI so we have the dimension field as most correct value.
+            bool isTexture3D = (m_Dimension.intValue == (int)UnityEngine.Rendering.TextureDimension.Tex3D);
+            bool isTexture2DArray = (m_Dimension.intValue == (int)UnityEngine.Rendering.TextureDimension.Tex2DArray);
 
             GUILayout.BeginHorizontal();
             EditorGUILayout.PrefixLabel(styles.size, EditorStyles.popup);
             EditorGUILayout.DelayedIntField(m_Width, GUIContent.none, GUILayout.MinWidth(40));
             GUILayout.Label(styles.cross);
             EditorGUILayout.DelayedIntField(m_Height, GUIContent.none, GUILayout.MinWidth(40));
-            if (isTexture3D)
+            if (isTexture3D || isTexture2DArray)
             {
                 GUILayout.Label(styles.cross);
                 EditorGUILayout.DelayedIntField(m_Depth, GUIContent.none, GUILayout.MinWidth(40));
@@ -133,8 +127,10 @@ namespace UnityEditor
 
             // If no fallbacks are found for the color AND depth stencil buffer, disable the EnableCompatibleFormat field
             // If only one of the two fails, checkbox can still be interacted with
-            using (new EditorGUI.DisabledScope(compatibleColorFormat == GraphicsFormat.None && compatibleDepthStencilFormat == GraphicsFormat.None))
+            if (!(compatibleColorFormat == GraphicsFormat.None && compatibleDepthStencilFormat == GraphicsFormat.None))
+            {
                 EditorGUILayout.PropertyField(m_EnableCompatibleFormat, styles.enableCompatibleFormat);
+            }
 
             EditorGUILayout.PropertyField(m_ColorFormat, styles.colorFormat);
             m_sRGB.boolValue = GraphicsFormatUtility.IsSRGBFormat((GraphicsFormat)m_ColorFormat.intValue);
@@ -152,9 +148,13 @@ namespace UnityEditor
                 EditorGUILayout.HelpBox(text, m_EnableCompatibleFormat.boolValue && compatibleColorFormat != GraphicsFormat.None ? MessageType.Warning : MessageType.Error);
             }
 
-            if ((guiElements & GUIElements.RenderTargetDepthGUI) != 0)
+            // 3D Textures with a depth buffer aren't supported.
+            if (!isTexture3D)
             {
-                EditorGUILayout.PropertyField(m_DepthStencilFormat, styles.depthStencilFormat);
+                if ((guiElements & GUIElements.RenderTargetDepthGUI) != 0)
+                {
+                    EditorGUILayout.PropertyField(m_DepthStencilFormat, styles.depthStencilFormat);
+                }
 
                 if (isDepthStencilFormatIncompatible && depthStencilFormat != compatibleDepthStencilFormat)
                 {
@@ -168,37 +168,55 @@ namespace UnityEditor
                     }
                     EditorGUILayout.HelpBox(text, m_EnableCompatibleFormat.boolValue && compatibleDepthStencilFormat != GraphicsFormat.None ? MessageType.Warning : MessageType.Error);
                 }
+
+                if ((GraphicsFormat)m_DepthStencilFormat.intValue == GraphicsFormat.None && (GraphicsFormat)m_ColorFormat.intValue == GraphicsFormat.None)
+                {
+                    EditorGUILayout.HelpBox("You cannot set both color format and depth format to None", MessageType.Error);
+                }
             }
 
-            if ((GraphicsFormat)m_DepthStencilFormat.intValue == GraphicsFormat.None && (GraphicsFormat)m_ColorFormat.intValue == GraphicsFormat.None)
-            {
-                EditorGUILayout.HelpBox("You cannot set both color format and depth format to None", MessageType.Error);
-            }
-
-            using (new EditorGUI.DisabledScope(isTexture3D || RenderTextureIsDepthOnly()))
+            // Mip map generation is not supported yet for 3D textures (and for depth only textures).
+            if (!(isTexture3D || RenderTextureIsDepthOnly()))
             {
                 EditorGUILayout.PropertyField(m_EnableMipmaps, styles.enableMipmaps);
-                using (new EditorGUI.DisabledScope(!m_EnableMipmaps.boolValue))
+                if (m_EnableMipmaps.boolValue)
+                {
+                    ++EditorGUI.indentLevel;
                     EditorGUILayout.PropertyField(m_AutoGeneratesMipmaps, styles.autoGeneratesMipmaps);
+                    --EditorGUI.indentLevel;
+                }
             }
-
-            if (isTexture3D)
+            else
             {
-                // Mip map generation is not supported yet for 3D textures.
-                EditorGUILayout.HelpBox("3D RenderTextures do not support Mip Maps.", MessageType.Info);
-            }
+                if (isTexture3D)
+                {
+                    // Mip map generation is not supported yet for 3D textures.
+                    EditorGUILayout.HelpBox("3D RenderTextures do not support Mip Maps.", MessageType.Info);
+                }
 
-            if (RenderTextureIsDepthOnly())
-            {
-                // Mip map generation is not supported yet for 3D textures.
-                EditorGUILayout.HelpBox("Depth-only RenderTextures do not support Mip Maps.", MessageType.Info);
+                if (RenderTextureIsDepthOnly())
+                {
+                    // Mip map generation is not supported yet for depth-only textures.
+                    EditorGUILayout.HelpBox("Depth-only RenderTextures do not support Mip Maps.", MessageType.Info);
+                }
             }
 
             EditorGUILayout.PropertyField(m_UseDynamicScale, styles.useDynamicScale);
 
             var rt = target as RenderTexture;
             if (GUI.changed && rt != null)
+            {
                 rt.Release();
+                m_RepaintDelay = 5;
+            }
+
+            // Trigger delayed repaint to allow camera's to be rendered before thumbnail is generated.
+            if (m_RepaintDelay > 0)
+            {
+                --m_RepaintDelay;
+                if (m_RepaintDelay == 0)
+                    EditorUtility.SetDirty(target);
+            }
 
             EditorGUILayout.Space();
 
@@ -206,20 +224,16 @@ namespace UnityEditor
             DoWrapModePopup();
             DoFilterModePopup();
 
-            using (new EditorGUI.DisabledScope(RenderTextureHasDepth())) // Render Textures with depth are forced to 0 Aniso Level
+            if (!RenderTextureHasDepth()) // Render Textures with depth are forced to 0 Aniso Level
             {
                 DoAnisoLevelSlider();
             }
-            if (RenderTextureHasDepth())
+            else
             {
-                // RenderTextures don't enforce this nicely. RenderTexture only forces Aniso to 0 if the gfx card
-                // supports depth, rather than forcing Aniso to zero depending on what the user asks of the RT. If the
-                // user requests any kind of depth then we will force aniso to zero here.
-                m_Aniso.intValue = 0;
-                EditorGUILayout.HelpBox("RenderTextures with depth must have an Aniso Level of 0.", MessageType.Info);
+                EditorGUILayout.HelpBox("RenderTextures with depth are forced to have an Aniso Level of 0.", MessageType.Info);
             }
 
-            using (new EditorGUI.DisabledScope(!RenderTextureHasDepth())) // Depth-only textures have shadow mode
+            if (RenderTextureHasDepth()) // Depth-only textures have shadow mode
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_ShadowSamplingMode, styles.shadowSamplingMode);
@@ -230,9 +244,8 @@ namespace UnityEditor
                     rt.Release();
                 }
             }
-            if (!RenderTextureHasDepth())
+            else
             {
-                m_ShadowSamplingMode.intValue = (int)ShadowSamplingMode.None;
                 EditorGUILayout.HelpBox("Only render textures with depth can have shadow filtering.", MessageType.Info);
             }
 
@@ -247,111 +260,6 @@ namespace UnityEditor
             serializedObject.Update();
 
             OnRenderTextureGUI(s_AllGUIElements);
-        }
-
-        public override void OnPreviewSettings()
-        {
-            RenderTexture rt = (RenderTexture)target;
-            if (m_Dimension.intValue == (int)UnityEngine.Rendering.TextureDimension.Tex2DArray)
-            {
-                if (m_Material == null)
-                    InitPreview();
-
-                m_Material.mainTexture = rt;
-
-                if (rt.volumeDepth > 1)
-                {
-                    m_Slice = EditorGUILayout.IntSlider(m_Slice, 0, rt.volumeDepth - 1, GUILayout.Width(150));
-                    m_Material.SetFloat(s_ShaderSliceIndex, (float)m_Slice);
-                }
-            }
-
-            if (TextureUtil.IsHDRGraphicsFormat(rt.graphicsFormat)
-                && base.IsCubemap() == false) //cubemaps are handled in CubemapPreview and so do not share any TextureInspector paths :|
-            {
-                base.OnExposureSlider();
-            }
-
-
-            var prevColorMode = m_PreviewMode;
-            base.OnPreviewSettings();
-            if (m_PreviewMode != prevColorMode)
-                SetShaderColorMask();
-        }
-
-        void InitPreview()
-        {
-            if (m_Material == null)
-            {
-                m_Material = (Material)EditorGUIUtility.LoadRequired("Previews/Preview2DTextureArrayMaterial.mat");
-            }
-        }
-
-        void SetShaderColorMask()
-        {
-            var mode = m_PreviewMode;
-            var mask = 15;
-            switch (mode)
-            {
-                case PreviewMode.RGB: mask = 7; break;
-
-                case PreviewMode.R: mask = 1; break;
-                case PreviewMode.G: mask = 2; break;
-                case PreviewMode.B: mask = 4; break;
-                case PreviewMode.A: mask = 8; break;
-            }
-            m_Material.SetFloat(s_ShaderColorMask, (float)mask);
-        }
-
-        public override void OnPreviewGUI(Rect r, GUIStyle background)
-        {
-            if (m_Dimension.intValue == (int)UnityEngine.Rendering.TextureDimension.Tex2DArray)
-            {
-                if (!SystemInfo.supports2DArrayTextures)
-                {
-                    if (Event.current.type == EventType.Repaint)
-                        EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 40), "2D texture array preview not supported");
-                    return;
-                }
-
-                RenderTexture rt = (RenderTexture)target;
-
-                if (Event.current.type == EventType.Repaint)
-                {
-                    InitPreview();
-                    m_Material.mainTexture = rt;
-
-                    // If multiple objects are selected, we might be using a slice level before the maximum
-                    int effectiveSlice = Mathf.Clamp(m_Slice, 0, rt.volumeDepth - 1);
-
-                    m_Material.SetFloat(s_ShaderSliceIndex, (float)effectiveSlice);
-                    m_Material.SetFloat(s_ShaderToSrgb, QualitySettings.activeColorSpace == ColorSpace.Linear ? 1.0f : 0.0f);
-
-                    int texWidth = Mathf.Max(rt.width, 1);
-                    int texHeight = Mathf.Max(rt.height, 1);
-
-                    float zoomLevel = Mathf.Min(Mathf.Min(r.width / texWidth, r.height / texHeight), 1);
-                    Rect wantedRect = new Rect(r.x, r.y, texWidth * zoomLevel, texHeight * zoomLevel);
-                    PreviewGUI.BeginScrollView(r, m_Pos, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
-                    FilterMode oldFilter = rt.filterMode;
-                    TextureUtil.SetFilterModeNoDirty(rt, FilterMode.Point);
-
-                    EditorGUI.DrawPreviewTexture(wantedRect, rt, m_Material, ScaleMode.StretchToFill, 0, mipLevel, ColorWriteMask.All, GetExposureValueForTexture(rt));
-
-                    TextureUtil.SetFilterModeNoDirty(rt, oldFilter);
-
-                    m_Pos = PreviewGUI.EndScrollView();
-                    if (effectiveSlice != 0 || (int)mipLevel != 0)
-                    {
-                        EditorGUI.DropShadowLabel(new Rect(r.x, r.y + 10, r.width, 30),
-                            "Slice " + effectiveSlice + "\nMip " + mipLevel);
-                    }
-                }
-            }
-            else
-            {
-                base.OnPreviewGUI(r, background);
-            }
         }
 
         private bool RenderTextureHasDepth()
@@ -376,16 +284,6 @@ namespace UnityEditor
                 return true;
             }
             return false;
-        }
-
-        override protected float GetExposureValueForTexture(Texture t)
-        {
-            RenderTexture rt = (RenderTexture)t;
-            if (TextureUtil.IsHDRGraphicsFormat(rt.graphicsFormat))
-            {
-                return m_ExposureSliderValue;
-            }
-            return 0.0f;
         }
 
         override public string GetInfoString()

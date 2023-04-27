@@ -150,6 +150,7 @@ namespace UnityEditor
 
         CubemapPreview m_CubemapPreview = new CubemapPreview();
         Texture3DPreview m_Texture3DPreview;
+        protected Texture2DArrayPreview m_Texture2DArrayPreview = new Texture2DArrayPreview();
 
         List<TextureMipLevels> m_TextureMipLevels = new List<TextureMipLevels>();
 
@@ -172,7 +173,7 @@ namespace UnityEditor
             SetMipLevelDefaultForVT();
 
             m_Texture3DPreview = CreateInstance<Texture3DPreview>();
-            if (IsVolume())
+            if (IsTexture3D())
             {
                 m_Texture3DPreview.Texture = target as Texture;
             }
@@ -482,7 +483,7 @@ namespace UnityEditor
         bool m_ShowPerAxisWrapModes = false;
         protected void DoWrapModePopup()
         {
-            WrapModePopup(m_WrapU, m_WrapV, m_WrapW, IsVolume(), ref m_ShowPerAxisWrapModes, false);
+            WrapModePopup(m_WrapU, m_WrapV, m_WrapW, IsTexture3D(), ref m_ShowPerAxisWrapModes, false);
         }
 
         protected void DoFilterModePopup()
@@ -531,7 +532,7 @@ namespace UnityEditor
             return t != null && t.dimension == UnityEngine.Rendering.TextureDimension.CubeArray;
         }
 
-        bool IsVolume()
+        bool IsTexture3D()
         {
             var t = target as Texture;
             return t != null && t.dimension == UnityEngine.Rendering.TextureDimension.Tex3D;
@@ -539,26 +540,75 @@ namespace UnityEditor
 
         bool IsTexture2DArray()
         {
-            var t = target as Texture2DArray;
+            var t = target as Texture;
             return t != null && t.dimension == UnityEngine.Rendering.TextureDimension.Tex2DArray;
         }
 
-        protected virtual float GetExposureValueForTexture(Texture t)
+        protected float GetExposureValueForTexture(Texture t)
         {
-            if (TextureUtil.NeedsExposureControl(t))
+            if (NeedsExposureControl(t))
+            {
                 return m_ExposureSliderValue;
+            }
             return 0.0f;
+        }
+
+        // Native NeedsExposureControl doesn't work for RenderTextures (they are hardcoded to return kTexFormatUnknown).
+        protected bool NeedsExposureControl(Texture t)
+        {
+            TextureUsageMode usageMode = TextureUtil.GetUsageMode(t);
+            return TextureUtil.IsHDRGraphicsFormat(t.graphicsFormat) || TextureUtil.IsRGBMUsageMode(usageMode) || TextureUtil.IsDoubleLDRUsageMode(usageMode);
         }
 
         public override void OnPreviewSettings()
         {
+            // TextureInspector code is reused for RenderTexture and Cubemap inspectors.
+            // Make sure we can handle the situation where target is just a Texture and
+            // not a Texture2D. It's also used for large popups for mini texture fields,
+            // and while it's being shown the actual texture object might disappear --
+            // make sure to handle null targets.
+            Texture tex = target as Texture;
+
+            bool alphaOnly = true;
+            bool hasAlpha = false;
+            bool needsExposureControl = false;
+            int mipCount = 1;
+
+            foreach (Texture t in targets)
+            {
+                if (t == null) // texture might have disappeared while we're showing this in a preview popup
+                    continue;
+
+                mipCount = Mathf.Max(mipCount, TextureUtil.GetMipmapCount(t));
+
+                TextureUsageMode mode = TextureUtil.GetUsageMode(t);
+
+                if (!GraphicsFormatUtility.IsAlphaOnlyFormat(t.graphicsFormat))
+                    alphaOnly = false;
+
+                if (GraphicsFormatUtility.HasAlphaChannel(t.graphicsFormat))
+                {
+                    if (mode == TextureUsageMode.Default) // all other texture usage modes don't displayable alpha
+                        hasAlpha = true;
+                }
+
+                // 3D texture previewer doesn't support an exposure value.
+                if (t.dimension != TextureDimension.Tex3D && NeedsExposureControl(t))
+                    needsExposureControl = true;
+            }
+
+            if (needsExposureControl)
+            {
+                OnExposureSlider();
+            }
+
             if (IsCubemap())
             {
-                m_CubemapPreview.OnPreviewSettings(targets);
+                m_CubemapPreview.OnPreviewSettings(targets, mipCount, alphaOnly, hasAlpha);
                 return;
             }
 
-            if (IsVolume())
+            if (IsTexture3D())
             {
                 m_Texture3DPreview.OnPreviewSettings(targets);
                 return;
@@ -569,50 +619,6 @@ namespace UnityEditor
 
             if (s_Styles == null)
                 s_Styles = new Styles();
-
-            // TextureInspector code is reused for RenderTexture and Cubemap inspectors.
-            // Make sure we can handle the situation where target is just a Texture and
-            // not a Texture2D. It's also used for large popups for mini texture fields,
-            // and while it's being shown the actual texture object might disappear --
-            // make sure to handle null targets.
-            Texture tex = target as Texture;
-
-            bool alphaOnly = false;
-            bool hasAlpha = true;
-            bool needsExposureControl = false;
-            int mipCount = 1;
-
-            if (target is Texture2D)
-            {
-                alphaOnly = true;
-                hasAlpha = false;
-            }
-
-            foreach (Texture t in targets)
-            {
-                if (t == null) // texture might have disappeared while we're showing this in a preview popup
-                    continue;
-
-                mipCount = Mathf.Max(mipCount, TextureUtil.GetMipmapCount(t));
-
-                if (t is Texture2D)
-                {
-                    TextureFormat format = (t as Texture2D).format;
-                    TextureUsageMode mode = TextureUtil.GetUsageMode(t);
-
-                    if (!TextureUtil.IsAlphaOnlyTextureFormat(format))
-                        alphaOnly = false;
-
-                    if (TextureUtil.HasAlphaTextureFormat(format))
-                    {
-                        if (mode == TextureUsageMode.Default || mode == TextureUsageMode.SingleChannelAlpha) // all other texture usage modes don't displayable alpha
-                            hasAlpha = true;
-                    }
-                }
-
-                if (TextureUtil.NeedsExposureControl(t))
-                    needsExposureControl = true;
-            }
 
             List<PreviewMode> previewCandidates = new List<PreviewMode>(5);
             previewCandidates.Add(PreviewMode.RGB);
@@ -660,9 +666,9 @@ namespace UnityEditor
                         : m_PreviewMode;
             }
 
-            if (needsExposureControl)
+            if (IsTexture2DArray())
             {
-                OnExposureSlider();
+                m_Texture2DArrayPreview.OnPreviewSettings(tex);
             }
 
             if (mipCount > 1)
@@ -717,6 +723,13 @@ namespace UnityEditor
             if (t == null) // texture might be gone by now, in case this code is used for floating texture preview
                 return;
 
+            GraphicsFormat format = t.graphicsFormat;
+            if (!(GraphicsFormatUtility.IsIEEE754Format(format) || GraphicsFormatUtility.IsNormFormat(format)))
+            {
+                EditorGUI.HelpBox(r, "This preview only supports floating point or normalized formats.", MessageType.Warning);
+                return;
+            }
+
             // Render target must be created before we can display it (case 491797)
             RenderTexture rt = t as RenderTexture;
             if (rt != null)
@@ -729,14 +742,20 @@ namespace UnityEditor
 
             if (IsCubemap())
             {
-                m_CubemapPreview.OnPreviewGUI(t, r, background);
+                m_CubemapPreview.OnPreviewGUI(t, r, background, GetExposureValueForTexture(t));
                 return;
             }
 
-            if (IsVolume())
+            if (IsTexture3D())
             {
                 m_Texture3DPreview.Texture = t;
                 m_Texture3DPreview.OnPreviewGUI(r, background);
+                return;
+            }
+
+            if (IsTexture2DArray())
+            {
+                m_Texture2DArrayPreview.OnPreviewGUI(t, r, background, GetExposureValueForTexture(t), m_PreviewMode, m_MipLevel);
                 return;
             }
 
@@ -774,9 +793,11 @@ namespace UnityEditor
             else
             {
                 if (t2d != null && t2d.alphaIsTransparency)
-                    EditorGUI.DrawTextureTransparent(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel, colorWriteMask, GetExposureValueForTexture(t));
+                    EditorGUI.DrawTextureTransparent(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel,
+                        colorWriteMask, GetExposureValueForTexture(t));
                 else
-                    EditorGUI.DrawPreviewTexture(wantedRect, t, null, ScaleMode.StretchToFill, 0, mipLevel, colorWriteMask, GetExposureValueForTexture(t));
+                    EditorGUI.DrawPreviewTexture(wantedRect, t, null, ScaleMode.StretchToFill, 0, mipLevel,
+                        colorWriteMask, GetExposureValueForTexture(t));
             }
 
             // TODO: Less hacky way to prevent sprite rects to not appear in smaller previews like icons.
@@ -845,12 +866,19 @@ namespace UnityEditor
 
             Texture texture = target as Texture;
 
-            if (IsCubemap())
+            GraphicsFormat format = texture.graphicsFormat;
+            if (!(GraphicsFormatUtility.IsIEEE754Format(format) || GraphicsFormatUtility.IsNormFormat(format)))
             {
-                return m_CubemapPreview.RenderStaticPreview(texture, width, height);
+                // Can't generate correct previews for non-float/norm formats. On Metal and Vulkan this even causes validation errors.
+                return null;
             }
 
-            if (IsVolume())
+            if (IsCubemap())
+            {
+                return m_CubemapPreview.RenderStaticPreview(texture, width, height, GetExposureValueForTexture(texture));
+            }
+
+            if (IsTexture3D())
             {
                 return m_Texture3DPreview.RenderStaticPreview(texture, width, height);
             }
@@ -873,6 +901,12 @@ namespace UnityEditor
 
             RenderTexture savedRT = RenderTexture.active;
             Rect savedViewport = ShaderUtil.rawViewportRect;
+
+            var rt = texture as RenderTexture;
+            if (rt != null)
+            {
+                rt.Create(); // Ensure RT is created. Otherwise the first attempted Blit will end up binding a dummy 2D Texture where it expects a 2D Texture Array. (validation errors observed on Vulkan/Metal)
+            }
 
             RenderTexture tmp = RenderTexture.GetTemporary(
                 width, height,

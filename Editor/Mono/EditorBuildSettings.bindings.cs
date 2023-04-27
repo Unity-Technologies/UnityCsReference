@@ -45,7 +45,7 @@ namespace UnityEditor
         public GUID guid { get { return m_guid; } set { m_guid = value; } }
         public static string[] GetActiveSceneList(EditorBuildSettingsScene[] scenes)
         {
-            return scenes.Where(scene => scene.enabled).Select(scene => scene.path).ToArray();
+            return scenes.Where(scene => scene.enabled && !string.IsNullOrEmpty(scene.path)).Select(scene => scene.path).ToArray();
         }
 
         public int CompareTo(object obj)
@@ -74,27 +74,10 @@ namespace UnityEditor
 
         public static EditorBuildSettingsScene[] scenes
         {
-            get
-            {
-                var result = GetEditorBuildSettingsScenes();
-                foreach (var scene in result)
-                {
-                    if (scene.guid.Empty())
-                    {
-                        scene.guid = new GUID(AssetDatabase.AssetPathToGUID(scene.path));
-                    }
-                    else
-                    {
-                        scene.path = AssetDatabase.GUIDToAssetPath(scene.guid.ToString());
-                    }
-                }
-                return result;
-            }
-            set
-            {
-                SetEditorBuildSettingsScenes(value);
-            }
+            get => GetEditorBuildSettingsScenes();
+            set => SetEditorBuildSettingsScenes(value);
         }
+
         static extern EditorBuildSettingsScene[] GetEditorBuildSettingsScenes();
         static extern void SetEditorBuildSettingsScenes(EditorBuildSettingsScene[] scenes);
 
