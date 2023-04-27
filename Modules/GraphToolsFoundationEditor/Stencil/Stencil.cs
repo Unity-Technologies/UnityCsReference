@@ -36,6 +36,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public override IEnumerable<string> SectionNames { get; } = new List<string> { "Graph Variables" };
 
+        /// <inheritdoc />
+        protected Stencil(GraphModel graphModel)
+            : base(graphModel) { }
+
         public override BlackboardGraphModel CreateBlackboardGraphModel(GraphModel graphModel)
         {
             return new BlackboardGraphModel(){GraphModel = graphModel};
@@ -78,7 +82,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected virtual void CreateGraphProcessors()
         {
             if (AllowMultipleDataOutputInstances == AllowMultipleDataOutputInstances.AllowWithWarning)
-                GetGraphProcessorContainer().AddGraphProcessor(new VariableNodeGraphProcessor_Internal());
+                GetGraphProcessorContainer().AddGraphProcessor(new VariableNodeGraphProcessor_Internal(GraphModel));
         }
 
         [CanBeNull]
@@ -108,10 +112,6 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             return m_DatabaseProvider ??= new DefaultDatabaseProvider(this);
         }
-
-        public virtual void OnGraphProcessingStarted(GraphModel graphModel) {}
-        public virtual void OnGraphProcessingSucceeded(GraphModel graphModel, GraphProcessingResult results) {}
-        public virtual void OnGraphProcessingFailed(GraphModel graphModel, GraphProcessingResult results) {}
 
         // PF: To preference
         public virtual bool MoveNodeDependenciesByDefault => false;
@@ -171,7 +171,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The converted error.</returns>
         public virtual GraphProcessingErrorModel CreateProcessingErrorModel(GraphProcessingError error)
         {
-            if (error.SourceNode != null && !error.SourceNode.Destroyed)
+            if (GraphModel.GetModel(error.SourceNodeGuid) is AbstractNodeModel { Destroyed: false })
                 return new GraphProcessingErrorModel(error);
 
             return null;

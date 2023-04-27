@@ -49,7 +49,7 @@ namespace UnityEngine.UIElements
         /// <returns>The float parsed from the string.</returns>
         protected override float StringToValue(string str)
         {
-            var success = UINumericFieldsUtils.StringToFloat(str, textInputBase.originalText, out var v);
+            var success = UINumericFieldsUtils.TryConvertStringToFloat(str, textInputBase.originalText, out var v);
             return success ? v : rawValue;
         }
 
@@ -94,7 +94,7 @@ namespace UnityEngine.UIElements
         internal override bool CanTryParse(string textString) => float.TryParse(textString, out _);
 
         /// <summary>
-        /// Modify the value using a 3D delta and a speed, typically coming from an input device.
+        /// Applies the values of a 3D delta and a speed from an input device.
         /// </summary>
         /// <param name="delta">A vector used to compute the value change.</param>
         /// <param name="speed">A multiplier for the value change.</param>
@@ -139,7 +139,7 @@ namespace UnityEngine.UIElements
 
             protected override float StringToValue(string str)
             {
-                UINumericFieldsUtils.StringToFloat(str, originalText, out var v);
+                UINumericFieldsUtils.TryConvertStringToFloat(str, originalText, out var v);
                 return v;
             }
         }

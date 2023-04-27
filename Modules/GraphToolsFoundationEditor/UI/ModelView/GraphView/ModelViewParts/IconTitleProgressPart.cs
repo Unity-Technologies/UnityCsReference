@@ -17,6 +17,7 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         public static new readonly string ussClassName = "ge-icon-title-progress";
         public static readonly string collapseButtonPartName = "collapse-button";
+        public static readonly string previewButtonPartName = "preview-button";
         public static readonly string missingWarningIconName = "missing-graph-icon";
 
         /// <summary>
@@ -58,6 +59,11 @@ namespace Unity.GraphToolsFoundation.Editor
         protected IconTitleProgressPart(string name, GraphElementModel model, ModelView ownerElement, string parentClassName, bool useEllipsis)
             : base(name, model, ownerElement, parentClassName, false, useEllipsis ,true)
         {
+            if (model is AbstractNodeModel abstractNodeModel && abstractNodeModel.HasNodePreview)
+            {
+                var togglePreviewButtonPart = NodePreviewButtonPart.Create(previewButtonPartName, model, ownerElement, ussClassName);
+                PartList.AppendPart(togglePreviewButtonPart);
+            }
 
             if (model.IsCollapsible())
             {

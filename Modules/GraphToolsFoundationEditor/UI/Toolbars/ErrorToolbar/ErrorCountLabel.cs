@@ -29,6 +29,11 @@ namespace Unity.GraphToolsFoundation.Editor
         protected BaseGraphTool GraphTool => (containerWindow as GraphViewEditorWindow)?.GraphTool;
 
         /// <summary>
+        /// The graph view.
+        /// </summary>
+        protected GraphView GraphView => (containerWindow as GraphViewEditorWindow)?.GraphView;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ErrorCountLabel"/> class.
         /// </summary>
         protected ErrorCountLabel()
@@ -47,7 +52,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 if (m_UpdateObserver == null)
                 {
-                    m_UpdateObserver = new ErrorToolbarUpdateObserver(this, GraphTool.ToolState, GraphTool.GraphProcessingState);
+                    m_UpdateObserver = new ErrorToolbarUpdateObserver(this, GraphTool.ToolState, GraphView.GraphViewModel.ProcessingErrorsState);
                     GraphTool.ObserverManager?.RegisterObserver(m_UpdateObserver);
                 }
             }
@@ -68,7 +73,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         public virtual void Update()
         {
-            var errorCount = GraphTool?.GraphProcessingState.Errors.Count ?? 0;
+            var errorCount = GraphView?.GraphViewModel.ProcessingErrorsState.Errors.Count ?? 0;
             text = errorCount == 1 ? $"{errorCount} error" : $"{errorCount} errors";
         }
     }

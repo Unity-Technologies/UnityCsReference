@@ -42,6 +42,8 @@ namespace Unity.UI.Builder
             RegisterFactory(new BuilderTypedUxmlAttributeFieldFactory<float, FloatField>());
             RegisterFactory(new BuilderTypedUxmlAttributeFieldFactory<double, DoubleField>());
             RegisterFactory(new BuilderTypedUxmlAttributeFieldFactory<long, LongField>());
+            RegisterFactory(new BuilderTypedUxmlAttributeFieldFactory<ulong, UnsignedLongField>());
+            RegisterFactory(new BuilderTypedUxmlAttributeFieldFactory<uint, UnsignedIntegerField>());
             RegisterFactory(new BuilderTypedUxmlAttributeFieldFactory<bool, Toggle>());
             RegisterFactory(new BuilderUxmlIntAttributeFieldFactory());
             RegisterFactory(new BuilderUxmlStringAttributeFieldFactory());
@@ -69,11 +71,11 @@ namespace Unity.UI.Builder
         }
 
         /// <summary>
-        /// Returns the factory that can create a ui field for the specified uxml attribute.
+        /// Returns the factory that can create a UI field for the specified UXML attribute.
         /// </summary>
-        /// <param name="attributeOwner">An instance created from the uxml element that owns the related xml attribute.</param>
-        /// <param name="attributeUxmlOwner">The uxml element that owns the uxml attribute related to field factory to seek.</param>
-        /// <param name="attribute">The uxml attribute.</param>
+        /// <param name="attributeOwner">An instance created from the UXML element that owns the related UXML attribute.</param>
+        /// <param name="attributeUxmlOwner">The UXML element that owns the UXML attribute related to the field factory to seek.</param>
+        /// <param name="attribute">The UXML attribute.</param>
         /// <returns>The factory found.</returns>
         public static IBuilderUxmlAttributeFieldFactory GetFactory(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
         {

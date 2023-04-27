@@ -118,8 +118,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The newly created block.</returns>
         public BlockNodeModel CreateAndInsertBlock(Type blockType, int index = -1, SerializableGUID guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.Default)
         {
-            //use SpawnFlags.Orphan to prevent adding the node to the GraphModel
-            var block = (BlockNodeModel)GraphModel.CreateNode(blockType, blockType.Name, Vector2.zero, guid, initializationCallback, spawnFlags | SpawnFlags.Orphan);
+            var block = (BlockNodeModel)GraphModel.CreateNode(blockType, blockType.Name, Vector2.zero, guid, initializationCallback, spawnFlags);
 
             InsertBlock(block, index, spawnFlags);
 

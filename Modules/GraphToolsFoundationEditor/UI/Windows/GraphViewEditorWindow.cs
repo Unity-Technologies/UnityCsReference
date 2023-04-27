@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Unity.CommandStateObserver;
 using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEngine;
@@ -96,7 +95,6 @@ namespace Unity.GraphToolsFoundation.Editor
         List<string> m_DisplayedOverlays;
         protected ShortcutBlocker_Internal m_ShortcutBlocker;
 
-        AutomaticGraphProcessingObserver m_AutomaticGraphProcessingObserver;
         GraphProcessingStatusObserver_Internal m_GraphProcessingStatusObserver;
 
         [SerializeField]
@@ -286,13 +284,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (GraphView?.DisplayMode == GraphViewDisplayMode.Interactive)
             {
-                m_AutomaticGraphProcessingObserver = new AutomaticGraphProcessingObserver(GraphView.GraphViewModel.GraphModelState, GraphView.ProcessOnIdleAgent.StateComponent, GraphTool.GraphProcessingState, GraphTool.Preferences);
-                GraphTool?.ObserverManager.RegisterObserver(m_AutomaticGraphProcessingObserver);
-
                 rootVisualElement.RegisterCallback<MouseMoveEvent>(GraphView.ProcessOnIdleAgent.OnMouseMove);
             }
 
-            m_GraphProcessingStatusObserver = new GraphProcessingStatusObserver_Internal(m_GraphProcessingPendingLabel, GraphTool?.GraphProcessingState);
+            m_GraphProcessingStatusObserver = new GraphProcessingStatusObserver_Internal(m_GraphProcessingPendingLabel, GraphView?.GraphViewModel?.GraphProcessingState);
 
             GraphTool?.ObserverManager.RegisterObserver(m_GraphProcessingStatusObserver);
 
@@ -315,7 +310,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (GraphTool != null)
             {
-                GraphTool.ObserverManager.UnregisterObserver(m_AutomaticGraphProcessingObserver);
                 GraphTool.ObserverManager.UnregisterObserver(m_GraphProcessingStatusObserver);
                 GraphTool.Dispose();
                 GraphTool = null;

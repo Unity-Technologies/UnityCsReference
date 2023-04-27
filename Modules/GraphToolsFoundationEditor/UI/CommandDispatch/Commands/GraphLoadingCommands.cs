@@ -74,21 +74,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="toolState">The tool state.</param>
         /// <param name="graphProcessingState">The graph processing state.</param>
         /// <param name="command">The command.</param>
-        public static void DefaultCommandHandler(ToolStateComponent toolState, GraphProcessingStateComponent graphProcessingState, LoadGraphCommand command)
+        public static void DefaultCommandHandler(ToolStateComponent toolState, LoadGraphCommand command)
         {
-            if (toolState.GraphModel != null)
-            {
-                // force queued graph processing to happen now when unloading a graph
-                if (graphProcessingState.GraphProcessingPending)
-                {
-                    // Do not force graph processing if it's the same graph
-                    if ((command.GraphModel != null && toolState.GraphModel != command.GraphModel))
-                    {
-                        GraphProcessingHelper.ProcessGraph(toolState.GraphModel, null, RequestGraphProcessingOptions.Default);
-                    }
-                }
-            }
-
             using (var toolStateUpdater = toolState.UpdateScope)
             {
                 if (command.TruncateHistoryIndex >= 0)
@@ -124,11 +111,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     graphModel.OnLoadGraph();
                 }
             }
-
-            using (var graphProcessingStateUpdater = graphProcessingState.UpdateScope)
-            {
-                graphProcessingStateUpdater.Clear();
-            }
         }
     }
 
@@ -140,26 +122,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="toolState">The tool state.</param>
         /// <param name="graphProcessingState">The graph processing state.</param>
         /// <param name="command">The command.</param>
-        public static void DefaultCommandHandler(ToolStateComponent toolState, GraphProcessingStateComponent graphProcessingState, UnloadGraphCommand command)
+        public static void DefaultCommandHandler(ToolStateComponent toolState, UnloadGraphCommand command)
         {
-            if (toolState.GraphModel != null)
-            {
-                // force queued graph processing to happen now when unloading a graph
-                if (graphProcessingState.GraphProcessingPending)
-                {
-                    GraphProcessingHelper.ProcessGraph(toolState.GraphModel, null, RequestGraphProcessingOptions.Default);
-                }
-            }
-
             using (var toolStateUpdater = toolState.UpdateScope)
             {
                 toolStateUpdater.ClearHistory();
                 toolStateUpdater.LoadGraph(null, null);
-            }
-
-            using (var graphProcessingStateUpdater = graphProcessingState.UpdateScope)
-            {
-                graphProcessingStateUpdater.Clear();
             }
         }
     }

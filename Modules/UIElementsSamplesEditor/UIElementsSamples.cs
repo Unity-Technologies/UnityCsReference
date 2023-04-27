@@ -107,6 +107,8 @@ namespace UnityEditor.UIElements.Samples
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Vector4", Vector4FieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Rect", RectFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Bounds", BoundsFieldSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("UnsignedInteger", UnsignedIntegerFieldSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("UnsignedLong", UnsignedLongFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("SliderInt", SliderIntSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Vector2Int", Vector2IntFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Vector3Int", Vector3IntFieldSnippet.Create)),
@@ -221,6 +223,8 @@ namespace UnityEditor.UIElements.Samples
             container.Add(new Vector4Field("Vector4"));
             container.Add(new RectField("Rect"));
             container.Add(new BoundsField("Bounds"));
+            container.Add(new UnsignedIntegerField("UnsignedInteger"));
+            container.Add(new UnsignedLongField("UnsignedLong"));
             container.Add(new SliderInt("SliderInt"));
             container.Add(new Vector2IntField("Vector2Int"));
             container.Add(new Vector3IntField("Vector3Int"));

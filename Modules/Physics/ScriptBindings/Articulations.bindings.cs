@@ -176,7 +176,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Modules/Physics/ArticulationBody.h")]
-    [NativeClass("Unity::ArticulationBody")]
+    [NativeClass("Physics::ArticulationBody")]
     public partial class ArticulationBody : Behaviour
     {
         extern public ArticulationJointType jointType { get; set; }

@@ -12,7 +12,6 @@ using System.Text.RegularExpressions;
 using System.Linq;
 using System.IO;
 using UnityEditor.Web;
-using UnityEditor.Analytics;
 
 namespace UnityEditor
 {

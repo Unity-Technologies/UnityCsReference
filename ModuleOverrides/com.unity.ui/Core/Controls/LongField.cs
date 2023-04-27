@@ -49,7 +49,7 @@ namespace UnityEngine.UIElements
         /// <returns>The long integer parsed from the string.</returns>
         protected override long StringToValue(string str)
         {
-            var success = UINumericFieldsUtils.StringToLong(str, textInputBase.originalText, out var v);
+            var success = UINumericFieldsUtils.TryConvertStringToLong(str, textInputBase.originalText, out var v);
             return success ? v : rawValue;
         }
 
@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
         internal override bool CanTryParse(string textString) => long.TryParse(textString, out _);
 
         /// <summary>
-        /// Modify the value using a 3D delta and a speed, typically coming from an input device.
+        /// Applies the values of a 3D delta and a speed from an input device.
         /// </summary>
         /// <param name="delta">A vector used to compute the value change.</param>
         /// <param name="speed">A multiplier for the value change.</param>
@@ -122,9 +122,12 @@ namespace UnityEngine.UIElements
             public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, long startValue)
             {
                 double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue);
-                float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
-                long v = StringToValue(text);
-                v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
+                var acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
+                var v = StringToValue(text);
+                var niceDelta = (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
+
+                v = ClampMinMaxLongValue(niceDelta, v);
+
                 if (parentLongField.isDelayed)
                 {
                     text = ValueToString(v);
@@ -135,6 +138,27 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            private long ClampMinMaxLongValue(long niceDelta, long value)
+            {
+                var niceDeltaAbs = Math.Abs(niceDelta);
+                if (niceDelta > 0)
+                {
+                    if (value > 0 && niceDeltaAbs > long.MaxValue - value)
+                    {
+                        return long.MaxValue;
+                    }
+
+                    return value + niceDelta;
+                }
+
+                if (value < 0 && value < long.MinValue + niceDeltaAbs)
+                {
+                    return long.MinValue;
+                }
+
+                return value - niceDeltaAbs;
+            }
+
             protected override string ValueToString(long v)
             {
                 return v.ToString(formatString);
@@ -142,7 +166,7 @@ namespace UnityEngine.UIElements
 
             protected override long StringToValue(string str)
             {
-                UINumericFieldsUtils.StringToLong(str, originalText, out var v);
+                UINumericFieldsUtils.TryConvertStringToLong(str, originalText, out var v);
                 return v;
             }
         }

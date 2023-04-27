@@ -243,7 +243,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// <summary>
     /// Command to paste elements in the graph.
     /// </summary>
-    class PasteSerializedDataCommand : UndoableCommand
+    class PasteDataCommand : UndoableCommand
     {
         /// <summary>
         /// The delta to apply to the pasted models.
@@ -265,22 +265,22 @@ namespace Unity.GraphToolsFoundation.Editor
         public PasteOperation Operation;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PasteSerializedDataCommand"/> class.
+        /// Initializes a new instance of the <see cref="PasteDataCommand"/> class.
         /// </summary>
-        public PasteSerializedDataCommand()
+        public PasteDataCommand()
         {
             UndoString = "Paste";
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PasteSerializedDataCommand"/> class.
+        /// Initializes a new instance of the <see cref="PasteDataCommand"/> class.
         /// </summary>
         /// <param name="operation">The operation that triggers this command.</param>
         /// <param name="undoString">The name of the paste operation (Paste, Duplicate, etc.).</param>
         /// <param name="delta">The delta to apply on the pasted elements position.</param>
         /// <param name="data">The elements to paste.</param>
         /// <param name="selectedGroup">The selected group, If any.</param>
-        public PasteSerializedDataCommand(PasteOperation operation, string undoString, Vector2 delta, CopyPasteData data, GroupModel selectedGroup = null) : this()
+        public PasteDataCommand(PasteOperation operation, string undoString, Vector2 delta, CopyPasteData data, GroupModel selectedGroup = null) : this()
         {
             if (!string.IsNullOrEmpty(undoString))
                 UndoString = undoString;
@@ -298,7 +298,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="graphModelState">The graph model state component.</param>
         /// <param name="selectionState">The selection state component.</param>
         /// <param name="command">The command.</param>
-        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, PasteSerializedDataCommand command)
+        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, PasteDataCommand command)
         {
             if (!command.Data.IsEmpty())
             {

@@ -42,7 +42,6 @@ namespace Unity.CommandStateObserver
             /// </summary>
             protected TStateComponent m_State;
 
-            string m_StackTrace;
 
             /// <summary>
             /// Initializes the updater with the state to update.
@@ -52,8 +51,7 @@ namespace Unity.CommandStateObserver
             {
                 if (m_State != null)
                 {
-                    Debug.LogError($"Missing Dispose call for updater initialized at {m_StackTrace}");
-                    m_StackTrace = Environment.StackTrace;
+                    Debug.LogError("Missing Dispose call. Did you nest update scopes for the same state component?");
                 }
 
                 m_State = (TStateComponent)state;

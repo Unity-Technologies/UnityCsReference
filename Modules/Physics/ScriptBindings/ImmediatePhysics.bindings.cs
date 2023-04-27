@@ -45,7 +45,7 @@ namespace UnityEngine.LowLevelPhysics
     [NativeHeader("Modules/Physics/ImmediatePhysics.h")]
     public static class ImmediatePhysics
     {
-        [FreeFunction("Unity::Physics::GenerateContacts", isThreadSafe: true)]
+        [FreeFunction("Physics::Immediate::GenerateContacts", isThreadSafe: true)]
         private static unsafe extern int GenerateContacts_Native(void* geom1, void* geom2, void* xform1, void* xform2, int numPairs, void* contacts, int contactArrayLength, void* sizes, int sizesArrayLength, float contactDistance);
 
         public unsafe static int GenerateContacts(NativeArray<GeometryHolder>.ReadOnly geom1, NativeArray<GeometryHolder>.ReadOnly geom2,

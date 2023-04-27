@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Search;
 using UnityEngine;
 
@@ -24,8 +25,10 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeField, HideInInspector]
         string m_Tooltip;
 
-        [SerializeField, HideInInspector]
-        SpawnFlags m_SpawnFlags;
+        SpawnFlags m_SpawnFlags = SpawnFlags.Default;
+
+        [SerializeReference, HideInInspector]
+        NodePreviewModel m_NodePreviewModel;
 
         internal static string titleFieldName_Internal = nameof(m_Title);
         internal static string positionFieldName_Internal = nameof(m_Position);
@@ -113,6 +116,19 @@ namespace Unity.GraphToolsFoundation.Editor
         public bool Destroyed { get; private set; }
 
         /// <summary>
+        /// Whether the node has a preview or not.
+        /// </summary>
+        public abstract bool HasNodePreview { get; }
+
+        /// <summary>
+        /// The preview of the node.
+        /// </summary>
+        public NodePreviewModel NodePreviewModel => HasNodePreview ? m_NodePreviewModel : null;
+
+        /// <inheritdoc />
+        public override IEnumerable<GraphElementModel> DependentModels => m_NodePreviewModel != null ? base.DependentModels.Append(m_NodePreviewModel) : base.DependentModels;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AbstractNodeModel"/> class.
         /// </summary>
         protected AbstractNodeModel()
@@ -131,9 +147,15 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// Marks the object as being deleted from the graph.
+        /// Called on deletion of the node.
         /// </summary>
-        public void Destroy() => Destroyed = true;
+        public virtual void OnDeleteNode()
+        {
+            Destroyed = true;
+
+            if (m_NodePreviewModel != null)
+                GraphModel.CurrentGraphChangeDescription?.AddDeletedModels(m_NodePreviewModel);
+        }
 
         /// <summary>
         /// Gets all wires connected to this node.
@@ -144,7 +166,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Called on creation of the node.
         /// </summary>
-        public virtual void OnCreateNode() { }
+        public virtual void OnCreateNode()
+        {
+            if (HasNodePreview && SpawnFlags != SpawnFlags.Orphan)
+                AddNodePreview();
+        }
 
         /// <summary>
         /// Called on duplication of the node.
@@ -153,6 +179,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual void OnDuplicateNode(AbstractNodeModel sourceNode)
         {
             Title = sourceNode.Title;
+            if (sourceNode.HasNodePreview)
+            {
+                var nodePreview = AddNodePreview();
+                nodePreview.OnDuplicateNodePreview(sourceNode.NodePreviewModel);
+            }
         }
 
         /// <inheritdoc />
@@ -162,6 +193,31 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
 
             Position += delta;
+        }
+
+        /// <summary>
+        /// Creates a node preview.
+        /// </summary>
+        /// <returns>The newly created node preview.</returns>
+        protected virtual NodePreviewModel CreateNodePreview()
+        {
+            return new NodePreviewModel();
+        }
+
+        /// <summary>
+        /// Creates and adds a node preview to the node.
+        /// </summary>
+        /// <returns>The newly created node preview.</returns>
+        protected virtual NodePreviewModel AddNodePreview()
+        {
+            var nodePreviewModel = CreateNodePreview();
+            m_NodePreviewModel = nodePreviewModel;
+            nodePreviewModel.OnCreateNodePreview(this);
+
+            GraphModel.RegisterNodePreview(m_NodePreviewModel);
+            GraphModel.CurrentGraphChangeDescription?.AddNewModels(m_NodePreviewModel);
+
+            return nodePreviewModel;
         }
     }
 }

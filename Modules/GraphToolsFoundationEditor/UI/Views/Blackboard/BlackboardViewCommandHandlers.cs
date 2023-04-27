@@ -9,7 +9,7 @@ namespace Unity.GraphToolsFoundation.Editor
     static class BlackboardViewCommandHandlers
     {
         /// <summary>
-        /// Command handler for the <see cref="PasteSerializedDataCommand"/>.
+        /// Command handler for the <see cref="PasteDataCommand"/>.
         /// </summary>
         /// <param name="undoState">The undo state component.</param>
         /// <param name="graphModelState">The graph model state component.</param>
@@ -17,7 +17,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="blackboardState">The blackboard state component.</param>
         /// <param name="command">The command.</param>
         public static void PasteSerializedDataCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState,
-            SelectionStateComponent selectionState, BlackboardViewStateComponent blackboardState, PasteSerializedDataCommand command)
+            SelectionStateComponent selectionState, BlackboardViewStateComponent blackboardState, PasteDataCommand command)
         {
             if (!command.Data.IsEmpty())
             {

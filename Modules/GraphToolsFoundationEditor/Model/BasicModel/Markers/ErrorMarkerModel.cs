@@ -10,9 +10,11 @@ namespace Unity.GraphToolsFoundation.Editor
     /// <summary>
     /// A model to hold error messages to be displayed by markers.
     /// </summary>
-    [Serializable]
     abstract class ErrorMarkerModel : MarkerModel
     {
+        /// <summary>
+        /// The error type.
+        /// </summary>
         public abstract LogType ErrorType { get; }
 
         /// <summary>

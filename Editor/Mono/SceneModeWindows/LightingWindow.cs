@@ -31,6 +31,7 @@ namespace UnityEditor
             public static readonly GUIStyle buttonStyle = "LargeButton";
             public static readonly GUIContent continuousBakeLabel = EditorGUIUtility.TrTextContent("Auto Generate", "Generate lighting data in the Scene when there are changes that affect Scene lighting, such as modifications to lights, materials, or geometry. This option is only available when there is a Lighting Settings Asset assigned in the Lighting Window.");
             public static readonly GUIContent bakeLabel = EditorGUIUtility.TrTextContent("Generate Lighting", "Generates the lightmap data for the current active scene. This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
+            public static readonly GUIContent bakeLabelAnythingCompiling = EditorGUIUtility.TrTextContent("Generate Lighting", "Generate Lighting is currently unavailable. Waiting for asynchronous shader compilation.");
             public static readonly GUIContent cancelLabel = EditorGUIUtility.TrTextContent("Cancel");
 
             public static readonly GUIContent progressiveGPUBakingDevice = EditorGUIUtility.TrTextContent("GPU Baking Device", "Will list all available GPU devices.");
@@ -62,7 +63,6 @@ namespace UnityEditor
                 "Clear Baked Data"
             };
 
-            public static readonly string BakingPausedWarning = $"{bakeLabel.text} cannot be started. Waiting for asynchronous shader compilation to finish...";
             public static readonly string BakingPausedHelpText = $"{Styles.bakeLabel.text} is currently unavailable. Waiting for asynchronous shader compilation to finish...";
         }
 
@@ -540,16 +540,6 @@ namespace UnityEditor
             }
         }
 
-        // We only want to show the warning when we first detect that shaders are compiling
-        private static bool _wasCompilingShaders;
-        private static bool WarnWhenShaderCompilationIsDetected()
-        {
-            bool isCompilingShaders = ShaderUtil.anythingCompiling;
-            if (!_wasCompilingShaders && isCompilingShaders)
-                Debug.LogWarning(Styles.BakingPausedWarning);
-            return _wasCompilingShaders = isCompilingShaders;
-        }
-
         void DrawBottomBarGUI(Mode selectedMode)
         {
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
@@ -589,20 +579,23 @@ namespace UnityEditor
                     bool showBakeButton = resultingIterative || !Lightmapping.isRunning;
                     if (showBakeButton)
                     {
-                        bool anyShaderCompiling = WarnWhenShaderCompilationIsDetected();
-                        using (new EditorGUI.DisabledScope(anyShaderCompiling))
+                        bool anythingCompiling = ShaderUtil.anythingCompiling;
+                        using (new EditorGUI.DisabledScope(anythingCompiling))
                         {
                             var customTab = m_Tabs[selectedMode] as LightingWindowTab;
                             if (customTab != null)
                                 customTab.OnBakeButtonGUI();
-                            else if (EditorGUI.LargeSplitButtonWithDropdownList(Styles.bakeLabel,
-                                         Styles.BakeModeStrings, BakeDropDownCallback))
+                            else
                             {
-                                DoBake();
+                                GUIContent guiContent = anythingCompiling ? Styles.bakeLabelAnythingCompiling : Styles.bakeLabel;
+                                if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback))
+                                {
+                                    DoBake();
 
-                                // DoBake could've spawned a save scene dialog. This breaks GUI on mac (Case 490388).
-                                // We work around this with an ExitGUI here.
-                                GUIUtility.ExitGUI();
+                                    // DoBake could've spawned a save scene dialog. This breaks GUI on mac (Case 490388).
+                                    // We work around this with an ExitGUI here.
+                                    GUIUtility.ExitGUI();
+                                }
                             }
                         }
                     }
@@ -645,13 +638,6 @@ namespace UnityEditor
         internal static void Summary()
         {
             bool autoGenerate = Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
-            bool anyShaderCompiling = WarnWhenShaderCompilationIsDetected();
-            
-            if (anyShaderCompiling)
-            {
-                EditorGUILayout.HelpBox(Styles.BakingPausedHelpText, MessageType.Warning);
-                return;
-            }
 
             // Show the number of lightmaps:
             {

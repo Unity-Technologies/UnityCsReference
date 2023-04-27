@@ -30,7 +30,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="processOnIdleComponent">The component that tells us to process the graph when the mouse is idle.</param>
         /// <param name="graphProcessingState">The graph processing state.</param>
         /// <param name="preferences">The tool preferences.</param>
-        public AutomaticGraphProcessingObserver(GraphModelStateComponent graphModelStateComponent, ProcessOnIdleStateComponent processOnIdleComponent, GraphProcessingStateComponent graphProcessingState, Preferences preferences)
+        public AutomaticGraphProcessingObserver(
+            GraphModelStateComponent graphModelStateComponent,
+            ProcessOnIdleStateComponent processOnIdleComponent,
+            GraphProcessingStateComponent graphProcessingState,
+            Preferences preferences)
             : base(new IStateComponent[]
                 {
                     graphModelStateComponent,
@@ -52,7 +56,7 @@ namespace Unity.GraphToolsFoundation.Editor
             using var graphObservation = this.ObserveState(m_GraphModelStateComponent);
             var gvUpdateType = graphObservation.UpdateType;
             GraphModelStateComponent.Changeset changeset = null;
-            IReadOnlyList<GraphProcessingResult> results = null;
+            IReadOnlyList<BaseGraphProcessingResult> results = null;
 
             if (gvUpdateType == UpdateType.Partial)
             {
@@ -71,8 +75,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 updater.GraphProcessingPending = false;
 
                 if (results != null)
-                    updater.SetResults(results,
-                        GraphProcessingHelper.GetErrors((Stencil)m_GraphModelStateComponent.GraphModel.Stencil, results));
+                {
+                    updater.SetResults(results);
+                }
             }
         }
 

@@ -23,6 +23,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public static readonly string portsUssName = "vertical-port-container";
 
+        /// <inheritdoc />
+        protected override bool SetCountClassOnParent => true;
+
         /// <summary>
         /// Creates a new <see cref="VerticalPortContainerPart"/>.
         /// </summary>

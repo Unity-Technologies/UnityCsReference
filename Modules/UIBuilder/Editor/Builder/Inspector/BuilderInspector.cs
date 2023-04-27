@@ -105,7 +105,9 @@ namespace Unity.UI.Builder
         List<VisualElement> m_Sections;
 
         // Minor Sections
-        Label m_NothingSelectedSection;
+        VisualElement m_NothingSelectedSection;
+        VisualElement m_NothingSelectedDayZeroVisualElement;
+        VisualElement m_NothingSelectedIdleStateVisualElement;
         VisualElement m_MultiSelectionSection;
 
         public BuilderSelection selection => m_Selection;
@@ -245,7 +247,11 @@ namespace Unity.UI.Builder
             m_Sections.Add(m_HeaderSection.header);
 
             // Nothing Selected Section
-            m_NothingSelectedSection = this.Q<Label>("nothing-selected-label");
+            m_NothingSelectedSection = this.Q<VisualElement>("nothing-selected-visual-element");
+            m_NothingSelectedDayZeroVisualElement = this.Q<VisualElement>("day-zero-visual-element");
+            m_NothingSelectedIdleStateVisualElement = this.Q<VisualElement>("idle-state-visual-element");
+            m_NothingSelectedDayZeroVisualElement.style.display = DisplayStyle.None;
+            m_NothingSelectedIdleStateVisualElement.style.display = DisplayStyle.None;
             m_Sections.Add(m_NothingSelectedSection);
 
             // Multi-Selection Section
@@ -312,6 +318,12 @@ namespace Unity.UI.Builder
         {
             // For performance reasons, it's important NOT to use a style class!
             section.style.display = DisplayStyle.None;
+
+            if (section != m_NothingSelectedSection)
+                return;
+
+            m_ScrollView.contentContainer.style.flexGrow = 0;
+            m_ScrollView.contentContainer.style.justifyContent = Justify.FlexStart;
         }
 
         void EnableSection(VisualElement section)
@@ -651,8 +663,24 @@ namespace Unity.UI.Builder
             switch (m_Selection.selectionType)
             {
                 case BuilderSelectionType.Nothing:
+
                     EnableSections(Section.NothingSelected);
+                    m_ScrollView.contentContainer.style.flexGrow = 1;
+                    m_ScrollView.contentContainer.style.justifyContent = Justify.Center;
+                    var hierarchyOrStyleSectionsNotEmpty = document.visualTreeAsset.visualElementAssets.Count > 1 ||
+                                                    document.activeStyleSheet != null;
+                    if (!string.IsNullOrEmpty(document.activeOpenUXMLFile.uxmlPath) || hierarchyOrStyleSectionsNotEmpty)
+                    {
+                        m_NothingSelectedIdleStateVisualElement.style.display = DisplayStyle.Flex;
+                        m_NothingSelectedDayZeroVisualElement.style.display = DisplayStyle.None;
+                    }
+                    else
+                    {
+                        m_NothingSelectedDayZeroVisualElement.style.display = DisplayStyle.Flex;
+                        m_NothingSelectedIdleStateVisualElement.style.display = DisplayStyle.None;
+                    }
                     return;
+
                 case BuilderSelectionType.StyleSheet:
                     EnableSections(Section.StyleSheet);
                     return;

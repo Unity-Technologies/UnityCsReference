@@ -23,7 +23,7 @@ namespace UnityEngine
     // Primitive tests
 
     [NativeHeader("MarshallingScriptingClasses.h")]
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class PrimitiveTests
     {
@@ -56,7 +56,7 @@ namespace UnityEngine
     [ExcludeFromDocs]
     [RequiredByNativeCode(GenerateProxy = true, Name = "StructCoreStringManaged")]
     [NativeClass("StructCoreString", "struct StructCoreString;")]
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal struct StructCoreString
     {
         public string field;
@@ -70,7 +70,7 @@ namespace UnityEngine
         public string[] field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class StringTests
     {
@@ -121,27 +121,27 @@ namespace UnityEngine
     // --------------------------------------------------------------------
     // Blittable tests
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructInt
     {
         public int field;
     }
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructInt2
     {
         public int field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructNestedBlittable
     {
         public StructInt field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     [ExcludeFromDocs]
     internal unsafe struct StructFixedBuffer
@@ -149,7 +149,7 @@ namespace UnityEngine
         public fixed int SomeInts[4];
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class BlittableStructTests
     {
@@ -181,21 +181,21 @@ namespace UnityEngine
     // --------------------------------------------------------------------
     // IntPtrObject tests
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructIntPtrObject
     {
         public MyIntPtrObject field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructIntPtrObjectVector
     {
         public MyIntPtrObject[] field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructIntPtrObjectDynamicArray
     {
@@ -247,7 +247,7 @@ namespace UnityEngine
         }
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class IntPtrObjectTests
     {
@@ -267,7 +267,7 @@ namespace UnityEngine
     // --------------------------------------------------------------------
     // UnityEngineObject tests
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     [StructLayout(LayoutKind.Sequential)]
     internal class MarshallingTestObject : Object
@@ -297,7 +297,7 @@ namespace UnityEngine
         extern private static void Internal_CreateMarshallingTestObject([Writable] MarshallingTestObject notSelf);
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructUnityObject
     {
@@ -305,28 +305,28 @@ namespace UnityEngine
         public extern int InstanceMethod([NotNull] System.Object o);
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructUnityObjectPPtr
     {
         public MarshallingTestObject field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructUnityObjectVector
     {
         public MarshallingTestObject[] field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal struct StructUnityObjectDynamicArray
     {
         public MarshallingTestObject[] field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class UnityObjectTests
     {
@@ -368,7 +368,7 @@ namespace UnityEngine
         public static extern StructUnityObjectDynamicArray[] ReturnStructUnityObjectDynamicArrayDynamicArray();
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class NullCheckTests
     {
@@ -398,20 +398,20 @@ namespace UnityEngine
     }
 
     [ExcludeFromDocs]
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal struct StructManagedObject
     {
         public MyManagedObject field;
     }
 
     [ExcludeFromDocs]
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal struct StructManagedObjectVector
     {
         public MyManagedObject[] field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class ManagedObjectTests
     {
@@ -439,7 +439,7 @@ namespace UnityEngine
         public System.Type[] field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/SystemTypeMarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/SystemTypeMarshallingTests.h")]
     [ExcludeFromDocs]
     internal static class SystemTypeMarshallingTests
     {
@@ -480,7 +480,7 @@ namespace UnityEngine
         public System.Reflection.FieldInfo[] field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/SystemReflectionFieldInfoMarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/SystemReflectionFieldInfoMarshallingTests.h")]
     [ExcludeFromDocs]
     internal static class SystemReflectionFieldInfoMarshallingTests
     {
@@ -518,7 +518,7 @@ namespace UnityEngine
         public System.Reflection.MethodInfo[] field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/SystemReflectionMethodInfoMarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/SystemReflectionMethodInfoMarshallingTests.h")]
     [ExcludeFromDocs]
     internal static class SystemReflectionMethodInfoMarshallingTests
     {
@@ -543,7 +543,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // Struct w/ icall tests
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     [StructLayout(LayoutKind.Sequential)]
     internal struct StructWithExternTests
@@ -564,7 +564,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // Delegate tests
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class DelegateTests
     {
@@ -584,7 +584,7 @@ namespace UnityEngine
     // --------------------------------------------------------------------
     // Exception tests
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class ExceptionTests
     {
@@ -620,7 +620,7 @@ namespace UnityEngine
         }
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class ExceptionTypeTests
     {
@@ -652,7 +652,7 @@ namespace UnityEngine
         C = 2,
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class EnumTests
     {
@@ -665,7 +665,7 @@ namespace UnityEngine
 
     [ExcludeFromDocs]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal struct StructWithStringIntAndFloat
     {
         public string a;
@@ -728,7 +728,7 @@ namespace UnityEngine
         public StructWithStringIntAndFloat[] field;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class NonBlittableStructTests
     {
@@ -763,7 +763,7 @@ namespace UnityEngine
 #pragma warning disable 0169
         bool a;
     }
-    [NativeType(Header = "Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeType(Header = "Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class TypedefManagedNameTests
     {
@@ -772,7 +772,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // Field-bound property tests
-    [NativeType("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeType("Modules/Marshalling/MarshallingTests.h")]
     internal class FieldBoundPropertyTests
     {
         [NativeProperty(TargetType = TargetType.Field)]
@@ -782,7 +782,7 @@ namespace UnityEngine
         public static extern int StaticAccessorProp { get; set; }
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/OutArrayMarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/OutArrayMarshallingTests.h")]
     [ExcludeFromDocs]
     internal static class OutArrayMarshallingTests
     {
@@ -808,7 +808,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // Abstract type tests
-    [NativeType(Header = "Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeType(Header = "Modules/Marshalling/MarshallingTests.h")]
     internal abstract class AbstractClass
     {
         public static extern int MethodInAbstractClass();
@@ -825,7 +825,7 @@ namespace UnityEngine
         public bool bool3;
     }
 
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class BoolStructTests
     {
@@ -842,7 +842,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // System.Array tests
-    [NativeType("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeType("Modules/Marshalling/MarshallingTests.h")]
     internal class ValueTypeArrayTests
     {
         [NativeThrows] public static extern void ParameterIntArrayReadOnly(int[] param);
@@ -865,7 +865,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // System.Span tests
-    [NativeType("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeType("Modules/Marshalling/MarshallingTests.h")]
     internal class ValueTypeSpanTests
     {
         [NativeThrows] public static extern void ParameterIntReadOnlySpan(ReadOnlySpan<int> param);
@@ -878,7 +878,7 @@ namespace UnityEngine
 
     // --------------------------------------------------------------------
     // System.Collections.Generic.List tests
-    [NativeType("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeType("Modules/Marshalling/MarshallingTests.h")]
     internal class ValueTypeListOfTTests
     {
         [NativeThrows] public static extern void ParameterListOfIntRead(List <int> param);
@@ -894,7 +894,56 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterListOfCharReadWrite(List<char> param);
         [NativeThrows] public static extern void ParameterListOfEnumReadWrite(List<SomeEnum> param);
         [NativeThrows] public static extern void ParameterListOfCornerCaseStructReadWrite(List<BlittableCornerCases> param);
-        
+    }
+
+        // --------------------------------------------------------------------
+    // Invoke tests (calling from native to managed)
+    [NativeType("Modules/Marshalling/MarshallingTests.h")]
+    internal class InvokeTests
+    {
+        public static extern bool TestInvokeBool(bool arg);
+        public static extern sbyte TestInvokeSByte(sbyte arg);
+        public static extern byte TestInvokeByte(byte arg);
+        public static extern char TestInvokeChar(char arg);
+        public static extern short TestInvokeShort(short arg);
+        public static extern ushort TestInvokeUShort(ushort arg);
+        public static extern int TestInvokeInt(int arg);
+        public static extern uint TestInvokeUInt(uint arg);
+        public static extern long TestInvokeLong(long arg);
+        public static extern ulong TestInvokeULong(ulong arg);
+        public static extern IntPtr TestInvokeIntPtr(IntPtr arg);
+        public static extern UIntPtr TestInvokeUIntPtr(UIntPtr arg);
+        public static extern float TestInvokeFloat(float arg);
+        public static extern double TestInvokeDouble(double arg);
+
+        [RequiredByNativeCode]
+        static bool InvokeBool(bool arg) { return arg; }
+        [RequiredByNativeCode]
+        static sbyte InvokeSByte(sbyte arg) { return arg; }
+        [RequiredByNativeCode]
+        static byte InvokeByte(byte arg) { return arg; }
+        [RequiredByNativeCode]
+        static char InvokeChar(char arg) { return arg; }
+        [RequiredByNativeCode]
+        static short InvokeShort(short arg) { return arg; }
+        [RequiredByNativeCode]
+        static ushort InvokeUShort(ushort arg) { return arg; }
+        [RequiredByNativeCode]
+        static int InvokeInt(int arg) { return arg; }
+        [RequiredByNativeCode]
+        static uint InvokeUInt(uint arg) { return arg; }
+        [RequiredByNativeCode]
+        static long InvokeLong(long arg) { return arg; }
+        [RequiredByNativeCode]
+        static ulong InvokeULong(ulong arg) { return arg; }
+        [RequiredByNativeCode]
+        static IntPtr InvokeIntPtr(IntPtr arg) { return arg; }
+        [RequiredByNativeCode]
+        static UIntPtr InvokeUIntPtr(UIntPtr arg) { return arg; }
+        [RequiredByNativeCode]
+        static float InvokeFloat(float arg) { return arg; }
+        [RequiredByNativeCode]
+        static double InvokeDouble(double arg) { return arg; }
     }
 
     internal static class MarshallingTests

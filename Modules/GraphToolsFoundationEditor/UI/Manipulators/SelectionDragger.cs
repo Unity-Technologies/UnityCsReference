@@ -256,8 +256,18 @@ namespace Unity.GraphToolsFoundation.Editor
                         return;
                 }
 
-                // Only start manipulating if the clicked element is movable, selected and that the mouse is in its clickable region (it must be deselected otherwise).
-                if (!clickedElement.IsMovable() || !clickedElement.ContainsPoint(clickedElement.WorldToLocal(e.mousePosition)))
+                // Only start manipulating if the clicked element is movable.
+                if (clickedElement is Marker marker)
+                {
+                    // If the clicked element is a marker, check if its parent model is movable.
+                    if (!marker.ParentModel.IsMovable())
+                        return;
+                }
+                else if (!clickedElement.IsMovable())
+                    return;
+
+                // Only start manipulating if the mouse is in its clickable region (it must be deselected otherwise).
+                if (!clickedElement.ContainsPoint(clickedElement.WorldToLocal(e.mousePosition)))
                     return;
 
                 // In the case of a drag starting on an unselected element, the m_SelectionObserver notification will be too late, and the selection will indeed probably change.

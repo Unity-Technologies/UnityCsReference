@@ -80,8 +80,10 @@ namespace Unity.GraphToolsFoundation.Editor
             if (placematModel != null)
             {
                 var selectionHelper = new GlobalSelectionCommandHelper(selectionState);
+                using (var undoStateUpdater = undoState.UpdateScope)
                 using (var selectionUpdaters = selectionHelper.UpdateScopes)
                 {
+                    undoStateUpdater.SaveStates(selectionHelper.SelectionStates);
                     foreach (var updater in selectionUpdaters)
                         updater.ClearSelection();
                     selectionUpdaters.MainUpdateScope.SelectElement(placematModel, true);

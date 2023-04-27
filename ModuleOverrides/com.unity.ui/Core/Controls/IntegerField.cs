@@ -49,7 +49,7 @@ namespace UnityEngine.UIElements
         /// <returns>The integer parsed from the string.</returns>
         protected override int StringToValue(string str)
         {
-            var success = UINumericFieldsUtils.StringToInt(str, textInputBase.originalText, out var v);
+            var success = UINumericFieldsUtils.TryConvertStringToInt(str, textInputBase.originalText, out var v);
             return success ? v : rawValue;
         }
 
@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
         internal override bool CanTryParse(string textString) => int.TryParse(textString, out _);
 
         /// <summary>
-        /// Modify the value using a 3D delta and a speed, typically coming from an input device.
+        /// Applies the values of a 3D delta and a speed from an input device.
         /// </summary>
         /// <param name="delta">A vector used to compute the value change.</param>
         /// <param name="speed">A multiplier for the value change.</param>
@@ -139,7 +139,7 @@ namespace UnityEngine.UIElements
 
             protected override int StringToValue(string str)
             {
-                UINumericFieldsUtils.StringToInt(str, originalText, out var v);
+                UINumericFieldsUtils.TryConvertStringToInt(str, originalText, out var v);
                 return v;
             }
         }

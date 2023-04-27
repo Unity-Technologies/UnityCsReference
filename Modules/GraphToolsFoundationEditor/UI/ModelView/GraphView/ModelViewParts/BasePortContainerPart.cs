@@ -30,6 +30,12 @@ abstract class BasePortContainerPart : BaseModelViewPart
     /// <inheritdoc />
     public override VisualElement Root => m_Root;
 
+
+    /// <summary>
+    /// Should the parent of the PortContainer get the modifier class for the number of elements as well ?
+    /// </summary>
+    protected virtual bool SetCountClassOnParent => false;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="BasePortContainerPart"/> class.
     /// </summary>
@@ -57,7 +63,7 @@ abstract class BasePortContainerPart : BaseModelViewPart
             m_Root.AddToClassList(m_UssClassName);
             m_Root.AddToClassList(m_ParentClassName.WithUssElement(PartName));
 
-            PortContainer = new PortContainer { name = m_PortUssClassName };
+            PortContainer = new PortContainer(false, float.PositiveInfinity, SetCountClassOnParent) { name = m_PortUssClassName };
             PortContainer.AddToClassList(m_ParentClassName.WithUssElement(m_PortUssClassName));
             m_Root.Add(PortContainer);
 

@@ -54,6 +54,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public override bool AllowSelfConnect => false;
 
         /// <inheritdoc />
+        public override bool HasNodePreview => false;
+
+        /// <inheritdoc />
         public override IReadOnlyDictionary<string, PortModel> InputsById => m_InputsById;
 
         /// <inheritdoc />

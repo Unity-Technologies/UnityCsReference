@@ -19,9 +19,11 @@ namespace Unity.GraphToolsFoundation.Editor
         bool m_ShouldShowInLibrary;
 
         [SerializeField]
+        [Delayed]
         string m_DisplayedPath;
 
         [SerializeField]
+        [Delayed]
         string m_Description;
 
         string m_WarningMessage;

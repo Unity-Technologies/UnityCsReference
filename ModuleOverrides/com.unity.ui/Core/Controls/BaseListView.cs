@@ -572,7 +572,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_MakeNoneElement != null)
                 {
-                    m_NoneElement = m_MakeNoneElement.Invoke();
+                    m_NoneElement ??= m_MakeNoneElement.Invoke();
                     scrollView.contentViewport.Add(m_NoneElement);
                     m_ListViewLabel?.RemoveFromHierarchy();
                     m_ListViewLabel = null;
@@ -803,6 +803,8 @@ namespace UnityEngine.UIElements
                     return;
 
                 m_MakeNoneElement = value;
+                m_NoneElement?.RemoveFromHierarchy();
+                m_NoneElement = null;
                 RefreshItems();
                 NotifyPropertyChanged(makeNoneElementProperty);
             }
@@ -853,10 +855,6 @@ namespace UnityEngine.UIElements
                     return;
 
                 m_OverridingAddButtonBehavior = value;
-                if (overridingAddButtonBehavior != null && m_AddButton != null)
-                {
-                    overridingAddButtonBehavior(this, m_AddButton);
-                }
                 RefreshItems();
                 NotifyPropertyChanged(overridingAddButtonBehaviorProperty);
             }

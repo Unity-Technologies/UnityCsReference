@@ -11,71 +11,6 @@ using UnityEngine;
 
 namespace UnityEngine.UIElements
 {
-
-    internal interface StopRecordingInterface
-    {
-        public void StopRecording();
-    }
-
-    internal class LayoutDebuggerItem
-    {
-        public LayoutDebuggerItem(int frameIndex, int passIndex, int layoutLoop, LayoutDebuggerVisualElement ve)
-        {
-            m_FrameIndex = frameIndex;
-            m_PassIndex = passIndex;
-            m_LayoutLoop = layoutLoop;
-            m_VE = ve;
-        }
-
-        public int m_FrameIndex;
-        public int m_PassIndex;
-        public int m_LayoutLoop;
-
-        public LayoutDebuggerVisualElement m_VE;
-    }
-
-    internal class LayoutDebuggerVisualElement
-    {
-        public List<LayoutDebuggerVisualElement> m_Children = null;
-        public VisualElement m_OriginalVisualElement;
-        public string name;
-        public Rect layout = new Rect();
-        public bool visible = false;
-        public bool enable = false;
-        public bool enabledInHierarchy = false;
-        public bool isYogaNodeDirty = false;
-        public LayoutDebuggerVisualElement parent = null;
-
-        public bool IsVisualElementVisible()
-        {
-            return visible && enable && enabledInHierarchy;
-        }
-
-        public int CountTotalElement()
-        {
-            int count = 0;
-            CountTotalElement(this, ref count);
-            return count;
-        }
-
-        private static void CountTotalElement(LayoutDebuggerVisualElement ve, ref int count)
-        {
-            if (!ve.IsVisualElementVisible())
-            {
-                return;
-            }
-
-            count++;
-
-            for (int i = 0; i < ve.m_Children.Count; ++i)
-            {
-                var child = ve.m_Children[i];
-                CountTotalElement(child, ref count);
-            }
-        }
-    }
-
-
     // This is basically the same as the standard layout update except for 1 thing :
     // - Only call dirty repaint when the layout rect has changed instead of "layoutNode.HasNewLayout"
     internal class UIRLayoutUpdater : BaseVisualTreeUpdater
@@ -135,35 +70,10 @@ namespace UnityEngine.UIElements
 
         List<LayoutDebuggerItem> recordedLayoutItemList = new List<LayoutDebuggerItem>();
 
-        private void CopyLayout(VisualElement source, LayoutDebuggerVisualElement dest)
-        {
-            dest.name = source.name;
-            dest.layout = source.layout;
-            dest.visible = source.visible;
-            dest.enable = source.enabledSelf;
-            dest.enabledInHierarchy = source.enabledInHierarchy;
-            dest.isYogaNodeDirty = source.layoutNode.IsDirty;
-            dest.m_OriginalVisualElement = source;
-
-            var childCount = source.hierarchy.childCount;
-
-            dest.m_Children = new List<LayoutDebuggerVisualElement>(childCount);
-
-            for (int i = 0; i < childCount; ++i)
-            {
-                var child = source.hierarchy[i];
-                LayoutDebuggerVisualElement ve = new LayoutDebuggerVisualElement();
-                CopyLayout(child, ve);
-                ve.parent = dest;
-                dest.m_Children.Add(ve);
-            }
-        }
-
         static int s_FrameIndex = 0;
         static int s_OldMainLoopCount = 0;
         static int s_MainLoopCount = 0;
         static int s_PassIndex = 0;
-
 
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
@@ -188,9 +98,10 @@ namespace UnityEngine.UIElements
             LayoutDebuggerItem record;
             int layoutLoop = 0;
 
+            List<VisualElement> currentDirtyVE = null;
+
             if (visualTree.layoutNode.IsDirty)
             {
-
                 if (recordLayout)
                 {
                     if (s_OldMainLoopCount == s_MainLoopCount)
@@ -204,9 +115,11 @@ namespace UnityEngine.UIElements
                         s_PassIndex = 0;
                     }
 
+                    currentDirtyVE = new List<VisualElement>();
+                    LayoutDebuggerVisualElement.TrackDirtyElement(visualTree, currentDirtyVE);
                     LayoutDebuggerVisualElement ve = new LayoutDebuggerVisualElement();
                     record = new LayoutDebuggerItem(s_FrameIndex, s_PassIndex, layoutLoop, ve);
-                    CopyLayout(visualTree, ve);
+                    LayoutDebuggerVisualElement.CopyLayout(visualTree, ve, currentDirtyVE);
                     layoutLoop++;
                     recordedLayoutItemList.Add(record);
                 }
@@ -219,6 +132,12 @@ namespace UnityEngine.UIElements
                     if (validateLayoutCount > 0)
                         panel.ApplyStyles();
 
+                    if (recordLayout)
+                    {
+                        currentDirtyVE.Clear();
+                        LayoutDebuggerVisualElement.TrackDirtyElement(visualTree, currentDirtyVE);
+                    }
+
                     panel.duringLayoutPhase = true;
                     visualTree.layoutNode.CalculateLayout();
                     panel.duringLayoutPhase = false;
@@ -229,7 +148,8 @@ namespace UnityEngine.UIElements
                     {
                         LayoutDebuggerVisualElement ve = new LayoutDebuggerVisualElement();
                         record = new LayoutDebuggerItem(s_FrameIndex, s_PassIndex, layoutLoop, ve);
-                        CopyLayout(visualTree, ve);
+
+                        LayoutDebuggerVisualElement.CopyLayout(visualTree, ve, currentDirtyVE);
                         layoutLoop++;
                         recordedLayoutItemList.Add(record);
                     }

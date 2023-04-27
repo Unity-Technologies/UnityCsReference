@@ -18,7 +18,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The graph model to which this stencil is associated.
         /// </summary>
-        public virtual GraphModel GraphModel { get; set; }
+        public GraphModel GraphModel { get; }
 
         /// <summary>
         /// The metadata resolver for the graph.
@@ -30,6 +30,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <returns>The answer to whether it is allowed to have multiple instances of a data output variable.</returns>
         public virtual AllowMultipleDataOutputInstances AllowMultipleDataOutputInstances => AllowMultipleDataOutputInstances.AllowWithWarning;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="StencilBase"/> class.
+        /// </summary>
+        protected StencilBase(GraphModel graphModel)
+        {
+            GraphModel = graphModel;
+        }
 
         /// <summary>
         /// Performs tasks that need to be done when the <see cref="GraphModel"/> is enabled.

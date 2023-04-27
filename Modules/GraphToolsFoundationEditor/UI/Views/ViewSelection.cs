@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -34,33 +33,11 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         static IReadOnlyList<GraphElementModel> s_EmptyList = new List<GraphElementModel>();
 
-        protected const string k_SerializedDataMimeType = "application/vnd.unity.graphview.elements";
-
         protected readonly RootView m_View;
         protected readonly GraphModelStateComponent m_GraphModelState;
         protected readonly SelectionStateComponent m_SelectionState;
+        protected readonly ClipboardProvider m_ClipboardProvider;
 
-        // For tests only
-        protected virtual bool UseInternalClipboard => false;
-        string m_Clipboard = string.Empty;
-
-        // Internal access for tests.
-        internal string Clipboard_Internal
-        {
-            get => UseInternalClipboard ? m_Clipboard : EditorGUIUtility.systemCopyBuffer;
-
-            set
-            {
-                if (UseInternalClipboard)
-                {
-                    m_Clipboard = value;
-                }
-                else
-                {
-                    EditorGUIUtility.systemCopyBuffer = value;
-                }
-            }
-        }
 
         /// <summary>
         /// All the models that can be selected in this view.
@@ -78,6 +55,7 @@ namespace Unity.GraphToolsFoundation.Editor
             m_View = view;
             m_GraphModelState = graphModelState;
             m_SelectionState = selectionState;
+            m_ClipboardProvider = m_View.GraphTool.ClipboardProvider;
         }
 
         /// <summary>
@@ -188,17 +166,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Returns true if the selection can be copied.
         /// </summary>
-        protected virtual bool CanCopySelection => GetSelection().Any(ge => ge.IsCopiable());
+        protected virtual bool CanCopySelection => m_ClipboardProvider != null && GetSelection().Any(ge => ge.IsCopiable());
 
         /// <summary>
         /// Returns true if the selection can be cut (copied and deleted).
         /// </summary>
-        protected virtual bool CanCutSelection => GetSelection().Any(ge => ge.IsCopiable() && ge.IsDeletable());
+        protected virtual bool CanCutSelection => m_ClipboardProvider != null && GetSelection().Any(ge => ge.IsCopiable() && ge.IsDeletable());
 
         /// <summary>
         /// Returns true if the clipboard content can be pasted.
         /// </summary>
-        protected virtual bool CanPaste => CanPasteSerializedData(Clipboard_Internal);
+        protected virtual bool CanPaste => m_ClipboardProvider?.CanDeserializeDataFromClipboard() ?? false;
 
         /// <summary>
         /// Returns true if the selection can be duplicated.
@@ -218,12 +196,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var elementsToCopySet = CollectCopyableGraphElements(GetSelection());
             var copyPasteData = BuildCopyPasteData(elementsToCopySet);
-            var serializedData = SerializedPasteData(copyPasteData);
-            if (!string.IsNullOrEmpty(serializedData))
-            {
-                Clipboard_Internal = k_SerializedDataMimeType + " " + serializedData;
-            }
-
+            m_ClipboardProvider.SerializeDataToClipboard(copyPasteData);
             return elementsToCopySet;
         }
 
@@ -241,13 +214,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         protected virtual void Paste()
         {
-            var data = Clipboard_Internal;
-            if (data.StartsWith(k_SerializedDataMimeType))
-            {
-                data = data.Substring(k_SerializedDataMimeType.Length + 1);
-            }
-
-            UnserializeAndPaste(PasteOperation.Paste, "Paste", data);
+            var copyPasteData = m_ClipboardProvider.DeserializeDataFromClipboard();
+            PasteData(PasteOperation.Paste, "Paste", copyPasteData);
         }
 
         /// <summary>
@@ -257,8 +225,8 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var elementsToCopySet = CollectCopyableGraphElements(GetSelection());
             var copyPasteData = BuildCopyPasteData(elementsToCopySet);
-            var serializedData = SerializedPasteData(copyPasteData);
-            UnserializeAndPaste(PasteOperation.Duplicate, "Duplicate", serializedData);
+            var duplicatedData = m_ClipboardProvider.Duplicate(copyPasteData);
+            PasteData(PasteOperation.Duplicate, "Duplicate", duplicatedData);
         }
 
         /// <summary>
@@ -282,16 +250,6 @@ namespace Unity.GraphToolsFoundation.Editor
         protected abstract CopyPasteData BuildCopyPasteData(HashSet<GraphElementModel> elementsToCopySet);
 
         /// <summary>
-        /// Serializes the <paramref name="copyPasteData"/>.
-        /// </summary>
-        /// <param name="copyPasteData">The data to serialize.</param>
-        /// <returns>The serialized data.</returns>
-        protected virtual string SerializedPasteData(CopyPasteData copyPasteData)
-        {
-            return JsonUtility.ToJson(copyPasteData, true);
-        }
-
-        /// <summary>
         /// Gets the offset at which data should be pasted.
         /// </summary>
         /// <remarks>
@@ -311,19 +269,21 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="operation">The kind of operation.</param>
         /// <param name="operationName">The name of the operation.</param>
         /// <param name="data">The serialized data.</param>
-        protected virtual void UnserializeAndPaste(PasteOperation operation, string operationName, string data)
+        protected virtual void PasteData(PasteOperation operation, string operationName, CopyPasteData data)
         {
-            var copyPaste = JsonUtility.FromJson<CopyPasteData>(data);
-            var delta = GetPasteDelta(copyPaste);
+            if (data == null)
+                return;
+
+            var delta = GetPasteDelta(data);
             var selection = GetSelection();
             foreach (var selected in selection.Reverse())
             {
                 var ui = selected.GetView_Internal(m_View);
-                if (ui != null && ui.HandlePasteOperation(operation, operationName, delta, copyPaste))
+                if (ui != null && ui.HandlePasteOperation(operation, operationName, delta, data))
                     return;
             }
 
-            m_View.Dispatch(new PasteSerializedDataCommand(operation, operationName, delta, copyPaste));
+            m_View.Dispatch(new PasteDataCommand(operation, operationName, delta, data));
         }
 
         /// <summary>
@@ -348,16 +308,6 @@ namespace Unity.GraphToolsFoundation.Editor
         protected static bool IsCopiable(GraphElementModel model)
         {
             return model?.IsCopiable() ?? false;
-        }
-
-        /// <summary>
-        /// Returns true if the data can be pasted into <see cref="m_View"/>.
-        /// </summary>
-        /// <param name="data">The data to check.</param>
-        /// <returns>True if the data can be pasted.</returns>
-        protected virtual bool CanPasteSerializedData(string data)
-        {
-            return data.StartsWith(k_SerializedDataMimeType);
         }
 
         /// <summary>

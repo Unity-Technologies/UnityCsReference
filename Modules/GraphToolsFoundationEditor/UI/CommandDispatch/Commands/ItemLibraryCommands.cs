@@ -323,19 +323,14 @@ namespace Unity.GraphToolsFoundation.Editor
 
                                 // Connect input port
                                 var inputPortModel = newModelToConnect.GetPortFitToConnectTo(wireOutput);
-
-                                if (inputPortModel != null)
-                                {
-                                    graphModel.CreateWire(inputPortModel, wireOutput);
-                                }
+                                var inputWire = inputPortModel == null ? null : graphModel.CreateWire(inputPortModel, wireOutput);
 
                                 // Connect output port
                                 var outputPortModel = newModelToConnect.GetPortFitToConnectTo(wireInput);
+                                var outputWire = outputPortModel == null ? null : graphModel.CreateWire(wireInput, outputPortModel);
 
-                                if (outputPortModel != null)
-                                {
-                                    graphModel.CreateWire(wireInput, outputPortModel);
-                                }
+                                if (inputWire != null && outputWire != null)
+                                    autoPlacementUpdater.MarkModelToRepositionAtCreation((createdElement, inputWire, WireSide.To), new List<GraphElementModel> { outputWire });
                             }
                             break;
                         case ConnectionsToMake.ExistingWires:

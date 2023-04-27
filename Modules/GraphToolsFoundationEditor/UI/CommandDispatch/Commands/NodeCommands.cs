@@ -74,6 +74,70 @@ namespace Unity.GraphToolsFoundation.Editor
     }
 
     /// <summary>
+    /// Command to hide and show node previews.
+    /// </summary>
+    class ShowNodePreviewCommand : ModelCommand<AbstractNodeModel, bool>
+    {
+        const string k_HidePreviewUndoStringSingular = "Hide Node Preview";
+        const string k_HidePreviewUndoStringPlural = "Hide Node Previews";
+        const string k_ShowPreviewUndoStringSingular = "Show Node Preview";
+        const string k_ShowPreviewUndoStringPlural = "Show Node Previews";
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShowNodePreviewCommand"/> class.
+        /// </summary>
+        public ShowNodePreviewCommand()
+            : base("Show or Hide Node Preview") {}
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShowNodePreviewCommand"/> class.
+        /// </summary>
+        /// <param name="value">True if the node previews should be hidden, false otherwise.</param>
+        /// <param name="nodes">The nodes which node previews are to be hidden or shown.</param>
+        public ShowNodePreviewCommand(bool value, IReadOnlyList<AbstractNodeModel> nodes)
+            : base(value ? k_ShowPreviewUndoStringSingular : k_HidePreviewUndoStringSingular,
+                   value ? k_ShowPreviewUndoStringPlural : k_HidePreviewUndoStringPlural, value, nodes)
+        {}
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ShowNodePreviewCommand"/> class.
+        /// </summary>
+        /// <param name="value">True if the node previews should be hidden, false otherwise.</param>
+        /// <param name="nodes">The nodes which node previews are to be hidden or shown.</param>
+        public ShowNodePreviewCommand(bool value, params AbstractNodeModel[] nodes)
+            : this(value, (IReadOnlyList<AbstractNodeModel>)nodes)
+        {}
+
+        /// <summary>
+        /// Default command handler.
+        /// </summary>
+        /// <param name="undoState">The undo state component.</param>
+        /// <param name="graphModelState">The graph model state component.</param>
+        /// <param name="command">The command.</param>
+        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, ShowNodePreviewCommand command)
+        {
+            if (!command.Models.Any())
+                return;
+
+            using (var undoStateUpdater = undoState.UpdateScope)
+            {
+                undoStateUpdater.SaveState(graphModelState);
+            }
+
+            using (var graphUpdater = graphModelState.UpdateScope)
+            using (var changeScope = graphModelState.GraphModel.ChangeDescriptionScope)
+            {
+                foreach (var model in command.Models)
+                {
+                    if (model.NodePreviewModel != null)
+                        model.NodePreviewModel.ShowNodePreview = command.Value;
+                }
+                graphUpdater.MarkUpdated(changeScope.ChangeDescription);
+            }
+        }
+    }
+
+    /// <summary>
     /// Command to change the name of a graph element.
     /// </summary>
     class RenameElementCommand : UndoableCommand
@@ -265,29 +329,29 @@ namespace Unity.GraphToolsFoundation.Editor
     /// <summary>
     /// Command to remove all wires on nodes.
     /// </summary>
-    class DisconnectNodeCommand : ModelCommand<AbstractNodeModel>
+    class DisconnectWiresCommand : ModelCommand<AbstractNodeModel>
     {
-        const string k_UndoStringSingular = "Disconnect Node";
-        const string k_UndoStringPlural = "Disconnect Nodes";
+        const string k_UndoStringSingular = "Disconnect Wires";
+        const string k_UndoStringPlural = "Disconnect Wires";
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DisconnectNodeCommand"/> class.
+        /// Initializes a new instance of the <see cref="DisconnectWiresCommand"/> class.
         /// </summary>
-        public DisconnectNodeCommand()
+        public DisconnectWiresCommand()
             : base(k_UndoStringSingular) {}
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DisconnectNodeCommand"/> class.
+        /// Initializes a new instance of the <see cref="DisconnectWiresCommand"/> class.
         /// </summary>
         /// <param name="nodeModels">The nodes to disconnect.</param>
-        public DisconnectNodeCommand(IReadOnlyList<AbstractNodeModel> nodeModels)
+        public DisconnectWiresCommand(IReadOnlyList<AbstractNodeModel> nodeModels)
             : base(k_UndoStringSingular, k_UndoStringPlural, nodeModels) {}
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DisconnectNodeCommand"/> class.
+        /// Initializes a new instance of the <see cref="DisconnectWiresCommand"/> class.
         /// </summary>
         /// <param name="nodeModels">The nodes to disconnect.</param>
-        public DisconnectNodeCommand(params AbstractNodeModel[] nodeModels)
+        public DisconnectWiresCommand(params AbstractNodeModel[] nodeModels)
             : this((IReadOnlyList<AbstractNodeModel>)nodeModels) {}
 
         /// <summary>
@@ -296,7 +360,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="undoState">The undo state component.</param>
         /// <param name="graphModelState">The graph model state component.</param>
         /// <param name="command">The command.</param>
-        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, DisconnectNodeCommand command)
+        public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, DisconnectWiresCommand command)
         {
             if (!command.Models.Any())
                 return;

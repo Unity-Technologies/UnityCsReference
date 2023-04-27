@@ -28,10 +28,12 @@ namespace UnityEditor.Presets
             public static GUIContent enableProperty = EditorGUIUtility.TrTextContent("Include Property");
             public static GUIContent disableProperty = EditorGUIUtility.TrTextContent("Exclude Property");
 
+            public const string presetEditorStyles = "StyleSheets/Preset/PresetEditor.uss";
             public static readonly string excludedUssClassName = "unity-binding--preset-ignore";
             public static readonly string excludedBarName = "unity-binding-preset-ignore-bar";
             public static readonly string excludedBarContainerName = "unity-preset-override-bars-container";
             public static readonly string excludedBarUssClassName = "unity-binding__preset-ignore-bar";
+            public static readonly string presetTypeFieldUssClassName = "unity-preset__type-field";
         }
 
         class ReferenceCount
@@ -93,7 +95,11 @@ namespace UnityEditor.Presets
             }
             else
             {
+                root.styleSheets.Add(EditorGUIUtility.Load(Style.presetEditorStyles) as StyleSheet);
+
                 var label = new TextField();
+                label.AddToClassList(Style.presetTypeFieldUssClassName);
+
                 label.label = Style.presetType.text;
                 label.tooltip = Style.presetType.tooltip;
                 label.value = m_PresetTypeName;

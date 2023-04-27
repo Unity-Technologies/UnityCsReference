@@ -214,7 +214,7 @@ namespace UnityEngine.UIElements
         /// <param name="converterFunc">A function to convert a string value to type T.</param>
         /// <param name="defaultValue">The value to return if the attribute is not found in the bag.</param>
         /// <param name="value">If the attribute could be retrieved, the retrieved value converted by the conversion function or the default value if the retrieved value could not de converted.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         protected bool TryGetValueFromBag<T>(IUxmlAttributes bag, CreationContext cc, Func<string, T, T> converterFunc, T defaultValue, ref T value)
         {
             string stringValue;
@@ -264,7 +264,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Base class for all the uxml specific attributes.
+    /// Base class for all the UXML specific attributes.
     /// </summary>
     public abstract class TypedUxmlAttributeDescription<T> : UxmlAttributeDescription
     {
@@ -282,13 +282,13 @@ namespace UnityEngine.UIElements
         public T defaultValue { get; set; }
 
         /// <summary>
-        /// The string representation of the default value of the uxml attribute.
+        /// The string representation of the default value of the UXML attribute.
         /// </summary>
         public override string defaultValueAsString { get { return defaultValue.ToString(); } }
     }
 
     /// <summary>
-    /// Describes a XML <c>string</c> attribute.
+    /// Describes a UXML <c>string</c> attribute.
     /// </summary>
     public class UxmlStringAttributeDescription : TypedUxmlAttributeDescription<string>
     {
@@ -308,7 +308,7 @@ namespace UnityEngine.UIElements
         public override string defaultValueAsString { get { return defaultValue; } }
 
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
@@ -319,12 +319,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="value">The value of the attribute.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref string value)
         {
             return TryGetValueFromBag(bag, cc, (s, t) => s , defaultValue, ref value);
@@ -332,7 +332,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Describes a XML <c>float</c> attribute.
+    /// Describes a UXML <c>float</c> attribute.
     /// </summary>
     public class UxmlFloatAttributeDescription : TypedUxmlAttributeDescription<float>
     {
@@ -352,7 +352,7 @@ namespace UnityEngine.UIElements
         public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
@@ -363,12 +363,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="value">The value of the attribute.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref float value)
         {
             return TryGetValueFromBag(bag, cc, (s, f) => ConvertValueToFloat(s, f), defaultValue, ref value);
@@ -377,14 +377,14 @@ namespace UnityEngine.UIElements
         static float ConvertValueToFloat(string v, float defaultValue)
         {
             float l;
-            if (v == null || !Single.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out l))
+            if (v == null || !float.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out l))
                 return defaultValue;
             return l;
         }
     }
 
     /// <summary>
-    /// Describes a XML <c>double</c> attribute.
+    /// Describes a UXML <c>double</c> attribute.
     /// </summary>
     public class UxmlDoubleAttributeDescription : TypedUxmlAttributeDescription<double>
     {
@@ -404,7 +404,7 @@ namespace UnityEngine.UIElements
         public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
@@ -415,12 +415,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="value">The value of the attribute.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref double value)
         {
             return TryGetValueFromBag(bag, cc, (s, d) => ConvertValueToDouble(s, d), defaultValue, ref value);
@@ -429,14 +429,14 @@ namespace UnityEngine.UIElements
         static double ConvertValueToDouble(string v, double defaultValue)
         {
             double l;
-            if (v == null || !Double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out l))
+            if (v == null || !double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out l))
                 return defaultValue;
             return l;
         }
     }
 
     /// <summary>
-    /// Describes a XML <c>int</c> attribute.
+    /// Describes a UXML <c>int</c> attribute.
     /// </summary>
     public class UxmlIntAttributeDescription : TypedUxmlAttributeDescription<int>
     {
@@ -456,7 +456,7 @@ namespace UnityEngine.UIElements
         public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
@@ -467,12 +467,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="value">The value of the attribute.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref int value)
         {
             return TryGetValueFromBag(bag, cc, (s, i) => ConvertValueToInt(s, i), defaultValue, ref value);
@@ -481,7 +481,7 @@ namespace UnityEngine.UIElements
         static int ConvertValueToInt(string v, int defaultValue)
         {
             int l;
-            if (v == null || !Int32.TryParse(v, out l))
+            if (v == null || !int.TryParse(v, out l))
                 return defaultValue;
 
             return l;
@@ -489,7 +489,111 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Describes a XML <c>long</c> attribute.
+    /// Describes a UXML <c>uint</c> attribute.
+    /// </summary>
+    public class UxmlUnsignedIntAttributeDescription : TypedUxmlAttributeDescription<uint>
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public UxmlUnsignedIntAttributeDescription()
+        {
+            type = "unsignedInt";
+            typeNamespace = xmlSchemaNamespace;
+            defaultValue = 0;
+        }
+
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
+        public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
+
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
+        public override uint GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        {
+            return GetValueFromBag(bag, cc, (s, i) => ConvertValueToUInt(s, i), defaultValue);
+        }
+
+        /// <summary>
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value is found, false otherwise.</returns>
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref uint value)
+        {
+            return TryGetValueFromBag(bag, cc, (s, i) => ConvertValueToUInt(s, i), defaultValue, ref value);
+        }
+
+        static uint ConvertValueToUInt(string v, uint defaultValue)
+        {
+            if (v == null || !uint.TryParse(v, out var l))
+                return defaultValue;
+
+            return l;
+        }
+    }
+
+    /// <summary>
+    /// Describes a UXML <c>ulong</c> attribute.
+    /// </summary>
+    public class UxmlUnsignedLongAttributeDescription : TypedUxmlAttributeDescription<ulong>
+    {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        public UxmlUnsignedLongAttributeDescription()
+        {
+            type = "unsignedLong";
+            typeNamespace = xmlSchemaNamespace;
+            defaultValue = 0;
+        }
+
+        /// <summary>
+        /// The default value for the attribute, as a string.
+        /// </summary>
+        public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
+
+        /// <summary>
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <returns>The value of the attribute.</returns>
+        public override ulong GetValueFromBag(IUxmlAttributes bag, CreationContext cc)
+        {
+            return GetValueFromBag(bag, cc, (s, l) => ConvertValueToUlong(s, l), defaultValue);
+        }
+
+        /// <summary>
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
+        /// </summary>
+        /// <param name="bag">The bag of attributes.</param>
+        /// <param name="cc">The context in which the values are retrieved.</param>
+        /// <param name="value">The value of the attribute.</param>
+        /// <returns>True if the value is found, false otherwise.</returns>
+        public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref ulong value)
+        {
+            return TryGetValueFromBag(bag, cc, (s, l) => ConvertValueToUlong(s, l), defaultValue, ref value);
+        }
+
+        static ulong ConvertValueToUlong(string v, ulong defaultValue)
+        {
+            ulong l;
+            if (v == null || !ulong.TryParse(v, out l))
+                return defaultValue;
+            return l;
+        }
+    }
+
+    /// <summary>
+    /// Describes a UXML <c>long</c> attribute.
     /// </summary>
     public class UxmlLongAttributeDescription : TypedUxmlAttributeDescription<long>
     {
@@ -509,7 +613,7 @@ namespace UnityEngine.UIElements
         public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
@@ -520,12 +624,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="value">The value of the attribute.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref long value)
         {
             return TryGetValueFromBag(bag, cc, (s, l) => ConvertValueToLong(s, l), defaultValue, ref value);
@@ -541,7 +645,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Describes a XML <c>bool</c> attribute.
+    /// Describes a UXML <c>bool</c> attribute.
     /// </summary>
     public class UxmlBoolAttributeDescription : TypedUxmlAttributeDescription<bool>
     {
@@ -561,7 +665,7 @@ namespace UnityEngine.UIElements
         public override string defaultValueAsString { get { return defaultValue.ToString().ToLower(); } }
 
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
@@ -572,12 +676,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="value">The value of the attribute.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref bool value)
         {
             return TryGetValueFromBag(bag, cc, (s, b) => ConvertValueToBool(s, b), defaultValue, ref value);
@@ -594,7 +698,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Describes a XML attribute representing a <see cref="Color"/> as a <c>string</c>.
+    /// Describes a UXML attribute representing a <see cref="Color"/> as a <c>string</c>.
     /// </summary>
     public class UxmlColorAttributeDescription : TypedUxmlAttributeDescription<Color>
     {
@@ -614,7 +718,7 @@ namespace UnityEngine.UIElements
         public override string defaultValueAsString { get { return defaultValue.ToString(); } }
 
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
@@ -625,12 +729,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="value">The value of the attribute.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref Color value)
         {
             return TryGetValueFromBag(bag, cc, (s, color) => ConvertValueToColor(s, color), defaultValue, ref value);
@@ -715,7 +819,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Describes a XML attribute representing an <c>enum</c> as a <c>string</c>.
+    /// Describes a UXML attribute representing an <c>enum</c> as a <c>string</c>.
     /// </summary>
     public class UxmlEnumAttributeDescription<T> : TypedUxmlAttributeDescription<T> where T : struct, IConvertible
     {
@@ -751,7 +855,7 @@ namespace UnityEngine.UIElements
         public override string defaultValueAsString { get { return defaultValue.ToString(CultureInfo.InvariantCulture.NumberFormat); } }
 
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
@@ -762,12 +866,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="value">The value of the attribute.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref T value)
         {
             return TryGetValueFromBag(bag, cc, (s, convertible) => ConvertValueToEnum(s, convertible), defaultValue, ref value);
@@ -806,7 +910,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Describes a XML <c>Hash128</c> attribute.
+    /// Describes a UXML <c>Hash128</c> attribute.
     /// </summary>
     public class UxmlHash128AttributeDescription : TypedUxmlAttributeDescription<Hash128>
     {
@@ -826,7 +930,7 @@ namespace UnityEngine.UIElements
         public override string defaultValueAsString { get { return defaultValue.ToString(); } }
 
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
@@ -837,12 +941,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="value">The value of the attribute.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, ref Hash128 value)
         {
             return TryGetValueFromBag(bag, cc, (s, i) => i = Hash128.Parse(s), defaultValue, ref value);
@@ -862,7 +966,7 @@ namespace UnityEngine.UIElements
         public T defaultValue { get; set; }
 
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
@@ -883,14 +987,14 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Describes a list of UXML objects defined as children in Uxml. Each UXML object then has a set of attributes.
+    /// Describes a list of UXML objects defined as children in UXML. Each UXML object then has a set of attributes.
     /// </summary>
     /// <typeparam name="T">Type of the created UXML objects.</typeparam>
     /// <remarks>UXML objects are defined using <see cref="UxmlObjectFactory{TCreatedType,TTraits}"/> and <see cref="UxmlObjectTraits{T}"/> on a simple class or structure.</remarks>
     internal class UxmlObjectListAttributeDescription<T> : UxmlObjectAttributeDescription<List<T>> where T : new()
     {
         /// <summary>
-        /// Retrieves the value of this attribute from the attribute bag. Returns it if it is found, otherwise return <see cref="defaultValue"/>.
+        /// Retrieves the value of this attribute from the attribute bag. Returns the value if found; otherwise, it returns <see cref="defaultValue"/>.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>

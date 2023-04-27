@@ -109,18 +109,35 @@ namespace Unity.GraphToolsFoundation.Editor
 
             m_FreehandElement.Points.Add(m_GraphView.ChangeCoordinatesTo(m_GraphView.ContentViewContainer, e.localMousePosition));
 
+            SelectElementsUnderLasso(m_FreehandElement.Points, e.altKey, m_GraphView);
+            m_GraphView.StopMergingUndoableCommands();
+
+            m_Active = false;
+            target.ReleaseMouse();
+            e.StopPropagation();
+            m_PanHelper.OnMouseUp(e);
+        }
+
+        /// <summary>
+        /// Selects or deletes all elements found under the lasso points.
+        /// </summary>
+        /// <param name="lassoPoints">Points forming the lasso.</param>
+        /// <param name="deleteElements">True to delete elements, otherwise select them.</param>
+        /// <param name="graphView">The <see cref="GraphView"/> in which to search for the elements.</param>
+        protected static void SelectElementsUnderLasso(List<Vector2> lassoPoints, bool deleteElements, GraphView graphView)
+        {
             // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
             List<ModelView> newSelection = new List<ModelView>();
-            m_GraphView.GraphModel.GraphElementModels
+            graphView.GraphModel.GraphElementModels
                 .Where(ge => ge.IsSelectable())
-                .GetAllViewsInList_Internal(m_GraphView, null, k_OnMouseUpAllUIs);
+                .GetAllViewsInList_Internal(graphView, null, k_OnMouseUpAllUIs);
             foreach (var element in k_OnMouseUpAllUIs)
             {
-                for (int i = 1; i < m_FreehandElement.Points.Count; i++)
+                for (int i = 1; i < lassoPoints.Count; i++)
                 {
                     // Apply offset
-                    Vector2 start = m_GraphView.ContentViewContainer.ChangeCoordinatesTo(element, m_FreehandElement.Points[i - 1]);
-                    Vector2 end = m_GraphView.ContentViewContainer.ChangeCoordinatesTo(element, m_FreehandElement.Points[i]);
+                    Vector2 start = graphView.ContentViewContainer.ChangeCoordinatesTo(element, lassoPoints[i - 1]);
+                    Vector2 end = graphView.ContentViewContainer.ChangeCoordinatesTo(element, lassoPoints[i]);
                     float minx = Mathf.Min(start.x, end.x);
                     float maxx = Mathf.Max(start.x, end.x);
                     float miny = Mathf.Min(start.y, end.y);
@@ -138,20 +155,14 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var selectedModels = newSelection.Select(elem => elem.Model).OfType<GraphElementModel>().ToList();
 
-            if (e.altKey)
+            if (deleteElements)
             {
-                m_GraphView.Dispatch(new DeleteElementsCommand(selectedModels));
+                graphView.Dispatch(new DeleteElementsCommand(selectedModels));
             }
             else
             {
-                m_GraphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, selectedModels));
+                graphView.Dispatch(new SelectElementsCommand(SelectElementsCommand.SelectionMode.Replace, selectedModels));
             }
-            m_GraphView.StopMergingUndoableCommands();
-
-            m_Active = false;
-            target.ReleaseMouse();
-            e.StopPropagation();
-            m_PanHelper.OnMouseUp(e);
         }
 
         /// <summary>

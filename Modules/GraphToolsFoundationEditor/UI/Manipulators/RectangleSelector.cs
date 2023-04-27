@@ -138,6 +138,23 @@ namespace Unity.GraphToolsFoundation.Editor
                 max = new Vector2(Math.Max(m_Rectangle.Start.x, m_Rectangle.End.x), Math.Max(m_Rectangle.Start.y, m_Rectangle.End.y))
             };
 
+            SelectElementsInRegion(selectionRect, e.actionKey ? SelectElementsCommand.SelectionMode.Toggle : SelectElementsCommand.SelectionMode.Replace, graphView);
+            graphView.StopMergingUndoableCommands();
+
+            m_Active = false;
+            target.ReleaseMouse();
+            e.StopPropagation();
+            m_PanHelper.OnMouseUp(e);
+        }
+
+        /// <summary>
+        /// Performs the selection of all elements inside a specific region.
+        /// </summary>
+        /// <param name="selectionRegion">The region where to look for the elements.</param>
+        /// <param name="selectionMode">The selection mode.</param>
+        /// <param name="graphView">The <see cref="GraphView"/> in which to search for the elements.</param>
+        protected static void SelectElementsInRegion(Rect selectionRegion, SelectElementsCommand.SelectionMode selectionMode, GraphView graphView)
+        {
             // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
             List<ModelView> newSelection = new List<ModelView>();
             graphView.GraphModel?.GraphElementModels
@@ -145,7 +162,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 .GetAllViewsInList_Internal(graphView, null, k_OnMouseUpAllUIs);
             foreach (var child in k_OnMouseUpAllUIs)
             {
-                var localSelRect = graphView.ContentViewContainer.ChangeCoordinatesTo(child, selectionRect);
+                var localSelRect = graphView.ContentViewContainer.ChangeCoordinatesTo(child, selectionRegion);
                 if (child.Overlaps(localSelRect))
                 {
                     newSelection.Add(child);
@@ -153,7 +170,6 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             k_OnMouseUpAllUIs.Clear();
 
-            var mode = e.actionKey ? SelectElementsCommand.SelectionMode.Toggle : SelectElementsCommand.SelectionMode.Replace;
             var allSelectedModels = newSelection
                 .Select(elem => elem.Model)
                 .OfType<GraphElementModel>()
@@ -163,7 +179,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 .OfType<PortNodeModel>()
                 .ToHashSet();
 
-            foreach(var node in selectedNodes.ToList()) // need to copy the list as it will be changed while iterating.
+            foreach (var node in selectedNodes.ToList()) // need to copy the list as it will be changed while iterating.
                 RecurseAddGraphContainerChildren(node, selectedNodes);
 
             bool PortIsSelected(PortModel p) => p != null && selectedNodes.Contains(p.NodeModel);
@@ -172,17 +188,11 @@ namespace Unity.GraphToolsFoundation.Editor
             var modelsToSelect = onlyWiresSelected ?
                 allSelectedModels :
                 allSelectedModels
-                .Where(m => m is not WireModel wire
-                            || PortIsSelected(wire.FromPort) && PortIsSelected(wire.ToPort))
-                .ToList();
+                    .Where(m => m is not WireModel wire
+                        || PortIsSelected(wire.FromPort) && PortIsSelected(wire.ToPort))
+                    .ToList();
 
-            graphView.Dispatch(new SelectElementsCommand(mode, modelsToSelect));
-            graphView.StopMergingUndoableCommands();
-
-            m_Active = false;
-            target.ReleaseMouse();
-            e.StopPropagation();
-            m_PanHelper.OnMouseUp(e);
+            graphView.Dispatch(new SelectElementsCommand(selectionMode, modelsToSelect));
         }
 
         static void RecurseAddGraphContainerChildren(PortNodeModel node, HashSet<PortNodeModel> nodeModels)

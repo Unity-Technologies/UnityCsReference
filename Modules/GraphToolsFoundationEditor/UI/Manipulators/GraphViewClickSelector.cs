@@ -42,12 +42,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="isActionKeyDown">Whether the action key is down. This is used to alter the way the selection is changed.</param>
         public static void SelectElements(GraphElement clickedElement, bool isActionKeyDown)
         {
-            if (clickedElement.GraphElementModel.IsSelectable())
+            var clickedGraphElement = clickedElement is Marker marker ? marker.ParentModel : clickedElement.GraphElementModel;
+            if (clickedGraphElement.IsSelectable())
             {
                 var selectionMode = isActionKeyDown
                     ? SelectElementsCommand.SelectionMode.Toggle
                     : SelectElementsCommand.SelectionMode.Replace;
-                clickedElement.GraphView?.Dispatch(new SelectElementsCommand(selectionMode, clickedElement.GraphElementModel));
+
+                clickedElement.GraphView?.Dispatch(new SelectElementsCommand(selectionMode, clickedGraphElement));
             }
         }
     }

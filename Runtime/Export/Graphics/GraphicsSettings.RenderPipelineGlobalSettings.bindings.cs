@@ -79,5 +79,31 @@ namespace UnityEngine.Rendering
 
             return currentRenderPipelineGlobalSettings != null;
         }
+
+        public static T GetSRPGraphicsSetting<T>() where T : class, ISRPGraphicsSetting
+        {
+            if (!TryGetCurrentRenderPipelineGlobalSettings(out RenderPipelineGlobalSettings currentRenderPipelineGlobalSettings))
+                throw new Exception($"The current render pipeline does not have {nameof(RenderPipelineGlobalSettings)} registered");
+
+            if (!currentRenderPipelineGlobalSettings.TryGet(typeof(T), out var baseSetting))
+                throw new Exception($"Unable to find a setting of type {typeof(T)} on {currentRenderPipelineGlobalSettings.GetType()}");
+
+            return baseSetting as T;
+        }
+
+        public static bool TryGetSRPGraphicsSetting<T>(out T setting) where T : class, ISRPGraphicsSetting
+        {
+            try
+            {
+                setting = GetSRPGraphicsSetting<T>();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                setting = null;
+            }
+
+            return setting != null;
+        }
     }
 }

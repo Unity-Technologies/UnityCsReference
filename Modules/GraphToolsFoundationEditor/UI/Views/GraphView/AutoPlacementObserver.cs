@@ -83,6 +83,11 @@ namespace Unity.GraphToolsFoundation.Editor
                     RepositionModelsAtCreation(elementsToReposition, graphModel, graphUpdater);
                 }
 
+                if (changeset.ModelsToHideDuringAutoPlacement.Any())
+                {
+                    SetHiddenModelsToVisible(changeset.ModelsToHideDuringAutoPlacement);
+                }
+
                 graphUpdater.MarkUpdated(changeScope.ChangeDescription);
             }
         }
@@ -137,16 +142,20 @@ namespace Unity.GraphToolsFoundation.Editor
 
                     nodeModel.Position = new Vector2(newPosX, newPosY);
 
-                    // The wire's visibility was set to hidden before the first layout pass. Now, it should be set to visible.
                     var wireUI = wireModel.GetView<Wire>(m_GraphView);
                     if (wireUI != null)
-                    {
-                        wireUI.visible = true;
                         graphUpdater.MarkChanged(wireModel, ChangeHint.Layout);
-                    }
                 }
-                // The node was set to hidden before the first layout pass. Now, it should be set to visible.
-                nodeUI.visible = true;
+            }
+        }
+
+        void SetHiddenModelsToVisible(IEnumerable<SerializableGUID> hiddenModels)
+        {
+            foreach (var hiddenModel in hiddenModels)
+            {
+                var modelUI = hiddenModel.GetView_Internal(m_GraphView);
+                if (modelUI != null)
+                    modelUI.visible = true;
             }
         }
     }

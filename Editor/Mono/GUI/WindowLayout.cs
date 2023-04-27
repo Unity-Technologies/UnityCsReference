@@ -1509,7 +1509,6 @@ namespace UnityEditor
                     output += $"{killme.GetType().Name} {killme.name} {killme.titleContent.text} [{killme.GetInstanceID()}]\r\n";
                     UnityObject.DestroyImmediate(killme, true);
                 }
-                Debug.LogWarning($"Failed to destroy editor windows: #{oldWindows.Length}\r\n{output}");
             }
 
             UnityObject[] oldViews = Resources.FindObjectsOfTypeAll(typeof(View));

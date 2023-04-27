@@ -251,9 +251,7 @@ namespace UnityEditor.UIElements.Bindings
                         }
                         else if (element is INotifyValueChanged<ulong>)
                         {
-                            //This is not sustainable, we must fix this
-                            DefaultBind(element,  prop, (x) => (ulong) SerializedPropertyHelper.GetLongPropertyValue(x), (x, v) => SerializedPropertyHelper.SetLongPropertyValue(x, (long)v),
-                                (a, b, c) => SerializedPropertyHelper.ValueEquals((long)a,b, (x) => (long)c(x)));
+                            DefaultBind(element,  prop, SerializedPropertyHelper.GetULongPropertyValue, SerializedPropertyHelper.SetULongPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
                         else if (element is INotifyValueChanged<int>)
                         {
@@ -269,6 +267,10 @@ namespace UnityEditor.UIElements.Bindings
                         if (element is INotifyValueChanged<int> || element is  INotifyValueChanged<string>)
                         {
                             DefaultBind(element, prop, SerializedPropertyHelper.GetIntPropertyValue, SerializedPropertyHelper.SetIntPropertyValue, SerializedPropertyHelper.ValueEquals);
+                        }
+                        else if (element is INotifyValueChanged<uint>)
+                        {
+                            DefaultBind(element, prop, SerializedPropertyHelper.GetUIntPropertyValue, SerializedPropertyHelper.SetUIntPropertyValue, SerializedPropertyHelper.ValueEquals);
                         }
                         else if (element is INotifyValueChanged<long>)
                         {

@@ -6,7 +6,9 @@ using System.Runtime.CompilerServices;
 
 // GTF Tests
 [assembly: InternalsVisibleTo("Unity.GraphTools.Foundation.Tests")]
+[assembly: InternalsVisibleTo("Unity.GraphTools.Foundation.Testing.Editor")]
 [assembly: InternalsVisibleTo("Unity.GraphTools.Foundation.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.GraphTools.Foundation.Editor.Tests.Performance")]
 
 // GTF Samples
 [assembly: InternalsVisibleTo("BlackboardSample")]

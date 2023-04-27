@@ -334,6 +334,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_SelectionColor = value;
                 NotifyPropertyChanged(selectionColorProperty);
+                MarkDirtyRepaint();
             }
         }
 
@@ -353,6 +354,7 @@ namespace UnityEngine.UIElements
                     return;
                 m_CursorColor = value;
                 NotifyPropertyChanged(cursorColorProperty);
+                MarkDirtyRepaint();
             }
         }
 
@@ -373,6 +375,7 @@ namespace UnityEngine.UIElements
                 if (Mathf.Approximately(m_CursorWidth, value))
                     return;
                 m_CursorWidth = value;
+                MarkDirtyRepaint();
             }
         }
 

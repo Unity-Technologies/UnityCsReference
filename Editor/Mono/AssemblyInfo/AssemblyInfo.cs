@@ -25,6 +25,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.PureCSharpTests")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.ExternalVersionControl")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UnityAnalytics")]
 [assembly: InternalsVisibleTo("Unity.PerformanceIntegrationTests")]
 [assembly: InternalsVisibleTo("Unity.Timeline.Editor")]
@@ -130,6 +131,9 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.TextCoreTextEngineModule")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
 [assembly: InternalsVisibleTo("Unity.Animation.Editor.AnimationWindow")]
+[assembly: InternalsVisibleTo("Unity.VisualEffectGraph.Editor")]
+[assembly: InternalsVisibleTo("Unity.Testing.VisualEffectGraph.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.VisualEffectGraph.EditorTests")]
 
 [assembly: InternalsVisibleTo("Unity.SceneTemplate.Editor")]
 [assembly: InternalsVisibleTo("com.unity.purchasing.udp.Editor")]

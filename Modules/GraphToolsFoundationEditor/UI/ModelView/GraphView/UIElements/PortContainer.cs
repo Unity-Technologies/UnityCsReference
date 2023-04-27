@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
@@ -29,21 +27,34 @@ namespace Unity.GraphToolsFoundation.Editor
         string m_CurrentPortCountClassName;
         bool m_SetupLabelWidth;
         float m_MaxInputLabelWidth;
+        bool m_SetCountModifierOnParent;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortContainer"/> class.
         /// </summary>
-        public PortContainer(bool setupLabelWidth, float maxInputLabelWidth)
+        /// <param name="setupLabelWidth">Whether the label width should be computed based on the largest label.</param>
+        /// <param name="maxInputLabelWidth">If <see cref="setupLabelWidth"/> is true, sets the maximum width for the labels.</param>
+        /// <param name="setCountModifierOnParent">Whether to set the class for the modifier of the number of port on parent <see cref="VisualElement"/> too.</param>
+        public PortContainer(bool setupLabelWidth, float maxInputLabelWidth, bool setCountModifierOnParent = false)
         {
             m_SetupLabelWidth = setupLabelWidth;
             m_MaxInputLabelWidth = maxInputLabelWidth;
+            m_SetCountModifierOnParent = setCountModifierOnParent;
             AddToClassList(ussClassName);
             this.AddStylesheet_Internal("PortContainer.uss");
         }
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="PortContainer"/> class.
+        /// </summary>
         public PortContainer() : this(false, float.PositiveInfinity)
         {}
 
+        /// <summary>
+        /// Updates the ports in this container.
+        /// </summary>
+        /// <param name="ports"> The ports to update.</param>
+        /// <param name="view"> The root view.</param>
         public void UpdatePorts(IEnumerable<PortModel> ports, RootView view)
         {
             var uiPorts = this.Query<Port>().ToList();
@@ -98,9 +109,21 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             schedule.Execute(UpdateLayout).StartingIn(0);
 
-            this.ReplaceAndCacheClassName(portCountClassNamePrefix + portViewModels.Count, ref m_CurrentPortCountClassName);
+            var newCountModifier = portCountClassNamePrefix + portViewModels.Count;
+            if (m_SetCountModifierOnParent)
+            {
+                if (newCountModifier != m_CurrentPortCountClassName)
+                {
+                    parent.RemoveFromClassList(m_CurrentPortCountClassName);
+                    parent.AddToClassList(newCountModifier);
+                }
+            }
+            this.ReplaceAndCacheClassName(newCountModifier, ref m_CurrentPortCountClassName);
         }
 
+        /// <summary>
+        /// Updates the container layout, computing the needed label width if configured.
+        /// </summary>
         public void UpdateLayout()
         {
             var uiPorts = this.Query<Port>().ToList();
@@ -141,7 +164,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         static UnityEngine.TextCore.Text.TextGenerationSettings s_TextGenerationSettings = new();
 
-        float GetLabelTextWidth(TextElement element)
+        static float GetLabelTextWidth(TextElement element)
         {
             var style = element.computedStyle;
 
@@ -173,7 +196,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var size = TextGenerator.GetPreferredValues(s_TextGenerationSettings, TextHandle.textInfoCommon);
 
-            return size.x;
+            return Mathf.Ceil(size.x);
         }
     }
 }

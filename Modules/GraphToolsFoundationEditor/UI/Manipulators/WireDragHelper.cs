@@ -152,40 +152,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 WireCandidateModel.ToPort = draggedPort;
             }
 
-            m_AllPorts = GraphView.GraphModel.GetPortModels().ToList();
-            m_CompatiblePorts = GraphView.GraphModel.GetCompatiblePorts(m_AllPorts, draggedPort);
+            GetCompatiblePorts_Internal(compatiblePortsFilter);
 
-            // Filter compatible ports
-            if (compatiblePortsFilter != null)
-            {
-                m_CompatiblePorts = m_CompatiblePorts.FindAll(compatiblePortsFilter);
-            }
-
-            // Only light compatible anchors when dragging a wire.
-            for (var i = 0; i < m_AllPorts.Count; i++)
-            {
-                var pv = m_AllPorts[i].GetView<Port>(GraphView);
-                if (pv != null)
-                {
-                    pv.SetEnabled(false);
-                }
-            }
-
-            for (var i = 0; i < m_CompatiblePorts.Count; i++)
-            {
-                var pv = m_CompatiblePorts[i].GetView<Port>(GraphView);
-                if (pv != null)
-                {
-                    pv.SetEnabled(true);
-                }
-            }
-
-            var portUI = draggedPort.GetView<Port>(GraphView);
-            if (portUI != null)
-            {
-                portUI.WillConnect = true;
-                portUI.SetEnabled(true);
-            }
+            HighlightCompatiblePorts_Internal();
 
             m_WireCandidate.UpdateFromModel();
 
@@ -293,14 +262,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var scale = GraphView.ContentViewContainer.transform.scale;
             GraphView.Dispatch(new ReframeGraphViewCommand(position, scale));
 
-            for (var i = 0; i < m_AllPorts.Count; i++)
-            {
-                var pv = m_AllPorts[i].GetView<Port>(GraphView);
-                if (pv != null)
-                {
-                    pv.SetEnabled(true);
-                }
-            }
+            StopHighlightingCompatiblePorts_Internal();
 
             // Clean up ghost wires.
             if (m_GhostWireModel != null)
@@ -422,6 +384,59 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             return endPort;
+        }
+
+        protected internal void GetCompatiblePorts_Internal(Predicate<PortModel> compatiblePortsFilter = null)
+        {
+            m_AllPorts = GraphView.GraphModel.GetPortModels().ToList();
+            m_CompatiblePorts = GraphView.GraphModel.GetCompatiblePorts(m_AllPorts, draggedPort);
+
+            // Filter compatible ports
+            if (compatiblePortsFilter != null)
+            {
+                m_CompatiblePorts = m_CompatiblePorts.FindAll(compatiblePortsFilter);
+            }
+        }
+
+        protected internal void HighlightCompatiblePorts_Internal()
+        {
+            // Only light compatible anchors when dragging a wire.
+            for (var i = 0; i < m_AllPorts.Count; i++)
+            {
+                var pv = m_AllPorts[i].GetView<Port>(GraphView);
+                if (pv != null)
+                {
+                    pv.SetEnabled(false);
+                }
+            }
+
+            for (var i = 0; i < m_CompatiblePorts.Count; i++)
+            {
+                var pv = m_CompatiblePorts[i].GetView<Port>(GraphView);
+                if (pv != null)
+                {
+                    pv.SetEnabled(true);
+                }
+            }
+
+            var portUI = draggedPort.GetView<Port>(GraphView);
+            if (portUI != null)
+            {
+                portUI.WillConnect = true;
+                portUI.SetEnabled(true);
+            }
+        }
+
+        protected internal void StopHighlightingCompatiblePorts_Internal()
+        {
+            for (var i = 0; i < m_AllPorts.Count; i++)
+            {
+                var pv = m_AllPorts[i].GetView<Port>(GraphView);
+                if (pv != null)
+                {
+                    pv.SetEnabled(true);
+                }
+            }
         }
     }
 }

@@ -101,7 +101,6 @@ namespace UnityEditor
                 get
                 {
                     var sceneViewFocus = EditorWindow.focusedWindow is SceneView;
-
                     return sceneViewFocus && s_ViewportsUnderMouse;
                 }
             }
@@ -174,7 +173,8 @@ namespace UnityEditor
             Tools.s_LockedViewTool = Tools.viewTool = tool;
             s_CurrentState = MotionState.kDragging;
             HandleMouseDown(SceneView.lastActiveSceneView, s_ViewToolID, Event.current?.button ?? 0);
-            UpdateViewToolState(Event.current);
+            //Do not pass the event here to avoid string comparisons in the method as this is not needed here.
+            UpdateViewToolState(null);
             if(Event.current != null)
                 shortcutKey = Event.current.isMouse ? KeyCode.Mouse0 + Event.current.button : Event.current.keyCode;
             else
@@ -241,13 +241,15 @@ namespace UnityEditor
 
         static void UpdateViewToolState(Event evt)
         {
-            bool viewShortcut = false;
-            var eventKeyCombination = new[] { KeyCombination.FromInput(evt) };
+            bool shouldBeActive = false;
+            if (evt?.type == EventType.MouseDown)
+            {
+                var eventKeyCombination = new[] { KeyCombination.FromInput(evt) };
+                foreach (var shortcut in ViewToolShortcuts)
+                    shouldBeActive |= shortcut?.StartsWith(eventKeyCombination) ?? false;
+            }
 
-            foreach (var shortcut in ViewToolShortcuts)
-                viewShortcut |= shortcut?.StartsWith(eventKeyCombination) ?? false;
-
-            bool shouldBeActive = Tools.s_LockedViewTool != ViewTool.None || Tools.current == Tool.View || viewShortcut;
+            shouldBeActive |= Tools.s_LockedViewTool != ViewTool.None || Tools.current == Tool.View;
             if (shouldBeActive != s_ViewToolActive)
             {
                 s_ViewToolActive = shouldBeActive;

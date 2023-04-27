@@ -34,7 +34,7 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeField, HideInInspector]
         Rect m_Position;
 
-        [SerializeField, Multiline]
+        [SerializeField, Multiline, Delayed]
         string m_Comment;
 
         public override Color DefaultColor => new Color(74.0f/255.0f, 88.0f/255.0f, 91.0f / 255.0f);

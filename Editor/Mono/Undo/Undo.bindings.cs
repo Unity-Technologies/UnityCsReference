@@ -64,9 +64,15 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/Undo/ObjectUndo.h")]
     [NativeHeader("Editor/Mono/Undo/Undo.bindings.h")]
     [NativeHeader("Editor/Src/Undo/AssetUndo.h")]
-
     public partial class Undo
     {
+        [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
+        public static extern bool isProcessing
+        {
+            [NativeMethod("GetIsProcessing")]
+            get;
+        }
+
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         private static extern void GetRecordsInternal(object undoRecords, out int undoCursorPos);
 

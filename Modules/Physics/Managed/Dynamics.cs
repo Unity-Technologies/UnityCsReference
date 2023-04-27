@@ -16,15 +16,15 @@ namespace UnityEngine
     public enum RigidbodyConstraints
     {
         None = 0,
-        FreezePositionX = 0x02,
-        FreezePositionY = 0x04,
-        FreezePositionZ = 0x08,
-        FreezeRotationX = 0x10,
-        FreezeRotationY = 0x20,
-        FreezeRotationZ = 0x40,
-        FreezePosition = 0x0e,
-        FreezeRotation = 0x70,
-        FreezeAll = 0x7e,
+        FreezePositionX = 1 << 1,
+        FreezePositionY = 1 << 2,
+        FreezePositionZ = 1 << 3,
+        FreezeRotationX = 1 << 4,
+        FreezeRotationY = 1 << 5,
+        FreezeRotationZ = 1 << 6,
+        FreezePosition = FreezePositionX | FreezePositionY | FreezePositionZ,
+        FreezeRotation = FreezeRotationX | FreezeRotationY | FreezeRotationZ,
+        FreezeAll = FreezePosition | FreezeRotation
     }
 
     // Option for how to apply a force using Rigidbody.AddForce.
@@ -248,7 +248,6 @@ namespace UnityEngine
         // Assumes we are NOT in the reusing mode
         internal Collision(in ContactPairHeader header, in ContactPair pair, bool flipped)
         {
-            Assertions.Assert.IsFalse(Physics.reuseCollisionCallbacks);
             m_LegacyContacts = new ContactPoint[pair.m_NbPoints];
             pair.ExtractContactsArray(m_LegacyContacts, flipped);
             m_Header = header;
@@ -259,7 +258,6 @@ namespace UnityEngine
         // Assumes we are in the reusing mode
         internal void Reuse(in ContactPairHeader header, in ContactPair pair)
         {
-            Assertions.Assert.IsTrue(Physics.reuseCollisionCallbacks);
             m_Header = header;
             m_Pair = pair;
             m_LegacyContacts = null;

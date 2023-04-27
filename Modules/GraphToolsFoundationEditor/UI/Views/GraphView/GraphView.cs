@@ -122,10 +122,15 @@ namespace Unity.GraphToolsFoundation.Editor
         GraphViewStateComponent.GraphLoadedObserver m_GraphViewGraphLoadedObserver;
         GraphModelStateComponent.GraphAssetLoadedObserver m_GraphModelGraphLoadedAssetObserver;
         SelectionStateComponent.GraphLoadedObserver m_SelectionGraphLoadedObserver;
+        GraphProcessingStateComponent.GraphLoadedObserver m_ProcessingGraphLoadedObserver;
+        GraphProcessingErrorsStateComponent.GraphLoadedObserver m_ProcessingErrorsGraphLoadedObserver;
         ModelViewUpdater m_UpdateObserver;
         WireOrderObserver_Internal m_WireOrderObserver;
         DeclarationHighlighter m_DeclarationHighlighter;
         AutoPlacementObserver m_AutoPlacementObserver;
+        AutomaticGraphProcessingObserver m_AutomaticGraphProcessingObserver;
+        GraphProcessingErrorObserver m_GraphProcessingErrorObserver;
+
         ViewSelection m_ViewSelection;
 
         /// <summary>
@@ -274,7 +279,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (GraphTool != null)
             {
                 GraphModel graphModel = GraphTool.ToolState.GraphModel;
-                Model = new GraphViewModel(graphViewName, graphModel);
+                Model = new GraphViewModel(graphViewName, graphModel); // PF FIXME this is not great for derived classes that want to add state components.
 
                 if (DisplayMode == GraphViewDisplayMode.Interactive)
                 {
@@ -776,9 +781,9 @@ namespace Unity.GraphToolsFoundation.Editor
                             .Where(m => m.GetConnectedWires().Any())
                             .ToList();
 
-                        evt.menu.AppendAction("Disconnect Nodes", _ =>
+                        evt.menu.AppendAction("Disconnect Wires", _ =>
                         {
-                            Dispatch(new DisconnectNodeCommand(connectedNodes));
+                            Dispatch(new DisconnectWiresCommand(connectedNodes));
                         }, connectedNodes.Count == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
 
                         var ioConnectedNodes = connectedNodes
@@ -1025,6 +1030,18 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_SelectionGraphLoadedObserver = new SelectionStateComponent.GraphLoadedObserver(GraphTool.ToolState, GraphViewModel.SelectionState);
                 GraphTool.ObserverManager.RegisterObserver(m_SelectionGraphLoadedObserver);
             }
+
+            if (m_ProcessingGraphLoadedObserver == null)
+            {
+                m_ProcessingGraphLoadedObserver = new GraphProcessingStateComponent.GraphLoadedObserver(GraphTool.ToolState, GraphViewModel.GraphProcessingState);
+                GraphTool.ObserverManager.RegisterObserver(m_ProcessingGraphLoadedObserver);
+            }
+
+            if (m_ProcessingErrorsGraphLoadedObserver == null)
+            {
+                m_ProcessingErrorsGraphLoadedObserver = new GraphProcessingErrorsStateComponent.GraphLoadedObserver(GraphTool.ToolState, GraphViewModel.ProcessingErrorsState);
+                GraphTool.ObserverManager.RegisterObserver(m_ProcessingErrorsGraphLoadedObserver);
+            }
         }
 
         /// <inheritdoc />
@@ -1035,7 +1052,13 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (m_UpdateObserver == null)
             {
-                m_UpdateObserver = new ModelViewUpdater(this, GraphViewModel.GraphViewState, GraphViewModel.GraphModelState, GraphViewModel.SelectionState, GraphTool.GraphProcessingState, GraphTool.HighlighterState, GraphViewModel.AutoPlacementState);
+                m_UpdateObserver = new ModelViewUpdater(this,
+                    GraphViewModel.GraphViewState,
+                    GraphViewModel.GraphModelState,
+                    GraphViewModel.SelectionState,
+                    GraphViewModel.AutoPlacementState,
+                    GraphViewModel.ProcessingErrorsState,
+                    GraphTool.HighlighterState);
                 GraphTool.ObserverManager.RegisterObserver(m_UpdateObserver);
             }
 
@@ -1056,6 +1079,20 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_AutoPlacementObserver = new AutoPlacementObserver(this, GraphViewModel.AutoPlacementState, GraphViewModel.GraphModelState);
                 GraphTool.ObserverManager.RegisterObserver(m_AutoPlacementObserver);
+            }
+
+            if (m_AutomaticGraphProcessingObserver == null && DisplayMode == GraphViewDisplayMode.Interactive)
+            {
+                m_AutomaticGraphProcessingObserver = new AutomaticGraphProcessingObserver(
+                    GraphViewModel.GraphModelState, ProcessOnIdleAgent.StateComponent,
+                    GraphViewModel.GraphProcessingState, GraphTool.Preferences);
+                GraphTool?.ObserverManager.RegisterObserver(m_AutomaticGraphProcessingObserver);
+            }
+
+            if (m_GraphProcessingErrorObserver == null)
+            {
+                m_GraphProcessingErrorObserver = new GraphProcessingErrorObserver(GraphViewModel.GraphModelState, GraphViewModel.GraphProcessingState, GraphViewModel.ProcessingErrorsState);
+                GraphTool.ObserverManager.RegisterObserver(m_GraphProcessingErrorObserver);
             }
 
             SelectionDragger?.RegisterObservers(GraphTool.ObserverManager);
@@ -1084,6 +1121,18 @@ namespace Unity.GraphToolsFoundation.Editor
                 GraphTool?.ObserverManager?.UnregisterObserver(m_SelectionGraphLoadedObserver);
                 m_SelectionGraphLoadedObserver = null;
             }
+
+            if (m_ProcessingGraphLoadedObserver != null)
+            {
+                GraphTool?.ObserverManager?.UnregisterObserver(m_ProcessingGraphLoadedObserver);
+                m_ProcessingGraphLoadedObserver = null;
+            }
+
+            if (m_ProcessingErrorsGraphLoadedObserver != null)
+            {
+                GraphTool?.ObserverManager?.UnregisterObserver(m_ProcessingErrorsGraphLoadedObserver);
+                m_ProcessingErrorsGraphLoadedObserver = null;
+            }
         }
 
         /// <inheritdoc />
@@ -1104,6 +1153,18 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 GraphTool?.ObserverManager?.UnregisterObserver(m_WireOrderObserver);
                 m_WireOrderObserver = null;
+            }
+
+            if (m_AutomaticGraphProcessingObserver != null)
+            {
+                GraphTool?.ObserverManager?.UnregisterObserver(m_AutomaticGraphProcessingObserver);
+                m_AutomaticGraphProcessingObserver = null;
+            }
+
+            if (m_GraphProcessingErrorObserver != null)
+            {
+                GraphTool?.ObserverManager?.UnregisterObserver(m_GraphProcessingErrorObserver);
+                m_GraphProcessingErrorObserver = null;
             }
 
             if (m_DeclarationHighlighter != null)
@@ -1717,25 +1778,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (GraphTool.Preferences.GetBool(BoolPref.ShowUnusedNodes))
                 PositionDependenciesManager_Internal.UpdateNodeState();
 
-            // Models that need repositioning are hidden until they are moved by the observer next frame.
-            using (var autoPlacementObservation = m_UpdateObserver.ObserveState(GraphViewModel.AutoPlacementState))
-            {
-                var autoPlacementChangeset = GraphViewModel.AutoPlacementState.GetAggregatedChangeset(autoPlacementObservation.LastObservedVersion);
-                if (autoPlacementChangeset?.ModelsToRepositionAtCreation.Any() ?? false)
-                {
-                    foreach (var elementToReposition in autoPlacementChangeset?.ModelsToRepositionAtCreation)
-                    {
-                        // Since they are going to be repositioned, the node and wire's visibility are set to hidden at the first layout pass.
-                        var nodeUI = elementToReposition.Model.GetView_Internal(this);
-                        if (nodeUI is { Model: AbstractNodeModel })
-                            nodeUI.visible = false;
-
-                        var wireUI = elementToReposition.WireModel.GetView_Internal(this);
-                        if (wireUI != null)
-                            wireUI.visible = false;
-                    }
-                }
-            }
+            HideAutoPlacedElements();
 
             var lastSelectedNode = GetSelection().OfType<AbstractNodeModel>().LastOrDefault();
             if (lastSelectedNode != null && lastSelectedNode.IsAscendable())
@@ -1752,6 +1795,24 @@ namespace Unity.GraphToolsFoundation.Editor
                 foreach (var ui in modelUis)
                 {
                     ui.ActivateRename();
+                }
+            }
+        }
+
+        void HideAutoPlacedElements()
+        {
+            // Models that need repositioning are hidden until they are moved by the observer next frame.
+            using (var autoPlacementObservation = m_UpdateObserver.ObserveState(GraphViewModel.AutoPlacementState))
+            {
+                var autoPlacementChangeset = GraphViewModel.AutoPlacementState.GetAggregatedChangeset(autoPlacementObservation.LastObservedVersion);
+                if (autoPlacementChangeset?.ModelsToRepositionAtCreation.Any() ?? false)
+                {
+                    foreach (var elementToHide in autoPlacementChangeset.ModelsToHideDuringAutoPlacement)
+                    {
+                        var modelUI = elementToHide.GetView_Internal(this);
+                        if (modelUI != null)
+                            modelUI.visible = false;
+                    }
                 }
             }
         }
@@ -1786,7 +1847,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var newModels = modelChangeSet.NewModels.Select(GraphModel.GetModel).Where(m => m != null).ToList();
 
-            foreach (var model in newModels.Where(m => !(m is WireModel) && !(m is PlacematModel) && !(m is MarkerModel) && !(m is DeclarationModel)))
+            foreach (var model in newModels.Where(m => !(m is WireModel) && !(m is PlacematModel) && !(m is DeclarationModel) && !(m is NodePreviewModel)))
             {
                 if (model.Container != GraphModel)
                     continue;
@@ -1810,15 +1871,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
             }
 
-            foreach (var model in newModels.OfType<MarkerModel>())
+            foreach (var model in newModels.OfType<NodePreviewModel>())
             {
-                if (model.ParentModel == null)
-                    continue;
-
-                var marker = ModelViewFactory.CreateUI<Marker>(this, model);
-                if (marker != null)
+                var preview = ModelViewFactory.CreateUI<NodePreview>(this, model);
+                if (preview != null)
                 {
-                    AddElement(marker);
+                    AddElement(preview);
                 }
             }
         }
@@ -1857,14 +1915,14 @@ namespace Unity.GraphToolsFoundation.Editor
         protected virtual void DoUpdateProcessingErrorMarkers(UpdateType rebuildType)
         {
             // Update processing error markers.
-            using (var processingStateObservation = m_UpdateObserver.ObserveState(GraphTool.GraphProcessingState))
+            using (var processingStateObservation = m_UpdateObserver.ObserveState(GraphViewModel.ProcessingErrorsState))
             {
                 if (processingStateObservation.UpdateType != UpdateType.None || rebuildType == UpdateType.Partial)
                 {
                     ConsoleWindowHelper_Internal.RemoveLogEntries();
                     var graphAsset = GraphViewModel.GraphModelState.GraphModel?.Asset;
 
-                    foreach (var rawError in GraphTool.GraphProcessingState.RawErrors ?? Enumerable.Empty<GraphProcessingError>())
+                    foreach (var error in GraphViewModel.ProcessingErrorsState.Errors)
                     {
                         if (graphAsset is Object asset)
                         {
@@ -1878,9 +1936,9 @@ namespace Unity.GraphToolsFoundation.Editor
                                 graphAssetPath = "<unknown>";
                             }
                             ConsoleWindowHelper_Internal.LogSticky(
-                                $"{graphAssetPath}: {rawError.Description}",
-                                $"{graphAssetPath}@{rawError.SourceNodeGuid}",
-                                rawError.IsWarning ? LogType.Warning : LogType.Error,
+                                $"{graphAssetPath}: {error.ErrorMessage}",
+                                $"{graphAssetPath}@{error.ParentNodeGuid}",
+                                error.ErrorType,
                                 LogOption.None,
                                 asset.GetInstanceID());
                         }
@@ -1899,9 +1957,9 @@ namespace Unity.GraphToolsFoundation.Editor
                         }
                     }
 
-                    foreach (var model in GraphTool.GraphProcessingState.Errors ?? Enumerable.Empty<GraphProcessingErrorModel>())
+                    foreach (var model in GraphViewModel.ProcessingErrorsState.Errors)
                     {
-                        if (model.ParentModel == null || !GraphModel.TryGetModelFromGuid(model.ParentModel.Guid, out var _))
+                        if (model.GetParentModel(GraphModel) == null)
                             return;
 
                         var marker = ModelViewFactory.CreateUI<Marker>(this, model);
@@ -1956,11 +2014,26 @@ namespace Unity.GraphToolsFoundation.Editor
                     AddElement(placeholder);
             }
 
+            ContentViewContainer.Add(m_MarkersParent);
+
+            m_MarkersParent.Clear();
+
             foreach (var nodeModel in graphModel.NodeModels)
             {
                 var node = ModelViewFactory.CreateUI<GraphElement>(this, nodeModel);
                 if (node != null)
+                {
                     AddElement(node);
+
+                    if (nodeModel.NodePreviewModel != null)
+                    {
+                        var nodePreview = ModelViewFactory.CreateUI<NodePreview>(this, nodeModel.NodePreviewModel);
+                        if (nodePreview != null)
+                        {
+                            AddElement(nodePreview);
+                        }
+                    }
+                }
             }
 
             foreach (var stickyNoteModel in graphModel.StickyNoteModels)
@@ -1991,26 +2064,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
             }
 
-            ContentViewContainer.Add(m_MarkersParent);
-
-            m_MarkersParent.Clear();
-            foreach (var markerModel in graphModel.MarkerModels)
-            {
-                if (markerModel.ParentModel == null)
-                    continue;
-
-                var marker = ModelViewFactory.CreateUI<Marker>(this, markerModel);
-                if (marker != null)
-                {
-                    AddElement(marker);
-                }
-            }
-
             // We need to do this after all graph elements are created.
             foreach (var placemat in placemats)
             {
                 placemat.UpdateFromModel();
             }
+
+            HideAutoPlacedElements();
 
             UpdateViewTransform(GraphViewModel.GraphViewState.Position, GraphViewModel.GraphViewState.Scale);
         }
@@ -2068,7 +2128,6 @@ namespace Unity.GraphToolsFoundation.Editor
             var invalidWireCount = GraphModel.WireModels.Count(n => n == null);
             var invalidStickyCount = GraphModel.StickyNoteModels.Count(n => n == null);
             var invalidVariableCount = GraphModel.VariableDeclarations.Count(v => v == null);
-            var invalidMarkerCount = GraphModel.MarkerModels.Count(b => b == null);
             var invalidPlacematCount = GraphModel.PlacematModels.Count(p => p == null);
             var invalidPortalCount = GraphModel.PortalDeclarations.Count(p => p == null);
             var invalidSectionCount = GraphModel.SectionModels.Count(s => s == null);
@@ -2078,7 +2137,6 @@ namespace Unity.GraphToolsFoundation.Editor
             countMessage.Append(invalidWireCount == 0 ? string.Empty : $"{invalidWireCount} invalid wire(s) found.\n");
             countMessage.Append(invalidStickyCount == 0 ? string.Empty : $"{invalidStickyCount} invalid sticky note(s) found.\n");
             countMessage.Append(invalidVariableCount == 0 ? string.Empty : $"{invalidVariableCount} invalid variable declaration(s) found.\n");
-            countMessage.Append(invalidMarkerCount == 0 ? string.Empty : $"{invalidMarkerCount} invalid marker(s) found.\n");
             countMessage.Append(invalidPlacematCount == 0 ? string.Empty : $"{invalidPlacematCount} invalid placemat(s) found.\n");
             countMessage.Append(invalidPortalCount == 0 ? string.Empty : $"{invalidPortalCount} invalid portal(s) found.\n");
             countMessage.Append(invalidSectionCount == 0 ? string.Empty : $"{invalidSectionCount} invalid section(s) found.\n");

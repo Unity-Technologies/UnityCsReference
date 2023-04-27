@@ -391,7 +391,15 @@ namespace Unity.GraphToolsFoundation.Editor
 
                                 break;
                             }
-
+                            case TextInputBaseField<TValue> textBaseField:
+                            {
+                                if (!textBaseField.hasFocus || textBaseField.isDelayed || m_ForceUpdate)
+                                {
+                                    textBaseField.SetValueWithoutNotify(newValue);
+                                    m_ForceUpdate = false;
+                                }
+                                break;
+                            }
                             case BaseField<TValue> baseField:
                                 baseField.SetValueWithoutNotify(newValue);
                                 return;

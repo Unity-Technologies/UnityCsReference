@@ -99,7 +99,7 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCommandHandler<UpdateTooltipCommand>(UpdateTooltipCommand.DefaultCommandHandler);
 
             m_CommandTarget.RegisterCommandHandler<UndoStateComponent, GraphModelStateComponent, SelectionStateComponent,
-                BlackboardViewStateComponent, PasteSerializedDataCommand>(
+                BlackboardViewStateComponent, PasteDataCommand>(
                 BlackboardViewCommandHandlers.PasteSerializedDataCommandHandler,
                 m_GraphTool.UndoStateComponent, m_GraphModelState, m_SelectionState, m_BlackboardViewState);
 

@@ -8,7 +8,7 @@ using System.Collections.Generic;
 namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
-    /// Class that contains graph processors used to process a graph.
+    /// Class that contains all the <see cref="GraphProcessor"/> used to process a graph.
     /// </summary>
     class GraphProcessorContainer
     {
@@ -59,18 +59,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Processes a graph using the container's graph processors.
         /// </summary>
-        /// <param name="graphModel">The graph to process.</param>
         /// <param name="changes">A description of what changed in the graph. If null, the method assumes everything changed.</param>
-        /// <returns>A list of <see cref="GraphProcessingResult"/>, one for each <see cref="GraphProcessor"/>.</returns>
-        public IReadOnlyList<GraphProcessingResult> ProcessGraph(GraphModel graphModel, GraphChangeDescription changes)
+        /// <returns>A list of <see cref="BaseGraphProcessingResult"/>, one for each <see cref="GraphProcessor"/>.</returns>
+        public IReadOnlyList<BaseGraphProcessingResult> ProcessGraph(GraphChangeDescription changes)
         {
-            var results = new List<GraphProcessingResult>();
+            var results = new List<BaseGraphProcessingResult>();
 
             if (m_GraphProcessors != null)
             {
                 foreach (var graphProcessor in m_GraphProcessors)
                 {
-                    results.Add(graphProcessor.ProcessGraph(graphModel, changes));
+                    results.Add(graphProcessor.ProcessGraph(changes));
                 }
             }
 

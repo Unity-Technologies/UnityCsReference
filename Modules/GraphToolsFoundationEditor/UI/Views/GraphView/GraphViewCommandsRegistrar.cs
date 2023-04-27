@@ -72,7 +72,7 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCommandHandler<MoveWireCommand>(MoveWireCommand.DefaultCommandHandler);
             RegisterCommandHandler<ReorderWireCommand>(ReorderWireCommand.DefaultCommandHandler);
             RegisterCommandHandler<SplitWireAndInsertExistingNodeCommand>(SplitWireAndInsertExistingNodeCommand.DefaultCommandHandler);
-            RegisterCommandHandler<DisconnectNodeCommand>(DisconnectNodeCommand.DefaultCommandHandler);
+            RegisterCommandHandler<DisconnectWiresCommand>(DisconnectWiresCommand.DefaultCommandHandler);
 
             m_CommandTarget.RegisterCommandHandler<UndoStateComponent, GraphViewStateComponent, GraphModelStateComponent, SelectionStateComponent, ConvertWiresToPortalsCommand>(
                 ConvertWiresToPortalsCommand.DefaultCommandHandler, m_GraphTool.UndoStateComponent, m_GraphViewState, m_GraphModelState, m_SelectionState);
@@ -80,6 +80,7 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCommandHandler<ChangeNodeStateCommand>(ChangeNodeStateCommand.DefaultCommandHandler);
             RegisterCommandHandler<ChangeNodeModeCommand>(ChangeNodeModeCommand.DefaultCommandHandler);
             RegisterCommandHandler<CollapseNodeCommand>(CollapseNodeCommand.DefaultCommandHandler);
+            RegisterCommandHandler<ShowNodePreviewCommand>(ShowNodePreviewCommand.DefaultCommandHandler);
             RegisterCommandHandler<UpdateConstantValueCommand>(UpdateConstantValueCommand.DefaultCommandHandler);
             RegisterCommandHandler<UpdateConstantsValueCommand>(UpdateConstantsValueCommand.DefaultCommandHandler);
             RegisterCommandHandler<CreateOppositePortalCommand>(CreateOppositePortalCommand.DefaultCommandHandler);
@@ -110,7 +111,7 @@ namespace Unity.GraphToolsFoundation.Editor
             m_CommandTarget.RegisterCommandHandler<GraphViewStateComponent, GraphModelStateComponent, SelectionStateComponent, ReframeGraphViewCommand>(
                 ReframeGraphViewCommand.DefaultCommandHandler, m_GraphViewState, m_GraphModelState, m_SelectionState);
 
-            RegisterCommandHandler<PasteSerializedDataCommand>(PasteSerializedDataCommand.DefaultCommandHandler);
+            RegisterCommandHandler<PasteDataCommand>(PasteDataCommand.DefaultCommandHandler);
             RegisterCommandHandler<DeleteElementsCommand>(DeleteElementsCommand.DefaultCommandHandler);
             RegisterCommandHandler<ConvertConstantNodesAndVariableNodesCommand>(
                 ConvertConstantNodesAndVariableNodesCommand.DefaultCommandHandler);

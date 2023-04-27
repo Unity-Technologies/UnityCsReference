@@ -10,6 +10,8 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
+using System.Collections;
+
 // ReSharper disable InconsistentNaming
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -379,22 +381,30 @@ namespace Unity.GraphToolsFoundation.Editor
             if (k_TypeClassNameSuffix.TryGetValue(thisPortType, out var kebabCaseName))
                 return kebabCaseName;
 
-            if (thisPortType.IsSubclassOf(typeof(Component)))
-                return "component";
             if (thisPortType.IsSubclassOf(typeof(GameObject)))
                 return "game-object";
             if (thisPortType.IsSubclassOf(typeof(Transform)))
                 return "transform";
-            if (thisPortType.IsSubclassOf(typeof(Texture)) || thisPortType.IsSubclassOf(typeof(Texture2D)))
-                return "texture2d";
-            if (thisPortType.IsSubclassOf(typeof(KeyCode)))
-                return "key-code";
             if (thisPortType.IsSubclassOf(typeof(Material)))
                 return "material";
-            if (thisPortType == typeof(Object))
-                return "object";
+            if (thisPortType.IsSubclassOf(typeof(Cubemap)) || thisPortType == typeof(Cubemap))
+                return "cubemap";
+            if (thisPortType.IsSubclassOf(typeof(Texture2DArray)))
+                return "texture2darray";
+            if (thisPortType.IsSubclassOf(typeof(Texture2D)) || thisPortType.IsSubclassOf(typeof(Texture)))
+                return "texture2d";
+            if (thisPortType.IsSubclassOf(typeof(Material)))
+                return "material";
             if (thisPortType == typeof(MissingPort))
                 return "missing-port";
+            if (thisPortType == typeof(IList))
+                return "list";
+            if (thisPortType == typeof(IDictionary))
+                return "dictionary";
+            if (thisPortType.IsSubclassOf(typeof(Enum)))
+                return "enum";
+            if (thisPortType == typeof(Matrix4x4))
+                return "matrix";
 
             kebabCaseName = thisPortType.Name.ToKebabCase_Internal();
             k_TypeClassNameSuffix.Add(thisPortType, kebabCaseName);

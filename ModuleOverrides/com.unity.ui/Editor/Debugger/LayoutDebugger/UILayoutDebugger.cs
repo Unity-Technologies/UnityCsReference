@@ -17,13 +17,13 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         private int m_PassIndex = 0;
         private int m_LayoutLoop = 0;
         private int m_MaxItem = 1;
-        private bool m_EnableLayoutComparison = false;
-        private bool m_ShowYogaNodeDirty = false;
+        private bool m_ShowDirty = false;
+        private Label m_InfoLine1;
+        private Label m_InfoLine2;
+        private Label m_InfoLine3;
+        private Label m_InfoLine4;
+        private VisualElement m_LayoutDisplay;
         private VisualElement m_LockSelectedVisualElement = null;
-
-        const int kNumberOfLinesOfInfo = 4;
-        const float kLineHeight = 16.0f;
-        const float kVisualContentOffset = kNumberOfLinesOfInfo * kLineHeight;
 
         public LayoutDebuggerVisualElement lastDrawElement
         {
@@ -55,10 +55,145 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
         internal LayoutPanelDebuggerImpl m_ParentWindow = null;
 
-        public void SetShowYogaNodeDirty(bool show)
+        public UILayoutDebugger() : base()
         {
-            m_ShowYogaNodeDirty = show;
-            MarkDirtyRepaint();
+            focusable = true;
+            style.marginRight = 2;
+            style.marginLeft = 2;
+            style.marginBottom = 2;
+            style.marginTop = 2;
+
+            style.overflow = Overflow.Hidden;
+
+            style.minWidth = 100.0f;
+            style.minHeight = 100.0f;
+
+            style.flexDirection = FlexDirection.Column;
+
+            m_InfoLine1 = new Label();
+            m_InfoLine1.enableRichText = true;
+            m_InfoLine2 = new Label();
+            m_InfoLine2.enableRichText = true;
+            m_InfoLine3 = new Label();
+            m_InfoLine3.enableRichText = true;
+            m_InfoLine4 = new Label();
+            m_InfoLine4.enableRichText = true;
+
+            VisualElement ve = new VisualElement();
+            ve.style.flexDirection = FlexDirection.Column;
+            ve.style.flexShrink = 0.0f;
+
+            ve.Add(m_InfoLine1);
+            ve.Add(m_InfoLine2);
+            ve.Add(m_InfoLine3);
+            ve.Add(m_InfoLine4);
+
+            m_LayoutDisplay = new VisualElement();
+            m_LayoutDisplay.style.flexShrink = 0.0f;
+
+            Add(ve);
+            Add(m_LayoutDisplay);
+
+            m_LayoutDisplay.generateVisualContent += OnGenerateVisualContent;
+
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        }
+
+        void UpdateDisplay()
+        {
+            m_LayoutDisplay.MarkDirtyRepaint();
+            UpdateInfo();
+        }
+
+        void UpdateInfo()
+        {
+            if (recordLayout != null)
+            {
+                for (int i = 0; i < recordLayout.Count; i++)
+                {
+                    var record = recordLayout[i];
+
+                    if (record.m_FrameIndex == m_FrameIndex)
+                    {
+                        if (record.m_PassIndex == m_PassIndex)
+                        {
+                            if (record.m_LayoutLoop == m_LayoutLoop)
+                            {
+                                int count = 0;
+                                int countOfZeroSizeElement = 0;
+                                int outOfRootVE = 0;
+
+                                Rect rectRootVE = new Rect();
+                                rectRootVE.x = record.m_VE.layout.x;
+                                rectRootVE.y = record.m_VE.layout.y;
+                                rectRootVE.width = record.m_VE.layout.width;
+                                rectRootVE.height = record.m_VE.layout.height;
+
+                                m_LayoutDisplay.style.width = rectRootVE.width;
+                                m_LayoutDisplay.style.height = rectRootVE.height;
+
+                                int currentIndex = 0;
+                                DisplayLayoutRecursive(null, ref currentIndex, record.m_VE, 0.5f, 0.5f);
+
+                                CountLayoutItem(rectRootVE, record.m_VE, ref count, ref countOfZeroSizeElement, ref outOfRootVE);
+
+                                int depth = 0;
+                                CountDepth(m_LastDrawElement, ref depth);
+
+                                string className = m_LastDrawElement.m_OriginalVisualElement.GetType().ToString();
+
+                                if (m_LockSelectedVisualElement != null)
+                                {
+                                    if (m_LockSelectedVisualElement != m_LastDrawElement.m_OriginalVisualElement)
+                                    {
+                                        className += string.Format("<color=\"red\"> - Locked item not found (Name: {0} Class: {1})",
+                                            m_LockSelectedVisualElement.name,
+                                            m_LockSelectedVisualElement.GetType().ToString());
+                                    }
+                                }
+
+                                m_InfoLine1.text = string.Format("<color=\"white\">CurrentElement: Name: {0} Class: {1}",
+                                    m_LastDrawElement.name,
+                                    className
+                                    );
+
+                                m_InfoLine2.text = string.Format("<color=\"white\">CurrentElement: Local ({0} {1}, {2}, {3}) Global ({4} {5}, {6}, {7}) Depth:{8}",
+                                    m_LastDrawElement.layout.x,
+                                    m_LastDrawElement.layout.y,
+                                    m_LastDrawElement.layout.width,
+                                    m_LastDrawElement.layout.height,
+                                    m_LastDrawElement.layout.x + m_LastDrawElementOffset.x - 0.5f,
+                                    m_LastDrawElement.layout.y + m_LastDrawElementOffset.y - 0.5f,
+                                    m_LastDrawElement.layout.width,
+                                    m_LastDrawElement.layout.height,
+                                    depth);
+
+
+                                m_InfoLine3.text = string.Format("<color=\"white\">CurrentElement: Visible:{0} Enable:{1} EnableInHierarchy:{2} YogaNodeDirty:{3}",
+                                    m_LastDrawElement.visible,
+                                    m_LastDrawElement.enable,
+                                    m_LastDrawElement.enabledInHierarchy,
+                                    m_LastDrawElement.isDirty);
+
+                                m_InfoLine4.text = string.Format("<color=\"white\">Count of ZeroSize Element:{0} {1}%   Count of Out of Root Element:{0} {1}%",
+                                    countOfZeroSizeElement,
+                                    100.0f * countOfZeroSizeElement / count,
+                                    outOfRootVE,
+                                    100.0f * outOfRootVE / count);
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public void SetShowDirty(bool show)
+        {
+            m_ShowDirty = show;
+            UpdateDisplay();
         }
 
         public void LockSelectedElement(bool lockSelectedElement)
@@ -78,10 +213,10 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         {
             if (evt.button == 2)
             {
-                Vector2 pos = new Vector2(evt.localPosition.x, evt.localPosition.y - kVisualContentOffset);
-                Debug.Log(pos);
+                Vector2 pos = new Vector2(evt.localPosition.x, evt.localPosition.y);
                 SelectVisualElement(pos);
                 evt.StopImmediatePropagation();
+                m_ParentWindow.UpdateInfo();
             }
         }
 
@@ -116,6 +251,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 GotoNextItem();
             }
             evt.StopImmediatePropagation();
+            m_ParentWindow.UpdateInfo();
         }
 
         private void GotoPreviousItem()
@@ -167,7 +303,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
                         if (nextMaxItem != -1)
                         {
-                            MarkDirtyRepaint();
+                            UpdateDisplay();
                             return nextMaxItem;
                         }
 
@@ -192,8 +328,9 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                             int count = 0;
                             int nextMaxItem = 0;
                             SelectVisualElement(record.m_VE, pos, ref count, ref nextMaxItem);
+
                             m_MaxItem = nextMaxItem;
-                            MarkDirtyRepaint();
+                            UpdateDisplay();
 
                             if (m_ParentWindow != null)
                             {
@@ -227,7 +364,17 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             if (rect.Contains(pos))
             {
-                nextMaxItem = count;
+                if (m_ShowDirty)
+                {
+                    if (ve.isDirty)
+                    {
+                        nextMaxItem = count;
+                    }
+                }
+                else
+                {
+                    nextMaxItem = count;
+                }
             }
 
             count++;
@@ -239,38 +386,202 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             }
         }
 
-        public UILayoutDebugger() : base()
+        private void GetAllElements(LayoutDebuggerVisualElement ve, ref List<LayoutDebuggerVisualElement> foundElements)
         {
-            focusable = true;
-            generateVisualContent += OnGenerateVisualContent;
+            if (!ve.IsVisualElementVisible())
+            {
+                return;
+            }
 
-            style.marginRight = 2;
-            style.marginLeft = 2;
-            style.marginBottom = 2;
-            style.marginTop = 2;
+            if (m_LastDrawElement != null)
+            {
+                if (ve.m_OriginalVisualElement == m_LastDrawElement.m_OriginalVisualElement)
+                {
+                    foundElements.Add(ve);
+                }
+            }
 
-            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            for (int i = 0; i < ve.m_Children.Count; ++i)
+            {
+                var child = ve.m_Children[i];
+                GetAllElements(child, ref foundElements);
+            }
+        }
+
+        public class InfoData
+        {
+            public int m_FrameIndex;
+            public int m_PassIndex;
+            public int m_LayoutLoop;
+            public int m_SortIndex;
+            public string m_Info;
+            public bool m_HighLight;
+            public LayoutDebuggerVisualElement m_VE;
+        };
+
+        List<InfoData> data = new List<InfoData>();
+
+        static private void CreateLastLayout(LayoutDebuggerVisualElement ve, Dictionary<VisualElement, Rect> lastLayout)
+        {
+            lastLayout[ve.m_OriginalVisualElement] = ve.layout;
+
+            for (int i = 0; i < ve.m_Children.Count; i++)
+            {
+                CreateLastLayout(ve.m_Children[i], lastLayout);
+            }
+        }
+
+        public void FillUpdateInfoOfSelectedElement(MultiColumnListView listView)
+        {
+            data.Clear();
+
+            if (m_ShowDirty)
+            { 
+                for (int i = 0; i < recordLayout.Count; i++)
+                {
+                    var record = recordLayout[i];
+                    if (record.m_FrameIndex == m_FrameIndex)
+                    {
+                        if (record.m_PassIndex == m_PassIndex)
+                        {
+                            if (record.m_LayoutLoop == m_LayoutLoop)
+                            {
+                                Queue<LayoutDebuggerVisualElement> foundElements = new Queue<LayoutDebuggerVisualElement>();
+                                foundElements.Enqueue(record.m_VE);
+                                int sortIndex = 0;
+
+                                Dictionary<VisualElement, Rect> lastLayout = new Dictionary<VisualElement, Rect>();
+
+                                if (i > 0)
+                                {
+                                    CreateLastLayout(recordLayout[i - 1].m_VE, lastLayout);
+                                }
+
+                                while (foundElements.Count > 0)
+                                {
+                                    var ve = foundElements.Dequeue();
+
+                                    if ((ve.layout.width > 0 && ve.layout.height > 0))
+                                    {
+                                        if (ve.isDirty)
+                                        {
+                                            InfoData item = new InfoData();
+                                            item.m_FrameIndex = record.m_FrameIndex;
+                                            item.m_PassIndex = record.m_PassIndex;
+                                            item.m_LayoutLoop = record.m_LayoutLoop;
+                                            item.m_Info = ve.m_OriginalVisualElement.GetType().ToString() + " " + ve.m_OriginalVisualElement.name + " " + ve.layout.ToString();
+
+                                            item.m_HighLight = false;
+
+                                            if (lastLayout.ContainsKey(ve.m_OriginalVisualElement) && (ve.layout != lastLayout[ve.m_OriginalVisualElement]))
+                                            {
+                                                item.m_Info += " last:" + lastLayout[ve.m_OriginalVisualElement].ToString();
+                                                item.m_HighLight = true;
+                                            }
+                                            else if (!lastLayout.ContainsKey(ve.m_OriginalVisualElement))
+                                            {
+                                                if (i > 0)
+                                                {
+                                                    item.m_Info += " last: N/A (New Visual Element)";
+                                                }
+                                                else
+                                                {
+                                                    item.m_Info += " last: N/A";
+                                                }
+                                                item.m_HighLight = true;
+                                            }
+
+                                            item.m_SortIndex = sortIndex;
+                                            sortIndex++;
+
+                                            item.m_VE = ve;
+                                            data.Add(item);
+                                        }
+                                    }
+
+                                    for (int j = 0; j < ve.m_Children.Count; ++j)
+                                    {
+                                        var child = ve.m_Children[j];
+                                        foundElements.Enqueue(child);
+                                    }
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                int sortIndex = 0;
+                foreach (var record in recordLayout)
+                {
+                    List<LayoutDebuggerVisualElement> foundElements = new List<LayoutDebuggerVisualElement>();
+                    GetAllElements(record.m_VE, ref foundElements);
+
+                    for (int i = 0; i < foundElements.Count; i++)
+                    {
+                        InfoData item = new InfoData();
+                        item.m_FrameIndex = record.m_FrameIndex;
+                        item.m_PassIndex = record.m_PassIndex;
+                        item.m_LayoutLoop = record.m_LayoutLoop;
+                        item.m_Info = foundElements[i].m_OriginalVisualElement.GetType().ToString() + " " + foundElements[i].m_OriginalVisualElement.name + " " + foundElements[i].layout.ToString();
+                        item.m_SortIndex = sortIndex;
+
+                        bool addItem = true;
+
+                        if (data.Count > 0)
+                        {
+                            int index = data.Count - 1;
+                            if (data[index].m_Info == item.m_Info)
+                            {
+                                addItem = false;
+                            }
+                        }
+
+                        if (addItem)
+                        {
+                            data.Add(item);
+                            sortIndex++;
+                        }
+                    }
+                }
+            }
+
+            data.Sort((a, b) => (a.m_SortIndex - b.m_SortIndex));
+
+            listView.itemsSource = data;
+
+            listView.columns["Pos"].bindCell = (VisualElement element, int index) => (element as Label).text = data[index].m_SortIndex.ToString();
+            listView.columns["FrameIndex"].bindCell = (VisualElement element, int index) => (element as Label).text = data[index].m_FrameIndex.ToString();
+            listView.columns["PassIndex"].bindCell = (VisualElement element, int index) => (element as Label).text = data[index].m_PassIndex.ToString();
+            listView.columns["LayoutLoop"].bindCell = (VisualElement element, int index) => (element as Label).text = data[index].m_LayoutLoop.ToString();
+            listView.columns["VisualElement"].bindCell = (VisualElement element, int index) =>
+            {
+                (element as Label).text = data[index].m_Info;
+                if (data[index].m_HighLight)
+                {
+                    (element as Label).style.color = Color.cyan;
+                }
+            };
+            listView.Rebuild();
         }
 
         void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            RegisterCallback<PointerUpEvent>(OnPointerUpEvent);
             RegisterCallback<KeyDownEvent>(OnKeyDownEvent);
-            RegisterCallback<WheelEvent>(OnWheelEvent);
+
+            m_LayoutDisplay.RegisterCallback<PointerUpEvent>(OnPointerUpEvent);
+            m_LayoutDisplay.RegisterCallback<WheelEvent>(OnWheelEvent);
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             UnregisterCallback<KeyDownEvent>(OnKeyDownEvent);
-            UnregisterCallback<PointerUpEvent>(OnPointerUpEvent);
-            UnregisterCallback<WheelEvent>(OnWheelEvent);
-        }
 
-        public void EnableLayoutComparison(bool enable)
-        {
-            m_EnableLayoutComparison = enable;
-            MarkDirtyRepaint();
+            m_LayoutDisplay.UnregisterCallback<PointerUpEvent>(OnPointerUpEvent);
+            m_LayoutDisplay.UnregisterCallback<WheelEvent>(OnWheelEvent);
         }
 
         internal void SetMaxItem(int maxItem)
@@ -300,7 +611,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 }
                 m_ParentWindow.UpdateSlider(m_MaxItem, false);
             }
-            MarkDirtyRepaint();
+            UpdateDisplay();
         }
 
         public void SetItemIndex(int index)
@@ -322,7 +633,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             m_FrameIndex = frameIndex;
             m_PassIndex = passIndex;
             m_LayoutLoop = layoutLoop;
-            MarkDirtyRepaint();
+            UpdateDisplay();
         }
 
         internal void SetRecord(List<LayoutDebuggerItem> _recordLayout)
@@ -334,8 +645,8 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 // adjust size with base element
                 if (recordLayout.Count > 0)
                 {
-                    style.width = recordLayout[0].m_VE.layout.width;
-                    style.height = recordLayout[0].m_VE.layout.height + kVisualContentOffset;
+                    m_LayoutDisplay.style.width = recordLayout[0].m_VE.layout.width;
+                    m_LayoutDisplay.style.height = recordLayout[0].m_VE.layout.height;
                 }
             }
         }
@@ -450,10 +761,6 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                         {
                             if (record.m_LayoutLoop == m_LayoutLoop)
                             {
-                                int count = 0;
-                                int countOfZeroSizeElement = 0;
-                                int outOfRootVE = 0;
-
                                 Rect rectRootVE = new Rect();
                                 rectRootVE.x = record.m_VE.layout.x;
                                 rectRootVE.y = record.m_VE.layout.y;
@@ -467,78 +774,8 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                                     FindLockedItem(record.m_VE, ref findLockedCurrentIndex);
                                 }
 
-                                CountLayoutItem(rectRootVE, record.m_VE, ref count, ref countOfZeroSizeElement, ref outOfRootVE);
-
                                 int currentIndex = 0;
-                                if (m_EnableLayoutComparison)
-                                {
-                                    DisplayLayoutComparison(paint2D, recordLayout[i].m_VE, recordLayout[i + 1].m_VE, 0.5f, kVisualContentOffset + 0.5f);
-                                }
-                                else
-                                {
-                                    DisplayLayoutRecursive(paint2D, ref currentIndex, record.m_VE, 0.5f, kVisualContentOffset + 0.5f);
-                                }
-
-                                int depth = 0;
-                                CountDepth(m_LastDrawElement, ref depth);
-
-                                string className = m_LastDrawElement.m_OriginalVisualElement.GetType().ToString();
-
-                                Color textColor = Color.white;
-
-                                if (m_LockSelectedVisualElement != null)
-                                {
-                                    if (m_LockSelectedVisualElement != m_LastDrawElement.m_OriginalVisualElement)
-                                    {
-                                        textColor = Color.red;
-                                        className += string.Format(" - Locked item not found (Name: {0} Class: {1})",
-                                            m_LockSelectedVisualElement.name,
-                                            m_LockSelectedVisualElement.GetType().ToString());
-                                    }
-                                }
-
-                                string infoString = string.Format("CurrentElement: Name: {0} Class: {1}",
-                                    m_LastDrawElement.name,
-                                    className
-                                    );
-
-                                int numberOfLinesOfInfo = 0;
-
-                                mgc.DrawText(infoString, new Vector2(0.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, textColor);
-
-
-                                infoString = string.Format("CurrentElement: Local ({0} {1}, {2}, {3}) Global ({4} {5}, {6}, {7}) Depth:{8}",
-                                    m_LastDrawElement.layout.x,
-                                    m_LastDrawElement.layout.y,
-                                    m_LastDrawElement.layout.width,
-                                    m_LastDrawElement.layout.height,
-                                    m_LastDrawElement.layout.x + m_LastDrawElementOffset.x - 0.5f,
-                                    m_LastDrawElement.layout.y + m_LastDrawElementOffset.y - 0.5f,
-                                    m_LastDrawElement.layout.width,
-                                    m_LastDrawElement.layout.height,
-                                    depth);
-
-                                mgc.DrawText(infoString, new Vector2(0.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, Color.white);
-
-                                infoString = string.Format("CurrentElement: Visible:{0} Enable:{1} EnableInHierarchy:{2} YogaNodeDirty:{3}",
-                                    m_LastDrawElement.visible,
-                                    m_LastDrawElement.enable,
-                                    m_LastDrawElement.enabledInHierarchy,
-                                    m_LastDrawElement.isYogaNodeDirty);
-
-                                mgc.DrawText(infoString, new Vector2(0.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, Color.white);
-
-                                infoString = string.Format("Count of ZeroSize Element:{0} {1}%",
-                                    countOfZeroSizeElement,
-                                    100.0f * countOfZeroSizeElement / count);
-
-                                mgc.DrawText(infoString, new Vector2(0.0f, numberOfLinesOfInfo * kLineHeight), 12.0f, Color.white);
-
-                                infoString = string.Format("Count of Out of Root Element:{0} {1}%",
-                                    outOfRootVE,
-                                    100.0f * outOfRootVE / count);
-
-                                mgc.DrawText(infoString, new Vector2(350.0f, (numberOfLinesOfInfo++) * kLineHeight), 12.0f, Color.white);
+                                DisplayLayoutRecursive(paint2D, ref currentIndex, record.m_VE, 0.5f, 0.5f);
 
                                 break;
                             }
@@ -546,58 +783,6 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                     }
                 }
             }
-        }
-
-        private void DisplayLayoutComparison(Painter2D paint2D, LayoutDebuggerVisualElement veA, LayoutDebuggerVisualElement veB, float offset_x, float offset_y)
-        {
-            // Display Item B
-            float x = veB.layout.x + offset_x;
-            float y = veB.layout.y + offset_y;
-            float w = veB.layout.width;
-            float h = veB.layout.height;
-
-            if (veA == null || (veA.layout.x != veB.layout.x) ||
-                 (veA.layout.y != veB.layout.y) ||
-                 (veA.layout.width != veB.layout.width) ||
-                 (veA.layout.height != veB.layout.height) ||
-                 (veA.name != veB.name))
-            {
-
-                if (w > 0 && h > 0)
-                {
-                    paint2D.BeginPath();
-                    paint2D.MoveTo(new Vector2(x, y));
-                    paint2D.LineTo(new Vector2(x + w, y));
-                    paint2D.LineTo(new Vector2(x + w, y + h));
-                    paint2D.LineTo(new Vector2(x, y + h));
-                    paint2D.ClosePath();
-                    paint2D.Stroke();
-                }
-            }
-
-            if (veB.m_Children == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < veB.m_Children.Count; i++)
-            {
-                if (veA != null && veA.m_Children != null)
-                {
-                    if (i < veA.m_Children.Count)
-                    {
-                        DisplayLayoutComparison(paint2D, veA.m_Children[i], veB.m_Children[i], x, y);
-                    }
-                    else
-                    {
-                        DisplayLayoutComparison(paint2D, null, veB.m_Children[i], x, y);
-                    }
-                }
-                else
-                {
-                    DisplayLayoutComparison(paint2D, null, veB.m_Children[i], x, y);
-                }
-            };
         }
 
         private void DisplayLayoutRecursive(Painter2D paint2D, ref int currentIndex, LayoutDebuggerVisualElement ve, float offset_x, float offset_y)
@@ -615,63 +800,76 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             float x = ve.layout.x + offset_x;
             float y = ve.layout.y + offset_y;
-            float w = ve.layout.width;
-            float h = ve.layout.height;
+
+            // As we are using the Painter2D LineTo and MoveTo functions, we have to reduce the width and height by one pixel to make
+            // sure we are drawing the exact number of pixel, a with of 2 would result in a 3 pixels width, which is wrong.
+            float w = ve.layout.width - 1.0f;
+            float h = ve.layout.height - 1.0f;
 
             bool selected = false;
 
             if (currentIndex < (m_MaxItem))
             {
                 float alpha = (float)currentIndex / (float)m_MaxItem;
-                paint2D.strokeColor = new Color(alpha, 1.0f - alpha, 0.0f);
+
+                if (paint2D != null)
+                {
+                    paint2D.strokeColor = new Color(alpha, 1.0f - alpha, 0.0f);
+                }
             }
             else
             {
-                paint2D.strokeColor = Color.cyan;
+                if (paint2D != null)
+                {
+                    paint2D.strokeColor = Color.cyan;
+                }
                 selected = true;
             }
 
-            if (currentIndex <= m_MaxItem)
+            if (paint2D != null)
             {
-                if (w > 0 && h > 0)
+                if (currentIndex <= m_MaxItem)
                 {
-                    bool show = true;
-
-                    if (m_ShowYogaNodeDirty && ve.isYogaNodeDirty == false)
+                    if (w > 0 && h > 0)
                     {
-                        show = false;
+                        bool show = true;
+
+                        if (m_ShowDirty && ve.isDirty == false)
+                        {
+                            show = false;
+                        }
+
+                        paint2D.BeginPath();
+                        paint2D.MoveTo(new Vector2(x, y));
+                        paint2D.LineTo(new Vector2(x + w, y));
+                        paint2D.LineTo(new Vector2(x + w, y + h));
+                        paint2D.LineTo(new Vector2(x, y + h));
+                        paint2D.ClosePath();
+
+                        if (show)
+                        {
+                            paint2D.Stroke();
+                        }
+
+                        if (currentIndex == 0)
+                        {
+                            paint2D.fillColor = Color.black;
+                            paint2D.Fill();
+                        }
                     }
-
-                    paint2D.BeginPath();
-                    paint2D.MoveTo(new Vector2(x, y));
-                    paint2D.LineTo(new Vector2(x + w, y));
-                    paint2D.LineTo(new Vector2(x + w, y + h));
-                    paint2D.LineTo(new Vector2(x, y + h));
-                    paint2D.ClosePath();
-
-                    if (show)
+                    else if (selected)
                     {
+                        if (w == 0) w = 1;
+                        if (h == 0) h = 1;
+
+                        paint2D.BeginPath();
+                        paint2D.MoveTo(new Vector2(x, y));
+                        paint2D.LineTo(new Vector2(x + w, y));
+                        paint2D.LineTo(new Vector2(x + w, y + h));
+                        paint2D.LineTo(new Vector2(x, y + h));
+                        paint2D.ClosePath();
                         paint2D.Stroke();
                     }
-
-                    if (currentIndex == 0)
-                    {
-                        paint2D.fillColor = Color.black;
-                        paint2D.Fill();
-                    }
-                }
-                else if (selected)
-                {
-                    if (w == 0) w = 1;
-                    if (h == 0) h = 1;
-
-                    paint2D.BeginPath();
-                    paint2D.MoveTo(new Vector2(x, y));
-                    paint2D.LineTo(new Vector2(x + w, y));
-                    paint2D.LineTo(new Vector2(x + w, y + h));
-                    paint2D.LineTo(new Vector2(x, y + h));
-                    paint2D.ClosePath();
-                    paint2D.Stroke();
                 }
             }
 

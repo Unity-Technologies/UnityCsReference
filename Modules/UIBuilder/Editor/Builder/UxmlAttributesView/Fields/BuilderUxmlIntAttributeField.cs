@@ -86,7 +86,7 @@ namespace Unity.UI.Builder
                 return;
 
             var newValue = evt.newData;
-            var valueResolved = UINumericFieldsUtils.StringToLong(newValue, out var v);
+            var valueResolved = UINumericFieldsUtils.TryConvertStringToLong(newValue, out var v);
             var resolvedValue = valueResolved ? Mathf.ClampToInt(v) : field.value;
 
             SetNegativeFixedItemHeightHelpBoxEnabled((newValue.Length != 0 && (resolvedValue < 1 || newValue.Equals("-"))), field);
@@ -100,7 +100,7 @@ namespace Unity.UI.Builder
             var field = labelElement.parent as TextInputBaseField<int>;
             if (field == null)
                 return;
-            var valueResolved = UINumericFieldsUtils.StringToLong(field.text, out var v);
+            var valueResolved = UINumericFieldsUtils.TryConvertStringToLong(field.text, out var v);
             var resolvedValue = valueResolved ? Mathf.ClampToInt(v) : field.value;
 
             SetNegativeFixedItemHeightHelpBoxEnabled((resolvedValue < 1 || field.text.ToCharArray()[0].Equals('-')), field);

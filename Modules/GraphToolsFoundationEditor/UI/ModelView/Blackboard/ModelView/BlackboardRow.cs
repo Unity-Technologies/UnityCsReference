@@ -124,7 +124,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (copyPasteData.HasVariableContent_Internal() && Model is VariableDeclarationModel variableDeclarationModel)
             {
-                BlackboardView.Dispatch(new PasteSerializedDataCommand(operation, operationName, delta, copyPasteData, variableDeclarationModel.ParentGroup));
+                BlackboardView.Dispatch(new PasteDataCommand(operation, operationName, delta, copyPasteData, variableDeclarationModel.ParentGroup));
                 return true;
             }
 

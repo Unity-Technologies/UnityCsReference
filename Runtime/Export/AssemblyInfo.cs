@@ -68,6 +68,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Burst.Editor")]
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.ExternalVersionControl")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UnityAnalytics")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Timeline")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Framework")]

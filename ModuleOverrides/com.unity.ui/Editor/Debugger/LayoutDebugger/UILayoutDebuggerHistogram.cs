@@ -27,18 +27,20 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             style.borderRightColor = Color.black;
 
             style.flexGrow = 1;
+            style.flexShrink = 0;
 
             style.minHeight = 40 * 3;
 
-            style.marginRight = 10;
-            style.marginLeft = 4;
-            style.marginBottom = 4;
-            style.marginTop = 4;
+            style.marginRight = 2;
+            style.marginLeft = 2;
+            style.marginBottom = 2;
+            style.marginTop = 2;
 
             style.overflow = Overflow.Hidden;
 
             VisualElement col = new VisualElement();
             col.style.flexDirection = FlexDirection.Column;
+            col.style.flexShrink = 0;
 
             m_Graph = new UILayoutDebuggerHistogramGraph();
 
@@ -46,10 +48,10 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             m_Graph.style.minHeight = 40 * 3;
 
-            m_Graph.style.marginRight = 10;
-            m_Graph.style.marginLeft = 4;
-            m_Graph.style.marginBottom = 4;
-            m_Graph.style.marginTop = 4;
+            m_Graph.style.marginRight = 2;
+            m_Graph.style.marginLeft = 2;
+            m_Graph.style.marginBottom = 2;
+            m_Graph.style.marginTop = 2;
 
             RadioButton radioButton = new RadioButton();
             radioButton.text = "MaxLayoutLoop";
@@ -180,6 +182,12 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                     break;
                 }
             }
+            MarkDirtyRepaint();
+        }
+
+        public void DisableHover()
+        {
+            m_HoverPosition = new Vector2(-1, 0);
             MarkDirtyRepaint();
         }
 
@@ -381,13 +389,14 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             int colorIndex = 0;
 
-            int selectedIndex = -1;
+            int hoverIndex = -1;
             int alreadySelectedIndex = -1;
 
             float x = 0;
 
             for (int i = 0; i < maxItemList.Count; i++)
             {
+                bool maxSelected = false;
                 if (selectedLayoutDebuggerItem != -1)
                 {
                     if ((maxItemList[i].m_FrameIndex == recordLayout[selectedLayoutDebuggerItem].m_FrameIndex) &&
@@ -395,6 +404,14 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                         (maxItemList[i].m_LayoutLoop == recordLayout[selectedLayoutDebuggerItem].m_LayoutLoop))
                     {
                         alreadySelectedIndex = i;
+                        maxSelected = true;
+                    }
+                    else  if (maxItemList[i].m_FrameIndex == recordLayout[selectedLayoutDebuggerItem].m_FrameIndex)
+                    {
+                        if (alreadySelectedIndex == -1)
+                        {
+                            alreadySelectedIndex = i;
+                        }
                     }
                 }
 
@@ -407,13 +424,13 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                     if ((x < m_HoverPosition.x) && (m_HoverPosition.x < (x + xStep)))
                     {
                         color = Color.cyan;
-                        selectedIndex = i;
+                        hoverIndex = i;
                     }
                 }
 
                 if (alreadySelectedIndex == i)
                 {
-                    color = Color.green;
+                    color = maxSelected ? Color.green : new Color(0.0f, 0.5f, 0.0f);
                 }
 
 
@@ -447,19 +464,19 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 mgc.painter2D.Stroke();
             }
 
-            if (selectedIndex >= 0)
+            if (hoverIndex >= 0)
             {
-                int frameIndex = maxItemList[selectedIndex].m_FrameIndex;
-                int passIndex = maxItemList[selectedIndex].m_PassIndex;
-                int layoutLoop = maxItemList[selectedIndex].m_LayoutLoop;
-                int maxItem = maxItemList[selectedIndex].m_MaxItem;
+                int frameIndex = maxItemList[hoverIndex].m_FrameIndex;
+                int passIndex = maxItemList[hoverIndex].m_PassIndex;
+                int layoutLoop = maxItemList[hoverIndex].m_LayoutLoop;
+                int maxItem = maxItemList[hoverIndex].m_MaxItem;
 
                 selectedItem = new GraphItem(frameIndex, passIndex, layoutLoop);
 
                 mgc.DrawText("FrameIndex: " + frameIndex +
                     " PassIndex: " + passIndex +
                     " LayoutLoop: " + layoutLoop +
-                    " " + m_Mode.ToString() + " " + maxItem , new Vector2(0, 0), 12, Color.cyan);
+                    " " + m_Mode.ToString() + " " + maxItem , new Vector2(0, 14), 12, Color.cyan);
             }
             else
             {
@@ -472,7 +489,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                     " PassIndex: " + maxItemList[alreadySelectedIndex].m_PassIndex +
                     " LayoutLoop: " + maxItemList[alreadySelectedIndex].m_LayoutLoop +
                     " " + m_Mode.ToString() + " " + maxItemList[alreadySelectedIndex].m_MaxItem,
-                    new Vector2(0, 14), 12, Color.green);
+                    new Vector2(0, 0), 12, Color.green);
             }
         }
     }

@@ -423,7 +423,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (copyPasteData.HasVariableContent_Internal())
             {
-                BlackboardView.Dispatch(new PasteSerializedDataCommand(operation, operationName, delta, copyPasteData, GroupModel));
+                BlackboardView.Dispatch(new PasteDataCommand(operation, operationName, delta, copyPasteData, GroupModel));
                 return true;
             }
 

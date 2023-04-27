@@ -104,7 +104,11 @@ namespace UnityEngine
         extern public bool useGravity { get; set; }
         extern public float maxDepenetrationVelocity { get; set; }
         extern public bool isKinematic { get; set; }
-        extern public bool freezeRotation { get; set; }
+        public bool freezeRotation
+        {
+            get => constraints.HasFlag(RigidbodyConstraints.FreezeRotation);
+            set => constraints |= value ? RigidbodyConstraints.FreezeRotation : ~RigidbodyConstraints.FreezeRotation;
+        }
         extern public RigidbodyConstraints constraints { get; set; }
         extern public CollisionDetectionMode collisionDetectionMode { get; set; }
         extern public bool automaticCenterOfMass { get; set; }

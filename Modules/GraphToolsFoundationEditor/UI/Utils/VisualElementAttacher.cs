@@ -17,7 +17,7 @@ namespace Unity.GraphToolsFoundation.Editor
         List<VisualElement> m_WatchedObjects;
         Vector2 m_Offset;
         SpriteAlignment m_Alignment;
-        float m_Distance;
+        Vector2 m_Distance;
 
         public VisualElement Target { get; }
         public VisualElement Element { get; }
@@ -54,7 +54,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        public float Distance
+        public Vector2 Distance
         {
             get => m_Distance;
             set
@@ -80,7 +80,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="alignment">How to align <paramref name="anchored"/> relative to <paramref name="target"/>.</param>
         public Attacher(VisualElement anchored, VisualElement target, SpriteAlignment alignment)
         {
-            Distance = 6.0f;
+            Distance = new Vector2(6.0f, 6.0f);
             Target = target;
             Element = anchored;
             Alignment = alignment;
@@ -123,7 +123,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     m_WatchedObjects = new List<VisualElement>();
 
                 VisualElement v = Target;
-
                 while (v != commonAncestor)
                 {
                     m_WatchedObjects.Add(v);
@@ -173,7 +172,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 case SpriteAlignment.TopLeft:
                 case SpriteAlignment.TopCenter:
                 case SpriteAlignment.TopRight:
-                    centerY = targetRect.y - currentRect.height * 0.5f - Distance;
+                    centerY = targetRect.y - currentRect.height * 0.5f - Distance.y;
                     break;
                 case SpriteAlignment.LeftCenter:
                 case SpriteAlignment.RightCenter:
@@ -183,7 +182,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 case SpriteAlignment.BottomLeft:
                 case SpriteAlignment.BottomCenter:
                 case SpriteAlignment.BottomRight:
-                    centerY = targetRect.yMax + currentRect.height * 0.5f + Distance;
+                    centerY = targetRect.yMax + currentRect.height * 0.5f + Distance.y;
                     break;
             }
 
@@ -192,9 +191,12 @@ namespace Unity.GraphToolsFoundation.Editor
             switch (Alignment)
             {
                 case SpriteAlignment.TopLeft:
-                case SpriteAlignment.LeftCenter:
                 case SpriteAlignment.BottomLeft:
-                    centerX = targetRect.x - currentRect.width * 0.5f - Distance;
+                    // Left of element is aligned to left of the parent
+                    centerX = targetRect.x + currentRect.width * 0.5f - Distance.x;
+                    break;
+                case SpriteAlignment.LeftCenter:
+                    centerX = targetRect.x - currentRect.width * 0.5f - Distance.x;
                     break;
                 case SpriteAlignment.TopCenter:
                 case SpriteAlignment.Center:
@@ -202,9 +204,12 @@ namespace Unity.GraphToolsFoundation.Editor
                     centerX = targetRect.center.x;
                     break;
                 case SpriteAlignment.TopRight:
-                case SpriteAlignment.RightCenter:
                 case SpriteAlignment.BottomRight:
-                    centerX = targetRect.xMax + currentRect.width * 0.5f + Distance;
+                    // Right of element is aligned to left of the parent
+                    centerX = targetRect.xMax - currentRect.width * 0.5f + Distance.x;
+                    break;
+                case SpriteAlignment.RightCenter:
+                    centerX = targetRect.xMax + currentRect.width * 0.5f + Distance.x;
                     break;
             }
 

@@ -37,6 +37,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         Toggle m_LayoutLoopAllowFrameIndexPassIndexUpdate;
         VisualElement m_Interface;
         UILayoutDebuggerHistogram m_Histogram = null;
+        MultiColumnListView m_Info = null;
         Label m_Label = null;
         UILayoutDebugger m_Display = null;
         SliderInt m_Slider = null;
@@ -117,6 +118,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             {
                 m_Slider.SetValueWithoutNotify(value);
             }
+
             return (int)m_Slider.value;
         }
 
@@ -227,42 +229,6 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             return true;
         }
 
-        private List<LayoutDebuggerItem> RemoveDuplicate()
-        {
-            if (m_RecordLayout.Count == 0)
-            {
-                return m_RecordLayout;
-            }
-            else
-            {
-                int currentFrame = 0;
-
-                List<LayoutDebuggerItem> list = new List<LayoutDebuggerItem>();
-
-                LayoutDebuggerItem a = m_RecordLayout[0];
-
-                list.Add(new LayoutDebuggerItem(currentFrame, a.m_PassIndex, a.m_LayoutLoop, a.m_VE));
-
-                for (int i = 1; i < m_RecordLayout.Count; i++)
-                {
-                    LayoutDebuggerItem b = m_RecordLayout[i];
-
-                    if (!IsEqual(a.m_VE,b.m_VE))
-                    {
-                        if (a.m_FrameIndex != b.m_FrameIndex)
-                        {
-                            currentFrame++;
-                        }
-
-                        list.Add(new LayoutDebuggerItem(currentFrame, b.m_PassIndex, b.m_LayoutLoop, b.m_VE));
-                        a = b;
-                    }
-                }
-
-                return list;
-            }
-        }
-
         private void FindNextComplexUpdateLoop()
         {
             int nextFrameIndex = m_FrameIndex + 1;
@@ -317,6 +283,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             root.style.flexGrow = 0;
             root.style.flexShrink = 0;
 
+            m_PanelSelect.style.flexShrink = 0;
 
             m_RecordLayoutToggle = new ToolbarToggle() { name = "recordLayoutToggle" };
             m_RecordLayoutToggle.text = "Record Layout Updates";
@@ -375,7 +342,6 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             m_Display = new UILayoutDebugger();
             m_Display.m_ParentWindow = this;
             m_Display.style.flexDirection = FlexDirection.Column;
-            m_Display.style.flexGrow = 1;
             m_Display.style.flexShrink = 0;
 
             row = createNewRow();
@@ -557,10 +523,13 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             row = createNewRow();
 
             m_SearchTextField = new TextField();
-            m_SearchTextField.style.flexGrow = 1;
+            m_SearchTextField.style.flexGrow = 1.0f;
+            m_SearchTextField.style.flexShrink = 0.0f;
+            m_SearchTextField.style.minWidth = 50.0f;
             row.Add(m_SearchTextField);
 
             m_SearchModeEnumField = new EnumFlagsField("Search mode", SearchMode.ByClass);
+            m_SearchModeEnumField.labelElement.style.minWidth = 50.0f;
 
             row.Add(m_SearchModeEnumField);
 
@@ -583,6 +552,55 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             histogramCol.Add(row);
 
+            row = createNewRow();
+
+            m_Info = new MultiColumnListView();
+
+            m_Info.style.marginRight = 2;
+            m_Info.style.marginLeft = 2;
+            m_Info.style.marginBottom = 2;
+            m_Info.style.marginTop = 2;
+
+            m_Info.style.flexGrow = 1;
+            m_Info.style.flexShrink = 1;
+
+            Column header = new Column() { name = "Pos" };
+            header.title = "Pos";
+            header.width = 50;
+            header.makeCell = () => new Label();
+            m_Info.columns.Add(header);
+
+            header = new Column() { name = "FrameIndex" };
+            header.title = "FrameIndex";
+            header.width = 100;
+            header.makeCell = () => new Label();
+            m_Info.columns.Add(header);
+
+            header = new Column() { name = "PassIndex" };
+            header.title = "PassIndex";
+            header.width = 100;
+            header.makeCell = () => new Label();
+            m_Info.columns.Add(header);
+
+            header = new Column() { name = "LayoutLoop" };
+            header.title = "LayoutLoop";
+            header.width = 100;
+            header.makeCell = () => new Label();
+            m_Info.columns.Add(header);
+
+            header = new Column() { name = "VisualElement" };
+            header.title = "VisualElement";
+            header.width = 800;
+            header.stretchable = true;
+
+            header.makeCell = () => new Label();
+            m_Info.columns.Add(header);
+            m_Info.columns.stretchMode = Columns.StretchMode.GrowAndFill;
+
+            m_Info.selectionChanged += OnSelectionChanged;
+
+            histogramCol.Add(row);
+
             VisualElement histogramRow = createNewRow();
             histogramRow.Add(histogramCol);
             m_Histogram = new UILayoutDebuggerHistogram();
@@ -590,6 +608,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
 
             m_Histogram.m_Graph.RegisterCallback<MouseMoveEvent>(HistogramOnMouseMove);
             m_Histogram.m_Graph.RegisterCallback<MouseDownEvent>(HistogramOnMouseDown);
+            m_Histogram.m_Graph.RegisterCallback<MouseLeaveEvent>(HistogramOnMouseLeave);
 
             root.Add(histogramRow);
 
@@ -604,44 +623,13 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             m_Slider.RegisterValueChangedCallback(v =>
             {
                 m_Display.SetMaxItem((int)v.newValue);
+                m_Display.FillUpdateInfoOfSelectedElement(m_Info);
             });
 
             m_Interface = createNewColumn();
             m_Interface.Add(row);
 
             row = createNewRow();
-
-            ToolbarToggle removeDuplicates = new ToolbarToggle();
-            removeDuplicates.text = "Remove Duplicates";
-            removeDuplicates.RegisterValueChangedCallback((e) =>
-            {
-                if (e.newValue)
-                {
-                    SetRecord(RemoveDuplicate());
-                    m_Display.SetRecord(m_RecordLayout);
-                    m_Histogram.m_Graph.SetRecord(m_RecordLayout);
-
-                    UpdateLabelsAndSetupIndices();
-                    m_Display.SetMaxItem((int)m_Slider.value);
-                }
-                else
-                {
-                    SetRecord(m_RecordLayout);
-                    m_Histogram.m_Graph.SetRecord(m_RecordLayout);
-
-                    UpdateLabelsAndSetupIndices();
-                    m_Display.SetMaxItem((int)m_Slider.value);
-                }
-            });
-            row.Add(removeDuplicates);
-
-            ToolbarToggle enableLayoutComparison = new ToolbarToggle();
-            enableLayoutComparison.text = "Enable layout comparison";
-            enableLayoutComparison.RegisterValueChangedCallback((e) =>
-            {
-                m_Display.EnableLayoutComparison(e.newValue);
-            });
-            row.Add(enableLayoutComparison);
 
             row.Add(m_Slider);
 
@@ -653,11 +641,12 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             row = createNewRow();
 
             Toggle toggle = new Toggle();
-            toggle.text = "Only show YogaNodeDirty=true";
+            toggle.text = "Only show IsDirty=true";
             toggle.value = false;
             toggle.RegisterValueChangedCallback((e) =>
             {
-                m_Display.SetShowYogaNodeDirty(e.newValue);
+                m_Display.SetShowDirty(e.newValue);
+                m_Display.FillUpdateInfoOfSelectedElement(m_Info);
             });
             row.Add(toggle);
 
@@ -677,9 +666,10 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
             root.Add(m_Interface);
 
             row = new VisualElement();
-            row.style.flexDirection = FlexDirection.Column;
+            row.style.flexDirection = FlexDirection.Row;
             row.style.flexGrow = 1;
             row.Add(m_Display);
+            row.Add(m_Info);
 
             root.Add(row);
         }
@@ -688,6 +678,16 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
         {
             m_Display.SetIndices(m_FrameIndex, m_PassIndex, m_LayoutLoop);
             m_Histogram.m_Graph.SelectItemFromIndices(m_FrameIndex, m_PassIndex, m_LayoutLoop);
+        }
+
+        void OnSelectionChanged(IEnumerable<object> items)
+        {
+            foreach(object item in items)
+            {
+                m_Display.lastDrawElement = ((UILayoutDebugger.InfoData)item).m_VE;
+                m_Display.MarkDirtyRepaint();
+                break;
+            }
         }
 
         private void UpdateLabelsAndSetupIndices()
@@ -824,7 +824,18 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                 m_PassIndex = m_RecordLayout[selectedItem].m_PassIndex;
                 m_LayoutLoop = m_RecordLayout[selectedItem].m_LayoutLoop;
                 UpdateLabel();
+                m_Display.FillUpdateInfoOfSelectedElement(m_Info);
             }
+        }
+
+        private void HistogramOnMouseLeave(MouseLeaveEvent evt)
+        {
+            m_Histogram.m_Graph.DisableHover();
+        }
+
+        public void UpdateInfo()
+        {
+            m_Display.FillUpdateInfoOfSelectedElement(m_Info);
         }
 
         private VisualElement createNewRow()

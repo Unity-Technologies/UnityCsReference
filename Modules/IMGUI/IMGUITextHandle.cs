@@ -240,6 +240,7 @@ namespace UnityEngine
             settings.richText = style.richText;
             settings.parseControlCharacters = false;
             settings.isPlaceholder = false;
+            settings.isRightToLeft = false;
 
             if (style.fontSize > 0)
                 settings.fontSize = style.fontSize;

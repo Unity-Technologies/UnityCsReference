@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -12,20 +11,14 @@ namespace Unity.GraphToolsFoundation.Editor
     /// <summary>
     /// A container for graph processing errors and warnings.
     /// </summary>
-    class GraphProcessingResult
+    class ErrorsAndWarningsResult : BaseGraphProcessingResult
     {
-        readonly List<GraphProcessingError> m_Errors = new List<GraphProcessingError>();
+        readonly List<GraphProcessingError> m_Errors = new();
 
         /// <summary>
         /// The errors.
         /// </summary>
         public IReadOnlyList<GraphProcessingError> Errors => m_Errors;
-
-        /// <summary>
-        /// The graph processing status.
-        /// </summary>
-        public GraphProcessingStatuses Status => Errors.Any(e => e.IsWarning == false) ?
-        GraphProcessingStatuses.Failed : GraphProcessingStatuses.Succeeded;
 
         /// <summary>
         /// Adds an error.
@@ -54,7 +47,6 @@ namespace Unity.GraphToolsFoundation.Editor
             var error = new GraphProcessingError
             {
                 Description = desc,
-                SourceNode = node,
                 SourceNodeGuid = node?.Guid ?? default,
                 IsWarning = isWarning,
                 Fix = quickFix

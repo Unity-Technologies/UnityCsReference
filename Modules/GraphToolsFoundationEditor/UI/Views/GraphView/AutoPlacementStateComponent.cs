@@ -34,12 +34,22 @@ namespace Unity.GraphToolsFoundation.Editor
             /// Marks a model as needing to be repositioned after its creation.
             /// </summary>
             /// <param name="model">The model to reposition.</param>
+            /// <param name="modelsToHideDuringAutoPlacement">Models to hide during auto placement, if any.</param>
             /// <remarks>Nodes created from wires need to recompute their position after their creation to make sure
             /// that the last hovered position corresponds to the connected port. In the case of an incompatible connection,
             /// the last hovered position will correspond to the nodes' middle height or width, depending on the orientation.</remarks>
-            public void MarkModelToRepositionAtCreation((GraphElementModel, WireModel, WireSide) model)
+            public void MarkModelToRepositionAtCreation((GraphElementModel, WireModel, WireSide) model, List<GraphElementModel> modelsToHideDuringAutoPlacement = null)
             {
                 m_State.CurrentChangeset.AddModelToRepositionAtCreation(model);
+
+                // The model and the wire need to be hidden during auto placement.
+                m_State.CurrentChangeset.AddModelToHideDuringAutoPlacement(model.Item1);
+                m_State.CurrentChangeset.AddModelToHideDuringAutoPlacement(model.Item2);
+
+                if (modelsToHideDuringAutoPlacement != null)
+                    foreach (var elementModel in modelsToHideDuringAutoPlacement)
+                        m_State.CurrentChangeset.AddModelToHideDuringAutoPlacement(elementModel);
+
                 m_State.SetUpdateType(UpdateType.Partial);
             }
         }
@@ -97,8 +107,12 @@ namespace Unity.GraphToolsFoundation.Editor
             [SerializeField]
             List<ModelToReposition> m_ModelsToRepositionAtCreationList;
 
+            [SerializeField]
+            List<SerializableGUID> m_ModelsToHideDuringAutoPlacementList;
+
             protected HashSet<SerializableGUID> m_ModelsToAutoAlign;
             protected HashSet<ModelToReposition> m_ModelsToRepositionAtCreation;
+            protected HashSet<SerializableGUID> m_ModelsToHideDuringAutoPlacement;
 
             /// <summary>
             /// The models that need to be aligned.
@@ -111,12 +125,18 @@ namespace Unity.GraphToolsFoundation.Editor
             public IEnumerable<ModelToReposition> ModelsToRepositionAtCreation => m_ModelsToRepositionAtCreation;
 
             /// <summary>
+            /// The models that need to be hidden during auto placement.
+            /// </summary>
+            public IEnumerable<SerializableGUID> ModelsToHideDuringAutoPlacement => m_ModelsToHideDuringAutoPlacement;
+
+            /// <summary>
             /// Initializes a new instance of the <see cref="BlackboardViewStateComponent.Changeset" /> class.
             /// </summary>
             public Changeset()
             {
                 m_ModelsToAutoAlign = new HashSet<SerializableGUID>();
                 m_ModelsToRepositionAtCreation = new HashSet<ModelToReposition>();
+                m_ModelsToHideDuringAutoPlacement = new HashSet<SerializableGUID>();
             }
 
             /// <summary>
@@ -145,6 +165,16 @@ namespace Unity.GraphToolsFoundation.Editor
                     );
             }
 
+            /// <summary>
+            /// Adds a model to the list of models to hide during auto placement.
+            /// </summary>
+            /// <param name="model">The model to hide.</param>
+            public virtual void AddModelToHideDuringAutoPlacement(GraphElementModel model)
+            {
+                if (!m_ModelsToHideDuringAutoPlacement.Contains(model.Guid))
+                    m_ModelsToHideDuringAutoPlacement.Add(model.Guid);
+            }
+
             /// <inheritdoc />
             public virtual bool Reverse()
             {
@@ -156,6 +186,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_ModelsToAutoAlign.Clear();
                 m_ModelsToRepositionAtCreation.Clear();
+                m_ModelsToHideDuringAutoPlacement.Clear();
             }
 
             /// <inheritdoc/>
@@ -165,6 +196,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     m_ModelsToAutoAlign.UnionWith(changeset.m_ModelsToAutoAlign);
                     m_ModelsToRepositionAtCreation.UnionWith(changeset.m_ModelsToRepositionAtCreation);
+                    m_ModelsToHideDuringAutoPlacement.UnionWith(changeset.m_ModelsToHideDuringAutoPlacement);
                 }
 
                 m_ModelsToRepositionAtCreation.RemoveWhere(m => m_ModelsToAutoAlign.Contains(m.Model));
@@ -175,6 +207,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_ModelsToAutoAlignList = m_ModelsToAutoAlign.ToList();
                 m_ModelsToRepositionAtCreationList = m_ModelsToRepositionAtCreation.ToList();
+                m_ModelsToHideDuringAutoPlacementList = m_ModelsToHideDuringAutoPlacement.ToList();
             }
 
             /// <inheritdoc />
@@ -182,6 +215,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_ModelsToAutoAlign = new HashSet<SerializableGUID>(m_ModelsToAutoAlignList);
                 m_ModelsToRepositionAtCreation = new HashSet<ModelToReposition>(m_ModelsToRepositionAtCreationList);
+                m_ModelsToHideDuringAutoPlacement = new HashSet<SerializableGUID>(m_ModelsToHideDuringAutoPlacementList);
             }
         }
 

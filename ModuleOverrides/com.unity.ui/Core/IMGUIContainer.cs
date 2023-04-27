@@ -382,6 +382,7 @@ namespace UnityEngine.UIElements
             EventType originalEventType = Event.current.type;
 
             bool isExitGUIException = false;
+            int guiClipFinalCount = 0;
 
             try
             {
@@ -494,12 +495,19 @@ namespace UnityEngine.UIElements
                     // Cache the fact that we have focusable controls or not.
                     hasFocusableControls = GUIUtility.HasFocusableControls();
                 }
-            }
 
-            // This will copy Event.current into evt. End the container by now since the container
-            // should end at this point no matter an exception occured or not. Not ending the container will make the GUIDepth off by 1.
-            UIElementsUtility.EndContainerGUI(evt, layoutSize);
-            RestoreGlobals();
+                // This will copy Event.current into evt. End the container by now since the container
+                // should end at this point no matter an exception occured or not. Not ending the container will make the GUIDepth off by 1.
+                UIElementsUtility.EndContainerGUI(evt, layoutSize);
+
+                RestoreGlobals();
+
+                guiClipFinalCount = GUIClip.Internal_GetCount();
+
+                // Clear extraneous GUIClips
+                while (GUIClip.Internal_GetCount() > guiClipCount)
+                    GUIClip.Internal_Pop();
+            }
 
             // See if the container size has changed. This is to make absolutely sure the VisualElement resizes
             // if the IMGUI content resizes.
@@ -517,17 +525,12 @@ namespace UnityEngine.UIElements
                 // This is the same logic as GUIClipState::EndOnGUI
                 if (evt.type != EventType.Ignore && evt.type != EventType.Used)
                 {
-                    int currentCount = GUIClip.Internal_GetCount();
-                    if (currentCount > guiClipCount)
+                    if (guiClipFinalCount > guiClipCount)
                         Debug.LogError("GUI Error: You are pushing more GUIClips than you are popping. Make sure they are balanced.");
-                    else if (currentCount < guiClipCount)
+                    else if (guiClipFinalCount < guiClipCount)
                         Debug.LogError("GUI Error: You are popping more GUIClips than you are pushing. Make sure they are balanced.");
                 }
             }
-
-            // Clear extraneous GUIClips
-            while (GUIClip.Internal_GetCount() > guiClipCount)
-                GUIClip.Internal_Pop();
 
             if (evt.type == EventType.Used)
             {

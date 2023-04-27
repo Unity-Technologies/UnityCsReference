@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine
 {
-    [NativeHeader("Runtime/Scripting/Marshalling/Test/MarshallingTests.h")]
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     [ExcludeFromDocs]
     internal class MarshallingTests2
     {

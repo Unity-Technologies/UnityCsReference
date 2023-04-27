@@ -24,6 +24,7 @@ namespace Unity.UI.Builder
         ToolbarMenu m_PseudoStatesMenu;
         BuilderTooltipPreview m_TooltipPreview;
         BuilderStyleSheetsDragger m_StyleSheetsDragger;
+        Label m_EmptyStyleSheetsPaneLabel;
 
         enum FieldFocusStep
         {
@@ -163,6 +164,11 @@ namespace Unity.UI.Builder
             m_StyleSheetsDragger = styleSheetsDragger;
 
             RegisterCallback<GeometryChangedEvent>(e => AdjustPosition());
+
+            // Create the empty state label here because this file shares a UXML with BuilderHierarchy
+            m_EmptyStyleSheetsPaneLabel = new Label("Click the + icon to create a new StyleSheet.");
+            m_EmptyStyleSheetsPaneLabel.AddToClassList(BuilderConstants.ExplorerDayZeroStateLabelClassName);
+            m_EmptyStyleSheetsPaneLabel.style.display = DisplayStyle.None;
         }
 
         protected override void InitEllipsisMenu()
@@ -369,6 +375,27 @@ namespace Unity.UI.Builder
             m_ElementHierarchyView.hasUssChanges = true;
             UpdateNewSelectorFieldEnabledStateFromDocument();
             UpdateSubtitleFromActiveUSS();
+
+            // Show empty state if no stylesheet loaded
+            if (document.activeStyleSheet == null)
+            {
+                m_ElementHierarchyView.container.style.justifyContent = Justify.Center;
+                m_ElementHierarchyView.treeView.style.flexGrow = 0;
+                m_EmptyStyleSheetsPaneLabel.style.display = DisplayStyle.Flex;
+                m_ElementHierarchyView.container.Add(m_EmptyStyleSheetsPaneLabel);
+                m_EmptyStyleSheetsPaneLabel.SendToBack();
+            }
+            else
+            {
+                if (m_EmptyStyleSheetsPaneLabel.parent != m_ElementHierarchyView.container)
+                    return;
+
+                // Revert inline style changes to default
+                m_ElementHierarchyView.container.style.justifyContent = Justify.FlexStart;
+                elementHierarchyView.treeView.style.flexGrow = 1;
+                m_EmptyStyleSheetsPaneLabel.style.display = DisplayStyle.None;
+                m_EmptyStyleSheetsPaneLabel.RemoveFromHierarchy();
+            }
         }
 
         // Used by unit tests to reset state after stylesheets drag

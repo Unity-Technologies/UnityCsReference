@@ -4,25 +4,56 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.CommandStateObserver;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
-    /// A state component holding data related to graph processing.
+    /// A state component holding the results of graph processing.
     /// </summary>
     [Serializable]
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Editor")]
     class GraphProcessingStateComponent : StateComponent<GraphProcessingStateComponent.StateUpdater>
     {
+        public class GraphLoadedObserver : StateObserver
+        {
+            ToolStateComponent m_ToolStateComponent;
+            GraphProcessingStateComponent m_GraphProcessingStateComponent;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="GraphLoadedObserver"/> class.
+            /// </summary>
+            public GraphLoadedObserver(ToolStateComponent toolStateComponent, GraphProcessingStateComponent graphProcessingStateComponent)
+                : base(new [] { toolStateComponent},
+                    new IStateComponent[] { graphProcessingStateComponent })
+            {
+                m_ToolStateComponent = toolStateComponent;
+                m_GraphProcessingStateComponent = graphProcessingStateComponent;
+            }
+
+            /// <inheritdoc />
+            public override void Observe()
+            {
+                using (var obs = this.ObserveState(m_ToolStateComponent))
+                {
+                    if (obs.UpdateType != UpdateType.None)
+                    {
+                        using var updater = m_GraphProcessingStateComponent.UpdateScope;
+                        updater.Clear();
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// The updater for the <see cref="GraphProcessingStateComponent"/>.
         /// </summary>
         public class StateUpdater : BaseUpdater<GraphProcessingStateComponent>
         {
-            /// <inheritdoc  cref="GraphProcessingStateComponent.GraphProcessingPending"/>
+            /// <summary>
+            /// Sets whether we are waiting for the graph processing to begin.
+            /// </summary>
             public bool GraphProcessingPending
             {
                 set
@@ -39,40 +70,22 @@ namespace Unity.GraphToolsFoundation.Editor
             /// Sets the results of the graph processing.
             /// </summary>
             /// <param name="results">The results.</param>
-            /// <param name="errorModels">The error to display.</param>
-            public void SetResults(IReadOnlyList<GraphProcessingResult> results, IEnumerable<GraphProcessingErrorModel> errorModels)
+            public void SetResults(IReadOnlyList<BaseGraphProcessingResult> results)
             {
-                m_State.RawResults = results;
-                m_State.RawErrors = m_State.RawResults?.SelectMany(r => r.Errors).ToList();
-
-                if (m_State.m_Errors == null)
-                {
-                    m_State.m_Errors = new List<GraphProcessingErrorModel>();
-                }
-                else
-                {
-                    m_State.m_Errors.Clear();
-                }
-
-                if (errorModels != null)
-                    m_State.m_Errors.AddRange(errorModels);
+                m_State.Results = results;
                 m_State.SetUpdateType(UpdateType.Complete);
             }
 
             /// <summary>
-            /// Clears the graph processing results stored in the component.
+            /// Clears the graph processing results.
             /// </summary>
             public void Clear()
             {
-                m_State.RawResults = null;
-                m_State.RawErrors = null;
-                m_State.m_Errors.Clear();
+                m_State.Results = null;
                 m_State.GraphProcessingPending = false;
                 m_State.SetUpdateType(UpdateType.Complete);
             }
         }
-
-        List<GraphProcessingErrorModel> m_Errors = new List<GraphProcessingErrorModel>();
 
         /// <summary>
         /// Whether we are waiting for the graph processing to begin.
@@ -82,26 +95,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The graph processing results.
         /// </summary>
-        public IReadOnlyList<GraphProcessingResult> RawResults { get; private set; }
-
-        /// <summary>
-        /// All the errors from the <see cref="RawResults"/>.
-        /// </summary>
-        public IReadOnlyList<GraphProcessingError> RawErrors { get; private set; }
-
-        /// <summary>
-        /// The errors to display.
-        /// </summary>
-        public IReadOnlyList<GraphProcessingErrorModel> Errors => m_Errors;
+        public IReadOnlyList<BaseGraphProcessingResult> Results { get; private set; }
 
         /// <inheritdoc/>
         public override void OnRemovedFromState(IState state)
         {
             base.OnRemovedFromState(state);
-
-            RawResults = null;
-            RawErrors = null;
-            m_Errors.Clear();
+            Results = null;
         }
     }
 }

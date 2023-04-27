@@ -5,8 +5,10 @@
 using System.Runtime.CompilerServices;
 
 // Tests
+[assembly: InternalsVisibleTo("Unity.GraphTools.Foundation.Testing.Editor")]
 [assembly: InternalsVisibleTo("Unity.GraphTools.Foundation.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.ItemLibrary.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.GraphTools.Foundation.Editor.Tests.Performance")]
 
 // Samples
 [assembly: InternalsVisibleTo("Unity.ItemLibrary.Editor.Samples")]

@@ -52,7 +52,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 if (m_UpdateObserver == null)
                 {
-                    m_UpdateObserver = new ErrorToolbarUpdateObserver(this, GraphTool.ToolState, GraphTool.GraphProcessingState);
+                    m_UpdateObserver = new ErrorToolbarUpdateObserver(this, GraphTool.ToolState, GraphView.GraphViewModel.ProcessingErrorsState);
                     GraphTool?.ObserverManager?.RegisterObserver(m_UpdateObserver);
                 }
 
@@ -88,7 +88,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual void Update()
         {
             bool enabled = GraphTool?.ToolState.GraphModel != null;
-            bool hasError = GraphTool?.GraphProcessingState.Errors.Count > 0;
+            bool hasError = GraphView.GraphViewModel.ProcessingErrorsState.Errors.Count > 0;
             SetEnabled(enabled && hasError);
         }
 
@@ -98,7 +98,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="index">The index of the error.</param>
         protected void FrameAndSelectError(int index)
         {
-            var errors = GraphTool?.GraphProcessingState.RawErrors;
+            var errors = GraphView.GraphViewModel.ProcessingErrorsState.Errors;
             if (errors != null && errors.Count > 0)
             {
                 if (index >= errors.Count)
@@ -107,7 +107,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (index < 0)
                     index = errors.Count - 1;
 
-                var errorModelGuid = errors[index].SourceNodeGuid;
+                var errorModelGuid = errors[index].ParentNodeGuid;
                 if (GraphTool.ToolState.GraphModel.TryGetModelFromGuid(errorModelGuid, out var errorModel))
                 {
                     var ui = errorModel.GetView<GraphElement>(GraphView);

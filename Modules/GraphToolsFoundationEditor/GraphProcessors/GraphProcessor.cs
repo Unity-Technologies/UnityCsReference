@@ -24,9 +24,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Processes the graph.
         /// </summary>
-        /// <param name="graphModel">The graph to process.</param>
         /// <param name="changes">A description of what changed in the graph. If null, the method assumes everything changed.</param>
         /// <returns>The results of the processing.</returns>
-        public abstract GraphProcessingResult ProcessGraph(GraphModel graphModel, GraphChangeDescription changes);
+        public abstract BaseGraphProcessingResult ProcessGraph(GraphChangeDescription changes);
     }
 }

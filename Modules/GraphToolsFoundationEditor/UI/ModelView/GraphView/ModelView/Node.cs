@@ -44,6 +44,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public AbstractNodeModel NodeModel => Model as AbstractNodeModel;
 
+        VisualElement m_ShowNodePreviewButton;
+        VisualElement m_CollapseButton;
 
         public Node():base(true)
         {}
@@ -64,6 +66,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var disabledOverlay = new VisualElement { name = disabledOverlayElementName, pickingMode = PickingMode.Ignore };
             hierarchy.Add(disabledOverlay);
+
+            RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
+            RegisterCallback<MouseEnterEvent>(OnMouseEnter);
         }
 
         /// <inheritdoc />
@@ -74,6 +79,10 @@ namespace Unity.GraphToolsFoundation.Editor
             usageHints = UsageHints.DynamicTransform;
             AddToClassList(ussClassName);
             this.AddStylesheet_Internal("Node.uss");
+
+            m_CollapseButton = this.SafeQ(IconTitleProgressPart.collapseButtonPartName);
+            m_ShowNodePreviewButton = this.SafeQ(IconTitleProgressPart.previewButtonPartName);
+            m_ShowNodePreviewButton?.RegisterCallback<ChangeEvent<bool>>(OnShowNodePreviewChangeEvent);
         }
 
         /// <inheritdoc />
@@ -107,6 +116,73 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
 
             label.BeginEditing();
+        }
+
+        void OnMouseEnter(MouseEnterEvent evt)
+        {
+            ShowButtons(true);
+        }
+
+        void OnMouseLeave(MouseLeaveEvent evt)
+        {
+            ShowButtons(false);
+        }
+
+        public void ShowButtons(bool show)
+        {
+            m_CollapseButton?.EnableInClassList(ToggleIconButton.visibleUssClassName, show);
+
+            if (NodeModel.HasNodePreview)
+            {
+                m_ShowNodePreviewButton?.EnableInClassList(ToggleIconButton.visibleUssClassName, show);
+
+                var nodePreview = NodeModel.NodePreviewModel.GetView<NodePreview>(RootView);
+                nodePreview?.ShowClosePreviewButtonElement(show);
+            }
+        }
+
+        protected void OnShowNodePreviewChangeEvent(ChangeEvent<bool> evt)
+        {
+            GraphView.Dispatch(new ShowNodePreviewCommand(evt.newValue, NodeModel));
+        }
+
+        /// <inheritdoc />
+        public override void SetElementLevelOfDetail(float zoom, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode)
+        {
+            base.SetElementLevelOfDetail(zoom, newZoomMode, oldZoomMode);
+
+            if (NodeModel.HasNodePreview)
+                SetToggleButtonLevelOfDetail(m_ShowNodePreviewButton);
+
+            SetToggleButtonLevelOfDetail(m_CollapseButton);
+
+            void SetToggleButtonLevelOfDetail(VisualElement button)
+            {
+                var buttonIcon = button?.SafeQ(ToggleIconButton.iconElementName);
+                if (buttonIcon == null)
+                    return;
+
+                const int minSize = 9;
+                const int normalSize = 16;
+                const int marginLeft = 4;
+                var scale = 1.0f / zoom;
+
+                switch (newZoomMode)
+                {
+                    case GraphViewZoomMode.Normal:
+                        button.style.marginLeft = marginLeft;
+                        buttonIcon.style.width = normalSize;
+                        buttonIcon.style.height = normalSize;
+                        break;
+                    case GraphViewZoomMode.Medium:
+                    case GraphViewZoomMode.Small:
+                    case GraphViewZoomMode.VerySmall:
+                        button.style.marginLeft = marginLeft * scale;
+                        buttonIcon.style.width = minSize * scale;
+                        buttonIcon.style.height = minSize * scale;
+                        break;
+                }
+            }
         }
     }
 }

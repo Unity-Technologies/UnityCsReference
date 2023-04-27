@@ -855,6 +855,11 @@ namespace UnityEditor
             return m_Reasons.Count > 0;
         }
 
+        private bool SupportsRunInBackground(NamedBuildTarget buildTarget)
+        {
+            return buildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || buildTarget == NamedBuildTarget.Android;
+        }
+
         private void OnPresetSelectorClosed()
         {
             hasPresetWindowClosed = false;
@@ -1034,8 +1039,11 @@ namespace UnityEditor
                 }
                 else
                 {
-                    // Resolution itself
+                    GUILayout.Label(SettingsContent.resolutionTitle, EditorStyles.boldLabel);
+                    if (SupportsRunInBackground(namedBuildTarget))
+                        EditorGUILayout.PropertyField(m_RunInBackground, SettingsContent.runInBackground);
 
+                    // Resolution itself
                     if (settingsExtension != null)
                     {
                         float h = EditorGUI.kSingleLineHeight;
@@ -1046,7 +1054,6 @@ namespace UnityEditor
 
                     if (namedBuildTarget == NamedBuildTarget.Standalone)
                     {
-                        GUILayout.Label(SettingsContent.resolutionTitle, EditorStyles.boldLabel);
 
                         var fullscreenModes = new[] { FullScreenMode.FullScreenWindow, FullScreenMode.ExclusiveFullScreen, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
                         var fullscreenModeNames = new[] { SettingsContent.fullscreenWindow, SettingsContent.exclusiveFullscreen, SettingsContent.maximizedWindow, SettingsContent.windowed };
@@ -1080,14 +1087,10 @@ namespace UnityEditor
                         }
                         EditorGUILayout.EndFadeGroup();
                     }
-                    if (namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
-                    {
-                        if (namedBuildTarget != NamedBuildTarget.Server)
-                        {
-                            EditorGUILayout.PropertyField(m_MacRetinaSupport, SettingsContent.macRetinaSupport);
-                        }
-                        EditorGUILayout.PropertyField(m_RunInBackground, SettingsContent.runInBackground);
-                    }
+
+                    var buildTargetGroup = namedBuildTarget.ToBuildTargetGroup();
+                    if (buildTargetGroup == BuildTargetGroup.Standalone && namedBuildTarget != NamedBuildTarget.Server)
+                        EditorGUILayout.PropertyField(m_MacRetinaSupport, SettingsContent.macRetinaSupport);
 
                     if (settingsExtension != null && settingsExtension.SupportsOrientation())
                     {
@@ -2272,7 +2275,7 @@ namespace UnityEditor
                     if (oldUseHDRDisplay != PlayerSettings.useHDRDisplay)
                         requestRepaint = true;
 
-                    if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps)
+                    if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.iOS)
                     {
                         using (new EditorGUI.DisabledScope(!PlayerSettings.useHDRDisplay))
                         {

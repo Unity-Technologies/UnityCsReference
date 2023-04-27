@@ -247,7 +247,7 @@ namespace Unity.GraphToolsFoundation.Editor
                             foreach (var block in SelectedBlocks)
                             {
                                 block.RemoveFromHierarchy();
-                                ((AbstractNodeModel)block.Model).Destroy();
+                                ((AbstractNodeModel)block.Model).OnDeleteNode();
                             }
                         }
                         else

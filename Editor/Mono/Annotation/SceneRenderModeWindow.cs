@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -104,14 +105,6 @@ namespace UnityEditor
                 new SceneView.CameraMode(DrawCameraMode.Wireframe, "Wireframe", kShadingMode),
                 new SceneView.CameraMode(DrawCameraMode.TexturedWire, "Shaded Wireframe", kShadingMode),
 
-                new SceneView.CameraMode(DrawCameraMode.ShadowCascades, "Shadow Cascades", kMiscellaneous),
-                new SceneView.CameraMode(DrawCameraMode.RenderPaths, "Render Paths", kMiscellaneous),
-                new SceneView.CameraMode(DrawCameraMode.AlphaChannel, "Alpha Channel", kMiscellaneous),
-                new SceneView.CameraMode(DrawCameraMode.Overdraw, "Overdraw", kMiscellaneous),
-                new SceneView.CameraMode(DrawCameraMode.Mipmaps, "Mipmaps", kMiscellaneous),
-                new SceneView.CameraMode(DrawCameraMode.TextureStreaming, "Texture Streaming", kMiscellaneous),
-                new SceneView.CameraMode(DrawCameraMode.SpriteMask, "Sprite Mask", kMiscellaneous),
-
                 new SceneView.CameraMode(DrawCameraMode.DeferredDiffuse, "Albedo", kDeferred),
                 new SceneView.CameraMode(DrawCameraMode.DeferredSpecular, "Specular", kDeferred),
                 new SceneView.CameraMode(DrawCameraMode.DeferredSmoothness, "Smoothness", kDeferred),
@@ -142,8 +135,19 @@ namespace UnityEditor
 
                 new SceneView.CameraMode(DrawCameraMode.ValidateAlbedo, "Validate Albedo", kMaterialValidation),
                 new SceneView.CameraMode(DrawCameraMode.ValidateMetalSpecular, "Validate Metal Specular", kMaterialValidation),
+
+                new SceneView.CameraMode(DrawCameraMode.ShadowCascades, "Shadow Cascades", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.RenderPaths, "Render Paths", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.AlphaChannel, "Alpha Channel", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.Overdraw, "Overdraw", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.Mipmaps, "Mipmaps", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.TextureStreaming, "Texture Streaming", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.SpriteMask, "Sprite Mask", kMiscellaneous),
             };
+
         }
+
+        private Dictionary<string, bool> foldoutStates = new Dictionary<string, bool>();
 
         private float windowHeight
         {
@@ -153,12 +157,14 @@ namespace UnityEditor
                 int modes;
 
                 // Hide unsupported items and headers
-                headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode)).Select(mode => mode.section).Distinct().Count() +
-                    SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode)).Select(mode => mode.section).Distinct().Count();
-                modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode)) + SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode));
+                headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode))
+                              .Select(mode => mode.section).Distinct().Count() +
+                          SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode))
+                              .Select(mode => mode.section).Distinct().Count();
+                modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode)) +
+                        SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode));
 
-                int separators = headers - 1;
-                return ((headers + modes) * EditorGUI.kSingleLineHeight) + (kSeparatorHeight * separators);
+                return UpdatedHeight(headers, modes, GraphicsSettings.renderPipelineAsset != null);
             }
         }
 
@@ -185,10 +191,17 @@ namespace UnityEditor
                 return;
 
             // We do not use the layout event
-            if (Event.current.type == EventType.Layout)
-                return;
+           if (Event.current.type == EventType.Layout)
+               return;
 
             Draw(rect.width);
+
+            if (GUI.changed)
+            {
+                GUIUtility.ExitGUI();
+                editorWindow.RepaintImmediately();
+                GUI.changed = false; // Reset the changed flag
+            }
 
             // Use mouse move so we get hover state correctly in the menu item rows
             if (Event.current.type == EventType.MouseMove)
@@ -214,14 +227,22 @@ namespace UnityEditor
             rect.y += kSeparatorHeight;
         }
 
-        private void DrawHeader(ref Rect rect, GUIContent label)
+        //Opens render debugger window located at \newSRP\unity\Packages\com.unity.render-pipelines.core\Editor\Debugging\DebugWindow.cs
+        private void DrawRenderingDebuggerShortCut(Rect rect)
         {
+            GUIContent label = new GUIContent("Open Rendering Debugger...");
             var labelRect = rect;
-            labelRect.y += kHeaderVerticalPadding;
+            labelRect.y += (kHeaderVerticalPadding * 2f);
             labelRect.x += kHeaderHorizontalPadding;
             labelRect.width = EditorStyles.miniLabel.CalcSize(label).x;
             labelRect.height = EditorStyles.miniLabel.CalcSize(label).y;
-            GUI.Label(labelRect, label, EditorStyles.miniLabel);
+
+            if (GUI.Button(labelRect, label, EditorStyles.miniLabel))
+            {
+                EditorApplication.ExecuteMenuItem("Window/Analysis/Rendering Debugger");
+                editorWindow.Close();
+            }
+
             rect.y += EditorGUI.kSingleLineHeight;
         }
 
@@ -230,7 +251,8 @@ namespace UnityEditor
             var drawPos = new Rect(0, 0, listElementWidth, EditorGUI.kSingleLineHeight);
             string lastSection = null;
 
-            foreach (SceneView.CameraMode mode in SceneView.userDefinedModes.OrderBy(mode => mode.section).Concat(Styles.sBuiltinCameraModes))
+            foreach (SceneView.CameraMode mode in SceneView.userDefinedModes.OrderBy(mode => mode.section)
+                         .Concat(Styles.sBuiltinCameraModes))
             {
                 // Draw separators and headers
                 if (mode.drawMode != DrawCameraMode.UserDefined && !m_SceneView.IsCameraDrawModeSupported(mode))
@@ -239,23 +261,87 @@ namespace UnityEditor
 
                 if (lastSection != mode.section)
                 {
-                    // Draw header for new section
-                    if (lastSection != null)
-                        // Don't draw separator before first section
-                        DrawSeparator(ref drawPos);
-                    DrawHeader(ref drawPos, EditorGUIUtility.TextContent(mode.section));
                     lastSection = mode.section;
+                    if (!foldoutStates.ContainsKey(lastSection))
+                    {
+                        foldoutStates.Add(lastSection, true);
+                    }
+
+                    bool previousState = foldoutStates[lastSection];
+                    foldoutStates[lastSection] = EditorGUI.Foldout(
+                        new Rect(drawPos.x + kHeaderHorizontalPadding, drawPos.y, drawPos.width,
+                            EditorGUI.kSingleLineHeight), foldoutStates[lastSection],
+                        EditorGUIUtility.TextContent(lastSection), true);
+                    drawPos.y += EditorGUI.kSingleLineHeight;
+
+                    if (previousState != foldoutStates[lastSection])
+                    {
+                        UpdateWindowSize();
+                    }
                 }
 
-                using (new EditorGUI.DisabledScope(!m_SceneView.IsCameraDrawModeEnabled(mode)))
+                if (foldoutStates[lastSection])
                 {
-                    DoBuiltinMode(ref drawPos, mode);
+                    using (new EditorGUI.DisabledScope(!m_SceneView.IsCameraDrawModeEnabled(mode)))
+                    {
+                        using (new EditorGUI.IndentLevelScope())
+                        {
+                            DoBuiltinMode(ref drawPos, mode);
+                        }
+                    }
                 }
             }
 
-            bool disabled = (m_SceneView.cameraMode.drawMode < DrawCameraMode.RealtimeCharting) ||
-                !IsModeEnabled(m_SceneView.cameraMode.drawMode);
+            if (GraphicsSettings.renderPipelineAsset != null)
+            {
+                DrawSeparator(ref drawPos);
+                DrawRenderingDebuggerShortCut(drawPos);
+            }
         }
+
+        private void UpdateWindowSize()
+        {
+            if (editorWindow != null && Event.current.type != EventType.Layout)
+            {
+                float newWindowHeight = RecalculateWindowHeight();
+                editorWindow.minSize = new Vector2(windowWidth, newWindowHeight);
+                editorWindow.maxSize = new Vector2(windowWidth, newWindowHeight);
+            }
+        }
+
+        private float RecalculateWindowHeight()
+        {
+            int headers = 0;
+            int modes = 0;
+
+            string lastSection = null;
+            foreach (SceneView.CameraMode mode in SceneView.userDefinedModes.OrderBy(mode => mode.section)
+                         .Concat(Styles.sBuiltinCameraModes))
+            {
+                if (mode.drawMode != DrawCameraMode.UserDefined && !m_SceneView.IsCameraDrawModeSupported(mode))
+                    continue;
+
+                if (lastSection != mode.section)
+                {
+                    headers++;
+                    lastSection = mode.section;
+                }
+
+                if (foldoutStates.ContainsKey(lastSection) && foldoutStates[lastSection])
+                {
+                    modes++;
+                }
+            }
+
+            return UpdatedHeight(headers, modes, GraphicsSettings.renderPipelineAsset != null);
+        }
+
+        private float UpdatedHeight(int headers, int modes, bool isSRP)
+        {
+            int separators = headers - 1;
+            return ((headers + modes + (isSRP ? 1 : 0)) * EditorGUI.kSingleLineHeight) + (kSeparatorHeight * separators);
+        }
+
 
         bool IsModeEnabled(DrawCameraMode mode)
         {
@@ -268,7 +354,8 @@ namespace UnityEditor
             {
                 EditorGUI.BeginChangeCheck();
 
-                GUI.Toggle(rect, m_SceneView.cameraMode == mode, EditorGUIUtility.TextContent(mode.name), Styles.sMenuItem);
+                GUI.Toggle(rect, m_SceneView.cameraMode == mode, EditorGUIUtility.TextContent(mode.name),
+                    Styles.sMenuItem);
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_SceneView.cameraMode = mode;
@@ -284,7 +371,8 @@ namespace UnityEditor
         {
             if (drawCameraMode == DrawCameraMode.UserDefined)
                 return GUIContent.none;
-            return EditorGUIUtility.TextContent(Styles.sBuiltinCameraModes.Single(mode => mode.drawMode == drawCameraMode).name);
+            return EditorGUIUtility.TextContent(Styles.sBuiltinCameraModes
+                .Single(mode => mode.drawMode == drawCameraMode).name);
         }
 
         internal static SceneView.CameraMode GetBuiltinCameraMode(DrawCameraMode drawMode)

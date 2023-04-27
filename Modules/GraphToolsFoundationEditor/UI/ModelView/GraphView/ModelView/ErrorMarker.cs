@@ -32,6 +32,9 @@ namespace Unity.GraphToolsFoundation.Editor
         private static CustomStyleProperty<float> s_TextSizeProperty = new CustomStyleProperty<float>("--error-text-size");
         private static CustomStyleProperty<float> s_TextMaxWidthProperty = new CustomStyleProperty<float>("--error-text-max-width");
 
+        public MarkerModel MarkerModel => Model as MarkerModel;
+        public override GraphElementModel ParentModel => (Model as MarkerModel)?.GetParentModel(GraphView.GraphModel);
+
         protected Image m_TipElement;
         protected Image m_IconElement;
         protected Label m_TextElement;

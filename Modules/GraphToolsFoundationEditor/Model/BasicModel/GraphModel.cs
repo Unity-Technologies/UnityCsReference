@@ -63,14 +63,8 @@ namespace Unity.GraphToolsFoundation.Editor
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Model")]
     abstract class GraphModel : Model, IGraphElementContainer, ISerializationCallbackReceiver
     {
-        static List<ChangeHint> s_GroupingChangeHint = new() { ChangeHint.Grouping };
-
         [SerializeReference]
         List<AbstractNodeModel> m_GraphNodeModels;
-
-        [SerializeReference]
-        [FormerlySerializedAs("m_BadgeModels")]
-        List<MarkerModel> m_MarkerModels;
 
         [SerializeReference, FormerlySerializedAs("m_GraphEdgeModels")]
         List<WireModel> m_GraphWireModels;
@@ -132,9 +126,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 Assert.IsTrue(typeof(StencilBase).IsAssignableFrom(value));
                 m_StencilType = value;
 
-                Stencil = (StencilBase)Activator.CreateInstance(m_StencilType);
+                Stencil = (StencilBase)Activator.CreateInstance(m_StencilType, this);
                 Assert.IsNotNull(Stencil);
-                Stencil.GraphModel = this;
             }
         }
 
@@ -183,11 +176,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// The wires of the graph.
         /// </summary>
         public virtual IReadOnlyList<WireModel> WireModels => m_GraphWireModels;
-
-        /// <summary>
-        /// The markers of the graph.
-        /// </summary>
-        public virtual IReadOnlyList<MarkerModel> MarkerModels => m_MarkerModels;
 
         /// <summary>
         /// The sticky note of the graph.
@@ -349,7 +337,6 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             m_GraphNodeModels = new List<AbstractNodeModel>();
             m_GraphWireModels = new List<WireModel>();
-            m_MarkerModels = new List<MarkerModel>();
             m_GraphStickyNoteModels = new List<StickyNoteModel>();
             m_GraphPlacematModels = new List<PlacematModel>();
             m_GraphVariableModels = new List<VariableDeclarationModel>();
@@ -635,6 +622,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 throw new ArgumentOutOfRangeException(nameof(index));
 
             var oldModel = m_GraphNodeModels[index];
+
             UnregisterElement(oldModel);
             RegisterElement(nodeModel);
             var indexInMetadata = m_GraphElementMetaData.FindIndex(m => m.Index == index);
@@ -702,6 +690,16 @@ namespace Unity.GraphToolsFoundation.Editor
             UnregisterElement(blockNodeModel);
         }
 
+        public void RegisterNodePreview(NodePreviewModel nodePreviewModel)
+        {
+            RegisterElement(nodePreviewModel);
+        }
+
+        public void UnregisterNodePreview(NodePreviewModel nodePreviewModel)
+        {
+            UnregisterElement(nodePreviewModel);
+        }
+
         public void RegisterPort(PortModel portModel)
         {
             if (!portModel?.NodeModel?.SpawnFlags.IsOrphan() ?? false)
@@ -741,9 +739,6 @@ namespace Unity.GraphToolsFoundation.Editor
                         break;
                     case AbstractNodeModel nodeModel:
                         RemoveNode(nodeModel);
-                        break;
-                    case MarkerModel markerModel:
-                        RemoveMarker(markerModel);
                         break;
                     case PortModel portModel:
                         UnregisterPort(portModel);
@@ -848,30 +843,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (wireModel.FromPort?.PortType == PortType.MissingPort && (!wireModel.FromPort?.GetConnectedWires().Any() ?? false))
                 wireModel.FromPort?.NodeModel?.RemoveUnusedMissingPort(wireModel.FromPort);
-        }
-
-        /// <summary>
-        /// Adds a marker to the graph.
-        /// </summary>
-        /// <param name="markerModel">The marker to add.</param>
-        public virtual void AddMarker(MarkerModel markerModel)
-        {
-            RegisterElement(markerModel);
-            markerModel.GraphModel = this;
-            m_MarkerModels.Add(markerModel);
-            CurrentGraphChangeDescription?.AddNewModels(markerModel);
-        }
-
-        /// <summary>
-        /// Removes a marker from the graph.
-        /// </summary>
-        /// <param name="markerModel">The marker to remove.</param>
-        public virtual void RemoveMarker(MarkerModel markerModel)
-        {
-            UnregisterElement(markerModel);
-            markerModel.GraphModel = null;
-            m_MarkerModels.Remove(markerModel);
-            CurrentGraphChangeDescription?.AddDeletedModels(markerModel);
         }
 
         /// <summary>
@@ -994,11 +965,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 RegisterElement(model);
             }
 
-            foreach (var model in m_MarkerModels)
-            {
-                RegisterElement(model);
-            }
-
             foreach (var model in m_GraphWireModels)
             {
                 RegisterElement(model);
@@ -1046,7 +1012,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var nodeModel = InstantiateNode(nodeTypeToCreate, nodeName, position, guid, initializationCallback, spawnFlags);
 
-            if (!spawnFlags.IsOrphan())
+            if (!spawnFlags.IsOrphan() && nodeModel.Container == this)
             {
                 AddNode(nodeModel);
             }
@@ -1172,43 +1138,6 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// Deletes all markers from the graph.
-        /// </summary>
-        public virtual void DeleteMarkers()
-        {
-            var deletedMarkers = new List<GraphElementModel>(m_MarkerModels);
-
-            foreach (var model in deletedMarkers)
-            {
-                UnregisterElement(model);
-            }
-
-            m_MarkerModels.Clear();
-            CurrentGraphChangeDescription?.AddDeletedModels(deletedMarkers);
-        }
-
-        /// <summary>
-        /// Deletes all markers of type <typeparamref name="T"/> from the graph.
-        /// </summary>
-        public virtual void DeleteMarkersOfType<T>() where T : MarkerModel
-        {
-            var deletedMarkers = m_MarkerModels
-                .Where(b => b is T)
-                .ToList();
-
-            foreach (var model in deletedMarkers)
-            {
-                UnregisterElement(model);
-            }
-
-            m_MarkerModels = m_MarkerModels
-                .Where(b => !(b is T))
-                .ToList();
-
-            CurrentGraphChangeDescription?.AddDeletedModels(deletedMarkers);
-        }
-
-        /// <summary>
         /// Duplicates a node and adds it to the graph.
         /// </summary>
         /// <param name="sourceNode">The node to duplicate. The node does not have to be in this graph.</param>
@@ -1316,7 +1245,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     DeleteWires(connectedWires);
                 }
 
-                // If this all the portals with the given declaration are deleted, delete the declaration.
+                // If all the portals with the given declaration are deleted, delete the declaration.
                 if (nodeModel is WirePortalModel wirePortalModel &&
                     wirePortalModel.DeclarationModel != null &&
                     !this.FindReferencesInGraph<WirePortalModel>(wirePortalModel.DeclarationModel).Except(nodeModels).Any())
@@ -1331,7 +1260,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                 }
 
-                nodeModel.Destroy();
+                nodeModel.OnDeleteNode();
             }
 
             foreach (var container in deletedElementsByContainer)
@@ -2267,11 +2196,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 model.GraphModel = this;
             }
 
-            foreach (var model in m_MarkerModels.Where(m => m != null))
-            {
-                model.GraphModel = this;
-            }
-
             foreach (var model in m_GraphWireModels.Where(m => m != null))
             {
                 model.GraphModel = this;
@@ -2415,18 +2339,14 @@ namespace Unity.GraphToolsFoundation.Editor
                 pastedStickyNote.Contents = stickyNote.Contents;
                 pastedStickyNote.Theme = stickyNote.Theme;
                 pastedStickyNote.TextSize = stickyNote.TextSize;
-                elementMapping.Add(stickyNote.Guid.ToString(), pastedStickyNote);
             }
 
-            List<PlacematModel> pastedPlacemats = new List<PlacematModel>();
             foreach (var placemat in sourceGraphModel.PlacematModels)
             {
                 var newPosition = new Rect(placemat.PositionAndSize.position, placemat.PositionAndSize.size);
                 var pastedPlacemat = CreatePlacemat(newPosition);
                 pastedPlacemat.Title = placemat.Title;
                 pastedPlacemat.Color = placemat.Color;
-                pastedPlacemats.Add(pastedPlacemat);
-                elementMapping.Add(placemat.Guid.ToString(), pastedPlacemat);
             }
         }
 
@@ -2553,8 +2473,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void RemoveUnmanagedNullElements()
         {
-            m_MarkerModels.RemoveAll(t => t == null);
-            m_MarkerModels.RemoveAll(t => t.ParentModel == null);
             m_GraphStickyNoteModels.RemoveAll(t => t == null);
             m_GraphPlacematModels.RemoveAll(t => t == null);
             m_SectionModels.ForEach(t => t.Repair());
@@ -2754,8 +2672,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var validGuids = new HashSet<SerializableGUID>(m_GraphNodeModels.Select(t => t.Guid));
 
-            m_MarkerModels.RemoveAll(t => t == null);
-            m_MarkerModels.RemoveAll(t => t.ParentModel == null);
             m_GraphWireModels.RemoveAll(t => t is null or IPlaceholder);
             m_GraphWireModels.RemoveAll(t => !validGuids.Contains(t.FromNodeGuid) || !validGuids.Contains(t.ToNodeGuid));
             m_GraphStickyNoteModels.RemoveAll(t => t == null);

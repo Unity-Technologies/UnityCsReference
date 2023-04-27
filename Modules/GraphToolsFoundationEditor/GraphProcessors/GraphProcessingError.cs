@@ -18,11 +18,6 @@ namespace Unity.GraphToolsFoundation.Editor
         public string Description { get; set; }
 
         /// <summary>
-        /// Node that is the source of error.
-        /// </summary>
-        public AbstractNodeModel SourceNode { get; set; }
-
-        /// <summary>
         /// Unique ID of the node that is the source of the error.
         /// </summary>
         public SerializableGUID SourceNodeGuid { get; set; }
@@ -51,7 +46,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return Description == other.Description && Equals(SourceNode, other.SourceNode) && IsWarning == other.IsWarning;
+            return Description == other.Description && SourceNodeGuid == other.SourceNodeGuid && IsWarning == other.IsWarning;
         }
 
         /// <inheritdoc />
@@ -70,7 +65,7 @@ namespace Unity.GraphToolsFoundation.Editor
             unchecked
             {
                 var hashCode = (Description != null ? Description.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (SourceNode != null ? SourceNode.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ SourceNodeGuid.GetHashCode();
                 hashCode = (hashCode * 397) ^ IsWarning.GetHashCode();
                 return hashCode;
             }

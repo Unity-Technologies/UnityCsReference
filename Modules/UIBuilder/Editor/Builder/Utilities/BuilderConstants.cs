@@ -247,6 +247,7 @@ namespace Unity.UI.Builder
         public static readonly string ExplorerStyleSheetsPaneClassName = "unity-builder-stylesheets-pane";
         public static readonly string ExplorerActiveStyleSheetClassName = "unity-builder-stylesheets-pane--active-stylesheet";
         public static readonly string ExplorerItemBelongsToOpenDocument = "unity-builder-explorer-excluded";
+        public static readonly string ExplorerDayZeroStateLabelClassName = "unity-builder-explorer__day-zero-label";
 
         // Selector labels
         public static readonly string SelectorLabelClassName = "unity-builder-selector-label";

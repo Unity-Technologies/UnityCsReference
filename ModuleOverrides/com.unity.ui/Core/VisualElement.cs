@@ -82,6 +82,25 @@ namespace UnityEngine.UIElements
         Ignore
     }
 
+    /// <summary>
+    /// Indicates the directionality of the element's text.
+    /// </summary>
+    public enum LanguageDirection
+    {
+        /// <summary>
+        /// Inherits the directionality from the nearest ancestor with a specified directionality.
+        /// </summary>
+        Inherit,
+        /// <summary>
+        /// Left to right language direction.
+        /// </summary>
+        LTR,
+        /// <summary>
+        /// Right to left language direction.
+        /// </summary>
+        RTL
+    }
+
     internal static class VisualElementListPool
     {
         static ObjectPool<List<VisualElement>> pool = new ObjectPool<List<VisualElement>>(() => new List<VisualElement>(), 20);
@@ -307,7 +326,7 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public string viewDataKey
         {
-            get { return m_ViewDataKey; }
+            get => m_ViewDataKey;
             set
             {
                 if (m_ViewDataKey != value)
@@ -1601,6 +1620,52 @@ namespace UnityEngine.UIElements
                 for (int i = 0; i < count; ++i)
                 {
                     m_Children[i].PropagateEnabledToChildren(value);
+                }
+            }
+        }
+
+        LanguageDirection m_LanguageDirection;
+        /// <summary>
+        /// Indicates the directionality of the element's text. The value will propagate to the element's children.
+        /// </summary>
+        /// <remarks>
+        /// Setting the languageDirection to RTL adds basic support for right-to-left (RTL) by reversing the text and handling linebreaking
+        /// and word wrapping appropriately. However, it does not provide comprehensive RTL support, as this would require text shaping,
+        /// which includes the reordering of characters, and OpenType font feature support. Comprehensive RTL support is planned for future updates,
+        /// which will involve additional APIs to handle language, script, and font feature specifications.
+        ///
+        /// To enhance the RTL functionality of this property, users can explore available third-party plugins in the Unity Asset Store and make use of <see cref="ITextElementExperimentalFeatures.renderedText"/>
+        /// </remarks>
+        public LanguageDirection languageDirection
+        {
+            get => m_LanguageDirection;
+            set
+            {
+                if (m_LanguageDirection == value)
+                    return;
+
+                m_LanguageDirection = value;
+                localLanguageDirection = m_LanguageDirection;
+            }
+        }
+
+        LanguageDirection m_LocalLanguageDirection;
+        internal LanguageDirection localLanguageDirection
+        {
+            get => m_LocalLanguageDirection;
+            set
+            {
+                if (m_LocalLanguageDirection == value)
+                    return;
+
+                m_LocalLanguageDirection = value;
+
+                IncrementVersion(VersionChangeType.Layout);
+                var count = m_Children.Count;
+                for (int i = 0; i < count; ++i)
+                {
+                    if(m_Children[i].languageDirection == LanguageDirection.Inherit)
+                        m_Children[i].localLanguageDirection = m_LocalLanguageDirection;
                 }
             }
         }

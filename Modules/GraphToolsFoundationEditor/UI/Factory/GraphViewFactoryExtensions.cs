@@ -124,6 +124,13 @@ namespace Unity.GraphToolsFoundation.Editor
             return marker;
         }
 
+        public static ModelView CreateNodePreviewModelView(this ElementBuilder elementBuilder, NodePreviewModel model)
+        {
+            var preview = new NodePreview();
+            preview.SetupBuildAndUpdate(model, elementBuilder.View, elementBuilder.Context);
+            return preview;
+        }
+
         /// <summary>
         /// Creates a subgraph node from its model.
         /// </summary>

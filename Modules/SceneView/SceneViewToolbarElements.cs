@@ -18,13 +18,6 @@ namespace UnityEditor.Toolbars
         public EditorWindow containerWindow { get; set; }
         SceneView sceneView => containerWindow as SceneView;
 
-        static readonly string s_UssClassName_Shaded = "cameramode-shaded";
-        static readonly string s_UssClassName_ShadedWireframe = "cameramode-shadedwireframe";
-        static readonly string s_UssClassName_Wireframe = "cameramode-wireframe";
-        static readonly string s_UssClassName_Debug = "cameramode-debug";
-
-        string currentUssClassName;
-
         public CameraModeElement()
         {
             name = "CameraModeDropDown";
@@ -34,18 +27,20 @@ namespace UnityEditor.Toolbars
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            AddToClassList(s_UssClassName_Debug);
-            currentUssClassName = s_UssClassName_Debug;
             SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            SceneViewOnCameraModeChanged(sceneView.cameraMode);
             //Settings the icon display explicitly as this is set to DisplayStyle.Flex when icon = null
             //Here the icon is set using USS so on the C# side icon = null
             var iconElement = this.Q<Image>();
+            iconElement.style.width = 145f;
+            Label label = new Label();
+            label.name = "Mode Label";
+            iconElement.Add(label);
             iconElement.style.display = DisplayStyle.Flex;
+            SceneViewOnCameraModeChanged(sceneView.cameraMode);
             sceneView.onCameraModeChanged += SceneViewOnCameraModeChanged;
         }
 
@@ -56,26 +51,8 @@ namespace UnityEditor.Toolbars
 
         void SceneViewOnCameraModeChanged(SceneView.CameraMode mode)
         {
-            RemoveFromClassList(currentUssClassName);
-            switch (mode.name)
-            {
-                case "Shaded":
-                    currentUssClassName = s_UssClassName_Shaded;
-                    break;
-
-                case "Wireframe":
-                    currentUssClassName = s_UssClassName_Wireframe;
-                    break;
-
-                case "Shaded Wireframe":
-                    currentUssClassName = s_UssClassName_ShadedWireframe;
-                    break;
-
-                default:
-                    currentUssClassName = s_UssClassName_Debug;
-                    break;
-            }
-            AddToClassList(currentUssClassName);
+            var label = this.Q<Label>("Mode Label");
+            label.text = mode.name;
         }
     }
 

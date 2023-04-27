@@ -9,34 +9,35 @@ using UnityEngine.UIElements;
 namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
-    /// An element that displays text and is attached to another element. Used to display annotations on nodes.
+    /// An element that is attached to another element.
     /// </summary>
     abstract class Marker : GraphElement
     {
-        static readonly CustomStyleProperty<int> k_DistanceProperty = new CustomStyleProperty<int>("--distance");
+        static readonly CustomStyleProperty<int> k_HorizontalDistanceProperty = new CustomStyleProperty<int>("--horizontal-distance");
+        static readonly CustomStyleProperty<int> k_VerticalDistanceProperty = new CustomStyleProperty<int>("--vertical-distance");
         static readonly int k_DefaultDistanceValue = 6;
 
         protected VisualElement m_Target;
         protected VisualElement m_OriginalParent;
-        protected int m_Distance;
+        protected Vector2 m_Distance;
 
         protected Attacher Attacher { get; private set; }
         protected SpriteAlignment Alignment { get; private set; }
-        public MarkerModel MarkerModel => Model as MarkerModel;
+        public abstract GraphElementModel ParentModel { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Marker"/> class.
         /// </summary>
         protected Marker()
         {
-            m_Distance = k_DefaultDistanceValue;
+            m_Distance = new Vector2(k_DefaultDistanceValue, k_DefaultDistanceValue);
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
         protected virtual void Attach()
         {
-            var visualElement = MarkerModel?.ParentModel?.GetView<GraphElement>(RootView);
+            var visualElement = ParentModel?.GetView<GraphElement>(RootView);
             if (visualElement != null)
             {
                 AttachTo(visualElement, SpriteAlignment.RightCenter);
@@ -113,8 +114,8 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             base.OnCustomStyleResolved(e);
 
-            if (e.customStyle.TryGetValue(k_DistanceProperty, out var dist))
-                m_Distance = dist;
+            if (e.customStyle.TryGetValue(k_HorizontalDistanceProperty, out var distX) && e.customStyle.TryGetValue(k_VerticalDistanceProperty, out var distY))
+                m_Distance = new Vector2(distX, distY);
         }
 
         protected void OnAttachToPanel(AttachToPanelEvent evt)
@@ -125,6 +126,15 @@ namespace Unity.GraphToolsFoundation.Editor
         protected void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
             ReleaseAttacher();
+        }
+
+        /// <inheritdoc />
+        protected override void UpdateElementFromModel()
+        {
+            base.UpdateElementFromModel();
+
+            if (ParentModel?.IsSelectable() ?? false)
+                ClickSelector ??= CreateClickSelector();
         }
     }
 }

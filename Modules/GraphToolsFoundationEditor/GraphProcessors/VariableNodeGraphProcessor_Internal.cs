@@ -7,14 +7,24 @@ using System.Linq;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
+    /// <summary>
+    /// Processor that checks that at most one node refers to a writable data <see cref="VariableDeclarationModel"/>.
+    /// </summary>
     class VariableNodeGraphProcessor_Internal : GraphProcessor
     {
-        /// <inheritdoc />
-        public override GraphProcessingResult ProcessGraph(GraphModel graphModel, GraphChangeDescription changes)
-        {
-            var res = new GraphProcessingResult();
+        readonly GraphModel m_GraphModel;
 
-            foreach (var variableNodeModel in graphModel.NodeModels.OfType<VariableNodeModel>().Where(v => ShouldAddError(v.VariableDeclarationModel, graphModel)))
+        public VariableNodeGraphProcessor_Internal(GraphModel graphModel)
+        {
+            m_GraphModel = graphModel;
+        }
+
+        /// <inheritdoc />
+        public override BaseGraphProcessingResult ProcessGraph(GraphChangeDescription changes)
+        {
+            var res = new ErrorsAndWarningsResult();
+
+            foreach (var variableNodeModel in m_GraphModel.NodeModels.OfType<VariableNodeModel>().Where(v => ShouldAddError(v.VariableDeclarationModel)))
             {
                 res.AddError("Only one instance of a data output is allowed in the graph.", variableNodeModel);
             }
@@ -22,12 +32,12 @@ namespace Unity.GraphToolsFoundation.Editor
             return res;
         }
 
-        static bool ShouldAddError(VariableDeclarationModel variable, GraphModel graphModel)
+        bool ShouldAddError(VariableDeclarationModel variable)
         {
-            return graphModel.Stencil.AllowMultipleDataOutputInstances == AllowMultipleDataOutputInstances.AllowWithWarning
+            return m_GraphModel.Stencil.AllowMultipleDataOutputInstances == AllowMultipleDataOutputInstances.AllowWithWarning
                 && variable.Modifiers == ModifierFlags.Write
                 && !variable.IsInputOrOutputTrigger()
-                && graphModel.FindReferencesInGraph<VariableNodeModel>(variable).Count() > 1 ;
+                && m_GraphModel.FindReferencesInGraph<VariableNodeModel>(variable).Count() > 1 ;
         }
     }
 }

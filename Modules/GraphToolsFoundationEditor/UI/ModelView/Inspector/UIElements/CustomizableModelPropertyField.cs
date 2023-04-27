@@ -33,6 +33,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected FieldInfo InspectedField { get; }
 
+
+        protected bool m_ForceUpdate;
+
         /// <summary>
         /// Tries to create an instance of a custom property field builder provided by an implementation of <see cref="ICustomPropertyFieldBuilder{T}"/>.
         /// </summary>
@@ -120,14 +123,17 @@ namespace Unity.GraphToolsFoundation.Editor
 
             //m_ChildrenContainer = null;
 
+
+            bool isDelayed = InspectedField == null || InspectedField.GetCustomAttribute<DelayedAttribute>() != null;
+
             if (type == typeof(long))
             {
-                return ConfigureField(new LongField { isDelayed = true, tooltip = fieldTooltip });
+                return ConfigureField(new LongField { isDelayed = isDelayed, tooltip = fieldTooltip });
             }
 
             if (type == typeof(int))
             {
-                return ConfigureField(new IntegerField { isDelayed = true, tooltip = fieldTooltip });
+                return ConfigureField(new IntegerField { isDelayed = isDelayed, tooltip = fieldTooltip });
             }
 
             if (type == typeof(bool))
@@ -137,12 +143,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (type == typeof(float))
             {
-                return ConfigureField(new FloatField { isDelayed = true, tooltip = fieldTooltip });
+                return ConfigureField(new FloatField { isDelayed = isDelayed, tooltip = fieldTooltip });
             }
 
             if (type == typeof(double))
             {
-                return ConfigureField(new DoubleField { isDelayed = true, tooltip = fieldTooltip });
+                return ConfigureField(new DoubleField { isDelayed = isDelayed, tooltip = fieldTooltip });
             }
 
             if (type == typeof(string))
@@ -161,11 +167,11 @@ namespace Unity.GraphToolsFoundation.Editor
                     if (InspectedField != null && InspectedField.FieldType == typeof(string) && InspectedField.GetCustomAttribute<MultilineAttribute>() != null)
                     {
                         AddToClassList(multilineUssClassName);
-                        field = new TextField() { isDelayed = true, tooltip = fieldTooltip, multiline = true };
+                        field = new TextField() { isDelayed = isDelayed, tooltip = fieldTooltip, multiline = true };
                     }
                     else
                     {
-                        field = new TextField { isDelayed = true, tooltip = fieldTooltip };
+                        field = new TextField { isDelayed = isDelayed, tooltip = fieldTooltip };
                     }
                     return ConfigureField(field);
                 }
@@ -310,6 +316,17 @@ namespace Unity.GraphToolsFoundation.Editor
             m_LabelExtraPadding = 2.0f;
 
             field.RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+
+            if (field is TextInputBaseField<TFieldValue> textField && !textField.isDelayed)
+            {
+                field.RegisterCallback<ExecuteCommandEvent>(
+                    e =>
+                    {
+                        if (e.commandName == EventCommandNames.UndoRedoPerformed)
+                            m_ForceUpdate = true;
+                    }
+                );
+            }
 
             if (!(parent is ModelInspector inspectorElement))
                 return field;

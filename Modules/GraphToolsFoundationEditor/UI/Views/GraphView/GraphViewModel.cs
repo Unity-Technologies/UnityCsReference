@@ -34,6 +34,16 @@ namespace Unity.GraphToolsFoundation.Editor
         public AutoPlacementStateComponent AutoPlacementState { get; }
 
         /// <summary>
+        /// The state component that holds the graph processing state.
+        /// </summary>
+        public GraphProcessingStateComponent GraphProcessingState { get; }
+
+        /// <summary>
+        /// The errors returned by the <see cref="GraphProcessor"/>s.
+        /// </summary>
+        public GraphProcessingErrorsStateComponent ProcessingErrorsState { get; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GraphViewModel"/> class.
         /// </summary>
         public GraphViewModel(string graphViewName, GraphModel graphModel)
@@ -48,6 +58,10 @@ namespace Unity.GraphToolsFoundation.Editor
             SelectionState = PersistedState.GetOrCreatePersistedStateComponent<SelectionStateComponent>(default, Guid, graphKey);
 
             AutoPlacementState = new AutoPlacementStateComponent();
+
+            GraphProcessingState = new GraphProcessingStateComponent();
+
+            ProcessingErrorsState = new GraphProcessingErrorsStateComponent();
         }
 
         /// <inheritdoc />
@@ -57,6 +71,8 @@ namespace Unity.GraphToolsFoundation.Editor
             state?.AddStateComponent(GraphModelState);
             state?.AddStateComponent(SelectionState);
             state?.AddStateComponent(AutoPlacementState);
+            state?.AddStateComponent(GraphProcessingState);
+            state?.AddStateComponent(ProcessingErrorsState);
         }
 
         /// <inheritdoc />
@@ -66,6 +82,8 @@ namespace Unity.GraphToolsFoundation.Editor
             state?.RemoveStateComponent(GraphModelState);
             state?.RemoveStateComponent(SelectionState);
             state?.RemoveStateComponent(AutoPlacementState);
+            state?.RemoveStateComponent(GraphProcessingState);
+            state?.RemoveStateComponent(ProcessingErrorsState);
         }
     }
 }

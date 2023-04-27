@@ -30,9 +30,13 @@ namespace Unity.GraphToolsFoundation.Editor
             return tool;
         }
 
-        string m_InstantiationStackTrace;
 
         protected Dictionary<string, OverlayToolbarProvider> m_ToolbarProviders;
+
+        /// <summary>
+        /// The clipboard service provider, used for copy, paste and duplicate operations.
+        /// </summary>
+        protected ClipboardProvider m_ClipboardProvider;
 
         protected Hash128 WindowID { get; private set; }
 
@@ -64,11 +68,6 @@ namespace Unity.GraphToolsFoundation.Editor
         public ToolStateComponent ToolState { get; private set; }
 
         /// <summary>
-        /// The state component that holds the graph processing state.
-        /// </summary>
-        public GraphProcessingStateComponent GraphProcessingState { get; private set; }
-
-        /// <summary>
         /// The state component that holds the undo state.
         /// </summary>
         public UndoStateComponent UndoStateComponent { get; private set; }
@@ -87,21 +86,18 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual bool EnableUnsavedChangesDialogueWindow => true;
 
         /// <summary>
+        /// The clipboard service provider, used for copy, paste and duplicate operations.
+        /// </summary>
+        public virtual ClipboardProvider ClipboardProvider => m_ClipboardProvider ??= new EditorClipboardProvider();
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="BaseGraphTool"/> class.
         /// </summary>
         public BaseGraphTool()
         {
             m_ToolbarProviders = new Dictionary<string, OverlayToolbarProvider>();
-            m_InstantiationStackTrace = Environment.StackTrace;
         }
 
-        ~BaseGraphTool()
-        {
-            Debug.Assert(
-                m_InstantiationStackTrace == null ||
-                Undo.undoRedoPerformed.GetInvocationList().Count(d => ReferenceEquals(d.Target, this)) == 0,
-                $"Unbalanced Initialize() and Dispose() calls for tool {GetType()} instantiated at {m_InstantiationStackTrace}");
-        }
 
         /// <inheritdoc />
         protected override void Initialize()
@@ -144,20 +140,15 @@ namespace Unity.GraphToolsFoundation.Editor
             ToolState = PersistedState.GetOrCreatePersistedStateComponent<ToolStateComponent>(default, WindowID, Name);
             State.AddStateComponent(ToolState);
 
-            GraphProcessingState = new GraphProcessingStateComponent();
-            State.AddStateComponent(GraphProcessingState);
-
             UndoStateComponent = new UndoStateComponent(State, ToolState);
             State.AddStateComponent(UndoStateComponent);
 
             HighlighterState = new DeclarationHighlighterStateComponent();
             State.AddStateComponent(HighlighterState);
 
-            this.RegisterCommandHandler<ToolStateComponent, GraphProcessingStateComponent, LoadGraphCommand>(
-                LoadGraphCommand.DefaultCommandHandler, ToolState, GraphProcessingState);
+            this.RegisterCommandHandler<ToolStateComponent, LoadGraphCommand>(LoadGraphCommand.DefaultCommandHandler, ToolState);
 
-            this.RegisterCommandHandler<ToolStateComponent, GraphProcessingStateComponent, UnloadGraphCommand>(
-                UnloadGraphCommand.DefaultCommandHandler, ToolState, GraphProcessingState);
+            this.RegisterCommandHandler<ToolStateComponent, UnloadGraphCommand>(UnloadGraphCommand.DefaultCommandHandler, ToolState);
 
             this.RegisterCommandHandler<UndoStateComponent, UndoRedoCommand>(UndoRedoCommand.DefaultCommandHandler, UndoStateComponent);
 
