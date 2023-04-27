@@ -27,11 +27,6 @@ namespace UnityEditor
         float                           m_MipLevel = 0.0F;
         private float                   m_Intensity = 1.0f;
 
-        [SerializeField]
-        float m_ExposureSliderValue = 0.0f;
-
-        float m_ExposureSliderMax = 16f; // this value can be altered by the user
-
         // Cached preview data
         private PreviewRenderUtility    m_PreviewUtility;
         private Mesh                    m_Mesh;
@@ -72,20 +67,6 @@ namespace UnityEditor
             m_Intensity = intensity;
         }
 
-        protected float GetExposureValueForTexture(Texture t)
-        {
-            RenderTexture rt = t as RenderTexture;
-            if (rt != null && TextureUtil.IsHDRGraphicsFormat(rt.graphicsFormat))
-            {
-                return m_ExposureSliderValue;
-            }
-            if (TextureUtil.NeedsExposureControl(t))
-            {
-                return m_ExposureSliderValue;
-            }
-            return 0.0f;
-        }
-
         void InitPreview()
         {
             // Initialized?
@@ -98,7 +79,7 @@ namespace UnityEditor
             m_Material = EditorGUIUtility.LoadRequired("Previews/PreviewCubemapMaterial.mat") as Material;
         }
 
-        public void OnPreviewSettings(Object[] targets)
+        public void OnPreviewSettings(Object[] targets, int mipCount, bool alphaOnly, bool hasAlpha)
         {
             if (!ShaderUtil.hardwareSupportsRectRenderTexture)
                 return;
@@ -106,44 +87,6 @@ namespace UnityEditor
             InitPreview();
 
             bool showMode = true;
-            bool alphaOnly = true;
-            //@TODO: Share some code with texture inspector???
-            bool hasAlpha = false;
-            bool needsExposureControl = false;
-
-            int mipCount = 8;
-            foreach (Texture t2 in targets)
-            {
-                mipCount = Mathf.Max(mipCount, TextureUtil.GetMipmapCount(t2));
-
-                Cubemap cubemap = t2 as Cubemap;
-                if (cubemap)
-                {
-                    TextureFormat format = cubemap.format;
-                    if (!TextureUtil.IsAlphaOnlyTextureFormat(format))
-                        alphaOnly = false;
-                    if (TextureUtil.HasAlphaTextureFormat(format))
-                    {
-                        TextureUsageMode mode = TextureUtil.GetUsageMode(t2);
-                        if (mode == TextureUsageMode.Default) // all other texture usage modes don't displayable alpha
-                            hasAlpha = true;
-                    }
-
-                    if (TextureUtil.NeedsExposureControl(t2))
-                        needsExposureControl = true;
-                }
-                else
-                {
-                    hasAlpha = true;
-                    alphaOnly = false;
-                }
-
-                RenderTexture rt = t2 as RenderTexture;
-                if (rt)
-                {
-                    needsExposureControl = TextureUtil.IsHDRGraphicsFormat(rt.graphicsFormat);
-                }
-            }
 
             if (alphaOnly)
             {
@@ -164,11 +107,6 @@ namespace UnityEditor
                     m_PreviewType = (PreviewType)(++index % kPreviewIcons.Length);
             }
 
-            if (needsExposureControl)
-            {
-                m_ExposureSliderValue = EditorGUIInternal.ExposureSlider(m_ExposureSliderValue, ref m_ExposureSliderMax, Styles.preSlider);
-            }
-
             GUI.enabled = (mipCount != 1);
             GUILayout.Box(Styles.smallZoom, Styles.preLabel);
             GUI.changed = false;
@@ -177,7 +115,7 @@ namespace UnityEditor
             GUI.enabled = true;
         }
 
-        public void OnPreviewGUI(Texture t, Rect r, GUIStyle background)
+        public void OnPreviewGUI(Texture t, Rect r, GUIStyle background, float exposure)
         {
             if (t == null)
                 return;
@@ -198,7 +136,7 @@ namespace UnityEditor
             m_PreviewUtility.BeginPreview(r, background);
             const float previewDistance = 6.0f;
 
-            RenderCubemap(t, m_PreviewDir, previewDistance);
+            RenderCubemap(t, m_PreviewDir, previewDistance, exposure);
 
             Texture renderedTexture = m_PreviewUtility.EndPreview();
             GUI.DrawTexture(r, renderedTexture, ScaleMode.StretchToFill, false);
@@ -207,7 +145,7 @@ namespace UnityEditor
                 EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 20), "Mip " + mipLevel);
         }
 
-        public Texture2D RenderStaticPreview(Texture t, int width, int height)
+        public Texture2D RenderStaticPreview(Texture t, int width, int height, float exposure)
         {
             if (!ShaderUtil.hardwareSupportsRectRenderTexture)
                 return null;
@@ -221,12 +159,12 @@ namespace UnityEditor
             // If we don't do this and we are generating the preview for a point light cookie, if a light uses this cookie it will try to bind it which result in internal assert in AssetDatabase due to using the texture while building it.
             m_PreviewUtility.ambientColor = Color.black;
 
-            RenderCubemap(t, previewDirection, previewDistance);
+            RenderCubemap(t, previewDirection, previewDistance, exposure);
 
             return m_PreviewUtility.EndStaticPreview();
         }
 
-        private void RenderCubemap(Texture t, Vector2 previewDir, float previewDistance)
+        private void RenderCubemap(Texture t, Vector2 previewDir, float previewDistance, float exposure)
         {
             m_PreviewUtility.camera.transform.position = -Vector3.forward * previewDistance;
             m_PreviewUtility.camera.transform.rotation = Quaternion.identity;
@@ -242,7 +180,7 @@ namespace UnityEditor
             m_Material.SetFloat(s_ShaderAlpha, (m_PreviewType == PreviewType.Alpha) ? 1.0f : 0.0f);
             m_Material.SetFloat(s_ShaderIntensity, m_Intensity);
             m_Material.SetFloat(s_ShaderIsNormalMap, TextureInspector.IsNormalMap(t) ? 1.0f : 0.0f);
-            m_Material.SetFloat(s_ShaderExposure, GetExposureValueForTexture(t));
+            m_Material.SetFloat(s_ShaderExposure, exposure);
 
             if (PlayerSettings.colorSpace == ColorSpace.Linear)
             {

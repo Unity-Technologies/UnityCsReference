@@ -20,7 +20,7 @@ namespace UnityEditor
         private static GUIStyle s_MixedToggleStyle = EditorStyles.toggleMixed;
 
         const float kExposureSliderAbsoluteMax = 23.0f;
-        static readonly GUIContent s_ExposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the lightmap.");
+        static readonly GUIContent s_ExposureIcon = EditorGUIUtility.TrIconContent("Exposure", "Controls the number of stops to over or under expose the texture.");
 
         static internal Rect GetTooltipRect() { return tooltipRect; }
         static internal string GetMouseTooltip() { return mouseTooltip; }
