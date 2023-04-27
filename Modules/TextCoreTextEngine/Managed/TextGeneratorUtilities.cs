@@ -1792,7 +1792,7 @@ namespace UnityEngine.TextCore.Text
             return true;
         }
 
-                internal static bool IsEmoji(uint c)
+        internal static bool IsEmoji(uint c)
         {
             return /*c == 0x23 || c == 0x2A || c >= 0x30 && c <= 0x39 || c == 0xA9 || c == 0xAE || */
                    c == 0x200D || c == 0x203C || c == 0x2049 || c == 0x20E3 || c == 0x2122 || c == 0x2139 || c >= 0x2194 && c <= 0x2199 || c >= 0x21A9 && c <= 0x21AA || c >= 0x231A && c <= 0x231B || c == 0x2328 || c == 0x2388 || c == 0x23CF || c >= 0x23E9 && c <= 0x23F3 || c >= 0x23F8 && c <= 0x23FA || c == 0x24C2 || c >= 0x25AA && c <= 0x25AB || c == 0x25B6 || c == 0x25C0 || c >= 0x25FB && c <= 0x25FE || c >= 0x2600 && c <= 0x2605 || c >= 0x2607 && c <= 0x2612 || c >= 0x2614 && c <= 0x2685 || c >= 0x2690 && c <= 0x2705 || c >= 0x2708 && c <= 0x2712 || c == 0x2714 || c == 0x2716 || c == 0x271D || c == 0x2721 || c == 0x2728 || c >= 0x2733 && c <= 0x2734 || c == 0x2744 || c == 0x2747 || c == 0x274C || c == 0x274E || c >= 0x2753 && c <= 0x2755 || c == 0x2757 || c >= 0x2763 && c <= 0x2767 || c >= 0x2795 && c <= 0x2797 || c == 0x27A1 || c == 0x27B0 || c == 0x27BF || c >= 0x2934 && c <= 0x2935 || c >= 0x2B05 && c <= 0x2B07 || c >= 0x2B1B && c <= 0x2B1C || c == 0x2B50 || c == 0x2B55 ||
@@ -1815,33 +1815,33 @@ namespace UnityEngine.TextCore.Text
         internal static bool IsCJK(uint c)
         {
             return
-                   c >= 0x3000  && c <= 0x303F  || /* CJK Symbols and Punctuation */
-                   c >= 0x16FE0 && c <= 0x16FF  || /* CJK Ideographic Symbols and Punctuation */
-                   c >= 0x3100  && c <= 0x312F  || /* Bopomofo */
-                   c >= 0x31A0  && c <= 0x31BF  || /* Bopomofo Extended */
-                   c >= 0x4E00  && c <= 0x9FFF  || /* CJK Unified Ideographs (Han) */
-                   c >= 0x3400  && c <= 0x4DBF  || /* CJK Extension A */
-                   c >= 0x20000 && c <= 0x2A6DF || /* CJK Extension B */
-                   c >= 0x2A700 && c <= 0x2B73F || /* CJK Extension C */
-                   c >= 0x2B740 && c <= 0x2B81F || /* CJK Extension D */
-                   c >= 0x2B820 && c <= 0x2CEAF || /* CJK Extension E */
-                   c >= 0x2CEB0 && c <= 0x2EBE0 || /* CJK Extension F */
-                   c >= 0x30000 && c <= 0x3134A || /* CJK Extension G */
-                   c >= 0xF900  && c <= 0xFAFF  || /* CJK Compatibility Ideographs */
-                   c >= 0x2F800 && c <= 0x2FA1F || /* CJK Compatibility Ideographs Supplement */
-                   c >= 0x2F00  && c <= 0x2FDF  || /* CJK Radicals / Kangxi Radicals */
-                   c >= 0x2E80  && c <= 0x2EFF  || /* CJK Radicals Supplement */
-                   c >= 0x31C0  && c <= 0x31EF  || /* CJK Strokes */
-                   c >= 0x2FF0  && c <= 0x2FFF  || /* Ideographic Description Characters */
-                   c >= 0x3040  && c <= 0x309F  || /* Hiragana */
-                   c >= 0x1B100 && c <= 0x1B12F || /* Kana Extended-A */
-                   c >= 0x1AFF0 && c <= 0x1AFFF || /* Kana Extended-B */
-                   c >= 0x1B000 && c <= 0x1B0FF || /* Kana Supplement */
-                   c >= 0x1B130 && c <= 0x1B16F || /* Small Kana Extension */
-                   c >= 0x3190  && c <= 0x319F  || /* Kanbun */
-                   c >= 0x30A0  && c <= 0x30FF  || /* Katakana */
-                   c >= 0x31F0  && c <= 0x31FF  || /* Katakana Phonetic Extensions */
-                   c >= 0xFF65  && c <= 0xFF9F;    /* Halfwidth Katakana */
+                    c >= 0x3000  && c <= 0x303F  || /* CJK Symbols and Punctuation */
+                    c >= 0x16FE0 && c <= 0x16FF  || /* CJK Ideographic Symbols and Punctuation */
+                    c >= 0x3100  && c <= 0x312F  || /* Bopomofo */
+                    c >= 0x31A0  && c <= 0x31BF  || /* Bopomofo Extended */
+                    c >= 0x4E00  && c <= 0x9FFF  || /* CJK Unified Ideographs (Han) */
+                    c >= 0x3400  && c <= 0x4DBF  || /* CJK Extension A */
+                    c >= 0x20000 && c <= 0x2A6DF || /* CJK Extension B */
+                    c >= 0x2A700 && c <= 0x2B73F || /* CJK Extension C */
+                    c >= 0x2B740 && c <= 0x2B81F || /* CJK Extension D */
+                    c >= 0x2B820 && c <= 0x2CEAF || /* CJK Extension E */
+                    c >= 0x2CEB0 && c <= 0x2EBE0 || /* CJK Extension F */
+                    c >= 0x30000 && c <= 0x3134A || /* CJK Extension G */
+                    c >= 0xF900  && c <= 0xFAFF  || /* CJK Compatibility Ideographs */
+                    c >= 0x2F800 && c <= 0x2FA1F || /* CJK Compatibility Ideographs Supplement */
+                    c >= 0x2F00  && c <= 0x2FDF  || /* CJK Radicals / Kangxi Radicals */
+                    c >= 0x2E80  && c <= 0x2EFF  || /* CJK Radicals Supplement */
+                    c >= 0x31C0  && c <= 0x31EF  || /* CJK Strokes */
+                    c >= 0x2FF0  && c <= 0x2FFF  || /* Ideographic Description Characters */
+                    c >= 0x3040  && c <= 0x309F  || /* Hiragana */
+                    c >= 0x1B100 && c <= 0x1B12F || /* Kana Extended-A */
+                    c >= 0x1AFF0 && c <= 0x1AFFF || /* Kana Extended-B */
+                    c >= 0x1B000 && c <= 0x1B0FF || /* Kana Supplement */
+                    c >= 0x1B130 && c <= 0x1B16F || /* Small Kana Extension */
+                    c >= 0x3190  && c <= 0x319F  || /* Kanbun */
+                    c >= 0x30A0  && c <= 0x30FF  || /* Katakana */
+                    c >= 0x31F0  && c <= 0x31FF  || /* Katakana Phonetic Extensions */
+                    c >= 0xFF65  && c <= 0xFF9F;    /* Halfwidth Katakana */
         }
     }
 }

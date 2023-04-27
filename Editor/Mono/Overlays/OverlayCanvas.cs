@@ -215,6 +215,7 @@ namespace UnityEditor.Overlays
         OverlayMenu m_Menu;
         internal string lastAppliedPresetName => m_LastAppliedPresetName;
         List<Overlay> m_Overlays = new List<Overlay>();
+        List<Overlay> m_TransientOverlays = new();
 
 
         [SerializeField]
@@ -252,6 +253,7 @@ namespace UnityEditor.Overlays
 
         internal IEnumerable<Overlay> overlays => m_Overlays.AsReadOnly();
 
+        internal IEnumerable<Overlay> transientOverlays => m_TransientOverlays;
 
         VisualElement m_WindowRoot;
         internal VisualElement windowRoot => m_WindowRoot;
@@ -441,13 +443,15 @@ namespace UnityEditor.Overlays
         internal void ShowMenu(bool show, bool atMousePosition = true)
         {
             if (show && !menuVisible)
-                menu.Show(overlays, atMousePosition);
+                menu.Show(atMousePosition);
             else if (!show)
                 menu.Hide();
         }
 
         internal bool menuVisible => menu.isShown;
 
+
+        internal bool IsTransient(Overlay overlay) => m_TransientOverlays.Contains(overlay);
 
         internal void Initialize(EditorWindow window)
         {
@@ -591,22 +595,31 @@ namespace UnityEditor.Overlays
             RestoreOverlays();
         }
 
-        public void Add(Overlay overlay, bool show = true)
+        [Obsolete("OverlayCanvas.Add(Overlay, bool) is obsolete, use Add(Overlay) overload.", false)]
+        public void Add(Overlay overlay, bool show)
+        {
+            Add(overlay);
+            overlay.displayed = show;
+        }
 
+        // Overlays added to the canvas through this method are considered "temporary" and will be shown in separate
+        // category in the menu. Persistent overlays (i.e., overlays registered through OverlayAttribute) are not
+        // created using this method.
+        public void Add(Overlay overlay)
         {
             if(m_Overlays.Contains(overlay))
                 return;
             overlay.canvas?.Remove(overlay);
-            AddOverlay(overlay);
+            AddOverlay(overlay, true);
             RestoreOverlay(overlay);
-            overlay.displayed = show;
         }
 
         public bool Remove(Overlay overlay)
         {
             if (!m_Overlays.Remove(overlay))
                 return false;
-
+            m_TransientOverlays.Remove(overlay);
+            overlay.OnWillBeDestroyed();
             WriteOrReplaceSaveData(overlay);
             overlay.container?.RemoveOverlay(overlay);
             overlay.canvas = null;
@@ -619,8 +632,13 @@ namespace UnityEditor.Overlays
         }
 
         // AddOverlay just registers the Overlay with Canvas. It does not init save data or add to a valid container.
-        void AddOverlay(Overlay overlay)
+        void AddOverlay(Overlay overlay, bool transient = false)
         {
+            // Don't show an error when attempting to add a null overlay. This means that a persistent Overlay type was
+            // removed from a project, or moved to a transient overlay. In either case, the user can't do anything
+            // meaningful with this information.
+            if (overlay == null)
+                return;
 
             if(!OverlayUtilities.EnsureValidId(m_Overlays, overlay))
             {
@@ -631,7 +649,8 @@ namespace UnityEditor.Overlays
 
             overlay.canvas = this;
             m_Overlays.Add(overlay);
-
+            if (transient)
+                m_TransientOverlays.Add(overlay);
             m_OverlaysByVE[overlay.rootVisualElement] = overlay;
             overlay.rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnterOverlay);
             overlay.rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeaveOverlay);
@@ -732,11 +751,13 @@ namespace UnityEditor.Overlays
             if (containers == null)
                 return;
 
-            // Clear existing Overlays
-
+            // Clear OverlayContainer instances and set Overlay.displayed to false. RestoreOverlay expects that Overlay
+            // is not present in VisualElement hierarchy.
             foreach (var overlay in overlays)
-
+            {
+                overlay.displayed = false;
                 overlay.container?.RemoveOverlay(overlay);
+            }
 
 
             // Three steps to reinitialize a canvas:

@@ -156,7 +156,7 @@ namespace UnityEditor
         ListViewState m_ListView;
         string m_ActiveText = "";
         StringBuilder m_CopyString;
-        private int m_LastPingedEntry = -1;
+        private int m_LastPingedEntryRow = -1;
         bool m_DevBuild;
         int m_CallstackTextStart = 0;
         private Mode m_ActiveMode = Mode.None;
@@ -452,18 +452,19 @@ namespace UnityEditor
                 m_ActiveMode = (Mode)entry.mode;
                 entry.callstackTextStartUTF8 = entry.message.Length;
                 m_CallstackTextStart = entry.callstackTextStartUTF16;
+                var entryRow = LogEntries.GetEntryRowIndex(entry.globalLineIndex);
                 // ping object referred by the log entry
-                if (entry.instanceID != 0 && m_LastPingedEntry != entry.globalLineIndex)
+                if (entry.instanceID != 0 && m_LastPingedEntryRow != entryRow)
                 {
                     EditorGUIUtility.PingObject(entry.instanceID);
-                    m_LastPingedEntry = entry.globalLineIndex;
+                    m_LastPingedEntryRow = entryRow;
                 }
             }
             else
             {
                 m_CallstackTextStart = 0;
                 m_ActiveText = string.Empty;
-                m_LastPingedEntry = -1;
+                m_LastPingedEntryRow = -1;
                 m_ListView.row = -1;
                 m_CopyString.Clear();
                 m_ActiveMode = Mode.None;

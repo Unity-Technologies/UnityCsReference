@@ -704,6 +704,7 @@ namespace UnityEditor.Overlays
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal void ApplySaveData(SaveData data)
         {
+            rootVisualElement.style.display = DisplayStyle.None;
             floatingSnapCorner = data.snapCorner;
             m_Floating = data.floating;
             m_Collapsed = data.collapsed;

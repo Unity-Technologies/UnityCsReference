@@ -18,7 +18,7 @@ namespace UnityEngine.UIElements
 
         private int m_ConsecutiveMouseDownCount;
         private long m_LastMouseDownTimeStamp = 0;
-        private bool isClicking
+        internal bool isClicking
         {
             get => m_IsClicking;
             set
@@ -183,7 +183,6 @@ namespace UnityEngine.UIElements
                 isClicking = true;
                 m_TextElement.CapturePointer(evt.pointerId);
                 m_ClickStartPosition = pointerPosition;
-                evt.StopPropagation();
             }
         }
 

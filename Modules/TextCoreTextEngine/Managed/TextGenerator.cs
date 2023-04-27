@@ -2232,16 +2232,7 @@ namespace UnityEngine.TextCore.Text
                         m_SavedSoftLineBreakState.previousWordBreak = -1;
                     }
                     // Handling for East Asian characters
-                    else if (m_IsNonBreakingSpace == false &&
-                             ((charCode > k_HangulJamoStart && charCode < k_HangulJamoEnd || /* Hangul Jamo */
-                               charCode > k_HangulJameExtendedStart && charCode < k_HangulJameExtendedEnd || /* Hangul Jamo Extended-A */
-                               charCode > k_HangulSyllablesStart && charCode < k_HangulSyllablesEnd) && /* Hangul Syllables */
-                              generationSettings.textSettings.lineBreakingRules.useModernHangulLineBreakingRules == false ||
-
-                              (charCode > k_CjkStart && charCode < k_CjkEnd || /* CJK */
-                               charCode > k_CjkIdeographsStart && charCode < k_CjkIdeographsEnd || /* CJK Compatibility Ideographs */
-                               charCode > k_CjkFormsStart && charCode < k_CjkFormsEnd || /* CJK Compatibility Forms */
-                               charCode > k_CjkHalfwidthStart && charCode < k_CjkHalfwidthEnd))) /* CJK Halfwidth */
+                    else if (m_IsNonBreakingSpace == false && (TextGeneratorUtilities.IsHangul(charCode) && textSettings.lineBreakingRules.useModernHangulLineBreakingRules == false || TextGeneratorUtilities.IsCJK(charCode)))
                     {
                         bool isCurrentLeadingCharacter = textSettings.lineBreakingRules.leadingCharactersLookup.Contains((uint)charCode);
                         bool isNextFollowingCharacter = m_CharacterCount < totalCharacterCount - 1 && textSettings.lineBreakingRules.followingCharactersLookup.Contains((uint)textInfo.textElementInfo[m_CharacterCount + 1].character);

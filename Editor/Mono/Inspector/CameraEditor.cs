@@ -12,6 +12,7 @@ using UnityEngine.XR;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
+using UnityEditor.Overlays;
 using UnityEditorInternal.VR;
 using Object = UnityEngine.Object;
 
@@ -510,7 +511,6 @@ namespace UnityEditor
             }
         }
 
-
         private static bool IsDeferredRenderingPath(RenderingPath rp) { return rp == RenderingPath.DeferredShading; }
 
         private bool wantDeferredRendering
@@ -574,6 +574,9 @@ namespace UnityEditor
 
             SubsystemManager.GetSubsystemDescriptors(displayDescriptors);
             SubsystemManager.afterReloadSubsystems += OnReloadSubsystemsComplete;
+
+            if(!SceneViewCameraOverlay.forceDisable)
+                CreatePreviewOverlay(c);
         }
 
         public void OnDestroy()
@@ -584,6 +587,7 @@ namespace UnityEditor
 
         public void OnDisable()
         {
+            SceneViewCameraOverlay.DisableCameraOverlay((Camera)target);
             m_ShowBGColorOptions.valueChanged.RemoveListener(Repaint);
             m_ShowOrthoOptions.valueChanged.RemoveListener(Repaint);
             m_ShowTargetEyeOption.valueChanged.RemoveListener(Repaint);
@@ -762,11 +766,13 @@ namespace UnityEditor
         }
 
         // marked obsolete @karlh 2021/02/13
-        [Obsolete("OnOverlayGUI is obsolete, use Overlay to create a preview.")]
+        [Obsolete("OnOverlayGUI is obsolete. Override CreatePreviewOverlay to create a preview.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void OnOverlayGUI(Object target, SceneView sceneView)
         {
         }
+
+        public virtual Overlay CreatePreviewOverlay(Camera cam) => SceneViewCameraOverlay.GetOrCreateCameraOverlay(cam);
 
         [RequiredByNativeCode]
         internal static float GetGameViewAspectRatio()
