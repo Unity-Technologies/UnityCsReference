@@ -272,7 +272,8 @@ namespace UnityEditor
         // Returns true when the pressed keys are defined in the Trigger
         internal static Func<bool> doPressedKeysTriggerAnyShortcut;
 
-        internal static event Action<bool> focusChanged;
+        public static event Action<bool> focusChanged;
+        public static bool isFocused { get; private set; }
 
         // Windows were reordered
         internal static CallbackFunction windowsReordered;
@@ -483,9 +484,10 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void Internal_FocusChanged(bool isFocused)
+        static void Internal_FocusChanged(bool hasFocus)
         {
-            focusChanged?.Invoke(isFocused);
+            isFocused = hasFocus;
+            focusChanged?.Invoke(hasFocus);
         }
 
         [MenuItem("File/New Scene %n", priority = 150)]

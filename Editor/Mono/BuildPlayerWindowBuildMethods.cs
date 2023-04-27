@@ -9,6 +9,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using System.Collections;
 using System.IO;
 using System;
+using System.Linq;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Connect;
 using UnityEditor.Profiling;
@@ -313,7 +314,7 @@ namespace UnityEditor
                 EditorBuildSettingsScene[] editorScenes = EditorBuildSettings.scenes;
                 foreach (EditorBuildSettingsScene scene in editorScenes)
                 {
-                    if (scene.enabled)
+                    if (scene.enabled && !string.IsNullOrEmpty(scene.path))
                         scenesList.Add(scene.path);
                 }
 
@@ -359,19 +360,32 @@ namespace UnityEditor
                 }
 
                 string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target, subtarget);
-                string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
 
-                if (path == string.Empty)
-                    return false;
+                string path;
+                bool isValidPath = false;
+                do
+                {
+                    path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
+                    if (path == string.Empty)
+                        return false;
+
+                    if (IsBuildPathValid(path, out var msg))
+                    {
+                        isValidPath = true;
+                    }
+                    else if (!EditorUtility.DisplayDialog("Invalid build path", msg, "Ok", "Cancel"))
+                    {
+                        Debug.LogError($"Invalid build path: '{path}'. {msg}");
+                        return false;
+                    }
+
+                } while (!isValidPath);
 
                 if (isWindowsStandalone)
                 {
                     extension = realExtension;
                     path = Path.Combine(path, Paths.MakeValidFileName(PlayerSettings.productName) + '.' + extension);
                 }
-
-                if (!IsBuildPathValid(path))
-                    return false;
 
                 // Enforce extension if needed
                 if (extension != string.Empty && FileUtil.GetPathExtension(path).ToLower() != extension)
@@ -413,14 +427,14 @@ namespace UnityEditor
 
                 fullPath = string.IsNullOrEmpty(fullPath) ? string.Empty : Path.GetFullPath(fullPath);
 
-                fullPath = fullPath.ToLower();
                 if (Path.DirectorySeparatorChar == '/')
                     return fullPath;
                 return fullPath.Replace(Path.DirectorySeparatorChar, '/');
             }
 
-            internal static bool IsBuildPathValid(string path)
+            internal static bool IsBuildPathValid(string path, out string errorMessage)
             {
+                errorMessage = default;
                 var cleanedPath = NormalizePath(path);
                 if (cleanedPath.Equals(string.Empty) &&
                     IsInstallInBuildFolderOption())
@@ -428,22 +442,37 @@ namespace UnityEditor
 
                 var basePath = NormalizePath(Application.dataPath + "/../");
 
-                var assetsPath = NormalizePath(basePath + "/Assets");
-                var settingsPath = NormalizePath(basePath + "/ProjectSettings");
-                var tempPath = NormalizePath(basePath + "/Temp");
-                var libraryPath = NormalizePath(basePath + "/Library");
-                var userSettingsPath = NormalizePath(basePath + "/UserSettings");
-                var userDesktopPath = NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
-
-                if (basePath.Contains(cleanedPath) ||
-                    cleanedPath == assetsPath ||
-                    cleanedPath == settingsPath ||
-                    cleanedPath == tempPath ||
-                    cleanedPath == libraryPath ||
-                    cleanedPath == userSettingsPath ||
-                    cleanedPath == userDesktopPath)
+                // Allow build into the Temp folder (used by Unity TestRunner)
+                var invalidPaths = new[]
                 {
-                    Debug.LogError("Invalid build path: " + cleanedPath);
+                    NormalizePath(basePath + "/Assets"),
+                    NormalizePath(basePath + "/ProjectSettings"),
+                    NormalizePath(basePath + "/Library"),
+                    NormalizePath(basePath + "/Packages"),
+                    NormalizePath(basePath + "/UserSettings")
+                };
+
+                var invalidPath = invalidPaths.FirstOrDefault(p => cleanedPath.Contains(p, StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrEmpty(invalidPath))
+                {
+                    var dirName = Path.GetFileName(invalidPath);
+                    errorMessage = $"The '{dirName}' directory is an internal work directory of Unity and " +
+                                    "projects should not be built inside it. Please choose another directory for the build output.";
+                    return false;
+                }
+
+                if (cleanedPath.Equals(basePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    errorMessage = "The project root directory should not be used as a build output directory. " +
+                                   "Please create a subdirectory for the build output.";
+                    return false;
+                }
+
+                var userDesktopPath = NormalizePath(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+                if (cleanedPath.Equals(userDesktopPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    errorMessage = "The desktop directory should not be used as a build output directory. " +
+                                   "Please create a subdirectory for the build output.";
                     return false;
                 }
 

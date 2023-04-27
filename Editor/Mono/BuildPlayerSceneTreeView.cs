@@ -13,21 +13,22 @@ namespace UnityEditor
     {
         private const string kAssetsFolder = "Assets/";
         private const string kSceneExtension = ".unity";
-
         public static int kInvalidCounter = -1;
+
+        private string m_FullName;
 
         public bool active;
         public int counter;
-        public string fullName;
-        public GUID guid;
-        public void UpdateName()
+        public string fullName
         {
-            var name = AssetDatabase.GUIDToAssetPath(guid.ToString());
-            if (name != fullName)
+            get => m_FullName;
+            set
             {
-                fullName = name;
+                if (m_FullName == value)
+                    return;
 
-                displayName = fullName;
+                m_FullName = value;
+                displayName = m_FullName;
                 if (displayName.StartsWith(kAssetsFolder))
                     displayName = displayName.Remove(0, kAssetsFolder.Length);
                 var ext = displayName.LastIndexOf(kSceneExtension);
@@ -35,13 +36,21 @@ namespace UnityEditor
                     displayName = displayName.Substring(0, ext);
             }
         }
+        public GUID guid;
 
-        public BuildPlayerSceneTreeViewItem(int id, int depth, GUID g, bool state) : base(id, depth)
+        public void UpdateName()
         {
-            active = state;
+            var name = AssetDatabase.GUIDToAssetPath(guid.ToString());
+            if (!string.IsNullOrEmpty(name) && name != fullName)
+                fullName = name;
+        }
+
+        public BuildPlayerSceneTreeViewItem(EditorBuildSettingsScene scene) : base(scene.guid.GetHashCode(), 0)
+        {
+            active = scene.enabled;
             counter = kInvalidCounter;
-            guid = g;
-            fullName = "";
+            guid = scene.guid;
+            fullName = scene.path;
             UpdateName();
         }
     }
@@ -71,7 +80,7 @@ namespace UnityEditor
             List<EditorBuildSettingsScene> scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
             foreach (var sc in scenes)
             {
-                var item = new BuildPlayerSceneTreeViewItem(sc.guid.GetHashCode(), 0, sc.guid, sc.enabled);
+                var item = new BuildPlayerSceneTreeViewItem(sc);
                 root.AddChild(item);
             }
             return root;
@@ -314,6 +323,11 @@ namespace UnityEditor
             {
                 var sceneItem = rootItem.children[index] as BuildPlayerSceneTreeViewItem;
                 sceneList[index] = new EditorBuildSettingsScene(sceneItem.fullName, sceneItem.active);
+
+                // If the scene was deleted AssetPathToGUID may not work and the guid will be lost
+                // In that case restore it to the previous value
+                if (sceneList[index].guid.Empty() && !sceneItem.guid.Empty())
+                    sceneList[index].guid = sceneItem.guid;
             }
             return sceneList;
         }

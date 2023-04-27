@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -11,7 +10,7 @@ using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor.Overlays
 {
-    internal class OverlayMenu : VisualElement
+    class OverlayMenu : VisualElement
     {
         static bool s_KeepAlive = false;
         static Action s_DelayUntilCanHide;
@@ -21,6 +20,7 @@ namespace UnityEditor.Overlays
         static VisualTreeAsset s_TreeAsset;
 
         readonly ScrollView m_ListRoot;
+        int m_ListContentsHash;
         readonly Toggle m_Toggle;
         TextElement m_DropdownText;
         readonly Button m_Dropdown;
@@ -63,7 +63,6 @@ namespace UnityEditor.Overlays
             canvas.afterOverlaysInitialized += () =>
             {
                 m_DropdownText.text = canvas.lastAppliedPresetName;
-                RebuildMenu(canvas.overlays);
             };
 
             RegisterCallback<FocusOutEvent>(evt =>
@@ -78,9 +77,7 @@ namespace UnityEditor.Overlays
             });
 
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
-
             canvas.overlaysEnabledChanged += OnOverlayEnabledChanged;
-
             focusable = true;
             Hide();
         }
@@ -116,25 +113,62 @@ namespace UnityEditor.Overlays
             menu.DropDown(m_Dropdown.worldBound);
         }
 
-        void RebuildMenu(IEnumerable<Overlay> overlays)
+        bool RebuildMenu()
         {
             m_ListRoot.Clear();
+            var previousHash = m_ListContentsHash;
+            m_ListContentsHash = 13;
 
-            foreach (var overlay in overlays)
+            foreach (var overlay in m_Canvas.overlays)
             {
-                if (!overlay.userControlledVisibility || !overlay.hasMenuEntry)
+                if (!overlay.userControlledVisibility || !overlay.hasMenuEntry || m_Canvas.IsTransient(overlay))
                     continue;
-
-                var item = new OverlayMenuItem();
-                item.overlay = overlay;
-                m_ListRoot.Add(item);
+                m_ListRoot.Add(new OverlayMenuItem() { overlay = overlay });
+                m_ListContentsHash = Tuple.CombineHashCodes(overlay.GetHashCode(), m_ListContentsHash);
             }
+
+            if (m_Canvas.transientOverlays.Any())
+            {
+                var separator = new VisualElement() { name = "Separator" };
+                separator.AddToClassList("unity-separator");
+                m_ListRoot.Add(separator);
+            }
+
+            foreach (var overlay in m_Canvas.transientOverlays)
+            {
+                m_ListRoot.Add(new OverlayMenuItem() { overlay = overlay });
+                m_ListContentsHash = Tuple.CombineHashCodes(overlay.GetHashCode(), m_ListContentsHash);
+            }
+
+            return m_ListContentsHash != previousHash;
         }
 
-        public void Show(IEnumerable<Overlay> overlays, bool atMousePosition)
+        public void Show(bool atMousePosition = true)
+        {
+            // If the contents of the scroll view changed, we need to wait until the layout is recalculated before
+            // placing the popup overlay. If the contents have _not_ changed, this event will not be invoked and thus
+            // we need to immediately show the popup.
+            if(RebuildMenu())
+                m_ListRoot.RegisterCallback<GeometryChangedEvent>(atMousePosition ? PresentAtMouse : PresentAtCenter);
+            else
+                Present(atMousePosition);
+        }
+
+        void PresentAtCenter(GeometryChangedEvent _)
+        {
+            m_ListRoot.UnregisterCallback<GeometryChangedEvent>(PresentAtCenter);
+            Present(false);
+        }
+
+        void PresentAtMouse(GeometryChangedEvent _)
+        {
+            m_ListRoot.UnregisterCallback<GeometryChangedEvent>(PresentAtMouse);
+            Present(true);
+        }
+
+        void Present(bool atMousePosition)
         {
             var parentBounds = parent.layout;
-
             var currentLayout = layout;
             var currentSize = new Vector2(currentLayout.width, currentLayout.height);
 
@@ -172,48 +206,37 @@ namespace UnityEditor.Overlays
             // Change `visibility` instead of `display` to ensure that menu size is
             // recomputed even when it is not shown.
             style.visibility = Visibility.Visible;
-
             OnOverlayEnabledChanged(m_Canvas.overlaysEnabled);
             Focus();
         }
 
-        void ResolveSizeLimits(out float minWidth, out float minHeight, out float maxWidth, out float maxHeight)
+        internal void AdjustToParentSize()
         {
-            if (m_InitialMinWidth.keyword == StyleKeyword.None || m_InitialMinWidth.keyword == StyleKeyword.Auto)
-            {
-                minWidth = 0;
-            }
-            else
-            {
-                minWidth = m_InitialMinWidth.value;
-            }
+            // If size limits have changed since the last time this method was called,
+            // a re-computation of the layout will occur because the code below will update
+            // some style properties.
 
-            if (m_InitialMinHeight.keyword == StyleKeyword.None || m_InitialMinHeight.keyword == StyleKeyword.Auto)
-            {
-                minHeight = 0;
-            }
-            else
-            {
-                minHeight = m_InitialMinHeight.value;
-            }
+            // Calling this as soon as the parent size is modified ensures that
+            // the menu width and height will be appropriate when comes the time to
+            // display the menu.
 
-            if (m_InitialMaxWidth.keyword == StyleKeyword.None)
-            {
-                maxWidth = float.MaxValue;
-            }
-            else
-            {
-                maxWidth = m_InitialMaxWidth.value;
-            }
+            float minWidth = m_InitialMinWidth.keyword == StyleKeyword.None ||
+                             m_InitialMinWidth.keyword == StyleKeyword.Auto
+                ? 0
+                : m_InitialMinWidth.value;
 
-            if (m_InitialMaxHeight.keyword == StyleKeyword.None)
-            {
-                maxHeight = float.MaxValue;
-            }
-            else
-            {
-                maxHeight = m_InitialMaxHeight.value;
-            }
+            float minHeight = m_InitialMinHeight.keyword == StyleKeyword.None ||
+                              m_InitialMinHeight.keyword == StyleKeyword.Auto
+                ? 0
+                : m_InitialMinHeight.value;
+
+            float maxWidth = m_InitialMaxWidth.keyword == StyleKeyword.None
+                ? float.MaxValue
+                : m_InitialMaxWidth.value;
+
+            float maxHeight = m_InitialMaxHeight.keyword == StyleKeyword.None
+                ? float.MaxValue
+                : m_InitialMaxHeight.value;
 
             var parentBounds = parent.layout;
 
@@ -221,20 +244,7 @@ namespace UnityEditor.Overlays
             minHeight = Mathf.Min(parentBounds.height, minHeight);
 
             maxWidth = Mathf.Min(parentBounds.width, maxWidth);
-            maxHeight = Mathf.Min(parentBounds.height, maxHeight);;
-        }
-
-        internal void AdjustToParentSize()
-        {
-            // If size limits have changed since the last time this method was called,
-            // a recomputation of the layout will occur because the code below will update
-            // some style properties.
-
-            // Calling this as soon as the parent size is modified ensures that
-            // the menu width and height will be appropriate when comes the time to
-            // display the menu.
-
-            ResolveSizeLimits(out var minWidth, out var minHeight, out var maxWidth, out var maxHeight);
+            maxHeight = Mathf.Min(parentBounds.height, maxHeight);
 
             style.minWidth = minWidth;
             style.minHeight = minHeight;
@@ -245,7 +255,6 @@ namespace UnityEditor.Overlays
         public void Hide()
         {
             style.visibility = Visibility.Hidden;
-
             var overlays = m_ListRoot.Children().OfType<OverlayMenuItem>();
             foreach (var overlay in overlays)
                 overlay.overlay.SetHighlightEnabled(false);
