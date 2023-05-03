@@ -92,6 +92,8 @@ namespace UnityEngine
         extern public UInt32                     renderingLayerMask { get; set; }
         extern public int                        rendererPriority { get; set; }
         extern public RayTracingMode             rayTracingMode { get; set; }
+        extern public RayTracingAccelerationStructureBuildFlags rayTracingAccelerationStructureBuildFlags { get; set; }
+        extern public bool                       rayTracingAccelerationStructureBuildFlagsOverride { get; set; }
 
         extern public   string sortingLayerName  { get; set; }
         extern public   int    sortingLayerID    { get; set; }

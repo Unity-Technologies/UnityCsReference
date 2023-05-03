@@ -155,6 +155,12 @@ namespace Unity.GraphToolsFoundation
         /// </summary>
         public static TypeHandle Quaternion { get; } = TypeHandleHelpers.GenerateTypeHandle(typeof(Quaternion));
 
+        // This empty static constructor is required so the static properties will be initialized on CoreCLR as initializing these properties has side effects other code depends on.
+        // The static constructor was not necessary on Mono as the static properties were initialized there regardless.
+        static TypeHandle()
+        {
+        }
+
         /// <summary>
         /// Whether the type handle is valid.
         /// </summary>

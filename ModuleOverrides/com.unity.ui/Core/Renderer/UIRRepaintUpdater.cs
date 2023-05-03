@@ -157,10 +157,10 @@ namespace UnityEngine.UIElements
 
         void InitRenderChain()
         {
-            renderChain = CreateRenderChain();
+            Debug.Assert(attachedPanel != null);
 
-            if (attachedPanel?.visualTree != null)
-                renderChain.UIEOnChildAdded(attachedPanel.visualTree);
+            renderChain = CreateRenderChain();
+            renderChain.UIEOnChildAdded(attachedPanel.visualTree);
 
             OnPanelStandardShaderChanged();
             if (panel.contextType == ContextType.Player)

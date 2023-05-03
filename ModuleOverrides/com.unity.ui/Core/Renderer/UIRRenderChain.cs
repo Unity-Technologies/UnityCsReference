@@ -6,7 +6,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using Unity.Collections;
 using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
@@ -182,6 +181,7 @@ namespace UnityEngine.UIElements.UIR
         LinkedPool<RenderChainCommand> m_CommandPool = new LinkedPool<RenderChainCommand>(() => new RenderChainCommand(), cmd => {});
         BasicNodePool<TextureEntry> m_TexturePool = new BasicNodePool<TextureEntry>();
         List<RenderNodeData> m_RenderNodesData = new List<RenderNodeData>();
+        MeshGenerationDeferrer m_MeshGenerationDeferrer = new();
         Shader m_DefaultShader, m_DefaultWorldSpaceShader;
         Material m_DefaultMat, m_DefaultWorldSpaceMat;
         bool m_BlockDirtyRegistration;
@@ -233,13 +233,12 @@ namespace UnityEngine.UIElements.UIR
             this.atlas = atlas;
             this.vectorImageManager = vectorImageManager;
 
-            // TODO: Share these across all panels
-            vertexPool = new TempAllocator<Vertex>(8192, 2048, 64 * 1024);
-            indexPool = new TempAllocator<UInt16>(8192 << 1, 2048 << 1, (64 * 1024) << 1);
+            // TODO: Share across all panels
+            tempMeshAllocator = new TempMeshAllocatorImpl();
             jobManager = new JobManager();
 
-            this.shaderInfoAllocator.Construct();
-            this.opacityIdAccelerator = new OpacityIdAccelerator();
+            shaderInfoAllocator.Construct();
+            opacityIdAccelerator = new OpacityIdAccelerator();
 
             m_VisualChangesProcessor = new VisualChangesProcessor(this);
 
@@ -285,19 +284,31 @@ namespace UnityEngine.UIElements.UIR
                 UIRUtility.Destroy(m_DefaultWorldSpaceMat);
                 m_DefaultMat = m_DefaultWorldSpaceMat = null;
 
-                vertexPool.Dispose();
-                indexPool.Dispose();
-                jobManager.Dispose();
-                vectorImageManager?.Dispose();
-                shaderInfoAllocator.Dispose();
-                device?.Dispose();
-                opacityIdAccelerator?.Dispose();
-                m_VisualChangesProcessor?.Dispose();
+                tempMeshAllocator.Dispose();
+                tempMeshAllocator = null;
 
-                atlas = null;
+                jobManager.Dispose();
+                jobManager = null;
+
+                vectorImageManager?.Dispose();
+                vectorImageManager = null;
+
+                shaderInfoAllocator.Dispose();
                 shaderInfoAllocator = new UIRVEShaderInfoAllocator();
+
+                device?.Dispose();
                 device = null;
 
+                opacityIdAccelerator?.Dispose();
+                opacityIdAccelerator = null;
+
+                m_VisualChangesProcessor?.Dispose();
+                m_VisualChangesProcessor = null;
+
+                m_MeshGenerationDeferrer?.Dispose();
+                m_MeshGenerationDeferrer = null;
+
+                atlas = null;
                 m_ActiveRenderNodes = 0;
                 m_RenderNodesData.Clear();
             }
@@ -441,17 +452,15 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
+            m_MeshGenerationDeferrer.ProcessDeferredWork(m_VisualChangesProcessor.meshGenerationContext);
             m_VisualChangesProcessor.ConvertEntriesToCommands(ref m_Stats);
-
             jobManager.CompleteConvertMeshJobs();
             jobManager.CompleteCopyMeshJobs();
-
             opacityIdAccelerator.CompleteJobs();
             k_MarkerVisualsProcessing.End();
             m_BlockDirtyRegistration = false;
 
-            vertexPool.Reset();
-            indexPool.Reset();
+            tempMeshAllocator.Clear();
             meshWriteDataPool.ReturnAll();
             entryPool.ReturnAll();
 
@@ -655,10 +664,10 @@ namespace UnityEngine.UIElements.UIR
         public BaseElementBuilder elementBuilder => m_VisualChangesProcessor.elementBuilder;
         internal AtlasBase atlas { get; private set; }
         internal VectorImageManager vectorImageManager { get; private set; }
-        internal TempAllocator<Vertex> vertexPool { get; private set; }
-        internal TempAllocator<UInt16> indexPool { get; private set; }
+        internal TempMeshAllocatorImpl tempMeshAllocator { get; private set; }
         internal MeshWriteDataPool meshWriteDataPool { get; } = new();
         internal EntryPool entryPool => s_SharedEntryPool;
+        public MeshGenerationDeferrer meshGenerationDeferrer => m_MeshGenerationDeferrer;
         internal JobManager jobManager { get; private set; }
         internal UIRVEShaderInfoAllocator shaderInfoAllocator; // Not a property because this is a struct we want to mutate
         internal bool drawStats { get; set; }

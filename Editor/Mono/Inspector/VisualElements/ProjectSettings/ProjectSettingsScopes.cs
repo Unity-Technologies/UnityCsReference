@@ -7,7 +7,7 @@ using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace UnityEditor
+namespace UnityEditor.Inspector.VisualElements.ProjectSettings
 {
     internal class LabelWidthScope : GUI.Scope
     {
@@ -38,7 +38,7 @@ namespace UnityEditor
         public WideScreenScope(VisualElement currentElement)
         {
             m_CurrentWideMode = EditorGUIUtility.wideMode;
-            
+
             // the inspector's width can be NaN if this is our first layout check.
             // If that's the case we'll set wideMode to true to avoid computing too tall an inspector on the first layout calculation
             var inspectorWidth = currentElement.layout.width;

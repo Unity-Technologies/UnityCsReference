@@ -259,7 +259,6 @@ namespace UnityEditor
 
             if (platform != BuildTargetGroup.Standalone &&
                 platform != BuildTargetGroup.WSA &&
-                platform != BuildTargetGroup.XboxOne &&
                 platform != BuildTargetGroup.Unknown)
             {
                 allowedFormats.Add(AudioCompressionFormat.MP3);
@@ -270,7 +269,7 @@ namespace UnityEditor
                 allowedFormats.Add(AudioCompressionFormat.ATRAC9);
             }
 
-            if (platform == BuildTargetGroup.XboxOne || platform == BuildTargetGroup.GameCoreXboxSeries || platform == BuildTargetGroup.GameCoreXboxOne)
+            if (platform == BuildTargetGroup.GameCoreXboxSeries || platform == BuildTargetGroup.GameCoreXboxOne)
             {
                 allowedFormats.Add(AudioCompressionFormat.XMA);
             }

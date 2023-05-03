@@ -14,7 +14,8 @@ namespace UnityEditor.ShaderFoundry
     internal struct StructFieldInternal : IInternalType<StructFieldInternal>
     {
         // This enum must be kept in sync with the enum in StructField.h
-        internal enum Flags : ushort
+        [Flags]
+        internal enum Flags : UInt32
         {
             kNone = 0,
             kInput = 1 << 0,
@@ -64,7 +65,7 @@ namespace UnityEditor.ShaderFoundry
         public IEnumerable<ShaderAttribute> Attributes => field.Attributes(container);
         public bool IsInput => field.m_Flags.HasFlag(StructFieldInternal.Flags.kInput);
         public bool IsOutput => field.m_Flags.HasFlag(StructFieldInternal.Flags.kOutput);
-
+        internal bool HasFlag(StructFieldInternal.Flags flags) => field.m_Flags.HasFlag(flags);
         // private
         internal StructField(ShaderContainer container, FoundryHandle handle)
         {

@@ -51,10 +51,6 @@ namespace UnityEditor
 
         class SettingsContent
         {
-            public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, remove OpenGL ES 2 API from the list. Blit Type for non-SRP projects must be Always Blit or Auto.");
-            public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2, uncheck 'Automatic Graphics API' to remove WebGL 1 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
-            public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2/3 APIs.");
-            public static readonly GUIContent colorSpaceEmbeddedLinuxWarning = EditorGUIUtility.TrTextContent("Linear colorspace is not supported with OpenGL ES 2.0, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API");
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Reordering the list will switch editor to the first available platform");
             public static readonly GUIContent appleSiliconOpenGLWarning = EditorGUIUtility.TrTextContent("OpenGL is not supported on Apple Silicon chips. Metal will be used on devices with Apple Silicon chips instead.");
             public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
@@ -140,8 +136,6 @@ namespace UnityEditor
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
             public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TrTextContent("Disable Depth and Stencil*");
             public static readonly GUIContent preserveFramebufferAlpha = EditorGUIUtility.TrTextContent("Render Over Native UI*", "Enable this option ONLY if you want Unity to render on top of the native Android or iOS UI.");
-            public static readonly GUIContent iosShowActivityIndicatorOnLoading = EditorGUIUtility.TrTextContent("Show Loading Indicator");
-            public static readonly GUIContent androidShowActivityIndicatorOnLoading = EditorGUIUtility.TrTextContent("Show Loading Indicator");
             public static readonly GUIContent actionOnDotNetUnhandledException = EditorGUIUtility.TrTextContent("On .Net UnhandledException*");
             public static readonly GUIContent logObjCUncaughtExceptions = EditorGUIUtility.TrTextContent("Log Obj-C Uncaught Exceptions*");
             public static readonly GUIContent enableCrashReportAPI = EditorGUIUtility.TrTextContent("Enable CrashReport API*");
@@ -308,8 +302,8 @@ namespace UnityEditor
             }
         }
 
-        private static GraphicsJobMode[] m_GfxJobModeValues = new GraphicsJobMode[] { GraphicsJobMode.Native, GraphicsJobMode.Legacy };
-        private static GUIContent[] m_GfxJobModeNames = new GUIContent[] { EditorGUIUtility.TrTextContent("Native"), EditorGUIUtility.TrTextContent("Legacy") };
+        private static GraphicsJobMode[] m_GfxJobModeValues = new GraphicsJobMode[] { GraphicsJobMode.Native, GraphicsJobMode.Legacy, GraphicsJobMode.Split };
+        private static GUIContent[] m_GfxJobModeNames = new GUIContent[] { EditorGUIUtility.TrTextContent("Native"), EditorGUIUtility.TrTextContent("Legacy"), EditorGUIUtility.TrTextContent("Split") };
         private static MeshDeformation[] m_MeshDeformations = { MeshDeformation.CPU, MeshDeformation.GPU, MeshDeformation.GPUBatched };
 
         // Section and tab selection state
@@ -354,8 +348,6 @@ namespace UnityEditor
         SerializedProperty m_Use32BitDisplayBuffer;
         SerializedProperty m_PreserveFramebufferAlpha;
         SerializedProperty m_DisableDepthAndStencilBuffers;
-        SerializedProperty m_iosShowActivityIndicatorOnLoading;
-        SerializedProperty m_androidShowActivityIndicatorOnLoading;
 
         SerializedProperty m_AndroidProfiler;
 
@@ -629,8 +621,6 @@ namespace UnityEditor
             m_Use32BitDisplayBuffer                 = FindPropertyAssert("use32BitDisplayBuffer");
             m_PreserveFramebufferAlpha              = FindPropertyAssert("preserveFramebufferAlpha");
             m_DisableDepthAndStencilBuffers         = FindPropertyAssert("disableDepthAndStencilBuffers");
-            m_iosShowActivityIndicatorOnLoading     = FindPropertyAssert("iosShowActivityIndicatorOnLoading");
-            m_androidShowActivityIndicatorOnLoading = FindPropertyAssert("androidShowActivityIndicatorOnLoading");
 
             m_DefaultIsNativeResolution     = FindPropertyAssert("defaultIsNativeResolution");
             m_MacRetinaSupport              = FindPropertyAssert("macRetinaSupport");
@@ -1178,19 +1168,6 @@ namespace UnityEditor
 
                         EditorGUILayout.PropertyField(m_DisableDepthAndStencilBuffers, SettingsContent.disableDepthAndStencilBuffers);
                         EditorGUILayout.PropertyField(m_PreserveFramebufferAlpha, SettingsContent.preserveFramebufferAlpha);
-                    }
-                    // activity indicator on loading
-                    if (namedBuildTarget == NamedBuildTarget.iOS)
-                    {
-                        EditorGUILayout.PropertyField(m_iosShowActivityIndicatorOnLoading, SettingsContent.iosShowActivityIndicatorOnLoading);
-                    }
-                    if (namedBuildTarget == NamedBuildTarget.Android)
-                    {
-                        EditorGUILayout.PropertyField(m_androidShowActivityIndicatorOnLoading, SettingsContent.androidShowActivityIndicatorOnLoading);
-                    }
-                    if (namedBuildTarget == NamedBuildTarget.iOS || namedBuildTarget == NamedBuildTarget.Android)
-                    {
-                        EditorGUILayout.Space();
                     }
 
                     ShowSharedNote();
@@ -1894,12 +1871,10 @@ namespace UnityEditor
             }
 
             // Special cases for some platform with limitations regarding linear colorspace
-            if (PlayerSettings.colorSpace == ColorSpace.Linear)
+            if ((PlayerSettings.colorSpace == ColorSpace.Linear) &&
+                (null != settingsExtension) && settingsExtension.SupportsForcedSrgbBlit())
             {
-                if (platform.namedBuildTarget == NamedBuildTarget.EmbeddedLinux)
-                {
-                    EditorGUILayout.PropertyField(m_ForceSRGBBlit, SettingsContent.forceSRGBBlit);
-                }
+                EditorGUILayout.PropertyField(m_ForceSRGBBlit, SettingsContent.forceSRGBBlit);
             }
 
             // Graphics APIs
@@ -2010,13 +1985,34 @@ namespace UnityEditor
                 }
             }
 
+            if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
+            {
+                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                gfxJobModesSupported = (gfxAPIs[0] == GraphicsDeviceType.Direct3D12) || (gfxAPIs[0] == GraphicsDeviceType.Vulkan);
+            }
+
             // GPU Skinning toggle (only show on relevant platforms)
             if (!BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
             {
-                /// Adding support to other platforms in progress...
-                bool platformSupportsBatching =
-                    platform.namedBuildTarget == NamedBuildTarget.NintendoSwitch ||
-                    platform.namedBuildTarget == NamedBuildTarget.PS5;
+                bool platformSupportsBatching = false;
+
+                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                foreach (GraphicsDeviceType api in gfxAPIs)
+                {
+                    if (api == GraphicsDeviceType.Switch ||
+                        api == GraphicsDeviceType.PlayStation5 ||
+                        api == GraphicsDeviceType.PlayStation5NGGC ||
+                        api == GraphicsDeviceType.Direct3D11 ||
+                        api == GraphicsDeviceType.Metal ||
+                        api == GraphicsDeviceType.Vulkan ||
+                        api == GraphicsDeviceType.OpenGLES3)
+                    {
+                        platformSupportsBatching = true;
+                        break;
+                    }
+                    // TODO: GraphicsDeviceType.OpenGLCore does not have GPU skinning enabled yet
+                }
+
 
                 if (platformSupportsBatching)
                 {
@@ -2067,8 +2063,7 @@ namespace UnityEditor
                 GraphicsJobMode newGfxJobMode = GraphicsJobMode.Legacy;
                 if (gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12)
                 {
-                    newGfxJobMode = GraphicsJobMode.Native;
-                    graphicsJobsOptionEnabled = false;
+                    newGfxJobMode = GraphicsJobMode.Split;
                     if (graphicsJobs == false)
                     {
                         PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, true);
@@ -2077,7 +2072,7 @@ namespace UnityEditor
                     }
                 }
                 PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
-                graphicsJobsModeOptionEnabled = false;
+                PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.SplitJobs);
             }
             else if (platform.namedBuildTarget == NamedBuildTarget.PS5)
             {
@@ -2094,6 +2089,7 @@ namespace UnityEditor
                     }
 
                     PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, GraphicsJobMode.Native);
+                    PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerNativeJobs);
                     graphicsJobsModeOptionEnabled = false;
                 }
             }
@@ -2142,6 +2138,13 @@ namespace UnityEditor
                     {
                         Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobModeString);
                         PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
+
+                        if(newGfxJobMode == GraphicsJobMode.Native)
+                            PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerNativeJobs);
+                        else if (newGfxJobMode == GraphicsJobMode.Legacy)
+                            PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerJobs);
+                        else if (newGfxJobMode == GraphicsJobMode.Split)
+                            PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.SplitJobs);
                     }
                 }
             }
@@ -3420,7 +3423,7 @@ namespace UnityEditor
 
             bool val = GetCaptureStartupLogsForTarget(namedBuildTarget);
             bool newVal = EditorGUILayout.Toggle(SettingsContent.captureStartupLogs, val);
-            if (val != newVal)    
+            if (val != newVal)
                 m_CaptureStartupLogs.SetMapValue(namedBuildTarget.TargetName, newVal);
 
             EditorGUILayout.Space();
@@ -3800,7 +3803,7 @@ namespace UnityEditor
                 {
                     PlayerSettingsSectionAttribute attr = GetSectionAttribute(method);
                     m_boxes.Add(new PlayerSettingsBox(method, attr.TargetName, attr.Title, attr.Order));
-                }        
+                }
             }
 
             m_boxes.Sort((a, b) => a.order.CompareTo(b.order));

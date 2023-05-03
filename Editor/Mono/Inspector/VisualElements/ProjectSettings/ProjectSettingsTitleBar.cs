@@ -2,48 +2,73 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
-using UnityEditor.Experimental;
+﻿using UnityEditor.Experimental;
 using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
-namespace UnityEditor
+namespace UnityEditor.UIElements.ProjectSettings
 {
-    internal class GraphicsSettingsInspectorTitleBar : GraphicsSettingsElement
+    internal class ProjectSettingsTitleBar : ProjectSettingsElementWithSO
     {
-        public new class UxmlFactory : UxmlFactory<GraphicsSettingsInspectorTitleBar, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<ProjectSettingsTitleBar, UxmlTraits>
+        {
+        }
+
+        public new class UxmlTraits : VisualElement.UxmlTraits
+        {
+            readonly UxmlStringAttributeDescription m_Label = new() { name = "label" };
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                ((ProjectSettingsTitleBar)ve).label = m_Label.GetValueFromBag(bag, cc);
+            }
+        }
 
         internal class Styles
         {
-            public static Lazy<GUIStyle> ImguiStylesHeader = new(() => "SettingsHeader");
-            public static StyleBlock settingsPanel { get; } = EditorResources.GetStyle("sb-settings-panel-client-area");
+            public static StyleBlock settingsBtn { get; } = EditorResources.GetStyle("sb-settings-icon-btn");
 
-            public static StyleBlock header { get; } =  EditorResources.GetStyle("sb-settings-header");
-
-            public static StyleBlock settingsBtn { get; } =  EditorResources.GetStyle("sb-settings-icon-btn");
-
-            public static readonly GUIContent mainHeader =  EditorGUIUtility.TrTextContent("Graphics");
+            public const string k_TitleBarClassName = "project-settings-title-bar";
+            public const string k_TitleLabelClassName = "project-settings-title-label";
         }
 
+        string m_Label;
+
+        public string label
+        {
+            get => m_Label;
+            set
+            {
+                m_Label = value;
+                m_LabelElement.text = m_Label;
+            }
+        }
+
+        readonly Label m_LabelElement;
         Object[] m_TargetObjects;
+
+        public ProjectSettingsTitleBar()
+        {
+            AddToClassList(Styles.k_TitleBarClassName);
+
+            m_LabelElement = new Label();
+            m_LabelElement.AddToClassList(Styles.k_TitleLabelClassName);
+            Add(m_LabelElement);
+            Add(new IMGUIContainer(DrawEditorHeaderItems));
+        }
 
         protected override void Initialize()
         {
             m_TargetObjects = m_SerializedObject.targetObjects;
-            Add(new IMGUIContainer(Draw));
         }
 
-        void Draw()
+        void DrawEditorHeaderItems()
         {
-            using var highlightScope = new EditorGUI.LabelHighlightScope(m_SettingsWindow.GetSearchText(), HighlightSelectionColor, HighlightColor);
             GUILayout.BeginHorizontal();
-            GUILayout.Space(Styles.settingsPanel.GetFloat(StyleCatalogKeyword.marginLeft));
-            GUILayout.Label(Styles.mainHeader, Styles.ImguiStylesHeader.Value, GUILayout.MaxHeight(Styles.header.GetFloat("max-height")),
-                GUILayout.MinWidth(160));
-            GUILayout.FlexibleSpace();
-
             var btnWidth = Styles.settingsBtn.GetFloat(StyleCatalogKeyword.width);
             var btnHeight = Styles.settingsBtn.GetFloat(StyleCatalogKeyword.height);
             var btnMargin = Styles.settingsBtn.GetFloat(StyleCatalogKeyword.marginTop);

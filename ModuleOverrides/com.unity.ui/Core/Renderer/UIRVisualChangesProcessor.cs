@@ -37,6 +37,7 @@ namespace UnityEngine.UIElements.UIR
             List<EntryProcessor> m_Processors;
 
             public BaseElementBuilder elementBuilder => m_ElementBuilder;
+            public MeshGenerationContext meshGenerationContext => m_MeshGenerationContext;
 
             public VisualChangesProcessor(RenderChain renderChain)
             {
@@ -44,8 +45,8 @@ namespace UnityEngine.UIElements.UIR
                 m_MeshGenerationContext = new MeshGenerationContext(
                     m_RenderChain.meshWriteDataPool,
                     m_RenderChain.entryPool,
-                    m_RenderChain.vertexPool,
-                    m_RenderChain.indexPool);
+                    m_RenderChain.tempMeshAllocator,
+                    m_RenderChain.meshGenerationDeferrer);
                 m_ElementBuilder = new DefaultElementBuilder(m_RenderChain);
                 m_EntryProcessingList = new List<EntryProcessingInfo>();
                 m_Processors = new List<EntryProcessor>(4);

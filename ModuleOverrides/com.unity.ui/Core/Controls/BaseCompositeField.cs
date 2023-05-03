@@ -8,10 +8,6 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
 {
-    internal delegate void RegisterSerializedPropertyBindCallback<TValueType, TField, TFieldValue>(
-        BaseCompositeField<TValueType, TField, TFieldValue> compositeField, TField field)
-        where TField : TextValueField<TFieldValue>, new();
-
     /// <summary>
     /// This is the base class for the composite fields.
     /// </summary>
@@ -52,20 +48,6 @@ namespace UnityEngine.UIElements
         internal abstract FieldDescription[] DescribeFields();
         bool m_ShouldUpdateDisplay;
         bool m_ForceUpdateDisplay;
-
-        int m_PropertyIndex;
-
-        internal int propertyIndex
-        {
-            get => m_PropertyIndex;
-            set => m_PropertyIndex = value;
-        }
-
-        internal bool forceUpdateDisplay
-        {
-            get => m_ForceUpdateDisplay;
-            set => m_ForceUpdateDisplay = value;
-        }
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -131,8 +113,6 @@ namespace UnityEngine.UIElements
                 isMultiLine = true;
                 AddToClassList(multilineVariantUssClassName);
             }
-
-            m_PropertyIndex = 0;
 
             for (int i = 0; i < numberOfLines; i++)
             {

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -25,6 +26,17 @@ namespace UnityEngine.UIElements.UIR
         Page m_Pool;
         List<Page> m_Excess;
         int m_NextExcessSize;
+
+        static int s_StaticSafetyId;
+
+        static void InitStaticSafetyId(ref AtomicSafetyHandle handle)
+        {
+            if (s_StaticSafetyId == 0)
+                s_StaticSafetyId = AtomicSafetyHandle.NewStaticSafetyId<NativeSlice<T>>();
+            AtomicSafetyHandle.SetStaticSafetyId(ref handle, s_StaticSafetyId);
+        }
+
+        List<AtomicSafetyHandle> m_SafetyHandles = new();
 
         public TempAllocator(int poolCapacity, int excessMinCapacity, int excessMaxCapacity)
         {
@@ -59,7 +71,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
-                ReleaseExcess();
+                Reset();
                 m_Pool.array.Dispose();
                 m_Pool.used = 0;
             }
@@ -72,6 +84,21 @@ namespace UnityEngine.UIElements.UIR
         #endregion // Dispose Pattern
 
         public NativeSlice<T> Alloc(int count)
+        {
+            if (count > 0)
+            {
+                NativeSlice<T> slice = DoAlloc(count);
+                var safety = AtomicSafetyHandle.Create();
+                InitStaticSafetyId(ref safety);
+                NativeSliceUnsafeUtility.SetAtomicSafetyHandle(ref slice, safety);
+                m_SafetyHandles.Add(safety);
+                return slice;
+            }
+
+            return new NativeSlice<T>();
+        }
+
+        NativeSlice<T> DoAlloc(int count)
         {
             Debug.Assert(!disposed);
 
@@ -89,7 +116,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 var p = new Page
                 {
-                    array = new NativeArray<T>(count, Allocator.Persistent, NativeArrayOptions.UninitializedMemory),
+                    array = new NativeArray<T>(count, Allocator.TempJob, NativeArrayOptions.UninitializedMemory),
                     used = count
                 };
                 m_Excess.Add(p);
@@ -117,7 +144,7 @@ namespace UnityEngine.UIElements.UIR
 
                 var p = new Page
                 {
-                    array = new NativeArray<T>(m_NextExcessSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory),
+                    array = new NativeArray<T>(m_NextExcessSize, Allocator.TempJob, NativeArrayOptions.UninitializedMemory),
                     used = count
                 };
                 m_Excess.Add(p);
@@ -132,6 +159,14 @@ namespace UnityEngine.UIElements.UIR
             ReleaseExcess();
             m_Pool.used = 0;
             m_NextExcessSize = m_ExcessMinCapacity;
+            for (int i = 0; i < m_SafetyHandles.Count; ++i)
+            {
+                var safety = m_SafetyHandles[i];
+                AtomicSafetyHandle.CheckDeallocateAndThrow(safety);
+                AtomicSafetyHandle.Release(safety);
+            }
+
+            m_SafetyHandles.Clear();
         }
 
         void ReleaseExcess()

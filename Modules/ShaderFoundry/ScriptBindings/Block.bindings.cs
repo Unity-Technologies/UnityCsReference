@@ -4,12 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
-using BlockInput = UnityEditor.ShaderFoundry.BlockVariable;
-using BlockOutput = UnityEditor.ShaderFoundry.BlockVariable;
-using BlockProperty = UnityEditor.ShaderFoundry.BlockVariable;
 using UnityEngine;
 
 namespace UnityEditor.ShaderFoundry
@@ -25,8 +20,7 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_DeclaredFunctionListHandle;
         internal FoundryHandle m_ReferencedFunctionListHandle;
         internal FoundryHandle m_EntryPointFunctionHandle;
-        internal FoundryHandle m_InputVariableListHandle;
-        internal FoundryHandle m_OutputVariableListHandle;
+        internal FoundryHandle m_InterfaceTypeHandle;
         internal FoundryHandle m_PropertyVariableListHandle;
         internal FoundryHandle m_RenderStateDescriptorListHandle;
         internal FoundryHandle m_DefineListHandle;
@@ -36,10 +30,12 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_PassParentHandle;
         internal FoundryHandle m_TemplateParentHandle;
         internal FoundryHandle m_GeneratedIncludePathHandle;
+        internal FoundryHandle m_ConstructorFunctionHandle;
+        internal FoundryHandle m_PackageRequirementListHandle;
 
         internal extern static BlockInternal Invalid();
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
-        
+
         internal extern bool HasParent();
 
         // IInternalType
@@ -113,9 +109,49 @@ namespace UnityEditor.ShaderFoundry
 
         public ShaderFunction EntryPointFunction => new ShaderFunction(container, block.m_EntryPointFunctionHandle);
 
-        public IEnumerable<BlockInput> Inputs => GetVariableEnumerable(block.m_InputVariableListHandle);
+        public ShaderFunction ConstructorFunction => new ShaderFunction(container, block.m_ConstructorFunctionHandle);
 
-        public IEnumerable<BlockOutput> Outputs => GetVariableEnumerable(block.m_OutputVariableListHandle);
+        public IEnumerable<StructField> InterfaceFields => GetInterfaceFields();
+        public IEnumerable<BlockVariable> InterfaceFieldsAsBlockVariables => GetInterfaceFieldsAsBlockVariables();
+
+        public IEnumerable<StructField> Inputs => GetFields(StructFieldInternal.Flags.kInput);
+
+        public IEnumerable<StructField> Outputs => GetFields(StructFieldInternal.Flags.kOutput);
+
+        IEnumerable<StructField> GetFields(StructFieldInternal.Flags flags)
+        {
+            foreach (var field in InterfaceFields)
+            {
+                if (field.HasFlag(flags))
+                    yield return field;
+            }
+        }
+
+        [Obsolete("This function is there to temporarily ease updating by supporting the legacy behavior of Inputs.  Use Inputs instead.")]
+        public IEnumerable<BlockVariable> InputsAsBlockVariables
+        {
+            get
+            {
+                foreach (var variable in InterfaceFieldsAsBlockVariables)
+                {
+                    if (variable.IsInput)
+                        yield return variable;
+                }
+            }
+        }
+
+        [Obsolete("This function is there to temporarily ease updating by supporting the legacy behavior of Outputs.  Use Outputs instead.")]
+        public IEnumerable<BlockVariable> OutputsAsBlockVariables
+        {
+            get
+            {
+                foreach (var variable in InterfaceFieldsAsBlockVariables)
+                {
+                    if (variable.IsOutput)
+                        yield return variable;
+                }
+            }
+        }
 
         public IEnumerable<RenderStateDescriptor> RenderStates
         {
@@ -167,11 +203,38 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
-        IEnumerable<BlockVariable> GetVariableEnumerable(FoundryHandle listHandle)
+        public IEnumerable<PackageRequirement> PackageRequirements
+        {
+            get
+            {
+                var localContainer = Container;
+                var list = new HandleListInternal(block.m_PackageRequirementListHandle);
+                return list.Select<PackageRequirement>(localContainer, (handle) => (new PackageRequirement(localContainer, handle)));
+            }
+        }
+
+        private IEnumerable<StructField> GetInterfaceFields()
+        {
+            var blockInterfaceType = new ShaderType(Container, block.m_InterfaceTypeHandle);
+            if (blockInterfaceType.IsValid)
+                return blockInterfaceType.StructFields;
+
+            return Array.Empty<StructField>();
+        }
+
+        private IEnumerable<BlockVariable> GetInterfaceFieldsAsBlockVariables()
         {
             var localContainer = Container;
-            var list = new HandleListInternal(listHandle);
-            return list.Select<BlockVariable>(localContainer, (handle) => (new BlockVariable(localContainer, handle)));
+            foreach (var field in GetInterfaceFields())
+            {
+                var builder = new BlockVariable.Builder(localContainer);
+                builder.Name = field.Name;
+                builder.IsInput = field.IsInput;
+                builder.IsOutput = field.IsOutput;
+                foreach (var attribute in field.Attributes)
+                    builder.AddAttribute(attribute);
+                yield return builder.Build();
+            }
         }
 
         public TemplatePass ParentPass => new TemplatePass(container, block.m_PassParentHandle);
@@ -208,13 +271,13 @@ namespace UnityEditor.ShaderFoundry
             List<ShaderFunction> functions = new List<ShaderFunction>();
             List<ShaderFunction> referencedFunctions = new List<ShaderFunction>();
             ShaderFunction entryPointFunction = ShaderFunction.Invalid;
-
             List<RenderStateDescriptor> m_RenderStates = new List<RenderStateDescriptor>();
             List<DefineDescriptor> m_Defines = new List<DefineDescriptor>();
             List<IncludeDescriptor> m_Includes = new List<IncludeDescriptor>();
             List<KeywordDescriptor> m_Keywords = new List<KeywordDescriptor>();
             List<PragmaDescriptor> m_Pragmas = new List<PragmaDescriptor>();
-            public List<BlockVariable> interfaceFields;
+            List<PackageRequirement> m_PackageRequirements = new List<PackageRequirement>();
+            public List<StructField> interfaceFields;
             public ShaderType InterfaceType { get; private set; }
             bool finalized = false;
 
@@ -245,6 +308,12 @@ namespace UnityEditor.ShaderFoundry
             // TODO @ SHADERS: Remove once the legacy linker is removed
             internal void SetLegacyEntryPointFunction(ShaderFunction function)
             {
+                if (function.IsValid && entryPointFunction.ContainingNamespace != containingNamespace)
+                {
+                    throw new InvalidOperationException($"EntryPointFunction '{ function.Name }' set using SetLegacyEntryPointFunction " +
+                        $"on block '{name}' must have the same namespace as the block. Make sure to set 'containingNamespace' on the function's builder.");
+                }
+
                 entryPointFunction = function;
                 HandleLegacyEntryPointFunction(function, false);
                 AddFunction(entryPointFunction);
@@ -252,6 +321,12 @@ namespace UnityEditor.ShaderFoundry
 
             public void SetEntryPointFunction(ShaderFunction function)
             {
+                if (function.IsValid && function.ContainingNamespace != containingNamespace)
+                {
+                    throw new InvalidOperationException($"EntryPointFunction '{ function.Name }' set using SetEntryPointFunction " +
+                        $"on block '{name}' must have the same namespace as the block. Make sure to set 'containingNamespace' on the function's builder.");
+                }
+
                 entryPointFunction = HandleLegacyEntryPointFunction(function, true);
                 AddFunction(entryPointFunction);
             }
@@ -288,9 +363,20 @@ namespace UnityEditor.ShaderFoundry
             public void AddInclude(IncludeDescriptor descriptor) { m_Includes.Add(descriptor); }
             public void AddKeyword(KeywordDescriptor descriptor) { m_Keywords.Add(descriptor); }
             public void AddPragma(PragmaDescriptor descriptor) { m_Pragmas.Add(descriptor); }
+            public void AddPackageRequirement(PackageRequirement packageRequirement) { m_PackageRequirements.Add(packageRequirement); }
 
             // Adds a new interface field to the block.
+            [Obsolete("The interface fields are converted to struct field.  This function is there to temporarily support the legacy interface.  Instead use 'AddInterfaceField(StructField)'")]
             public void AddInterfaceField(BlockVariable variable)
+            {
+                var builder = new StructField.Builder(container, variable.Name, variable.Type, variable.IsInput, variable.IsOutput);
+                foreach (var attribute in variable.Attributes)
+                    builder.AddAttribute(attribute);
+
+                AddInterfaceField(builder.Build());
+            }
+
+            public void AddInterfaceField(StructField variable)
             {
                 if (InterfaceType.IsValid)
                     throw new InvalidOperationException("Cannot add an interface field after the interface type has been built");
@@ -314,16 +400,12 @@ namespace UnityEditor.ShaderFoundry
             public ShaderType.StructBuilder CreateBuilderForInterfaceType(string typeName = "Interface")
             {
                 var typeBuilder = new ShaderType.StructBuilder(this, typeName);
+                typeBuilder.containingNamespace = containingNamespace;
+
                 if (interfaceFields != null)
                 {
                     foreach (var field in interfaceFields)
-                    {
-                        var fieldBuilder = new StructField.Builder(container, field.Name, field.Type);
-                        foreach (var attribute in field.Attributes)
-                            fieldBuilder.AddAttribute(attribute);
-
-                        typeBuilder.AddField(fieldBuilder.Build());
-                    }
+                        typeBuilder.AddField(field);
                 }
                 return typeBuilder;
             }
@@ -333,6 +415,12 @@ namespace UnityEditor.ShaderFoundry
             {
                 if (InterfaceType.IsValid)
                     throw new InvalidOperationException($"Interface type for block '{name}' has already been set. Cannot set interface type twice.");
+
+                if (type.IsValid && type.ContainingNamespace != containingNamespace)
+                {
+                    throw new InvalidOperationException($"InterfaceType '{ type.Name }' set using SetInterfaceType on block '{name}' must have the " +
+                        $"same namespace as the block. Make sure to set 'containingNamespace' on the type's builder.");
+                }
 
                 InterfaceType = type;
                 AddType(type);
@@ -345,10 +433,25 @@ namespace UnityEditor.ShaderFoundry
                     throw new InvalidOperationException("You must call 'SetInterfaceType' before building an entry point function.");
 
                 var builder = new ShaderFunction.Builder(this, fnName);
+                builder.containingNamespace = containingNamespace;
+
                 var paramBuilder = new FunctionParameter.Builder(container, selfName, InterfaceType, true, true);
                 builder.AddParameter(paramBuilder.Build());
                 builder.AddAttribute(new ShaderAttribute.Builder(container, "EntryPoint").Build());
                 return builder;
+            }
+
+            private FoundryHandle BuildConstructorFunction()
+            {
+                if (!InterfaceType.IsValid)
+                    return ShaderFunction.Invalid.handle;
+
+                var builder = new ShaderFunction.Builder(this, "Constructor", InterfaceType);
+                builder.containingNamespace = containingNamespace;
+
+                var fn = builder.Build();
+                AddFunction(fn);
+                return fn.handle;
             }
 
             public Block Build()
@@ -367,28 +470,15 @@ namespace UnityEditor.ShaderFoundry
                 blockInternal.m_DeclaredFunctionListHandle = HandleListInternal.Build(container, functions, (f) => (f.handle));
                 blockInternal.m_ReferencedFunctionListHandle = HandleListInternal.Build(container, referencedFunctions, (f) => (f.handle));
                 blockInternal.m_EntryPointFunctionHandle = entryPointFunction.handle;
-
-                List<BlockVariable> inputs = new List<BlockInput>();
-                List<BlockVariable> outputs = new List<BlockInput>();
-                if (interfaceFields != null)
-                {
-                    foreach (var field in interfaceFields)
-                    {
-                        if (field.IsInput)
-                            inputs.Add(field);
-                        if (field.IsOutput)
-                            outputs.Add(field);
-                    }
-                }
-
-                blockInternal.m_InputVariableListHandle = HandleListInternal.Build(container, inputs, (v) => (v.handle));
-                blockInternal.m_OutputVariableListHandle = HandleListInternal.Build(container, outputs, (v) => (v.handle));
-
+                blockInternal.m_InterfaceTypeHandle = InterfaceType.handle;
+                blockInternal.m_ConstructorFunctionHandle = BuildConstructorFunction();
                 blockInternal.m_RenderStateDescriptorListHandle = HandleListInternal.Build(container, m_RenderStates, (c) => (c.handle));
                 blockInternal.m_DefineListHandle = HandleListInternal.Build(container, m_Defines, (d) => (d.handle));
                 blockInternal.m_IncludeListHandle = HandleListInternal.Build(container, m_Includes, (i) => (i.handle));
                 blockInternal.m_KeywordListHandle = HandleListInternal.Build(container, m_Keywords, (k) => (k.handle));
                 blockInternal.m_PragmaDescriptorListHandle = HandleListInternal.Build(container, m_Pragmas, (p) => (p.handle));
+                blockInternal.m_PackageRequirementListHandle = HandleListInternal.Build(container, m_PackageRequirements, (p) => (p.handle));
+
                 blockInternal.m_PassParentHandle = passParentHandle;
                 blockInternal.m_TemplateParentHandle = templateParentHandle;
 
@@ -418,29 +508,24 @@ namespace UnityEditor.ShaderFoundry
                 const string selfName = "self";
                 const string inputsName = "inputs";
                 const string outputsName = "outputs";
-                Dictionary<string, BlockVariable.Builder> variables = new Dictionary<string, BlockVariable.Builder>();
+                Dictionary<string, StructField.Builder> fieldBuilders = new Dictionary<string, StructField.Builder>();
                 void AddVariable(StructField field, bool input, bool output)
                 {
                     // The field name already exists, make sure there's not a type conflict
-                    if (variables.TryGetValue(field.Name, out var builder))
+                    if (fieldBuilders.TryGetValue(field.Name, out var builder))
                     {
-                        if (builder.Type != field.Type)
+                        if (builder.type != field.Type)
                         {
                             var message = $"Cannot upgrade old interface field {field.Name}. " +
-                                $"Variable is declared with conflicting types {builder.Type.Name} and {field.Type.Name}";
+                                $"Variable is declared with conflicting types {builder.type.Name} and {field.Type.Name}";
                             throw new InvalidOperationException(message);
                         }
                     }
                     // The field name doesn't exist, create it
                     else
                     {
-                        builder = new BlockVariable.Builder(Container);
-                        builder.Name = field.Name;
-                        builder.Type = field.Type;
-                        // Initialize the flags to false so that the ors work correctly.
-                        builder.IsInput = false;
-                        builder.IsOutput = false;
-                        variables[field.Name] = builder;
+                        builder = new StructField.Builder(Container, field.Name, field.Type, input, output);
+                        fieldBuilders[field.Name] = builder;
                     }
 
                     builder.IsInput |= input;
@@ -458,7 +543,7 @@ namespace UnityEditor.ShaderFoundry
                     AddVariable(field, false, true);
 
                 // Now build the interface from the merged types
-                foreach (var variableBuilder in variables.Values)
+                foreach (var variableBuilder in fieldBuilders.Values)
                     AddInterfaceField(variableBuilder.Build());
                 BuildInterfaceType();
 

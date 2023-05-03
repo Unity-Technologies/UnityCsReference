@@ -6,6 +6,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections;
+using Unity.Jobs;
 using Unity.Profiling;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
@@ -56,7 +57,29 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// A class that represents the vertex and index data allocated for drawing the content of a <see cref="VisualElement"/>.
+    /// An enum used to qualify deferred mesh generation actions.
+    /// </summary>
+    /// <remarks>
+    /// See <see cref="MeshGenerationContext.DeferMeshGeneration"/>.
+    /// </remarks>
+    enum MeshGenerationCallbackType
+    {
+        /// <summary>
+        /// Qualifies a callback that doesn't perform significant work on the main thread and promptly dispatches jobs.
+        /// </summary>
+        Fork,
+        /// <summary>
+        /// Qualifies a callback that performs significant work on the main thread, but eventually dispatches jobs.
+        /// </summary>
+        WorkThenFork,
+        /// <summary>
+        /// Qualifies a callback that performs work on the main thread without dispatching jobs.
+        /// </summary>
+        Work,
+    }
+
+    /// <summary>
+    /// Represents the vertex and index data allocated for drawing the content of a <see cref="VisualElement"/>.
     /// </summary>
     /// <remarks>
     /// You can use this object to fill the values for the vertices and indices only during a callback to the <see cref="VisualElement.generateVisualContent"/> delegate. Do not store the passed <see cref="MeshWriteData"/> outside the scope of <see cref="VisualElement.generateVisualContent"/> as Unity could recycle it for other callbacks.
@@ -343,17 +366,18 @@ namespace UnityEngine.UIElements
         Painter2D m_Painter2D;
 
         MeshWriteDataPool m_MeshWriteDataPool;
-        TempAllocator<Vertex> m_VertexPool;
-        TempAllocator<ushort> m_IndexPool;
+        TempMeshAllocatorImpl m_Allocator;
+        MeshGenerationDeferrer m_MeshGenerationDeferrer;
 
         internal IMeshGenerator meshGenerator { get; set; }
+
         internal EntryRecorder entryRecorder { get; private set; }
 
-        internal MeshGenerationContext(MeshWriteDataPool meshWriteDataPool, EntryPool entryPool, TempAllocator<Vertex> vertexPool, TempAllocator<ushort> indexPool)
+        internal MeshGenerationContext(MeshWriteDataPool meshWriteDataPool, EntryPool entryPool, TempMeshAllocatorImpl allocator, MeshGenerationDeferrer meshGenerationDeferrer)
         {
             m_MeshWriteDataPool = meshWriteDataPool;
-            m_VertexPool = vertexPool;
-            m_IndexPool = indexPool;
+            m_Allocator = allocator;
+            m_MeshGenerationDeferrer = meshGenerationDeferrer;
 
             entryRecorder = new EntryRecorder(entryPool);
             meshGenerator = new MeshGenerator(this);
@@ -361,6 +385,21 @@ namespace UnityEngine.UIElements
 
         static readonly ProfilerMarker k_AllocateMarker = new ProfilerMarker("UIR.MeshGenerationContext.Allocate");
         static readonly ProfilerMarker k_DrawVectorImageMarker = new ProfilerMarker("UIR.MeshGenerationContext.DrawVectorImage");
+
+        /// <summary>
+        /// Allocates the specified number of vertices and indices from a temporary allocator.
+        /// </summary>
+        /// <remarks>
+        /// You can only call this method during the mesh generation phase of the panel and shouldn't use it beyond.
+        /// </remarks>
+        /// <param name="vertexCount">The number of vertices to allocate. The maximum is 65535 (or UInt16.MaxValue).</param>
+        /// <param name="indexCount">The number of triangle list indices to allocate. Each 3 indices represent one triangle, so this value should be multiples of 3.</param>
+        /// <param name="vertices">The returned vertices.</param>
+        /// <param name="indices">The returned indices.</param>
+        public void AllocateTempMesh(int vertexCount, int indexCount, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices)
+        {
+            m_Allocator.AllocateTempMesh(vertexCount, indexCount, out vertices, out indices);
+        }
 
         /// <summary>
         /// Allocates and draws the specified number of vertices and indices required to express geometry for drawing the content of a <see cref="VisualElement"/>.
@@ -386,8 +425,7 @@ namespace UnityEngine.UIElements
                 if (vertexCount > UIRenderDevice.maxVerticesPerPage)
                     throw new ArgumentOutOfRangeException(nameof(vertexCount), $"Attempting to allocate {vertexCount} vertices which exceeds the limit of {UIRenderDevice.maxVerticesPerPage}.");
 
-                NativeSlice<Vertex> vertices = m_VertexPool.Alloc(vertexCount);
-                NativeSlice<ushort> indices = m_IndexPool.Alloc(indexCount);
+                m_Allocator.AllocateTempMesh(vertexCount, indexCount, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices);
 
                 Debug.Assert(vertices.Length == vertexCount);
                 Debug.Assert(indices.Length == indexCount);
@@ -400,20 +438,27 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void AllocateTempMesh(int vertexCount, int indexCount, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices)
+        /// <summary>
+        /// Records a draw command with the provided triangle-list indexed mesh.
+        /// </summary>
+        /// <remarks>
+        /// You can generate the mesh content later because the renderer doesn't immediately process the mesh. The mesh
+        /// content must be fully generated before you return from GenerateVisualContent, unless you call <see cref="AddMeshGenerationJob"/>.
+        ///
+        /// The renderer will process the mesh when the following conditions are met:
+        /// - GenerateVisualContent has been called on all dirty VisualElements
+        /// - All registered generation dependencies have completed
+        /// - All deferred generation callbacks have been issued
+        /// </remarks>
+        /// <param name="vertices">The vertices to be drawn. All referenced vertices must be initialized.</param>
+        /// <param name="indices">The triangle list indices. Must be a multiple of 3. All indices must be initialized.</param>
+        /// <param name="texture">An optional texture to be applied on the triangles. Pass null to rely on vertex colors only.</param>
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null)
         {
-            if (vertexCount == 0 || indexCount == 0)
-            {
-                vertices = new NativeSlice<Vertex>();
-                indices = new NativeSlice<ushort>();
+            if (vertices.Length == 0 || indices.Length == 0)
                 return;
-            }
 
-            if (vertexCount > UIRenderDevice.maxVerticesPerPage)
-                throw new ArgumentOutOfRangeException(nameof(vertexCount), $"Attempting to allocate {vertexCount} vertices which exceeds the limit of {UIRenderDevice.maxVerticesPerPage}.");
-
-            vertices = m_VertexPool.Alloc(vertexCount);
-            indices = m_IndexPool.Alloc(indexCount);
+            entryRecorder.DrawMesh(vertices, indices, texture, false);
         }
 
         /// <summary>
@@ -444,28 +489,79 @@ namespace UnityEngine.UIElements
             meshGenerator.DrawText(text, pos, fontSize, color, font);
         }
 
-        bool m_HasTarget;
+        /// <summary>
+        /// Returns an allocator that can be used to safely allocate temporary meshes from the job system. The meshes
+        /// have the same scope as those allocated by <see cref="AllocateTempMesh"/>.
+        /// </summary>
+        /// <param name="allocator">The allocator.</param>
+        internal void GetTempMeshAllocator(out TempMeshAllocator allocator)
+        {
+            m_Allocator.CreateNativeHandle(out allocator);
+        }
+
+        /// <summary>
+        /// Inserts a node into the rendering tree that can be populated in a mesh generation callback.
+        /// </summary>
+        /// <returns>The inserted mesh generation node.</returns>
+        internal MeshGenerationNode InsertMeshGenerationNode()
+        {
+            var placeHolder = entryRecorder.InsertPlaceholder();
+            return new MeshGenerationNode { placeholder = placeHolder };
+        }
+
+        /// <summary>
+        /// Instructs the renderer to wait for the completion of the provided JobHandle before beginning processing the meshes.
+        /// </summary>
+        /// <param name="jobHandle">JobHandle to wait for.</param>
+        /// <example>
+        /// The following code example shows how to use a job to generate a mesh:
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/MeshGenerationContext_AddMeshGenerationJob.cs"/>
+        /// </example>
+        public void AddMeshGenerationJob(JobHandle jobHandle)
+        {
+            m_MeshGenerationDeferrer.AddMeshGenerationJob(jobHandle);
+        }
+
+        /// <summary>
+        /// Instructs the renderer to execute the provided callback before the end of the current mesh generation iteration.
+        /// </summary>
+        /// <remarks>
+        ///To keep the CPU as busy as possible, the renderer prioritizes callbacks based on the following order:
+        /// 1. <see cref="MeshGenerationCallbackType.Fork"/>
+        /// 2. <see cref="MeshGenerationCallbackType.WorkThenFork"/>
+        /// 3. <see cref="MeshGenerationCallbackType.Work"/>
+        /// </remarks>
+        /// <param name="callback">The callback.</param>
+        /// <param name="userData">The data provided to the callback.</param>
+        /// <param name="callbackType">The type of callback.</param>
+        /// <param name="isJobDependent">Indicates if the callback requires the execution of a job to be completed.</param>
+        internal void AddMeshGenerationCallback(UIR.MeshGenerationCallback callback, object userData, MeshGenerationCallbackType callbackType, bool isJobDependent)
+        {
+            m_MeshGenerationDeferrer.AddMeshGenerationCallback(callback, userData, callbackType, isJobDependent);
+        }
 
         internal void Begin(MeshGenerationNode node, VisualElement ve)
         {
+            if (visualElement != null)
+                throw new InvalidOperationException($"{nameof(Begin)} can only be called when there is no target set. Did you forget to call {nameof(End)}?");
             if (node.placeholder == null)
                 throw new ArgumentException($"The state of the provided {nameof(MeshGenerationNode)} is invalid (entry is null).");
             if (node.placeholder.firstChild != null)
                 throw new ArgumentException($"The state of the provided {nameof(MeshGenerationNode)} is invalid (entry isn't empty).");
+            if (ve == null)
+                throw new ArgumentException(nameof(ve));
 
             entryRecorder.Begin(node.placeholder);
             visualElement = ve;
-            m_HasTarget = true;
             meshGenerator.currentElement = ve;
         }
 
         internal void End()
         {
-            if (!m_HasTarget)
+            if (visualElement == null)
                 throw new InvalidOperationException($"{nameof(End)} can only be called after a successful call to {nameof(Begin)}.");
 
             meshGenerator.currentElement = null;
-            m_HasTarget = false;
             visualElement = null;
             entryRecorder.End();
             m_Painter2D?.Reset();
@@ -492,13 +588,11 @@ namespace UnityEngine.UIElements
                 m_Painter2D?.Dispose();
                 m_Painter2D = null;
                 m_MeshWriteDataPool = null;
-                m_VertexPool = null;
-                m_IndexPool = null;
                 entryRecorder = null;
                 meshGenerator = null;
-
+                m_Allocator = null;
+                m_MeshGenerationDeferrer = null;
             }
-            // else DisposeHelper.NotifyMissingDispose(this);
 
             disposed = true;
         }

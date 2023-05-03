@@ -610,6 +610,16 @@ namespace UnityEngine
             PerShape,
             PerVertex,
         }
+
+        // Keep this in sync with enum class RayTracingAccelerationStructureBuildFlags.
+        [Flags]
+        public enum RayTracingAccelerationStructureBuildFlags
+        {
+            None            = 0,
+            PreferFastTrace = 1 << 0,
+            PreferFastBuild = 1 << 1,
+            MinimizeMemory  = 1 << 2,
+        }
     }
 
     namespace Experimental
@@ -1990,7 +2000,9 @@ namespace UnityEngine.Rendering
 
     public enum LightProbeOutsideHullStrategy // Defines behaviour of a Light Probe lit Renderer placed outside of the bounds of the Light Probe tetrahedral hull.
     {
+        [InspectorName("Find closest Light Probe")]
         kLightProbeSearchTetrahedralHull,   // Slow path, search the tetrahedral hull to find the closest Light Probe.
+        [InspectorName("Use Ambient Probe")]
         kLightProbeUseAmbientProbe,         // Fast path, don't spend time searching the hull to find the closest probe, use the global Ambient Probe.
     };
 

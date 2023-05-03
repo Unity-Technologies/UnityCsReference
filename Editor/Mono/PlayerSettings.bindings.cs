@@ -222,7 +222,45 @@ namespace UnityEditor
     public enum GraphicsJobMode
     {
         Native = 0,
-        Legacy = 1
+        Legacy = 1,
+        Split
+    }
+
+    // Must be in sync with GfxThreadingMode enum in GfxDeviceTypes.h
+    public enum GfxThreadingMode
+    {
+        // Direct threading mode.
+        // Main thread writes native graphics commands and submits them directly.
+        Direct = 0,
+
+        // SingleThreaded mode.
+        // Main thread writes Unity graphics commands that it later reads and converts to native graphics commands.
+        NonThreaded = 1,
+
+        // MultiThreaded mode.
+        // Main thread writes Unity graphics commands. A Render thread reads Unity graphics commands and converts them to native graphics commands.
+        Threaded = 2,
+
+        // Legacy Graphics Jobs ("Jobified Rendering").
+        // Main thread writes Unity graphics commands and starts worker threads to do the same.
+        // A Render thread reads Unity graphics commands and converts them to native graphics commands.
+        ClientWorkerJobs = 3,
+
+        // Native Graphics Jobs.
+        // Main thread writes Unity graphics commands.
+        // Render thread reads Unity graphics commands and converts them to native graphics commands.
+        // The render thread also starts worker threads to write native graphics commands.
+        ClientWorkerNativeJobs = 4,
+
+        // Native Graphics Jobs without Render Thread.
+        // Main thread writes native graphics commands, starts worker threads to do the same, and submits them directly.
+        DirectNativeJobs = 5,
+
+        // Split Graphics Jobs.
+        // Main thread starts worker threads to write Unity graphics commands.
+        // Render thread reads Unity graphics commands converts them to native graphics commands.
+        // The render thread also starts worker threads to write native graphics commands. 
+        SplitJobs = 6
     }
 
     // Must be in sync with MeshDeformation enum in GfxDeviceTypes.h
@@ -1526,6 +1564,12 @@ namespace UnityEditor
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetGraphicsJobModeForPlatform(BuildTarget platform, GraphicsJobMode gfxJobMode);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern GfxThreadingMode GetGraphicsThreadingModeForPlatform(BuildTarget platform);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetGraphicsThreadingModeForPlatform(BuildTarget platform, GfxThreadingMode gfxJobMode);
 
         [StaticAccessor("GetPlayerSettings()")]
         public static extern bool GetWsaHolographicRemotingEnabled();

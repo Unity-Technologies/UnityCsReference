@@ -469,9 +469,8 @@ namespace UnityEngine.UIElements
 
         internal float ResolveItemHeight(float height = -1)
         {
-            var dpiScaling = scaledPixelsPerPoint;
             height = height < 0 ? fixedItemHeight : height;
-            return Mathf.Round(height * dpiScaling) / dpiScaling;
+            return AlignmentUtils.RoundToPixelGrid(height, scaledPixelsPerPoint);
         }
 
         /// <summary>
@@ -1072,7 +1071,7 @@ namespace UnityEngine.UIElements
 
             m_LastHeight = m_ScrollView.layout.height;
 
-            if (float.IsNaN(m_ScrollView.layout.height))
+            if (panel== null || float.IsNaN(m_ScrollView.layout.height))
                 return;
 
             Resize(m_ScrollView.layout.size);

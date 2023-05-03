@@ -107,7 +107,7 @@ namespace UnityEngine
         //internal ability to retarget the url on an inside field value's type's HelpURL
         internal HelpURLAttribute(string defaultURL, string dispatchingFieldName) { m_Url = defaultURL; m_DispatchingFieldName = dispatchingFieldName; m_Dispatcher = !String.IsNullOrEmpty(dispatchingFieldName); }
 
-        public string URL => m_Url;
+        public virtual string URL => m_Url;
 
         internal readonly string m_Url;
         internal readonly bool m_Dispatcher;

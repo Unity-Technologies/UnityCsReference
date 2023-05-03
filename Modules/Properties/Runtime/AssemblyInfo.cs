@@ -4,6 +4,13 @@
 
 using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("UnityEditor.PropertiesModule")]
+
 [assembly: InternalsVisibleTo("Unity.Properties.CodeGen.IntegrationTests")]
 [assembly: InternalsVisibleTo("Unity.Properties.Reflection.Tests")]
 [assembly: InternalsVisibleTo("Unity.Properties.Tests")]
+
+[assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")] // ConversionRegistry
+[assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")] // PropertyBag.AddJobToWaitQueue
+
+[assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")] // ReflectedPropertyBag<TContainer>

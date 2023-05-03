@@ -280,12 +280,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         ContextualMenuManager contextualMenuManager { get; }
 
-
         /// <summary>
-        /// This method returns true if any state was changed on an element of this panel since the last render of the panel.
+        /// Checks whether any element within the panel has had any changes to its state since the panel was last rendered.
         /// </summary>
         /// <remarks>
-        /// This method does not currently check for any binding that has to be updated, any currently pending transition, any referenced asset modified (like renderTexture, panelSettings or textSettings) 
+        /// This method doesn't verify if any bindings have been updated, if there are any pending transitions, or if any referenced assets (such as renderTexture, panelSettings, or textSettings) have been modified.
         /// </remarks>
         bool isDirty { get; }
     }
@@ -301,10 +300,10 @@ namespace UnityEngine.UIElements
     {
         /// <summary>
         /// Receives notifications for every change that occurs on the panel's visual elements.
-        /// This method is exclusively available in debug builds and the Editor, as it serves as a debug feature that complements the profiling of an application. 
+        /// This method is exclusively available in debug builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
         /// </summary>
         /// <remarks>
-        /// The number of times the callback is called, the value returned, and the order in which they are returned are subject to change between each minor release of Unity, as this is considered internal. 
+        /// The number of times the callback is called, the value returned, and the order in which they are returned are subject to change between each minor release of Unity, as this is considered internal.
         /// <see cref="PanelSettings.panelChangeReceiver"/>
         /// </remarks>
         /// <param name="element"> The element that changed.</param>
@@ -821,12 +820,12 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Sets a custom <see cref="IPanelChangeReceiver"> in the panelChangeReceiver setter to receive every change event.
-        /// This method is exclusively available in debug builds and the Editor, as it serves as a debug feature that complements the profiling of an application. 
+        /// This method is exclusively available in debug builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
         /// </summary>
         /// <remarks>
         /// Note that the values returned might change over time when the underlying architecture is modified.
-        /// 
-        /// As this is called at every change marked on any visual element of the panel, the overhead is not negligeable.
+        ///
+        /// Since this is called for every change made to any visual element within the panel, the overhead is not negligible.
         /// </remarks>
 
         public IDebugPanelChangeReceiver panelChangeReceiver {

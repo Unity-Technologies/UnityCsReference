@@ -158,6 +158,8 @@ namespace UnityEngine.Rendering
             motionVectorMode = MotionVectorGenerationMode.Camera;
             lightProbeUsage = LightProbeUsage.Off;
             lightProbeProxyVolume = null;
+            accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+            accelerationStructureBuildFlagsOverride = false;
 
         }
         public Mesh mesh;
@@ -174,6 +176,38 @@ namespace UnityEngine.Rendering
         public MotionVectorGenerationMode motionVectorMode;
         public LightProbeUsage lightProbeUsage;
         public LightProbeProxyVolume lightProbeProxyVolume;
+        public RayTracingAccelerationStructureBuildFlags accelerationStructureBuildFlags { get; set; }
+        public bool accelerationStructureBuildFlagsOverride { get; set; }
+}
+
+    public struct RayTracingAABBsInstanceConfig
+    {
+        public RayTracingAABBsInstanceConfig(GraphicsBuffer aabbBuffer, int aabbCount, bool dynamicGeometry, Material material)
+        {
+            this.aabbBuffer = aabbBuffer;
+            this.aabbCount = aabbCount;
+            this.material = material;
+            this.dynamicGeometry = dynamicGeometry;
+            opaqueMaterial = true;
+            aabbOffset = 0;
+            materialProperties = null;
+            layer = 0;
+            mask = 0xFF;
+            accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+            accelerationStructureBuildFlagsOverride = false;
+
+        }
+        public GraphicsBuffer aabbBuffer { get; set; }
+        public int aabbCount { get; set; }
+        public uint aabbOffset { get; set; }
+        public bool dynamicGeometry { get; set; }
+        public bool opaqueMaterial { get; set; }
+        public Material material { get; set; }
+        public MaterialPropertyBlock materialProperties { get; set; }
+        public int layer { get; set; }
+        public uint mask { get; set; }
+        public RayTracingAccelerationStructureBuildFlags accelerationStructureBuildFlags { get; set; }
+        public bool accelerationStructureBuildFlagsOverride { get; set; }
     }
 
     [MovedFrom("UnityEngine.Experimental.Rendering")]
@@ -191,8 +225,24 @@ namespace UnityEngine.Rendering
 
         public enum ManagementMode
         {
-            Manual      = 0,    // Manual management of Renderers in the Raytracing Acceleration Structure.
+            Manual      = 0,    // Manual management of Renderers in the Ray Tracing Acceleration Structure.
             Automatic   = 1,    // New renderers are added automatically based on a RayTracingModeMask.
+        }
+
+        public struct BuildSettings 
+        {
+            public RayTracingAccelerationStructureBuildFlags buildFlags { get; set; } 
+            public Vector3 relativeOrigin { get; set; } 
+            public BuildSettings()
+            {
+                buildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;                
+                relativeOrigin = Vector3.zero;
+            }
+            public BuildSettings(RayTracingAccelerationStructureBuildFlags buildFlags, Vector3 relativeOrigin)
+            {
+                this.buildFlags = buildFlags;
+                this.relativeOrigin = relativeOrigin;
+            }
         }
 
         [System.Obsolete(@"RayTracingAccelerationStructure.RASSettings is deprecated. Use RayTracingAccelerationStructure.Settings instead. (UnityUpgradable) -> RayTracingAccelerationStructure/Settings", false)]
@@ -214,11 +264,33 @@ namespace UnityEngine.Rendering
             public ManagementMode managementMode;
             public RayTracingModeMask rayTracingModeMask;
             public int layerMask;
+            public RayTracingAccelerationStructureBuildFlags buildFlagsStaticGeometries { get; set; }
+            public RayTracingAccelerationStructureBuildFlags buildFlagsDynamicGeometries { get; set; }
+
+            public Settings()
+            {
+                managementMode = ManagementMode.Manual;
+                rayTracingModeMask = RayTracingModeMask.Everything;
+                layerMask = -1;
+                buildFlagsStaticGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+                buildFlagsDynamicGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+            }
+
             public Settings(ManagementMode sceneManagementMode, RayTracingModeMask rayTracingModeMask, int layerMask)
             {
                 this.managementMode = sceneManagementMode;
                 this.rayTracingModeMask = rayTracingModeMask;
                 this.layerMask = layerMask;
+                buildFlagsStaticGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+                buildFlagsDynamicGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+            }
+            public Settings(ManagementMode sceneManagementMode, RayTracingModeMask rayTracingModeMask, int layerMask, RayTracingAccelerationStructureBuildFlags buildFlagsStaticGeometries, RayTracingAccelerationStructureBuildFlags buildFlagsDynamicGeometries)
+            {
+                this.managementMode = sceneManagementMode;
+                this.rayTracingModeMask = rayTracingModeMask;
+                this.layerMask = layerMask;
+                this.buildFlagsStaticGeometries = buildFlagsStaticGeometries;
+                this.buildFlagsDynamicGeometries = buildFlagsDynamicGeometries;
             }
         }
 
@@ -246,9 +318,7 @@ namespace UnityEngine.Rendering
 
             m_Ptr = IntPtr.Zero;
         }
-
-        // --------------------------------------------------------------------
-        // Actual API
+        
         public RayTracingAccelerationStructure(Settings settings)
         {
             m_Ptr = Create(settings);
@@ -256,18 +326,17 @@ namespace UnityEngine.Rendering
 
         public RayTracingAccelerationStructure()
         {
-            Settings settings = new Settings();
-            settings.rayTracingModeMask = RayTracingModeMask.Everything;
-            settings.managementMode = ManagementMode.Manual;
-            settings.layerMask = -1;
+            Settings settings = new Settings()
+            {
+                rayTracingModeMask = RayTracingModeMask.Everything,
+                managementMode = ManagementMode.Manual,
+                layerMask = -1,
+                buildFlagsStaticGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace,
+                buildFlagsDynamicGeometries = RayTracingAccelerationStructureBuildFlags.PreferFastTrace
+            };
+            
             m_Ptr = Create(settings);
         }
-
-        [FreeFunction("RayTracingAccelerationStructure_Bindings::Create")]
-        extern private static IntPtr Create(Settings desc);
-
-        [FreeFunction("RayTracingAccelerationStructure_Bindings::Destroy")]
-        extern private static void Destroy(RayTracingAccelerationStructure accelStruct);
 
         public void Release()
         {
@@ -279,26 +348,50 @@ namespace UnityEngine.Rendering
 #pragma warning restore 414
 
         public void Build()
+        {            
+            Build(new BuildSettings());
+        }
+
+        public void Build(Vector3 relativeOrigin)
         {
-            Build(Vector3.zero);
+            BuildSettings buildSettings = new BuildSettings()
+            {
+                relativeOrigin = relativeOrigin
+            };
+
+            Build(buildSettings);
         }
 
         public int AddInstance(Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF)
         {
             return AddInstanceSubMeshFlagsArray(targetRenderer, subMeshFlags, enableTriangleCulling, frontTriangleCounterClockwise, mask, id);
         }
+         
+        public int AddInstance(RayTracingAABBsInstanceConfig config, Matrix4x4 matrix, uint id = 0xFFFFFFFF)
+        {         
+            if (config.aabbBuffer == null)
+                throw new ArgumentNullException("config.aabbBuffer.");
 
-        public int AddInstance(GraphicsBuffer aabbBuffer, uint aabbCount, bool dynamicData, Matrix4x4 matrix, Material material, bool opaqueMaterial, MaterialPropertyBlock properties, uint mask = 0xFF, uint id = 0xFFFFFFFF)
-        {
-            return AddInstance_Procedural(aabbBuffer, aabbCount, dynamicData, matrix, material, opaqueMaterial, properties, mask, id);
+            if (config.aabbBuffer.target != GraphicsBuffer.Target.Structured)
+                throw new ArgumentException("config.aabbBuffer.target must be GraphicsBuffer.Target.Structured.");
+
+            if (config.aabbBuffer.stride != 6 * sizeof(float))
+                throw new ArgumentException("config.aabbBuffer.stride must be 6 floats.");
+
+            if (config.aabbCount == 0)
+                throw new ArgumentException("config.aabbCount cannot be 0.");
+
+            return AddAABBsInstance(config, matrix, id);
         }
 
         public unsafe int AddInstance(in RayTracingMeshInstanceConfig config, Matrix4x4 matrix, [DefaultValue("null")] Matrix4x4? prevMatrix = null, uint id = 0xFFFFFFFF)
         {
             if (config.mesh == null)
                 throw new ArgumentNullException("config.mesh");
+
             if (config.subMeshIndex >= config.mesh.subMeshCount)
                 throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
+
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
@@ -314,14 +407,19 @@ namespace UnityEngine.Rendering
         {
             if (instanceData == null)
                 throw new ArgumentNullException("instanceData");
+
             if (config.material == null)
                 throw new ArgumentNullException("config.material");
+
             if (!config.material.enableInstancing)
                 throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+
             if (config.mesh == null)
                 throw new ArgumentNullException("config.mesh");
+
             if (config.subMeshIndex >= config.mesh.subMeshCount)
                 throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
+
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
@@ -341,14 +439,19 @@ namespace UnityEngine.Rendering
         {
             if (instanceData == null)
                 throw new ArgumentNullException("instanceData");
+
             if (config.material == null)
                 throw new ArgumentNullException("config.material");
+
             if (!config.material.enableInstancing)
                 throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+
             if (config.mesh == null)
                 throw new ArgumentNullException("config.mesh");
+
             if (config.subMeshIndex >= config.mesh.subMeshCount)
                 throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
+
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
@@ -368,12 +471,16 @@ namespace UnityEngine.Rendering
         {
             if (config.material == null)
                 throw new ArgumentNullException("config.material");
+
             if (!config.material.enableInstancing)
                 throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+
             if (config.mesh == null)
                 throw new ArgumentNullException("config.mesh");
+
             if (config.subMeshIndex >= config.mesh.subMeshCount)
                 throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
+
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
@@ -393,12 +500,16 @@ namespace UnityEngine.Rendering
         {
             if (config.material == null)
                 throw new ArgumentNullException("config.material");
+
             if (!config.material.enableInstancing)
                 throw new InvalidOperationException("config.material needs to enable instancing for use with AddInstances.");
+
             if (config.mesh == null)
                 throw new ArgumentNullException("config.mesh");
+
             if (config.subMeshIndex >= config.mesh.subMeshCount)
                 throw new ArgumentOutOfRangeException("config.subMeshIndex", "config.subMeshIndex is out of range.");
+
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
@@ -450,9 +561,37 @@ namespace UnityEngine.Rendering
         }
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::Build", HasExplicitThis = true)]
-        extern public void Build(Vector3 relativeOrigin);
+        extern public void Build(BuildSettings buildSettings);
+ 
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddVFXInstances", HasExplicitThis = true)]
+        extern public void AddVFXInstances([NotNull] Renderer targetRenderer, uint[] vfxSystemMasks);
 
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstance", HasExplicitThis = true)]
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveVFXInstances", HasExplicitThis = true)]
+        extern public void  RemoveVFXInstances([NotNull]Renderer targetRenderer);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstancePropertyBlock", HasExplicitThis = true)]
+        extern public void UpdateInstancePropertyBlock(int handle, MaterialPropertyBlock properties);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::GetSize", HasExplicitThis = true)]
+        extern public UInt64 GetSize();
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::GetInstanceCount", HasExplicitThis = true)]
+        extern public UInt32 GetInstanceCount();
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::ClearInstances", HasExplicitThis = true)]
+        extern public void ClearInstances();
+
+        public RayTracingInstanceCullingResults CullInstances(ref RayTracingInstanceCullingConfig cullingConfig) => Internal_CullInstances(in cullingConfig);
+
+
+        // Private methods bellow
+        [FreeFunction("RayTracingAccelerationStructure_Bindings::Create")]
+        extern private static IntPtr Create(Settings desc);
+
+        [FreeFunction("RayTracingAccelerationStructure_Bindings::Destroy")]
+        extern private static void Destroy(RayTracingAccelerationStructure accelStruct);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddAABBsInstance", HasExplicitThis = true)]
         extern private int AddInstance_Procedural([NotNull] GraphicsBuffer aabbBuffer, uint aabbCount, bool dynamicData, Matrix4x4 matrix, [NotNull] Material material, bool opaqueMaterial, MaterialPropertyBlock properties, uint mask = 0xFF, uint id = 0xFFFFFFFF);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveInstance", HasExplicitThis = true)]
@@ -470,12 +609,6 @@ namespace UnityEngine.Rendering
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceMask", HasExplicitThis = true)]
         extern private void UpdateInstanceMask_Renderer([NotNull] Renderer renderer, uint mask);
 
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddVFXInstances", HasExplicitThis = true)]
-        extern public void AddVFXInstances([NotNull] Renderer targetRenderer, uint[] vfxSystemMasks);
-
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveVFXInstances", HasExplicitThis = true)]
-        extern public void  RemoveVFXInstances([NotNull]Renderer targetRenderer);
-
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceMask", HasExplicitThis = true)]
         extern private void UpdateInstanceMask_Handle(int handle, uint mask);
 
@@ -484,18 +617,6 @@ namespace UnityEngine.Rendering
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceID", HasExplicitThis = true)]
         extern private void UpdateInstanceID_Handle(int handle, uint id);
-
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstancePropertyBlock", HasExplicitThis = true)]
-        extern public void UpdateInstancePropertyBlock(int handle, MaterialPropertyBlock properties);
-
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::GetSize", HasExplicitThis = true)]
-        extern public UInt64 GetSize();
-
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::GetInstanceCount", HasExplicitThis = true)]
-        extern public UInt32 GetInstanceCount();
-
-        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::ClearInstances", HasExplicitThis = true)]
-        extern public void ClearInstances();
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceSubMeshFlagsArray", HasExplicitThis = true)]
         extern private int AddInstanceSubMeshFlagsArray([NotNull] Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF);
@@ -506,13 +627,14 @@ namespace UnityEngine.Rendering
         [FreeFunction("RayTracingAccelerationStructure_Bindings::AddMeshInstances", HasExplicitThis = true, ThrowsException = true)]
 		extern unsafe private int AddMeshInstances(RayTracingMeshInstanceConfig config, IntPtr instancedData, RenderInstancedDataLayout layout, uint instanceCount, uint id = 0xFFFFFFFF);
 
-        public RayTracingInstanceCullingResults CullInstances(ref RayTracingInstanceCullingConfig cullingConfig) => Internal_CullInstances(in cullingConfig);
+        [FreeFunction("RayTracingAccelerationStructure_Bindings::AddAABBsInstance", HasExplicitThis = true)]
+        extern private int AddAABBsInstance(RayTracingAABBsInstanceConfig config, Matrix4x4 matrix, uint id = 0xFFFFFFFF);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::CullInstances", HasExplicitThis = true)]
         extern private RayTracingInstanceCullingResults Internal_CullInstances(in RayTracingInstanceCullingConfig cullingConfig);
 
 
-        // Obsolete methods. To be removed in the future.
+        // Obsolete methods bellow. To be removed in the future.
         const string obsoleteBuildMsg1 = "Method Update is deprecated. Use Build instead (UnityUpgradable) -> Build()";
         [Obsolete(obsoleteBuildMsg1, true)]
         public void Update() => new NotSupportedException(obsoleteBuildMsg1);
@@ -525,12 +647,16 @@ namespace UnityEngine.Rendering
         [Obsolete(obsoleteRendererMsg, true)]
         public void AddInstance(Renderer targetRenderer, bool[] subMeshMask = null, bool[] subMeshTransparencyFlags = null, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteRendererMsg);
 
-        const string obsoleteAABBMsg = "This AddInstance method is deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
-        [Obsolete(obsoleteAABBMsg, true)]
-        public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteAABBMsg);
+        const string obsoleteAABBMsg1 = "This AddInstance method is deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
+        [Obsolete(obsoleteAABBMsg1, true)]
+        public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteAABBMsg1);
 
-        [Obsolete(obsoleteAABBMsg, true)]
-        public void AddInstance(GraphicsBuffer aabbBuffer, uint numElements, Material material, Matrix4x4 instanceTransform, bool isCutOff, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, bool reuseBounds = false, uint id = 0xFFFFFFFF) => new NotSupportedException(obsoleteAABBMsg);
+        const string obsoleteAABBMsg2 = "This AddInstance method is deprecated and will be removed in a future version. Please use the alternate AddInstance method for adding procedural geometry (AABBs) to the acceleration structure.";
+        [Obsolete(obsoleteAABBMsg2, false)]
+        public int AddInstance(GraphicsBuffer aabbBuffer, uint aabbCount, bool dynamicData, Matrix4x4 matrix, Material material, bool opaqueMaterial, MaterialPropertyBlock properties, uint mask = 0xFF, uint id = 0xFFFFFFFF)
+        {
+            return AddInstance_Procedural(aabbBuffer, aabbCount, dynamicData, matrix, material, opaqueMaterial, properties, mask, id);
+        }
 
         internal static class BindingsMarshaller
         {

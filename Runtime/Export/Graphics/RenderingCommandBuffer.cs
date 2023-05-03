@@ -269,13 +269,27 @@ namespace UnityEngine.Rendering
 
         public void BuildRayTracingAccelerationStructure(RayTracingAccelerationStructure accelerationStructure)
         {
-            Vector3 zero = new Vector3(0, 0, 0);
-            Internal_BuildRayTracingAccelerationStructure(accelerationStructure, zero);
+            RayTracingAccelerationStructure.BuildSettings buildSettings = new RayTracingAccelerationStructure.BuildSettings()
+            {
+                buildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace,
+                relativeOrigin = Vector3.zero,
+            };
+            Internal_BuildRayTracingAccelerationStructure(accelerationStructure, buildSettings);
         }
 
         public void BuildRayTracingAccelerationStructure(RayTracingAccelerationStructure accelerationStructure, Vector3 relativeOrigin)
         {
-            Internal_BuildRayTracingAccelerationStructure(accelerationStructure, relativeOrigin);
+            RayTracingAccelerationStructure.BuildSettings buildSettings = new RayTracingAccelerationStructure.BuildSettings()
+            {
+                buildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace,
+                relativeOrigin = relativeOrigin,
+            };
+            Internal_BuildRayTracingAccelerationStructure(accelerationStructure, buildSettings);
+        }
+
+        public void BuildRayTracingAccelerationStructure(RayTracingAccelerationStructure accelerationStructure, RayTracingAccelerationStructure.BuildSettings buildSettings)
+        {
+            Internal_BuildRayTracingAccelerationStructure(accelerationStructure, buildSettings);
         }
 
         public void SetRayTracingAccelerationStructure(RayTracingShader rayTracingShader, string name, RayTracingAccelerationStructure rayTracingAccelerationStructure)

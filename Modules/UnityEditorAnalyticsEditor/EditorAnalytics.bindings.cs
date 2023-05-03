@@ -10,6 +10,7 @@ using UnityEngine.Scripting;
 using UnityEngine.Analytics;
 using UnityEditor.PackageManager;
 using UnityEngine;
+using UnityEditor.Modules;
 
 namespace UnityEditor
 {
@@ -245,6 +246,15 @@ namespace UnityEditor
         private extern static AnalyticsResult SetEventWithLimitEndPoint(string eventName, string endPoint, int ver, string prefix);
 
         private extern static AnalyticsResult SetEventWithLimitPriority(string eventName, AnalyticsEventPriority eventPriority, int ver, string prefix);
+
+        [RequiredByNativeCode]
+        internal static void AddExtraBuildAnalyticsFields(string target, IntPtr eventData)
+        {
+            var extension = ModuleManager.GetEditorAnalyticsExtension(target);
+            if (extension == null)
+                return;
+            extension.AddExtraBuildAnalyticsFields(eventData);
+        }
     }
 
     [RequiredByNativeCode]
@@ -290,5 +300,16 @@ namespace UnityEditor
         {
             get;
         }
+    }
+
+    internal abstract class EditorAnalyticsExtension : IEditorAnalyticsExtension
+    {
+        public virtual void AddExtraBuildAnalyticsFields(IntPtr eventData)
+        {
+            var evt = new UnityEditor.Analytics.EditorAnalyticsEvent(eventData);
+            AddExtraBuildAnalyticsFields(evt);
+        }
+
+        public abstract void AddExtraBuildAnalyticsFields(UnityEditor.Analytics.EditorAnalyticsEvent eventData);
     }
 }

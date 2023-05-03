@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using UnityEditor.AssetImporters;
 using UnityEditor.Experimental;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -107,21 +108,21 @@ namespace UnityEditor
             //Right side
             public VisualElement SelectedItemView;
             public Label assetName;
-            public (VisualElement container, Label header, IMGUIContainer content, string path, Object loadedAsset)assetWithObjectField;
-            public (VisualElement container, Label header, Label content)guid;
-            public (VisualElement container, Label header, Label content)assetSize;
-            public (VisualElement container, Label header, Label content)path;
-            public (VisualElement container, Label header, Label content)editorRevision;
-            public (VisualElement container, Label header, Label content)timeStamp;
-            public (VisualElement container, Label header, Label content)duration;
-            public (VisualElement container, IMGUIContainer content, ArtifactBrowserTreeViewNested<ArtifactDifferenceReporter.ArtifactInfoDifference> treeView, Label header)reasonsForImport;
+            public (VisualElement container, Label header, IMGUIContainer content, string path, Object loadedAsset) assetWithObjectField;
+            public (VisualElement container, Label header, Label content) guid;
+            public (VisualElement container, Label header, Label content) assetSize;
+            public (VisualElement container, Label header, Label content) path;
+            public (VisualElement container, Label header, Label content) editorRevision;
+            public (VisualElement container, Label header, Label content) timeStamp;
+            public (VisualElement container, Label header, Label content) duration;
+            public (VisualElement container, IMGUIContainer content, ArtifactBrowserTreeViewNested<ArtifactDifferenceReporter.ArtifactInfoDifference> treeView, Label header) reasonsForImport;
 
-            public (VisualElement container, Label header, Label content)producedArtifacts;
+            public (VisualElement container, Label header, Label content) producedArtifacts;
             public Label dependencies;
 
             //Left side
             public VisualElement PreviousRevisionsContainer;
-            public (IMGUIContainer container, ArtifactBrowserTreeView<ArtifactInfoTreeViewItem> treeView)previousRevisions;
+            public (IMGUIContainer container, ArtifactBrowserTreeView<ArtifactInfoTreeViewItem> treeView) previousRevisions;
         }
 
         internal struct ProjectOverviewContainer
@@ -129,16 +130,50 @@ namespace UnityEditor
             public VisualElement SummaryView;
             public Label overView;
             public Label mostDependenciesHeader;
-            public (IMGUIContainer container, ArtifactBrowserTreeView<ArtifactInfoTreeViewItem> treeView)mostDependencies;
+            public (IMGUIContainer container, ArtifactBrowserTreeView<ArtifactInfoTreeViewItem> treeView) mostDependencies;
 
             public Label longestDurationHeader;
-            public (IMGUIContainer container, ArtifactBrowserTreeView<ArtifactInfoTreeViewItem> treeView)longestDuration;
+            public (IMGUIContainer container, ArtifactBrowserTreeView<ArtifactInfoTreeViewItem> treeView) longestDuration;
+
+            public Button analyzeImportProcess;
+            public (IMGUIContainer container, ArtifactBrowserTreeView<ProjectAnalysisTreeViewItem> treeView) importProcessAnalysis;
         }
 
         [Serializable]
         internal struct ToolBarContainer
         {
-            public (IMGUIContainer container, ArtifactBrowserToolbar toolbar)options;
+            public (IMGUIContainer container, ArtifactBrowserToolbar toolbar) options;
+        }
+
+        public struct PostProcessorStaticFieldWarningMessage
+        {
+            public string message;
+            public string additionalInfo;
+            public string additionalWarning;
+            public string filePath;
+            public int lineNumber;
+            public int columnNumber;
+        }
+
+        internal class ProjectAnalysisTreeViewItem
+        {
+            public (string message, string additionalInfo, string additionalWarning, string filePath, int lineNumber, int column) itemDetails;
+
+            public string message
+            {
+                get
+                {
+                    return itemDetails.message;
+                }
+            }
+
+            public string additionalInfo
+            {
+                get
+                {
+                    return itemDetails.additionalInfo;
+                }
+            }
         }
 
         internal class ArtifactInfoTreeViewItem
@@ -235,6 +270,7 @@ namespace UnityEditor
         private readonly List<ArtifactInfoProducedFiles> m_ProducedFilesList = new List<ArtifactInfoProducedFiles>();
         private readonly List<ArtifactInfoTreeViewItem> m_MostDependencyAssets = new List<ArtifactInfoTreeViewItem>();
         private readonly List<ArtifactInfoTreeViewItem> m_LongestDurationAssets = new List<ArtifactInfoTreeViewItem>();
+        private readonly List<ProjectAnalysisTreeViewItem> m_ProjectAnalysisResults = new List<ProjectAnalysisTreeViewItem>();
         private List<ArtifactInfoTreeViewItem> m_PreviousRevisionsList = new List<ArtifactInfoTreeViewItem>();
         private List<ArtifactDifferenceReporter.ArtifactInfoDifference> m_ReasonsToReimportList = new List<ArtifactDifferenceReporter.ArtifactInfoDifference>();
 
@@ -419,6 +455,7 @@ namespace UnityEditor
 
             var mostDependenciesColumns = CreateColumns(new Column("Asset Path", 360), new Column("Total Dependencies", 125));
             var longestDurationColumns = CreateColumns(new Column("Asset Path", 360), new Column("Import Duration (ms)", 125));
+            var projectAnalysisColumns = CreateColumns(new Column("Message", 720), new Column("Info", 1280));
 
             GetMostDependencyAssets();
             m_Overview.mostDependencies.treeView = CreateTreeView(m_Overview.mostDependencies.treeView,
@@ -447,12 +484,33 @@ namespace UnityEditor
             m_Overview.longestDuration.container.style.maxHeight = windowPosition.height * 0.25f;
             m_Overview.longestDuration.container.style.minHeight = windowPosition.height * 0.25f;
 
+            m_Overview.analyzeImportProcess = new Button(OnAnalyseImportProcessClicked);
+            m_Overview.analyzeImportProcess.text = "Analyze Import Process";
+            m_Overview.analyzeImportProcess.style.maxWidth = windowPosition.width * 0.20f;
+            m_Overview.analyzeImportProcess.style.left = 8;
+            m_Overview.analyzeImportProcess.style.top = 16;
+
+            var importProcessAnalysisColumn = m_ImportActivityState.projectAnalysisState.GetVisibleColumns();
+            m_Overview.importProcessAnalysis.treeView = CreateTreeView<ProjectAnalysisTreeViewItem>(m_Overview.importProcessAnalysis.treeView,
+                m_ProjectAnalysisResults, projectAnalysisColumns, ProjectAnalysisSelector, GetImportProcessAnalysisSortCallbacks(), visibleColumns: importProcessAnalysisColumn);
+            m_Overview.importProcessAnalysis.treeView.CellGUICallback = CellGUIForProjectAnalysis;
+            m_Overview.importProcessAnalysis.treeView.OnDoubleClickedItem = OnProjectAnalysisEntryDoubleClicked;
+            m_Overview.importProcessAnalysis.treeView.Reload();
+
+            m_Overview.importProcessAnalysis.container = new IMGUIContainer(m_Overview.importProcessAnalysis.treeView.OnGUI);
+            m_Overview.importProcessAnalysis.container.RegisterCallback<MouseUpEvent>(HandleProjectAnalysisRightClick);
+            m_Overview.importProcessAnalysis.container.style.maxHeight = windowPosition.height * 0.20f;
+            m_Overview.importProcessAnalysis.container.style.minHeight = windowPosition.height * 0.20f;
+            m_Overview.importProcessAnalysis.container.style.top = 24;
+
             m_Overview.SummaryView = new VisualElement();
             m_Overview.SummaryView.Add(m_Overview.overView);
             m_Overview.SummaryView.Add(m_Overview.mostDependenciesHeader);
             m_Overview.SummaryView.Add(m_Overview.mostDependencies.container);
             m_Overview.SummaryView.Add(m_Overview.longestDurationHeader);
             m_Overview.SummaryView.Add(m_Overview.longestDuration.container);
+            m_Overview.SummaryView.Add(m_Overview.analyzeImportProcess);
+            m_Overview.SummaryView.Add(m_Overview.importProcessAnalysis.container);
         }
 
         private void OnLongestDurationDoubleClickedItem(int id)
@@ -473,6 +531,27 @@ namespace UnityEditor
             var selectedItem = m_MostDependencyAssets.ElementAt(id - 1);
             var selectedItemGUID = selectedItem.artifactInfo.artifactKey.guid;
             FocusOnSelectedItem(selectedItemGUID.ToString());
+        }
+
+        private void OnProjectAnalysisEntryDoubleClicked(int id)
+        {
+            if (id - 1 < 0)
+                return;
+
+            var selectedItem = m_ProjectAnalysisResults.ElementAt(id - 1);
+            // File could not be found, so we log this
+            // warning to the console on double click
+            if (string.IsNullOrEmpty(selectedItem.itemDetails.filePath))
+                Debug.LogWarning(selectedItem.itemDetails.additionalWarning);
+            else
+            {
+                UnityEditorInternal.InternalEditorUtility.OpenFileAtLineExternal
+                (
+                    selectedItem.itemDetails.filePath,
+                    selectedItem.itemDetails.lineNumber,
+                    selectedItem.itemDetails.column
+                );
+            }
         }
 
         private void GetLongestDurationAssets()
@@ -733,6 +812,27 @@ namespace UnityEditor
             menu.DropDown(menuRect);
         }
 
+        private void HandleProjectAnalysisRightClick(MouseUpEvent evt)
+        {
+            if (evt.button != (int)MouseButton.RightMouse)
+                return;
+
+            var menu = new GenericMenu();
+            var copyItemName = "Copy";
+            var selectedItems = m_Overview.importProcessAnalysis.treeView.GetSelection();
+            if (selectedItems.Count() == 0)
+            {
+                menu.AddDisabledItem(new GUIContent(copyItemName));
+            }
+            else
+            {
+                menu.AddItem(new GUIContent(copyItemName), false, CopyProjectAnalysisEntries);
+            }
+
+            var menuRect = new Rect(evt.mousePosition, Vector2.zero);
+            menu.DropDown(menuRect);
+        }
+
         private void HandleDependenciesRightClick(MouseUpEvent evt)
         {
             if (evt.button != (int)MouseButton.RightMouse)
@@ -852,6 +952,30 @@ namespace UnityEditor
             GUIUtility.systemCopyBuffer = contents.ToString();
         }
 
+        private void CopyProjectAnalysisEntries()
+        {
+            StringBuilder contents = new StringBuilder();
+            var rows = m_Overview.importProcessAnalysis.treeView.GetRows();
+            foreach (var curEntryIndex in m_Overview.importProcessAnalysis.treeView.GetSelection())
+            {
+                var index = Math.Max(0, curEntryIndex - 1);
+                var entry = m_ProjectAnalysisResults[index];
+                var extraInfo = "";
+
+                // Copy the relevant file info, and if not available
+                // copy the warning over
+                if (string.IsNullOrEmpty(entry.itemDetails.filePath))
+                    extraInfo = entry.itemDetails.additionalWarning;
+                else
+                    extraInfo =
+                        $"path: {entry.itemDetails.filePath}, line: {entry.itemDetails.lineNumber}, column: {entry.itemDetails.column}";
+
+                contents.Append($"{entry.message} , {entry.additionalInfo}, {extraInfo}");
+                contents.AppendLine();
+            }
+            GUIUtility.systemCopyBuffer = contents.ToString();
+        }
+
         private void CreateAssetPathWithObjectField(Rect windowPosition)
         {
             var availableSpace = 620;
@@ -950,6 +1074,9 @@ namespace UnityEditor
             [SerializeField] public ImportActivityTreeViewState previousRevisionsState;
             [SerializeField] public ImportActivityTreeViewState producedFilesState;
             [SerializeField] public ImportActivityTreeViewState dependenciesState;
+            [SerializeField] public ImportActivityTreeViewState projectAnalysisState;
+            [SerializeField] public bool populateImportProcessAnalysis;
+
             public ImportActivityState()
             {
                 useRelativeTimeStamps = 0;
@@ -964,6 +1091,7 @@ namespace UnityEditor
                 previousRevisionsState = new ImportActivityTreeViewState(0, false, new int[] { 0, 1, 2 }, "", 0);
                 producedFilesState = new ImportActivityTreeViewState(0, false, new int[] { 0, 1, 2 }, "", 0);
                 dependenciesState = new ImportActivityTreeViewState(0, false, new int[] { 0, 1 }, "", 0);
+                projectAnalysisState = new ImportActivityTreeViewState(0, false, new int[] { 0, 1 }, "", 0);
             }
         }
 
@@ -1008,7 +1136,14 @@ namespace UnityEditor
 
             //Dependencies List View
             StoreTreeViewToState(m_ImportActivityState.dependenciesState, m_DependenciesListView);
+
+            // Project Analysis results
+            StoreTreeViewToState(m_ImportActivityState.projectAnalysisState, m_Overview.importProcessAnalysis.treeView);
+
             m_ImportActivityState.dependenciesState.searchString = m_DependenciesListView.searchString;
+
+            // Whether or not to repopulate the import process list after domain reload
+            m_ImportActivityState.populateImportProcessAnalysis = m_ProjectAnalysisResults.Count > 0;
 
             //Toolbar
             m_ImportActivityState.reasonForImportSearchString = m_ItemContainers.reasonsForImport.treeView.searchString;
@@ -1025,6 +1160,12 @@ namespace UnityEditor
             m_ProducedFilesListView.RestoreSelection();
             m_Overview.mostDependencies.treeView.RestoreSelection();
             m_Overview.longestDuration.treeView.RestoreSelection();
+            m_Overview.importProcessAnalysis.treeView.RestoreSelection();
+
+            if (m_ImportActivityState.populateImportProcessAnalysis)
+                OnAnalyseImportProcessClicked();
+
+            m_Overview.importProcessAnalysis.treeView.RestoreSelection();
         }
 
         public void FocusOnSelectedItem(string selectedObjectGuid, string selectedArtifactID = "")
@@ -1108,6 +1249,14 @@ namespace UnityEditor
             return callbacks;
         }
 
+        private Func<TreeViewItem, TreeViewItem, int, List<ProjectAnalysisTreeViewItem>, int>[] GetImportProcessAnalysisSortCallbacks()
+        {
+            var callbacks = new Func<TreeViewItem, TreeViewItem, int, List<ProjectAnalysisTreeViewItem>, int>[3];
+            callbacks[0] = ImportProcessAnalysis_Message;
+            callbacks[1] = ImportProcessAnalysis_Info;
+            return callbacks;
+        }
+
         private void CreateListViews()
         {
             var artifactColumns = CreateColumns(new Column("Asset", 200), new Column("Last Import", 120), new Column("Duration (ms)", 85), new Column("Importer", 160));
@@ -1146,6 +1295,21 @@ namespace UnityEditor
             iconRect.x += 2;
 
             Texture icon = GetIconForItem(item, element);
+            if (icon != null)
+                GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
+            rect.x += k_IconWidth * 1.2f;
+            rect.width -= k_IconWidth * 1.2f;
+            return rect;
+        }
+
+        private Rect DrawIconForProjectAnalysisResult(Rect rect, ProjectAnalysisTreeViewItem item)
+        {
+            // Draw icon
+            Rect iconRect = rect;
+            iconRect.width = k_IconWidth;
+            iconRect.x += 2;
+
+            Texture icon = EditorGUIUtility.LoadIcon("console.warnicon.sml");
             if (icon != null)
                 GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
             rect.x += k_IconWidth * 1.2f;
@@ -1308,6 +1472,19 @@ namespace UnityEditor
             return true;
         }
 
+        private bool CellGUIForProjectAnalysis(Rect rect, TreeViewItem treeViewItem, int columnIndex, ProjectAnalysisTreeViewItem item)
+        {
+            var contentText = columnIndex == 0 ? item.message : item.additionalInfo;
+
+            // Add the icon
+            if (columnIndex == 0)
+                rect = DrawIconForProjectAnalysisResult(rect, item);
+
+            var content = new GUIContent(contentText);
+            EditorGUI.LabelField(rect, content);
+            return true;
+        }
+
         private bool CellGUIForProducedFiles(Rect rect, TreeViewItem item, int columnIndex, ArtifactInfoProducedFiles producedFiles)
         {
             var contentText = ProducedFilesInfoSelector(producedFiles, columnIndex).ToString();
@@ -1331,6 +1508,24 @@ namespace UnityEditor
         private void OnOverviewClicked()
         {
             UpdateSelectedView(RightContentState.ShowOverview);
+        }
+
+        private void OnAnalyseImportProcessClicked()
+        {
+            if (m_ProjectAnalysisResults != null)
+                m_ProjectAnalysisResults.Clear();
+
+            //TODO: Update the code on the editor
+            //UnityEditor.AssetImportWorkerPostProcessorHelper.StaticVariableDetector.FindStaticVariablesInPostProcessorsAndScriptedImporters();
+            var warnings = StaticFieldCollector.FindStaticVariablesInPostProcessorsAndScriptedImporters();
+            for (int i = 0; i < warnings.Length; ++i)
+            {
+                m_ProjectAnalysisResults.Add(new ProjectAnalysisTreeViewItem()
+                {
+                    itemDetails = (warnings[i].message, warnings[i].additionalInfo, warnings[i].additionalWarning, warnings[i].filePath, warnings[i].lineNumber, warnings[i].columnNumber)
+                });
+            }
+            m_Overview.importProcessAnalysis.treeView.Reload();
         }
 
         private static IComparable PropertySelector((string, ArtifactInfoDependency) element, int index)
@@ -1503,6 +1698,20 @@ namespace UnityEditor
             return string.CompareOrdinal(element1.importerName, element2.importerName);
         }
 
+        private static int ImportProcessAnalysis_Message(TreeViewItem item1, TreeViewItem item2, int index, List<ProjectAnalysisTreeViewItem> items)
+        {
+            var element1 = items[item1.id - 1];
+            var element2 = items[item2.id - 1];
+            return string.CompareOrdinal(element1.message , element2.message);
+        }
+
+        private static int ImportProcessAnalysis_Info(TreeViewItem item1, TreeViewItem item2, int index, List<ProjectAnalysisTreeViewItem> items)
+        {
+            var element1 = items[item1.id - 1];
+            var element2 = items[item2.id - 1];
+            return string.CompareOrdinal(element1.additionalInfo, element2.additionalInfo);
+        }
+
         private static IComparable ProducedFilesInfoSelector(ArtifactInfoProducedFiles element, int index)
         {
             return index switch
@@ -1551,6 +1760,15 @@ namespace UnityEditor
             {
                 0 => element.shortenedName,
                 1 => element.importDuration,
+                _ => "",
+            };
+        }
+
+        private static IComparable ProjectAnalysisSelector(ProjectAnalysisTreeViewItem element, int index)
+        {
+            return index switch
+            {
+                0 => element.message,
                 _ => "",
             };
         }
@@ -2048,11 +2266,11 @@ namespace UnityEditor
                 AssetDatabase.GetImportActivityWindowStartupData(ImportActivityWindowStartupData.ClearCache);
             }
 
-            public ArtifactInfo[] allCurrentRevisions { get { return m_AllCurrentRevisions; }}
+            public ArtifactInfo[] allCurrentRevisions { get { return m_AllCurrentRevisions; } }
 
-            public ArtifactInfo[] longestDurationAssets { get { return m_LongestDurationAssets; }}
+            public ArtifactInfo[] longestDurationAssets { get { return m_LongestDurationAssets; } }
 
-            public ArtifactInfo[] mostDependencyAssets { get { return m_MostDependenciesAssets; }}
+            public ArtifactInfo[] mostDependencyAssets { get { return m_MostDependenciesAssets; } }
         }
 
         private ImportActivityWindowStartupDataWrapper m_StartupData;
@@ -2079,6 +2297,7 @@ namespace UnityEditor
 
             m_Overview.mostDependencies.treeView.Reload();
             m_Overview.longestDuration.treeView.Reload();
+            m_Overview.importProcessAnalysis.treeView.Reload();
 
             if (m_DependenciesListView.multiColumnHeader.state.sortedColumnIndex == -1 &&
                 m_ImportActivityState.dependenciesState.sortedColumnIndex != -1)
@@ -2097,6 +2316,9 @@ namespace UnityEditor
             }
             else
                 m_ProducedFilesListView.Sort(m_ProducedFilesListView.GetRows());
+
+            if (m_ImportActivityState.populateImportProcessAnalysis)
+                m_Overview.importProcessAnalysis.treeView.SetSelection(new List<int>() { m_ImportActivityState.projectAnalysisState.selectedItem });
 
             m_DependenciesListView.RestoreSelection();
             m_ProducedFilesListView.RestoreSelection();
@@ -2662,7 +2884,7 @@ namespace UnityEditor
                     return selectedMethod(lhs, rhs, sortedColumnIndex, m_ItemList);
                 };
 
-                Comparison<TreeViewItem> sortDescend = (TreeViewItem lhs, TreeViewItem rhs) => - sortAscend.Invoke(lhs, rhs);
+                Comparison<TreeViewItem> sortDescend = (TreeViewItem lhs, TreeViewItem rhs) => -sortAscend.Invoke(lhs, rhs);
 
                 var rowList = rows as List<TreeViewItem>;
                 if (rowList == null)

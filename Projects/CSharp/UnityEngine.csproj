@@ -797,6 +797,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationContext.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationDeferrer.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationDeferrer.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerator.cs</Link>
     </Compile>
@@ -829,6 +832,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempAllocator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempMeshAllocator.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTempMeshAllocator.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextCoreSettings.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRTextCoreSettings.cs</Link>
@@ -2575,6 +2581,9 @@
     </Compile>
     <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs">
       <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\AssemblyInfo.cs">
+      <Link>Modules\UIElements\AssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UI\ScriptBindings\CanvasGroup.bindings.cs">
       <Link>Modules\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>

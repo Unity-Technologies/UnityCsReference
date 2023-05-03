@@ -4,6 +4,8 @@
 
 using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("UnityEditor.GraphToolsFoundationModule")]
+
 // Tests
 [assembly: InternalsVisibleTo("Unity.GraphTools.Foundation.Tests")]
 [assembly: InternalsVisibleTo("Unity.GraphTools.Foundation.Testing.Editor")]

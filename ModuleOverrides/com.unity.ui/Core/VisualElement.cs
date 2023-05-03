@@ -11,6 +11,7 @@ using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
 using PropertyBagValue = System.Collections.Generic.KeyValuePair<UnityEngine.PropertyName, object>;
+using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
@@ -548,7 +549,22 @@ namespace UnityEngine.UIElements
             private set => m_Flags = value ? m_Flags | VisualElementFlags.LayoutManual : m_Flags & ~VisualElementFlags.LayoutManual;
         }
 
-        internal float scaledPixelsPerPoint => elementPanel?.scaledPixelsPerPoint ?? GUIUtility.pixelsPerPoint;
+        internal float scaledPixelsPerPoint
+        {
+            get
+            {
+                if (elementPanel == null)
+                {
+                    Debug.LogWarning("Tying to acces dpi setting of a visual element not on a panel");
+                    return GUIUtility.pixelsPerPoint;
+                }
+
+                return elementPanel.scaledPixelsPerPoint;
+            }
+        }
+
+        [Obsolete("scaledPixelsPerPoint_noChecks is deprecated. Use scaledPixelsPerPoint instead.")]
+        internal float scaledPixelsPerPoint_noChecks => elementPanel?.scaledPixelsPerPoint ?? GUIUtility.pixelsPerPoint;
 
         [Obsolete("unityBackgroundScaleMode is deprecated. Use background-* properties instead.")]
         StyleEnum<ScaleMode> IResolvedStyle.unityBackgroundScaleMode => resolvedStyle.unityBackgroundScaleMode;

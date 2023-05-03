@@ -64,5 +64,7 @@ namespace UnityEditor.Modules
         {
             return Enumerable.Empty<ScriptAssemblyPlatform>();
         }
+
+        public virtual IEditorAnalyticsExtension GetEditorAnalyticsExtension() { return null; }
     }
 }

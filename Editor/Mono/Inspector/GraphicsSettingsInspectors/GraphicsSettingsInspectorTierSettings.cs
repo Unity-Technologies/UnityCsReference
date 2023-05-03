@@ -5,12 +5,13 @@
 ﻿using System;
 using UnityEditor.AnimatedValues;
 using UnityEditor.Build;
+using UnityEditor.Inspector.VisualElements.ProjectSettings;
 using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
-namespace UnityEditor
+namespace UnityEditor.Inspector.GraphicsSettingsInspectors
 {
     internal class TierSettingsWindow : EditorWindow
     {
@@ -159,26 +160,19 @@ namespace UnityEditor
             Add(container);
 
             if (UseAnimation)
+            {
                 m_TierSettingsAnimator = new AnimBool(m_ShowTierSettingsUI, container.MarkDirtyRepaint);
+            }
         }
 
         void Draw()
         {
-            if (GraphicsSettings.isScriptableRenderPipelineEnabled)
-            {
-                var window = TierSettingsWindow.GetInstance();
-                if (window != null)
-                    window.Close();
-            }
+            using var settingsScope = new LabelWidthScope();
+            using var wideScreenScope = new WideScreenScope(this);
+            if (m_TierSettingsAnimator == null)
+                OnInspectorGUI();
             else
-            {
-                using var settingsScope = new LabelWidthScope();
-                using var wideScreenScope = new WideScreenScope(this);
-                if (m_TierSettingsAnimator == null)
-                    OnInspectorGUI();
-                else
-                    TierSettingsGUI();
-            }
+                TierSettingsGUI();
         }
 
         void HandleEditorWindowButton()
@@ -236,18 +230,14 @@ namespace UnityEditor
 
         void OnFieldLabelsGUI(bool vertical)
         {
-            var usingSRP = GraphicsSettings.currentRenderPipeline != null;
             if (!vertical)
                 EditorGUILayout.LabelField(Styles.standardShaderSettings, EditorStyles.boldLabel);
 
-            if (!usingSRP)
-            {
-                EditorGUILayout.LabelField(Styles.standardShaderQuality);
-                EditorGUILayout.LabelField(Styles.reflectionProbeBoxProjection);
-                EditorGUILayout.LabelField(Styles.reflectionProbeBlending);
-                EditorGUILayout.LabelField(Styles.detailNormalMap);
-                EditorGUILayout.LabelField(Styles.semitransparentShadows);
-            }
+            EditorGUILayout.LabelField(Styles.standardShaderQuality);
+            EditorGUILayout.LabelField(Styles.reflectionProbeBoxProjection);
+            EditorGUILayout.LabelField(Styles.reflectionProbeBlending);
+            EditorGUILayout.LabelField(Styles.detailNormalMap);
+            EditorGUILayout.LabelField(Styles.semitransparentShadows);
 
             if (SupportedRenderingFeatures.active.lightProbeProxyVolumes)
                 EditorGUILayout.LabelField(Styles.enableLPPV);
@@ -258,14 +248,11 @@ namespace UnityEditor
                 EditorGUILayout.LabelField(Styles.renderingSettings, EditorStyles.boldLabel);
             }
 
-            if (!usingSRP)
-            {
-                EditorGUILayout.LabelField(Styles.cascadedShadowMaps);
-                EditorGUILayout.LabelField(Styles.prefer32BitShadowMaps);
-                EditorGUILayout.LabelField(Styles.useHDR);
-                EditorGUILayout.LabelField(Styles.hdrMode);
-                EditorGUILayout.LabelField(Styles.renderingPath);
-            }
+            EditorGUILayout.LabelField(Styles.cascadedShadowMaps);
+            EditorGUILayout.LabelField(Styles.prefer32BitShadowMaps);
+            EditorGUILayout.LabelField(Styles.useHDR);
+            EditorGUILayout.LabelField(Styles.hdrMode);
+            EditorGUILayout.LabelField(Styles.renderingPath);
 
             if (SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
                 EditorGUILayout.LabelField(Styles.realtimeGICPUUsage);
@@ -296,15 +283,11 @@ namespace UnityEditor
             if (!vertical)
                 EditorGUILayout.LabelField(Styles.empty, EditorStyles.boldLabel);
 
-            var usingSRP = GraphicsSettings.currentRenderPipeline != null;
-            if (!usingSRP)
-            {
-                ts.standardShaderQuality = ShaderQualityPopup(ts.standardShaderQuality);
-                ts.reflectionProbeBoxProjection = EditorGUILayout.Toggle(ts.reflectionProbeBoxProjection);
-                ts.reflectionProbeBlending = EditorGUILayout.Toggle(ts.reflectionProbeBlending);
-                ts.detailNormalMap = EditorGUILayout.Toggle(ts.detailNormalMap);
-                ts.semitransparentShadows = EditorGUILayout.Toggle(ts.semitransparentShadows);
-            }
+            ts.standardShaderQuality = ShaderQualityPopup(ts.standardShaderQuality);
+            ts.reflectionProbeBoxProjection = EditorGUILayout.Toggle(ts.reflectionProbeBoxProjection);
+            ts.reflectionProbeBlending = EditorGUILayout.Toggle(ts.reflectionProbeBlending);
+            ts.detailNormalMap = EditorGUILayout.Toggle(ts.detailNormalMap);
+            ts.semitransparentShadows = EditorGUILayout.Toggle(ts.semitransparentShadows);
 
             if (SupportedRenderingFeatures.active.lightProbeProxyVolumes)
                 ts.enableLPPV = EditorGUILayout.Toggle(ts.enableLPPV);
@@ -315,16 +298,13 @@ namespace UnityEditor
                 EditorGUILayout.LabelField(Styles.empty, EditorStyles.boldLabel);
             }
 
-            if (!usingSRP)
-            {
-                ts.cascadedShadowMaps = EditorGUILayout.Toggle(ts.cascadedShadowMaps);
-                ts.prefer32BitShadowMaps = EditorGUILayout.Toggle(ts.prefer32BitShadowMaps);
-                ts.hdr = EditorGUILayout.Toggle(ts.hdr);
-                ts.hdrMode = HDRModePopup(ts.hdrMode);
-                ts.renderingPath = RenderingPathPopup(ts.renderingPath);
-            }
+            ts.cascadedShadowMaps = EditorGUILayout.Toggle(ts.cascadedShadowMaps);
+            ts.prefer32BitShadowMaps = EditorGUILayout.Toggle(ts.prefer32BitShadowMaps);
+            ts.hdr = EditorGUILayout.Toggle(ts.hdr);
+            ts.hdrMode = HDRModePopup(ts.hdrMode);
+            ts.renderingPath = RenderingPathPopup(ts.renderingPath);
 
-            if (!usingSRP)
+            if (!GraphicsSettings.isScriptableRenderPipelineEnabled)
                 if (SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
                     ts.realtimeGICPUUsage = RealtimeGICPUUsagePopup(ts.realtimeGICPUUsage);
 

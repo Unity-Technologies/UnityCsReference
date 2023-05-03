@@ -28,7 +28,7 @@ namespace UnityEditor.Scripting
 
         internal static int Run(string arguments, string workingDir, out string stdOut, out string stdErr)
         {
-            var assemblyUpdaterProcess = new NetCoreProgram(AssemblyUpdaterPath(), arguments, psi =>
+            using var assemblyUpdaterProcess = new NetCoreProgram(AssemblyUpdaterPath(), arguments, psi =>
             {
                 psi.CreateNoWindow = true;
                 psi.RedirectStandardError = true;

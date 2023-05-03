@@ -122,6 +122,8 @@ namespace UnityEditor.Modules
         void OnUnload();
 
         IEnumerable<ScriptAssemblyPlatform> GetExtraScriptAssemblyPlatforms(BuildTarget buildTarget);
+
+        IEditorAnalyticsExtension GetEditorAnalyticsExtension();
     }
 
     struct ScriptAssemblyPlatform
@@ -256,6 +258,8 @@ namespace UnityEditor.Modules
         bool SupportsFrameTimingStatistics();
 
         void SerializedObjectUpdated();
+
+        bool SupportsForcedSrgbBlit();
     }
 
 
@@ -420,5 +424,10 @@ namespace UnityEditor.Modules
 
         // Returns an array of C# source files that should be included into the assembly when compiling scripts
         IEnumerable<string> GetAdditionalSourceFiles();
+    }
+
+    internal interface IEditorAnalyticsExtension
+    {
+        void AddExtraBuildAnalyticsFields(IntPtr eventData);
     }
 }

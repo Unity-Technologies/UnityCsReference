@@ -19,11 +19,13 @@ sealed class AudioContainerWindowState
 
     internal event EventHandler OnPlaybackStateChanged;
     internal event EventHandler OnTargetChanged;
+    internal event EventHandler OnPauseStateChanged;
 
     internal AudioContainerWindowState()
     {
         EditorApplication.playModeStateChanged += OnEditorPlayModeStateChanged;
         Selection.selectionChanged += OnSelectionChanged;
+        EditorApplication.pauseStateChanged += OnEditorPauseStateChanged;
     }
 
     internal AudioRandomContainer AudioContainer
@@ -77,6 +79,7 @@ sealed class AudioContainerWindowState
         Stop();
         EditorApplication.playModeStateChanged -= OnEditorPlayModeStateChanged;
         Selection.selectionChanged -= OnSelectionChanged;
+        EditorApplication.pauseStateChanged -= OnEditorPauseStateChanged;
 
         if (m_PreviewAudioSource != null) Object.DestroyImmediate(m_PreviewAudioSource.gameObject);
     }
@@ -236,5 +239,10 @@ sealed class AudioContainerWindowState
     void OnSelectionChanged()
     {
         UpdateTarget();
+    }
+
+    void OnEditorPauseStateChanged(PauseState state)
+    {
+        OnPauseStateChanged?.Invoke(this, EventArgs.Empty);
     }
 }

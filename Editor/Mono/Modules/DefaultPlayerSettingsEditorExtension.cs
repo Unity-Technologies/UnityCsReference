@@ -146,5 +146,10 @@ namespace UnityEditor.Modules
         }
 
         public virtual void VulkanSectionGUI() {}
+
+        public virtual bool SupportsForcedSrgbBlit()
+        {
+            return false;
+        }
     }
 }

@@ -448,6 +448,17 @@ namespace UnityEditor.Modules
 
             return null;
         }
+
+        internal static IEditorAnalyticsExtension GetEditorAnalyticsExtension(string target)
+        {
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
+            {
+                return module.GetEditorAnalyticsExtension();
+            }
+
+            return null;
+        }
     }
 
     internal static class ModuleUtils

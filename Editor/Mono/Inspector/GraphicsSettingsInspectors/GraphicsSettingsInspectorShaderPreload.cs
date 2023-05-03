@@ -2,14 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using UnityEngine;
+﻿using UnityEditor.Inspector.VisualElements.ProjectSettings;
+using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace UnityEditor
+namespace UnityEditor.Inspector.GraphicsSettingsInspectors
 {
     internal class GraphicsSettingsInspectorShaderPreload : GraphicsSettingsElement
     {
-        public new class UxmlFactory : UxmlFactory<GraphicsSettingsInspectorShaderPreload, UxmlTraits> { }
+        public new class UxmlFactory : UxmlFactory<GraphicsSettingsInspectorShaderPreload, UxmlTraits>
+        {
+        }
+
         internal class Styles
         {
             public static readonly GUIContent shaderPreloadSave = EditorGUIUtility.TrTextContent("Save to asset...", "Save currently tracked shaders into a Shader Variant Manifest asset.");
@@ -28,7 +32,7 @@ namespace UnityEditor
         protected override void Initialize()
         {
             m_PreloadedShaders = m_SerializedObject.FindProperty("m_PreloadedShaders");
-            m_PreloadedShaders.isExpanded = true;
+            m_PreloadedShaders.isExpanded = false;
             m_PreloadShadersBatchTimeLimit = m_SerializedObject.FindProperty("m_PreloadShadersBatchTimeLimit");
             LoadShaderPreloadingDelay();
 

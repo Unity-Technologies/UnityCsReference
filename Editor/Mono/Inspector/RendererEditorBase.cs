@@ -350,6 +350,8 @@ namespace UnityEditor
         private SerializedProperty m_MotionVectors;
         private SerializedProperty m_RayTracingMode;
         private SerializedProperty m_RayTraceProcedural;
+        private SerializedProperty m_RayTracingAccelStructBuildFlags;
+        private SerializedProperty m_RayTracingAccelStructBuildFlagsOverride;
         protected SerializedProperty m_Materials;
 
         class Styles
@@ -363,9 +365,10 @@ namespace UnityEditor
             public static readonly GUIContent skinnedMotionVectors = EditorGUIUtility.TrTextContent("Skinned Motion Vectors", "Enabling Skinned Motion Vectors will allow generation of high precision motion vectors for the Skinned Mesh. This is achieved by keeping the skinning results of the previous frame in memory thus increasing the memory usage.");
             public static readonly GUIContent renderingLayerMask = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
             public static readonly GUIContent rendererPriority = EditorGUIUtility.TrTextContent("Priority", "Sets the priority value that the render pipeline uses to calculate the rendering order.");
-            public static readonly GUIContent rayTracingModeStyle = EditorGUIUtility.TrTextContent("Ray Tracing Mode", "Describes how renderer will update for ray tracing");
+            public static readonly GUIContent rayTracingModeStyle = EditorGUIUtility.TrTextContent("Ray Tracing Mode", "Describes how the acceleration structure associated with a renderer will update for ray tracing.");
             public static readonly GUIContent[] rayTracingModeOptions = (Enum.GetNames(typeof(RayTracingMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
-            public static readonly GUIContent rayTracingGeomStyle = EditorGUIUtility.TrTextContent("Ray Trace Procedurally", "Specifies whether to treat geometry as defined by shader (true) or as a normal mesh (false)");
+            public static readonly GUIContent rayTracingGeomStyle = EditorGUIUtility.TrTextContent("Procedural Geometry", "Specifies whether to treat geometry as procedurally defined by an intersection shader or as a Mesh.");
+            public static readonly GUIContent rayTracingAccelStructBuildFlagsStyle = EditorGUIUtility.TrTextContent("Acceleration Structure Build Flags", "Specifies whether this renderer overrides the default build flags that you specified when you created a RayTracingAccelerationStructure.");
         }
 
         protected Probes m_Probes;
@@ -385,6 +388,8 @@ namespace UnityEditor
             m_RendererPriority = serializedObject.FindProperty("m_RendererPriority");
             m_RayTracingMode = serializedObject.FindProperty("m_RayTracingMode");
             m_RayTraceProcedural = serializedObject.FindProperty("m_RayTraceProcedural");
+            m_RayTracingAccelStructBuildFlags = serializedObject.FindProperty("m_RayTracingAccelStructBuildFlags");
+            m_RayTracingAccelStructBuildFlagsOverride = serializedObject.FindProperty("m_RayTracingAccelStructBuildFlagsOverride");
             m_MotionVectors = serializedObject.FindProperty("m_MotionVectors");
             m_SkinnedMotionVectors = serializedObject.FindProperty("m_SkinnedMotionVectors");
             m_Materials = serializedObject.FindProperty("m_Materials");
@@ -550,8 +555,64 @@ namespace UnityEditor
                 if (m_ShowRayTracingSettings.value)
                 {
                     EditorGUI.indentLevel++;
+
                     EditorGUILayout.Popup(m_RayTracingMode, Styles.rayTracingModeOptions, Styles.rayTracingModeStyle);
+
                     EditorGUILayout.PropertyField(m_RayTraceProcedural, Styles.rayTracingGeomStyle);
+
+                    // Ray Tracing Acceleration Structure Build Flags
+                    {
+                        Rect rect = EditorGUILayout.GetControlRect();
+                        EditorGUI.BeginProperty(rect, Styles.rayTracingAccelStructBuildFlagsStyle, m_RayTracingAccelStructBuildFlagsOverride);
+
+                        rect = EditorGUI.PrefixLabel(rect, Styles.rayTracingAccelStructBuildFlagsStyle);
+
+                        EditorGUI.BeginChangeCheck();
+
+                        Rect toggleRect = rect;
+
+                        toggleRect.x -= EditorGUI.indent;
+                        toggleRect.width = 30;
+
+                        bool overrideFlags = EditorGUI.Toggle(toggleRect, m_RayTracingAccelStructBuildFlagsOverride.boolValue);
+                        int buildFlags = m_RayTracingAccelStructBuildFlags.intValue;
+
+                        EditorGUI.EndProperty();
+
+                        bool disableFlagsField = m_RayTracingAccelStructBuildFlags.hasMultipleDifferentValues;
+
+                        using (new EditorGUI.DisabledScope(!m_RayTracingAccelStructBuildFlagsOverride.boolValue || m_RayTracingAccelStructBuildFlagsOverride.hasMultipleDifferentValues || disableFlagsField))
+                        {
+                            rect.xMin += EditorGUI.kDefaultSpacing;
+
+                            if (m_RayTracingAccelStructBuildFlags.hasMultipleDifferentValues)
+                                EditorGUI.showMixedValue = true;
+
+                            buildFlags = (int)(RayTracingAccelerationStructureBuildFlags)EditorGUI.EnumFlagsField(rect, (RayTracingAccelerationStructureBuildFlags)m_RayTracingAccelStructBuildFlags.intValue);
+
+                            EditorGUI.showMixedValue = false;
+
+                            if (buildFlags == -1 && !disableFlagsField)
+                            {
+                                buildFlags = 0;
+
+                                foreach (RayTracingAccelerationStructureBuildFlags type in Enum.GetValues(typeof(RayTracingAccelerationStructureBuildFlags)))
+                                {
+                                    buildFlags = buildFlags | (int)type;
+                                }
+                            }
+                                
+                        }
+
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            m_RayTracingAccelStructBuildFlagsOverride.boolValue = overrideFlags;
+
+                            if (!disableFlagsField)
+                                m_RayTracingAccelStructBuildFlags.intValue = buildFlags;
+                        }
+                    }
+                    
                     EditorGUI.indentLevel--;
                 }
                 EditorGUILayout.EndFoldoutHeaderGroup();

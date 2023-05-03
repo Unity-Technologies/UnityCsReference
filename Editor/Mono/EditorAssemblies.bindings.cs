@@ -27,5 +27,14 @@ namespace UnityEditor
 
         [FreeFunction(Name = "GetAllMethodsWithAttribute")]
         extern static object[] Internal_GetAllMethodsWithAttribute(Type attrType, BindingFlags staticness);
+
+        [FreeFunction("GetUnchangedAssemblyNames")]
+        internal static extern string[] GetUnchangedAssemblyNames();
+
+        internal static extern bool AllAssembliesAreUnchanged
+        {
+            [FreeFunction("AllAssembliesAreUnchanged")]
+            get;
+        }
     }
 }

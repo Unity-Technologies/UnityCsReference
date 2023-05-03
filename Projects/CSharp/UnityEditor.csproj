@@ -569,6 +569,12 @@
     <Compile Include="..\..\Editor\Mono\Audio\StreamedAudioClipPreview.cs">
       <Link>Editor\Mono\Audio\StreamedAudioClipPreview.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\UIElements\AudioRandomRangeSliderTracker.cs">
+      <Link>Editor\Mono\Audio\UIElements\AudioRandomRangeSliderTracker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\UIToolkitUtilities.cs">
+      <Link>Editor\Mono\Audio\UIToolkitUtilities.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Audio\WaveformPreview.cs">
       <Link>Editor\Mono\Audio\WaveformPreview.cs</Link>
     </Compile>
@@ -2024,47 +2030,14 @@
     <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsElement.cs">
       <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsElement.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorAlwaysIncludedShader.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorAlwaysIncludedShader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorBuiltinShaderLabel.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorBuiltinShaderLabel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorBuiltinShaders.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorBuiltinShaders.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorCameraSettings.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorCameraSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorCullingSettings.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorCullingSettings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorLightProbe.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorLightProbe.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorRenderPipelineAsset.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorRenderPipelineAsset.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorShaderLog.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorShaderLog.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorShaderPreload.cs">
       <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorShaderPreload.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorShaderStripping.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorShaderStripping.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorTierSettings.cs">
       <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorTierSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorTitleBar.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorTitleBar.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorVideoShader.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsInspectorVideoShader.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsScopes.cs">
-      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsScopes.cs</Link>
+    <Compile Include="..\..\Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsUtils.cs">
+      <Link>Editor\Mono\Inspector\GraphicsSettingsInspectors\GraphicsSettingsUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\IEditorElement.cs">
       <Link>Editor\Mono\Inspector\IEditorElement.cs</Link>
@@ -2390,8 +2363,38 @@
     <Compile Include="..\..\Editor\Mono\Inspector\VersionControlSettingsInspector.cs">
       <Link>Editor\Mono\Inspector\VersionControlSettingsInspector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\FadeGroup.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\FadeGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\IndentGroup.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\IndentGroup.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\MinMaxGradientField.cs">
       <Link>Editor\Mono\Inspector\VisualElements\MinMaxGradientField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\ObjectFieldWithPrompt.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\ObjectFieldWithPrompt.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\ProjectSettings\BuiltInShaderElement.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\ProjectSettings\BuiltInShaderElement.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\ProjectSettings\ProjectSettingsElementWithSO.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\ProjectSettings\ProjectSettingsElementWithSO.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\ProjectSettings\ProjectSettingsScopes.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\ProjectSettings\ProjectSettingsScopes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\ProjectSettings\ProjectSettingsSection.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\ProjectSettings\ProjectSettingsSection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\ProjectSettings\ProjectSettingsTitleBar.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\ProjectSettings\ProjectSettingsTitleBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\ProjectSettings\TabButton.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\ProjectSettings\TabButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\ProjectSettings\TabbedView.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\ProjectSettings\TabbedView.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\WebCamTextureInspector.cs">
       <Link>Editor\Mono\Inspector\WebCamTextureInspector.cs</Link>
@@ -4222,6 +4225,12 @@
     </Compile>
     <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\Managed\ArtifactDifferenceReporterTesting.cs">
       <Link>Modules\AssetDatabase\Editor\V2\Managed\ArtifactDifferenceReporterTesting.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\Managed\AssetImportWorkerPostProcessorHelper.cs">
+      <Link>Modules\AssetDatabase\Editor\V2\Managed\AssetImportWorkerPostProcessorHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\Managed\AssetPostprocessorStaticVariableIgnoreAttribute.cs">
+      <Link>Modules\AssetDatabase\Editor\V2\Managed\AssetPostprocessorStaticVariableIgnoreAttribute.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\AssetDatabase\Editor\V2\Managed\ImportActivityWindow.cs">
       <Link>Modules\AssetDatabase\Editor\V2\Managed\ImportActivityWindow.cs</Link>
@@ -7940,6 +7949,9 @@
     <Compile Include="..\..\Modules\Progress\VisualProgressItem.cs">
       <Link>Modules\Progress\VisualProgressItem.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PropertiesEditor\Module\AssemblyInfo.cs">
+      <Link>Modules\PropertiesEditor\Module\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PropertiesEditor\Module\PropertiesEditorInitialization.cs">
       <Link>Modules\PropertiesEditor\Module\PropertiesEditorInitialization.cs</Link>
     </Compile>
@@ -9815,6 +9827,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetUtilities.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\AssemblyInfo.cs">
+      <Link>Modules\UIElementsEditor\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\ElementSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\ElementSnippet.cs</Link>
     </Compile>
@@ -10096,6 +10111,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\EditorAnalytics.bindings.cs">
       <Link>Modules\UnityEditorAnalyticsEditor\EditorAnalytics.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\Events\EditorAnalyticsEvent.bindings.cs">
+      <Link>Modules\UnityEditorAnalyticsEditor\Events\EditorAnalyticsEvent.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs">
       <Link>Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs</Link>

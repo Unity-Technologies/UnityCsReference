@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace UnityEngine.UIElements.Layout;
@@ -21,7 +21,8 @@ unsafe struct LayoutComputedData
                 ComputedFlexBasis = float.NaN,
                 HadOverflow = false,
                 GenerationCount = 0,
-                LastParentDirection = (LayoutDirection) (-1)
+                LastParentDirection = (LayoutDirection) (-1),
+                LastPointScaleFactor = 1.0f
             };
             r.Dimensions[0] = LayoutDefaults.DimensionValues[0];
             r.Dimensions[1] = LayoutDefaults.DimensionValues[1];
@@ -42,6 +43,7 @@ unsafe struct LayoutComputedData
     public bool HadOverflow;
     public uint GenerationCount;
     public LayoutDirection LastParentDirection;
+    public float LastPointScaleFactor;
     public fixed float MeasuredDimensions[2];
 
     public float* MarginBuffer

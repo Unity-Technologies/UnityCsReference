@@ -567,7 +567,8 @@ namespace UnityEditor
                 ContainerWindow cw = ScriptableObject.CreateInstance<ContainerWindow>();
                 cw.title = titleContent.text;
                 HostView host = ScriptableObject.CreateInstance<HostView>();
-                host.actualView = this; // Among other things, this sets m_Parent to host
+                host.actualView = this;
+                m_Parent = host;
 
                 Rect r = m_Parent.borderSize.Add(new Rect(position.x, position.y, position.width, position.height));
                 // Order is important here: first set rect of container, then assign main view, then apply various settings, then show.
@@ -576,6 +577,7 @@ namespace UnityEditor
                 cw.rootView = host;
                 MakeParentsSettingsMatchMe();
                 cw.ShowPopupWithMode(mode, giveFocus);
+                cw.OnResize();
             }
         }
 
@@ -588,7 +590,8 @@ namespace UnityEditor
                 ContainerWindow cw = ScriptableObject.CreateInstance<ContainerWindow>();
                 cw.title = titleContent.text;
                 HostView host = ScriptableObject.CreateInstance<HostView>();
-                host.actualView = this; // Among other things, this sets m_Parent to host
+                host.actualView = this;
+                m_Parent = host;
 
                 Rect r = m_Parent.borderSize.Add(new Rect(position.x, position.y, position.width, position.height));
                 // Order is important here: first set rect of container, then assign main view, then apply various settings, then show.
@@ -599,7 +602,7 @@ namespace UnityEditor
                 cw.Show(mode, loadPosition: true, displayImmediately: false, setFocus: true);
                 // set min/max size now that native window is not null so that it will e.g., use proper styleMask on macOS
                 cw.SetMinMaxSizes(minSize, maxSize);
-
+                cw.OnResize();
                 oldState.ApplyAndForget();
             }
         }
@@ -1190,7 +1193,11 @@ namespace UnityEditor
                     DockArea da = m_Parent as DockArea;
                     if (!da)
                     {
-                        m_Parent.window.position = value;
+                        if(m_Parent.window.showMode == ShowMode.Tooltip || m_Parent.window.showMode == ShowMode.PopupMenu)
+                            m_Parent.window.position = m_Parent.window.FitWindowRectToScreen(value, true, false);
+                        else
+                            m_Parent.window.position = value;
+                        m_Parent.window.OnResize();
                     }
                     else if (da.parent && da.m_Panes.Count == 1 && !da.parent.parent)     // We should have a DockArea, then a splitView, then null
                     {
