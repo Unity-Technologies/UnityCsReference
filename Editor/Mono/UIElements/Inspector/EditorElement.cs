@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditorInternal;
@@ -14,6 +15,22 @@ namespace UnityEditor.UIElements
 {
     internal class EditorElement : VisualElement, IEditorElement
     {
+        // Local method use only -- created here to reduce garbage collection. Collection must be cleared before use 
+        static readonly List<VisualElement> s_Decorators = new List<VisualElement>();
+        static readonly EditorElementDecoratorCollection s_EditorDecoratorCollection = new EditorElementDecoratorCollection();
+
+        /// <summary>
+        /// Adds the given editor decorator.
+        /// </summary>
+        /// <param name="editorDecorator">The editor decorator instance to be added.</param>
+        internal static void AddDecorator(IEditorElementDecorator editorDecorator) => s_EditorDecoratorCollection.Add(editorDecorator);
+
+        /// <summary>
+        /// Removes the given editor decorator.
+        /// </summary>
+        /// <param name="editorDecorator">The editor decorator instance to be removed.</param>
+        internal static void RemoveDecorator(IEditorElementDecorator editorDecorator) => s_EditorDecoratorCollection.Remove(editorDecorator);
+
         readonly IPropertyView inspectorWindow;
         Editor[] m_EditorCache;
 
@@ -37,6 +54,7 @@ namespace UnityEditor.UIElements
         public IEnumerable<Editor> Editors => m_Editors.AsEnumerable();
 
         Object m_EditorTarget;
+        Editor m_EditorUsedInDecorators;
 
         int m_EditorIndex;
         public Editor editor
@@ -67,6 +85,7 @@ namespace UnityEditor.UIElements
 
         IMGUIContainer m_Header;
         InspectorElement m_InspectorElement;
+        VisualElement m_DecoratorsElement;
         IMGUIContainer m_Footer;
 
         bool m_WasVisible;
@@ -92,6 +111,10 @@ namespace UnityEditor.UIElements
             pickingMode = PickingMode.Ignore;
 
             name = GetNameFromEditor(editor);
+
+            // Register ui callbacks
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
 
             if (isCulled)
             {
@@ -167,12 +190,26 @@ namespace UnityEditor.UIElements
             return inspectorElement;
         }
 
+        void OnAttachToPanel(AttachToPanelEvent evt)
+        {
+            s_EditorDecoratorCollection.OnAdd += OnEditorDecoratorAdded;
+            s_EditorDecoratorCollection.OnRemove += OnEditorDecoratorRemoved;
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            s_EditorDecoratorCollection.OnAdd -= OnEditorDecoratorAdded;
+            s_EditorDecoratorCollection.OnRemove -= OnEditorDecoratorRemoved;
+        }
+
         public void ReinitCulled(int editorIndex)
         {
             if (m_Header != null)
             {
                 m_EditorIndex = editorIndex;
                 m_Header = m_Footer = null;
+                m_EditorUsedInDecorators = null;
+                m_DecoratorsElement = null;
                 Clear();
                 InitCulled();
                 return;
@@ -186,6 +223,7 @@ namespace UnityEditor.UIElements
             if (m_Header == null)
             {
                 m_EditorIndex = editorIndex;
+                m_EditorUsedInDecorators = null;
                 Clear();
                 Init();
                 return;
@@ -220,6 +258,13 @@ namespace UnityEditor.UIElements
 
                 // InspectorElement should be enabled only if the Editor is open for edit.
                 m_InspectorElement.SetEnabled(editor.IsOpenForEdit());
+
+                // Update decorators
+                if (m_EditorUsedInDecorators != editor)
+                {
+                    m_EditorUsedInDecorators = editor;
+                    UpdateDecoratorsElement(m_EditorUsedInDecorators, editorTitle);
+                }
             }
 
             UpdateInspectorVisibility();
@@ -237,14 +282,27 @@ namespace UnityEditor.UIElements
             if (editor.targets.Length != Selection.objects.Length)
                 inspectorWindow.tracker.RebuildIfNecessary();
 
+            var updateInspectorVisibility = false;
+
             // If the editor targets contain many targets and multi editing is not supported, we should not add this inspector.
             if (null != editor && (editor.targets.Length <= 1 || PropertyEditor.IsMultiEditingSupported(editor, editor.target, inspectorWindow.inspectorMode)))
             {
                 m_InspectorElement = BuildInspectorElement();
                 Insert(IndexOf(m_Header) + 1, m_InspectorElement);
-                UpdateInspectorVisibility();
                 SetElementVisible(m_InspectorElement, m_WasVisible);
+                updateInspectorVisibility = true;
             }
+
+            // Create decorators
+            if (m_InspectorElement != null && m_EditorUsedInDecorators != editor)
+            {
+                m_EditorUsedInDecorators = editor;
+                UpdateDecoratorsElement(m_EditorUsedInDecorators);
+                updateInspectorVisibility = true;
+            }
+
+            if (updateInspectorVisibility)
+                UpdateInspectorVisibility();
         }
 
         string GetNameFromEditor(Editor editor)
@@ -261,13 +319,34 @@ namespace UnityEditor.UIElements
                 if (m_Footer != null)
                     m_Footer.style.marginTop = m_WasVisible ? 0 : -kFooterDefaultHeight;
 
-                if (m_InspectorElement != null)
-                    m_InspectorElement.style.paddingBottom = PropertyEditor.kEditorElementPaddingBottom;
+                if (m_DecoratorsElement != null)
+                {
+                    if (m_InspectorElement != null)
+                        m_InspectorElement.style.paddingBottom = 0;
+
+                    m_DecoratorsElement.style.paddingBottom = PropertyEditor.kEditorElementPaddingBottom;
+                }
+                else
+                {
+                    if (m_InspectorElement != null)
+                        m_InspectorElement.style.paddingBottom = PropertyEditor.kEditorElementPaddingBottom;
+                }
             }
             else
             {
-                if (m_Footer != null)
-                    m_Footer.style.marginTop = -kFooterDefaultHeight;
+                if (m_DecoratorsElement != null)
+                {
+                    if (m_Footer != null)
+                        m_Footer.style.marginTop = m_WasVisible ? 0 : -kFooterDefaultHeight;
+
+                    m_DecoratorsElement.style.paddingBottom = PropertyEditor.kEditorElementPaddingBottom;
+                }
+                else
+                {
+                    if (m_Footer != null)
+                        m_Footer.style.marginTop = -kFooterDefaultHeight;
+                }
+                    
 
                 if (m_InspectorElement != null)
                     m_InspectorElement.style.paddingBottom = 0;
@@ -322,6 +401,10 @@ namespace UnityEditor.UIElements
                 {
                     SetElementVisible(m_InspectorElement, false);
                 }
+                if (m_DecoratorsElement != null)
+                {
+                    SetElementVisible(m_DecoratorsElement, false);
+                }
                 return;
             }
 
@@ -337,6 +420,10 @@ namespace UnityEditor.UIElements
                 {
                     SetElementVisible(m_InspectorElement, false);
                 }
+                if (m_DecoratorsElement != null)
+                {
+                    SetElementVisible(m_DecoratorsElement, false);
+                }    
                 return;
             }
 
@@ -377,6 +464,10 @@ namespace UnityEditor.UIElements
             if (m_InspectorElement != null && m_WasVisible != IsElementVisible(m_InspectorElement))
             {
                 SetElementVisible(m_InspectorElement, m_WasVisible);
+            }
+            if (m_DecoratorsElement != null && m_WasVisible != IsElementVisible(m_DecoratorsElement))
+            {
+                SetElementVisible(m_DecoratorsElement, m_WasVisible);
             }
 
             UpdateInspectorVisibility();
@@ -509,7 +600,7 @@ namespace UnityEditor.UIElements
             return (ve.resolvedStyle.display == DisplayStyle.Flex);
         }
 
-        internal static void SetElementVisible(InspectorElement ve, bool visible)
+        internal static void SetElementVisible(VisualElement ve, bool visible)
         {
             if (visible)
             {
@@ -523,7 +614,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        static void SetInspectorElementChildIMGUIContainerFocusable(InspectorElement ve, bool focusable)
+        static void SetInspectorElementChildIMGUIContainerFocusable(VisualElement ve, bool focusable)
         {
             var childCount = ve.childCount;
 
@@ -602,6 +693,128 @@ namespace UnityEditor.UIElements
         }
 
         #endregion Footer
+
+        #region Decorator
+        private class EditorElementDecoratorCollection : IEnumerable<IEditorElementDecorator>
+        {
+            readonly List<IEditorElementDecorator> m_EditorDecorators = new List<IEditorElementDecorator>();
+
+            internal Action<IEditorElementDecorator> OnAdd;
+            internal Action<IEditorElementDecorator> OnRemove;
+
+            internal int Count => m_EditorDecorators.Count;
+
+            internal void Add(IEditorElementDecorator editorDecorator)
+            {
+                if (m_EditorDecorators.Contains(editorDecorator))
+                    return;
+
+                m_EditorDecorators.Add(editorDecorator);
+                OnAdd?.Invoke(editorDecorator);
+            }
+
+            internal void Remove(IEditorElementDecorator editorDecorator)
+            {
+                if (!m_EditorDecorators.Contains(editorDecorator))
+                    return;
+
+                m_EditorDecorators.Remove(editorDecorator);
+                OnRemove?.Invoke(editorDecorator);
+            }
+
+            IEnumerator<IEditorElementDecorator> IEnumerable<IEditorElementDecorator>.GetEnumerator()
+                => m_EditorDecorators.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator()
+                => m_EditorDecorators.GetEnumerator();
+        }
+
+        static bool TryGetDecorators(Editor editor, List<VisualElement> decorators)
+        {
+            if (null == editor || editor.inspectorMode != InspectorMode.Normal)
+                return false;
+
+            decorators.Clear();
+            foreach (var editorDecorator in s_EditorDecoratorCollection)
+            {
+                var decorator = editorDecorator.OnCreateFooter(editor);
+                if (decorator != null)
+                    decorators.Add(decorator);
+            }
+
+            return decorators.Count != 0;
+        }
+
+        void OnEditorDecoratorAdded(IEditorElementDecorator editorDecorator)
+        {
+            if (null == editor || null == m_InspectorElement || m_IsCulled)
+                return;
+
+            m_EditorUsedInDecorators = editor;
+            UpdateDecoratorsElement(m_EditorUsedInDecorators);
+            UpdateInspectorVisibility();
+        }
+
+        void OnEditorDecoratorRemoved(IEditorElementDecorator editorDecorator)
+        {
+            if (null == editor || null == m_InspectorElement || m_IsCulled)
+                return;
+
+            m_EditorUsedInDecorators = editor;
+            UpdateDecoratorsElement(m_EditorUsedInDecorators);
+            UpdateInspectorVisibility();
+        }
+
+        void UpdateDecoratorsElement(Editor editor, string editorTitle = null)
+        {
+            if (s_EditorDecoratorCollection.Count != 0 && TryGetDecorators(editor, s_Decorators))
+            {
+                editorTitle ??= ObjectNames.GetInspectorTitle(editor.targets[0], editor.targets.Length > 1);
+                CreateDecoratorsElement(editorTitle, s_Decorators);
+                SetElementVisible(m_DecoratorsElement, m_WasVisible);
+            }
+            else if (m_DecoratorsElement != null)
+            {
+                m_DecoratorsElement.Clear();
+                m_DecoratorsElement.RemoveFromHierarchy();
+                m_DecoratorsElement = null;
+            }
+        }
+
+        void CreateDecoratorsElement(string editorTitle, List<VisualElement> children)
+        {
+            if (m_DecoratorsElement == null)
+            {
+                m_DecoratorsElement = BuildDecoratorsElement(editorTitle);
+            }
+            else
+            {
+                m_DecoratorsElement.Clear();
+                m_DecoratorsElement.RemoveFromClassList(InspectorElement.uIEInspectorVariantUssClassName);
+                m_DecoratorsElement.name = editorTitle + "Decorators";
+            }
+
+            if (editor.UseDefaultMargins())
+            {
+                m_DecoratorsElement.AddToClassList(InspectorElement.uIEInspectorVariantUssClassName);
+                m_DecoratorsElement.style.paddingTop = 0;
+            }
+
+            foreach (var child in children)
+                m_DecoratorsElement.Add(child);
+
+            if (m_DecoratorsElement.parent != this)
+                Insert(IndexOf(m_Footer), m_DecoratorsElement);
+        }
+
+        VisualElement BuildDecoratorsElement(string editorTitle)
+        {
+            var decoratorsParent = new VisualElement() { name = editorTitle + "Decorators" };
+            decoratorsParent.AddToClassList(PropertyField.decoratorDrawersContainerClassName);
+            return decoratorsParent;
+        }
+
+        #endregion Decorator
 
         internal bool EditorNeedsVerticalOffset(Editor[] editors, Object target)
         {

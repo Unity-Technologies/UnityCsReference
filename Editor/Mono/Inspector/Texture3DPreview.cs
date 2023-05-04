@@ -188,7 +188,7 @@ namespace UnityEditor
 
             Vector3 resolution = GetTextureResolution(Texture);
             var format = GraphicsFormatUtility.GetFormatString(Texture.graphicsFormat);
-            var size = EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(Texture));
+            var size = EditorUtility.FormatBytes(TextureUtil.GetStorageMemorySizeLong(Texture));
             string info = $"{resolution.x}x{resolution.y}x{resolution.z} {format} {size}";
             return info;
         }
