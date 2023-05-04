@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 
 namespace UnityEngine.UIElements.Layout;
 
@@ -428,6 +428,11 @@ partial struct LayoutNode
 
     void SetStyleValuePoint(ref LayoutValue currentValue, LayoutValue newValue)
     {
+        if (float.IsNaN(currentValue.Value) && float.IsNaN(newValue.Value) && newValue.Unit == currentValue.Unit)
+        {
+            return;
+        }
+
         if (currentValue.Value != newValue.Value || currentValue.Unit != LayoutUnit.Point)
         {
             if (float.IsNaN(newValue.Value))
@@ -524,6 +529,11 @@ partial struct LayoutNode
 
     void StyleEdgeSetPoint(ref LayoutValue value, float newValue)
     {
+        if (float.IsNaN(value.Value) && float.IsNaN(newValue))
+        {
+            return;
+        }
+
         if (value.Value != newValue || value.Unit != LayoutUnit.Point)
         {
             value = float.IsNaN(newValue)

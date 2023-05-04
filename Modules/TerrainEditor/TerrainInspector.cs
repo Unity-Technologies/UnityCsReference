@@ -190,6 +190,8 @@ namespace UnityEditor
             public readonly GUIContent qualitySettings = EditorGUIUtility.TrTextContent("Quality Settings");
             public readonly GUIContent ignoreQualitySettings = EditorGUIUtility.TrTextContent("Ignore Quality Settings", "Toggle whether this terrain should ignore the current active quality settings' terrain overrides.");
             public readonly GUIContent pixelError = EditorGUIUtility.TrTextContent("Pixel Error", "The accuracy of the mapping between the terrain maps (heightmap, textures, etc.) and the generated terrain; higher values indicate lower accuracy but lower rendering overhead.");
+            public readonly GUIContent heightmapMinLODLimit = EditorGUIUtility.TrTextContent("Minimum Detail Limit", "Enforces a minimum level of detail on the Heightmap.\n0 enforces no limit - higher values enforce progressively more detail.\nMost users will not need this setting - see documentation.");
+            public readonly GUIContent heightmapMaxLODLimit = EditorGUIUtility.TrTextContent("Maximum Complexity Limit", "Enforces a maximum level of detail on the Heightmap.\n0 enforces no limit - higher values enforce progressively more detail.\nThis can be useful to limit detail on low-end devices.");
             public readonly GUIContent baseMapDist = EditorGUIUtility.TrTextContent("Base Map Dist.", "The maximum distance at which terrain textures will be displayed at full resolution. Beyond this distance, a lower resolution composite image will be used for efficiency.");
             public readonly GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Does the terrain cast shadows?");
             public readonly GUIContent createMaterial = EditorGUIUtility.TrTextContent("Create...", "Create a new Material asset to be used by the terrain by duplicating the current default Terrain material.");
@@ -1409,6 +1411,11 @@ namespace UnityEditor
                     if (overridePixelError)
                         ShowOverrideBar();
                 }
+
+                // 17 is the hard-coded patch size in the engine.
+                int numLevels = Mathf.RoundToInt(Mathf.Log(terrainData.heightmapResolution / 17, 2));
+                m_Terrain.heightmapMinimumLODSimplification = EditorGUILayout.IntSlider(styles.heightmapMinLODLimit, m_Terrain.heightmapMinimumLODSimplification, 0, numLevels);
+                m_Terrain.heightmapMaximumLOD = EditorGUILayout.IntSlider(styles.heightmapMaxLODLimit, m_Terrain.heightmapMaximumLOD, 0, numLevels);
 
                 float basemapDistance = m_Terrain.basemapDistance;
                 bool overrideBasemapDistance = overrideFlags.HasFlag(TerrainQualityOverrides.BasemapDistance) && !m_Terrain.ignoreQualitySettings;

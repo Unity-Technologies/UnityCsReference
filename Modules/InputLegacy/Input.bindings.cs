@@ -298,43 +298,76 @@ namespace UnityEngine
             internal extern static bool GetKeyString(string name);
             // Burst shadow
             [NativeThrows]
+            // This will only be referenced from Burst-generated code, in place of the version without the
+            // __Managed suffix. So we need to make sure it will not get stripped.
+            [RequiredMember]
+
             internal extern static unsafe bool GetKeyString__Unmanaged(byte* name, int nameLen);
             [NativeThrows]
             internal extern static bool GetKeyUpString(string name);
             // Burst shadow
             [NativeThrows]
+            // This will only be referenced from Burst-generated code, in place of the version without the
+            // __Managed suffix. So we need to make sure it will not get stripped.
+            [RequiredMember]
+
             internal extern static unsafe bool GetKeyUpString__Unmanaged(byte* name, int nameLen);
             [NativeThrows]
             internal extern static bool GetKeyDownString(string name);
             // Burst shadow
             [NativeThrows]
+            // This will only be referenced from Burst-generated code, in place of the version without the
+            // __Managed suffix. So we need to make sure it will not get stripped.
+            [RequiredMember]
+
             internal extern static unsafe bool GetKeyDownString__Unmanaged(byte* name, int nameLen);
             [NativeThrows]
             internal extern static float GetAxis(string axisName);
             // Burst shadow
             [NativeThrows]
+            // This will only be referenced from Burst-generated code, in place of the version without the
+            // __Managed suffix. So we need to make sure it will not get stripped.
+            [RequiredMember]
             internal extern static unsafe float GetAxis__Unmanaged(byte* axisName, int axisNameLen);
             [NativeThrows]
             internal extern static float GetAxisRaw(string axisName);
             // Burst shadow
             [NativeThrows]
+            // This will only be referenced from Burst-generated code, in place of the version without the
+            // __Managed suffix. So we need to make sure it will not get stripped.
+            [RequiredMember]
+
             internal extern static unsafe float GetAxisRaw__Unmanaged(byte* axisName, int axisNameLen);
             [NativeThrows]
             internal extern static bool GetButton(string buttonName);
             // Burst shadow
             [NativeThrows]
+            // This will only be referenced from Burst-generated code, in place of the version without the
+            // __Managed suffix. So we need to make sure it will not get stripped.
+            [RequiredMember]
+
             internal extern static unsafe bool GetButton__Unmanaged(byte* buttonName, int buttonNameLen);
             [NativeThrows]
             internal extern static bool GetButtonDown(string buttonName);
             // Burst shadow
             [NativeThrows]
+            // This will only be referenced from Burst-generated code, in place of the version without the
+            // __Managed suffix. So we need to make sure it will not get stripped.
+            [RequiredMember]
+
             internal extern static unsafe byte GetButtonDown__Unmanaged(byte* buttonName, int buttonNameLen);
             [NativeThrows]
             internal extern static bool GetButtonUp(string buttonName);
             // Burst shadow
             [NativeThrows]
+            // This will only be referenced from Burst-generated code, in place of the version without the
+            // __Managed suffix. So we need to make sure it will not get stripped.
+            [RequiredMember]
             internal extern static unsafe bool GetButtonUp__Unmanaged(byte* buttonName, int buttonNameLen);
             internal extern static bool IsJoystickPreconfigured(string joystickName);
+            // This will only be referenced from Burst-generated code, in place of the version without the
+            // __Managed suffix. So we need to make sure it will not get stripped.
+            [RequiredMember]
             internal extern static unsafe bool IsJoystickPreconfigured__Unmanaged(byte* joystickName, int joystickNameLen);
         }
     }
