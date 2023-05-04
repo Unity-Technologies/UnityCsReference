@@ -115,7 +115,6 @@ namespace UnityEditor
 
             foreach (Type type in sortedTypes)
             {
-                using (new EditorPerformanceMarker($"InitializeOnLoad {type.Name}", type).Auto())
                 using (_profilerMarkerProcessInitializeOnLoadAttributes.Auto(reportTimes, () => type.AssemblyQualifiedName))
                 {
                     try
@@ -136,7 +135,6 @@ namespace UnityEditor
             bool reportTimes = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
             foreach (var method in TypeCache.GetMethodsWithAttribute<InitializeOnLoadMethodAttribute>())
             {
-                using (new EditorPerformanceMarker($"InitializeOnLoad {method.DeclaringType?.Name}.{method.Name}", method.DeclaringType).Auto())
                 using (_profilerMarkerProcessInitializeOnLoadMethodAttributes.Auto(reportTimes, () => $"{method.DeclaringType?.FullName}::{method.Name}"))
                 {
                     try

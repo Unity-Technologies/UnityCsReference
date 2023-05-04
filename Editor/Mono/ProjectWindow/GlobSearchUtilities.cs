@@ -11,8 +11,8 @@ namespace UnityEditor
 {
     static class GlobSearchUtilities
     {
-        static readonly Regex k_BasicSymbolsRegex = new Regex(@"(?<range>\\\[..+\])|(?<dstarfold>\\\*\\\*/)|(?<dstar>\\\*\\\*)|(?<star>\\\*)|(?<single>\\\?)");
-        static readonly Regex k_ComplexSymbolsRegex = new Regex(@"(?<or>\\\(.+(?:\\\|.+)+\\\))");
+        static readonly Regex k_BasicSymbolsRegex = new Regex(@"(?<range>\\\[..+?\])|(?<dstarfold>\\\*\\\*/)|(?<dstar>\\\*\\\*)|(?<star>\\\*)|(?<single>\\\?)");
+        static readonly Regex k_ComplexSymbolsRegex = new Regex(@"(?<or>\\\(.+?(?:\\\|.+?)+\\\))");
         static Dictionary<string, Func<string, string>> s_GlobToRegexMatch;
 
         static GlobSearchUtilities()

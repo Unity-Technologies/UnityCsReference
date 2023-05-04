@@ -32,9 +32,6 @@ namespace UnityEditor.PackageManager
         [FreeFunction("PackageManager::Embed::StartOperation")]
         private static extern NativeStatusCode Embed([Out] out long operationId, string packageId);
 
-        [FreeFunction("PackageManager::GetCachedPackages::StartOperation")]
-        private static extern NativeStatusCode GetCachedPackages([Out] out long operationId, string registryId);
-
         [FreeFunction("PackageManager::GetCacheRoot::StartOperation")]
         private static extern NativeStatusCode GetCacheRoot([Out] out long operationId, ConfigSource source);
 

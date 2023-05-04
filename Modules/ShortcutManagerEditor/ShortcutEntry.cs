@@ -153,7 +153,7 @@ namespace UnityEditor.ShortcutManagement
         internal void SetOverride(IEnumerable<KeyCombination> newKeyCombinations)
         {
             m_OverriddenCombinations = newKeyCombinations.ToList();
-            if (m_Type == ShortcutType.Menu && m_Identifier.path.StartsWith(ShortcutManagerWindowViewController.s_MainMenu))
+            if (m_Type == ShortcutType.Menu && m_Identifier.path.StartsWith(ShortcutManagerWindowViewController.k_MainMenu))
             {
                 var newMenuKey = m_OverriddenCombinations.Any() ? m_OverriddenCombinations[0].ToMenuShortcutString() : "";
                 Menu.SetHotkey(m_Identifier.path.Substring(Discovery.k_MainMenuShortcutPrefix.Length), newMenuKey);
