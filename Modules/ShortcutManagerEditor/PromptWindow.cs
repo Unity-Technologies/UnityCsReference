@@ -12,7 +12,7 @@ namespace UnityEditor.ShortcutManagement
 {
     class PromptWindow : EditorWindow
     {
-        Predicate<string> m_Validator;
+        Func<string, string> m_Validator;
         Action<string> m_Action;
         bool m_IsValid;
 
@@ -20,14 +20,16 @@ namespace UnityEditor.ShortcutManagement
         TextElement m_MessageTextElement;
         TextElement m_LabelTextElement;
         TextField m_TextField;
+        Label m_WarningText;
         Button m_SubmitButton;
 
-        public static void Show(string title, string headerText, string messageText, string valueLabel, string initialValue, string acceptButtonText, Predicate<string> validator, Action<string> action)
+        public static void Show(string title, string headerText, string messageText, string valueLabel, string initialValue,
+            string acceptButtonText, Func<string, string> validator, Action<string> action)
         {
             var promptWindow = GetWindow<PromptWindow>(true, title, true);
 
             // TODO: Ideally the window size should be fixed according to its contents
-            promptWindow.minSize = new Vector2(360, 180);
+            promptWindow.minSize = promptWindow.maxSize = new Vector2(380, 160);
 
             promptWindow.m_HeaderTextElement.text = headerText;
             promptWindow.m_MessageTextElement.text = messageText;
@@ -56,7 +58,6 @@ namespace UnityEditor.ShortcutManagement
             // Load styles
             if (EditorGUIUtility.isProSkin)
                 root.AddToClassList("isProSkin");
-            root.AddStyleSheetPath("StyleSheets/ShortcutManager/PromptWindow.uss");
 
             // Find elements
             m_HeaderTextElement = root.Q<TextElement>("header");
@@ -64,6 +65,7 @@ namespace UnityEditor.ShortcutManagement
             var labelAndTextField = root.Q("label-and-text-field");
             m_LabelTextElement = labelAndTextField.Q<TextElement>();
             m_TextField = labelAndTextField.Q<TextField>();
+            m_WarningText = labelAndTextField.Q<Label>("warning-text");
             var buttons = root.Q("buttons");
             m_SubmitButton = root.Q<Button>("submit");
             var cancelButton = root.Q<Button>("cancel");
@@ -91,17 +93,13 @@ namespace UnityEditor.ShortcutManagement
 
         void UpdateValidation()
         {
-            m_IsValid = m_Validator == null || m_Validator(m_TextField.value);
-            if (m_IsValid)
-            {
-                m_SubmitButton.SetEnabled(true);
-                m_TextField.RemoveFromClassList("invalid");
-            }
-            else
-            {
-                m_SubmitButton.SetEnabled(false);
-                m_TextField.AddToClassList("invalid");
-            }
+            var validationErrorMessage = m_Validator?.Invoke(m_TextField.value);
+
+            m_WarningText.text = validationErrorMessage;
+            m_IsValid = validationErrorMessage == null;
+
+            m_SubmitButton.SetEnabled(m_IsValid);
+            m_WarningText.visible = !m_IsValid;
         }
 
         void Submit()

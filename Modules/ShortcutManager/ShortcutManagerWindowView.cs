@@ -541,7 +541,6 @@ namespace UnityEditor.ShortcutManagement
             m_Root.AddToClassList("ShortcutManagerView");
             if (EditorGUIUtility.isProSkin)
                 m_Root.AddToClassList("isProSkin");
-            m_Root.AddStyleSheetPath("StyleSheets/ShortcutManager/ShortcutManagerView.uss");
 
             BuildProfileManagementRow(header);
             BuildLegendRow(header);

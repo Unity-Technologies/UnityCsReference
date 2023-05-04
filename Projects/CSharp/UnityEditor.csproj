@@ -3592,6 +3592,9 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Inspector\EditorElement.cs">
       <Link>Editor\Mono\UIElements\Inspector\EditorElement.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Inspector\IEditorElementDecorator.cs">
+      <Link>Editor\Mono\UIElements\Inspector\IEditorElementDecorator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Inspector\InspectorElement.cs">
       <Link>Editor\Mono\UIElements\Inspector\InspectorElement.cs</Link>
     </Compile>
@@ -5998,9 +6001,6 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\CacheRootConfig.cs">
       <Link>Modules\PackageManager\Editor\Managed\CacheRootConfig.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\CachedPackageInfo.cs">
-      <Link>Modules\PackageManager\Editor\Managed\CachedPackageInfo.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Client.cs">
       <Link>Modules\PackageManager\Editor\Managed\Client.cs</Link>
     </Compile>
@@ -6111,9 +6111,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetCacheRootRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\GetCacheRootRequest.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetCachedPackagesRequest.cs">
-      <Link>Modules\PackageManager\Editor\Managed\Requests\GetCachedPackagesRequest.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs</Link>

@@ -74,6 +74,7 @@ namespace UnityEngine.Rendering
             [NativeThrows] extern public static bool debugTilesEnabled { get; set; }
             [NativeThrows] extern public static bool resolvingEnabled { get; set; }
             [NativeThrows] extern public static bool flushEveryTickEnabled { get; set; }
+            [NativeThrows] extern public static int mipPreloadedTextureCount { get; }
         }
 
         [NativeHeader("Modules/VirtualTexturing/Public/VirtualTextureResolver.h")]
@@ -196,6 +197,8 @@ namespace UnityEngine.Rendering
             extern public static void SetGPUCacheSettings(GPUCacheSetting[] cacheSettings);
             [NativeThrows]
             extern public static GPUCacheSetting[] GetGPUCacheSettings();
+            [NativeThrows]
+            extern public static void EnableMipPreloading(int texturesPerFrame, int mipCount);
         }
 
         [NativeHeader("Modules/VirtualTexturing/ScriptBindings/VirtualTexturing.bindings.h")]
