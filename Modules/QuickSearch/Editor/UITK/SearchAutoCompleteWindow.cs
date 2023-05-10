@@ -203,7 +203,7 @@ namespace UnityEditor.Search
         void InitializeSearchField()
         {
             ClearSearchField();
-            m_ToolbarSearchField = m_SearchToolbar.searchField;
+            m_ToolbarSearchField = m_SearchToolbar.searchField.searchField;
             m_ToolbarSearchField.RegisterValueChangedCallback(HandleTextFieldChanged);
             m_TextField = m_ToolbarSearchField?.Q<TextField>();
         }
@@ -398,7 +398,7 @@ namespace UnityEditor.Search
                 if (proposition.moveCursor == TextCursorPlacement.MoveLineEnd)
                 {
                     m_TextField.value = proposition.replacement;
-                    m_SearchToolbar.MoveCursor(TextCursorPlacement.MoveLineEnd, -1);
+                    m_SearchToolbar.searchField.MoveCursor(TextCursorPlacement.MoveLineEnd, -1);
                 }
                 else if (!options.tokens.All(t => t.StartsWith(proposition.replacement, StringComparison.OrdinalIgnoreCase)))
                 {
@@ -406,7 +406,7 @@ namespace UnityEditor.Search
                     SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchAutoCompleteInsertSuggestion, insertion);
 
                     m_TextField.value = insertion;
-                    m_SearchToolbar.MoveCursor(proposition.moveCursor, insertTokenPos);
+                    m_SearchToolbar.searchField.MoveCursor(proposition.moveCursor, insertTokenPos);
                 }
             }
 

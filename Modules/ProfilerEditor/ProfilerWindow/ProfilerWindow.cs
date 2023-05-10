@@ -5,7 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Unity.Profiling;
 using Unity.Profiling.Editor;
+using Unity.Profiling.Editor.UI;
 using UnityEditor.Accessibility;
 using UnityEditor.MPE;
 using UnityEditor.Networking.PlayerConnection;
@@ -21,11 +23,12 @@ using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
+using ViewController = Unity.Profiling.Editor.UI.ViewController;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Profiler", icon = "UnityEditor.ProfilerWindow")]
-    public sealed class ProfilerWindow : EditorWindow, IHasCustomMenu, IProfilerWindowController, ProfilerModulesDropdownWindow.IResponder
+    public sealed class ProfilerWindow : EditorWindow, IHasCustomMenu, IProfilerWindowController, ProfilerModulesDropdownWindow.IResponder, BottlenecksChartViewController.IResponder
     {
         internal static class Styles
         {
@@ -101,11 +104,13 @@ namespace UnityEditor
         static List<ProfilerWindow> s_ProfilerWindows = new List<ProfilerWindow>();
 
         const string k_UxmlResourceName = "ProfilerWindow.uxml";
-        const string k_UssSelector_ProfilerWindowDark = "profiler-window--dark";
-        const string k_UssSelector_ProfilerWindowLight = "profiler-window--light";
-        const string k_UssSelector_MainSplitView = "main-split-view";
-        const string k_UssSelector_ToolbarAndChartsLegacyIMGUIContainer = "toolbar-and-charts__legacy-imgui-container";
-        const string k_UssSelector_ModuleDetailsView_Container = "module-details-view__container";
+        const string k_UssClass_Dark = "profiler-view--dark";
+        const string k_UssClass_Light = "profiler-view--light";
+        const string k_UxmlIdentifier_ToolbarViewContainer = "profiler-view__toolbar-view-container";
+        const string k_UxmlIdentifier_BottlenecksViewContainer = "profiler-view__bottlenecks-view-container";
+        const string k_UxmlIdentifier_SplitView = "profiler-view__split-view";
+        const string k_UxmlIdentifier_ChartsViewContainer = "profiler-view__charts-view-container";
+        const string k_UxmlIdentifier_DetailsViewContainer = "profiler-view__details-view-container";
         const string k_MainSplitViewFixedPaneSizePreferenceKey = "ProfilerWindow.MainSplitView.FixedPaneSize";
         const int k_NoModuleSelected = -1;
         const string k_SelectedModuleIndexPreferenceKey = "ProfilerWindow.SelectedModuleIndex";
@@ -170,9 +175,19 @@ namespace UnityEditor
         [SerializeField]
         bool m_ClearOnPlay;
 
+        // Data
+        IProfilerCaptureDataService m_DataService;
+        IProfilerPersistentSettingsService m_PersistentSettingsService;
+        bool? m_IsLegacyChartsGUIScrollBarVisible = false;
+
         // UI references.
-        IMGUIContainer m_ToolbarAndChartsIMGUIContainer;
+        IMGUIContainer m_ToolbarIMGUIContainer;
+        IMGUIContainer m_ChartsIMGUIContainer;
+        VisualElement m_BottlenecksViewContainer;
         VisualElement m_DetailsViewContainer;
+
+        BottlenecksChartViewController m_BottlenecksChartViewController;
+        ViewController m_BottlenecksDetailsViewController;
 
         internal VisualElement DetailsViewContainer => m_DetailsViewContainer;
 
@@ -348,7 +363,9 @@ namespace UnityEditor
         void OnEnable()
         {
             Initialize();
-            ConstructVisualTree();
+            m_DataService = new LegacySingletonProfilerCaptureDataService();
+            m_PersistentSettingsService = new LegacyGlobalProfilerPersistentSettingsService();
+            ConstructVisualTree(m_DataService, m_PersistentSettingsService);
             SubscribeToGlobalEvents();
 
             // If there is already an open instance of the Module Editor window, resubscribe to the onChangesConfirmed event.
@@ -382,6 +399,10 @@ namespace UnityEditor
             {
                 module.OnDisable();
             }
+
+            m_BottlenecksChartViewController.Dispose();
+            m_PersistentSettingsService.Dispose();
+            m_DataService.Dispose();
 
             UnsubscribeFromGlobalEvents();
         }
@@ -523,23 +544,34 @@ namespace UnityEditor
             }
         }
 
-        void ConstructVisualTree()
+        void ConstructVisualTree(
+            IProfilerCaptureDataService dataService,
+            IProfilerPersistentSettingsService persistentSettingsService)
         {
             var template = EditorGUIUtility.Load(k_UxmlResourceName) as VisualTreeAsset;
             template.CloneTree(rootVisualElement);
 
-            var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssSelector_ProfilerWindowDark : k_UssSelector_ProfilerWindowLight;
+            var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssClass_Dark : k_UssClass_Light;
             rootVisualElement.AddToClassList(themeUssClass);
 
-            m_ToolbarAndChartsIMGUIContainer = rootVisualElement.Q<IMGUIContainer>(k_UssSelector_ToolbarAndChartsLegacyIMGUIContainer);
-            m_ToolbarAndChartsIMGUIContainer.onGUIHandler = DoLegacyGUI_ToolbarAndCharts;
+            m_ToolbarIMGUIContainer = rootVisualElement.Q<IMGUIContainer>(k_UxmlIdentifier_ToolbarViewContainer);
+            m_ToolbarIMGUIContainer.onGUIHandler = DoLegacyToolbarGUI;
 
-            MainSplitView = rootVisualElement.Q<TwoPaneSplitView>(k_UssSelector_MainSplitView);
+            m_BottlenecksChartViewController = new BottlenecksChartViewController(dataService, persistentSettingsService, this, this, rootVisualElement);
+            m_BottlenecksViewContainer = rootVisualElement.Q<VisualElement>(k_UxmlIdentifier_BottlenecksViewContainer);
+            m_BottlenecksViewContainer.Add(m_BottlenecksChartViewController.View);
+            var bottleneckViewVisible = persistentSettingsService.IsBottleneckViewVisible;
+            SetBottleneckViewVisible(bottleneckViewVisible);
+
+            m_ChartsIMGUIContainer = rootVisualElement.Q<IMGUIContainer>(k_UxmlIdentifier_ChartsViewContainer);
+            m_ChartsIMGUIContainer.onGUIHandler = DoLegacyChartsGUI;
+
+            MainSplitView = rootVisualElement.Q<TwoPaneSplitView>(k_UxmlIdentifier_SplitView);
             // TwoPaneSplitView.viewDataKey is not currently supported so we need to manually persist its state.
             var fixedPaneSize = EditorPrefs.GetFloat(k_MainSplitViewFixedPaneSizePreferenceKey, k_MinimumWindowSize.y * 0.5f);
             MainSplitView.fixedPaneInitialDimension = fixedPaneSize;
 
-            m_DetailsViewContainer = rootVisualElement.Q<VisualElement>(k_UssSelector_ModuleDetailsView_Container);
+            m_DetailsViewContainer = rootVisualElement.Q<VisualElement>(k_UxmlIdentifier_DetailsViewContainer);
         }
 
         void SubscribeToGlobalEvents()
@@ -872,7 +904,8 @@ namespace UnityEditor
                     if (ProfilerDriver.lastFrameIndex != window.m_LastFrameFromTick)
                     {
                         window.m_LastFrameFromTick = ProfilerDriver.lastFrameIndex;
-                        window.m_ToolbarAndChartsIMGUIContainer.MarkDirtyRepaint();
+                        window.m_BottlenecksChartViewController.ReloadData();
+                        window.m_ChartsIMGUIContainer.MarkDirtyRepaint();
                         window.InvokeSelectedFrameIndexChangedEventIfNecessary(window.m_LastFrameFromTick);
                     }
                 }
@@ -1180,7 +1213,8 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(popupRect, Styles.addArea, FocusType.Passive, EditorStyles.toolbarDropDownLeft))
             {
                 var popupScreenRect = GUIUtility.GUIToScreenRect(popupRect);
-                if (ProfilerModulesDropdownWindow.TryPresentIfNoOpenInstances(popupScreenRect, m_AllModules, out var modulesDropdownWindow))
+                var bottleneckViewVisible = m_PersistentSettingsService.IsBottleneckViewVisible;
+                if (ProfilerModulesDropdownWindow.TryPresentIfNoOpenInstances(popupScreenRect, m_AllModules, bottleneckViewVisible, out var modulesDropdownWindow))
                 {
                     modulesDropdownWindow.responder = this;
                 }
@@ -1315,7 +1349,7 @@ namespace UnityEditor
             Repaint();
         }
 
-        void DoLegacyGUI_ToolbarAndCharts()
+        void DoLegacyToolbarGUI()
         {
             EventType eventType = Event.current.type;
             if (eventType == EventType.MouseDown)
@@ -1323,17 +1357,20 @@ namespace UnityEditor
             else if (eventType == EventType.KeyDown)
                 ProfilerWindowAnalytics.RecordKeyDownUsabilityEvent();
 
-            CheckForPlatformModuleChange(); // TODO Move this to an update loop or a callback.
+            CheckForPlatformModuleChange();
 
-            var toolbarHeight = DrawMainToolbar();
+            DrawMainToolbar();
+        }
 
+        void DoLegacyChartsGUI()
+        {
             m_GraphPos = EditorGUILayout.BeginScrollView(m_GraphPos, Styles.profilerGraphBackground);
 
             // MainSplitView.fixedPane will be null on the first pass through here as MainSplitView picks up its children in its PostDisplaySetup.
             var fixedPaneRect = (MainSplitView.fixedPane != null) ?  MainSplitView.fixedPane.layout : Rect.zero;
             var verticalScrollbarStyle = GUI.skin.verticalScrollbar;
             var scrollViewContentWidth = fixedPaneRect.width - verticalScrollbarStyle.fixedWidth - verticalScrollbarStyle.padding.horizontal;
-            var scrollViewViewportHeight = fixedPaneRect.height - toolbarHeight;
+            var scrollViewViewportHeight = fixedPaneRect.height;
             int newCurrentFrame = DrawModuleChartViews(new Vector2(scrollViewContentWidth, scrollViewViewportHeight));
             if (newCurrentFrame != m_CurrentFrame)
             {
@@ -1421,21 +1458,56 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                GUILayout.Label(Styles.noActiveModules);
+                // Temporary workaround whilst Bottleneck is not a module due to upcoming transition to UIToolkit.
+                if (!m_BottlenecksViewContainer.visible)
+                    GUILayout.Label(Styles.noActiveModules);
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
                 GUILayout.FlexibleSpace();
             }
 
+            if (Event.current.type == EventType.Repaint)
+            {
+                var isScrollBarVisible = totalMinimumChartHeight > containerSize.y;
+                if (!m_IsLegacyChartsGUIScrollBarVisible.HasValue || m_IsLegacyChartsGUIScrollBarVisible != isScrollBarVisible)
+                {
+                    m_IsLegacyChartsGUIScrollBarVisible = isScrollBarVisible;
+                    OnLegacyChartsGUIScrollbarVisibilityChanged();
+                }
+            }
+
             return newCurrentFrame;
+        }
+
+        void OnLegacyChartsGUIScrollbarVisibilityChanged()
+        {
+            var marginRight = m_IsLegacyChartsGUIScrollBarVisible.Value ? GUI.skin.verticalScrollbar.fixedWidth : 0f;
+            m_BottlenecksViewContainer.style.marginRight = marginRight;
         }
 
         void ProfilerModulesDropdownWindow.IResponder.OnModuleActiveStateChanged()
         {
-            m_ToolbarAndChartsIMGUIContainer.MarkDirtyRepaint();
+            m_ChartsIMGUIContainer.MarkDirtyRepaint();
 
-            // If we have no module selected, try to select the first one.
-            if (m_SelectedModuleIndex == k_NoModuleSelected)
+            // If we have no module selected, including bottleneck, try to select the first one.
+            if (m_SelectedModuleIndex == k_NoModuleSelected && m_BottlenecksDetailsViewController == null)
+                SelectFirstActiveModule();
+        }
+
+        // Temporary workaround whilst Bottleneck is not a module due to upcoming transition to UIToolkit.
+        void ProfilerModulesDropdownWindow.IResponder.OnBottlenecksActiveStateChanged(bool active)
+        {
+            SetBottleneckViewVisible(active);
+        }
+
+        internal void SetBottleneckViewVisible(bool visible)
+        {
+            UIUtility.SetElementDisplay(m_BottlenecksViewContainer, visible);
+            SetCategoriesInUse(new [] { ProfilerCategory.Render.Name }, visible);
+            m_PersistentSettingsService.IsBottleneckViewVisible = visible;
+
+            // If the bottleneck view was disabled whilst it was selected (determined by its details view controller existing), select another module.
+            if (!visible && m_BottlenecksDetailsViewController != null)
                 SelectFirstActiveModule();
 
             // If GPU module state changed, force update CPU module
@@ -1765,6 +1837,13 @@ namespace UnityEditor
         {
             DeselectSelectedModuleIfNecessary();
 
+            // If the bottlenecks details view is currently shown, dispose of it
+            if (m_BottlenecksDetailsViewController != null)
+            {
+                m_BottlenecksDetailsViewController.Dispose();
+                m_BottlenecksDetailsViewController = null;
+            }
+
             if (moduleToSelect != null)
             {
                 // Ensure the module being selected is active.
@@ -1833,6 +1912,29 @@ namespace UnityEditor
             }
 
             return null;
+        }
+
+        void BottlenecksChartViewController.IResponder.ChartViewSelectedFrameIndex(int frameIndex)
+        {
+            // Create the bottleneck details view if necessary.
+            if (m_BottlenecksDetailsViewController == null)
+            {
+                DeselectSelectedModuleIfNecessary();
+                m_BottlenecksDetailsViewController = new BottlenecksDetailsViewController(m_DataService, m_PersistentSettingsService, this);
+                m_DetailsViewContainer.Add(m_BottlenecksDetailsViewController.View);
+
+                ProfilerWindowAnalytics.SwitchActiveView("Highlights");
+
+                // If the Bottleneck module was not already selected, do not change frame. We have been told to do this
+                // due to the poor UX of the Profiler window and the inability to easily select a frame when using high
+                // frame counts.
+                frameIndex = -1;
+            }
+
+            if (frameIndex < 0)
+                return;
+
+            selectedFrameIndex = frameIndex;
         }
 
         // TODO Ideally we wouldn't need this method. However, the current IMGUI tangle means setting the current frame can occur an unpredictable number of times per frame. We want to ensure we only invoke this event once for the selected frame. Fully transitioning to UIToolkit (especially on the toolbar) should simplify this.

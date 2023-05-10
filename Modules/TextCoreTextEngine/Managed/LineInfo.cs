@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
+
 namespace UnityEngine.TextCore.Text
 {
     struct Extents
@@ -25,7 +27,8 @@ namespace UnityEngine.TextCore.Text
     /// <summary>
     /// Structure which contains information about the individual lines of text.
     /// </summary>
-    struct LineInfo
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+    internal struct LineInfo
     {
         internal int controlCharacterCount;
 

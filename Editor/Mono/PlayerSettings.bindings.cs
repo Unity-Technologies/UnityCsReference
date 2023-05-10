@@ -1412,28 +1412,6 @@ namespace UnityEditor
             set;
         }
 
-        // Password used for interacting with the Android Keystore.
-        public static extern string keystorePass
-        {
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyNotPersistent().AndroidKeystorePass")]
-            [NativeMethod("c_str")]
-            get;
-
-            [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
-            set;
-        }
-
-        // Password for the key used for signing an Android application.
-        public static extern string keyaliasPass
-        {
-            [StaticAccessor("GetPlayerSettings().GetEditorOnlyNotPersistent().AndroidKeyaliasPass")]
-            [NativeMethod("c_str")]
-            get;
-
-            [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
-            set;
-        }
-
         // Xbox 360 title id
         [Obsolete("Xbox 360 has been removed in >=5.5")]
         public static string xboxTitleId

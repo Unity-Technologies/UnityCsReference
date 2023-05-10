@@ -145,7 +145,9 @@ namespace UnityEngine
     [RequiredByNativeCode]
     public class AnimationCurve : IEquatable<AnimationCurve>
     {
+        [VisibleToOtherModules("UnityEngine.ParticleSystemModule")]
         internal IntPtr m_Ptr;
+
         private bool m_RequiresNativeCleanup;
 
         [FreeFunction("AnimationCurveBindings::Internal_Destroy", IsThreadSafe = true)]
@@ -291,6 +293,7 @@ namespace UnityEngine
             m_RequiresNativeCleanup = true;
         }
 
+        [VisibleToOtherModules("UnityEngine.ParticleSystemModule")]
         internal AnimationCurve(IntPtr ptr)
         {
             m_Ptr = ptr;

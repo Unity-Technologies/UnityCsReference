@@ -6,7 +6,6 @@ using System;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Scripting.APIUpdating;
-using UnityEngine.Serialization;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -15,19 +14,27 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     [Serializable]
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Model")]
-    struct PortReference : ISerializationCallbackReceiver
+    struct PortReference : ISerializationCallbackReceiver, IEquatable<PortReference>
     {
-        [SerializeField, FormerlySerializedAs("NodeModelGuid")]
+        [SerializeField, Obsolete]
+#pragma warning disable CS0618
         SerializableGUID m_NodeModelGuid;
+#pragma warning restore CS0618
 
-        [SerializeField, FormerlySerializedAs("UniqueId")]
+        [SerializeField]
+        Hash128 m_NodeModelHashGuid;
+
+        [SerializeField]
         string m_UniqueId;
 
         [SerializeField]
         string m_Title;
 
         internal static string uniqueIdFieldName_Internal = nameof(m_UniqueId);
-        internal static string nodeModelGuidFieldName_Internal = nameof(m_NodeModelGuid);
+#pragma warning disable CS0612
+        internal static string obsoleteNodeModelGuidFieldName_Internal = nameof(m_NodeModelGuid);
+#pragma warning restore CS0612
+        internal static string nodeModelGuidFieldName_Internal = nameof(m_NodeModelHashGuid);
 
         GraphModel m_GraphModel;
 
@@ -36,7 +43,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The GUID of the node model that owns the port referenced by this instance.
         /// </summary>
-        public SerializableGUID NodeModelGuid => m_NodeModelGuid;
+        public Hash128 NodeModelGuid => m_NodeModelHashGuid;
 
         /// <summary>
         /// The unique id of the port referenced by this instance.
@@ -57,7 +64,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 if (m_NodeModel == null)
                 {
-                    if (m_GraphModel != null && m_GraphModel.TryGetModelFromGuid(m_NodeModelGuid, out var node))
+                    if (m_GraphModel != null && m_GraphModel.TryGetModelFromGuid(m_NodeModelHashGuid, out var node))
                     {
                         m_NodeModel = node as AbstractNodeModel;
                     }
@@ -68,7 +75,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             private set
             {
-                m_NodeModelGuid = value.Guid;
+                m_NodeModelHashGuid = value.Guid;
                 m_NodeModel = null;
             }
         }
@@ -142,6 +149,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (portModelsByGuid.TryGetValue(UniqueId, out var v))
                     previousValue = v;
             }
+
             return previousValue;
         }
 
@@ -151,9 +159,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>A string representation of this instance.</returns>
         public override string ToString()
         {
-            string nodeString = NodeModel is IHasTitle titleNode && !string.IsNullOrEmpty(titleNode.Title)
-                ? $"{titleNode.Title}({m_NodeModelGuid})"
-                : m_NodeModelGuid.ToString();
+            var nodeString = NodeModel is IHasTitle titleNode && !string.IsNullOrEmpty(titleNode.Title)
+                ? $"{titleNode.Title}({m_NodeModelHashGuid})"
+                : m_NodeModelHashGuid.ToString();
             return $"{m_GraphModel.Guid.ToString()}:{nodeString}@{UniqueId}";
         }
 
@@ -188,12 +196,46 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         public void OnBeforeSerialize()
         {
+#pragma warning disable CS0612
+            m_NodeModelGuid = m_NodeModelHashGuid;
+#pragma warning restore CS0612
         }
 
         /// <inheritdoc />
         public void OnAfterDeserialize()
         {
+#pragma warning disable CS0612
+            m_NodeModelHashGuid = m_NodeModelGuid;
+#pragma warning restore CS0612
+
             m_GraphModel = null;
+        }
+
+        public bool Equals(PortReference other)
+        {
+            return m_NodeModelHashGuid.Equals(other.m_NodeModelHashGuid) && m_UniqueId == other.m_UniqueId && Equals(m_GraphModel, other.m_GraphModel);
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is PortReference other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(m_NodeModelHashGuid, m_UniqueId, m_GraphModel);
+        }
+
+        public static bool operator ==(PortReference left, PortReference right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(PortReference left, PortReference right)
+        {
+            return !left.Equals(right);
         }
     }
 }

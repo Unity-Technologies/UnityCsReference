@@ -44,7 +44,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             SetFieldChangedCallback();
 
-            this.AddStylesheet_Internal("ConstantField.uss");
+            this.AddStylesheet_Internal("Field.uss");
 
             if (Field != null)
             {

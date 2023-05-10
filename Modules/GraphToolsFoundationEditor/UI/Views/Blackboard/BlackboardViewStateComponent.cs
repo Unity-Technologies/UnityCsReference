@@ -32,13 +32,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 bool isExpanded = m_State.GetVariableDeclarationModelExpanded(model);
                 if (isExpanded && !expanded)
                 {
-                    m_State.m_BlackboardExpandedRowStates?.Remove(model.Guid);
+                    m_State.m_BlackboardExpandedRowHashStates?.Remove(model.Guid);
                     m_State.CurrentChangeset.ChangedModels.Add(model.Guid);
                     m_State.SetUpdateType(UpdateType.Partial);
                 }
                 else if (!isExpanded && expanded)
                 {
-                    m_State.m_BlackboardExpandedRowStates?.Add(model.Guid);
+                    m_State.m_BlackboardExpandedRowHashStates?.Add(model.Guid);
                     m_State.CurrentChangeset.ChangedModels.Add(model.Guid);
                     m_State.SetUpdateType(UpdateType.Partial);
                 }
@@ -54,13 +54,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 bool isExpanded = m_State.GetGroupExpanded(model);
                 if (!isExpanded && expanded)
                 {
-                    m_State.m_BlackboardCollapsedGroupStates?.Remove(model.Guid);
+                    m_State.m_BlackboardCollapsedGroupHashStates?.Remove(model.Guid);
                     m_State.CurrentChangeset.ChangedModels.Add(model.Guid);
                     m_State.SetUpdateType(UpdateType.Partial);
                 }
                 else if (isExpanded && !expanded)
                 {
-                    m_State.m_BlackboardCollapsedGroupStates?.Add(model.Guid);
+                    m_State.m_BlackboardCollapsedGroupHashStates?.Add(model.Guid);
                     m_State.CurrentChangeset.ChangedModels.Add(model.Guid);
                     m_State.SetUpdateType(UpdateType.Partial);
                 }
@@ -128,15 +128,25 @@ namespace Unity.GraphToolsFoundation.Editor
         ChangesetManager<Changeset> m_ChangesetManager = new ChangesetManager<Changeset>();
 
         /// <inheritdoc />
-        public override IChangesetManager ChangesetManager => m_ChangesetManager;
+        public override ChangesetManager ChangesetManager => m_ChangesetManager;
 
         Changeset CurrentChangeset => m_ChangesetManager.CurrentChangeset;
 
-        [SerializeField]
+        [SerializeField, Obsolete]
+#pragma warning disable CS0618
         List<SerializableGUID> m_BlackboardExpandedRowStates;
+#pragma warning restore CS0618
+
+        [SerializeField, Obsolete]
+#pragma warning disable CS0618
+        List<SerializableGUID> m_BlackboardCollapsedGroupStates;
+#pragma warning restore CS0618
 
         [SerializeField]
-        List<SerializableGUID> m_BlackboardCollapsedGroupStates;
+        List<Hash128> m_BlackboardExpandedRowHashStates;
+
+        [SerializeField]
+        List<Hash128> m_BlackboardCollapsedGroupHashStates;
 
         [SerializeField]
         Vector2 m_ScrollOffset;
@@ -151,8 +161,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public BlackboardViewStateComponent()
         {
-            m_BlackboardExpandedRowStates = new List<SerializableGUID>();
-            m_BlackboardCollapsedGroupStates = new List<SerializableGUID>();
+            m_BlackboardExpandedRowHashStates = new List<Hash128>();
+            m_BlackboardCollapsedGroupHashStates = new List<Hash128>();
         }
 
         /// <summary>
@@ -172,7 +182,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>True is the UI for the model should be expanded. False otherwise.</returns>
         public bool GetVariableDeclarationModelExpanded(VariableDeclarationModel model)
         {
-            return m_BlackboardExpandedRowStates?.Contains(model.Guid) ?? false;
+            return m_BlackboardExpandedRowHashStates?.Contains(model.Guid) ?? false;
         }
 
         /// <summary>
@@ -182,7 +192,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>True is the UI for the model should be expanded. False otherwise.</returns>
         public bool GetGroupExpanded(GroupModel model)
         {
-            return !(m_BlackboardCollapsedGroupStates?.Contains(model.Guid) ?? false);
+            return !(m_BlackboardCollapsedGroupHashStates?.Contains(model.Guid) ?? false);
         }
 
         /// <inheritdoc />
@@ -192,27 +202,27 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (other is BlackboardViewStateComponent blackboardViewStateComponent)
             {
-                var changedRows = new HashSet<SerializableGUID>(m_BlackboardExpandedRowStates);
-                changedRows.SymmetricExceptWith(blackboardViewStateComponent.m_BlackboardExpandedRowStates);
+                var changedRows = new HashSet<Hash128>(m_BlackboardExpandedRowHashStates);
+                changedRows.SymmetricExceptWith(blackboardViewStateComponent.m_BlackboardExpandedRowHashStates);
                 if (changedRows.Count != 0)
                 {
                     CurrentChangeset.ChangedModels.UnionWith(changedRows);
                     SetUpdateType(UpdateType.Partial);
 
-                    m_BlackboardExpandedRowStates = blackboardViewStateComponent.m_BlackboardExpandedRowStates;
+                    m_BlackboardExpandedRowHashStates = blackboardViewStateComponent.m_BlackboardExpandedRowHashStates;
                 }
-                blackboardViewStateComponent.m_BlackboardExpandedRowStates = null;
+                blackboardViewStateComponent.m_BlackboardExpandedRowHashStates = null;
 
-                var changedGroups = new HashSet<SerializableGUID>(m_BlackboardCollapsedGroupStates);
-                changedGroups.SymmetricExceptWith(blackboardViewStateComponent.m_BlackboardCollapsedGroupStates);
+                var changedGroups = new HashSet<Hash128>(m_BlackboardCollapsedGroupHashStates);
+                changedGroups.SymmetricExceptWith(blackboardViewStateComponent.m_BlackboardCollapsedGroupHashStates);
                 if (changedGroups.Count != 0)
                 {
                     CurrentChangeset.ChangedModels.UnionWith(changedGroups);
                     SetUpdateType(UpdateType.Partial);
 
-                    m_BlackboardCollapsedGroupStates = blackboardViewStateComponent.m_BlackboardCollapsedGroupStates;
+                    m_BlackboardCollapsedGroupHashStates = blackboardViewStateComponent.m_BlackboardCollapsedGroupHashStates;
                 }
-                blackboardViewStateComponent.m_BlackboardCollapsedGroupStates = null;
+                blackboardViewStateComponent.m_BlackboardCollapsedGroupHashStates = null;
 
                 if (m_ScrollOffset != blackboardViewStateComponent.m_ScrollOffset)
                 {
@@ -222,6 +232,58 @@ namespace Unity.GraphToolsFoundation.Editor
                     m_ScrollOffset = blackboardViewStateComponent.m_ScrollOffset;
                 }
             }
+        }
+
+        /// <inheritdoc />
+        public override void OnBeforeSerialize()
+        {
+            base.OnBeforeSerialize();
+
+#pragma warning disable CS0612
+#pragma warning disable CS0618
+            m_BlackboardExpandedRowStates = new List<SerializableGUID>(m_BlackboardExpandedRowHashStates.Count);
+            foreach (var guid in m_BlackboardExpandedRowHashStates)
+            {
+                m_BlackboardExpandedRowStates.Add(guid);
+            }
+
+            m_BlackboardCollapsedGroupStates = new List<SerializableGUID>(m_BlackboardCollapsedGroupHashStates.Count);
+            foreach (var guid in m_BlackboardCollapsedGroupHashStates)
+            {
+                m_BlackboardCollapsedGroupStates.Add(guid);
+            }
+#pragma warning restore CS0618
+#pragma warning restore CS0612
+        }
+
+        /// <inheritdoc />
+        public override void OnAfterDeserialize()
+        {
+            base.OnAfterDeserialize();
+
+#pragma warning disable CS0612
+            if (m_BlackboardExpandedRowStates != null)
+            {
+                m_BlackboardExpandedRowHashStates = new List<Hash128>(m_BlackboardExpandedRowStates.Count);
+                foreach (var guid in m_BlackboardExpandedRowStates)
+                {
+                    m_BlackboardExpandedRowHashStates.Add(guid);
+                }
+
+                m_BlackboardExpandedRowStates = null;
+            }
+
+            if (m_BlackboardCollapsedGroupStates != null)
+            {
+                m_BlackboardCollapsedGroupHashStates = new List<Hash128>(m_BlackboardCollapsedGroupStates.Count);
+                foreach (var guid in m_BlackboardCollapsedGroupStates)
+                {
+                    m_BlackboardCollapsedGroupHashStates.Add(guid);
+                }
+
+                m_BlackboardCollapsedGroupStates = null;
+            }
+#pragma warning restore CS0612
         }
     }
 }

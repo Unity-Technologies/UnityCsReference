@@ -16,6 +16,7 @@ namespace Unity.UI.Builder
     {
         static readonly string kToolbarPath = BuilderConstants.UIBuilderPackagePath + "/Explorer/BuilderStyleSheetsNewSelectorControls.uxml";
         static readonly string kHelpTooltipPath = BuilderConstants.UIBuilderPackagePath + "/Explorer/BuilderStyleSheetsNewSelectorHelpTips.uxml";
+        private static readonly string kMessageLinkClassName = "unity-builder-message-link";
 
         ToolbarMenu m_AddUSSMenu;
         BuilderNewSelectorField m_NewSelectorField;
@@ -23,6 +24,7 @@ namespace Unity.UI.Builder
         VisualElement m_NewSelectorTextInputField;
         ToolbarMenu m_PseudoStatesMenu;
         BuilderTooltipPreview m_TooltipPreview;
+        Label m_MessageLink;
         BuilderStyleSheetsDragger m_StyleSheetsDragger;
         Label m_EmptyStyleSheetsPaneLabel;
 
@@ -64,6 +66,8 @@ namespace Unity.UI.Builder
                 var helpTooltipTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(kHelpTooltipPath);
                 var helpTooltipContainer = helpTooltipTemplate.CloneTree();
                 m_TooltipPreview.Add(helpTooltipContainer); // We are the only ones using it so just add the contents and be done.
+                m_MessageLink = m_TooltipPreview.Q<Label>(null, kMessageLinkClassName);
+                m_MessageLink.focusable = true;
             }
 
             viewDataKey = "builder-style-sheets";
@@ -129,24 +133,47 @@ namespace Unity.UI.Builder
             {
                 var input = evt.elementTarget;
                 var field = GetTextFieldParent(input);
+                // Delay tooltip to allow users to click on link in preview if needed
+                schedule.Execute(() =>
+                {
+                    field.textSelection.selectAllOnMouseUp = true;
+                    if (m_NewSelectorTextInputField.focusController.focusedElement == m_MessageLink)
+                        return;
 
-                field.textSelection.selectAllOnMouseUp = true;
+                    HideTooltip();
 
+                    if (m_ShouldRefocusSelectorFieldOnBlur)
+                    {
+                        PostEnterRefocus();
+                    }
+
+
+                    if (string.IsNullOrEmpty(field.text) || field.text == BuilderConstants.UssSelectorClassNameSymbol)
+                    {
+                        field.SetValueWithoutNotify(BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage);
+                        m_PseudoStatesMenu.SetEnabled(false);
+                    }
+
+                });
+            }, TrickleDown.TrickleDown);
+
+            m_MessageLink?.RegisterCallback<BlurEvent>(evt =>
+            {
                 HideTooltip();
                 if (m_ShouldRefocusSelectorFieldOnBlur)
                 {
-                    field.schedule.Execute(PostEnterRefocus);
-                    evt.StopImmediatePropagation();
-                    return;
+                    m_NewSelectorTextInputField.schedule.Execute(PostEnterRefocus);
                 }
 
-                if (string.IsNullOrEmpty(field.text) || field.text == BuilderConstants.UssSelectorClassNameSymbol)
+            });
+            m_MessageLink?.RegisterCallback<ClickEvent>(evt =>
+            {
+                HideTooltip();
+                if (m_ShouldRefocusSelectorFieldOnBlur)
                 {
-                    field.SetValueWithoutNotify(BuilderConstants.ExplorerInExplorerNewClassSelectorInfoMessage);
-                    m_PseudoStatesMenu.SetEnabled(false);
+                    m_NewSelectorTextInputField.schedule.Execute(PostEnterRefocus);
                 }
-
-            }, TrickleDown.TrickleDown);
+            });
 
             // Setup New USS Menu.
             m_AddUSSMenu = parent.Q<ToolbarMenu>("add-uss-menu");

@@ -46,6 +46,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="command">The command.</param>
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, CreateOppositePortalCommand command)
         {
+            if (!graphModelState.GraphModel.Stencil.AllowPortalCreation)
+                return;
+
             if (command.Models == null)
                 return;
 

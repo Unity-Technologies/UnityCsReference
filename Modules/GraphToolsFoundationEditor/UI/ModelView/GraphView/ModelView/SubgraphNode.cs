@@ -41,7 +41,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected override void BuildPartList()
         {
             base.BuildPartList();
-            PartList.ReplacePart(titleIconContainerPartName, SubgraphIconTitleProgressPart.Create(titleIconContainerPartName, Model, this, ussClassName));
+            PartList.ReplacePart(titleIconContainerPartName, SubgraphNodeTitlePart.Create(titleIconContainerPartName, Model, this, ussClassName));
         }
 
         void OnOpenSubgraph()

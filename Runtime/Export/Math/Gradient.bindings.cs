@@ -59,7 +59,9 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Math/Gradient.bindings.h")]
     public class Gradient : IEquatable<Gradient>
     {
+        [VisibleToOtherModules("UnityEngine.ParticleSystemModule")]
         internal IntPtr m_Ptr;
+
         private bool m_RequiresNativeCleanup;
 
         [FreeFunction(Name = "Gradient_Bindings::Init", IsThreadSafe = true)]
@@ -78,6 +80,7 @@ namespace UnityEngine
             m_RequiresNativeCleanup = true;
         }
 
+        [VisibleToOtherModules("UnityEngine.ParticleSystemModule")]
         internal Gradient(IntPtr ptr)
         {
             m_Ptr = ptr;

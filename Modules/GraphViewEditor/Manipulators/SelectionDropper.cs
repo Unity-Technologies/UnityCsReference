@@ -98,6 +98,14 @@ namespace UnityEditor.Experimental.GraphView
                 return;
             }
 
+            // SGB-549: Prevent stealing capture from a child element. This shouldn't be necessary if children
+            // elements call StopPropagation when they capture the mouse, but we can't be sure of that and thus
+            // we are being a bit overprotective here.
+            if (target.panel?.GetCapturingElement(PointerId.mousePointerId) != null)
+            {
+                return;
+            }
+
             m_Active = false;
             m_Dragging = false;
             m_AddedByMouseDown = false;
@@ -121,7 +129,8 @@ namespace UnityEditor.Experimental.GraphView
                 return;
 
             // Since we didn't drag after all, update selection with current element only
-            if (!selectionContainer.selection.Contains(selectedElement))
+            if (!selectionContainer.selection.Contains(selectedElement) && selectedElement.IsSelectable() &&
+                !ClickSelector.WasSelectableDescendantHitByMouse(selectedElement, e))
             {
                 if (!e.actionKey)
                     selectionContainer.ClearSelection();

@@ -18,8 +18,13 @@ namespace Unity.GraphToolsFoundation.Editor
         [SerializeReference]
         VariableDeclarationModel m_DeclarationModel;
 
-        [SerializeField]
+        [SerializeField, Obsolete]
+#pragma warning disable CS0618
         SerializableGUID m_DeclarationModelGuid;
+#pragma warning restore CS0618
+
+        [SerializeField]
+        Hash128 m_DeclarationModelHashGuid;
 
         protected PortModel m_MainPortModel;
 
@@ -41,7 +46,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             get
             {
-                if (m_DeclarationModel == null && GraphModel.TryGetModelFromGuid(m_DeclarationModelGuid, out var model) && model is VariableDeclarationPlaceholder missingDeclarationModel)
+                if (m_DeclarationModel == null && GraphModel.TryGetModelFromGuid(m_DeclarationModelHashGuid, out var model) && model is VariableDeclarationPlaceholder missingDeclarationModel)
                 {
                     this.SetCapability(Editor.Capabilities.Movable, false);
                     this.SetCapability(Editor.Capabilities.Copiable, false);
@@ -61,7 +66,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (ReferenceEquals(m_DeclarationModel, value))
                     return;
                 m_DeclarationModel = (VariableDeclarationModel)value;
-                m_DeclarationModelGuid = m_DeclarationModel.Guid;
+                m_DeclarationModelHashGuid = m_DeclarationModel.Guid;
                 GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
                 DefineNode();
             }
@@ -178,5 +183,25 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <returns>The type of the variable declaration associated with this node, or <see cref="TypeHandle.Unknown"/> if there is none.</returns>
         public virtual TypeHandle GetDataType() => VariableDeclarationModel?.DataType ?? TypeHandle.Unknown;
+
+        /// <inheritdoc />
+        public override void OnBeforeSerialize()
+        {
+            base.OnBeforeSerialize();
+
+#pragma warning disable CS0612
+            m_DeclarationModelGuid = m_DeclarationModelHashGuid;
+#pragma warning restore CS0612
+        }
+
+        /// <inheritdoc />
+        public override void OnAfterDeserialize()
+        {
+            base.OnAfterDeserialize();
+
+#pragma warning disable CS0612
+            m_DeclarationModelHashGuid = m_DeclarationModelGuid;
+#pragma warning restore CS0612
+        }
     }
 }

@@ -29,7 +29,9 @@ namespace UnityEngine.Rendering
     [StructLayout(LayoutKind.Sequential)]
     public partial struct CullingResults : IEquatable<CullingResults>
     {
+        [VisibleToOtherModules("UnityEngine.VFXModule")]
         internal IntPtr ptr;
+        
         unsafe CullingAllocationInfo* m_AllocationInfo;
         AtomicSafetyHandle m_Safety;
 

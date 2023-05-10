@@ -89,16 +89,17 @@ namespace UnityEditor.Search.Providers
         public override void SetupQueryEnginePropositions()
         {
             var goIcon = Utils.LoadIcon("GameObject Icon");
+            var sceneFilterCat = "Scene Filters";
             m_QueryEngine.GetFilter("active")
-                .AddOrUpdatePropositionData(category: "GameObject", label: "Active", replacement: "active=true", help: "Search active objects", icon: goIcon, color: QueryColors.filter);
+                .AddOrUpdatePropositionData(category: sceneFilterCat, label: "Active", replacement: "active=true", help: "Search active objects", icon: goIcon, color: QueryColors.filter);
             m_QueryEngine.GetFilter("size")
-                .AddOrUpdatePropositionData(category: "GameObject", label: "Volume Size", replacement: "size>1", help: "Search object by volume size", icon: goIcon, color: QueryColors.filter);;
+                .AddOrUpdatePropositionData(category: sceneFilterCat, label: "Volume Size", replacement: "size>1", help: "Search object by volume size", icon: goIcon, color: QueryColors.filter);;
             m_QueryEngine.GetFilter("components")
-                .AddOrUpdatePropositionData(category: "GameObject", label: "Components count", replacement: "components>1", help: "Search object with more than # components", icon: goIcon, color: QueryColors.filter);;;
+                .AddOrUpdatePropositionData(category: sceneFilterCat, label: "Components count", replacement: "components>1", help: "Search object with more than # components", icon: goIcon, color: QueryColors.filter);;;
             m_QueryEngine.GetFilter("id")
-                .AddOrUpdatePropositionData(category: "GameObject", label: "InstanceID", replacement: "id=0", help: "Search object with InstanceID", icon: goIcon, color: QueryColors.filter);
+                .AddOrUpdatePropositionData(category: sceneFilterCat, label: "InstanceID", replacement: "id=0", help: "Search object with InstanceID", icon: goIcon, color: QueryColors.filter);
             m_QueryEngine.GetFilter("path")
-                .AddOrUpdatePropositionData(category: "GameObject", label: "Path", replacement: "path=/root/children1", help: "Search object with Transform path", icon: goIcon, color: QueryColors.filter);
+                .AddOrUpdatePropositionData(category: sceneFilterCat, label: "Path", replacement: "path=/root/children1", help: "Search object with Transform path", icon: goIcon, color: QueryColors.filter);
 
             var layerFilter = m_QueryEngine.GetFilter("layer")
                 .SetGlobalPropositionData(category: "Layers", icon: Utils.LoadIcon("GUILayer Icon"), color: QueryColors.typeIcon, type: typeof(QueryLayerBlock));

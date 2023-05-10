@@ -7,6 +7,7 @@ using System;
 using System.Linq;
 using Unity.CommandStateObserver;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -67,16 +68,16 @@ namespace Unity.GraphToolsFoundation.Editor
             public struct ModelToReposition
             {
                 [SerializeField]
-                SerializableGUID m_Model;
+                Hash128 m_Model;
                 [SerializeField]
-                SerializableGUID m_WireModel;
+                Hash128 m_WireModel;
                 [SerializeField]
                 WireSide m_Side;
 
                 /// <summary>
                 /// The model to reposition.
                 /// </summary>
-                public SerializableGUID Model
+                public Hash128 Model
                 {
                     get => m_Model;
                     set => m_Model = value;
@@ -85,7 +86,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 /// <summary>
                 /// A wire attached to the node.
                 /// </summary>
-                public SerializableGUID WireModel
+                public Hash128 WireModel
                 {
                     get => m_WireModel;
                     set => m_WireModel = value;
@@ -102,41 +103,41 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             [SerializeField]
-            List<SerializableGUID> m_ModelsToAutoAlignList;
+            List<Hash128> m_ModelsToAutoAlignList;
 
             [SerializeField]
             List<ModelToReposition> m_ModelsToRepositionAtCreationList;
 
             [SerializeField]
-            List<SerializableGUID> m_ModelsToHideDuringAutoPlacementList;
+            List<Hash128> m_ModelsToHideDuringAutoPlacementList;
 
-            protected HashSet<SerializableGUID> m_ModelsToAutoAlign;
+            protected HashSet<Hash128> m_ModelsToAutoAlign;
             protected HashSet<ModelToReposition> m_ModelsToRepositionAtCreation;
-            protected HashSet<SerializableGUID> m_ModelsToHideDuringAutoPlacement;
+            protected HashSet<Hash128> m_ModelsToHideDuringAutoPlacement;
 
             /// <summary>
             /// The models that need to be aligned.
             /// </summary>
-            public IEnumerable<SerializableGUID> ModelsToAutoAlign => m_ModelsToAutoAlign;
+            public IReadOnlyCollection<Hash128> ModelsToAutoAlign => m_ModelsToAutoAlign;
 
             /// <summary>
             /// The models that need to be repositioned at their creation.
             /// </summary>
-            public IEnumerable<ModelToReposition> ModelsToRepositionAtCreation => m_ModelsToRepositionAtCreation;
+            public IReadOnlyCollection<ModelToReposition> ModelsToRepositionAtCreation => m_ModelsToRepositionAtCreation;
 
             /// <summary>
             /// The models that need to be hidden during auto placement.
             /// </summary>
-            public IEnumerable<SerializableGUID> ModelsToHideDuringAutoPlacement => m_ModelsToHideDuringAutoPlacement;
+            public IReadOnlyCollection<Hash128> ModelsToHideDuringAutoPlacement => m_ModelsToHideDuringAutoPlacement;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="BlackboardViewStateComponent.Changeset" /> class.
             /// </summary>
             public Changeset()
             {
-                m_ModelsToAutoAlign = new HashSet<SerializableGUID>();
+                m_ModelsToAutoAlign = new HashSet<Hash128>();
                 m_ModelsToRepositionAtCreation = new HashSet<ModelToReposition>();
-                m_ModelsToHideDuringAutoPlacement = new HashSet<SerializableGUID>();
+                m_ModelsToHideDuringAutoPlacement = new HashSet<Hash128>();
             }
 
             /// <summary>
@@ -171,8 +172,7 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <param name="model">The model to hide.</param>
             public virtual void AddModelToHideDuringAutoPlacement(GraphElementModel model)
             {
-                if (!m_ModelsToHideDuringAutoPlacement.Contains(model.Guid))
-                    m_ModelsToHideDuringAutoPlacement.Add(model.Guid);
+                m_ModelsToHideDuringAutoPlacement.Add(model.Guid);
             }
 
             /// <inheritdoc />
@@ -213,9 +213,9 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <inheritdoc />
             public virtual void OnAfterDeserialize()
             {
-                m_ModelsToAutoAlign = new HashSet<SerializableGUID>(m_ModelsToAutoAlignList);
+                m_ModelsToAutoAlign = new HashSet<Hash128>(m_ModelsToAutoAlignList);
                 m_ModelsToRepositionAtCreation = new HashSet<ModelToReposition>(m_ModelsToRepositionAtCreationList);
-                m_ModelsToHideDuringAutoPlacement = new HashSet<SerializableGUID>(m_ModelsToHideDuringAutoPlacementList);
+                m_ModelsToHideDuringAutoPlacement = new HashSet<Hash128>(m_ModelsToHideDuringAutoPlacementList);
             }
         }
 
@@ -223,7 +223,7 @@ namespace Unity.GraphToolsFoundation.Editor
         Changeset CurrentChangeset => m_ChangesetManager.CurrentChangeset;
 
         /// <inheritdoc />
-        public override IChangesetManager ChangesetManager => m_ChangesetManager;
+        public override ChangesetManager ChangesetManager => m_ChangesetManager;
 
         /// <summary>
         /// Gets a changeset that encompasses all changeset having a version larger than <paramref name="sinceVersion"/>.

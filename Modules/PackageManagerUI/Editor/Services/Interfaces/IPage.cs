@@ -43,6 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         string id { get; }
         string displayName { get; }
+        PageIcon icon { get; }
 
         string searchText { get; set; }
         string trimmedSearchText { get; }

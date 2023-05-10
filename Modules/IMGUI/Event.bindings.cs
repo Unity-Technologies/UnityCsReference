@@ -72,6 +72,8 @@ namespace UnityEngine
         internal extern void CopyFromPtr(IntPtr ptr);
 
         public static extern bool PopEvent([NotNull] Event outEvent);
+        [VisibleToOtherModules("UnityEngine.InputForUIModule")]
+        internal static extern void GetEventAtIndex(int index, [NotNull] Event outEvent);
         public static extern int GetEventCount();
 
         private static extern void Internal_SetNativeEvent(IntPtr ptr);
@@ -86,7 +88,7 @@ namespace UnityEngine
             Internal_SetNativeEvent(s_MasterEvent.m_Ptr);
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.InputForUIModule")]
         internal static extern int GetDoubleClickTime();
 
         internal static class BindingsMarshaller

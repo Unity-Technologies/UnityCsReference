@@ -11,23 +11,31 @@ namespace Unity.GraphToolsFoundation.Editor
     /// Abstract base class for all models.
     /// </summary>
     [Serializable]
-    abstract class Model
+    abstract class Model : ISerializationCallbackReceiver
     {
-        [SerializeField, HideInInspector]
+        [SerializeField, HideInInspector, Obsolete]
+#pragma warning disable CS0618
         SerializableGUID m_Guid;
+#pragma warning restore CS0618
 
-        internal static string guidFieldName_Internal = nameof(m_Guid);
+        [SerializeField, HideInInspector]
+        Hash128 m_HashGuid;
+
+#pragma warning disable CS0612
+        internal static string obsoleteGuidFieldName_Internal = nameof(m_Guid);
+#pragma warning restore CS0612
+        internal static string hashGuidFieldName_Internal = nameof(m_HashGuid);
 
         /// <summary>
         /// The unique identifier of the element.
         /// </summary>
-        public SerializableGUID Guid
+        public Hash128 Guid
         {
             get
             {
-                if (!m_Guid.Valid)
+                if (!m_HashGuid.isValid)
                     AssignNewGuid();
-                return m_Guid;
+                return m_HashGuid;
             }
         }
 
@@ -42,18 +50,18 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Initializes a new instance of the <see cref="Model"/> class.
         /// </summary>
-        protected Model(SerializableGUID guid)
+        protected Model(Hash128 guid)
         {
-            m_Guid = guid;
+            m_HashGuid = guid;
         }
 
         /// <summary>
         /// Sets the unique identifier of the model.
         /// </summary>
         /// <param name="value">The new GUID.</param>
-        public virtual void SetGuid(SerializableGUID value)
+        public virtual void SetGuid(Hash128 value)
         {
-            m_Guid = value;
+            m_HashGuid = value;
         }
 
         /// <summary>
@@ -61,7 +69,23 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public void AssignNewGuid()
         {
-            m_Guid = SerializableGUID.Generate();
+            m_HashGuid = Hash128Extensions.Generate();
+        }
+
+        /// <inheritdoc />
+        public virtual void OnBeforeSerialize()
+        {
+#pragma warning disable CS0612
+            m_Guid = m_HashGuid;
+#pragma warning restore CS0612
+        }
+
+        /// <inheritdoc />
+        public virtual void OnAfterDeserialize()
+        {
+#pragma warning disable CS0612
+            m_HashGuid = m_Guid;
+#pragma warning restore CS0612
         }
     }
 }

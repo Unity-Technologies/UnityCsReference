@@ -32,13 +32,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="self">The graph to add a node to.</param>
         /// <param name="nodeName">The name of the node to create.</param>
         /// <param name="position">The position of the node to create.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="initializationCallback">An initialization method to be called right after the node is created.</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         /// <typeparam name="TNodeType">The type of the new node to create.</typeparam>
         /// <returns>The newly created node.</returns>
         public static TNodeType CreateNode<TNodeType>(this GraphModel self, string nodeName = "", Vector2 position = default,
-            SerializableGUID guid = default, Action<TNodeType> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.Default)
+            Hash128 guid = default, Action<TNodeType> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.Default)
             where TNodeType : AbstractNodeModel
         {
             Action<AbstractNodeModel> setupWrapper = null;
@@ -61,14 +61,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="group">The group in which the variable is added. If null, it will go to the root group.</param>
         /// <param name="indexInGroup">THe index of the variable in the group. For indexInGroup &lt;= 0, The item will be added at the beginning. For indexInGroup &gt;= Items.Count, items will be added at the end.</param>
         /// <param name="initializationModel">The initialization model of the new variable declaration to create. Can be <code>null</code>.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="initializationCallback">An initialization method to be called right after the variable declaration is created.</param>
         /// <param name="spawnFlags">The flags specifying how the variable declaration is to be spawned.</param>
         /// <typeparam name="TDeclType">The type of variable declaration to create.</typeparam>
         /// <returns>The newly created variable declaration.</returns>
         public static TDeclType CreateGraphVariableDeclaration<TDeclType>(this GraphModel self, TypeHandle variableDataType,
             string variableName, ModifierFlags modifierFlags, bool isExposed, GroupModel group = null, int indexInGroup = int.MaxValue, Constant initializationModel = null,
-            SerializableGUID guid = default, Action<TDeclType, Constant> initializationCallback = null,
+            Hash128 guid = default, Action<TDeclType, Constant> initializationCallback = null,
             SpawnFlags spawnFlags = SpawnFlags.Default)
             where TDeclType : VariableDeclarationModel
         {
@@ -194,7 +194,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="self">The graph from which to get the model.</param>
         /// <param name="guid">The GUID of the model to get.</param>
         /// <returns>The model found, or null.</returns>
-        public static GraphElementModel GetModel(this GraphModel self, SerializableGUID guid)
+        public static GraphElementModel GetModel(this GraphModel self, Hash128 guid)
         {
             self.TryGetModelFromGuid(guid, out var model);
             return model;

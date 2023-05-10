@@ -32,7 +32,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             set
             {
-                var titleComponent = PartList.GetPart(titleIconContainerPartName) as IconTitleProgressPart;
+                var titleComponent = PartList.GetPart(titleIconContainerPartName) as NodeTitlePart;
                 if (titleComponent?.CoroutineProgressBar != null)
                 {
                     titleComponent.CoroutineProgressBar.value = value * k_ByteToPercentFactor;
@@ -40,16 +40,21 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        /// <summary>
+        /// The maximum allowed input label width.
+        /// </summary>
         public virtual float MaxInputLabelWidth => float.PositiveInfinity;
+
+        protected internal virtual int NodeTitleOptions => EditableTitlePart.Options.SetWidth | NodeTitlePart.Options.Colorable | NodeTitlePart.Options.HasIcon;
 
         /// <inheritdoc />
         protected override void BuildPartList()
         {
             PartList.AppendPart(VerticalPortContainerPart.Create(topPortContainerPartName, Model, this, ussClassName, BasePortContainerPart.inputPortFilter));
 
-            PartList.AppendPart(NodeTitlePart.Create(titleIconContainerPartName, NodeModel, this, ussClassName));
+            PartList.AppendPart(NodeTitlePart.Create(titleIconContainerPartName, NodeModel, this, ussClassName, EditableTitlePart.Options.UseEllipsis | EditableTitlePart.Options.SetWidth | NodeTitleOptions));
             PartList.AppendPart(NodeModeDropDownPart.Create(nodeModeDropDownPartName, Model, this, ussClassName));
-            PartList.AppendPart(NodeOptionsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.NodeOptionsFilterForNode));
+            PartList.AppendPart(NodeOptionsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, this, ussClassName, ModelInspectorView.NodeOptionsFilterForNode));
             PartList.AppendPart(InOutPortContainerPart.Create(portContainerPartName, Model, this, MaxInputLabelWidth, ussClassName));
 
             PartList.AppendPart(VerticalPortContainerPart.Create(bottomPortContainerPartName, Model, this, ussClassName, BasePortContainerPart.outputPortFilter));
@@ -71,7 +76,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if( !s_DisableHiddenNodeAtCreation_Internal )
             {
-                //Ensure that the first computation of Input labels is dones while the node is hidden to avoid a visible jump.
+                //Ensure that the first computation of Input labels is done while the node is hidden to avoid a visible jump.
                 //We first need a frame to get all the required info ( font, size, style, ... ) of the label in the resolved style to compute each label width
                 //then we find the largest input label and set the min-size of all the labels to this.
                 visible = false;

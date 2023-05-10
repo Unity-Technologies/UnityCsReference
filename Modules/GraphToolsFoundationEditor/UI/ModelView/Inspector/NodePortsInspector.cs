@@ -18,17 +18,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="name">The name of the part.</param>
         /// <param name="models">The models displayed in this part.</param>
-        /// <param name="rootView">The root view that will contain the inspector.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <returns>A new instance of <see cref="NodePortsInspector"/>.</returns>
-        public static NodePortsInspector Create(string name, IEnumerable<Model> models, RootView rootView, string parentClassName)
+        public static NodePortsInspector Create(string name, IReadOnlyList<Model> models, ChildView ownerElement, string parentClassName)
         {
-            return new NodePortsInspector(name, models, rootView, parentClassName);
+            return new NodePortsInspector(name, models, ownerElement, parentClassName);
         }
 
         /// <inheritdoc />
-        public NodePortsInspector(string name, IEnumerable<Model> models, RootView rootView, string parentClassName)
-            : base(name, models, rootView, parentClassName)
+        public NodePortsInspector(string name, IReadOnlyList<Model> models, ChildView ownerElement, string parentClassName)
+            : base(name, models, ownerElement, parentClassName)
         {
         }
 
@@ -121,7 +121,7 @@ namespace Unity.GraphToolsFoundation.Editor
             foreach (var port in ports)
             {
                 yield return InlineValueEditor.CreateEditorForConstants(
-                    RootView, port, port.Select(t => t.EmbeddedValue), false,
+                    OwnerRootView, port, port.Select(t => t.EmbeddedValue), false,
                     port.First().DisplayTitle ?? "");
             }
         }

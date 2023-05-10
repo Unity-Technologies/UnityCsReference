@@ -152,7 +152,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (updateInfo?.canUpdate == true)
             {
                 var warningMessage = string.Format(k_IncompatibleWarningMessage, localInfo.supportedVersion);
-                m_Errors.Add(new UIError(UIErrorCode.AssetStorePackageError, warningMessage, UIError.Attribute.IsWarning));
+                m_Errors.Add(new UIError(UIErrorCode.AssetStorePackageError, warningMessage, UIError.Attribute.Warning));
             }
         }
 

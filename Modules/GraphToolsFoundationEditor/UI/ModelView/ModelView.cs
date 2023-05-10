@@ -9,30 +9,16 @@ using UnityEngine.UIElements;
 namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
-    /// Base class for all UI element that displays a <see cref="GraphElementModel"/>.
+    /// Base class for all UI element that displays a <see cref="Model"/>.
     /// </summary>
-    abstract class ModelView : BaseModelView
+    abstract class ModelView : ChildView
     {
         /// <summary>
         /// The model that backs the UI.
         /// </summary>
         public Model Model { get; private set; }
 
-        /// <summary>
-        /// The view that owns this object.
-        /// </summary>
-        public RootView RootView { get; protected set; }
-
-        /// <summary>
-        /// The UI creation context.
-        /// </summary>
-        public IViewContext Context { get; private set; }
-
-        public ModelViewPartList PartList { get; private set; }
-
         protected UIDependencies Dependencies { get; }
-
-        ContextualMenuManipulator m_ContextualMenuManipulator;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelView"/> class.
@@ -43,23 +29,10 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
-
-            ContextualMenuManipulator = new ContextualMenuManipulator(BuildContextualMenu);
-        }
-
-        protected ContextualMenuManipulator ContextualMenuManipulator
-        {
-            get => m_ContextualMenuManipulator;
-            set => this.ReplaceManipulator(ref m_ContextualMenuManipulator, value);
         }
 
         /// <summary>
-        /// Builds the list of parts for this UI Element.
-        /// </summary>
-        protected virtual void BuildPartList() { }
-
-        /// <summary>
-        /// Helper method that calls <see cref="Setup"/>, <see cref="BaseModelView.BuildUI"/> and <see cref="BaseModelView.UpdateFromModel"/>.
+        /// Helper method that calls <see cref="Setup"/>, <see cref="View.BuildUI"/> and <see cref="View.UpdateFromModel"/>.
         /// </summary>
         /// <param name="model">The model that backs the instance.</param>
         /// <param name="view">The view to which the instance should be added.</param>
@@ -80,32 +53,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public void Setup(Model model, RootView view, IViewContext context = null)
         {
             Model = model;
-            RootView = view;
-            Context = context;
-
-            PartList = new ModelViewPartList();
-            BuildPartList();
-        }
-
-        /// <inheritdoc />
-        public override void BuildUI()
-        {
-            ClearElementUI();
-            BuildElementUI();
-
-            for (var i = 0; i < PartList.Parts.Count; i++)
-            {
-                var component = PartList.Parts[i];
-                component.BuildUI(this);
-            }
-
-            for (var i = 0; i < PartList.Parts.Count; i++)
-            {
-                var component = PartList.Parts[i];
-                component.PostBuildUI();
-            }
-
-            PostBuildUI();
+            Setup(view, context);
         }
 
         /// <summary>
@@ -126,44 +74,9 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
             }
 
-            UpdateElementFromModel();
-
-            for (var i = 0; i < PartList.Parts.Count; i++)
-            {
-                var component = PartList.Parts[i];
-                component.UpdateFromModel();
-            }
+            base.UpdateFromModel();
 
             Dependencies.UpdateDependencyLists();
-        }
-
-        /// <summary>
-        /// Removes all children VisualElements.
-        /// </summary>
-        protected virtual void ClearElementUI()
-        {
-            Clear();
-        }
-
-        /// <summary>
-        /// Build the UI for this instance: instantiates VisualElements, sets USS classes.
-        /// </summary>
-        protected virtual void BuildElementUI()
-        {
-        }
-
-        /// <summary>
-        /// Finalizes the building of the UI. Stylesheets are typically added here.
-        /// </summary>
-        protected virtual void PostBuildUI()
-        {
-        }
-
-        /// <summary>
-        /// Update the element to reflect the state of the attached model.
-        /// </summary>
-        protected virtual void UpdateElementFromModel()
-        {
         }
 
         protected virtual void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
@@ -226,50 +139,19 @@ namespace Unity.GraphToolsFoundation.Editor
         {
         }
 
-        /// <summary>
-        /// Callback to add menu items to the contextual menu.
-        /// </summary>
-        /// <param name="evt">The <see cref="ContextualMenuPopulateEvent"/>.</param>
-        protected virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        /// <inheritdoc />
+        public override void AddToRootView(RootView view)
         {
-        }
-
-        /// <summary>
-        /// Adds the instance to a view.
-        /// </summary>
-        /// <param name="view">The view to add the element to.</param>
-        public virtual void AddToRootView(RootView view)
-        {
-            RootView = view;
+            base.AddToRootView(view);
             ViewForModel.AddOrReplaceModelView_Internal(this);
-
-            if (PartList != null)
-            {
-                for (var i = 0; i < PartList.Parts.Count; i++)
-                {
-                    var component = PartList.Parts[i];
-                    component.OwnerAddedToView();
-                }
-            }
         }
 
-        /// <summary>
-        /// Removes the instance from the view.
-        /// </summary>
-        public virtual void RemoveFromRootView()
+        /// <inheritdoc />
+        public override void RemoveFromRootView()
         {
-            if (PartList != null)
-            {
-                for (var i = 0; i < PartList.Parts.Count; i++)
-                {
-                    var component = PartList.Parts[i];
-                    component.OwnerRemovedFromView();
-                }
-            }
-
             Dependencies.ClearDependencyLists();
             ViewForModel.RemoveModelView_Internal(this);
-            RootView = null;
+            base.RemoveFromRootView();
         }
 
         /// <summary>

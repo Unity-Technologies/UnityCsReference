@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore.LowLevel;
 
@@ -322,6 +323,7 @@ namespace UnityEngine.TextCore.Text
             return GetCachedFontAsset(font, TextShaderUtilities.ShaderRef_MobileSDF);
         }
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal FontAsset GetCachedFontAsset(Font font, Shader shader)
         {
             if (m_FontLookup == null)
@@ -364,12 +366,14 @@ namespace UnityEngine.TextCore.Text
             return fontAsset;
         }
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal virtual float GetEditorTextSharpness()
         {
             Debug.LogWarning("GetEditorTextSettings() should only be called on EditorTextSettings");
             return 0.0f;
         }
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal virtual Font GetEditorFont()
         {
             Debug.LogWarning("GetEditorTextSettings() should only be called on EditorTextSettings");

@@ -11,35 +11,19 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         protected List<Model> m_Models;
 
-        public RootView RootView { get; }
+        protected RootView OwnerRootView => m_OwnerElement?.RootView;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseModelViewPart"/> class.
         /// </summary>
         /// <param name="name">The name of the part.</param>
-        /// <param name="rootView">The root view.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="models">The models displayed in this part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
-        protected BaseMultipleModelViewsPart(string name, IEnumerable<Model> models, RootView rootView, string parentClassName) :
-            base(name, parentClassName)
+        protected BaseMultipleModelViewsPart(string name, IEnumerable<Model> models, ChildView ownerElement, string parentClassName) :
+            base(name, ownerElement, parentClassName)
         {
-            RootView = rootView;
             m_Models = models.ToList();
-        }
-
-        /// <inheritdoc />
-        protected override void PartOwnerAddedToView()
-        {
-            if( RootView is IMultipleModelPartContainer container)
-                container.Register(this);
-
-        }
-
-        /// <inheritdoc />
-        protected override void PartOwnerRemovedFromView()
-        {
-            if( RootView is IMultipleModelPartContainer container)
-                container.Unregister(this);
         }
     }
 }

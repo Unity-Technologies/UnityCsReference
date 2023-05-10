@@ -56,7 +56,7 @@ namespace Unity.GraphToolsFoundation.Editor
             target.UnregisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOutEvent);
         }
 
-        static void ChangeMouseCursorTo(BaseVisualElementPanel panel, int internalCursorId)
+        internal static void ChangeMouseCursorTo_Internal(BaseVisualElementPanel panel, int internalCursorId)
         {
             var cursor = new Cursor();
             cursor.defaultCursorId = internalCursorId;
@@ -84,7 +84,7 @@ namespace Unity.GraphToolsFoundation.Editor
             m_Active = true;
             target.CaptureMouse();
 
-            ChangeMouseCursorTo(graphView.elementPanel, (int)MouseCursor.Pan);
+            ChangeMouseCursorTo_Internal(graphView.elementPanel, (int)MouseCursor.Pan);
 
             e.StopImmediatePropagation();
         }
@@ -105,7 +105,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var position = graphView.ViewTransform.position + Vector3.Scale(diff, scale);
             graphView.UpdateViewTransform(position, scale);
 
-            ChangeMouseCursorTo(graphView.elementPanel, (int)MouseCursor.Pan);
+            ChangeMouseCursorTo_Internal(graphView.elementPanel, (int)MouseCursor.Pan);
 
             e.StopPropagation();
         }
@@ -147,7 +147,7 @@ namespace Unity.GraphToolsFoundation.Editor
             m_Active = false;
             target.ReleaseMouse();
 
-            ChangeMouseCursorTo(graphView.elementPanel, (int)MouseCursor.Arrow);
+            ChangeMouseCursorTo_Internal(graphView.elementPanel, (int)MouseCursor.Arrow);
         }
     }
 }

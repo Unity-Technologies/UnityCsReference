@@ -16,7 +16,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class FreehandSelector : MouseManipulator
     {
-        static readonly List<ModelView> k_OnMouseUpAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_OnMouseUpAllUIs = new();
 
         readonly FreehandElement m_FreehandElement;
         bool m_Active;
@@ -127,7 +127,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected static void SelectElementsUnderLasso(List<Vector2> lassoPoints, bool deleteElements, GraphView graphView)
         {
             // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
-            List<ModelView> newSelection = new List<ModelView>();
+            List<ChildView> newSelection = new List<ChildView>();
             graphView.GraphModel.GraphElementModels
                 .Where(ge => ge.IsSelectable())
                 .GetAllViewsInList_Internal(graphView, null, k_OnMouseUpAllUIs);
@@ -153,7 +153,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             k_OnMouseUpAllUIs.Clear();
 
-            var selectedModels = newSelection.Select(elem => elem.Model).OfType<GraphElementModel>().ToList();
+            var selectedModels = newSelection.OfType<ModelView>().Select(elem => elem.Model).OfType<GraphElementModel>().ToList();
 
             if (deleteElements)
             {

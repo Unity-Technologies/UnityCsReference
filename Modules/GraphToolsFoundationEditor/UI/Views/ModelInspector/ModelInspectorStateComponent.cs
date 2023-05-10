@@ -108,7 +108,7 @@ namespace Unity.GraphToolsFoundation.Editor
         ChangesetManager<Changeset> m_ChangesetManager;
 
         /// <inheritdoc />
-        public override IChangesetManager ChangesetManager => m_ChangesetManager;
+        public override ChangesetManager ChangesetManager => m_ChangesetManager;
 
         Changeset CurrentChangeset => m_ChangesetManager.CurrentChangeset;
 

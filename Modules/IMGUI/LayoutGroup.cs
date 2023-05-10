@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine
 {
     // *undocumented*
-    [VisibleToOtherModules("UnityEngine.UIElementsModule", "Unity.UIElements")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.CoreModule")]
     internal class GUILayoutGroup : GUILayoutEntry
     {
         public List<GUILayoutEntry> entries = new List<GUILayoutEntry>();

@@ -170,6 +170,8 @@ namespace UnityEngine.PlayerLoop
         public struct UpdateVideo {}
         [RequiredByNativeCode]
         public struct NewInputUpdate {}
+        [RequiredByNativeCode]
+        public struct InputForUIUpdate { }
     }
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.Experimental.PlayerLoop")]

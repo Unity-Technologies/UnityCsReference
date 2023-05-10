@@ -773,7 +773,7 @@ namespace UnityEditor.Presets
             return propertyPath;
         }
 
-        [MenuItem("CONTEXT/Preset/Exclude all properties")]
+        [MenuItem("CONTEXT/Preset/Exclude all properties", secondaryPriority = 5)]
         static void ExcludeAll(MenuCommand mc)
         {
             Undo.RecordObject(mc.context, "Inspector");
@@ -789,7 +789,7 @@ namespace UnityEditor.Presets
             }
         }
 
-        [MenuItem("CONTEXT/Preset/Include all properties")]
+        [MenuItem("CONTEXT/Preset/Include all properties", secondaryPriority = 6)]
         static void IncludeAll(MenuCommand mc)
         {
             Undo.RecordObject(mc.context, "Inspector");

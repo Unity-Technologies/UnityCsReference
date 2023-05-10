@@ -39,7 +39,7 @@ namespace UnityEditor.UIElements.Samples
         public const string k_WindowPath = "Window/UI Toolkit/Samples";
         public static readonly string OpenWindowCommand = nameof(OpenUIElementsSamplesCommand);
 
-        [MenuItem(k_WindowPath, false, 3010, false)]
+        [MenuItem(k_WindowPath, false, 3010, false, secondaryPriority = 1)]
         private static void OpenUIElementsSamplesCommand()
         {
             if (CommandService.Exists(OpenWindowCommand))

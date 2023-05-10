@@ -56,7 +56,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="guid">The guid of the model.</param>
         /// <param name="createdPlaceholder">The placeholder if it was successfully created, null otherwise</param>
         /// <returns>True if the placeholder was created, false otherwise.</returns>
-        internal static bool TryCreatePlaceholder_Internal(GraphModel graphModel, ManagedMissingTypeModelCategory category, ManagedReferenceMissingType referenceMissingType, SerializableGUID guid, out IPlaceholder createdPlaceholder)
+        internal static bool TryCreatePlaceholder_Internal(GraphModel graphModel, ManagedMissingTypeModelCategory category, ManagedReferenceMissingType referenceMissingType, Hash128 guid, out IPlaceholder createdPlaceholder)
         {
             createdPlaceholder = null;
             switch (category)
@@ -85,7 +85,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return createdPlaceholder != null;
         }
 
-        static void TryCreateNodePlaceholder(GraphModel graphModel, ManagedReferenceMissingType referenceMissingType, SerializableGUID guid, out IPlaceholder createdPlaceholder)
+        static void TryCreateNodePlaceholder(GraphModel graphModel, ManagedReferenceMissingType referenceMissingType, Hash128 guid, out IPlaceholder createdPlaceholder)
         {
             createdPlaceholder = null;
 
@@ -111,7 +111,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        static void TryCreateContextNodePlaceholder(GraphModel graphModel, ManagedReferenceMissingType referenceMissingType, SerializableGUID guid, out IPlaceholder createdPlaceholder)
+        static void TryCreateContextNodePlaceholder(GraphModel graphModel, ManagedReferenceMissingType referenceMissingType, Hash128 guid, out IPlaceholder createdPlaceholder)
         {
             createdPlaceholder = null;
 
@@ -133,7 +133,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        static void TryCreateVariableDeclarationPlaceholder(GraphModel graphModel, ManagedReferenceMissingType referenceMissingType, SerializableGUID guid, out IPlaceholder createdPlaceholder)
+        static void TryCreateVariableDeclarationPlaceholder(GraphModel graphModel, ManagedReferenceMissingType referenceMissingType, Hash128 guid, out IPlaceholder createdPlaceholder)
         {
             createdPlaceholder = null;
 
@@ -144,17 +144,17 @@ namespace Unity.GraphToolsFoundation.Editor
             createdPlaceholder = graphModel.CreateVariableDeclarationPlaceholder_Internal(name, guid, referenceMissingType.referenceId);
         }
 
-        static void TryCreateWirePlaceholder(GraphModel graphModel, ManagedReferenceMissingType referenceMissingType, SerializableGUID guid, out IPlaceholder createdPlaceholder)
+        static void TryCreateWirePlaceholder(GraphModel graphModel, ManagedReferenceMissingType referenceMissingType, Hash128 guid, out IPlaceholder createdPlaceholder)
         {
             createdPlaceholder = null;
-            var nodeModelFieldStr = PortReference.nodeModelGuidFieldName_Internal;
             var uniqueIdFieldStr = PortReference.uniqueIdFieldName_Internal;
 
             // Get FromPort data
             var fromPortIndex = referenceMissingType.serializedData.IndexOf(WireModel.fromPortReferenceFieldName_Internal, 0, StringComparison.Ordinal);
 
             if (fromPortIndex == -1
-                || !YamlParsingHelper_Internal.TryParseSerializableGUID(referenceMissingType.serializedData, nodeModelFieldStr, fromPortIndex, out var parsedFromNodeGuid)
+                || !YamlParsingHelper_Internal.TryParseGUID(referenceMissingType.serializedData,
+                    PortReference.nodeModelGuidFieldName_Internal, PortReference.obsoleteNodeModelGuidFieldName_Internal, fromPortIndex, out var parsedFromNodeGuid)
                 || !graphModel.TryGetModelFromGuid(parsedFromNodeGuid, out var fromModel)
                 || fromModel is not PortNodeModel fromNodeModel
                 || !YamlParsingHelper_Internal.TryParseString(referenceMissingType.serializedData, uniqueIdFieldStr, fromPortIndex, out var fromPortUniqueId))
@@ -164,7 +164,8 @@ namespace Unity.GraphToolsFoundation.Editor
             var toPortIndex = referenceMissingType.serializedData.IndexOf(WireModel.toPortReferenceFieldName_Internal, 0, StringComparison.Ordinal);
 
             if (toPortIndex == -1
-                || !YamlParsingHelper_Internal.TryParseSerializableGUID(referenceMissingType.serializedData, nodeModelFieldStr, toPortIndex, out var parsedToNodeGuid)
+                || !YamlParsingHelper_Internal.TryParseGUID(referenceMissingType.serializedData,
+                    PortReference.nodeModelGuidFieldName_Internal, PortReference.obsoleteNodeModelGuidFieldName_Internal, toPortIndex, out var parsedToNodeGuid)
                 || !graphModel.TryGetModelFromGuid(parsedToNodeGuid, out var toModel)
                 || toModel is not PortNodeModel toNodeModel
                 || !YamlParsingHelper_Internal.TryParseString(referenceMissingType.serializedData, uniqueIdFieldStr, toPortIndex, out var toPortUniqueId))
@@ -178,7 +179,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 createdPlaceholder = graphModel.CreateWirePlaceholder_Internal(toPort, fromPort, guid, referenceMissingType.referenceId);
         }
 
-        static void TryCreatePortalDeclarationPlaceholder(GraphModel graphModel, ManagedReferenceMissingType referenceMissingType, SerializableGUID guid, out IPlaceholder createdPlaceholder)
+        static void TryCreatePortalDeclarationPlaceholder(GraphModel graphModel, ManagedReferenceMissingType referenceMissingType, Hash128 guid, out IPlaceholder createdPlaceholder)
         {
             createdPlaceholder = null;
 

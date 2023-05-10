@@ -61,8 +61,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_Field.AddToClassList(ussClassName);
                 m_Field.AddToClassList(m_ParentClassName.WithUssElement(PartName));
 
-                m_Field.AddToRootView(m_OwnerElement.RootView);
-
                 if (m_Field is BlackboardField blackboardField)
                 {
                     blackboardField.NameLabel.RegisterCallback<ChangeEvent<string>>(OnFieldRenamed);
@@ -86,14 +84,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void PartOwnerAddedToView()
         {
-            m_Field.AddToRootView(m_OwnerElement.RootView);
+            m_Field?.AddToRootView(m_OwnerElement.RootView);
             base.PartOwnerAddedToView();
         }
 
         /// <inheritdoc />
         protected override void PartOwnerRemovedFromView()
         {
-            m_Field.RemoveFromRootView();
+            m_Field?.RemoveFromRootView();
             base.PartOwnerRemovedFromView();
         }
     }

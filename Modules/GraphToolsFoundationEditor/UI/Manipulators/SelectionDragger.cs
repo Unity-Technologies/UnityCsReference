@@ -59,7 +59,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public bool IsActive => m_Active;
 
-        ISelectionDraggerTarget GetTargetAt(Vector2 mousePosition, IReadOnlyList<ModelView> exclusionList)
+        ISelectionDraggerTarget GetTargetAt(Vector2 mousePosition, IReadOnlyList<ChildView> exclusionList)
         {
             Vector2 pickPoint = mousePosition;
 

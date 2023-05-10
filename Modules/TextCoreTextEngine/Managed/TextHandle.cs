@@ -5,15 +5,18 @@
 using System.Collections.Generic;
 using System;
 using System.Text;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
 {
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal class TextHandle
     {
         public TextHandle()
         {
         }
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal static TextCore.Text.TextGenerationSettings s_Settings = new TextCore.Text.TextGenerationSettings();
 
         ~TextHandle()
@@ -21,7 +24,12 @@ namespace UnityEngine.TextCore.Text
             RemoveTextInfoFromCache();
         }
 
-        internal Vector2 preferredSize { get; private set; }
+        internal Vector2 preferredSize { 
+            [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+            get; 
+            private set;
+        }
+
         private Rect screenRect;
         private float lineHeightDefault;
         private bool isPlaceholder;
@@ -40,6 +48,7 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         internal TextInfo textInfo
         {
+            [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
             get
             {
 
@@ -116,7 +125,9 @@ namespace UnityEngine.TextCore.Text
             return textInfo != null;
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int m_PreviousGenerationSettingsHash;
+
 		protected internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
 
         private bool isDirty;
@@ -713,6 +724,7 @@ namespace UnityEngine.TextCore.Text
 
         }
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal void UpdatePreferredSize(TextGenerationSettings generationSettings)
         {
             if (textInfo.characterCount <= 0)
@@ -746,6 +758,7 @@ namespace UnityEngine.TextCore.Text
             preferredSize = new Vector2(renderedWidth, renderedHeight);
         }
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal static float GetLineHeightDefault(TextGenerationSettings settings)
         {
             if (settings != null && settings.fontAsset != null)

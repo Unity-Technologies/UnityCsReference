@@ -21,7 +21,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="position">The position where to create the node.</param>
         /// <param name="guid">The unique identifier for the node to create.</param>
         /// <returns>The command with an additional node to create.</returns>
-        public static CreateNodeCommand WithNodeOnGraph(this CreateNodeCommand command, GraphNodeModelLibraryItem item, Vector2 position, SerializableGUID guid = default)
+        public static CreateNodeCommand WithNodeOnGraph(this CreateNodeCommand command, GraphNodeModelLibraryItem item, Vector2 position, Hash128 guid = default)
         {
             return command.WithNode(new CreateNodeCommand.NodeData
             {
@@ -39,7 +39,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="position">The position where to create the node.</param>
         /// <param name="guid">The unique identifier for the node to create.</param>
         /// <returns>The command with an additional node to create.</returns>
-        public static CreateNodeCommand WithNodeOnGraph(this CreateNodeCommand command, VariableDeclarationModel variableDeclaration, Vector2 position, SerializableGUID guid = default)
+        public static CreateNodeCommand WithNodeOnGraph(this CreateNodeCommand command, VariableDeclarationModel variableDeclaration, Vector2 position, Hash128 guid = default)
         {
             return command.WithNode(new CreateNodeCommand.NodeData
             {
@@ -58,7 +58,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="position">The position where to create the node.</param>
         /// <param name="guid">The unique identifier for the node to create.</param>
         /// <returns>The command with an additional node to create.</returns>
-        public static CreateNodeCommand WithNodeOnWire(this CreateNodeCommand command, GraphNodeModelLibraryItem item, WireModel wireModel, Vector2 position, SerializableGUID guid = default)
+        public static CreateNodeCommand WithNodeOnWire(this CreateNodeCommand command, GraphNodeModelLibraryItem item, WireModel wireModel, Vector2 position, Hash128 guid = default)
         {
             return command.WithNode(new CreateNodeCommand.NodeData
             {
@@ -78,7 +78,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="position">The position where to create the node.</param>
         /// <param name="guid">The unique identifier for the node to create.</param>
         /// <returns>The command with an additional node to create.</returns>
-        public static CreateNodeCommand WithNodeOnWires(this CreateNodeCommand command, GraphNodeModelLibraryItem item, IEnumerable<(WireModel, WireSide)> wires, Vector2 position, SerializableGUID guid = default)
+        public static CreateNodeCommand WithNodeOnWires(this CreateNodeCommand command, GraphNodeModelLibraryItem item, IEnumerable<(WireModel, WireSide)> wires, Vector2 position, Hash128 guid = default)
         {
             return command.WithNode(new CreateNodeCommand.NodeData
             {
@@ -99,7 +99,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="autoAlign">If true, the node will try to align automatically with the port after creation.</param>
         /// <param name="guid">The unique identifier for the node to create.</param>
         /// <returns>The command with an additional node to create.</returns>
-        public static CreateNodeCommand WithNodeOnPort(this CreateNodeCommand command, GraphNodeModelLibraryItem item, PortModel portModel, Vector2 position, bool autoAlign = false, SerializableGUID guid = default)
+        public static CreateNodeCommand WithNodeOnPort(this CreateNodeCommand command, GraphNodeModelLibraryItem item, PortModel portModel, Vector2 position, bool autoAlign = false, Hash128 guid = default)
         {
             return command.WithNode(new CreateNodeCommand.NodeData
             {
@@ -121,7 +121,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="autoAlign">If true, the node will try to align automatically with the port after creation.</param>
         /// <param name="guid">The unique identifier for the node to create.</param>
         /// <returns>The command with an additional node to create.</returns>
-        public static CreateNodeCommand WithNodeOnPort(this CreateNodeCommand command, VariableDeclarationModel variableDeclaration, PortModel portModel, Vector2 position, bool autoAlign = false, SerializableGUID guid = default)
+        public static CreateNodeCommand WithNodeOnPort(this CreateNodeCommand command, VariableDeclarationModel variableDeclaration, PortModel portModel, Vector2 position, bool autoAlign = false, Hash128 guid = default)
         {
             return command.WithNode(new CreateNodeCommand.NodeData
             {

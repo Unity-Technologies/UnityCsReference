@@ -22,6 +22,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public VisualElement Field { get; protected set; }
 
         /// <summary>
+        /// The label, if any of the PropertyField.
+        /// </summary>
+        public Label LabelElement { get; protected set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="CustomizableModelPropertyField"/> class.
         /// </summary>
         /// <param name="commandTarget">The view to use to dispatch commands when the field is edited.</param>

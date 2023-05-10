@@ -74,7 +74,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        [MenuItem("Assets/Create/UI Toolkit/Editor Window", false, 701, false)]
+        [MenuItem("Assets/Create/UI Toolkit/Editor Window", priority = 701)]
         public static void CreateTemplateEditorWindow()
         {
             UIElementsEditorWindowCreator editorWindow = GetWindow<UIElementsEditorWindowCreator>(true, "UI Toolkit Editor Window Creator");

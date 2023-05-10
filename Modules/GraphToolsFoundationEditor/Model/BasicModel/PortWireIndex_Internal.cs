@@ -4,38 +4,46 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
+    interface IPortWireIndexModel_Internal
+    {
+        public PortModel FromPort { get; }
+        public PortModel ToPort { get; }
+    }
+
     /// <summary>
     /// Implements an index to quickly retrieve the list of wires that are connected to a port.
     /// </summary>
     /// <remarks>
     /// The index needs to be kept up-to-date. In addition to adding and removing wires to it,
     /// it needs to be notified when any of the ports of a wire changes,
-    /// by calling <see cref="UpdateWire"/>, or when <see cref="PortModel.UniqueName"/> changes, by calling
-    /// <see cref="UpdatePortUniqueName"/>.
+    /// by calling <see cref="WirePortsChanged"/>, or when <see cref="PortModel.UniqueName"/> changes, by calling
+    /// <see cref="PortUniqueNameChanged"/>.
     /// </remarks>
-    class PortWireIndex_Internal
+    class PortWireIndex_Internal<TWire> where TWire : class, IPortWireIndexModel_Internal
+
     {
-        static readonly IReadOnlyList<WireModel> k_EmptyWireModelList = new List<WireModel>();
+        static readonly IReadOnlyList<TWire> k_EmptyWireModelList = new List<TWire>();
 
         /// <summary>
         /// Used to send 1 wire to the list reordering method.
         /// </summary>
-        static readonly List<WireModel> k_OneWireList = new List<WireModel>(1) { null };
+        static readonly List<TWire> k_OneWireList = new List<TWire>(1) { null };
 
-        GraphModel m_GraphModel;
+        IReadOnlyList<TWire> m_WireModels;
         bool m_IsDirty;
-        Dictionary<(SerializableGUID nodeGUID, string portUniqueName, PortDirection direction), List<WireModel>> m_WiresByPort;
+        Dictionary<(Hash128 nodeGUID, string portUniqueName, PortDirection direction), List<TWire>> m_WiresByPort;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="PortWireIndex_Internal"/> class.
+        /// Initializes a new instance of the <see cref="PortWireIndex_Internal{TWire}"/> class to index <paramref name="wireModels"/>.
         /// </summary>
-        public PortWireIndex_Internal(GraphModel graphModel)
+        public PortWireIndex_Internal(IReadOnlyList<TWire> wireModels)
         {
-            m_GraphModel = graphModel;
-            m_WiresByPort = new Dictionary<(SerializableGUID nodeGUID, string portUniqueName, PortDirection direction), List<WireModel>>();
+            m_WireModels = wireModels;
+            m_WiresByPort = new Dictionary<(Hash128 nodeGUID, string portUniqueName, PortDirection direction), List<TWire>>();
             m_IsDirty = true;
         }
 
@@ -44,7 +52,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="portModel">The port for which we want the list of connected wires.</param>
         /// <returns>The list of wires connected to the port.</returns>
-        public IReadOnlyList<WireModel> GetWiresForPort(PortModel portModel)
+        public IReadOnlyList<TWire> GetWiresForPort(PortModel portModel)
         {
             if (portModel?.NodeModel == null)
                 return k_EmptyWireModelList;
@@ -58,7 +66,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="portModel">The port for which we want the list of connected wires.</param>
         /// <param name="wireList">The list of wires connected to the port.</param>
         /// <returns><c>true</c> if the list was found, <c>false</c> otherwise.</returns>
-        bool TryGetWiresForPort(PortModel portModel, out List<WireModel> wireList)
+        bool TryGetWiresForPort(PortModel portModel, out List<TWire> wireList)
         {
             if (m_IsDirty)
                 Reindex();
@@ -76,10 +84,10 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// Adds a wire to the index, using its current from and to ports.
+        /// Updates the index when a wire is added to the wire list.
         /// </summary>
-        /// <param name="wireModel">The wire to add.</param>
-        public void AddWire(WireModel wireModel)
+        /// <param name="wireModel">The wire added.</param>
+        public void WireAdded(TWire wireModel)
         {
             if (m_IsDirty || wireModel == null)
             {
@@ -99,11 +107,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 AddKeyWire(key, wireModel);
             }
 
-            void AddKeyWire((SerializableGUID, string, PortDirection) key, WireModel wire)
+            void AddKeyWire((Hash128, string, PortDirection) key, TWire wire)
             {
                 if (!m_WiresByPort.TryGetValue(key, out var wireList))
                 {
-                    wireList = new List<WireModel>();
+                    wireList = new List<TWire>();
                     m_WiresByPort[key] = wireList;
                 }
 
@@ -118,7 +126,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="wireModel">The wire to update.</param>
         /// <param name="oldPort">The previous port value.</param>
         /// <param name="newPort">The new port value.</param>
-        public void UpdateWire(WireModel wireModel, PortModel oldPort, PortModel newPort)
+        public void WirePortsChanged(TWire wireModel, PortModel oldPort, PortModel newPort)
         {
             if (m_IsDirty || oldPort == newPort)
             {
@@ -134,12 +142,13 @@ namespace Unity.GraphToolsFoundation.Editor
                     wireList.Remove(wireModel);
                 }
             }
+
             if (newPort != null)
             {
                 var key = (newPort.NodeModel.Guid, newPort.UniqueName, newPort.Direction);
                 if (!m_WiresByPort.TryGetValue(key, out var wireList))
                 {
-                    wireList = new List<WireModel>();
+                    wireList = new List<TWire>();
                     m_WiresByPort[key] = wireList;
                 }
 
@@ -154,7 +163,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="portModel">The port model to update.</param>
         /// <param name="oldName">The old unique name of the port.</param>
         /// <param name="newName">The new unique name of the port.</param>
-        public void UpdatePortUniqueName(PortModel portModel, string oldName, string newName)
+        public void PortUniqueNameChanged(PortModel portModel, string oldName, string newName)
         {
             if (m_IsDirty || oldName == newName || oldName == null || newName == null)
             {
@@ -178,7 +187,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="portModel">The port model to update.</param>
         /// <param name="oldDirection">The old direction of the port.</param>
         /// <param name="newDirection">The new direction of the port.</param>
-        public void UpdatePortDirection(PortModel portModel, PortDirection oldDirection, PortDirection newDirection)
+        public void PortDirectionChanged(PortModel portModel, PortDirection oldDirection, PortDirection newDirection)
         {
             if (m_IsDirty || oldDirection == newDirection)
             {
@@ -197,10 +206,10 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// Removes a wire from the index.
+        /// Updates the index when a wire is removed from the wire list.
         /// </summary>
         /// <param name="wireModel">The wire to remove.</param>
-        public void RemoveWire(WireModel wireModel)
+        public void WireRemoved(TWire wireModel)
         {
             if (m_IsDirty || wireModel == null)
             {
@@ -220,7 +229,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 RemoveKeyWire(key, wireModel);
             }
 
-            void RemoveKeyWire((SerializableGUID, string, PortDirection) key, WireModel wire)
+            void RemoveKeyWire((Hash128, string, PortDirection) key, TWire wire)
             {
                 if (m_WiresByPort.TryGetValue(key, out var wireList))
                 {
@@ -243,17 +252,17 @@ namespace Unity.GraphToolsFoundation.Editor
                 pair.Value.Clear();
             }
 
-            foreach (var wireModel in m_GraphModel.WireModels)
+            foreach (var wireModel in m_WireModels)
             {
-                AddWire(wireModel);
+                WireAdded(wireModel);
             }
 
-            List<(SerializableGUID nodeGUID, string portUniqueName, PortDirection direction)> toRemove = null;
+            List<(Hash128 nodeGUID, string portUniqueName, PortDirection direction)> toRemove = null;
             foreach (var pair in m_WiresByPort)
             {
                 if (pair.Value.Count == 0)
                 {
-                    toRemove ??= new List<(SerializableGUID nodeGUID, string portUniqueName, PortDirection direction)>();
+                    toRemove ??= new List<(Hash128 nodeGUID, string portUniqueName, PortDirection direction)>();
                     toRemove.Add(pair.Key);
                 }
             }
@@ -268,11 +277,11 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <summary>
-        /// Changes the order of a wire among its siblings in the index.
+        /// Updates the index when a wire is reordered.
         /// </summary>
         /// <param name="wireModel">The wire to move.</param>
         /// <param name="reorderType">The type of move to do.</param>
-        public void ReorderWire(WireModel wireModel, ReorderType reorderType)
+        public void WireReordered(TWire wireModel, ReorderType reorderType)
         {
             if (TryGetWiresForPort(wireModel.FromPort, out var list))
             {
@@ -281,7 +290,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             else
             {
-                throw new IndexOutOfRangeException($"{wireModel} not part of the {nameof(PortWireIndex_Internal)}.");
+                throw new IndexOutOfRangeException($"{wireModel} not part of the {typeof(PortWireIndex_Internal<>).Name}.");
             }
         }
     }

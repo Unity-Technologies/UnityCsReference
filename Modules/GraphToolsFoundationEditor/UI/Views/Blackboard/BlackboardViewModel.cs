@@ -42,7 +42,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Initializes a new instance of the <see cref="BlackboardViewModel"/> class.
         /// </summary>
         public BlackboardViewModel(GraphView graphView, DeclarationHighlighterStateComponent highlighterState)
-        : base(new SerializableGUID(typeof(BlackboardViewModel).FullName + graphView.GraphViewModel.Guid))
+        : base(Hash128.Compute(typeof(BlackboardViewModel).FullName + graphView.GraphViewModel.Guid))
         {
             ParentGraphView = graphView;
             HighlighterState = highlighterState;

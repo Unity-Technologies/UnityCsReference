@@ -10,6 +10,7 @@ using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
 
@@ -18,7 +19,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// <summary>
     /// Base class for windows to edit graphs.
     /// </summary>
-    abstract class GraphViewEditorWindow : EditorWindow, ISupportsOverlays
+    abstract class GraphViewEditorWindow : EditorWindow, ISupportsOverlays, ISerializationCallbackReceiver
     {
         const string k_SaveChangesMessage = "Changes to an external graph asset in the breadcrumb have not been saved:\n\n{0}\nWould you like to save the graph asset?\n\n";
         bool m_HasMultipleWindowsForSameGraph;
@@ -97,15 +98,20 @@ namespace Unity.GraphToolsFoundation.Editor
 
         GraphProcessingStatusObserver_Internal m_GraphProcessingStatusObserver;
 
+        [SerializeField, Obsolete]
+#pragma warning disable CS0618
+        SerializableGUID m_WindowID;
+#pragma warning restore CS0618
+
         [SerializeField]
-        Hash128 m_WindowID;
+        Hash128 m_WindowHash;
 
         public virtual IEnumerable<GraphView> GraphViews
         {
             get { yield return GraphView; }
         }
 
-        protected Hash128 WindowID => m_WindowID;
+        protected Hash128 WindowID => m_WindowHash;
 
         /// <summary>
         /// The graph tool.
@@ -122,7 +128,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected GraphViewEditorWindow()
         {
             s_LastFocusedEditor = GetInstanceID();
-            m_WindowID = SerializableGUID.Generate();
+            m_WindowHash = Hash128Extensions.Generate();
         }
 
         protected virtual BaseGraphTool CreateGraphTool()
@@ -212,7 +218,7 @@ namespace Unity.GraphToolsFoundation.Editor
             using var toolStateUpdater = GraphTool.ToolState.UpdateScope;
             toolStateUpdater.ClearHistory();
             toolStateUpdater.LoadGraph(null, null);
-            m_WindowID = SerializableGUID.Generate();
+            m_WindowHash = Hash128Extensions.Generate();
         }
 
         void LoadLastOpenedGraph()
@@ -532,7 +538,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (window != null)
                 {
                     window.Focus();
-                    var guid = new SerializableGUID(pathAndGuid[1]);
+                    var guid = Hash128.Compute(pathAndGuid[1]);
                     if (window.GraphView.GraphModel.TryGetModelFromGuid(guid, out var nodeModel))
                     {
                         var graphElement = nodeModel.GetView<GraphElement>(window.GraphView);
@@ -673,6 +679,22 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
             }
             saveChangesMessage = string.Format(k_SaveChangesMessage, string.IsNullOrEmpty(pathsStr) ? "Path not found." : pathsStr);
+        }
+
+        /// <inheritdoc />
+        public void OnBeforeSerialize()
+        {
+#pragma warning disable CS0612
+            m_WindowID = m_WindowHash;
+#pragma warning restore CS0612
+        }
+
+        /// <inheritdoc />
+        public void OnAfterDeserialize()
+        {
+#pragma warning disable CS0612
+            m_WindowHash = m_WindowID;
+#pragma warning restore CS0612
         }
     }
 }

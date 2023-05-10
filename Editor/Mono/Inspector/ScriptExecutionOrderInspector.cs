@@ -123,7 +123,7 @@ namespace UnityEditor
             };
         }
 
-        [MenuItem("CONTEXT/MonoManager/Reset")]
+        [MenuItem("CONTEXT/MonoManager/Reset", secondaryPriority = 14)]
         private static void Reset(MenuCommand cmd)
         {
             var instances = ScriptExecutionOrderInspector.GetInstances();

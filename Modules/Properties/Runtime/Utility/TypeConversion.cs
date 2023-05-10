@@ -6,9 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 namespace Unity.Properties
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     readonly struct ConversionRegistry : IEqualityComparer<ConversionRegistry>
     {
         class ConverterKeyComparer : IEqualityComparer<ConverterKey>

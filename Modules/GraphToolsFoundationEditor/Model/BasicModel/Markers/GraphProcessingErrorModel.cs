@@ -17,7 +17,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The GUID of the node to which the error is related.
         /// </summary>
-        public SerializableGUID ParentNodeGuid { get; }
+        public Hash128 ParentNodeGuid { get; }
 
         /// <inheritdoc />
         public override LogType ErrorType { get; }

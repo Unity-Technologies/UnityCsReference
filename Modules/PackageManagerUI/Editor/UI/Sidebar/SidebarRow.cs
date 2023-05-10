@@ -10,17 +10,25 @@ internal class SidebarRow : VisualElement
 {
     public const string k_SelectedClassName = "selected";
     public const string k_IndentedClassName = "indented";
+    public const string k_SidebarIconClassName = "sidebarIcon";
+    public const string k_SidebarTitleClassName = "sidebarTitle";
+    public const string k_IconNamePrefix = "icon";
 
     public string pageId { get; }
-    private Label m_RowLabel;
+    private Label m_RowTitle;
+    private VisualElement m_RowIcon;
 
-    public SidebarRow(string pageId, string rowName, bool isIndented = false)
+    public SidebarRow(string pageId, string rowTitle, PageIcon icon = PageIcon.None, bool isIndented = false)
     {
-        tooltip = rowName;
+        tooltip = rowTitle;
         this.pageId = pageId;
 
-        m_RowLabel = new Label { text = rowName };
-        Add(m_RowLabel);
+        m_RowIcon = new VisualElement {name = k_IconNamePrefix + icon};
+        m_RowIcon.classList.Add(k_SidebarIconClassName);
+        Add(m_RowIcon);
+        m_RowTitle = new Label { text = rowTitle };
+        m_RowTitle.classList.Add(k_SidebarTitleClassName);
+        Add(m_RowTitle);
 
         EnableInClassList(k_IndentedClassName, isIndented);
     }

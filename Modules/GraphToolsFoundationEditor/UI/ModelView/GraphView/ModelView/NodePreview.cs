@@ -266,7 +266,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var previewRect = m_PreviewContainer.localBound;
             previewRect.position = Vector2.zero;
 
-            var togglePreviewButton = node.SafeQ(IconTitleProgressPart.previewButtonPartName);
+            var togglePreviewButton = node.SafeQ(NodeTitlePart.previewButtonPartName);
             var tipRect = new Rect(previewRect.width - (node.layout.width - togglePreviewButton.layout.xMin),
                 previewRect.yMax, togglePreviewButton.layout.width, tipHeight);
 

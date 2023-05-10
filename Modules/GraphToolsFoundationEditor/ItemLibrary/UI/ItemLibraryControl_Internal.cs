@@ -104,7 +104,7 @@ namespace Unity.ItemLibrary.Editor
         VisualElement m_Resizer;
         Label m_TitleLabel;
 
-        public ItemLibraryControl_Internal()
+        public ItemLibraryControl_Internal(TypeHandleInfos typeHandleInfos)
         {
             IsIndexing_Internal = true;
             this.AddStylesheetResourceWithSkinVariant_Internal(k_StylesheetName);
@@ -121,7 +121,7 @@ namespace Unity.ItemLibrary.Editor
 
             if (listView != null)
             {
-                m_TreeView = new LibraryTreeView_Internal
+                m_TreeView = new LibraryTreeView_Internal(typeHandleInfos)
                 {
                     fixedItemHeight = 25,
                     focusable = true,

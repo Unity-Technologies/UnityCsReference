@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -28,9 +28,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public SpawnFlags SpawnFlags { get; }
 
         /// <summary>
-        /// The SerializableGUID to assign to the newly created item.
+        /// The guid to assign to the newly created item.
         /// </summary>
-        public SerializableGUID Guid { get; }
+        public Hash128 Guid { get; }
 
         /// <summary>
         /// Initializes a new GraphNodeCreationData.
@@ -38,8 +38,8 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="graphModel">The interface to the graph where we want the node to be created in.</param>
         /// <param name="position">The position at which the node should be created.</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
-        public GraphNodeCreationData(GraphModel graphModel, Vector2 position, SpawnFlags spawnFlags = SpawnFlags.Default, SerializableGUID guid = default)
+        /// <param name="guid">The guid to assign to the newly created item.</param>
+        public GraphNodeCreationData(GraphModel graphModel, Vector2 position, SpawnFlags spawnFlags = SpawnFlags.Default, Hash128 guid = default)
         {
             GraphModel = graphModel;
             Position = position;

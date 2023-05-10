@@ -80,14 +80,14 @@ namespace UnityEditor
             Selection.activeGameObject = go;
         }
 
-        [MenuItem("GameObject/Create Empty %#n", priority = 0)]
+        [MenuItem("GameObject/Create Empty %#n", priority = 0, secondaryPriority = 1)]
         static void CreateEmpty(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
             Place(ObjectFactory.CreateGameObject("GameObject"), parent);
         }
 
-        [MenuItem("GameObject/Create Empty Child &#n", priority = 0)]
+        [MenuItem("GameObject/Create Empty Child &#n", priority = 0, secondaryPriority = 2)]
         static void CreateEmptyChild(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
@@ -109,7 +109,7 @@ namespace UnityEditor
         }
 
         // Avoiding executing this method per-object, by adding menu item manually in SceneHierarchy
-        [MenuItem("GameObject/Create Empty Parent %#g", priority = 0)]
+        [MenuItem("GameObject/Create Empty Parent %#g", priority = 0, secondaryPriority = 3)]
         internal static void CreateEmptyParent()
         {
             Transform[] selected = Selection.transforms;

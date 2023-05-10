@@ -9,7 +9,7 @@ namespace UnityEditor.Experimental.GraphView
 {
     public class ClickSelector : MouseManipulator
     {
-        static bool WasSelectableDescendantHitByMouse(GraphElement currentTarget, MouseDownEvent evt)
+        internal static bool WasSelectableDescendantHitByMouse(GraphElement currentTarget, MouseDownEvent evt)
         {
             VisualElement targetElement = evt.target as VisualElement;
 

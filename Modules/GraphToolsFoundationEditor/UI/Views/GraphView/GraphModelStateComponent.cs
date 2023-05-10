@@ -227,42 +227,42 @@ namespace Unity.GraphToolsFoundation.Editor
             static readonly List<ChangeHint> k_DefaultChangeHints = new List<ChangeHint> { ChangeHint.Unspecified };
 
             [SerializeField]
-            List<SerializableGUID> m_NewModelList;
+            List<Hash128> m_NewModelList;
 
             [SerializeField]
-            List<SerializableGUID> m_ChangedModelsList;
+            List<Hash128> m_ChangedModelsList;
 
             [SerializeField]
             List<int> m_ChangedModelsHintList;
 
             [SerializeField]
-            List<SerializableGUID> m_DeletedModelList;
+            List<Hash128> m_DeletedModelList;
 
-            HashSet<SerializableGUID> m_NewModels;
-            Dictionary<SerializableGUID, List<ChangeHint>> m_ChangedModelsAndHints;
-            HashSet<SerializableGUID> m_DeletedModels;
+            HashSet<Hash128> m_NewModels;
+            Dictionary<Hash128, List<ChangeHint>> m_ChangedModelsAndHints;
+            HashSet<Hash128> m_DeletedModels;
 
             /// <summary>
             /// The new models.
             /// </summary>
-            public IEnumerable<SerializableGUID> NewModels => m_NewModels;
+            public IEnumerable<Hash128> NewModels => m_NewModels;
 
             /// <summary>
             /// The changed models and the hints about what changed.
             /// </summary>
-            public IReadOnlyDictionary<SerializableGUID, IReadOnlyList<ChangeHint>> ChangedModelsAndHints =>
-                m_ChangedModelsAndHints.ToDictionary<KeyValuePair<SerializableGUID, List<ChangeHint>>, SerializableGUID, IReadOnlyList<ChangeHint>>(
+            public IReadOnlyDictionary<Hash128, IReadOnlyList<ChangeHint>> ChangedModelsAndHints =>
+                m_ChangedModelsAndHints.ToDictionary<KeyValuePair<Hash128, List<ChangeHint>>, Hash128, IReadOnlyList<ChangeHint>>(
                     kv => kv.Key, kv => kv.Value);
 
             /// <summary>
             /// The changed models.
             /// </summary>
-            public IEnumerable<SerializableGUID> ChangedModels => m_ChangedModelsAndHints.Keys;
+            public IEnumerable<Hash128> ChangedModels => m_ChangedModelsAndHints.Keys;
 
             /// <summary>
             /// The deleted models.
             /// </summary>
-            public IEnumerable<SerializableGUID> DeletedModels => m_DeletedModels;
+            public IEnumerable<Hash128> DeletedModels => m_DeletedModels;
 
             /// <summary>
             /// The models whose title will be focused for rename.
@@ -274,9 +274,9 @@ namespace Unity.GraphToolsFoundation.Editor
             /// </summary>
             public Changeset()
             {
-                m_NewModels = new HashSet<SerializableGUID>();
-                m_ChangedModelsAndHints = new Dictionary<SerializableGUID, List<ChangeHint>>();
-                m_DeletedModels = new HashSet<SerializableGUID>();
+                m_NewModels = new HashSet<Hash128>();
+                m_ChangedModelsAndHints = new Dictionary<Hash128, List<ChangeHint>>();
+                m_DeletedModels = new HashSet<Hash128>();
             }
 
             /// <summary>
@@ -294,11 +294,11 @@ namespace Unity.GraphToolsFoundation.Editor
             /// </summary>
             /// <param name="modelGuids">The guids of the models to add.</param>
             /// <returns>True if at least one model was added to the list of new models, false otherwise.</returns>
-            public bool AddNewModels(IEnumerable<SerializableGUID> modelGuids)
+            public bool AddNewModels(IEnumerable<Hash128> modelGuids)
             {
                 var somethingChanged = false;
 
-                foreach (var guid in modelGuids ?? Enumerable.Empty<SerializableGUID>())
+                foreach (var guid in modelGuids ?? Enumerable.Empty<Hash128>())
                 {
                     if (m_DeletedModels.Contains(guid))
                         continue;
@@ -329,7 +329,7 @@ namespace Unity.GraphToolsFoundation.Editor
             /// </summary>
             /// <param name="changes">The models to add.</param>
             /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
-            public bool AddChangedModels(IEnumerable<KeyValuePair<SerializableGUID, IReadOnlyList<ChangeHint>>> changes)
+            public bool AddChangedModels(IEnumerable<KeyValuePair<Hash128, IReadOnlyList<ChangeHint>>> changes)
             {
                 var somethingChanged = false;
 
@@ -364,12 +364,12 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <param name="modelGuids">The guids of the models to add.</param>
             /// <param name="changeHint">A hint about what changed on the models.</param>
             /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
-            public bool AddChangedModels(IEnumerable<SerializableGUID> modelGuids, ChangeHint changeHint = null)
+            public bool AddChangedModels(IEnumerable<Hash128> modelGuids, ChangeHint changeHint = null)
             {
                 var somethingChanged = false;
                 changeHint ??= ChangeHint.Unspecified;
 
-                foreach (var model in modelGuids ?? Enumerable.Empty<SerializableGUID>())
+                foreach (var model in modelGuids ?? Enumerable.Empty<Hash128>())
                 {
                     if (m_NewModels.Contains(model) ||
                         m_DeletedModels.Contains(model))
@@ -401,12 +401,12 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <param name="modelGuids">The guids of the models to add.</param>
             /// <param name="changeHints">Hints about what changed on the models. The hints apply to all models.</param>
             /// <returns>True if at least one model was added to the list of changed models, false otherwise.</returns>
-            public bool AddChangedModels(IEnumerable<SerializableGUID> modelGuids, IReadOnlyList<ChangeHint> changeHints)
+            public bool AddChangedModels(IEnumerable<Hash128> modelGuids, IReadOnlyList<ChangeHint> changeHints)
             {
                 var somethingChanged = false;
                 changeHints ??= k_DefaultChangeHints;
 
-                foreach (var guid in modelGuids ?? Enumerable.Empty<SerializableGUID>())
+                foreach (var guid in modelGuids ?? Enumerable.Empty<Hash128>())
                 {
                     if (m_NewModels.Contains(guid) ||
                         m_DeletedModels.Contains(guid))
@@ -420,7 +420,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 return somethingChanged;
             }
 
-            void AddChangedModel(SerializableGUID modelGuid, ChangeHint changeHint)
+            void AddChangedModel(Hash128 modelGuid, ChangeHint changeHint)
             {
                 if (!m_ChangedModelsAndHints.TryGetValue(modelGuid, out var currentHints))
                 {
@@ -432,7 +432,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
             }
 
-            void AddChangedModel(SerializableGUID modelGuid, IReadOnlyList<ChangeHint> changeHints)
+            void AddChangedModel(Hash128 modelGuid, IReadOnlyList<ChangeHint> changeHints)
             {
                 if (!m_ChangedModelsAndHints.TryGetValue(modelGuid, out var currentHints))
                 {
@@ -478,10 +478,10 @@ namespace Unity.GraphToolsFoundation.Editor
             /// </summary>
             /// <param name="modelGuids">The guids of the models to add.</param>
             /// <returns>True if at least one model was added to the list of deleted models, false otherwise.</returns>
-            public bool AddDeletedModels(IEnumerable<SerializableGUID> modelGuids)
+            public bool AddDeletedModels(IEnumerable<Hash128> modelGuids)
             {
                 var somethingChanged = false;
-                foreach (var guid in modelGuids ?? Enumerable.Empty<SerializableGUID>())
+                foreach (var guid in modelGuids ?? Enumerable.Empty<Hash128>())
                 {
                     var wasNew = m_NewModels.Remove(guid);
                     m_ChangedModelsAndHints.Remove(guid);
@@ -585,7 +585,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 m_NewModelList = m_NewModels.ToList();
 
-                m_ChangedModelsList = new List<SerializableGUID>();
+                m_ChangedModelsList = new List<Hash128>();
                 m_ChangedModelsHintList = new List<int>();
                 foreach (var kv in m_ChangedModelsAndHints)
                 {
@@ -603,13 +603,13 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <inheritdoc />
             public void OnAfterDeserialize()
             {
-                m_NewModels = new HashSet<SerializableGUID>(m_NewModelList);
-                m_DeletedModels = new HashSet<SerializableGUID>(m_DeletedModelList);
+                m_NewModels = new HashSet<Hash128>(m_NewModelList);
+                m_DeletedModels = new HashSet<Hash128>(m_DeletedModelList);
 
                 var declaredHints = Enumeration.GetDeclared<ChangeHint>().ToList();
 
                 int hintIndex = 0;
-                m_ChangedModelsAndHints = new Dictionary<SerializableGUID, List<ChangeHint>>();
+                m_ChangedModelsAndHints = new Dictionary<Hash128, List<ChangeHint>>();
                 for (var modelIndex = 0; modelIndex < m_ChangedModelsList.Count; modelIndex++)
                 {
                     var hintCount = m_ChangedModelsHintList[hintIndex++];
@@ -635,7 +635,7 @@ namespace Unity.GraphToolsFoundation.Editor
         Changeset CurrentChangeset => m_ChangesetManager.CurrentChangeset;
 
         /// <inheritdoc />
-        public override IChangesetManager ChangesetManager => m_ChangesetManager;
+        public override ChangesetManager ChangesetManager => m_ChangesetManager;
 
         [SerializeField]
         OpenedGraph m_CurrentGraph;

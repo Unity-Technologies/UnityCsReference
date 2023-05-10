@@ -12,21 +12,23 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly VisualElement m_ReleasesContainer;
 
+        protected override bool requiresUserSignIn => true;
+
         public override bool IsValid(IPackageVersion version)
         {
             return version != null && version.package.product != null && !version.HasTag(PackageTag.UpmFormat);
         }
 
-        public PackageDetailsReleasesTab()
+        public PackageDetailsReleasesTab(UnityConnectProxy unityConnect) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Releases");
 
             m_ReleasesContainer = new VisualElement { name = "releasesContainer" };
-            Add(m_ReleasesContainer);
+            m_ContentContainer.Add(m_ReleasesContainer);
         }
 
-        public override void Refresh(IPackageVersion version)
+        protected override void RefreshContent(IPackageVersion version)
         {
             m_ReleasesContainer.Clear();
 

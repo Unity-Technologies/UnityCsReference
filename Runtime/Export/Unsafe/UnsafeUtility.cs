@@ -10,6 +10,7 @@ using Unity.Burst;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
@@ -130,6 +131,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             return SizeOf<AlignOfHelper<T>>() - SizeOf<T>();
         }
 
+        [VisibleToOtherModules("UnityEngine.ImageConversionModule")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe Span<byte> GetByteSpanFromArray(System.Array array, int elementSize)
         {

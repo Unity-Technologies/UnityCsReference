@@ -4,6 +4,7 @@
 
 using System;
 using System.Text;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore.Text
@@ -339,6 +340,7 @@ namespace UnityEngine.TextCore.Text
         public Quaternion fxRotation;
     }
 
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal static class TextGeneratorUtilities
     {
         public static readonly Vector2 largePositiveVector2 = new Vector2(2147483647, 2147483647);

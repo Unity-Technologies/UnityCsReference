@@ -18,6 +18,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public abstract class IntegratedSubsystemDescriptor : ISubsystemDescriptorImpl
     {
+        [VisibleToOtherModules("UnityEngine.XRModule")]
         internal IntPtr m_Ptr;
 
         public string id => SubsystemDescriptorBindings.GetId(m_Ptr);

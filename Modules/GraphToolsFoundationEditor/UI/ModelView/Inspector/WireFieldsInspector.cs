@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -20,20 +18,20 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="name">The name of the part.</param>
         /// <param name="models">The models displayed in this part.</param>
-        /// <param name="rootView">The root view.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="filter">A filter function to select which fields are displayed in the inspector. If null, defaults to <see cref="SerializedFieldsInspector.CanBeInspected"/>.</param>
         /// <returns>A new instance of <see cref="WireFieldsInspector"/>.</returns>
-        public static WireFieldsInspector Create(string name, IEnumerable<WireModel> models, RootView rootView, string parentClassName, Func<FieldInfo, bool> filter = null)
+        public static WireFieldsInspector Create(string name, IReadOnlyList<WireModel> models, ChildView ownerElement, string parentClassName, Func<FieldInfo, bool> filter = null)
         {
-            return models.Any() ? new WireFieldsInspector(name, models, rootView, parentClassName, filter) : null;
+            return models.Count > 0 ? new WireFieldsInspector(name, models, ownerElement, parentClassName, filter) : null;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WireFieldsInspector"/> class.
         /// </summary>
-        protected WireFieldsInspector(string name, IEnumerable<WireModel> models, RootView rootView, string parentClassName, Func<FieldInfo, bool> filter)
-            : base(name, models, rootView, parentClassName, filter)
+        protected WireFieldsInspector(string name, IReadOnlyList<WireModel> models, ChildView ownerElement, string parentClassName, Func<FieldInfo, bool> filter)
+            : base(name, models, ownerElement, parentClassName, filter)
         {
         }
 

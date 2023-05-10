@@ -162,6 +162,26 @@ namespace Unity.GraphToolsFoundation
         }
 
         /// <summary>
+        /// The UnityEngine.Texture type.
+        /// </summary>
+        public static TypeHandle Texture { get; } = TypeHandleHelpers.GenerateTypeHandle(typeof(Texture));
+
+        /// <summary>
+        /// The UnityEngine.Texture2D type.
+        /// </summary>
+        public static TypeHandle Texture2D { get; } = TypeHandleHelpers.GenerateTypeHandle(typeof(Texture2D));
+
+        /// <summary>
+        /// The UnityEngine.Texture2DArray type.
+        /// </summary>
+        public static TypeHandle Texture2DArray { get; } = TypeHandleHelpers.GenerateTypeHandle(typeof(Texture2DArray));
+
+        /// <summary>
+        /// The UnityEngine.Texture3D type.
+        /// </summary>
+        public static TypeHandle Texture3D { get; } = TypeHandleHelpers.GenerateTypeHandle(typeof(Texture3D));
+
+        /// <summary>
         /// Whether the type handle is valid.
         /// </summary>
         public bool IsValid => !string.IsNullOrEmpty(m_Identification);
@@ -193,6 +213,7 @@ namespace Unity.GraphToolsFoundation
         /// The name of the type.
         /// </summary>
         public string Name => m_Name ??= IsCustomTypeHandle_Internal ? m_Identification : Resolve().Name;
+
         /// <summary>
         /// Determines whether this TypeHandle is equal to another TypeHandle.
         /// </summary>

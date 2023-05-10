@@ -28,7 +28,7 @@ namespace Unity.GraphToolsFoundation.Editor
             public VariableDeclarationModel m_Model;
 
             [SerializeField]
-            public SerializableGUID m_GroupGUID;
+            public Hash128 m_GroupGUID;
 
             [SerializeField]
             public int m_GroupIndex;
@@ -41,7 +41,7 @@ namespace Unity.GraphToolsFoundation.Editor
         internal struct GroupPath_Internal
         {
             [SerializeField]
-            public SerializableGUID m_OriginalGUID;
+            public Hash128 m_OriginalGUID;
 
             [SerializeField]
             public string[] m_Path;
@@ -258,6 +258,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             foreach (var o in wiresToCopy)
             {
+                // ReSharper disable once SuspiciousTypeConversion.Global
                 (o as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
             }
             foreach (var o in declarations)
@@ -270,14 +271,17 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             foreach (var o in groupsToCopy)
             {
+                // ReSharper disable once SuspiciousTypeConversion.Global
                 (o as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
             }
             foreach (var o in stickyNotesToCopy)
             {
+                // ReSharper disable once SuspiciousTypeConversion.Global
                 (o as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
             }
             foreach (var o in placematsToCopy)
             {
+                // ReSharper disable once SuspiciousTypeConversion.Global
                 (o as ICopyPasteCallbackReceiver)?.OnBeforeCopy();
             }
 
@@ -307,9 +311,9 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        static void RecurseAddMapping(Dictionary<string, GraphElementModel> elementMapping, GraphElementModel originalElement, GraphElementModel newElement)
+        static void RecurseAddMapping(Dictionary<Hash128, GraphElementModel> elementMapping, GraphElementModel originalElement, GraphElementModel newElement)
         {
-            elementMapping[originalElement.Guid.ToString()] = newElement;
+            elementMapping[originalElement.Guid] = newElement;
 
             if (newElement is IGraphElementContainer container)
                 foreach (var subElement in ((IGraphElementContainer)originalElement).GraphElementModels.Zip(
@@ -330,15 +334,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="copyPasteData">The data to paste.</param>
         /// <param name="graphModel">The graph model.</param>
         /// <param name="selectedGroup">The currently selected group, which will receive pasted variables.</param>
-        /// <returns>A dictionary that maps original element guids to newly pasted models.</returns>
-        public static Dictionary<string, GraphElementModel> PasteSerializedData(
+        public static void PasteSerializedData(
             PasteOperation operation, Vector2 delta,
             GraphModelStateComponent.StateUpdater graphModelStateUpdater,
             BlackboardViewStateComponent.StateUpdater bbUpdater,
             SelectionStateComponent.StateUpdater selectionStateUpdater,
             CopyPasteData copyPasteData, GraphModel graphModel, GroupModel selectedGroup)
         {
-            var elementMapping = new Dictionary<string, GraphElementModel>();
+            var elementMapping = new Dictionary<Hash128, GraphElementModel>();
 
             var declarationMapping = new Dictionary<string, VariableDeclarationModel>();
 
@@ -386,6 +389,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     createdGroups.Add(newGroup);
                     selectionStateUpdater.SelectElement(newGroup, true);
 
+                    // ReSharper disable once SuspiciousTypeConversion.Global
                     (newGroup as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                 }
             }
@@ -461,7 +465,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 selectionStateUpdater?.SelectElements(duplicatedModels, true);
             }
 
-            Dictionary<SerializableGUID, DeclarationModel> portalDeclarations = new Dictionary<SerializableGUID, DeclarationModel>();
+            Dictionary<Hash128, DeclarationModel> portalDeclarations = new Dictionary<Hash128, DeclarationModel>();
             List<WirePortalModel> portalModels = new List<WirePortalModel>();
             List<WirePortalModel> existingPortalNodes = graphModel.NodeModels.OfType<WirePortalModel>().ToList();
 
@@ -470,6 +474,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (!graphModel.Stencil.CanPasteNode(originalModel, graphModel))
                     continue;
                 if (originalModel.NeedsContainer())
+                    continue;
+                if (!graphModel.Stencil.AllowPortalCreation && originalModel is WirePortalModel)
                     continue;
 
                 VariableDeclarationModel declarationModel = null;
@@ -560,15 +566,22 @@ namespace Unity.GraphToolsFoundation.Editor
             // to resolve the PortModel from the PortReference (the wire is not in a GraphModel).
             foreach (var wire in copyPasteData.m_Wires)
             {
-                elementMapping.TryGetValue(wire.ToNodeGuid.ToString(), out var newInput);
-                elementMapping.TryGetValue(wire.FromNodeGuid.ToString(), out var newOutput);
+                graphModel.TryGetModelFromGuid(wire.ToNodeGuid, out var originalToNode);
+                graphModel.TryGetModelFromGuid(wire.FromNodeGuid, out var originalFromNode);
+                if (!graphModel.Stencil.AllowPortalCreation && (originalToNode is WirePortalModel || originalFromNode is WirePortalModel))
+                {
+                    continue;
+                }
+
+                elementMapping.TryGetValue(wire.ToNodeGuid, out var newInput);
+                elementMapping.TryGetValue(wire.FromNodeGuid, out var newOutput);
 
                 var copiedWire = graphModel.DuplicateWire(wire, newInput as AbstractNodeModel, newOutput as AbstractNodeModel);
                 if (copiedWire != null)
                 {
-                    elementMapping.Add(wire.Guid.ToString(), copiedWire);
                     selectionStateUpdater?.SelectElement(copiedWire, true);
 
+                    // ReSharper disable once SuspiciousTypeConversion.Global
                     (copiedWire as ICopyPasteCallbackReceiver)?.OnAfterPaste();
                 }
             }
@@ -582,8 +595,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 pastedStickyNote.Theme = stickyNote.Theme;
                 pastedStickyNote.TextSize = stickyNote.TextSize;
                 selectionStateUpdater?.SelectElement(pastedStickyNote, true);
-                elementMapping.Add(stickyNote.Guid.ToString(), pastedStickyNote);
 
+                // ReSharper disable once SuspiciousTypeConversion.Global
                 (pastedStickyNote as ICopyPasteCallbackReceiver)?.OnAfterPaste();
             }
 
@@ -596,13 +609,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 PlacematModel.CopyPlacematParameters(placemat,pastedPlacemat);
                 pastedPlacemat.Title = newTitle;
                 selectionStateUpdater?.SelectElement(pastedPlacemat, true);
-                elementMapping.Add(placemat.Guid.ToString(), pastedPlacemat);
 
+                // ReSharper disable once SuspiciousTypeConversion.Global
                 (pastedPlacemat as ICopyPasteCallbackReceiver)?.OnAfterPaste();
             }
 
             graphModelStateUpdater?.MarkUpdated(changeScope.ChangeDescription);
-            return elementMapping;
         }
     }
 }

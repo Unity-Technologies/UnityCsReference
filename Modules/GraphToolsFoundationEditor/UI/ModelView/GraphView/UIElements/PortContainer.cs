@@ -26,7 +26,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         string m_CurrentPortCountClassName;
         bool m_SetupLabelWidth;
-        float m_MaxInputLabelWidth;
+        float m_MaxLabelWidth;
         bool m_SetCountModifierOnParent;
 
         /// <summary>
@@ -35,10 +35,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="setupLabelWidth">Whether the label width should be computed based on the largest label.</param>
         /// <param name="maxInputLabelWidth">If <see cref="setupLabelWidth"/> is true, sets the maximum width for the labels.</param>
         /// <param name="setCountModifierOnParent">Whether to set the class for the modifier of the number of port on parent <see cref="VisualElement"/> too.</param>
-        public PortContainer(bool setupLabelWidth, float maxInputLabelWidth, bool setCountModifierOnParent = false)
+        public PortContainer(bool setupLabelWidth, float maxLabelWidth, bool setCountModifierOnParent = false)
         {
             m_SetupLabelWidth = setupLabelWidth;
-            m_MaxInputLabelWidth = maxInputLabelWidth;
+            m_MaxLabelWidth = maxLabelWidth;
             m_SetCountModifierOnParent = setCountModifierOnParent;
             AddToClassList(ussClassName);
             this.AddStylesheet_Internal("PortContainer.uss");
@@ -96,8 +96,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     var ui = ModelViewFactory.CreateUI<Port>(view, portModel);
                     Debug.Assert(ui != null, "GraphElementFactory does not know how to create UI for " + portModel.GetType());
                     Add(ui);
-
-                    ui.AddToRootView(view);
                 }
             }
             else
@@ -150,21 +148,21 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                 }
 
-                if (float.IsFinite(m_MaxInputLabelWidth))
-                    maxLabelWidth = Mathf.Min(m_MaxInputLabelWidth, maxLabelWidth);
+                if (float.IsFinite(m_MaxLabelWidth))
+                    maxLabelWidth = Mathf.Min(m_MaxLabelWidth, maxLabelWidth);
 
                 foreach (var port in uiPorts)
                 {
                     port.Label.style.minWidth = maxLabelWidth;
-                    if (float.IsFinite(m_MaxInputLabelWidth))
-                        port.Label.style.maxWidth = m_MaxInputLabelWidth;
+                    if (float.IsFinite(m_MaxLabelWidth))
+                        port.Label.style.maxWidth = m_MaxLabelWidth;
                 }
             }
         }
 
         static UnityEngine.TextCore.Text.TextGenerationSettings s_TextGenerationSettings = new();
 
-        static float GetLabelTextWidth(TextElement element)
+        internal static float GetLabelTextWidth(TextElement element)
         {
             var style = element.computedStyle;
 

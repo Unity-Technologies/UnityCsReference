@@ -22,6 +22,7 @@ namespace UnityEngine.TextCore
         /// <summary>
         /// The index of the font face and style to be loaded from the font file.
         /// </summary>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal int faceIndex { get { return m_FaceIndex; } set { m_FaceIndex = value; } }
 
         /// <summary>
@@ -48,6 +49,7 @@ namespace UnityEngine.TextCore
         /// <summary>
         /// The units per EM for the font face.
         /// </summary>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal int unitsPerEM { get { return m_UnitsPerEM; } set { m_UnitsPerEM = value; } }
 
         // Key metrics for the typeface

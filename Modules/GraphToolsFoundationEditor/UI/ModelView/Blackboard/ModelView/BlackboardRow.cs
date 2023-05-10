@@ -110,6 +110,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             ItemLibraryService.ShowVariableTypes(
+                RootView,
                 (Stencil)GraphElementModel.GraphModel.Stencil,
                 RootView.GraphTool.Preferences,
                 e.MenuPosition,

@@ -72,10 +72,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package.versions.primary.HasTag(PackageTag.SpecialInstall))
             {
                 m_PackageDatabase.UpdatePackages(toRemove: new[] { package.uniqueId });
-                if (!error.HasAttribute(UIError.Attribute.IsDetailInConsole))
+                if (!error.HasAttribute(UIError.Attribute.DetailInConsole))
                 {
                     UnityEngine.Debug.Log(error.message);
-                    error.attribute |= UIError.Attribute.IsDetailInConsole;
+                    error.attribute |= UIError.Attribute.DetailInConsole;
                 }
                 return;
             }

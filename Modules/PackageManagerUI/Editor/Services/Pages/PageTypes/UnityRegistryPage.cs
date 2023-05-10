@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string id => k_Id;
         public override string displayName => L10n.Tr("Unity Registry");
+        public override PageIcon icon => PageIcon.UnityRegistry;
         public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.UpmSearch;
         public override PageCapability capability => PageCapability.DynamicEntitlementStatus | PageCapability.SupportLocalReordering;
 

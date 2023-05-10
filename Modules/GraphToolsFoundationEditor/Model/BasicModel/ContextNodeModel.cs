@@ -22,7 +22,7 @@ namespace Unity.GraphToolsFoundation.Editor
         List<BlockNodeModel> m_Blocks = new();
 
         [SerializeField]
-        List<SerializableGUID> m_BlockGuids = new List<SerializableGUID>();
+        List<Hash128> m_BlockGuids = new();
 
         internal static string blocksFieldName_Internal = nameof(m_Blocks);
 
@@ -30,7 +30,7 @@ namespace Unity.GraphToolsFoundation.Editor
         List<BlockNodePlaceholder> m_BlockPlaceholders = new List<BlockNodePlaceholder>();
 
         public IReadOnlyList<BlockNodeModel> BlockPlaceholders => m_BlockPlaceholders;
-        public IReadOnlyList<SerializableGUID> BlockGuids => m_BlockGuids;
+        public IReadOnlyList<Hash128> BlockGuids => m_BlockGuids;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContextNodeModel"/> class.
@@ -38,6 +38,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public ContextNodeModel()
         {
             this.SetCapability(Editor.Capabilities.Collapsible, false);
+            this.SetCapability(Editor.Capabilities.Colorable, false);
         }
 
         /// <inheritdoc />
@@ -116,7 +117,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="initializationCallback">A callback called once the block is ready.</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         /// <returns>The newly created block.</returns>
-        public BlockNodeModel CreateAndInsertBlock(Type blockType, int index = -1, SerializableGUID guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.Default)
+        public BlockNodeModel CreateAndInsertBlock(Type blockType, int index = -1, Hash128 guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.Default)
         {
             var block = (BlockNodeModel)GraphModel.CreateNode(blockType, blockType.Name, Vector2.zero, guid, initializationCallback, spawnFlags);
 
@@ -137,7 +138,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="initializationCallback">A callback called once the block is ready</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         /// <returns>The newly created block.</returns>
-        public T CreateAndInsertBlock<T>(int index = -1, SerializableGUID guid = default,
+        public T CreateAndInsertBlock<T>(int index = -1, Hash128 guid = default,
             Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.Default) where T : BlockNodeModel, new()
         {
             return (T)CreateAndInsertBlock(typeof(T), index, guid, initializationCallback, spawnFlags);
@@ -145,6 +146,22 @@ namespace Unity.GraphToolsFoundation.Editor
 
         /// <inheritdoc />
         public IEnumerable<GraphElementModel> GraphElementModels => m_Blocks;
+
+
+        /// <summary>
+        /// Gets a block by its index.
+        /// </summary>
+        /// <param name="index">The index of the block</param>
+        /// <returns>the block a its index</returns>
+        public BlockNodeModel GetBlock(int index)
+        {
+            return m_Blocks[index];
+        }
+
+        /// <summary>
+        /// The number of blocks.
+        /// </summary>
+        public int BlockCount => m_Blocks.Count;
 
         /// <inheritdoc />
         public void RemoveElements(IReadOnlyCollection<GraphElementModel> elementModels)
@@ -172,10 +189,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc/>
         protected override void OnDefineNode()
         {
-            for (var i = 0; i < GraphElementModels.Count(); ++i)
+            for (var i = 0; i < BlockCount; ++i)
             {
-                var block = GraphElementModels.ElementAt(i);
-                if (block is BlockNodeModel blockNodeModel)
+                var blockNodeModel = GetBlock(i);
+                if (blockNodeModel != null)
                 {
                     blockNodeModel.ContextNodeModel = this;
                     blockNodeModel.DefineNode();
@@ -239,7 +256,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (m_BlockGuids == null || m_BlockGuids.Count < m_Blocks.Count)
             {
                 if (m_BlockGuids == null)
-                    m_BlockGuids = new List<SerializableGUID>();
+                    m_BlockGuids = new List<Hash128>();
 
                 m_BlockGuids.Clear();
 

@@ -33,16 +33,17 @@ namespace UnityEngine
         }
 
         [System.Diagnostics.DebuggerDisplay("id={id}, groups={layoutGroups.Count}")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal sealed class LayoutCache
         {
             internal int id { get; private set; }
-            internal GUILayoutGroup topLevel = new GUILayoutGroup();
+            public GUILayoutGroup topLevel = new GUILayoutGroup();
             internal GenericStack layoutGroups = new GenericStack();
             internal GUILayoutGroup windows = new GUILayoutGroup();
 
             public LayoutCacheState State => new LayoutCacheState(this);
 
-            internal LayoutCache(int instanceID = -1)
+            public LayoutCache(int instanceID = -1)
             {
                 id = instanceID;
                 layoutGroups.Push(topLevel);
@@ -83,6 +84,7 @@ namespace UnityEngine
             current = new LayoutCache();
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static LayoutCache SelectIDList(int instanceID, bool isWindow)
         {
             Dictionary<int, LayoutCache> store = isWindow ? s_StoredWindows : s_StoredLayouts;
@@ -119,6 +121,7 @@ namespace UnityEngine
             }
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static void BeginContainer(LayoutCache cache)
         {
             // Make a vertical group to encompass the whole thing
@@ -207,6 +210,7 @@ namespace UnityEngine
             }
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static void LayoutFromContainer(float w, float h)
         {
             if (current.topLevel != null)

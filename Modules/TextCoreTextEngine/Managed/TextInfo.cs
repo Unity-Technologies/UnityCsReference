@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -28,7 +29,8 @@ namespace UnityEngine.TextCore.Text
     /// <summary>
     /// Class which contains information about every element contained within the text object.
     /// </summary>
-    class TextInfo
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+    internal class TextInfo
     {
         static Vector2 s_InfinityVectorPositive = new Vector2(32767, 32767);
         static Vector2 s_InfinityVectorNegative = new Vector2(-32767, -32767);
@@ -77,6 +79,7 @@ namespace UnityEngine.TextCore.Text
         /// <summary>
         /// Function to clear the counters of the text object.
         /// </summary>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void Clear()
         {
             characterCount = 0;

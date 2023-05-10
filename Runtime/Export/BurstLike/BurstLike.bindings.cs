@@ -14,6 +14,7 @@ namespace Unity.Collections.LowLevel.Unsafe
 {
     [NativeHeader("Runtime/Export/BurstLike/BurstLike.bindings.h")]
     [StaticAccessor("BurstLike", StaticAccessorType.DoubleColon)]
+    [VisibleToOtherModules("UnityEngine.ParticleSystemModule")]
     internal static partial class BurstLike
     {
         [ThreadSafe(ThrowsException = false)]
@@ -22,6 +23,7 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         // NOTE this is an inferior and internal-only placeholder for SharedStatic
         // We expect to remove the BurstLike functionality once burst can be used in the Unity Editor build pipeline.
+        [VisibleToOtherModules("UnityEngine.ParticleSystemModule")]
         internal readonly unsafe struct SharedStatic<T> where T : unmanaged
         {
             private readonly void* _buffer;

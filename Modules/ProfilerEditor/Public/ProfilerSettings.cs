@@ -25,9 +25,12 @@ namespace UnityEditor.Profiling
         public const string k_DefaultTargetModeSettingKey = k_SettingsPrefix + "DefaultTargetMode";
         public const string k_ShowStatsLabelsOnCurrentFrameSettingKey = k_SettingsPrefix + "ShowStatsLabelsOnCurrentFrame";
         public const string k_CustomConnectionID = k_SettingsPrefix + "CustomConnectionID";
+        public const string k_TargetFramesPerSecond = k_SettingsPrefix + "TargetFramesPerSecond";
 
         public const int kMinFrameCount = 300;
         public const int kMaxFrameCount = 2000;
+        public const int k_MinimumTargetFramesPerSecond = 1;
+        public const int k_MaximumTargetFramesPerSecond = 1000;
 
         private const int kMaxCustomIDLength = 26;
 
@@ -35,6 +38,7 @@ namespace UnityEditor.Profiling
         private static int m_FrameCount = 0;
 
         public static Action settingsChanged;
+        public static event Action targetFramesPerSecondChanged;
 
         public static int frameCount
         {
@@ -101,6 +105,19 @@ namespace UnityEditor.Profiling
                     Debug.LogWarning($"Custom Connection ID is capped at {kMaxCustomIDLength} characters in length.");
                 }
                 EditorPrefs.SetString(k_CustomConnectionID, value);
+            }
+        }
+
+        public static int targetFramesPerSecond
+        {
+            get => EditorPrefs.GetInt(k_TargetFramesPerSecond, 60);
+            set
+            {
+                if (value < k_MinimumTargetFramesPerSecond || value > k_MaximumTargetFramesPerSecond)
+                    throw new ArgumentOutOfRangeException(nameof(targetFramesPerSecond));
+
+                EditorPrefs.SetInt(k_TargetFramesPerSecond, value);
+                targetFramesPerSecondChanged?.Invoke();
             }
         }
 

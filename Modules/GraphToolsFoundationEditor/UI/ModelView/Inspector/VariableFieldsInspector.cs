@@ -20,22 +20,22 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="name">The name of the part.</param>
         /// <param name="models">The models displayed in this part.</param>
-        /// <param name="rootView">The root view.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="filter">A filter function to select which fields are displayed in the inspector. If null, defaults to <see cref="SerializedFieldsInspector.CanBeInspected"/>.</param>
         /// <returns>A new instance of <see cref="VariableFieldsInspector"/>.</returns>
-        public static VariableFieldsInspector Create(string name, IEnumerable<VariableDeclarationModel> models, RootView rootView, string parentClassName, Func<FieldInfo, bool> filter = null)
+        public static VariableFieldsInspector Create(string name, IReadOnlyList<VariableDeclarationModel> models, ChildView ownerElement, string parentClassName, Func<FieldInfo, bool> filter = null)
         {
             if(models.Any())
-                return new VariableFieldsInspector(name, models, rootView, parentClassName, filter);
+                return new VariableFieldsInspector(name, models, ownerElement, parentClassName, filter);
             return null;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="VariableFieldsInspector"/> class.
         /// </summary>
-        protected VariableFieldsInspector(string name, IEnumerable<VariableDeclarationModel> models, RootView rootView, string parentClassName, Func<FieldInfo, bool> filter)
-            : base(name, models, rootView, parentClassName, filter)
+        protected VariableFieldsInspector(string name, IReadOnlyList<VariableDeclarationModel> models, ChildView ownerElement, string parentClassName, Func<FieldInfo, bool> filter)
+            : base(name, models, ownerElement, parentClassName, filter)
         {
         }
 
@@ -50,7 +50,7 @@ namespace Unity.GraphToolsFoundation.Editor
             // Selected Variables must all have an Initialization model of the same TypeHandle to display their default value.
             if (m_Models.OfType<VariableDeclarationModel>().All(t => t.InitializationModel != null) && !m_Models.OfType<VariableDeclarationModel>().Select(t => t.InitializationModel.GetTypeHandle()).Distinct().Skip(1).Any())
             {
-                BaseModelPropertyField valueEditor = InlineValueEditor.CreateEditorForConstants(RootView, m_Models.OfType<VariableDeclarationModel>(), m_Models.OfType<VariableDeclarationModel>().Select(t => t.InitializationModel), false, "Value");
+                BaseModelPropertyField valueEditor = InlineValueEditor.CreateEditorForConstants(OwnerRootView, m_Models.OfType<VariableDeclarationModel>(), m_Models.OfType<VariableDeclarationModel>().Select(t => t.InitializationModel), false, "Value");
 
                 yield return valueEditor;
             }

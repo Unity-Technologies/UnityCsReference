@@ -85,6 +85,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageDetails.OnEnable();
             packageSearchBar.OnEnable();
+            signInBar.OnEnable();
             packageList.OnEnable();
             packageManagerToolbar.OnEnable();
             packageStatusbar.OnEnable();
@@ -208,6 +209,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageDetails.OnDisable();
             packageSearchBar.OnDisable();
+            signInBar.OnDisable();
             packageList.OnDisable();
             packageManagerToolbar.OnDisable();
             packageStatusbar.OnDisable();
@@ -451,6 +453,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElementCache cache { set; get; }
 
         public PackageSearchBar packageSearchBar => cache.Get<PackageSearchBar>("packageSearchBar");
+        public SignInBar signInBar => cache.Get<SignInBar>("signInBar");
         public PackageList packageList => cache.Get<PackageList>("packageList");
         public PackageDetails packageDetails => cache.Get<PackageDetails>("packageDetails");
         public PackageManagerToolbar packageManagerToolbar => cache.Get<PackageManagerToolbar>("topMenuToolbar");

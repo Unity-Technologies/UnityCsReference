@@ -39,7 +39,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     [Serializable]
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Model")]
-    class WireModel : GraphElementModel
+    class WireModel : GraphElementModel, IPortWireIndexModel_Internal
     {
         [SerializeField, FormerlySerializedAs("m_OutputPortReference")]
         PortReference m_FromPortReference;
@@ -114,12 +114,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The unique identifier of the input node of the wire.
         /// </summary>
-        public virtual SerializableGUID FromNodeGuid => m_FromPortReference.NodeModelGuid;
+        public virtual Hash128 FromNodeGuid => m_FromPortReference.NodeModelGuid;
 
         /// <summary>
         /// The unique identifier of the output node of the wire.
         /// </summary>
-        public virtual SerializableGUID ToNodeGuid => m_ToPortReference.NodeModelGuid;
+        public virtual Hash128 ToNodeGuid => m_ToPortReference.NodeModelGuid;
 
         /// <summary>
         /// The label of the wire.
@@ -152,7 +152,8 @@ namespace Unity.GraphToolsFoundation.Editor
                 Editor.Capabilities.Deletable,
                 Editor.Capabilities.Copiable,
                 Editor.Capabilities.Selectable,
-                Editor.Capabilities.Movable
+                Editor.Capabilities.Movable,
+                Editor.Capabilities.Ascendable
             });
         }
 

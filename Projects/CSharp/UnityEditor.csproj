@@ -569,8 +569,14 @@
     <Compile Include="..\..\Editor\Mono\Audio\StreamedAudioClipPreview.cs">
       <Link>Editor\Mono\Audio\StreamedAudioClipPreview.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\UIElements\AudioLevelMeter.cs">
+      <Link>Editor\Mono\Audio\UIElements\AudioLevelMeter.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Audio\UIElements\AudioRandomRangeSliderTracker.cs">
       <Link>Editor\Mono\Audio\UIElements\AudioRandomRangeSliderTracker.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\UIElements\Tickmarks.cs">
+      <Link>Editor\Mono\Audio\UIElements\Tickmarks.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Audio\UIToolkitUtilities.cs">
       <Link>Editor\Mono\Audio\UIToolkitUtilities.cs</Link>
@@ -947,6 +953,9 @@
     <Compile Include="..\..\Editor\Mono\EditorGUI.cs">
       <Link>Editor\Mono\EditorGUI.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorGUILayout.cs">
+      <Link>Editor\Mono\EditorGUILayout.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\EditorGUIUtility.bindings.cs">
       <Link>Editor\Mono\EditorGUIUtility.bindings.cs</Link>
     </Compile>
@@ -1117,6 +1126,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\GI\InputExtraction.bindings.cs">
       <Link>Editor\Mono\GI\InputExtraction.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\GI\InteractiveLightBaking.bindings.cs">
+      <Link>Editor\Mono\GI\InteractiveLightBaking.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\GI\LightBaker.bindings.cs">
       <Link>Editor\Mono\GI\LightBaker.bindings.cs</Link>
@@ -2363,6 +2375,9 @@
     <Compile Include="..\..\Editor\Mono\Inspector\VersionControlSettingsInspector.cs">
       <Link>Editor\Mono\Inspector\VersionControlSettingsInspector.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\ClippingPlanes.cs">
+      <Link>Editor\Mono\Inspector\VisualElements\ClippingPlanes.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Inspector\VisualElements\FadeGroup.cs">
       <Link>Editor\Mono\Inspector\VisualElements\FadeGroup.cs</Link>
     </Compile>
@@ -3068,8 +3083,20 @@
     <Compile Include="..\..\Editor\Mono\SceneView\SceneViewToolbars.cs">
       <Link>Editor\Mono\SceneView\SceneViewToolbars.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneView\SceneViewViewpoint.cs">
+      <Link>Editor\Mono\SceneView\SceneViewViewpoint.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\SceneView\SceneVisibilityState.bindings.cs">
       <Link>Editor\Mono\SceneView\SceneVisibilityState.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneView\Viewpoint\CameraViewpoint.cs">
+      <Link>Editor\Mono\SceneView\Viewpoint\CameraViewpoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneView\Viewpoint\ViewpointAPI.cs">
+      <Link>Editor\Mono\SceneView\Viewpoint\ViewpointAPI.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\SceneView\Viewpoint\ViewpointProxyTypeCache.cs">
+      <Link>Editor\Mono\SceneView\Viewpoint\ViewpointProxyTypeCache.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\SceneVisibilityHierarchyGUI.cs">
       <Link>Editor\Mono\SceneVisibilityHierarchyGUI.cs</Link>
@@ -3527,6 +3554,9 @@
     <Compile Include="..\..\Editor\Mono\UIElements\BaseLiveReloadAssetTracker.cs">
       <Link>Editor\Mono\UIElements\BaseLiveReloadAssetTracker.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Bindings\BindingStyleHelpers.cs">
+      <Link>Editor\Mono\UIElements\Bindings\BindingStyleHelpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Bindings\BindingsInterface.cs">
       <Link>Editor\Mono\UIElements\Bindings\BindingsInterface.cs</Link>
     </Compile>
@@ -3943,9 +3973,6 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\BindingExtensions.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\BindingExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\BindingStyleHelpers.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\BindingStyleHelpers.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Bindings\EditorListViewController.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Bindings\EditorListViewController.cs</Link>
@@ -5036,6 +5063,12 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\VariableNodeModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\VariableNodeModel.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\VirtualWire.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\VirtualWire.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\VirtualWireBuilder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\VirtualWireBuilder.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\BasicModel\WireModel.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\BasicModel\WireModel.cs</Link>
     </Compile>
@@ -5134,9 +5167,6 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\ReorderType.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\ReorderType.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\SerializableGUIDExtensions.cs">
-      <Link>Modules\GraphToolsFoundationEditor\Model\SerializableGUIDExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\Model\Stencil\AllowMultipleDataOutputInstances.cs">
       <Link>Modules\GraphToolsFoundationEditor\Model\Stencil\AllowMultipleDataOutputInstances.cs</Link>
@@ -5444,9 +5474,6 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Manipulators\WireManipulator.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\Manipulators\WireManipulator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\BaseModelView.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\BaseModelView.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\BaseModelViewPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\BaseModelViewPart.cs</Link>
     </Compile>
@@ -5495,23 +5522,35 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\GroupItemOrderComparer_Internal.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Blackboard\ModelView\GroupItemOrderComparer_Internal.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\ChildView.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\ChildView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\DependencyTypes.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\DependencyTypes.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphElementPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphElementPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\BasePortContainerPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\BasePortContainerPart.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\CollapseButtonPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\CollapseButtonPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\ConstantNodeEditorPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\ConstantNodeEditorPart.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\AddBlockPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\AddBlockPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\ContextBlocksPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\ContextBlocksPart.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\BlocksContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\BlocksContainerPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\ContextBlocksPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\ContextBlocksPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\ContextCategoryPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\ContextCategoryPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\MissingBlocksContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\MissingBlocksContainerPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\ValidBlocksContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Context\ValidBlocksContainerPart.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\EditableTitlePart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\EditableTitlePart.cs</Link>
@@ -5519,29 +5558,44 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\FourWayResizerPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\FourWayResizerPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\HorizontalPortContainerPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\HorizontalPortContainerPart.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\BasePortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\BasePortContainerPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\IconTitleProgressPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\IconTitleProgressPart.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\ConstantNodeEditorPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\ConstantNodeEditorPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\InOutPortContainerPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\InOutPortContainerPart.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\HorizontalPortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\HorizontalPortContainerPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeCollapseButtonPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeCollapseButtonPart.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\InOutPortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\InOutPortContainerPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeLodCachePart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeLodCachePart.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\NodeCollapseButtonPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\NodeCollapseButtonPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeModeDropDownPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeModeDropDownPart.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\NodeLodCachePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\NodeLodCachePart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodePreviewButtonPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodePreviewButtonPart.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\NodeModeDropDownPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\NodeModeDropDownPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeTitlePart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\NodeTitlePart.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\NodePreviewButtonPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\NodePreviewButtonPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\NodeTitlePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\NodeTitlePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\SinglePortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\SinglePortContainerPart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\SubgraphNodeTitlePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\SubgraphNodeTitlePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\TokenLodCachePart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\TokenLodCachePart.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\VerticalPortContainerPart.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\Node\VerticalPortContainerPart.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PlacematTitlePart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PlacematTitlePart.cs</Link>
@@ -5555,20 +5609,8 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConstantEditorPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\PortConstantEditorPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\SinglePortContainerPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\SinglePortContainerPart.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\StickyNoteContentPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\StickyNoteContentPart.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\SubgraphIconTitleProgressPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\SubgraphIconTitleProgressPart.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\TokenLodCachePart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\TokenLodCachePart.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\VerticalPortContainerPart.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\VerticalPortContainerPart.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\WireBubblePart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\WireBubblePart.cs</Link>
@@ -5576,17 +5618,20 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\WireControlPart.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelViewParts\WireControlPart.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\BlockDragInfos_Internal.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\BlockDragInfos_Internal.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\BlockNode.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\BlockNode.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\CollapsibleInOutNode.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\CollapsibleInOutNode.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ContextNode.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ContextNode.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Context\BlockDragInfos_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Context\BlockDragInfos_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Context\BlockDrawParams_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Context\BlockDrawParams_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Context\BlockNode.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Context\BlockNode.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Context\ContextNode.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\Context\ContextNode.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ErrorMarker.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\GraphView\ModelView\ErrorMarker.cs</Link>
@@ -5735,9 +5780,6 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IModelViewContainer_Internal.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IModelViewContainer_Internal.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IMultipleModelPartContainer.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IMultipleModelPartContainer.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IShowItemLibraryUI_Internal.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\Interfaces\IShowItemLibraryUI_Internal.cs</Link>
     </Compile>
@@ -5762,14 +5804,20 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIDependenciesExtensions_Internal.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIDependenciesExtensions_Internal.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\DynamicBlockBorder.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\DynamicBlockBorder.cs</Link>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\DynamicBlockBorder_Internal.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\DynamicBlockBorder_Internal.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\DynamicBorder.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\DynamicBorder.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\EditableLabel.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\EditableLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\ExternalDynamicBorder.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\UIElements\ExternalDynamicBorder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\View.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\View.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\ModelView\VisualElementExtensions.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\ModelView\VisualElementExtensions.cs</Link>
@@ -5912,11 +5960,11 @@
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\ShortcutBlocker_Internal.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\Utils\ShortcutBlocker_Internal.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\StringUtilsExtensions.cs">
-      <Link>Modules\GraphToolsFoundationEditor\UI\Utils\StringUtilsExtensions.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\SubgraphCreationHelpers_Internal.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\Utils\SubgraphCreationHelpers_Internal.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\TypeHandleInfos.cs">
+      <Link>Modules\GraphToolsFoundationEditor\UI\Utils\TypeHandleInfos.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundationEditor\UI\Utils\VisualElementAttacher.cs">
       <Link>Modules\GraphToolsFoundationEditor\UI\Utils\VisualElementAttacher.cs</Link>
@@ -6563,6 +6611,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageFilters.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageFilters.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageIcon.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageIcon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageManager.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageManager.cs</Link>
     </Compile>
@@ -6923,6 +6974,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsVersionsTab.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\PackageDetailsVersionsTab.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\SignInDetails.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\SignInDetails.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\SortedColumn.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageDetailsTabs\SortedColumn.cs</Link>
     </Compile>
@@ -7042,6 +7096,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Sidebar\SidebarRow.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Sidebar\SidebarRow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\SignInBar.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\SignInBar.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageAddButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageAddButton.cs</Link>
@@ -7688,6 +7745,51 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Analytics\ProfilerWindowAnalytics.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Analytics\ProfilerWindowAnalytics.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\BottlenecksChartViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\BottlenecksChartViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Components\BlocksGraphView\BlocksGraphView.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Components\BlocksGraphView\BlocksGraphView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Components\BlocksGraphView\BlocksGraphViewMeshBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Components\BlocksGraphView\BlocksGraphViewMeshBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Components\GraphView.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Components\GraphView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Data\BottlenecksChartViewModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Data\BottlenecksChartViewModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Data\BottlenecksChartViewModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Data\BottlenecksChartViewModelBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Tooltip\BottlenecksChartTooltipViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Chart\Tooltip\BottlenecksChartTooltipViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Data\IProfilerCaptureDataService.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Data\IProfilerCaptureDataService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Data\IProfilerPersistentSettingsService.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Data\IProfilerPersistentSettingsService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Data\LegacyGlobalProfilerPersistentSettingsService.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Data\LegacyGlobalProfilerPersistentSettingsService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Data\LegacySingletonProfilerCaptureDataService.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Data\LegacySingletonProfilerCaptureDataService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\BottlenecksDetailsViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\BottlenecksDetailsViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Data\BottlenecksDetailsViewModel.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Data\BottlenecksDetailsViewModel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Data\BottlenecksDetailsViewModelBuilder.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Data\BottlenecksDetailsViewModelBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Shared\TimeFormatterUtility.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Bottlenecks\Details\Shared\TimeFormatterUtility.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Chart.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\Chart.cs</Link>
     </Compile>
@@ -7912,6 +8014,18 @@
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\SelectableLabel.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\SelectableLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\Utilities\UIUtility.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\Utilities\UIUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ViewControllerSystem\InvalidViewDefinedInUxmlException.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ViewControllerSystem\InvalidViewDefinedInUxmlException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ViewControllerSystem\ViewController.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ViewControllerSystem\ViewController.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ViewControllerSystem\ViewControllerUtility.cs">
+      <Link>Modules\ProfilerEditor\ProfilerWindow\ViewControllerSystem\ViewControllerUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\Public\FrameDataView.bindings.cs">
       <Link>Modules\ProfilerEditor\Public\FrameDataView.bindings.cs</Link>
@@ -8453,6 +8567,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\UITK\SearchEmptyView.cs">
       <Link>Modules\QuickSearch\Editor\UITK\SearchEmptyView.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\UITK\SearchField.cs">
+      <Link>Modules\QuickSearch\Editor\UITK\SearchField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\UITK\SearchGlobalEventHandlerManager.cs">
       <Link>Modules\QuickSearch\Editor\UITK\SearchGlobalEventHandlerManager.cs</Link>
     </Compile>
@@ -8629,6 +8746,9 @@
     </Compile>
     <Compile Include="..\..\Modules\SceneTemplateEditor\VisualSplitter.cs">
       <Link>Modules\SceneTemplateEditor\VisualSplitter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\SceneView\CameraOverlay.cs">
+      <Link>Modules\SceneView\CameraOverlay.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\SceneView\DropdownToggle.cs">
       <Link>Modules\SceneView\DropdownToggle.cs</Link>
@@ -10132,6 +10252,9 @@
     </Compile>
     <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VFXMemorySerializer.bindings.cs">
       <Link>Modules\VFXEditor\Public\ScriptBindings\VFXMemorySerializer.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VisualEffectImporter.bindings.cs">
+      <Link>Modules\VFXEditor\Public\ScriptBindings\VisualEffectImporter.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VisualEffectResource.bindings.cs">
       <Link>Modules\VFXEditor\Public\ScriptBindings\VisualEffectResource.bindings.cs</Link>

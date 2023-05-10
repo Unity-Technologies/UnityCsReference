@@ -3,21 +3,23 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine
 {
     [MovedFrom("UnityEditor")]
-    class NumericFieldDraggerUtility
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal class NumericFieldDraggerUtility
     {
-        internal static float Acceleration(bool shiftPressed, bool altPressed)
+        public static float Acceleration(bool shiftPressed, bool altPressed)
         {
             return (shiftPressed ? 4 : 1) * (altPressed ? .25f : 1);
         }
 
         static bool s_UseYSign = false;
 
-        internal static float NiceDelta(Vector2 deviceDelta, float acceleration)
+        public static float NiceDelta(Vector2 deviceDelta, float acceleration)
         {
             deviceDelta.y = -deviceDelta.y;
 
@@ -37,7 +39,7 @@ namespace UnityEngine
 
         const float kDragSensitivity = .03f;
 
-        internal static double CalculateFloatDragSensitivity(double value)
+        public static double CalculateFloatDragSensitivity(double value)
         {
             if (double.IsInfinity(value) || double.IsNaN(value))
             {
@@ -46,7 +48,7 @@ namespace UnityEngine
             return Math.Max(1, Math.Pow(Math.Abs(value), 0.5)) * kDragSensitivity;
         }
 
-        internal static double CalculateFloatDragSensitivity(double value, double minValue, double maxValue)
+        public static double CalculateFloatDragSensitivity(double value, double minValue, double maxValue)
         {
             if (double.IsInfinity(value) || double.IsNaN(value))
             {
@@ -57,22 +59,22 @@ namespace UnityEngine
             return range / 100.0f * kDragSensitivity;
         }
 
-        internal static long CalculateIntDragSensitivity(long value)
+        public static long CalculateIntDragSensitivity(long value)
         {
             return (long)CalculateIntDragSensitivity((double)value);
         }
 
-        internal static ulong CalculateIntDragSensitivity(ulong value)
+        public static ulong CalculateIntDragSensitivity(ulong value)
         {
             return (ulong)CalculateIntDragSensitivity((double)value);
         }
 
-        private static double CalculateIntDragSensitivity(double value)
+        public static double CalculateIntDragSensitivity(double value)
         {
             return Math.Max(1, Math.Pow(Math.Abs(value), 0.5) * kDragSensitivity);
         }
 
-        internal static long CalculateIntDragSensitivity(long value, long minValue, long maxValue)
+        public static long CalculateIntDragSensitivity(long value, long minValue, long maxValue)
         {
             long range = Math.Abs(maxValue - minValue);
             return Math.Max(1, (long)(kDragSensitivity * range / 100));

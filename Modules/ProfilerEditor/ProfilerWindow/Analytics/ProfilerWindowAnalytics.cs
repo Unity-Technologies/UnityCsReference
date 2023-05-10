@@ -73,6 +73,7 @@ namespace UnityEditor.Profiling.Analytics
         const string k_ProfilerConnection = "profilerConnection";
         const string k_ProfilerElementUsability = "profilerSessionElementUsability";
         const string k_ProfilerCapture = "profilerCapture";
+        const string k_BottlenecksModuleLinkSelected = "bottlenecksModuleLinkSelected";
 
         static IAnalyticsService s_AnalyticsService;
 
@@ -81,6 +82,7 @@ namespace UnityEditor.Profiling.Analytics
         static bool s_ProfilerCaptureRegistered;
         static bool s_ProfilerSaveLoadRegistered;
         static bool s_ProfilerConnectionRegistered;
+        static bool s_BottlenecksModuleLinkSelectedRegistered;
 
         static ProfilerAnalyticsViewUsabilitySession s_ProfilerSession;
         static List<ProfilerAnalyticsViewUsability> s_Views;
@@ -114,6 +116,7 @@ namespace UnityEditor.Profiling.Analytics
             s_ProfilerCaptureRegistered = false;
             s_ProfilerSaveLoadRegistered = false;
             s_ProfilerConnectionRegistered = false;
+            s_BottlenecksModuleLinkSelectedRegistered = false;
 
             return oldService;
         }
@@ -282,6 +285,14 @@ namespace UnityEditor.Profiling.Analytics
                 return;
 
             s_AnalyticsService.SendEventWithLimit(k_ProfilerConnection, data);
+        }
+
+        public static void SendBottleneckLinkSelectedEvent(string linkDescription)
+        {
+            if (!RegisterEvent(ref s_BottlenecksModuleLinkSelectedRegistered, k_BottlenecksModuleLinkSelected))
+                return;
+
+            s_AnalyticsService.SendEventWithLimit(k_BottlenecksModuleLinkSelected, linkDescription);
         }
     }
 }

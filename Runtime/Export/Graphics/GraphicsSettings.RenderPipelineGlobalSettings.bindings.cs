@@ -80,7 +80,8 @@ namespace UnityEngine.Rendering
             return currentRenderPipelineGlobalSettings != null;
         }
 
-        public static T GetSRPGraphicsSetting<T>() where T : class, ISRPGraphicsSetting
+        public static T GetRenderPipelineSettings<T>()
+            where T : class, IRenderPipelineGraphicsSettings
         {
             if (!TryGetCurrentRenderPipelineGlobalSettings(out RenderPipelineGlobalSettings currentRenderPipelineGlobalSettings))
                 throw new Exception($"The current render pipeline does not have {nameof(RenderPipelineGlobalSettings)} registered");
@@ -91,11 +92,12 @@ namespace UnityEngine.Rendering
             return baseSetting as T;
         }
 
-        public static bool TryGetSRPGraphicsSetting<T>(out T setting) where T : class, ISRPGraphicsSetting
+        public static bool TryGetRenderPipelineSettings<T>(out T setting)
+            where T : class, IRenderPipelineGraphicsSettings
         {
             try
             {
-                setting = GetSRPGraphicsSetting<T>();
+                setting = GetRenderPipelineSettings<T>();
             }
             catch (Exception ex)
             {

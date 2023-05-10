@@ -40,7 +40,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void BuildPartList()
         {
-            PartList.AppendPart(EditableTitlePart.Create(titleContainerPartName, Model, this, ussClassName, true, true, false));
+            PartList.AppendPart(EditableTitlePart.Create(titleContainerPartName, Model, this, ussClassName, EditableTitlePart.Options.Multiline | EditableTitlePart.Options.UseEllipsis));
             PartList.AppendPart(StickyNoteContentPart.Create(contentContainerPartName, Model, this, ussClassName));
             PartList.AppendPart(FourWayResizerPart.Create(resizerPartName, Model, this, ussClassName));
         }

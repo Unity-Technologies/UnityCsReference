@@ -135,7 +135,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         m_DownloadedBytes = 0;
                         state = DownloadState.Aborted;
                         m_ErrorMessage = L10n.Tr("Download aborted.");
-                        onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, UIError.Attribute.IsClearable | UIError.Attribute.IsWarning));
+                        onOperationError?.Invoke(this, new UIError(UIErrorCode.AssetStoreOperationError, m_ErrorMessage, UIError.Attribute.Clearable | UIError.Attribute.Warning));
                         onOperationFinalized?.Invoke(this);
                     }
                     else
@@ -155,19 +155,19 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             state = DownloadState.Error;
 
-            if ((attr & UIError.Attribute.IsWarning) != 0)
+            if ((attr & UIError.Attribute.Warning) != 0)
                 Debug.LogWarning($"{k_ConsoleLogPrefix} {errorMessage}");
             else
                 Debug.LogError($"{k_ConsoleLogPrefix} {errorMessage}");
 
-            attr |= UIError.Attribute.IsDetailInConsole;
+            attr |= UIError.Attribute.DetailInConsole;
             if (operationErrorCode == 403)
             {
                 m_ErrorMessage = k_ForbiddenErrorMessage;
             }
             else
             {
-                attr |= UIError.Attribute.IsClearable;
+                attr |= UIError.Attribute.Clearable;
                 m_ErrorMessage = k_DownloadErrorMessage;
             }
 
@@ -229,12 +229,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             var config = m_AssetStoreCachePathProxy.GetConfig();
             if (config.status == ConfigStatus.ReadOnly)
             {
-                OnErrorMessage("The Assets Cache location is read-only, see configuration in Preferences | Package Manager", -1, UIError.Attribute.IsWarning);
+                OnErrorMessage("The Assets Cache location is read-only, see configuration in Preferences | Package Manager", -1, UIError.Attribute.Warning);
                 return;
             }
             if (config.status == ConfigStatus.InvalidPath)
             {
-                OnErrorMessage("The Assets Cache location is invalid or inaccessible, see configuration in Preferences | Package Manager", -1, UIError.Attribute.IsWarning);
+                OnErrorMessage("The Assets Cache location is invalid or inaccessible, see configuration in Preferences | Package Manager", -1, UIError.Attribute.Warning);
                 return;
             }
 

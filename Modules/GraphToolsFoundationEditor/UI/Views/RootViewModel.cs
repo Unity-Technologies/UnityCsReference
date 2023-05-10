@@ -4,6 +4,7 @@
 
 using System;
 using Unity.CommandStateObserver;
+using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -14,7 +15,7 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         protected RootViewModel() { }
 
-        protected RootViewModel(SerializableGUID guid)
+        protected RootViewModel(Hash128 guid)
         : base(guid)
         {
         }

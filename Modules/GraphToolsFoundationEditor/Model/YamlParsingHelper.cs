@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
-    internal static class YamlParsingHelper_Internal
+    static class YamlParsingHelper_Internal
     {
         public static bool TryParseVector2(string data, string field, int startingIndex, out Vector2 parsedVector2)
         {
@@ -33,9 +33,12 @@ namespace Unity.GraphToolsFoundation.Editor
             return long.TryParse(line.Trim(), out parsedLong);
         }
 
-        public static bool TryParseSerializableGUID(string data, string field, int startingIndex, out SerializableGUID parsedGuid)
+        public static bool TryParseGUID(string data, string hashGuidFieldName, string obsoleteGuidFieldName, int startingIndex, out Hash128 parsedGuid)
         {
-            return TryParseSerializableGUIDFormat1(data, field, startingIndex, out parsedGuid) || TryParseSerializableGUIDFormat2(data, field, startingIndex, out parsedGuid);
+            return TryParseHash128Format1(data, hashGuidFieldName, startingIndex, out parsedGuid) ||
+                TryParseHash128Format2(data, hashGuidFieldName, startingIndex, out parsedGuid) ||
+                TryParseSerializableGUIDFormat1(data, obsoleteGuidFieldName, startingIndex, out parsedGuid) ||
+                TryParseSerializableGUIDFormat2(data, obsoleteGuidFieldName, startingIndex, out parsedGuid);
         }
 
         public static bool TryParseString(string data, string field, int startingIndex, out string parsedString)
@@ -88,7 +91,7 @@ namespace Unity.GraphToolsFoundation.Editor
             string GetElementStr(int lastLineIndex)
             {
                 var dataIndex = data.IndexOf("data", lastLineIndex, StringComparison.Ordinal);
-                var elementStr = "";
+                string elementStr;
                 if (dataIndex != -1)
                 {
                     var startLineIndex = data.IndexOf(elementField, dataIndex, StringComparison.Ordinal) + elementField.Length;
@@ -179,14 +182,14 @@ namespace Unity.GraphToolsFoundation.Editor
             return false;
         }
 
-        static bool TryParseSerializableGUIDFormat1(string data, string field, int startingIndex, out SerializableGUID parsedGuid)
+        static bool TryParseSerializableGUIDFormat1(string data, string field, int startingIndex, out Hash128 parsedGuid)
         {
             // For this format, example =>
             // m_Guid  (SerializableGUID)
             //      m_Value0 2209188150080794339 (UInt64)
             //      m_Value1 10894006200981209430 (UInt64)
 
-            parsedGuid = new SerializableGUID();
+            parsedGuid = new Hash128();
 
             var guidIndex = data.IndexOf(field, startingIndex, StringComparison.Ordinal);
             if (guidIndex == -1)
@@ -214,19 +217,19 @@ namespace Unity.GraphToolsFoundation.Editor
             if (!ulong.TryParse(data.Substring(secondValueIndex, secondSpaceIndex - secondValueIndex), out var secondValue))
                 return false;
 
-            parsedGuid = new SerializableGUID(firstValue, secondValue);
+            parsedGuid = new Hash128(firstValue, secondValue);
 
             return true;
         }
 
-        static bool TryParseSerializableGUIDFormat2(string data, string field, int startingIndex, out SerializableGUID parsedGuid)
+        static bool TryParseSerializableGUIDFormat2(string data, string field, int startingIndex, out Hash128 parsedGuid)
         {
             // For this format, example =>
             // m_Guid:
             // m_Value0: 6053792795968521525
             // m_Value1: 1379497253815963307
 
-            parsedGuid = new SerializableGUID();
+            parsedGuid = new Hash128();
 
             var guidIndex = data.IndexOf(field, startingIndex, StringComparison.Ordinal);
             if (guidIndex == -1)
@@ -236,7 +239,72 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 if (ulong.TryParse(firstValueStr, out var firstValue) && ulong.TryParse(secondValueStr, out var secondValue) && firstValue != 0 && secondValue != 0)
                 {
-                    parsedGuid = new SerializableGUID(firstValue, secondValue);
+                    parsedGuid = new Hash128(firstValue, secondValue);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        static bool TryParseHash128Format1(string data, string field, int startingIndex, out Hash128 parsedGuid)
+        {
+            // For this format, example =>
+            // m_Guid  (SerializableGUID)
+            //      m_Value0 2209188150080794339 (UInt64)
+            //      m_Value1 10894006200981209430 (UInt64)
+
+            parsedGuid = new Hash128();
+
+            var guidIndex = data.IndexOf(field, startingIndex, StringComparison.Ordinal);
+            if (guidIndex == -1)
+                return false;
+
+            var firstValueIndex = data.IndexOf("u64_0 ", guidIndex, StringComparison.Ordinal) + "u64_0 ".Length;
+            if (firstValueIndex == -1)
+                return false;
+
+            var firstSpaceIndex = data.IndexOf(" ", firstValueIndex, StringComparison.Ordinal);
+            if (firstSpaceIndex == -1)
+                return false;
+
+            var secondValueIndex = data.IndexOf("u64_1 ", firstValueIndex, StringComparison.Ordinal) + "u64_1 ".Length;
+            if (secondValueIndex == -1)
+                return false;
+
+            var secondSpaceIndex = data.IndexOf(" ", secondValueIndex, StringComparison.Ordinal);
+            if (secondSpaceIndex == -1)
+                return false;
+
+            if (!ulong.TryParse(data.Substring(firstValueIndex, firstSpaceIndex - firstValueIndex), out var firstValue))
+                return false;
+
+            if (!ulong.TryParse(data.Substring(secondValueIndex, secondSpaceIndex - secondValueIndex), out var secondValue))
+                return false;
+
+            parsedGuid = new Hash128(firstValue, secondValue);
+
+            return true;
+        }
+
+        static bool TryParseHash128Format2(string data, string field, int startingIndex, out Hash128 parsedGuid)
+        {
+            // For this format, example =>
+            // m_Guid:
+            // m_Value0: 6053792795968521525
+            // m_Value1: 1379497253815963307
+
+            parsedGuid = new Hash128();
+
+            var guidIndex = data.IndexOf(field, startingIndex, StringComparison.Ordinal);
+            if (guidIndex == -1)
+                return false;
+
+            if (TryParseLine("u64_0", data, guidIndex, out var firstValueStr) && TryParseLine("u64_1", data, guidIndex, out var secondValueStr))
+            {
+                if (ulong.TryParse(firstValueStr, out var firstValue) && ulong.TryParse(secondValueStr, out var secondValue) && firstValue != 0 && secondValue != 0)
+                {
+                    parsedGuid = new Hash128(firstValue, secondValue);
                     return true;
                 }
             }

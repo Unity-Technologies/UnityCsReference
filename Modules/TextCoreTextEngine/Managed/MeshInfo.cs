@@ -11,11 +11,14 @@ using UnityEngine.Scripting;
 namespace UnityEngine.TextCore.Text
 {
     enum VertexSortingOrder { Normal, Reverse }
-    enum VertexDataLayout { Mesh, VBO }
+
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal enum VertexDataLayout { Mesh, VBO }
 
     /// <summary>
     /// Structure which contains the vertex attributes (geometry) of the text object, as well as the material to be used.
     /// </summary>
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal struct MeshInfo
     {
         public int vertexCount;
@@ -46,6 +49,8 @@ namespace UnityEngine.TextCore.Text
         [Ignore] public int[] triangles;
 
         [Ignore] public VertexDataLayout vertexDataLayout;
+        
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal GlyphRenderMode glyphRenderMode;
 
         /// <summary>

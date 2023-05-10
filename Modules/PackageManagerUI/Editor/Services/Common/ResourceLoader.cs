@@ -43,14 +43,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 "StyleSheets/PackageManager/PackageDetailsSamplesTab.uss",
                 "StyleSheets/PackageManager/PackageDetailsReleasesTab.uss",
                 "StyleSheets/PackageManager/PackageDetailsVersionsTab.uss",
-                "StyleSheets/PackageManager/PackageDetailsInstalledAssetsTab.uss",
+                "StyleSheets/PackageManager/PackageDetailsImportedAssetsTab.uss",
                 "StyleSheets/PackageManager/PackageSearchBar.uss",
                 "StyleSheets/PackageManager/PackageStatusBar.uss",
                 "StyleSheets/PackageManager/PackageToolbar.uss",
                 "StyleSheets/PackageManager/ProgressBar.uss",
                 "StyleSheets/PackageManager/FeatureDependencies.uss",
                 "StyleSheets/PackageManager/PackageDetailsHeader.uss",
-                "StyleSheets/PackageManager/Sidebar.uss"
+                "StyleSheets/PackageManager/Sidebar.uss",
+                "StyleSheets/PackageManager/SignInBar.uss",
             };
 
             internal static readonly string filtersDropdown = "StyleSheets/PackageManager/Filters.uss";

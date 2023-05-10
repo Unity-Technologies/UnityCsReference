@@ -43,8 +43,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             cache = new VisualElementCache(root);
 
             scrollView.verticalScroller.valueChanged += OnDetailScroll;
-            scrollView.RegisterCallback<GeometryChangedEvent>(RecalculateFillerHeight);
-            detail.RegisterCallback<GeometryChangedEvent>(RecalculateFillerHeight);
+            scrollView.RegisterCallback<GeometryChangedEvent>(RefreshSelectedTabHeight);
+            detail.RegisterCallback<GeometryChangedEvent>(RefreshSelectedTabHeight);
         }
 
         public void OnEnable()
@@ -96,16 +96,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnityConnectProxy.onUserLoginStateChange -= OnUserLoginStateChange;
         }
 
-        private void RecalculateFillerHeight(GeometryChangedEvent evt)
+        private void RefreshSelectedTabHeight(GeometryChangedEvent evt)
         {
             if (evt.oldRect.height == evt.newRect.height)
                 return;
 
-            var featureDependencies = tabView.GetTab<FeatureDependenciesTab>(FeatureDependenciesTab.k_Id);
-            featureDependencies?.RecalculateFillerHeight(detail.layout.height, scrollView.layout.height);
-            var importedAssets = tabView.GetTab<PackageDetailsImportedAssetsTab>(PackageDetailsImportedAssetsTab.k_Id);
-            importedAssets?.RecalculateTabHeight(detail.layout.height, scrollView.layout.height, header.layout.height,
-                tabViewHeaderContainer.layout.height, customContainer.layout.height,
+            tabView.GetTab(tabView.selectedTabId)?.RefreshHeight(detail.layout.height, scrollView.layout.height,
+                header.layout.height, tabViewHeaderContainer.layout.height, customContainer.layout.height,
                 extensionContainer.layout.height);
         }
 
@@ -186,6 +183,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void RefreshExtensions(IPackage package, IPackageVersion version)
         {
+            UIUtils.SetElementDisplay(customContainer, customContainer.childCount > 0); // ExtensionV1
+            UIUtils.SetElementDisplay(extensionContainer, extensionContainer.childCount > 0); // ExtensionV2
+
             // For now packageInfo, package and packageVersion will all be null when there are multiple packages selected.
             // This way no single select UI will be displayed for multi-select. We might handle it differently in the future in a new story
             if (PackageManagerExtensions.extensionsGUICreated)
@@ -210,8 +210,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshDetailError(IPackage package, IPackageVersion version)
         {
-            var error = version?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable))
-                ?? package?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable));
+            var error = version?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI))
+                ?? package?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.Clearable | UIError.Attribute.HiddenFromUI));
             detailError.RefreshError(error, version);
         }
 

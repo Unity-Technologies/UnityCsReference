@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -20,7 +21,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Unique ID of the node that is the source of the error.
         /// </summary>
-        public SerializableGUID SourceNodeGuid { get; set; }
+        public Hash128 SourceNodeGuid { get; set; }
 
         /// <summary>
         /// QuickFix to address the error.

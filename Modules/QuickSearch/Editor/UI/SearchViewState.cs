@@ -72,6 +72,9 @@ namespace UnityEditor.Search
         public SearchViewFlags flags;
         public string group;
 
+        public bool hasQueryPanel => !HasFlag(SearchViewFlags.DisableSavedSearchQuery);
+        public bool isQueryPanelVisible => hasQueryPanel && HasFlag(SearchViewFlags.OpenLeftSidePanel);
+
         internal int[] m_SelectedIds;
         internal int[] selectedIds
         {

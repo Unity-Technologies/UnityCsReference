@@ -131,7 +131,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>A <see cref="DynamicBorder"/> for this graph element.</returns>
         protected virtual DynamicBorder CreateDynamicBorder()
         {
-            return new DynamicBorder(this);
+            return new ExternalDynamicBorder(this);
         }
 
         /// <summary>
@@ -285,6 +285,14 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Refresh the borders of this <see cref="GraphElement"/>
+        /// </summary>
+        public virtual void RefreshBorder()
+        {
+            Border.MarkDirtyRepaint();
         }
     }
 }

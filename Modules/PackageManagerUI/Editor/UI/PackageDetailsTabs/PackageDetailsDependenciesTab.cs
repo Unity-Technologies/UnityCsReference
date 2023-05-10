@@ -14,29 +14,28 @@ namespace UnityEditor.PackageManager.UI.Internal
         public const string k_Id = "dependencies";
 
         private const int k_DependencyViewSwitchWidthBreakpoint = 420;
-        private readonly ResourceLoader m_ResourceLoader;
-        private readonly PackageDatabase m_PackageDatabase;
 
         public override bool IsValid(IPackageVersion version)
         {
             return version != null && version.HasTag(PackageTag.UpmFormat) && !version.HasTag(PackageTag.Feature) && !version.HasTag(PackageTag.Placeholder);
         }
 
-        public PackageDetailsDependenciesTab(ResourceLoader resourceLoader, PackageDatabase packageDatabase)
+        private readonly PackageDatabase m_PackageDatabase;
+        public PackageDetailsDependenciesTab(UnityConnectProxy unityConnect, ResourceLoader resourceLoader,
+            PackageDatabase packageDatabase) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Dependencies");
-            m_ResourceLoader = resourceLoader;
             m_PackageDatabase = packageDatabase;
 
-            var root = m_ResourceLoader.GetTemplate("PackageDetailsDependenciesTab.uxml");
-            Add(root);
+            var root = resourceLoader.GetTemplate("PackageDetailsDependenciesTab.uxml");
+            m_ContentContainer.Add(root);
             m_Cache = new VisualElementCache(root);
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
-        public override void Refresh(IPackageVersion version)
+        protected override void RefreshContent(IPackageVersion version)
         {
             UpdateDependencies(version?.dependencies);
             UpdateReverseDependencies(m_PackageDatabase.GetReverseDependencies(version));
@@ -176,7 +175,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             ToggleLowWidthDependencyView(rect.width);
         }
 
-        private readonly  VisualElementCache m_Cache;
+        private readonly VisualElementCache m_Cache;
         private Label noDependencies => m_Cache.Get<Label>("noDependencies");
         private VisualElement dependenciesNames => m_Cache.Get<VisualElement>("dependenciesNames");
         private VisualElement dependenciesVersions => m_Cache.Get<VisualElement>("dependenciesVersions");

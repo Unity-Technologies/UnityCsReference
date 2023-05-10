@@ -139,7 +139,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        public override void SetGuid(SerializableGUID value)
+        public override void SetGuid(Hash128 value)
         {
             var oldUniqueName = UniqueName;
             base.SetGuid(value);
@@ -270,11 +270,11 @@ namespace Unity.GraphToolsFoundation.Editor
             PortType portType, TypeHandle dataType, string portId, PortModelOptions options, Attribute[] attributes)
         {
             var hash = new Hash128();
-            var gparts = nodeModel.Guid.ToParts();
-            hash.Append((int)(gparts.Item1 & uint.MaxValue));
-            hash.Append((int)(gparts.Item1 >> 32));
-            hash.Append((int)(gparts.Item2 & uint.MaxValue));
-            hash.Append((int)(gparts.Item2 >> 32));
+            var nodeGuid = nodeModel.Guid;
+            hash.Append((int)(nodeGuid.u64_0 & uint.MaxValue));
+            hash.Append((int)(nodeGuid.u64_0 >> 32));
+            hash.Append((int)(nodeGuid.u64_1 & uint.MaxValue));
+            hash.Append((int)(nodeGuid.u64_1 >> 32));
 
             if (string.IsNullOrEmpty(portId))
             {
@@ -312,7 +312,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="newUniqueName">The new name.</param>
         protected virtual void OnUniqueNameChanged(string oldUniqueName, string newUniqueName)
         {
-            GraphModel?.PortWireIndex_Internal.UpdatePortUniqueName(this, oldUniqueName, newUniqueName);
+            GraphModel?.PortWireIndex_Internal.PortUniqueNameChanged(this, oldUniqueName, newUniqueName);
             NodeModel.OnPortUniqueNameChanged(oldUniqueName, newUniqueName);
         }
 
@@ -324,7 +324,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="newDirection">The new direction.</param>
         protected virtual void OnDirectionChanged(PortDirection oldDirection, PortDirection newDirection)
         {
-            GraphModel?.PortWireIndex_Internal.UpdatePortDirection(this, oldDirection, newDirection);
+            GraphModel?.PortWireIndex_Internal.PortDirectionChanged(this, oldDirection, newDirection);
         }
 
         /// <summary>

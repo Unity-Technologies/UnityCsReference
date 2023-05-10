@@ -46,7 +46,7 @@ namespace UnityEngine.Playables
             return (T)playable;
         }
 
-
+        [VisibleToOtherModules("UnityEngine.DirectorModule")]
         internal T GetPayload<T>()
            where T : struct
         {
@@ -60,6 +60,7 @@ namespace UnityEngine.Playables
             return (T)payload;
         }
 
+        [VisibleToOtherModules("UnityEngine.DirectorModule")]
         internal void SetPayload<T>(T payload)
           where T : struct
         {
@@ -67,6 +68,7 @@ namespace UnityEngine.Playables
                 return;
             SetScriptInstance(payload);
         }
+        
         [VisibleToOtherModules]
         internal bool IsPlayableOfType<T>()
         {

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Jobs;
 using Unity.Properties.Internal;
+using UnityEngine.Bindings;
 
 namespace Unity.Properties
 {
@@ -85,6 +86,7 @@ namespace Unity.Properties
         /// </summary>
         /// <param name="handle">The job handle to wait on.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [VisibleToOtherModules("UnityEditor.PropertiesModule")]
         internal static void AddJobToWaitQueue(JobHandle handle)
         {
             PropertyBagStore.AddJobToWaitQueue(handle);

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -26,7 +27,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Gets the UIs that depends on a model. They need to be updated when the model changes.
         /// </summary>
         /// <param name="modelGUID">The model guid for which we're querying the UI.</param>
-        public static IEnumerable<ModelView> GetDependencies(this SerializableGUID modelGUID)
+        public static IEnumerable<ModelView> GetDependencies(this Hash128 modelGUID)
         {
             return UIDependencies.GetModelDependencies(modelGUID);
         }

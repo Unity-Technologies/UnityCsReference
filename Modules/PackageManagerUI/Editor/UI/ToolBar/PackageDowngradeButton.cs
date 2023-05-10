@@ -11,11 +11,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
         private PackageOperationDispatcher m_OperationDispatcher;
-        public PackageDowngradeButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageOperationDispatcher operationDispatcher)
+        private UnityConnectProxy m_UnityConnect;
+        public PackageDowngradeButton(AssetStoreDownloadManager assetStoreDownloadManager, AssetStoreCache assetStoreCache, PackageOperationDispatcher operationDispatcher, UnityConnectProxy unityConnect)
         {
             m_AssetStoreDownloadManager = assetStoreDownloadManager;
             m_AssetStoreCache = assetStoreCache;
             m_OperationDispatcher = operationDispatcher;
+            m_UnityConnect = unityConnect;
 
             m_Element.SetIcon("warning");
         }
@@ -30,6 +32,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override bool IsVisible(IPackageVersion version)
         {
+            if (!m_UnityConnect.isUserLoggedIn)
+                return false;
+
             if (version?.HasTag(PackageTag.LegacyFormat) != true)
                 return false;
 

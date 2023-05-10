@@ -56,7 +56,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected string m_CurrentDropHighlightClass = dropHighlightAcceptedClass;
 
-        string m_CurrentDataClassName;
         string m_CurrentTypeClassName;
 
         bool m_Hovering;
@@ -65,6 +64,8 @@ namespace Unity.GraphToolsFoundation.Editor
         WireConnector m_WireConnector;
 
         VisualElement m_ConnectorCache;
+
+        TypeHandle m_CurrentTypeHandle;
 
         static Color DefaultPortColor
         {
@@ -329,7 +330,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void UpdateElementFromModel()
         {
-            var wasUpdatedAtLeastOnce = m_CurrentDataClassName != null;
+            var wasUpdatedAtLeastOnce = m_CurrentTypeClassName != null;
             // Speed-up when creating many ports:
             // The first time the port is updated, avoid trying to remove classes we know aren't there
             void EnableClass(string className, bool condition)
@@ -355,7 +356,14 @@ namespace Unity.GraphToolsFoundation.Editor
             EnableClass(capacityNoneModifierUssClassName, PortModel.Capacity == PortCapacity.None);
             EnableClass(verticalModifierUssClassName, PortModel.Orientation == PortOrientation.Vertical);
 
-            this.ReplaceAndCacheClassName(portDataTypeClassNamePrefix + GetClassNameSuffixForDataType_Internal(PortModel.PortDataType), ref m_CurrentDataClassName);
+            if (! wasUpdatedAtLeastOnce || m_CurrentTypeHandle != PortModel.DataTypeHandle)
+            {
+                if (wasUpdatedAtLeastOnce)
+                    RootView.TypeHandleInfos.RemoveUssClasses(portDataTypeClassNamePrefix, this, m_CurrentTypeHandle);
+                m_CurrentTypeHandle = PortModel.DataTypeHandle;
+                RootView.TypeHandleInfos.AddUssClasses(portDataTypeClassNamePrefix, this, m_CurrentTypeHandle);
+            }
+
             this.ReplaceAndCacheClassName(GetCachedClassNameForPortType(PortModel.PortType), ref m_CurrentTypeClassName);
 
             tooltip = PortModel.Orientation == PortOrientation.Horizontal ? PortModel.ToolTip :
@@ -369,46 +377,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 connector.MarkDirtyRepaint();
             }
 
-        }
-
-        static readonly Dictionary<Type, string> k_TypeClassNameSuffix = new Dictionary<Type, string>();
-
-        internal static string GetClassNameSuffixForDataType_Internal(Type thisPortType)
-        {
-            if (thisPortType == null)
-                return String.Empty;
-
-            if (k_TypeClassNameSuffix.TryGetValue(thisPortType, out var kebabCaseName))
-                return kebabCaseName;
-
-            if (thisPortType.IsSubclassOf(typeof(GameObject)))
-                return "game-object";
-            if (thisPortType.IsSubclassOf(typeof(Transform)))
-                return "transform";
-            if (thisPortType.IsSubclassOf(typeof(Material)))
-                return "material";
-            if (thisPortType.IsSubclassOf(typeof(Cubemap)) || thisPortType == typeof(Cubemap))
-                return "cubemap";
-            if (thisPortType.IsSubclassOf(typeof(Texture2DArray)))
-                return "texture2darray";
-            if (thisPortType.IsSubclassOf(typeof(Texture2D)) || thisPortType.IsSubclassOf(typeof(Texture)))
-                return "texture2d";
-            if (thisPortType.IsSubclassOf(typeof(Material)))
-                return "material";
-            if (thisPortType == typeof(MissingPort))
-                return "missing-port";
-            if (thisPortType == typeof(IList))
-                return "list";
-            if (thisPortType == typeof(IDictionary))
-                return "dictionary";
-            if (thisPortType.IsSubclassOf(typeof(Enum)))
-                return "enum";
-            if (thisPortType == typeof(Matrix4x4))
-                return "matrix";
-
-            kebabCaseName = thisPortType.Name.ToKebabCase_Internal();
-            k_TypeClassNameSuffix.Add(thisPortType, kebabCaseName);
-            return kebabCaseName;
         }
 
         public Vector3 GetGlobalCenter()
@@ -540,6 +508,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             var paintRect = GetConnector().localBound;
             paintRect.position = Vector2.zero;
+            paintRect.position += Vector2.one * 0.5f;
+            paintRect.size -= Vector2.one;
 
             MakeCircle(mgc.painter2D, paintRect);
             mgc.painter2D.lineWidth = 1.0f;
@@ -547,8 +517,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (IsCapVisible)
             {
-                paintRect.position += Vector2.one * 2;
-                paintRect.size -= Vector2.one * 4;
+                paintRect.position += Vector2.one * 1.5f;
+                paintRect.size -= Vector2.one * 3;
                 mgc.painter2D.fillColor = PortColor;
                 MakeCircle(mgc.painter2D, paintRect);
                 mgc.painter2D.Fill();

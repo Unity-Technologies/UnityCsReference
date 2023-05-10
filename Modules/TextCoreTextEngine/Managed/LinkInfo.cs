@@ -3,13 +3,15 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
 {
     /// <summary>
     /// Structure containing information about individual links contained in the text object.
     /// </summary>
-    struct LinkInfo
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+    internal struct LinkInfo
     {
         public int hashCode;
 
@@ -18,7 +20,9 @@ namespace UnityEngine.TextCore.Text
         public int linkTextfirstCharacterIndex;
         public int linkTextLength;
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal char[] linkId;
+
         string m_LinkIdString;
         string m_LinkTextString;
 

@@ -17,7 +17,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// <summary>
     /// A view to display the model inspector.
     /// </summary>
-    class ModelInspectorView : RootView, IMultipleModelPartContainer
+    class ModelInspectorView : RootView
     {
         /// <summary>
         /// Determines if a field should be displayed in the node options section of a node.
@@ -65,7 +65,7 @@ namespace Unity.GraphToolsFoundation.Editor
 #pragma warning restore 618
         }
 
-        static readonly List<ModelView> k_UpdateAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_UpdateAllUIs = new();
 
         public new static readonly string ussClassName = "model-inspector-view";
         public static readonly string titleUssClassName = ussClassName.WithUssElement("title");
@@ -267,7 +267,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 return null;
             }
 
-            public static MultipleModelsView CallCreateSection(ElementBuilder eb, IEnumerable<Model> models)
+            public static MultipleModelsView CallCreateSection(ElementBuilder eb, IReadOnlyList<Model> models)
             {
                 if (!models.Any())
                     return null;
@@ -307,7 +307,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 if( s_SingleFunctions == null)
                     s_SingleFunctions = new Dictionary<(Type,Type), Func<ElementBuilder, Model, MultipleModelsView>>();
                 if( s_EnumFunctions == null)
-                    s_EnumFunctions = new Dictionary<(Type,Type), Func<ElementBuilder, IEnumerable<Model>, MultipleModelsView>>();
+                    s_EnumFunctions = new Dictionary<(Type,Type), Func<ElementBuilder, IReadOnlyList<Model>, MultipleModelsView>>();
 
                 var matchingTypes = TypeCache.GetTypesWithAttribute<ModelInspectorCreateSectionMethodsCacheAttribute>()
                     .Where(t => t.GetCustomAttribute<ModelInspectorCreateSectionMethodsCacheAttribute>().ViewDomain.IsAssignableFrom(viewType))
@@ -326,14 +326,14 @@ namespace Unity.GraphToolsFoundation.Editor
                     foreach (var meth in meths.Where(t => t.ReturnType == typeof(MultipleModelsView) &&
                                  t.GetParameters().Length == 2 &&
                                  t.GetParameters()[0].ParameterType == typeof(ElementBuilder) &&
-                                 typeof(IEnumerable<Model>).IsAssignableFrom(t.GetParameters()[1].ParameterType)))
+                                 typeof(IReadOnlyList<Model>).IsAssignableFrom(t.GetParameters()[1].ParameterType)))
                     {
                         var modelType = meth.GetParameters()[1].ParameterType.GenericTypeArguments[0];
                         if (!s_EnumFunctions.ContainsKey((viewType,modelType)))
                         {
-                            var castMethod = typeof(Enumerable).GetMethod(nameof(Enumerable.Cast), BindingFlags.Public | BindingFlags.Static)?.MakeGenericMethod(new[] { modelType });
+                            var castMethod = typeof(CollectionExtensions).GetMethod(nameof(CollectionExtensions.Cast), BindingFlags.Public | BindingFlags.Static)?.MakeGenericMethod(new[] { typeof(Model), modelType });
 
-                            Assert.IsNotNull(castMethod, "Cast Method for IEnumerable<" + modelType.FullName + ">  not found");
+                            Assert.IsNotNull(castMethod, "Cast Method for IReadOnlyList<" + typeof(Model).FullName + ", " + modelType.FullName + ">  not found");
 
                             s_EnumFunctions[(viewType,modelType)] = (eb, models) => (MultipleModelsView)meth.Invoke(null, new[] { eb, castMethod?.Invoke(null, new object[] { models }) });
                         }
@@ -341,7 +341,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
             }
 
-            static Dictionary<(Type,Type), Func<ElementBuilder, IEnumerable<Model>, MultipleModelsView>> s_EnumFunctions;
+            static Dictionary<(Type,Type), Func<ElementBuilder, IReadOnlyList<Model>, MultipleModelsView>> s_EnumFunctions;
             static Dictionary<(Type,Type), Func<ElementBuilder, Model, MultipleModelsView>> s_SingleFunctions;
         }
 
@@ -407,7 +407,6 @@ namespace Unity.GraphToolsFoundation.Editor
                         }
 
                         // Add the section to the view, in the side panel, and add the sectionInspector to the section.
-                        sectionUI.AddToRootView(this);
                         m_InspectorContainer.Add(sectionUI);
                         sectionUI.Add(sectionInspector);
                     }
@@ -416,8 +415,6 @@ namespace Unity.GraphToolsFoundation.Editor
                         // If there was no section created, let's put the sectionInspector directly in the side panel.
                         m_InspectorContainer.Add(sectionInspector);
                     }
-
-                    sectionInspector.AddToRootView(this);
                 }
 
                 sectionUI?.AddToClassList("last-child");
@@ -430,8 +427,7 @@ namespace Unity.GraphToolsFoundation.Editor
             Add(m_InspectorContainer);
         }
 
-
-
+        /// <inheritdoc />
         public override void UpdateFromModel()
         {
             if (panel == null)
@@ -462,7 +458,7 @@ namespace Unity.GraphToolsFoundation.Editor
                                     inspectedModelChanged = true;
                                 }
 
-                                if (inspectedModel is PortNodeModel portNodeModel)
+                                if (!inspectedModelChanged && inspectedModel is PortNodeModel portNodeModel)
                                 {
                                     foreach (var portModel in portNodeModel.Ports)
                                     {
@@ -470,6 +466,18 @@ namespace Unity.GraphToolsFoundation.Editor
                                         {
                                             inspectedModelChanged = true;
                                             break;
+                                        }
+                                    }
+
+                                    if (!inspectedModelChanged && portNodeModel is InputOutputPortsNodeModel inoutPortsNodeModel)
+                                    {
+                                        foreach (var option in inoutPortsNodeModel.NodeOptions)
+                                        {
+                                            if (option.PortModel.Guid == guid)
+                                            {
+                                                inspectedModelChanged = true;
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -496,18 +504,6 @@ namespace Unity.GraphToolsFoundation.Editor
                                     ui.UpdateFromModel();
                                 }
                                 k_UpdateAllUIs.Clear();
-                            }
-
-                            foreach (var ui in m_PartsToUpdate)
-                            {
-                                ui.UpdateFromModel();
-                            }
-                        }
-                        else if (changeset.NewModels.Any() || changeset.DeletedModels.Any())
-                        {
-                            foreach (var ui in m_PartsToUpdate)
-                            {
-                                ui.UpdateFromModel();
                             }
                         }
                     }
@@ -542,17 +538,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                 }
             }
-        }
-
-        List<BaseMultipleModelViewsPart> m_PartsToUpdate = new List<BaseMultipleModelViewsPart>();
-        public void Register(BaseMultipleModelViewsPart part)
-        {
-            m_PartsToUpdate.Add(part);
-        }
-
-        public void Unregister(BaseMultipleModelViewsPart part)
-        {
-            m_PartsToUpdate.Remove(part);
         }
     }
 }

@@ -29,9 +29,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public List<GraphElementModel> ElementsToAddToSubgraph;
 
         /// <summary>
-        /// The SerializableGUID to assign to the newly subgraph node.
+        /// The guid to assign to the newly subgraph node.
         /// </summary>
-        public SerializableGUID Guid;
+        public Hash128 Guid;
 
         /// <summary>
         /// The type of the asset.
@@ -68,7 +68,7 @@ namespace Unity.GraphToolsFoundation.Editor
             : this()
         {
             AssetType = assetType;
-            Guid = SerializableGUID.Generate();
+            Guid = Hash128Extensions.Generate();
             GraphView = graphView;
             ElementsToAddToSubgraph = elementsToCreate;
             Template = template;
@@ -87,7 +87,7 @@ namespace Unity.GraphToolsFoundation.Editor
             : this(assetType, elementsToCreate, template, graphView)
         {
             AssetType = assetType;
-            Guid = SerializableGUID.Generate();
+            Guid = Hash128Extensions.Generate();
             GraphView = graphView;
             ElementsToAddToSubgraph = elementsToCreate;
             Template = template;

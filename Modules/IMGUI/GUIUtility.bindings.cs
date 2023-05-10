@@ -19,7 +19,12 @@ namespace UnityEngine
         public static extern bool hasModalWindow { get; }
 
         [NativeProperty("GetGUIState().m_PixelsPerPoint", true, TargetType.Field)]
-        internal static extern float pixelsPerPoint { get; }
+        internal static extern float pixelsPerPoint
+        {
+
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            get;
+        }
 
         [NativeProperty("GetGUIState().m_OnGUIDepth", true, TargetType.Field)]
         internal static extern int guiDepth { get; }
@@ -64,9 +69,10 @@ namespace UnityEngine
             return Internal_GetControlID(hint, focusType, rect);
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern void BeginContainerFromOwner(ScriptableObject owner);
 
-
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern void BeginContainer(ObjectGUIState objectGUIState);
 
         [NativeMethod("EndContainer")]
@@ -79,18 +85,19 @@ namespace UnityEngine
         internal static extern void UpdateUndoName();
 
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern int CheckForTabEvent(Event evt);
 
-
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern void SetKeyboardControlToFirstControlId();
 
-
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern void SetKeyboardControlToLastControlId();
 
-
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern bool HasFocusableControls();
 
-
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern bool OwnsId(int id);
 
         public static extern Rect AlignRectToDevice(Rect rect, out int widthInPixels, out int heightInPixels);
@@ -107,6 +114,7 @@ namespace UnityEngine
         internal extern static IMECompositionMode imeCompositionMode
         {
             get;
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             set;
         }
 

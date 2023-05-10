@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -13,26 +14,26 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class GraphChangeDescription
     {
-        HashSet<SerializableGUID> m_NewModels;
-        Dictionary<SerializableGUID, List<ChangeHint>> m_ChangedModels;
-        HashSet<SerializableGUID> m_DeletedModels;
+        HashSet<Hash128> m_NewModels;
+        Dictionary<Hash128, List<ChangeHint>> m_ChangedModels;
+        HashSet<Hash128> m_DeletedModels;
 
         /// <summary>
         /// The new models.
         /// </summary>
-        public IEnumerable<SerializableGUID> NewModels => m_NewModels;
+        public IEnumerable<Hash128> NewModels => m_NewModels;
 
         /// <summary>
         /// The changed models.
         /// </summary>
-        public IReadOnlyDictionary<SerializableGUID, IReadOnlyList<ChangeHint>> ChangedModels =>
-            m_ChangedModels.ToDictionary<KeyValuePair<SerializableGUID, List<ChangeHint>>, SerializableGUID, IReadOnlyList<ChangeHint>>(
+        public IReadOnlyDictionary<Hash128, IReadOnlyList<ChangeHint>> ChangedModels =>
+            m_ChangedModels.ToDictionary<KeyValuePair<Hash128, List<ChangeHint>>, Hash128, IReadOnlyList<ChangeHint>>(
                 kv => kv.Key, kv => kv.Value);
 
         /// <summary>
         /// The deleted models.
         /// </summary>
-        public IEnumerable<SerializableGUID> DeletedModels => m_DeletedModels;
+        public IEnumerable<Hash128> DeletedModels => m_DeletedModels;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GraphChangeDescription"/> class.
@@ -47,18 +48,18 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="changedModels">The changed models, with hints about what changed.</param>
         /// <param name="deletedModels">The deleted models.</param>
         public GraphChangeDescription(
-            IEnumerable<SerializableGUID> newModels,
-            IReadOnlyDictionary<SerializableGUID, IReadOnlyList<ChangeHint>> changedModels,
-            IEnumerable<SerializableGUID> deletedModels)
+            IEnumerable<Hash128> newModels,
+            IReadOnlyDictionary<Hash128, IReadOnlyList<ChangeHint>> changedModels,
+            IEnumerable<Hash128> deletedModels)
         {
             m_NewModels = newModels?.ToHashSet()
-                ?? new HashSet<SerializableGUID>();
+                ?? new HashSet<Hash128>();
 
             m_ChangedModels = changedModels?.ToDictionary(kv => kv.Key, kv => kv.Value.ToList())
-                ?? new Dictionary<SerializableGUID, List<ChangeHint>>();
+                ?? new Dictionary<Hash128, List<ChangeHint>>();
 
             m_DeletedModels = deletedModels?.ToHashSet()
-                ?? new HashSet<SerializableGUID>();
+                ?? new HashSet<Hash128>();
         }
 
         /// <summary>
@@ -70,7 +71,7 @@ namespace Unity.GraphToolsFoundation.Editor
             Union(other.m_NewModels, other.m_ChangedModels, other.m_DeletedModels);
         }
 
-        static void AddItems(HashSet<SerializableGUID> hashSet, IEnumerable<SerializableGUID> items)
+        static void AddItems(HashSet<Hash128> hashSet, IEnumerable<Hash128> items)
         {
             foreach (var item in items)
             {
@@ -78,7 +79,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        static void RemoveItems(HashSet<SerializableGUID> hashSet, IEnumerable<SerializableGUID> items)
+        static void RemoveItems(HashSet<Hash128> hashSet, IEnumerable<Hash128> items)
         {
             foreach (var item in items)
             {
@@ -93,9 +94,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="changedModels">The changed models.</param>
         /// <param name="deletedModels">The deleted models.</param>
         internal void Union(
-            IEnumerable<SerializableGUID> newModels,
-            IEnumerable<KeyValuePair<SerializableGUID, List<ChangeHint>>> changedModels,
-            IEnumerable<SerializableGUID> deletedModels)
+            IEnumerable<Hash128> newModels,
+            IEnumerable<KeyValuePair<Hash128, List<ChangeHint>>> changedModels,
+            IEnumerable<Hash128> deletedModels)
         {
             if (newModels != null)
                 AddItems(m_NewModels, newModels);
@@ -187,7 +188,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The modified <see cref="GraphChangeDescription"/>.</returns>
         public GraphChangeDescription AddChangedModel(GraphElementModel model, ChangeHint changeHint)
         {
-            Union(null, new Dictionary<SerializableGUID, List<ChangeHint>> { { model.Guid, new List<ChangeHint> { changeHint } } }, null);
+            Union(null, new Dictionary<Hash128, List<ChangeHint>> { { model.Guid, new List<ChangeHint> { changeHint } } }, null);
             return this;
         }
 
@@ -208,14 +209,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="changedModels">The changed models guids and hints.</param>
         /// <returns>The modified <see cref="GraphChangeDescription"/>.</returns>
-        public GraphChangeDescription AddChangedModels(IReadOnlyDictionary<SerializableGUID, IReadOnlyList<ChangeHint>> changedModels)
+        public GraphChangeDescription AddChangedModels(IReadOnlyDictionary<Hash128, IReadOnlyList<ChangeHint>> changedModels)
         {
             Union(null, changedModels.Select(kv =>
             {
                 var list = kv.Value as List<ChangeHint>;
                 list ??= kv.Value.ToList();
 
-                return new KeyValuePair<SerializableGUID, List<ChangeHint>>(kv.Key, list);
+                return new KeyValuePair<Hash128, List<ChangeHint>>(kv.Key, list);
             }), null);
             return this;
         }

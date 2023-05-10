@@ -16,7 +16,7 @@ namespace UnityEditor.Search
 {
     static class ScenePicker
     {
-        [MenuItem("Window/Search/Scene", priority = 1269)]
+        [MenuItem("Window/Search/Scene", priority = 1269, secondaryPriority = 1)]
         internal static void OpenScenePicker()
         {
             var searchContext = SearchService.CreateContext(CreateOpenSceneProviders(), string.Empty);

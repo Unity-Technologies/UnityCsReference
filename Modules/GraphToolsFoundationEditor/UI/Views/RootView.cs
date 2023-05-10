@@ -13,7 +13,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// Base class for root views.
     /// </summary>
     /// <remarks>Root views are model views that can receive commands. They are also usually being updated by an observer.</remarks>
-    abstract class RootView : BaseModelView, IHierarchicalCommandTarget, IUndoableCommandMerger, IDisposable
+    abstract class RootView : View, IHierarchicalCommandTarget, IUndoableCommandMerger, IDisposable
     {
         public static readonly string ussClassName = "ge-view";
         public static readonly string focusedViewModifierUssClassName = ussClassName.WithUssModifier("focused");
@@ -46,13 +46,23 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <remarks>To dispatch a command, use <see cref="Dispatch"/>. This will ensure the command is also dispatched to parent dispatchers.</remarks>
         protected Dispatcher Dispatcher { get; private set; }
 
+        TypeHandleInfos m_TypeHandleInfos;
+
+        public TypeHandleInfos TypeHandleInfos => m_TypeHandleInfos;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="RootView"/> class.
         /// </summary>
         /// <param name="window">The <see cref="EditorWindow"/> containing this view.</param>
         /// <param name="graphTool">The tool hosting this view.</param>
-        protected RootView(EditorWindow window, BaseGraphTool graphTool)
+        /// <param name="typeHandleInfos">A <see cref="TypeHandleInfos"/> to use or this view. If null a new one will be created.</param>
+        protected RootView(EditorWindow window, BaseGraphTool graphTool, TypeHandleInfos typeHandleInfos = null)
         {
+            if (typeHandleInfos != null)
+                m_TypeHandleInfos = typeHandleInfos;
+            else
+                m_TypeHandleInfos = new TypeHandleInfos();
+
             focusable = true;
             m_RequiresCompleteUIBuild = true;
 

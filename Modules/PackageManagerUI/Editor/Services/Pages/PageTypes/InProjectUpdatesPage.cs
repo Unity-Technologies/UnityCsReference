@@ -10,8 +10,10 @@ namespace UnityEditor.PackageManager.UI.Internal;
 internal class InProjectUpdatesPage : InProjectPage
 {
     public new const string k_Id = "Updates";
+
     public override string id => k_Id;
     public override string displayName => L10n.Tr("Updates");
+    public override PageIcon icon => PageIcon.Updates;
 
     public InProjectUpdatesPage(PackageDatabase packageDatabase) : base(packageDatabase) {}
 

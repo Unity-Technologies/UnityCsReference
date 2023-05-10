@@ -17,6 +17,7 @@ namespace UnityEngine.TextCore.LowLevel
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
     internal struct GlyphAnchorPoint
     {
         /// <summary>
@@ -49,6 +50,7 @@ namespace UnityEngine.TextCore.LowLevel
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
     internal struct MarkPositionAdjustment
     {
         /// <summary>
@@ -91,6 +93,7 @@ namespace UnityEngine.TextCore.LowLevel
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
     internal struct MarkToBaseAdjustmentRecord
     {
         /// <summary>
@@ -140,6 +143,7 @@ namespace UnityEngine.TextCore.LowLevel
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
     internal struct MarkToMarkAdjustmentRecord
     {
         /// <summary>

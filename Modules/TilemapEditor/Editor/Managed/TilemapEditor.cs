@@ -166,7 +166,7 @@ namespace UnityEditor
             return bounds;
         }
 
-        [MenuItem("CONTEXT/Tilemap/Refresh All Tiles")]
+        [MenuItem("CONTEXT/Tilemap/Refresh All Tiles", secondaryPriority = 27)]
         static internal void RefreshAllTiles(MenuCommand item)
         {
             Tilemap tilemap = (Tilemap)item.context;
@@ -174,7 +174,7 @@ namespace UnityEditor
             InternalEditorUtility.RepaintAllViews();
         }
 
-        [MenuItem("CONTEXT/Tilemap/Compress Tilemap Bounds")]
+        [MenuItem("CONTEXT/Tilemap/Compress Tilemap Bounds", secondaryPriority = 28)]
         static internal void CompressBounds(MenuCommand item)
         {
             Tilemap tilemap = (Tilemap)item.context;

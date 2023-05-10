@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Jobs;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 
 namespace Unity.Collections
@@ -31,7 +32,9 @@ namespace Unity.Collections
     public unsafe struct NativeArray<T> : IDisposable, IEnumerable<T>, IEquatable<NativeArray<T>> where T : struct
     {
         [NativeDisableUnsafePtrRestriction]
+        [VisibleToOtherModules("UnityEngine.ContentLoadModule", "UnityEngine.TilemapModule")]
         internal void*                    m_Buffer;
+        
         internal int                      m_Length;
 
         internal int                      m_MinIndex;

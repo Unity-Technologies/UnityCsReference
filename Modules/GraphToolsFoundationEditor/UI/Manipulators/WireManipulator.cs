@@ -110,7 +110,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (graphView == null)
                     return;
 
-                ChangeMouseCursorTo(graphView.elementPanel, MouseIsNearPorts(inputPortUI, outputPortUI, evt.mousePosition, out _, out _) ? (int)MouseCursor.Link : (int)MouseCursor.Arrow);
+                ContentDragger.ChangeMouseCursorTo_Internal(graphView.elementPanel, MouseIsNearPorts(inputPortUI, outputPortUI, evt.mousePosition, out _, out _) ? (int)MouseCursor.Link : (int)MouseCursor.Arrow);
                 evt.StopPropagation();
 
                 return;
@@ -274,7 +274,7 @@ namespace Unity.GraphToolsFoundation.Editor
             target.ReleaseMouse();
         }
 
-        bool MouseIsNearPorts(Port input, Port output, Vector2 worldPos, out float distanceFromInput, out float distanceFromOutput)
+        static bool MouseIsNearPorts(Port input, Port output, Vector2 worldPos, out float distanceFromInput, out float distanceFromOutput)
         {
             distanceFromInput = float.NegativeInfinity;
             distanceFromOutput = float.NegativeInfinity;
@@ -289,14 +289,6 @@ namespace Unity.GraphToolsFoundation.Editor
             distanceFromInput = (referencePos - inputPos).sqrMagnitude;
 
             return !(distanceFromInput > 50 * 50) || !(distanceFromOutput > 50 * 50);
-        }
-
-        static void ChangeMouseCursorTo(BaseVisualElementPanel panel, int internalCursorId)
-        {
-            var cursor = new Cursor();
-            cursor.defaultCursorId = internalCursorId;
-
-            panel.cursorManager.SetCursor(cursor);
         }
 
         static List<WireDragHelper> GetAdditionalWireDragHelpers(PortModel detachedPort, Wire targetWire, RootView rootView, GraphModel graphModel, IMouseEvent evt)

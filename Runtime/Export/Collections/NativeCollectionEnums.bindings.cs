@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace Unity.Collections
@@ -33,6 +34,7 @@ namespace Unity.Collections
     }
 
     [UsedByNativeCode]
+    [VisibleToOtherModules("UnityEngine.AIModule")]
     internal enum LeakCategory
     {
         // NOTE: Any changes to this enum must be kept in sync with Runtime\Export\Collections\NativeCollectionLeakCategory.h

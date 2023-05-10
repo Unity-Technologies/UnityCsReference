@@ -66,7 +66,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void BuildPartList()
         {
-            var editableTitlePart = PlacematTitlePart.Create(titleContainerPartName, Model, this, ussClassName, false, true, false);
+            var editableTitlePart = PlacematTitlePart.Create(titleContainerPartName, Model, this, ussClassName);
             PartList.AppendPart(editableTitlePart);
             PartList.AppendPart(FourWayResizerPart.Create(resizerPartName, Model, this, ussClassName));
         }
@@ -126,7 +126,7 @@ namespace Unity.GraphToolsFoundation.Editor
         // PF FIXME: we can probably improve the performance of this.
         // Idea: build a bounding box of placemats affected by currentPlacemat and use this BB to intersect with nodes.
         // PF TODO: also revisit Placemat other recursive functions for perf improvements.
-        protected static void GatherDependencies(Placemat currentPlacemat, IList<ModelView> graphElements, ICollection<ModelView> dependencies)
+        protected static void GatherDependencies(Placemat currentPlacemat, IList<ChildView> graphElements, ICollection<ChildView> dependencies)
         {
             // We want gathering dependencies to work even if the placemat layout is not up to date, so we use the
             // currentPlacemat.PlacematModel.PositionAndSize to do our overlap test.
@@ -158,7 +158,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return true;
         }
 
-        static readonly List<ModelView> k_AddForwardDependenciesAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_AddForwardDependenciesAllUIs = new();
 
         /// <inheritdoc/>
         public override void AddForwardDependencies()
@@ -167,7 +167,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 .Where(ge => ge.IsSelectable() && !(ge is WireModel))
                 .GetAllViewsInList_Internal(GraphView, e => e.parent is GraphView.Layer, k_AddForwardDependenciesAllUIs);
 
-            var dependencies = new List<ModelView>();
+            var dependencies = new List<ChildView>();
             GatherDependencies(this, k_AddForwardDependenciesAllUIs, dependencies);
             k_AddForwardDependenciesAllUIs.Clear();
         }
@@ -210,7 +210,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
         }
 
-        static readonly List<ModelView> k_ActOnGraphElementsOver2AllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_ActOnGraphElementsOver2AllUIs = new();
         protected internal bool ActOnGraphElementsInside_Internal(Func<GraphElement, bool> act)
         {
             GraphView.GraphModel.GraphElementModels

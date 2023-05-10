@@ -14,17 +14,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         public const string k_Id = "samples";
 
         private const int k_SampleListSwitchWidthBreakpoint = 420;
+
+        private IEnumerable<Sample> m_Samples;
+        private IPackageVersion m_Version;
+
         private readonly ResourceLoader m_ResourceLoader;
         private readonly PackageDatabase m_PackageDatabase;
         private readonly SelectionProxy m_Selection;
         private readonly AssetDatabaseProxy m_AssetDatabase;
         private readonly ApplicationProxy m_Application;
         private readonly IOProxy m_IOProxy;
-
-        private IEnumerable<Sample> m_Samples;
-        private IPackageVersion m_Version;
-
-        public PackageDetailsSamplesTab(ResourceLoader resourceLoader, PackageDatabase packageDatabase, SelectionProxy selection, AssetDatabaseProxy assetDatabase, ApplicationProxy application, IOProxy iOProxy)
+        public PackageDetailsSamplesTab(UnityConnectProxy unityConnect,
+            ResourceLoader resourceLoader,
+            PackageDatabase packageDatabase,
+            SelectionProxy selection,
+            AssetDatabaseProxy assetDatabase,
+            ApplicationProxy application,
+            IOProxy iOProxy) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Samples");
@@ -36,7 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IOProxy = iOProxy;
 
             var root = m_ResourceLoader.GetTemplate("PackageDetailsSamplesTab.uxml");
-            Add(root);
+            m_ContentContainer.Add(root);
             m_Cache = new VisualElementCache(root);
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
@@ -51,7 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return samples?.Any() == true;
         }
 
-        public override void Refresh(IPackageVersion version)
+        protected override void RefreshContent(IPackageVersion version)
         {
             var packageChanged = version.package.uniqueId != m_Version?.package.uniqueId;
 

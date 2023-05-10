@@ -550,6 +550,7 @@ namespace UnityEngine
         [VisibleToOtherModules]
         [FreeFunction("UnityEngineObjectBindings::ForceLoadFromInstanceID")]
         internal extern static Object ForceLoadFromInstanceID(int instanceID);
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Object CreateMissingReferenceObject(int instanceID)
         {
             return new Object { m_InstanceID = instanceID };

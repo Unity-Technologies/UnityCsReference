@@ -216,7 +216,17 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
 
-            EditorGUILayout.LabelField("Display", (m_SelectedElement.resolvedStyle.display == DisplayStyle.None) ? "None" : "Flex");
+            GUILayout.BeginHorizontal();
+            var displayDescription = string.Empty;
+            if (m_SelectedElement.hasInlineStyle && m_SelectedElement.inlineStyleAccess.IsValueSet(StylePropertyId.Display))
+            {
+                displayDescription = "inline";
+            }
+            var chosenStyle = (DisplayStyle)EditorGUILayout.EnumPopup("Display", m_SelectedElement.resolvedStyle.display);
+            EditorGUILayout.LabelField(displayDescription);
+            if (chosenStyle != m_SelectedElement.resolvedStyle.display)
+                m_SelectedElement.style.display = chosenStyle;
+            GUILayout.EndHorizontal();
 
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
             EditorGUILayout.LabelField("World Clip", m_SelectedElement.worldClip.ToString());

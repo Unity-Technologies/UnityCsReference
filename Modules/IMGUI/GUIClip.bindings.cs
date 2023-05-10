@@ -8,6 +8,7 @@ namespace UnityEngine
 {
     [NativeHeader("Modules/IMGUI/GUIClip.h"),
      NativeHeader("Modules/IMGUI/GUIState.h")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal partial class GUIClip
     {
         internal static extern bool enabled {[FreeFunction("GetGUIState().m_CanvasGUIState.m_GUIClipState.GetEnabled")] get; }
@@ -27,9 +28,11 @@ namespace UnityEngine
         internal static extern void Internal_Push(Rect screenRect, Vector2 scrollOffset, Vector2 renderOffset, bool resetOffset);
 
         // Removes the topmost clipping rectangle, undoing the effect of the latest GUIClip.Push
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern void Internal_Pop();
 
         [FreeFunction("GetGUIState().m_CanvasGUIState.m_GUIClipState.GetCount")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern int Internal_GetCount();
 
         // Get the topmost rectangle

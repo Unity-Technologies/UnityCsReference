@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -11,13 +12,13 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         public readonly RootView View;
         public readonly IViewContext Context;
-        public readonly Dictionary<SerializableGUID, ModelView> ModelViews;
+        public readonly Dictionary<Hash128, ChildView> ModelViews;
 
         public ContextualizedModelViews_Internal(RootView view, IViewContext context)
         {
             View = view;
             Context = context;
-            ModelViews = new Dictionary<SerializableGUID, ModelView>();
+            ModelViews = new Dictionary<Hash128, ChildView>();
         }
     }
 }

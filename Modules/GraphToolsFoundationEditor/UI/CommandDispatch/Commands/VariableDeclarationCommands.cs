@@ -36,9 +36,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public TypeHandle TypeHandle;
 
         /// <summary>
-        /// The SerializableGUID to assign to the newly created variable.
+        /// The guid to assign to the newly created variable.
         /// </summary>
-        public SerializableGUID Guid;
+        public Hash128 Guid;
 
         /// <summary>
         /// The modifiers to apply to the newly created variable.
@@ -73,16 +73,16 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="group">The group in which the variable is added. If null, it will go to the root group.</param>
         /// <param name="indexInGroup">The index of the variable in the group. For indexInGroup &lt;= 0, The item will be added at the beginning. For indexInGroup &gt;= Items.Count, items will be added at the end.</param>
         /// <param name="modifierFlags">The modifiers to apply to the newly created variable.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item. If none is provided, a new
-        /// SerializableGUID will be generated for it.</param>
+        /// <param name="guid">The guid to assign to the newly created item. If none is provided, a new
+        /// guid will be generated for it.</param>
         public CreateGraphVariableDeclarationCommand(string name, bool isExposed, TypeHandle typeHandle,
                                                      GroupModel group = null, int indexInGroup = int.MaxValue,
-                                                     ModifierFlags modifierFlags = ModifierFlags.None, SerializableGUID guid = default) : this()
+                                                     ModifierFlags modifierFlags = ModifierFlags.None, Hash128 guid = default) : this()
         {
             VariableName = name;
             IsExposed = isExposed;
             TypeHandle = typeHandle;
-            Guid = guid.Valid ? guid : SerializableGUID.Generate();
+            Guid = guid.isValid ? guid : Hash128Extensions.Generate();
             ModifierFlags = modifierFlags;
             Group = group;
             IndexInGroup = indexInGroup;
@@ -98,11 +98,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="group">The group in which the variable is added. If null, it will go to the root group.</param>
         /// <param name="indexInGroup">The index of the variable in the group. For indexInGroup &lt;= 0, The item will be added at the beginning. For indexInGroup &gt;= Items.Count, items will be added at the end.</param>
         /// <param name="modifierFlags">The modifiers to apply to the newly created variable.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item. If none is provided, a new
-        /// SerializableGUID will be generated for it.</param>
+        /// <param name="guid">The guid to assign to the newly created item. If none is provided, a new
+        /// guid will be generated for it.</param>
         public CreateGraphVariableDeclarationCommand(string name, bool isExposed, TypeHandle typeHandle, Type variableType,
                                                      GroupModel group = null, int indexInGroup = int.MaxValue,
-                                                     ModifierFlags modifierFlags = ModifierFlags.None, SerializableGUID guid = default)
+                                                     ModifierFlags modifierFlags = ModifierFlags.None, Hash128 guid = default)
             : this(name, isExposed, typeHandle, group, indexInGroup, modifierFlags, guid)
         {
             VariableType = variableType;

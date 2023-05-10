@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -26,29 +24,29 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="elementBuilder">The element builder.</param>
         /// <param name="models">The models for which we want to create an inspector UI.</param>
         /// <returns>An inspector UI for the node.</returns>
-        public static MultipleModelsView CreateSectionInspector(this ElementBuilder elementBuilder, IEnumerable<PortNodeModel> models)
+        public static MultipleModelsView CreateSectionInspector(this ElementBuilder elementBuilder, IReadOnlyList<PortNodeModel> models)
         {
             var ui = new ModelInspector();
 
             ui.Setup(models, elementBuilder.View, elementBuilder.Context);
 
-            if (elementBuilder.Context is InspectorSectionContext inspectorSectionContext && models.Any())
+            if (elementBuilder.Context is InspectorSectionContext inspectorSectionContext && models is { Count: > 0 })
             {
                 switch (inspectorSectionContext.Section.SectionType)
                 {
                     case SectionType.Options:
                         {
-                            var inspectorFields = NodeOptionsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
+                            var inspectorFields = NodeOptionsInspector.Create(ModelInspector.fieldsPartName, models, ui, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
                             ui.PartList.AppendPart(inspectorFields);
                             break;
                         }
                     case SectionType.Properties:
-                        var nodeInspectorFields = NodePortsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName);
+                        var nodeInspectorFields = NodePortsInspector.Create(ModelInspector.fieldsPartName, models, ui, ModelInspector.ussClassName);
                         ui.PartList.AppendPart(nodeInspectorFields);
                         break;
                     case SectionType.Advanced:
                         {
-                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.AdvancedSettingsFilter);
+                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui, ModelInspector.ussClassName, ModelInspectorView.AdvancedSettingsFilter);
                             ui.PartList.AppendPart(inspectorFields);
                             break;
                         }
@@ -79,13 +77,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     case SectionType.Options:
                         {
-                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
+                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
                             ui.PartList.AppendPart(inspectorFields);
                             break;
                         }
                     case SectionType.Advanced:
                         {
-                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.AdvancedSettingsFilter);
+                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui, ModelInspector.ussClassName, ModelInspectorView.AdvancedSettingsFilter);
                             ui.PartList.AppendPart(inspectorFields);
                             break;
                         }
@@ -104,7 +102,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="elementBuilder">The element builder.</param>
         /// <param name="models">The models for which we want to create an inspector UI.</param>
         /// <returns>An inspector UI for the node.</returns>
-        public static MultipleModelsView CreateSectionInspector(this ElementBuilder elementBuilder, IEnumerable<VariableDeclarationModel> models)
+        public static MultipleModelsView CreateSectionInspector(this ElementBuilder elementBuilder, IReadOnlyList<VariableDeclarationModel> models)
         {
             var ui = new ModelInspector();
             ui.Setup(models, elementBuilder.View as ModelInspectorView, elementBuilder.Context);
@@ -115,13 +113,13 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     case SectionType.Properties:
                         {
-                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
+                            var inspectorFields = SerializedFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
                             ui.PartList.AppendPart(inspectorFields);
                             break;
                         }
                     case SectionType.Advanced:
                         {
-                            var inspectorFields = VariableFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.AdvancedSettingsFilter);
+                            var inspectorFields = VariableFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui, ModelInspector.ussClassName, ModelInspectorView.AdvancedSettingsFilter);
                             ui.PartList.AppendPart(inspectorFields);
                             break;
                         }
@@ -140,7 +138,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="elementBuilder">The element builder.</param>
         /// <param name="models">The models for which we want to create an inspector UI.</param>
         /// <returns>An inspector UI for the node.</returns>
-        public static MultipleModelsView CreateSectionInspector(this ElementBuilder elementBuilder, IEnumerable<WireModel> models)
+        public static MultipleModelsView CreateSectionInspector(this ElementBuilder elementBuilder, IReadOnlyList<WireModel> models)
         {
             var ui = new ModelInspector();
             ui.Setup(models, elementBuilder.View as ModelInspectorView, elementBuilder.Context);
@@ -151,7 +149,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 {
                     case SectionType.Properties:
                     {
-                        var inspectorFields = WireFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
+                        var inspectorFields = WireFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui, ModelInspector.ussClassName, ModelInspectorView.NodeOptionsFilter);
                         ui.PartList.AppendPart(inspectorFields);
                         break;
                     }
@@ -170,14 +168,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="elementBuilder">The element builder.</param>
         /// <param name="models">The models for which we want to create an inspector UI.</param>
         /// <returns>An inspector UI for the node.</returns>
-        public static MultipleModelsView CreateSectionInspector(this ElementBuilder elementBuilder, IEnumerable<PlacematModel> models)
+        public static MultipleModelsView CreateSectionInspector(this ElementBuilder elementBuilder, IReadOnlyList<PlacematModel> models)
         {
             var ui = new ModelInspector();
             ui.Setup(models, elementBuilder.View as ModelInspectorView, elementBuilder.Context);
 
-            if (elementBuilder.Context is InspectorSectionContext && models.Any())
+            if (elementBuilder.Context is InspectorSectionContext && models is { Count: > 0 })
             {
-                var inspectorFields = PlacematFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui.RootView, ModelInspector.ussClassName, ModelInspectorView.AdvancedSettingsFilter);
+                var inspectorFields = PlacematFieldsInspector.Create(ModelInspector.fieldsPartName, models, ui, ModelInspector.ussClassName, ModelInspectorView.AdvancedSettingsFilter);
                 ui.PartList.AppendPart(inspectorFields);
             }
 

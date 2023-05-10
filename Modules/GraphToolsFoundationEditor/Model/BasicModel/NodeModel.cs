@@ -224,7 +224,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
 
                 // Last choice: Become a missing port
-                newPort ??= this.AddMissingPort(direction, SerializableGUID.Generate().ToString(), oldPort.Orientation, oldPort.Title);
+                newPort ??= this.AddMissingPort(direction, Hash128Extensions.Generate().ToString(), oldPort.Orientation, oldPort.Title);
 
                 if (newPort != null)
                 {

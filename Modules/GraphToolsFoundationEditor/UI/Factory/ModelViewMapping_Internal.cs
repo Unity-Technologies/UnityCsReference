@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -37,6 +38,29 @@ namespace Unity.GraphToolsFoundation.Editor
             contextualizedView.ModelViews[modelView.Model.Guid] = modelView;
         }
 
+        public void AddOrReplaceViewForModel(MultipleModelsView modelView)
+        {
+            if (modelView.Models == null || modelView.Models.Count == 0)
+                return;
+
+            var view = modelView.RootView;
+            var context = modelView.Context;
+
+            var contextualizedView = m_ContextualizedModelViews.FirstOrDefault(cge
+                => cge.View == view && cge.Context == context);
+
+            if (contextualizedView == null)
+            {
+                contextualizedView = new ContextualizedModelViews_Internal(view, context);
+                m_ContextualizedModelViews.Add(contextualizedView);
+            }
+
+            foreach (var model in modelView.Models)
+            {
+                contextualizedView.ModelViews[model.Guid] = modelView;
+            }
+        }
+
         public void RemoveModelView(ModelView modelView)
         {
             if (modelView.Model == null)
@@ -45,6 +69,19 @@ namespace Unity.GraphToolsFoundation.Editor
             var contextualizedView = m_ContextualizedModelViews.FirstOrDefault(cge => cge.View == modelView.RootView && cge.Context == modelView.Context);
 
             contextualizedView?.ModelViews.Remove(modelView.Model.Guid);
+        }
+
+        public void RemoveModelView(MultipleModelsView modelView)
+        {
+            if (modelView.Models == null || modelView.Models.Count == 0)
+                return;
+
+            var contextualizedView = m_ContextualizedModelViews.FirstOrDefault(cge => cge.View == modelView.RootView && cge.Context == modelView.Context);
+
+            foreach (var model in modelView.Models)
+            {
+                contextualizedView?.ModelViews.Remove(model.Guid);
+            }
         }
 
         /// <summary>
@@ -60,7 +97,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        public ModelView FirstViewOrDefault(RootView view, IViewContext context, SerializableGUID modelGuid)
+        public ChildView FirstViewOrDefault(RootView view, IViewContext context, Hash128 modelGuid)
         {
             ContextualizedModelViews_Internal gel = null;
             for (int i = 0; i < m_ContextualizedModelViews.Count; i++)
@@ -80,7 +117,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return modelView;
         }
 
-        public void AppendAllViews(SerializableGUID modelGuid, RootView view, Predicate<ModelView> filter, List<ModelView> outViewList)
+        public void AppendAllViews(Hash128 modelGuid, RootView view, Predicate<ChildView> filter, List<ChildView> outViewList)
         {
             foreach (var contextualizedView in m_ContextualizedModelViews)
             {

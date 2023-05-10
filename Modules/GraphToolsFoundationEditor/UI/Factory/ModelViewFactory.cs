@@ -61,7 +61,11 @@ namespace Unity.GraphToolsFoundation.Editor
             if (ext != null)
             {
                 var nodeBuilder = new ElementBuilder { View = view, Context = context };
-                newElem = ext.Invoke(null, new object[] { nodeBuilder, model }) as T;
+                try
+                {
+                    newElem = ext.Invoke(null, new object[] { nodeBuilder, model }) as T;
+                }
+                catch { throw; }
             }
 
             if (newElem == null)

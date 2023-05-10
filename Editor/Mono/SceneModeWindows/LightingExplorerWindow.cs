@@ -34,7 +34,7 @@ namespace UnityEditor
         ILightingExplorerExtension m_CurrentLightingExplorerExtension = null;
         static ILightingExplorerExtension s_DefaultLightingExplorerExtension = null;
 
-        [MenuItem("Window/Rendering/Light Explorer", false, 2)]
+        [MenuItem("Window/Rendering/Light Explorer", priority = 2, secondaryPriority = 1)]
         static void CreateLightingExplorerWindow()
         {
             LightingExplorerWindow window = EditorWindow.GetWindow<LightingExplorerWindow>();

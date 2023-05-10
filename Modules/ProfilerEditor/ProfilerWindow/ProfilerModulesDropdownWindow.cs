@@ -29,13 +29,15 @@ namespace UnityEditor.Profiling
         // Data
         bool m_IsInitialized;
         List<ProfilerModule> m_Modules;
+        bool m_BottleneckViewVisible; // Temporary workaround whilst Bottleneck is not a module due to upcoming transition to UIToolkit.
 
         // UI
         ListView m_ModulesListView;
+        ModuleListViewItem m_BottlenecksItem;
 
         public IResponder responder { get; set; }
 
-        public static bool TryPresentIfNoOpenInstances(Rect buttonRect, List<ProfilerModule> modules, out ProfilerModulesDropdownWindow window)
+        public static bool TryPresentIfNoOpenInstances(Rect buttonRect, List<ProfilerModule> modules, bool bottleneckViewVisible, out ProfilerModulesDropdownWindow window)
         {
             /* Due to differences in the timing of Editor window destruction across platforms, we cannot easily detect if the window was just destroyed due to being unfocussed with EditorWindow.HasOpenInstances alone. We need to detect this situation in the case of clicking the dropdown control whilst the window is open - this should close the window. Following the advice of the Editor team, this timer pattern is copied from LayerSettingsWindow as this is how they work around the issue. realtimeSinceStartUp is not used since it is set to 0 when entering/exiting playmode, we assume an increasing time when comparing time.
              */
@@ -48,9 +50,10 @@ namespace UnityEditor.Profiling
             }
 
             window = GetWindowDontShow<ProfilerModulesDropdownWindow>();
-            window.Initialize(modules);
+            window.Initialize(modules, bottleneckViewVisible);
 
-            var windowHeight = (k_ListViewItemHeight * modules.Count) + k_ToolbarHeight + k_TotalBorderHeight;
+            const int k_ExtraRowForBottleneck = k_ListViewItemHeight;
+            var windowHeight = (k_ListViewItemHeight * modules.Count) + k_ToolbarHeight + k_TotalBorderHeight + k_ExtraRowForBottleneck;
             var windowSize = new Vector2(k_WindowWidth, windowHeight);
             window.ShowAsDropDown(buttonRect, windowSize);
             window.Focus();
@@ -58,7 +61,7 @@ namespace UnityEditor.Profiling
             return true;
         }
 
-        void Initialize(List<ProfilerModule> modules)
+        void Initialize(List<ProfilerModule> modules, bool bottleneckViewVisible)
         {
             if (m_IsInitialized)
             {
@@ -66,6 +69,7 @@ namespace UnityEditor.Profiling
             }
 
             m_Modules = modules;
+            m_BottleneckViewVisible = bottleneckViewVisible;
             m_IsInitialized = true;
 
             BuildWindow();
@@ -78,6 +82,22 @@ namespace UnityEditor.Profiling
 
             var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssSelectorModuleEditorWindowDark : k_UssSelectorModuleEditorWindowLight;
             rootVisualElement.AddToClassList(themeUssClass);
+
+            // Temporary workaround whilst Bottleneck is not a module due to upcoming transition to UIToolkit.
+            m_BottlenecksItem = new ModuleListViewItem()
+            {
+                style =
+                {
+                    height = k_ListViewItemHeight,
+                    paddingTop = 1,
+                    paddingRight = 1,
+                    paddingBottom = 1,
+                    paddingLeft = 1,
+                }
+            };
+            m_BottlenecksItem.Configure("Highlights", m_BottleneckViewVisible);
+            m_BottlenecksItem.RegisterCallback<ClickEvent>(OnBottlenecksSelected);
+            rootVisualElement.Insert(0, m_BottlenecksItem);
 
             m_ModulesListView = rootVisualElement.Q<ListView>(k_UssSelector_ListView);
             m_ModulesListView.fixedItemHeight = k_ListViewItemHeight;
@@ -117,6 +137,13 @@ namespace UnityEditor.Profiling
             m_ModulesListView.ClearSelection();
 
             responder?.OnModuleActiveStateChanged();
+        }
+
+        void OnBottlenecksSelected(ClickEvent evt)
+        {
+            m_BottleneckViewVisible = !m_BottleneckViewVisible;
+            responder?.OnBottlenecksActiveStateChanged(m_BottleneckViewVisible);
+            m_BottlenecksItem.SetActive(m_BottleneckViewVisible);
         }
 
         void ConfigureModules()
@@ -193,14 +220,17 @@ namespace UnityEditor.Profiling
 
             public void ConfigureWithModule(ProfilerModule module)
             {
-                bool isActive = module.active;
-                SetActive(isActive);
+                Configure(module.DisplayName, module.active, module.WarningMsg);
+            }
 
-                m_Label.text = module.DisplayName;
-                if (!string.IsNullOrEmpty(module.WarningMsg))
+            public void Configure(string displayName, bool active, string warningMsg = null)
+            {
+                m_Label.text = displayName;
+                SetActive(active);
+                if (!string.IsNullOrEmpty(warningMsg))
                 {
                     m_WarningIcon.style.visibility = Visibility.Visible;
-                    m_WarningIcon.tooltip = module.WarningMsg;
+                    m_WarningIcon.tooltip = warningMsg;
                 }
                 else
                     m_WarningIcon.style.visibility = Visibility.Hidden;
@@ -224,6 +254,9 @@ namespace UnityEditor.Profiling
             void OnModuleActiveStateChanged();
             void OnConfigureModules();
             void OnRestoreDefaultModules();
+
+            // Temporary workaround whilst Bottleneck is not a module due to upcoming transition to UIToolkit.
+            void OnBottlenecksActiveStateChanged(bool active);
         }
     }
 }

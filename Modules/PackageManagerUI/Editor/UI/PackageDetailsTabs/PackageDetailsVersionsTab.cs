@@ -11,16 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public const string k_Id = "versions";
 
-        private readonly ResourceLoader m_ResourceLoader;
-        private readonly ApplicationProxy m_ApplicationProxy;
-        private readonly PackageManagerPrefs m_PackageManagerPrefs;
-        private readonly PackageDatabase m_PackageDatabase;
-        private readonly PackageOperationDispatcher m_OperationDispatcher;
-        private readonly PageManager m_PageManager;
-        private readonly PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private readonly UpmCache m_UpmCache;
-        private readonly IOProxy m_IOProxy;
-
         private readonly VisualElement m_Container;
         private readonly VisualElement m_VersionHistoryList;
         private readonly VisualElement m_VersionsToolbar;
@@ -31,7 +21,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly ButtonDisableCondition m_DisableIfCompiling;
         private readonly ButtonDisableCondition m_DisableIfInstallOrUninstallInProgress;
 
-        public PackageDetailsVersionsTab(ResourceLoader resourceLoader,
+        private readonly ResourceLoader m_ResourceLoader;
+        private readonly ApplicationProxy m_ApplicationProxy;
+        private readonly PackageManagerPrefs m_PackageManagerPrefs;
+        private readonly PackageDatabase m_PackageDatabase;
+        private readonly PackageOperationDispatcher m_OperationDispatcher;
+        private readonly PageManager m_PageManager;
+        private readonly PackageManagerProjectSettingsProxy m_SettingsProxy;
+        private readonly UpmCache m_UpmCache;
+        private readonly IOProxy m_IOProxy;
+        public PackageDetailsVersionsTab(UnityConnectProxy unityConnect,
+            ResourceLoader resourceLoader,
             ApplicationProxy applicationProxyProxy,
             PackageManagerPrefs packageManagerPrefs,
             PackageDatabase packageDatabase,
@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             PageManager pageManager,
             PackageManagerProjectSettingsProxy settingsProxy,
             UpmCache upmCache,
-            IOProxy ioProxy)
+            IOProxy ioProxy) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Version History");
@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 L10n.Tr("You need to wait until other install or uninstall operations are finished to perform this action."));
 
             m_Container = new VisualElement { name = "versionsTab" };
-            Add(m_Container);
+            m_ContentContainer.Add(m_Container);
 
             m_VersionHistoryList = new VisualElement { name = "versionsList" };
             m_Container.Add(m_VersionHistoryList);
@@ -89,7 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version != null && version.HasTag(PackageTag.UpmFormat) && !version.HasTag(PackageTag.Feature | PackageTag.BuiltIn | PackageTag.Placeholder);
         }
 
-        public override void Refresh(IPackageVersion version)
+        protected override void RefreshContent(IPackageVersion version)
         {
             m_Version = version;
             if (m_Version?.uniqueId != m_PackageManagerPrefs.packageDisplayedInVersionHistoryTab)

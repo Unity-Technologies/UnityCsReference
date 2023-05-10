@@ -47,6 +47,7 @@ namespace UnityEngine.TextCore.LowLevel
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
     internal struct MultipleSubstitutionRecord
     {
         /// <summary>
@@ -109,6 +110,7 @@ namespace UnityEngine.TextCore.LowLevel
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule", "UnityEditor.TextCoreTextEngineModule")]
     internal struct LigatureSubstitutionRecord : IEquatable<LigatureSubstitutionRecord>
     {
         /// <summary>

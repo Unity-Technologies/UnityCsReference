@@ -8,11 +8,14 @@ using Unity.Collections.LowLevel.Unsafe;
 using static Unity.Collections.LowLevel.Unsafe.BurstLike;
 using Unity.Burst;
 using System.Diagnostics;
+using UnityEngine.Bindings;
 
 namespace Unity.Jobs
 {
+    [VisibleToOtherModules("UnityEngine.ParticleSystemModule")]
     internal static class JobValidationInternal
     {
+        [VisibleToOtherModules("UnityEngine.ParticleSystemModule")]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         internal static void CheckReflectionDataCorrect<T>(IntPtr reflectionData)
         {

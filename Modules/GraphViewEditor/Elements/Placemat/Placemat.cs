@@ -329,10 +329,12 @@ namespace UnityEditor.Experimental.GraphView
         protected override void HandleEventBubbleUp(EventBase evt)
         {
             base.HandleEventBubbleUp(evt);
-            var mde = evt as PointerDownEvent;
-            if (mde != null)
-                if (mde.clickCount == 2 && mde.button == (int)MouseButton.LeftMouse)
-                    SelectGraphElementsOver();
+
+            if (evt is PointerDownEvent mde && evt.currentTarget == evt.target &&
+                mde.clickCount == 2 && mde.button == (int)MouseButton.LeftMouse)
+            {
+                SelectGraphElementsOver();
+            }
         }
 
         [EventInterest(EventInterestOptions.Inherit)]

@@ -9,18 +9,18 @@ using UnityEngine;
 namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
-    /// Observer that updates a <see cref="BaseModelView"/>.
+    /// Observer that updates a <see cref="View"/>.
     /// </summary>
     class ModelViewUpdater : StateObserver
     {
-        BaseModelView m_View;
+        View m_View;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ModelViewUpdater" /> class.
         /// </summary>
-        /// <param name="view">The <see cref="BaseModelView"/> to update.</param>
+        /// <param name="view">The <see cref="View"/> to update.</param>
         /// <param name="observedStateComponents">The state components that can cause the view to be updated.</param>
-        public ModelViewUpdater(BaseModelView view, params IStateComponent[] observedStateComponents) :
+        public ModelViewUpdater(View view, params IStateComponent[] observedStateComponents) :
             base(observedStateComponents)
         {
             m_View = view;

@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public string name;
         public string displayName;
+        public PageIcon icon;
         public int priority;
         public RefreshOptions refreshOptions;
         public PageCapability capability;
@@ -37,6 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string id => GetIdFromName(m_Args.name);
         public override string displayName => m_Args.displayName;
+        public override PageIcon icon => m_Args.icon;
         public override RefreshOptions refreshOptions => m_Args.refreshOptions;
 
         public override IEnumerable<PageFilters.Status> supportedStatusFilters => m_Args.supportedStatusFilters ?? Enumerable.Empty<PageFilters.Status>();

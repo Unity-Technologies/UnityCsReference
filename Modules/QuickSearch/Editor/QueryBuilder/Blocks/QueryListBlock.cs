@@ -405,7 +405,7 @@ namespace UnityEditor.Search
         }
     }
 
-    [QueryListBlock("Hierarchy Filters", "is", "is", ":")]
+    [QueryListBlock("Scene Filters", "is", "is", ":")]
     class QueryIsFilterBlock : QueryListBlock
     {
         public QueryIsFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)

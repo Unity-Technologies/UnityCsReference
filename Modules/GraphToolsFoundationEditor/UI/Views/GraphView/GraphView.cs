@@ -44,8 +44,8 @@ namespace Unity.GraphToolsFoundation.Editor
     class GraphView : RootView, IDragSource
     {
         public const int frameBorder = 30;
-        const float k_VerySmallZoom = 0.125f;
-        const float k_SmallZoom = 0.25f;
+        const float k_VerySmallZoom = 0.11f;
+        const float k_SmallZoom = 0.20f;
         const float k_MediumZoom = 0.75f;
 
         GraphViewZoomMode m_ZoomMode;
@@ -56,7 +56,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public class Layer : VisualElement {}
 
-        static readonly List<ModelView> k_UpdateAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_UpdateAllUIs = new();
 
         public new static readonly string ussClassName = "ge-graph-view";
         public static readonly string ussNonInteractiveModifierClassName = ussClassName.WithUssModifier("non-interactive");
@@ -852,15 +852,18 @@ namespace Unity.GraphToolsFoundation.Editor
                         );
                     }
 
-                    var portals = nodes.OfType<WirePortalModel>().ToList();
-                    if (portals.Count > 0)
+                    if (GraphModel.Stencil.AllowPortalCreation)
                     {
-                        var canCreate = portals.Where(p => p.CanCreateOppositePortal()).ToList();
-                        evt.menu.AppendAction("Create Opposite Portal",
-                            _ =>
-                            {
-                                Dispatch(new CreateOppositePortalCommand(canCreate));
-                            }, canCreate.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                        var portals = nodes.OfType<WirePortalModel>().ToList();
+                        if (portals.Count > 0)
+                        {
+                            var canCreate = portals.Where(p => p.CanCreateOppositePortal()).ToList();
+                            evt.menu.AppendAction("Create Opposite Portal",
+                                _ =>
+                                {
+                                    Dispatch(new CreateOppositePortalCommand(canCreate));
+                                }, canCreate.Count > 0 ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                        }
                     }
 
                     var colorables = selection.Where(s => s.IsColorable()).ToList();
@@ -894,16 +897,19 @@ namespace Unity.GraphToolsFoundation.Editor
                         evt.menu.AppendAction("Color", _ => {}, _ => DropdownMenuAction.Status.Disabled);
                     }
 
-                    var wires = selection.OfType<WireModel>().ToList();
-                    if (wires.Count > 0)
+                    if (GraphModel.Stencil.AllowPortalCreation)
                     {
-                        evt.menu.AppendSeparator();
-
-                        var wireData = Wire.GetPortalsWireData(wires, this);
-                        evt.menu.AppendAction("Add Portals", _ =>
+                        var wires = selection.OfType<WireModel>().ToList();
+                        if (wires.Count > 0)
                         {
-                            Dispatch(new ConvertWiresToPortalsCommand(wireData, this));
-                        });
+                            evt.menu.AppendSeparator();
+
+                            var wireData = Wire.GetPortalsWireData(wires, this);
+                            evt.menu.AppendAction("Add Portals", _ =>
+                            {
+                                Dispatch(new ConvertWiresToPortalsCommand(wireData, this));
+                            });
+                        }
                     }
 
                     var stickyNotes = selection.OfType<StickyNoteModel>().ToList();
@@ -1230,15 +1236,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 GetLayer(newLayer).Add(graphElement);
             }
 
-            try
-            {
-                graphElement.AddToRootView(this);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e);
-            }
-
             switch (DisplayMode)
             {
                 case GraphViewDisplayMode.NonInteractive:
@@ -1294,7 +1291,7 @@ namespace Unity.GraphToolsFoundation.Editor
             graphElement.RemoveFromRootView();
         }
 
-        static readonly List<ModelView> k_CalculateRectToFitAllAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_CalculateRectToFitAllAllUIs = new();
 
         public Rect CalculateRectToFitAll()
         {
@@ -1304,7 +1301,7 @@ namespace Unity.GraphToolsFoundation.Editor
             GraphModel?.GraphElementModels.GetAllViewsInList_Internal(this, null, k_CalculateRectToFitAllAllUIs);
             foreach (var ge in k_CalculateRectToFitAllAllUIs)
             {
-                if (ge is null || ge.Model is WireModel)
+                if (ge is null || (ge is ModelView modelView && modelView.Model is WireModel))
                     continue;
 
                 if (!reachedFirstChild)
@@ -1719,7 +1716,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 Debug.Log($"Partial GraphView Update {modelChangeSet?.NewModels.Count() ?? 0} new {modelChangeSet?.ChangedModels.Count() ?? 0} changed {modelChangeSet?.DeletedModels.Count() ?? 0} deleted");
             }
 
-            var changedModels = new HashSet<SerializableGUID>();
+            var changedModels = new HashSet<Hash128>();
             var shouldUpdatePlacematContainer = false;
             var newPlacemats = new List<GraphElement>();
             if (modelChangeSet != null)
@@ -1743,7 +1740,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (modelChangeSet != null && selectionChangeSet != null)
             {
-                var combinedSet = new HashSet<SerializableGUID>(modelChangeSet.ChangedModels);
+                var combinedSet = new HashSet<Hash128>(modelChangeSet.ChangedModels);
                 combinedSet.UnionWith(selectionChangeSet.ChangedModels.Except(modelChangeSet.DeletedModels));
                 changedModels.UnionWith(combinedSet);
             }
@@ -1784,17 +1781,24 @@ namespace Unity.GraphToolsFoundation.Editor
             if (lastSelectedNode != null && lastSelectedNode.IsAscendable())
             {
                 var nodeUI = lastSelectedNode.GetView<GraphElement>(this);
-
                 nodeUI?.BringToFront();
+            }
+
+            var lastSelectedWire = GetSelection().OfType<WireModel>().LastOrDefault();
+            if (lastSelectedWire != null && lastSelectedWire.IsAscendable())
+            {
+                var wireUI = lastSelectedWire.GetView<GraphElement>(this);
+                wireUI?.BringToFront();
             }
 
             if (modelChangeSet?.RenamedModel != null)
             {
-                List<ModelView> modelUis = new List<ModelView>();
+                var modelUis = new List<ChildView>();
                 modelChangeSet.RenamedModel.GetAllViews(this, _ => true, modelUis);
                 foreach (var ui in modelUis)
                 {
-                    ui.ActivateRename();
+                    if (ui is ModelView modelView)
+                        modelView.ActivateRename();
                 }
             }
         }
@@ -1881,7 +1885,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        protected virtual void UpdateChangedModels(IEnumerable<SerializableGUID> changedModels, bool shouldUpdatePlacematContainer, List<GraphElement> placemats)
+        protected virtual void UpdateChangedModels(IEnumerable<Hash128> changedModels, bool shouldUpdatePlacematContainer, List<GraphElement> placemats)
         {
             foreach (var guid in changedModels)
             {
@@ -2220,7 +2224,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        List<ModelView> k_OnFocus_GraphElementList = new List<ModelView>();
+        List<ChildView> k_OnFocus_GraphElementList = new();
 
         /// <inheritdoc />
         protected override void OnFocus(FocusInEvent e)
@@ -2248,7 +2252,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             foreach (var element in k_OnFocus_GraphElementList.OfType<GraphElement>())
             {
-                element.Border.MarkDirtyRepaint();
+                element.RefreshBorder();
             }
         }
     }

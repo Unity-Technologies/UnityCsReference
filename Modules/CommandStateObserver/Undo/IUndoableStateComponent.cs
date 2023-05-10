@@ -21,7 +21,7 @@ namespace Unity.CommandStateObserver
         /// The changeset manager for this state component.
         /// </summary>
         /// <remarks>If the state components does not maintain changesets, this should return null.</remarks>
-        IChangesetManager ChangesetManager { get; }
+        ChangesetManager ChangesetManager { get; }
 
         /// <summary>
         /// Called before the state component is pushed on the undo stack.

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using UnityEngine.Bindings;
 
 
 namespace UnityEngine.TextCore.Text
@@ -144,6 +145,7 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         internal static Shader ShaderRef_MobileSDF
         {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get
             {
                 // Try to use TMP shaders first
@@ -168,6 +170,7 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         internal static Shader ShaderRef_MobileSDF_IMGUI
         {
+            [VisibleToOtherModules("UnityEngine.IMGUIModule")]
             get
             {
                 // IMGUI doesn't work with TMP shader so we ignore that one

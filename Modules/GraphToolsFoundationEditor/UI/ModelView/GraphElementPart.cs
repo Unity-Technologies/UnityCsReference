@@ -29,6 +29,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="zoom"></param>
         /// <param name="newZoomMode">The <see cref="GraphViewZoomMode"/> that will be active from now.</param>
         /// <param name="oldZoomMode">The <see cref="GraphViewZoomMode"/> that was active before this call.</param>
-        public virtual void SetLevelOfDetail(float zoom, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode) { }
+        public virtual void SetLevelOfDetail(float zoom, GraphViewZoomMode newZoomMode, GraphViewZoomMode oldZoomMode)
+        {
+            foreach (var part in PartList.Parts)
+            {
+                if( part is GraphElementPart gePart)
+                    gePart.SetLevelOfDetail(zoom, newZoomMode, oldZoomMode);
+            }
+        }
     }
 }

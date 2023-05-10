@@ -17,8 +17,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal class FeatureDependencyItem : VisualElement
     {
-        public IPackageVersion packageVersion { get; private set; }
-        public string packageName { get; private set; }
+        public IPackageVersion packageVersion { get; }
+        public string packageName { get; }
 
         public FeatureDependencyItem(IPackageVersion featureVersion, IPackageVersion featureDependencyVersion, FeatureState state = FeatureState.None)
         {
@@ -57,35 +57,30 @@ namespace UnityEditor.PackageManager.UI.Internal
         public const string k_SelectedClassName = "selected";
         public const string k_Id = "packagesincluded";
 
-        private ResourceLoader m_ResourceLoader;
-        private PackageDatabase m_PackageDatabase;
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        private PackageManagerProjectSettingsProxy m_SettingsProxy;
-        private ApplicationProxy m_Application;
-
         private string m_Link;
 
         private string infoBoxUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual";
 
         private IPackageVersion m_FeatureVersion;
 
-        public FeatureDependenciesTab(ResourceLoader resourceLoader,
+        private readonly PackageDatabase m_PackageDatabase;
+        private readonly PackageManagerPrefs m_PackageManagerPrefs;
+        private readonly ApplicationProxy m_Application;
+        public FeatureDependenciesTab(UnityConnectProxy unityConnect,
+                                      ResourceLoader resourceLoader,
                                       PackageDatabase packageDatabase,
                                       PackageManagerPrefs packageManagerPrefs,
-                                      PackageManagerProjectSettingsProxy settingsProxy,
-                                      ApplicationProxy applicationProxy)
+                                      ApplicationProxy applicationProxy)  : base(unityConnect)
         {
-            m_ResourceLoader = resourceLoader;
             m_PackageDatabase = packageDatabase;
             m_PackageManagerPrefs = packageManagerPrefs;
-            m_SettingsProxy = settingsProxy;
             m_Application = applicationProxy;
 
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Packages Included");
 
-            var root = m_ResourceLoader.GetTemplate("FeatureDependencies.uxml");
-            Add(root);
+            var root = resourceLoader.GetTemplate("FeatureDependencies.uxml");
+            m_ContentContainer.Add(root);
 
             cache = new VisualElementCache(root);
             dependencyInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL($"{infoBoxUrl}/{m_Link}");
@@ -112,22 +107,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             return FeatureState.None;
         }
 
-        public void RecalculateFillerHeight(float detailsHeight, float scrollViewHeight)
-        {
-            if (!UIUtils.IsElementVisible(this))
-                return;
-            var detailsContentHeight = detailsHeight - fillerLeftContainer.layout.height;
-            var newFillerHeight = Mathf.Max(0, scrollViewHeight - detailsContentHeight);
-            if ((int)fillerLeftContainer.layout.height != (int)newFillerHeight)
-                fillerLeftContainer.style.height = newFillerHeight;
-        }
-
         public override bool IsValid(IPackageVersion version)
         {
             return version?.HasTag(PackageTag.Feature) == true;
         }
 
-        public override void Refresh(IPackageVersion version)
+        protected override void RefreshContent(IPackageVersion version)
         {
             m_FeatureVersion = version;
 
@@ -223,7 +208,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private VisualElementCache cache { get; set; }
+        protected override void DerivedRefreshHeight(float detailHeight, float scrollViewHeight, float detailsHeaderHeight,
+            float tabViewHeaderContainerHeight, float customContainerHeight, float extensionContainerHeight)
+        {
+            var detailsContentHeight = detailHeight - fillerLeftContainer.layout.height;
+            var newFillerHeight = Mathf.Max(0, scrollViewHeight - detailsContentHeight);
+            if ((int)fillerLeftContainer.layout.height != (int)newFillerHeight)
+                fillerLeftContainer.style.height = newFillerHeight;
+        }
+
+        private VisualElementCache cache { get; }
         private VisualElement dependenciesOuterContainer => cache.Get<VisualElement>("featureDependenciesOuterContainer");
         private VisualElement dependencyList => cache.Get<VisualElement>("featureDependenciesList");
         private SelectableLabel dependencyTitle => cache.Get<SelectableLabel>("featureDependencyTitle");

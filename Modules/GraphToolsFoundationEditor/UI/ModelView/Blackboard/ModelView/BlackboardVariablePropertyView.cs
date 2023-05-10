@@ -138,6 +138,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 pos.y += 21;
 
                 ItemLibraryService.ShowVariableTypes(
+                    RootView,
                     (Stencil)GraphElementModel.GraphModel.Stencil,
                     RootView.GraphTool.Preferences,
                     pos,

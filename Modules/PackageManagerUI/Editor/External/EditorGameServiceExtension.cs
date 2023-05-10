@@ -126,6 +126,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 name = k_ServicesExtensionPageName,
                 displayName = L10n.Tr("Services"),
+                icon = PageIcon.Services,
                 priority = k_ServicesPriority,
                 filter = FilterServicesPackage,
                 getGroupName = GetServicesPackageGroupName,

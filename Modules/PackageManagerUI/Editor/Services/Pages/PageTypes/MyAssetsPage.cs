@@ -28,6 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string id => k_Id;
         public override string displayName => L10n.Tr("My Assets");
+        public override PageIcon icon => PageIcon.MyAssets;
 
         public override IEnumerable<PageFilters.Status> supportedStatusFilters => k_SupportedStatusFilters;
         public override IEnumerable<PageSortOption> supportedSortOptions => k_SupportedSortOptions;
@@ -60,7 +61,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                             PackageManagerPrefs packageManagerPrefs,
                             UnityConnectProxy unityConnect,
                             AssetStoreClientV2 assetStoreClient)
-            :base(packageDatabase)
+            : base(packageDatabase)
         {
             ResolveDependencies(packageDatabase, packageManagerPrefs, unityConnect, assetStoreClient);
         }

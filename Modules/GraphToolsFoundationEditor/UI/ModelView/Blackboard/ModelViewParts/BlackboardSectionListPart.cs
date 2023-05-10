@@ -79,7 +79,6 @@ namespace Unity.GraphToolsFoundation.Editor
                     if (section != null)
                     {
                        section.name = sectionName;
-                       section.AddToRootView(Blackboard.RootView);
                        m_Root.Add(section);
                        m_Sections.Add(sectionName, section);
                     }
@@ -97,9 +96,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void PartOwnerAddedToView()
         {
-            foreach (var section in m_Sections.Values)
+            if (m_Sections != null)
             {
-                section.AddToRootView(m_OwnerElement.RootView);
+                foreach (var section in m_Sections.Values)
+                {
+                    section.AddToRootView(m_OwnerElement.RootView);
+                }
             }
 
             base.PartOwnerAddedToView();
@@ -108,9 +110,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void PartOwnerRemovedFromView()
         {
-            foreach (var section in m_Sections.Values)
+            if (m_Sections != null)
             {
-                section.RemoveFromRootView();
+                foreach (var section in m_Sections.Values)
+                {
+                    section.RemoveFromRootView();
+                }
             }
 
             base.PartOwnerRemovedFromView();

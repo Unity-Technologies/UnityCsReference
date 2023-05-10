@@ -18,8 +18,8 @@ namespace Unity.GraphToolsFoundation.Editor
         const int k_AlignVerticalOffset = 30;
 
         readonly GraphView m_GraphView;
-        readonly Dictionary<SerializableGUID, Dictionary<SerializableGUID, IDependency>> m_DependenciesByNode = new Dictionary<SerializableGUID, Dictionary<SerializableGUID, IDependency>>();
-        readonly Dictionary<SerializableGUID, Dictionary<SerializableGUID, IDependency>> m_PortalDependenciesByNode = new Dictionary<SerializableGUID, Dictionary<SerializableGUID, IDependency>>();
+        readonly Dictionary<Hash128, Dictionary<Hash128, IDependency>> m_DependenciesByNode = new Dictionary<Hash128, Dictionary<Hash128, IDependency>>();
+        readonly Dictionary<Hash128, Dictionary<Hash128, IDependency>> m_PortalDependenciesByNode = new Dictionary<Hash128, Dictionary<Hash128, IDependency>>();
         readonly HashSet<AbstractNodeModel> m_ModelsToMove = new HashSet<AbstractNodeModel>();
         readonly HashSet<AbstractNodeModel> m_TempMovedModels = new HashSet<AbstractNodeModel>();
 
@@ -35,7 +35,7 @@ namespace Unity.GraphToolsFoundation.Editor
         void AddWireDependency(AbstractNodeModel parent, IDependency child)
         {
             if (!m_DependenciesByNode.TryGetValue(parent.Guid, out var link))
-                m_DependenciesByNode.Add(parent.Guid, new Dictionary<SerializableGUID, IDependency> { { child.DependentNode.Guid, child } });
+                m_DependenciesByNode.Add(parent.Guid, new Dictionary<Hash128, IDependency> { { child.DependentNode.Guid, child } });
             else
             {
                 if (link.TryGetValue(child.DependentNode.Guid, out IDependency dependency))
@@ -66,10 +66,10 @@ namespace Unity.GraphToolsFoundation.Editor
             return link.Values.ToList();
         }
 
-        public void Remove(SerializableGUID a, SerializableGUID b)
+        public void Remove(Hash128 a, Hash128 b)
         {
-            SerializableGUID parent;
-            SerializableGUID child;
+            Hash128 parent;
+            Hash128 child;
             if (m_DependenciesByNode.TryGetValue(a, out var link) &&
                 link.TryGetValue(b, out var dependency))
             {
@@ -207,7 +207,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         public void UpdateNodeState()
         {
-            var processed = new HashSet<SerializableGUID>();
+            var processed = new HashSet<Hash128>();
             void SetNodeState(AbstractNodeModel nodeModel, ModelState state)
             {
                 if (nodeModel.State == ModelState.Disabled)
@@ -220,7 +220,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     nodeUI.EnableInClassList(Node.unusedModifierUssClassName, false);
                 }
 
-                Dictionary<SerializableGUID, IDependency> dependencies = null;
+                Dictionary<Hash128, IDependency> dependencies = null;
 
                 if (nodeModel is WirePortalModel wirePortalModel)
                     m_PortalDependenciesByNode.TryGetValue(wirePortalModel.Guid, out dependencies);

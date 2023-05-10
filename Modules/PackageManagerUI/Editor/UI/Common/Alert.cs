@@ -48,11 +48,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(this, true);
 
             var message = error.message ?? string.Empty;
-            if (error.HasAttribute(UIError.Attribute.IsDetailInConsole))
+            if (error.HasAttribute(UIError.Attribute.DetailInConsole))
                 message = string.Format(L10n.Tr("{0} See console for more details."), message);
             alertMessage.text = message;
 
-            if (error.HasAttribute(UIError.Attribute.IsWarning))
+            if (error.HasAttribute(UIError.Attribute.Warning))
             {
                 alertContainer.RemoveFromClassList("error");
                 alertContainer.AddClasses("warning");

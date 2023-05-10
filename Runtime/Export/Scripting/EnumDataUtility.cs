@@ -6,9 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct EnumData
     {
         public Enum[] values;
@@ -22,12 +24,13 @@ namespace UnityEngine
         public bool serializable;
     }
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static class EnumDataUtility
     {
         private static readonly Dictionary<Type, EnumData> s_NonObsoleteEnumData = new Dictionary<Type, EnumData>();
         private static readonly Dictionary<Type, EnumData> s_EnumData = new Dictionary<Type, EnumData>();
 
-        internal static EnumData GetCachedEnumData(Type enumType, bool excludeObsolete = true, Func<string, string> nicifyName = null)
+        public static EnumData GetCachedEnumData(Type enumType, bool excludeObsolete = true, Func<string, string> nicifyName = null)
         {
             EnumData enumData;
             if (excludeObsolete && s_NonObsoleteEnumData.TryGetValue(enumType, out enumData))
@@ -137,7 +140,7 @@ namespace UnityEngine
             return enumData;
         }
 
-        internal static int EnumFlagsToInt(EnumData enumData, Enum enumValue)
+        public static int EnumFlagsToInt(EnumData enumData, Enum enumValue)
         {
             if (enumData.unsigned)
             {
@@ -160,7 +163,7 @@ namespace UnityEngine
             return Convert.ToInt32(enumValue);
         }
 
-        internal static Enum IntToEnumFlags(Type enumType, int value)
+        public static Enum IntToEnumFlags(Type enumType, int value)
         {
             var enumData = GetCachedEnumData(enumType);
 
@@ -187,7 +190,7 @@ namespace UnityEngine
             return Enum.Parse(enumType, value.ToString()) as Enum;
         }
 
-        internal static void HandleInspectorOrderAttribute(Type enumType, ref EnumData enumData)
+        public static void HandleInspectorOrderAttribute(Type enumType, ref EnumData enumData)
         {
             var attribute = Attribute.GetCustomAttribute(enumType, typeof(InspectorOrderAttribute)) as InspectorOrderAttribute;
             if (attribute == null)

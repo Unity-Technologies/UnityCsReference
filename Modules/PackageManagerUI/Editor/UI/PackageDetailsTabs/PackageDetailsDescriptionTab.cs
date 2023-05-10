@@ -13,9 +13,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_EmptyDescriptionClass = "empty";
         private const int k_maxDescriptionCharacters = 10000;
 
-        private ResourceLoader m_ResourceLoader;
-        private PackageManagerPrefs m_PackageManagerPrefs;
-
         private VisualElement m_FoldoutContainer;
         private Toggle m_OverviewToggle;
         private PackageDetailsOverviewTabContent m_OverviewContent;
@@ -25,7 +22,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version?.HasTag(PackageTag.UpmFormat) == true;
         }
 
-        public PackageDetailsDescriptionTab(ResourceLoader resourceLoader, PackageManagerPrefs packageManagerPrefs)
+        private readonly ResourceLoader m_ResourceLoader;
+        private readonly PackageManagerPrefs m_PackageManagerPrefs;
+        public PackageDetailsDescriptionTab(UnityConnectProxy unityConnect, ResourceLoader resourceLoader,
+            PackageManagerPrefs packageManagerPrefs) : base(unityConnect)
         {
             m_ResourceLoader = resourceLoader;
             m_PackageManagerPrefs = packageManagerPrefs;
@@ -33,11 +33,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Description");
             var root = resourceLoader.GetTemplate("DetailsTabs/PackageDetailsDescriptionTab.uxml");
-            Add(root);
+            m_ContentContainer.Add(root);
             m_Cache = new VisualElementCache(root);
         }
 
-        public override void Refresh(IPackageVersion version)
+        protected override void RefreshContent(IPackageVersion version)
         {
             packagePlatformList.Refresh(version);
             RefreshDescription(version);
@@ -83,7 +83,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_OverviewContent.name = "overviewFoldout";
                 m_FoldoutContainer.Add(m_OverviewContent);
 
-                Add(m_FoldoutContainer);
+                m_ContentContainer.Add(m_FoldoutContainer);
             }
             if (m_OverviewContent == null)
                 return;

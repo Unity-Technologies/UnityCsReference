@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using Unity.CommandStateObserver;
+using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -32,7 +33,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Initializes a new instance of the <see cref="ModelInspectorViewModel"/> class.
         /// </summary>
         public ModelInspectorViewModel(GraphView graphView)
-        : base(new SerializableGUID(typeof(ModelInspectorViewModel).FullName + graphView.GraphViewModel.Guid))
+        : base(Hash128.Compute(typeof(ModelInspectorViewModel).FullName + graphView.GraphViewModel.Guid))
         {
             ParentGraphView = graphView;
 

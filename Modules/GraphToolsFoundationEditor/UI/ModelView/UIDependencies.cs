@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.GraphToolsFoundation.Editor
@@ -20,14 +21,14 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </remarks>
     class UIDependencies
     {
-        static Dictionary<SerializableGUID, HashSet<ModelView>> s_ModelDependencies = new Dictionary<SerializableGUID, HashSet<ModelView>>();
+        static Dictionary<Hash128, HashSet<ModelView>> s_ModelDependencies = new Dictionary<Hash128, HashSet<ModelView>>();
 
         ModelView m_Owner;
 
         // Graph elements that we affect when we change.
-        HashSet<(ModelView, DependencyTypes)> m_ForwardDependencies;
+        HashSet<(ChildView, DependencyTypes)> m_ForwardDependencies;
         // Graph elements that affect us when they change.
-        HashSet<(ModelView, DependencyTypes)> m_BackwardDependencies;
+        HashSet<(ChildView, DependencyTypes)> m_BackwardDependencies;
         // Additional models that influence us.
         HashSet<GraphElementModel> m_ModelDependencies;
 
@@ -129,10 +130,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Adds a <see cref="ModelView"/> to the forward dependencies list. A forward dependency is
         /// a UI that should be updated whenever this object's owner is updated.
         /// </summary>
-        public void AddForwardDependency(ModelView dependency, DependencyTypes dependencyType)
+        public void AddForwardDependency(ChildView dependency, DependencyTypes dependencyType)
         {
             if (m_ForwardDependencies == null)
-                m_ForwardDependencies = new HashSet<(ModelView, DependencyTypes)>();
+                m_ForwardDependencies = new HashSet<(ChildView, DependencyTypes)>();
 
             m_ForwardDependencies.Add((dependency, dependencyType));
         }
@@ -141,10 +142,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Adds a <see cref="ModelView"/> to the backward dependencies list. A backward dependency is
         /// a UI that causes this object's owner to be updated whenever it is updated.
         /// </summary>
-        public void AddBackwardDependency(ModelView dependency, DependencyTypes dependencyType)
+        public void AddBackwardDependency(ChildView dependency, DependencyTypes dependencyType)
         {
             if (m_BackwardDependencies == null)
-                m_BackwardDependencies = new HashSet<(ModelView, DependencyTypes)>();
+                m_BackwardDependencies = new HashSet<(ChildView, DependencyTypes)>();
 
             m_BackwardDependencies.Add((dependency, dependencyType));
         }
@@ -246,7 +247,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Gets the UIs that depends on a model. They need to be updated when the model changes.
         /// </summary>
         /// <param name="modelGuid">The model GUID for which we're querying the UI.</param>
-        public static IEnumerable<ModelView> GetModelDependencies(SerializableGUID modelGuid)
+        public static IEnumerable<ModelView> GetModelDependencies(Hash128 modelGuid)
         {
             return s_ModelDependencies.TryGetValue(modelGuid, out var uiList) ? uiList : Enumerable.Empty<ModelView>();
         }

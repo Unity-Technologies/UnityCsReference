@@ -74,6 +74,8 @@ namespace Unity.GraphToolsFoundation.Editor
                     RegisterChangedCallback<TValue>(evt => evt.newValue, inspectedObjects, inspectedField);
                     break;
             }
+
+            this.AddStylesheet_Internal("Field.uss");
         }
 
         void RegisterChangedCallback<TCallbackValue>(Func<ChangeEvent<TCallbackValue>, object> valueExtractor,

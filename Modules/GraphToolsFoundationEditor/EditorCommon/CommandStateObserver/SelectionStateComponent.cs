@@ -75,25 +75,25 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <param name="graphElementModelGuids">The graph elements guids to select or unselect.</param>
             /// <param name="select">True if the graph elements should be selected.
             /// False if the graph elements should be unselected.</param>
-            public void SelectElements(IEnumerable<SerializableGUID> graphElementModelGuids, bool select)
+            public void SelectElements(IEnumerable<Hash128> graphElementModelGuids, bool select)
             {
                 // Invalidate m_State.m_SelectedModels
                 m_State.m_SelectedModels = null;
 
-                var currentSelection = new HashSet<SerializableGUID>(m_State.m_Selection);
+                var currentSelection = new HashSet<Hash128>(m_State.m_SelectionHashes);
                 if (select)
                 {
-                    m_State.m_Selection = m_State.m_Selection.Concat(graphElementModelGuids).Distinct().ToList();
+                    m_State.m_SelectionHashes = m_State.m_SelectionHashes.Concat(graphElementModelGuids).Distinct().ToList();
                 }
                 else
                 {
                     foreach (var graphElementModelGuid in graphElementModelGuids)
                     {
-                        m_State.m_Selection.Remove(graphElementModelGuid);
+                        m_State.m_SelectionHashes.Remove(graphElementModelGuid);
                     }
                 }
 
-                currentSelection.SymmetricExceptWith(m_State.m_Selection);
+                currentSelection.SymmetricExceptWith(m_State.m_SelectionHashes);
                 if (currentSelection.Any())
                 {
                     m_State.CurrentChangeset.ChangedModels.UnionWith(currentSelection);
@@ -115,12 +115,12 @@ namespace Unity.GraphToolsFoundation.Editor
                         m_State.m_SelectedModels.Add(graphElementModel);
 
                     var guid = graphElementModel.Guid;
-                    if (!m_State.m_Selection.Contains(guid))
-                        m_State.m_Selection.Add(guid);
+                    if (!m_State.m_SelectionHashes.Contains(guid))
+                        m_State.m_SelectionHashes.Add(guid);
                 }
                 else
                 {
-                    if (m_State.m_Selection.Remove(graphElementModel.Guid))
+                    if (m_State.m_SelectionHashes.Remove(graphElementModel.Guid))
                         m_State.m_SelectedModels?.Remove(graphElementModel);
                 }
 
@@ -133,12 +133,12 @@ namespace Unity.GraphToolsFoundation.Editor
             /// </summary>
             public void ClearSelection()
             {
-                m_State.CurrentChangeset.ChangedModels.UnionWith(m_State.m_Selection);
+                m_State.CurrentChangeset.ChangedModels.UnionWith(m_State.m_SelectionHashes);
                 m_State.SetUpdateType(UpdateType.Partial);
 
                 // If m_SelectedModels is not null, we maintain it. Otherwise, we let GetSelection rebuild it.
                 m_State.m_SelectedModels?.Clear();
-                m_State.m_Selection.Clear();
+                m_State.m_SelectionHashes.Clear();
             }
 
             /// <summary>
@@ -153,9 +153,14 @@ namespace Unity.GraphToolsFoundation.Editor
 
         static IReadOnlyList<GraphElementModel> s_EmptyList = new List<GraphElementModel>();
 
+        [SerializeField, Obsolete]
+#pragma warning disable CS0618
+        List<SerializableGUID> m_Selection;
+#pragma warning restore CS0618
+
         // Source of truth
         [SerializeField]
-        List<SerializableGUID> m_Selection;
+        List<Hash128> m_SelectionHashes;
 
         // Cache of selected models, built using m_Selection, for use by GetSelection().
         List<GraphElementModel> m_SelectedModels;
@@ -163,7 +168,7 @@ namespace Unity.GraphToolsFoundation.Editor
         ChangesetManager<SimpleChangeset> m_ChangesetManager = new ChangesetManager<SimpleChangeset>();
 
         /// <inheritdoc />
-        public override IChangesetManager ChangesetManager => m_ChangesetManager;
+        public override ChangesetManager ChangesetManager => m_ChangesetManager;
 
         SimpleChangeset CurrentChangeset => m_ChangesetManager.CurrentChangeset;
 
@@ -172,7 +177,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public SelectionStateComponent()
         {
-            m_Selection = new List<SerializableGUID>();
+            m_SelectionHashes = new List<Hash128>();
             m_SelectedModels = null;
         }
 
@@ -189,7 +194,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Returns true if the selection is empty.
         /// </summary>
-        public bool IsSelectionEmpty => m_Selection.Count == 0;
+        public bool IsSelectionEmpty => m_SelectionHashes.Count == 0;
 
         /// <summary>
         /// Gets the list of selected graph element models. If not done yet, this
@@ -207,7 +212,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
 
                 m_SelectedModels = new List<GraphElementModel>();
-                foreach (var guid in m_Selection)
+                foreach (var guid in m_SelectionHashes)
                 {
                     if (graph.TryGetModelFromGuid(guid, out var model))
                     {
@@ -227,7 +232,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>True if the model is selected. False otherwise.</returns>
         public bool IsSelected(GraphElementModel model)
         {
-            return model != null && m_Selection.Contains(model.Guid);
+            return model != null && m_SelectionHashes.Contains(model.Guid);
         }
 
         /// <summary>
@@ -235,9 +240,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="model">The model guid to check.</param>
         /// <returns>True if the model is selected. False otherwise.</returns>
-        public bool IsSelected(SerializableGUID modelGuid)
+        public bool IsSelected(Hash128 modelGuid)
         {
-            return m_Selection.Contains(modelGuid);
+            return m_SelectionHashes.Contains(modelGuid);
         }
 
         /// <inheritdoc />
@@ -247,17 +252,52 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (other is SelectionStateComponent selectionStateComponent)
             {
-                var changedModels = new HashSet<SerializableGUID>(m_Selection);
-                changedModels.SymmetricExceptWith(selectionStateComponent.m_Selection);
+                var changedModels = new HashSet<Hash128>(m_SelectionHashes);
+                changedModels.SymmetricExceptWith(selectionStateComponent.m_SelectionHashes);
                 CurrentChangeset.ChangedModels.UnionWith(changedModels);
                 SetUpdateType(UpdateType.Partial);
 
-                m_Selection = selectionStateComponent.m_Selection;
+                m_SelectionHashes = selectionStateComponent.m_SelectionHashes;
                 m_SelectedModels = null;
 
-                selectionStateComponent.m_Selection = null;
+                selectionStateComponent.m_SelectionHashes = null;
                 selectionStateComponent.m_SelectedModels = null;
             }
+        }
+
+        /// <inheritdoc />
+        public override void OnBeforeSerialize()
+        {
+            base.OnBeforeSerialize();
+
+#pragma warning disable CS0612
+#pragma warning disable CS0618
+            m_Selection = new List<SerializableGUID>(m_SelectionHashes.Count);
+            foreach (var guid in m_SelectionHashes)
+            {
+                m_Selection.Add(guid);
+            }
+#pragma warning restore CS0618
+#pragma warning restore CS0612
+        }
+
+        /// <inheritdoc />
+        public override void OnAfterDeserialize()
+        {
+            base.OnAfterDeserialize();
+
+#pragma warning disable CS0612
+            if (m_Selection != null)
+            {
+                m_SelectionHashes = new List<Hash128>(m_Selection.Count);
+                foreach (var guid in m_Selection)
+                {
+                    m_SelectionHashes.Add(guid);
+                }
+
+                m_Selection = null;
+            }
+#pragma warning restore CS0612
         }
     }
 }

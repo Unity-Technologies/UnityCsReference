@@ -26,14 +26,18 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected string m_ParentClassName;
 
+        protected ChildView m_OwnerElement;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseModelViewPart"/> class.
         /// </summary>
         /// <param name="name">The name of the part.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
-        protected ModelViewPart(string name, string parentClassName)
+        protected ModelViewPart(string name, ChildView ownerElement, string parentClassName)
         {
             PartName = name;
+            m_OwnerElement = ownerElement;
             m_ParentClassName = parentClassName;
         }
 

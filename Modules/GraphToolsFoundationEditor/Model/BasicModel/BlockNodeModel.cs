@@ -21,6 +21,11 @@ namespace Unity.GraphToolsFoundation.Editor
         internal static string contextNodeModelFieldName_Internal = nameof(m_ContextNodeModel);
 
         /// <summary>
+        /// Whether this block should have a title bar with icons, and collapse button.
+        /// </summary>
+        public virtual bool ShouldShowTitle => true;
+
+        /// <summary>
         /// The context the node belongs to
         /// </summary>
         public virtual ContextNodeModel ContextNodeModel

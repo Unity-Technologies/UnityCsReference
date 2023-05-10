@@ -31,7 +31,7 @@ namespace Unity.GraphToolsFoundation.Editor
             public void SetHighlightedDeclarations(Hash128 sourceStateHashGuid, IEnumerable<DeclarationModel> declarations)
             {
                 var newDeclarations = declarations.Select(m => m.Guid).ToList();
-                var changedDeclarations = new HashSet<SerializableGUID>(newDeclarations);
+                var changedDeclarations = new HashSet<Hash128>(newDeclarations);
 
                 if (m_State.m_HighlightedDeclarations.TryGetValue(sourceStateHashGuid, out var currentDeclarations))
                 {
@@ -49,20 +49,20 @@ namespace Unity.GraphToolsFoundation.Editor
         ChangesetManager<SimpleChangeset> m_ChangesetManager = new ChangesetManager<SimpleChangeset>();
 
         /// <inheritdoc />
-        public override IChangesetManager ChangesetManager => m_ChangesetManager;
+        public override ChangesetManager ChangesetManager => m_ChangesetManager;
 
         SimpleChangeset CurrentChangeset => m_ChangesetManager.CurrentChangeset;
 
         // The highlighted declaration, grouped by the id of the object (usually a view) that
         // asked for the elements to be highlighted.
-        Dictionary<Hash128, List<SerializableGUID>> m_HighlightedDeclarations;
+        Dictionary<Hash128, List<Hash128>> m_HighlightedDeclarations;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DeclarationHighlighterStateComponent" /> class.
         /// </summary>
         public DeclarationHighlighterStateComponent()
         {
-            m_HighlightedDeclarations = new Dictionary<Hash128, List<SerializableGUID>>();
+            m_HighlightedDeclarations = new Dictionary<Hash128, List<Hash128>>();
         }
 
         /// <summary>
@@ -103,9 +103,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (other is DeclarationHighlighterStateComponent highlighterStateComponent)
             {
-                var newDeclarations = new HashSet<SerializableGUID>(highlighterStateComponent.m_HighlightedDeclarations.Values.SelectMany(v => v));
+                var newDeclarations = new HashSet<Hash128>(highlighterStateComponent.m_HighlightedDeclarations.Values.SelectMany(v => v));
 
-                var changedDeclarations = new HashSet<SerializableGUID>(m_HighlightedDeclarations.Values.SelectMany(v => v));
+                var changedDeclarations = new HashSet<Hash128>(m_HighlightedDeclarations.Values.SelectMany(v => v));
 
                 changedDeclarations.SymmetricExceptWith(newDeclarations);
                 CurrentChangeset.ChangedModels.UnionWith(changedDeclarations);

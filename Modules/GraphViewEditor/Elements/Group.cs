@@ -146,6 +146,9 @@ namespace UnityEditor.Experimental.GraphView
                 if (HitTest(e.localMousePosition))
                 {
                     FocusTitleTextField();
+
+                    // Prevent MouseDown from refocusing the Label on PostDispatch
+                    focusController.IgnoreEvent(e);
                 }
             }
         }

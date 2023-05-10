@@ -15,14 +15,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool Refresh(IPackage package, IPackageVersion version)
         {
-            var operationError = version?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.IsClearable))
-                ?? package?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.IsClearable));
+            var operationError = version?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.Clearable))
+                ?? package?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.Clearable));
             if (operationError == null)
             {
                 ClearError();
                 return false;
             }
-            SetError(operationError.message, operationError.HasAttribute(UIError.Attribute.IsWarning) ? PackageState.Warning : PackageState.Error);
+            SetError(operationError.message, operationError.HasAttribute(UIError.Attribute.Warning) ? PackageState.Warning : PackageState.Error);
             return true;
         }
 

@@ -163,7 +163,7 @@ namespace Unity.CommandStateObserver
         /// <summary>
         /// The changeset manager, if any changesets are recorded.
         /// </summary>
-        public virtual IChangesetManager ChangesetManager => null;
+        public virtual ChangesetManager ChangesetManager => null;
 
         /// <summary>
         /// The state component name.
@@ -222,11 +222,11 @@ namespace Unity.CommandStateObserver
                     // If update type is Complete, there is no need to push the changeset, as they cannot be used for an update.
                     if (m_ScopeUpdateType != UpdateType.Complete)
                     {
-                        ChangesetManager.PushChangeset(CurrentVersion);
+                        ChangesetManager.PushCurrentChangeset(CurrentVersion);
                     }
                     else
                     {
-                        ChangesetManager.PurgeChangesets(uint.MaxValue, CurrentVersion);
+                        ChangesetManager.PushNullChangeset(CurrentVersion);
                     }
                 }
             }
@@ -241,20 +241,26 @@ namespace Unity.CommandStateObserver
         /// <param name="upToAndIncludingVersion">Version up to which we should purge changesets. Pass uint.MaxValue to purge all changesets.</param>
         public virtual void PurgeObsoleteChangesets(uint upToAndIncludingVersion)
         {
-            ChangesetManager?.PurgeChangesets(upToAndIncludingVersion, CurrentVersion);
+            ChangesetManager?.RemoveObsoleteChangesets(upToAndIncludingVersion, CurrentVersion);
         }
 
         /// <summary>
-        /// Sets the kind of update that was done on the state component. Unless <paramref name="force"/> is true,
-        /// if the update type is already set, it will be changed only
+        /// Sets the kind of update that was done on the state component.
+        /// If the update type is already set, it will be changed only
         /// if the new update type has a higher value than the current one.
         /// </summary>
         /// <param name="type">The update type.</param>
-        /// <param name="force">Set the update type even if the new value is lower than the current one.</param>
-        protected internal void SetUpdateType(UpdateType type, bool force = false)
+        // Internal for tests only.
+        protected internal void SetUpdateType(UpdateType type)
         {
-            if (type > m_ScopeUpdateType || force)
+            if (type > m_ScopeUpdateType)
                 m_ScopeUpdateType = type;
+        }
+
+        // For tests only.
+        internal void ForceSetUpdateType_Internal(UpdateType type)
+        {
+            m_ScopeUpdateType = type;
         }
 
         /// <summary>
@@ -286,17 +292,10 @@ namespace Unity.CommandStateObserver
                 return UpdateType.Complete;
             }
 
-            var earliestChangeSetVersion = ChangesetManager.GetEarliestChangesetVersion();
-            if (earliestChangeSetVersion == uint.MaxValue)
-            {
-                // observerVersion.Version != CurrentVersion, but ChangesetManager does not have any changeset for us.
-                // Let's do a complete update.
-                return UpdateType.Complete;
-            }
-
             // If ChangesetManager has changesets to go from observerVersion.Version to CurrentVersion,
             // do a partial update. Otherwise do a complete update.
-            return observerVersion.Version >= earliestChangeSetVersion - 1 ? UpdateType.Partial : UpdateType.Complete;
+            var hasValidChangesetForVersions = ChangesetManager.HasValidChangesetForVersions(observerVersion.Version, CurrentVersion);
+            return hasValidChangesetForVersions ? UpdateType.Partial : UpdateType.Complete;
         }
 
         /// <summary>
@@ -315,7 +314,7 @@ namespace Unity.CommandStateObserver
         public virtual void OnRemovedFromState(IState state)
         {
             State = null;
-            ChangesetManager?.PurgeChangesets(uint.MaxValue, CurrentVersion);
+            ChangesetManager?.RemoveAllChangesets();
         }
 
         /// <summary>

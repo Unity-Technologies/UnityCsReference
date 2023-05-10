@@ -84,10 +84,12 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         [ThreadSafe(ThrowsException = false)]
         [BurstAuthorizedExternalMethod]
+        [VisibleToOtherModules("UnityEngine.AIModule")]
         unsafe internal static extern int LeakRecord(IntPtr handle, LeakCategory category, int callstacksToSkip);
 
         [ThreadSafe(ThrowsException = false)]
         [BurstAuthorizedExternalMethod]
+        [VisibleToOtherModules("UnityEngine.AIModule")]
         unsafe internal static extern int LeakErase(IntPtr handle, LeakCategory category);
 
         [ThreadSafe(ThrowsException = true)]

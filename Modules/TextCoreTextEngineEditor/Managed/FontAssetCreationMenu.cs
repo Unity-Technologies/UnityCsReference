@@ -54,20 +54,20 @@ namespace UnityEditor.TextCore.Text
             AssetDatabase.SaveAssets();
         }
 
-        [MenuItem("Assets/Create/Text/FontAsset/SDF", false, 100)]
+        [MenuItem("Assets/Create/Text/Font Asset/SDF", false, 100)]
         static void CreateFontAssetSDF()
         {
             CreateFontAsset(GlyphRenderMode.SDFAA);
         }
 
-        [MenuItem("Assets/Create/Text/FontAsset/Bitmap", false, 105)]
+        [MenuItem("Assets/Create/Text/Font Asset/Bitmap", false, 105)]
         static void CreateFontAssetBitmap()
         {
             CreateFontAsset(GlyphRenderMode.SMOOTH);
         }
 
 
-        [MenuItem("Assets/Create/Text/FontAsset/Color", false, 110)]
+        [MenuItem("Assets/Create/Text/Font Asset/Color", false, 110)]
         static void CreateFontAssetColor()
         {
             CreateFontAsset(GlyphRenderMode.COLOR);

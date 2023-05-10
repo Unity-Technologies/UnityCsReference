@@ -53,9 +53,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void BuildPartList()
         {
-            PartList.AppendPart(EditableTitlePart.Create(titleContainerPartName, Model, this, ussClassName));
+            PartList.AppendPart(NodeTitlePart.Create(titleContainerPartName, NodeModel, this, ussClassName));
             PartList.AppendPart(NodeModeDropDownPart.Create(nodeModeDropDownPartName, Model, this, ussClassName));
-            PartList.AppendPart(NodeOptionsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, RootView, ussClassName, ModelInspectorView.NodeOptionsFilterForNode));
+            PartList.AppendPart(NodeOptionsInspector.Create(nodeOptionsContainerPartName, new[] {Model}, this, ussClassName, ModelInspectorView.NodeOptionsFilterForNode));
             PartList.AppendPart(HorizontalPortContainerPart.Create(portContainerPartName, Model, this, ussClassName));
         }
 
@@ -80,8 +80,8 @@ namespace Unity.GraphToolsFoundation.Editor
             AddToClassList(ussClassName);
             this.AddStylesheet_Internal("Node.uss");
 
-            m_CollapseButton = this.SafeQ(IconTitleProgressPart.collapseButtonPartName);
-            m_ShowNodePreviewButton = this.SafeQ(IconTitleProgressPart.previewButtonPartName);
+            m_CollapseButton = this.SafeQ(NodeTitlePart.collapseButtonPartName);
+            m_ShowNodePreviewButton = this.SafeQ(NodeTitlePart.previewButtonPartName);
             m_ShowNodePreviewButton?.RegisterCallback<ChangeEvent<bool>>(OnShowNodePreviewChangeEvent);
         }
 

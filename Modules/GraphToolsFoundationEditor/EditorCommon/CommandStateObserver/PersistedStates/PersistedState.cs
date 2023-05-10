@@ -22,7 +22,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>A unique key for the graph.</returns>
         public static string MakeGraphKey(GraphModel graphModel)
         {
-            return graphModel?.Guid.ToString() ?? default(SerializableGUID).ToString();
+            return graphModel?.Guid.ToString() ?? default(Hash128).ToString();
         }
 
         static Hash128 GetComponentStorageHash(string componentName, Hash128 viewGuid, string graphKey = "")

@@ -788,13 +788,19 @@ namespace UnityEditor
 
             var changedColor = false;
             PrefColor ccolor = null;
+
+            // some pref colors are very long, and changing them would mean invalidating any user-defined colors.
+            // as a compromise, we'll clip the label with an ellipses and show the full text in a tooltip.
+            var clipping = EditorStyles.label.clipping;
+            EditorStyles.label.clipping = TextClipping.Ellipsis;
+
             foreach (KeyValuePair<string, List<KeyValuePair<string, PrefColor>>> category in s_CachedColors)
             {
                 GUILayout.Label(category.Key, EditorStyles.boldLabel);
                 foreach (KeyValuePair<string, PrefColor> kvp in category.Value)
                 {
                     EditorGUI.BeginChangeCheck();
-                    Color c = EditorGUILayout.ColorField(kvp.Key, kvp.Value.Color);
+                    Color c = EditorGUILayout.ColorField(EditorGUIUtility.TempContent(kvp.Key, kvp.Key), kvp.Value.Color);
                     if (EditorGUI.EndChangeCheck())
                     {
                         ccolor = kvp.Value;
@@ -805,6 +811,8 @@ namespace UnityEditor
                 if (ccolor != null)
                     PrefSettings.Set(ccolor.Name, ccolor);
             }
+            EditorStyles.label.clipping = clipping;
+
             GUILayout.Space(5f);
 
             if (GUILayout.Button(ColorsProperties.userDefaults, GUILayout.Width(120)))

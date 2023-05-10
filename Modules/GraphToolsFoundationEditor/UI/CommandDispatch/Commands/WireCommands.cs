@@ -602,6 +602,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="command">The command.</param>
         public static void DefaultCommandHandler(UndoStateComponent undoState, GraphViewStateComponent graphViewState, GraphModelStateComponent graphModelState, SelectionStateComponent selectionState, ConvertWiresToPortalsCommand command)
         {
+            if (!graphModelState.GraphModel.Stencil.AllowPortalCreation)
+                return;
+
             if (command.WireData == null || !command.WireData.Any())
                 return;
 
@@ -610,7 +613,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 undoStateUpdater.SaveState(graphModelState);
             }
 
-            var createdElements = new List<SerializableGUID>();
+            var createdElements = new List<Hash128>();
             var graphModel = graphModelState.GraphModel;
 
             var elementsToFrame = new List<GraphElement>();

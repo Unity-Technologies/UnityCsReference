@@ -21,8 +21,8 @@ namespace Unity.GraphToolsFoundation.Editor
         public MissingFieldEditor(ICommandTarget commandTarget, string fieldLabel)
             : base(commandTarget)
         {
-            var label = new Label($"Missing editor for: {fieldLabel}.");
-            Add(label);
+            LabelElement = new Label($"Missing editor for: {fieldLabel}.");
+            Add(LabelElement);
         }
 
         /// <inheritdoc />

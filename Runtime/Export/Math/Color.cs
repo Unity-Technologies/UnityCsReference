@@ -143,6 +143,7 @@ namespace UnityEngine
         }
 
         // Returns new color that has RGB components multiplied, but leaving alpha untouched.
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal Color RGBMultiplied(float multiplier) { return new Color(r * multiplier, g * multiplier, b * multiplier, a); }
         // Returns new color that has RGB components multiplied, but leaving alpha untouched.
         internal Color AlphaMultiplied(float multiplier) { return new Color(r, g, b, a * multiplier); }

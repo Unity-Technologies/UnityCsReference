@@ -128,6 +128,7 @@ namespace UnityEditor.Search
 
             // Don't let SearchToolbar process the ChangeEvent too.
             evt.StopPropagation();
+            UpdateCancelButton();
         }
 
         private void OnKeyDown(KeyDownEvent evt)

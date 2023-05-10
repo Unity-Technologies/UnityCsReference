@@ -25,8 +25,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
         WireControl m_WireControl;
 
-        ModelView m_LastUsedFromPort;
-        ModelView m_LastUsedToPort;
+        ChildView m_LastUsedFromPort;
+        ChildView m_LastUsedToPort;
         WireModel m_LastUsedWireModel;
 
         protected WireManipulator WireManipulator
@@ -218,7 +218,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Gets the wire data required to create portals.
         /// </summary>
         /// <param name="wires">The wires that will be converted to portals.</param>
-        /// <param name="rootView">The <paramref name="RootView"/> that contains the portals.</param>
+        /// <param name="rootView">The <see cref="RootView"/> that contains the portals.</param>
         internal static List<(WireModel, Vector2, Vector2)> GetPortalsWireData(IEnumerable<WireModel> wires, RootView rootView)
         {
             var wireData = wires.Select(
@@ -265,15 +265,18 @@ namespace Unity.GraphToolsFoundation.Editor
                 ShowItemLibrary(mousePosition);
             });
 
-            // TODO OYT (GTF-918) : When Junction Points are implemented, a menu item needs to be added to create a Junction Point. The menu item name will be "Add Junction Point".
-            var wires = selection.OfType<WireModel>().ToList();
-            if (wires.Count > 0)
+            if (WireModel.GraphModel.Stencil.AllowPortalCreation)
             {
-                var wireData = GetPortalsWireData(wires, GraphView);
-                evt.menu.AppendAction("Add Portals", _ =>
+                // TODO OYT (GTF-918) : When Junction Points are implemented, a menu item needs to be added to create a Junction Point. The menu item name will be "Add Junction Point".
+                var wires = selection.OfType<WireModel>().ToList();
+                if (wires.Count > 0)
                 {
-                    GraphView.Dispatch(new ConvertWiresToPortalsCommand(wireData, GraphView));
-                });
+                    var wireData = GetPortalsWireData(wires, GraphView);
+                    evt.menu.AppendAction("Add Portals", _ =>
+                    {
+                        GraphView.Dispatch(new ConvertWiresToPortalsCommand(wireData, GraphView));
+                    });
+                }
             }
 
             if (wire.WireModel.FromPort?.HasReorderableWires ?? false)

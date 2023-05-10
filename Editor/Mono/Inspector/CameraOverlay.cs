@@ -2,12 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor.Overlays;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.UIElements;
-using UnityObject = UnityEngine.Object;
+using static UnityEditor.CameraPreviewUtils;
 
 namespace UnityEditor
 {
@@ -25,11 +25,6 @@ namespace UnityEditor
         Camera m_SelectedCamera;
         Camera selectedCamera => m_SelectedCamera;
 
-        Camera m_PreviewCamera;
-        Camera previewCamera => m_PreviewCamera;
-
-        RenderTexture m_PreviewTexture;
-
         static Dictionary<Camera, (SceneViewCameraOverlay overlay, int count)> s_CameraOverlays = new Dictionary<Camera, (SceneViewCameraOverlay, int)>();
 
         SceneViewCameraOverlay(Camera camera)
@@ -43,20 +38,6 @@ namespace UnityEditor
                 : selectedCamera.name;
 
             s_CameraOverlays.Add(camera, (this ,1));
-        }
-
-        public override void OnCreated()
-        {
-            m_PreviewCamera = EditorUtility.CreateGameObjectWithHideFlags("Preview Camera",
-                HideFlags.HideAndDontSave,
-                typeof(Camera),
-                typeof(Skybox)).GetComponent<Camera>();
-            m_PreviewCamera.enabled = false;
-        }
-
-        public override void OnWillBeDestroyed()
-        {
-            UnityObject.DestroyImmediate(m_PreviewCamera.gameObject, true);
         }
 
         public static SceneViewCameraOverlay GetOrCreateCameraOverlay(Camera camera)
@@ -90,18 +71,10 @@ namespace UnityEditor
             }
         }
 
-        RenderTexture GetPreviewTextureWithSizeAndAA(int width, int height)
+        void UpdateSize()
         {
-            int antiAliasing = Mathf.Max(1, QualitySettings.antiAliasing);
-            if (m_PreviewTexture == null || m_PreviewTexture.width != width || m_PreviewTexture.height != height || m_PreviewTexture.antiAliasing != antiAliasing)
-            {
-                if (m_PreviewTexture != null)
-                    m_PreviewTexture.Release();
-
-                m_PreviewTexture = new RenderTexture(width, height, 24, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
-                m_PreviewTexture.antiAliasing = antiAliasing;
-            }
-            return m_PreviewTexture;
+            if (!sizeOverridden)
+                size = new Vector2(240, 135);
         }
 
         public override void OnGUI()
@@ -133,31 +106,6 @@ namespace UnityEditor
             {
                 Graphics.DrawTexture(cameraRect, Texture2D.whiteTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, Color.black);
 
-                // setup camera and render
-                previewCamera.CopyFrom(selectedCamera);
-
-                // make sure the preview camera is rendering the same stage as the SceneView is
-                if (sceneView.overrideSceneCullingMask != 0)
-                    previewCamera.overrideSceneCullingMask = sceneView.overrideSceneCullingMask;
-                else
-                    previewCamera.scene = sceneView.customScene;
-
-                // also make sure to sync any Skybox component on the preview camera
-                var dstSkybox = previewCamera.GetComponent<Skybox>();
-                if (dstSkybox)
-                {
-                    var srcSkybox = selectedCamera.GetComponent<Skybox>();
-                    if (srcSkybox && srcSkybox.enabled)
-                    {
-                        dstSkybox.enabled = true;
-                        dstSkybox.material = srcSkybox.material;
-                    }
-                    else
-                    {
-                        dstSkybox.enabled = false;
-                    }
-                }
-
                 Vector2 previewSize = selectedCamera.targetTexture
                     ? new Vector2(selectedCamera.targetTexture.width, selectedCamera.targetTexture.height)
                     : PlayModeView.GetMainPlayModeViewTargetSize();
@@ -183,23 +131,11 @@ namespace UnityEditor
                     previewRect = new Rect(cameraRect.xMin, cameraRect.yMin + cameraRect.height * (1.0f - stretch) * .5f, cameraRect.width, stretch * cameraRect.height);
                 }
 
-                var previewTexture = GetPreviewTextureWithSizeAndAA((int)previewRect.width, (int)previewRect.height);
-                previewCamera.targetTexture = previewTexture;
-                previewCamera.pixelRect = new Rect(0, 0, previewRect.width, previewRect.height);
+                var settings = new PreviewSettings(new Vector2((int)previewRect.width, (int)previewRect.height));
+                settings.overrideSceneCullingMask = sceneView.overrideSceneCullingMask;
+                settings.scene = sceneView.customScene;
 
-                Handles.EmitGUIGeometryForCamera(selectedCamera, previewCamera);
-
-                if (selectedCamera.usePhysicalProperties)
-                {
-                    // when sensor size is reduced, the previous frame is still visible behing so we need to clear the texture before rendering.
-                    RenderTexture rt = RenderTexture.active;
-                    RenderTexture.active = previewTexture;
-                    GL.Clear(false, true, Color.clear);
-                    RenderTexture.active = rt;
-                }
-
-                previewCamera.cameraType = CameraType.Preview;
-                previewCamera.Render();
+                var previewTexture = CameraPreviewUtils.GetPreview(selectedCamera, settings);
 
                 Graphics.DrawTexture(previewRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
             }

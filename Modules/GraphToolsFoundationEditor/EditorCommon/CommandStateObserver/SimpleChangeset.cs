@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.CommandStateObserver;
+using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -16,14 +17,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The changed models.
         /// </summary>
-        public HashSet<SerializableGUID> ChangedModels { get; }
+        public HashSet<Hash128> ChangedModels { get; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SimpleChangeset" /> class.
         /// </summary>
         public SimpleChangeset()
         {
-            ChangedModels = new HashSet<SerializableGUID>();
+            ChangedModels = new HashSet<Hash128>();
         }
 
         /// <inheritdoc/>

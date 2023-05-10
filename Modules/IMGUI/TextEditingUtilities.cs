@@ -27,6 +27,7 @@ namespace UnityEngine
         SelectParagraphForward, Copy, SelectAll, SelectNone
     }
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal class TextEditingUtilities
     {
         private TextSelectingUtilities m_TextSelectingUtility;
@@ -35,7 +36,10 @@ namespace UnityEngine
         private string SelectedText => m_TextSelectingUtility.selectedText;
         private int m_iAltCursorPos => m_TextSelectingUtility.iAltCursorPos;
         int m_CursorIndexSavedState = -1;
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal bool isCompositionActive;
+
         bool m_UpdateImeWindowPosition;
         internal Action OnTextChanged;
 
@@ -530,6 +534,7 @@ namespace UnityEngine
             return value;
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void OnBlur()
         {
             revealCursor = false;
@@ -538,6 +543,7 @@ namespace UnityEngine
 
         // Returns true if the TouchScreenKeyboard should be used. On Android and Chrome OS, we only want to use the
         // TouchScreenKeyboard if in-place editing is not allowed (i.e. when we do not have a hardware keyboard available).
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal bool TouchScreenKeyboardShouldBeUsed()
         {
             RuntimePlatform platform = Application.platform;

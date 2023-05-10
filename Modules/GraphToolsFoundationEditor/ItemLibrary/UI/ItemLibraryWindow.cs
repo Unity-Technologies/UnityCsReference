@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.GraphToolsFoundation.Editor;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -98,13 +99,14 @@ namespace Unity.ItemLibrary.Editor
         internal static ItemLibraryWindow Show_Internal(
             EditorWindow host,
             ItemLibraryLibrary_Internal library,
-            Vector2 displayPosition)
+            Vector2 displayPosition,
+            TypeHandleInfos typeHandleInfos)
         {
             UpdateDefaultSize(library);
 
             var rect = new Rect(displayPosition, s_DefaultSize);
 
-            return Show_Internal(host, library, rect);
+            return Show_Internal(host, library, rect, typeHandleInfos);
         }
 
         /// <summary>
@@ -116,13 +118,14 @@ namespace Unity.ItemLibrary.Editor
         internal static ItemLibraryWindow Show_Internal(
             EditorWindow host,
             ItemLibraryLibrary_Internal library,
-            Rect rect)
+            Rect rect,
+            TypeHandleInfos typeHandleInfos)
         {
 
             var window = CreateInstance<ItemLibraryWindow>();
             window.position = GetRectStartingInWindow(rect, host);
             window.minSize = MinSize;
-            window.Initialize(library, ShowMode.PopupMenu);
+            window.Initialize(library, ShowMode.PopupMenu, typeHandleInfos);
             window.ShowPopup();
             window.Focus();
             return window;
@@ -139,21 +142,21 @@ namespace Unity.ItemLibrary.Editor
             return new Rect(pos, rect.size);
         }
 
-        void Initialize(ItemLibraryLibrary_Internal library, ShowMode showMode)
+        void Initialize(ItemLibraryLibrary_Internal library, ShowMode showMode, TypeHandleInfos typeHandleInfos)
         {
             rootVisualElement.AddStylesheetResource_Internal(k_StylesheetName);
             rootVisualElement.AddToClassList(k_WindowClassName);
             rootVisualElement.AddToClassList("unity-theme-env-variables");
             rootVisualElement.EnableInClassList(k_PopupWindowClassName, showMode == ShowMode.PopupMenu);
 
-            SetupLibrary(library);
+            SetupLibrary(library, typeHandleInfos);
         }
 
-        void SetupLibrary(ItemLibraryLibrary_Internal library)
+        void SetupLibrary(ItemLibraryLibrary_Internal library, TypeHandleInfos typeHandleInfos)
         {
             UpdateDefaultSize(library);
 
-            m_Control ??= new ItemLibraryControl_Internal();
+            m_Control ??= new ItemLibraryControl_Internal(typeHandleInfos);
             StatusBarText = m_InitialStatusText ?? k_DefaultStatusText;
             m_Control.Setup(library);
             m_Control.detailsPanelWidthChanged_Internal += OnDetailsPanelWidthChanged;

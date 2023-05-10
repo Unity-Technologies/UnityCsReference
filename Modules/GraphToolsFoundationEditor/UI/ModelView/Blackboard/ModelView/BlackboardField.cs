@@ -74,7 +74,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected VisualElement m_Icon;
 
         SelectionDropper m_SelectionDropper;
-        string m_OldIconDataTypeStr;
+        TypeHandle m_CurrentTypeHandle;
 
         /// <summary>
         /// The <see cref="EditableLabel"/> containing the name of the field.
@@ -141,12 +141,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (Model is VariableDeclarationModel variableDeclarationModel)
             {
-                var currentDataTypeStr = Port.GetClassNameSuffixForDataType_Internal(variableDeclarationModel.DataType.Resolve());
-                if (m_OldIconDataTypeStr != currentDataTypeStr)
+                if (m_CurrentTypeHandle != variableDeclarationModel.DataType)
                 {
-                    m_Icon.PrefixEnableInClassList(Port.dataTypeClassPrefix, currentDataTypeStr);
-                    m_Icon.MarkDirtyRepaint();
-                    m_OldIconDataTypeStr = currentDataTypeStr;
+                    RootView.TypeHandleInfos.RemoveUssClasses(Port.dataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
+                    m_CurrentTypeHandle = variableDeclarationModel.DataType;
+                    RootView.TypeHandleInfos.AddUssClasses(Port.dataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
+
                 }
 
                 if (variableDeclarationModel.GraphModel != null)

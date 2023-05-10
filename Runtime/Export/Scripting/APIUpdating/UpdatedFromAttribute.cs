@@ -4,10 +4,12 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.Scripting.APIUpdating
 {
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct MovedFromAttributeData
     {
         public void Set(bool autoUpdateAPI, string sourceNamespace = null, string sourceAssembly = null, string sourceClassName = null)
@@ -69,6 +71,7 @@ namespace UnityEngine.Scripting.APIUpdating
             get { return data.assemblyHasChanged; }
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal MovedFromAttributeData data;
     }
 }

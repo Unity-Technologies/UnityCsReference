@@ -31,9 +31,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public SpawnFlags SpawnFlags { get; }
 
         /// <summary>
-        /// The SerializableGUID to assign to the newly created item.
+        /// The guid to assign to the newly created item.
         /// </summary>
-        public SerializableGUID Guid { get; }
+        public Hash128 Guid { get; }
 
         /// <summary>
         /// The Context in which the Block will be added.
@@ -50,12 +50,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="graphModel">The interface to the graph where we want the node to be created in.</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="contextNodeModel">The Context in which the block will be added.</param>
         /// <param name="orderInContext">The index of the position at which the Block is to be added to the Context.</param>
         public GraphBlockCreationData(GraphModel graphModel,
             SpawnFlags spawnFlags = SpawnFlags.Default,
-            SerializableGUID guid = default,
+            Hash128 guid = default,
             ContextNodeModel contextNodeModel = null,
             int orderInContext = -1)
         {
@@ -79,9 +79,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public GraphNodeModelLibraryItem SelectedItem;
 
         /// <summary>
-        /// The SerializableGUID to assign to the newly created item.
+        /// The guid to assign to the newly created item.
         /// </summary>
-        public SerializableGUID Guid;
+        public Hash128 Guid;
 
         /// <summary>
         /// The Context in which the block will be added.
@@ -105,17 +105,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Initializes a new <see cref="CreateBlockFromItemLibraryCommand"/>.
         /// </summary>
         /// <param name="selectedItem">The <see cref="GraphNodeModelLibraryItem"/> representing the node to create.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item. If none is provided, a new
-        /// SerializableGUID will be generated for it.</param>
+        /// <param name="guid">The guid to assign to the newly created item. If none is provided, a new
+        /// guid will be generated for it.</param>
         /// <param name="contextNodeModel">The context in which to add the block.</param>
         /// <param name="orderInContext">The index of the position at which the Block is to be added to the Context.</param>
         public CreateBlockFromItemLibraryCommand(GraphNodeModelLibraryItem selectedItem,
                                              ContextNodeModel contextNodeModel = null,
                                               int orderInContext = -1,
-                                              SerializableGUID guid = default) : this()
+                                              Hash128 guid = default) : this()
         {
             SelectedItem = selectedItem;
-            Guid = guid.Valid ? guid : SerializableGUID.Generate();
+            Guid = guid.isValid ? guid : Hash128Extensions.Generate();
             ContextNodeModel = contextNodeModel;
             OrderInContext = orderInContext;
         }

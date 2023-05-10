@@ -421,7 +421,7 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
-        [MenuItem("CONTEXT/CustomRenderTexture/Export", false)]
+        [MenuItem("CONTEXT/CustomRenderTexture/Export", secondaryPriority = 12)]
         static void SaveToDisk(MenuCommand command)
         {
             CustomRenderTexture texture = command.context as CustomRenderTexture;

@@ -16,7 +16,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class RectangleSelector : MouseManipulator
     {
-        static readonly List<ModelView> k_OnMouseUpAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_OnMouseUpAllUIs = new();
 
         readonly RectangleSelect m_Rectangle;
         bool m_Active;
@@ -156,7 +156,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected static void SelectElementsInRegion(Rect selectionRegion, SelectElementsCommand.SelectionMode selectionMode, GraphView graphView)
         {
             // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
-            List<ModelView> newSelection = new List<ModelView>();
+            List<ChildView> newSelection = new List<ChildView>();
             graphView.GraphModel?.GraphElementModels
                 .Where(ge => ge.IsSelectable())
                 .GetAllViewsInList_Internal(graphView, null, k_OnMouseUpAllUIs);
@@ -171,6 +171,7 @@ namespace Unity.GraphToolsFoundation.Editor
             k_OnMouseUpAllUIs.Clear();
 
             var allSelectedModels = newSelection
+                .OfType<ModelView>()
                 .Select(elem => elem.Model)
                 .OfType<GraphElementModel>()
                 .ToList();

@@ -15,6 +15,7 @@ namespace UnityEngine.TextCore.Text
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/TextCoreTextEngine/MeshInfo.h")]
     [UsedByNativeCode("MeshInfo")]
+    [VisibleToOtherModules("UnityEngine.IMGUIModule")]
     internal struct MeshInfoBindings
     {
         public TextCoreVertex[] vertexData;

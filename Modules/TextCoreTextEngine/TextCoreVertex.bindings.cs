@@ -15,6 +15,7 @@ namespace UnityEngine.TextCore.Text
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/TextCoreTextEngine/TextCoreVertex.h")]
     [UsedByNativeCode("TextCoreVertex")]
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal struct TextCoreVertex
     {
         public Vector3 position;

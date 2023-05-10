@@ -51,9 +51,9 @@ namespace Unity.GraphToolsFoundation.Editor
             public bool AutoAlign;
 
             /// <summary>
-            /// The SerializableGUID to assign to the newly created item.
+            /// The guid to assign to the newly created item.
             /// </summary>
-            public SerializableGUID Guid;
+            public Hash128 Guid;
 
             /// <summary>
             /// The wire models on which to connect the newly created node.
@@ -80,12 +80,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="item">The <see cref="GraphNodeModelLibraryItem"/> representing the node to create.</param>
         /// <param name="position">The position where to create the node.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item. If none is provided, a new
-        /// SerializableGUID will be generated for it.</param>
+        /// <param name="guid">The guid to assign to the newly created item. If none is provided, a new
+        /// guid will be generated for it.</param>
         /// <returns>A <see cref="CreateNodeCommand"/> that can be dispatched to create a node on the graph.</returns>
         public static CreateNodeCommand OnGraph(GraphNodeModelLibraryItem item,
             Vector2 position = default,
-            SerializableGUID guid = default)
+            Hash128 guid = default)
         {
             return new CreateNodeCommand().WithNodeOnGraph(item, position, guid);
         }
@@ -95,12 +95,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="model">The declaration for the variable to create on the graph.</param>
         /// <param name="position">The position where to create the node.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item. If none is provided, a new
-        /// SerializableGUID will be generated for it.</param>
+        /// <param name="guid">The guid to assign to the newly created item. If none is provided, a new
+        /// guid will be generated for it.</param>
         /// <returns>A <see cref="CreateNodeCommand"/> that can be dispatched to create a variable on the graph.</returns>
         public static CreateNodeCommand OnGraph(VariableDeclarationModel model,
             Vector2 position = default,
-            SerializableGUID guid = default)
+            Hash128 guid = default)
         {
             return new CreateNodeCommand().WithNodeOnGraph(model, position, guid);
         }
@@ -111,13 +111,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="item">The <see cref="GraphNodeModelLibraryItem"/> representing the node to create.</param>
         /// <param name="wireModel">The wire to insert the new node one.</param>
         /// <param name="position">The position where to create the node.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item. If none is provided, a new
-        /// SerializableGUID will be generated for it.</param>
+        /// <param name="guid">The guid to assign to the newly created item. If none is provided, a new
+        /// guid will be generated for it.</param>
         /// <returns>A <see cref="CreateNodeCommand"/> that can be dispatched to create a node on a wire.</returns>
         public static CreateNodeCommand OnWire(GraphNodeModelLibraryItem item,
             WireModel wireModel,
             Vector2 position = default,
-            SerializableGUID guid = default)
+            Hash128 guid = default)
         {
             return new CreateNodeCommand().WithNodeOnWire(item, wireModel, position, guid);
         }
@@ -129,14 +129,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="portModel">The port to connect the new node to.</param>
         /// <param name="position">The position where to create the node.</param>
         /// <param name="autoAlign">If true, the created node will be automatically aligned after being created.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item. If none is provided, a new
-        /// SerializableGUID will be generated for it.</param>
+        /// <param name="guid">The guid to assign to the newly created item. If none is provided, a new
+        /// guid will be generated for it.</param>
         /// <returns>A <see cref="CreateNodeCommand"/> that can be dispatched to create a node on a port.</returns>
         public static CreateNodeCommand OnPort(GraphNodeModelLibraryItem item,
             PortModel portModel,
             Vector2 position = default,
             bool autoAlign = false,
-            SerializableGUID guid = default)
+            Hash128 guid = default)
         {
             return new CreateNodeCommand().WithNodeOnPort(item, portModel, position, autoAlign, guid);
         }
@@ -148,14 +148,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="portModel">The port to connect the new node to.</param>
         /// <param name="position">The position where to create the node.</param>
         /// <param name="autoAlign">If true, the created node will be automatically aligned after being created.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item. If none is provided, a new
-        /// SerializableGUID will be generated for it.</param>
+        /// <param name="guid">The guid to assign to the newly created item. If none is provided, a new
+        /// guid will be generated for it.</param>
         /// <returns>A <see cref="CreateNodeCommand"/> that can be dispatched to create a node on a wire.</returns>
         public static CreateNodeCommand OnPort(VariableDeclarationModel model,
             PortModel portModel,
             Vector2 position = default,
             bool autoAlign = false,
-            SerializableGUID guid = default)
+            Hash128 guid = default)
         {
             return new CreateNodeCommand().WithNodeOnPort(model, portModel, position, autoAlign, guid);
         }
@@ -166,13 +166,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="item">The <see cref="GraphNodeModelLibraryItem"/> representing the node to create.</param>
         /// <param name="wires">The wires to connect to the node.</param>
         /// <param name="position">The position where to create the node.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item. If none is provided, a new
-        /// SerializableGUID will be generated for it.</param>
+        /// <param name="guid">The guid to assign to the newly created item. If none is provided, a new
+        /// guid will be generated for it.</param>
         /// <returns>A <see cref="CreateNodeCommand"/> that can be dispatched to create a node on a port.</returns>
         public static CreateNodeCommand OnWireSide(GraphNodeModelLibraryItem item,
             IEnumerable<(WireModel, WireSide)> wires,
             Vector2 position,
-            SerializableGUID guid = default)
+            Hash128 guid = default)
         {
             return new CreateNodeCommand().WithNodeOnWires(item, wires, position, guid);
         }
@@ -243,7 +243,7 @@ namespace Unity.GraphToolsFoundation.Editor
                             : ConnectionsToMake.InsertOnWire;
                     }
 
-                    var guid = creationData.Guid.Valid ? creationData.Guid : SerializableGUID.Generate();
+                    var guid = creationData.Guid.isValid ? creationData.Guid : Hash128Extensions.Generate();
 
                     // Create new element
                     GraphElementModel createdElement;

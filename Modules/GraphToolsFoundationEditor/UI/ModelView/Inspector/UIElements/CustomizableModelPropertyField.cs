@@ -300,6 +300,8 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             field.label = Label ?? "";
 
+            LabelElement = field.labelElement;
+
             field.labelElement.PreallocForMoreClasses(2);
             field.labelElement.AddToClassList(labelUssClassName);
             var baseField = field.SafeQ(null, BaseField<TFieldValue>.inputUssClassName);

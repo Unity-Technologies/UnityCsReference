@@ -53,14 +53,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="name">The name of the part.</param>
         /// <param name="models">The models displayed in this part.</param>
-        /// <param name="rootView">The root view.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="filter">A filter function to select which fields are displayed in the inspector. If null, defaults to <see cref="CanBeInspected"/>.</param>
         /// <returns>A new instance of <see cref="SerializedFieldsInspector"/>.</returns>
-        public static SerializedFieldsInspector Create(string name, IEnumerable<Model> models, RootView rootView,
+        public static SerializedFieldsInspector Create(string name, IReadOnlyList<Model> models, ChildView ownerElement,
             string parentClassName, Func<FieldInfo, bool> filter = null)
         {
-            return new SerializedFieldsInspector(name, models, rootView, parentClassName, filter);
+            return new SerializedFieldsInspector(name, models, ownerElement, parentClassName, filter);
         }
 
         Func<FieldInfo, bool> m_Filter;
@@ -70,12 +70,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="name">The name of the part.</param>
         /// <param name="models">The models displayed in this part.</param>
-        /// <param name="rootView">The root view.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="filter">A filter function to select which fields are displayed in the inspector. If null, defaults to <see cref="CanBeInspected"/>.</param>
-        protected SerializedFieldsInspector(string name, IEnumerable<Model> models, RootView rootView,
+        protected SerializedFieldsInspector(string name, IReadOnlyList<Model> models, ChildView ownerElement,
             string parentClassName, Func<FieldInfo, bool> filter)
-            : base(name, models, rootView, parentClassName)
+            : base(name, models, ownerElement, parentClassName)
         {
             m_Filter = filter ?? CanBeInspected;
         }
@@ -170,7 +170,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
                 var modelFieldFieldType = typeof(ModelSerializedFieldField_Internal<>).MakeGenericType(fieldInfo1.FieldType);
                 var baseModelPropertyField = Activator.CreateInstance(
-                        modelFieldFieldType, RootView, m_Models, targets, fieldInfo1, tooltip)
+                        modelFieldFieldType, OwnerRootView, m_Models, targets, fieldInfo1, tooltip)
                     as BaseModelPropertyField;
                 return baseModelPropertyField;
             }

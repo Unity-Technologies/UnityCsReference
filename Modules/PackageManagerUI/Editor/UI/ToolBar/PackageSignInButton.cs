@@ -19,7 +19,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return true;
         }
 
-        protected override bool IsVisible(IPackageVersion version) => !m_UnityConnectProxy.isUserLoggedIn && version?.package.hasEntitlementsError == true;
+        protected override bool IsVisible(IPackageVersion version) => !m_UnityConnectProxy.isUserLoggedIn &&
+                                                                      (version?.package.hasEntitlementsError == true ||
+                                                                       version?.package.product != null);
 
         protected override string GetTooltip(IPackageVersion version, bool isInProgress)
         {
@@ -28,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override string GetText(IPackageVersion version, bool isInProgress)
         {
-            return L10n.Tr("Sign In");
+            return L10n.Tr("Sign in");
         }
 
         protected override bool IsInProgress(IPackageVersion version) => false;

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using UnityEngine;
 
 namespace Unity.GraphToolsFoundation.Editor
 {
@@ -14,15 +15,20 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     static class ViewForModel
     {
-        static ModelViewMapping_Internal s_ViewForModel = new ModelViewMapping_Internal();
+        static ModelViewMapping_Internal s_ViewForModel = new();
 
         internal static void AddOrReplaceModelView_Internal(ModelView modelView)
         {
             s_ViewForModel.AddOrReplaceViewForModel(modelView);
         }
 
+        internal static void AddOrReplaceModelView_Internal(MultipleModelsView modelView)
+        {
+            s_ViewForModel.AddOrReplaceViewForModel(modelView);
+        }
+
         [CanBeNull]
-        internal static ModelView GetView_Internal(this Model model, RootView view, IViewContext context = null)
+        internal static ChildView GetView_Internal(this Model model, RootView view, IViewContext context = null)
         {
             return model == null ? null : GetView_Internal(model.Guid, view, context);
         }
@@ -42,7 +48,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         [CanBeNull]
-        internal static ModelView GetView_Internal(this SerializableGUID modelGuid, RootView view, IViewContext context = null)
+        internal static ChildView GetView_Internal(this Hash128 modelGuid, RootView view, IViewContext context = null)
         {
             return s_ViewForModel.FirstViewOrDefault(view, context, modelGuid);
         }
@@ -56,7 +62,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <typeparam name="T">The type of view to get.</typeparam>
         /// <returns>The view for the model, or null if no view was found.</returns>
         [CanBeNull]
-        public static T GetView<T>(this SerializableGUID modelGuid, RootView view, IViewContext context = null) where T : ModelView
+        public static T GetView<T>(this Hash128 modelGuid, RootView view, IViewContext context = null) where T : ChildView
         {
             return s_ViewForModel.FirstViewOrDefault(view, context, modelGuid) as T;
         }
@@ -68,7 +74,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="view">The view in which the UI elements live.</param>
         /// <param name="filter">A predicate to filter the appended elements.</param>
         /// <param name="outUIList">The list onto which the elements are appended.</param>
-        public static void GetAllViews(this Model model, RootView view, Predicate<ModelView> filter, List<ModelView> outUIList)
+        public static void GetAllViews(this Model model, RootView view, Predicate<ChildView> filter, List<ChildView> outUIList)
         {
             if (model == null)
                 return;
@@ -83,13 +89,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="view">The view in which the UI elements live.</param>
         /// <param name="filter">A predicate to filter the appended elements.</param>
         /// <param name="outUIList">The list onto which the elements are appended.</param>
-        public static void GetAllViews(this SerializableGUID guid, RootView view, Predicate<ModelView> filter, List<ModelView> outUIList)
+        public static void GetAllViews(this Hash128 guid, RootView view, Predicate<ChildView> filter, List<ChildView> outUIList)
         {
             s_ViewForModel.AppendAllViews(guid, view, filter, outUIList);
         }
 
-        internal static IEnumerable<ModelView> GetAllViewsInList_Internal(this IEnumerable<Model> models, RootView view,
-            Predicate<ModelView> filter, List<ModelView> outViewList)
+        internal static IEnumerable<ChildView> GetAllViewsInList_Internal(this IEnumerable<Model> models, RootView view,
+            Predicate<ChildView> filter, List<ChildView> outViewList)
         {
             outViewList.Clear();
             var modelList = models.ToList();
@@ -101,15 +107,15 @@ namespace Unity.GraphToolsFoundation.Editor
             return outViewList;
         }
 
-        internal static IEnumerable<ModelView> GetAllViewsRecursivelyInList_Internal(this IEnumerable<Model> models, RootView view,
-            Predicate<ModelView> filter, List<ModelView> outViewList)
+        internal static IEnumerable<ChildView> GetAllViewsRecursivelyInList_Internal(this IEnumerable<Model> models, RootView view,
+            Predicate<ChildView> filter, List<ChildView> outViewList)
         {
             outViewList.Clear();
             return RecurseGetAllViewsInList(models, view, filter, outViewList);
         }
 
-        static IEnumerable<ModelView> RecurseGetAllViewsInList(this IEnumerable<Model> models, RootView view,
-            Predicate<ModelView> filter, List<ModelView> outViewList)
+        static IEnumerable<ChildView> RecurseGetAllViewsInList(this IEnumerable<Model> models, RootView view,
+            Predicate<ChildView> filter, List<ChildView> outViewList)
         {
             var modelList = models.ToList();
             foreach (var model in modelList)
@@ -125,6 +131,11 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         internal static void RemoveModelView_Internal(ModelView modelView)
+        {
+            s_ViewForModel.RemoveModelView(modelView);
+        }
+
+        internal static void RemoveModelView_Internal(MultipleModelsView modelView)
         {
             s_ViewForModel.RemoveModelView(modelView);
         }

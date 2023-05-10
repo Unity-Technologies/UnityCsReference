@@ -236,6 +236,11 @@ sealed class AudioContainerWindowState
         }
     }
 
+    internal float GetMeterValue()
+    {
+        return m_PreviewAudioSource == null ? 0.0f : m_PreviewAudioSource.GetAudioRandomContainerRuntimeMeterValue();
+    }
+
     void OnSelectionChanged()
     {
         UpdateTarget();

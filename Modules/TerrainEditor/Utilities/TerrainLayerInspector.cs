@@ -12,7 +12,7 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     public sealed class TerrainLayerInspector : Editor
     {
-        [MenuItem("Assets/Create/Terrain Layer")]
+        [MenuItem("Assets/Create/Terrain Layer", secondaryPriority = 2)]
         private static void CreateDefaultTerrainLayer()
         {
             TerrainLayer terrainLayer = new TerrainLayer();

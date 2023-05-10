@@ -24,6 +24,9 @@ using UnityEditor.StyleSheets;
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Rendering.Hybrid")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.VisualEffectGraph.Editor")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Localization.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Hierarchy.Tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Entities.Editor.Tests")]
 
 namespace UnityEditor.Search
 {

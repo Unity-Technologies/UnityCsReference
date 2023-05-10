@@ -16,6 +16,7 @@ namespace UnityEditor.Profiling
             public static readonly GUIContent k_FrameCountWarningText = EditorGUIUtility.TrTextContent("Profiler overhead and memory usage can increase significantly the more frames are kept visible in the Profiler Window through the 'Frame Count' setting.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent k_DefaultRecordState = EditorGUIUtility.TrTextContent("Default recording state", "Recording state in which the profiler should start the first time, or when not remembering state.");
             public static readonly GUIContent k_DefaultTargetMode = EditorGUIUtility.TrTextContent("Default editor target mode on start", "Default profiler recording target mode, which is set on editor start.");
+            public static readonly GUIContent k_TargetFps = EditorGUIUtility.TrTextContent("Target Frames Per Second (Highlights Module)", "The target frames per second used by the Highlights module.");
 
             public static readonly GUIContent[] k_RecordStates =
             {
@@ -38,6 +39,7 @@ namespace UnityEditor.Profiling
         }
 
         private string connectionID;
+        int m_TargetFramesPerSecond;
 
         public override void OnGUI(string searchContext)
         {
@@ -87,6 +89,13 @@ namespace UnityEditor.Profiling
                 EditorGUI.HelpBox(r,
                     $"Connection ID contains \", * or is more than 26 characters in length and will be reverted",
                     MessageType.Error);
+            }
+
+            EditorGUI.BeginChangeCheck();
+            m_TargetFramesPerSecond = System.Math.Clamp(EditorGUILayout.DelayedIntField(Content.k_TargetFps, ProfilerUserSettings.targetFramesPerSecond), ProfilerUserSettings.k_MinimumTargetFramesPerSecond, ProfilerUserSettings.k_MaximumTargetFramesPerSecond);
+            if (EditorGUI.EndChangeCheck())
+            {
+                ProfilerUserSettings.targetFramesPerSecond = m_TargetFramesPerSecond;
             }
         }
 

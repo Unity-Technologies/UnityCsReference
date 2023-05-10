@@ -18,7 +18,8 @@ namespace UnityEngine.TextCore.Text
     /// <summary>
     /// Structure containing information about individual text elements (character or sprites).
     /// </summary>
-    struct TextElementInfo
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+    internal struct TextElementInfo
     {
         public char character; // Should be changed to an int to handle UTF 32
         public int index; // Index of the character in the input string.

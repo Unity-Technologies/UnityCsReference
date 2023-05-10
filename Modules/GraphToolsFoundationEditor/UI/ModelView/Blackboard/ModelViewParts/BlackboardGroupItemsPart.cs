@@ -76,7 +76,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (ui == null)
                     continue;
 
-                ui.AddToRootView(m_OwnerElement.RootView);
                 Root.Add(ui);
             }
 

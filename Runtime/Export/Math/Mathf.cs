@@ -6,6 +6,7 @@ using System;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using uei = UnityEngine.Internal;
+using UnityEngine.Bindings;
 
 namespace UnityEngineInternal
 {
@@ -446,6 +447,7 @@ namespace UnityEngine
             return (long)(System.BitConverter.ToUInt64(buffer, 0) & System.Int64.MaxValue);
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static float ClampToFloat(double value)
         {
             if (double.IsPositiveInfinity(value))
@@ -463,6 +465,7 @@ namespace UnityEngine
             return (float)value;
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static int ClampToInt(long value)
         {
             if (value < int.MinValue)
@@ -474,6 +477,7 @@ namespace UnityEngine
             return (int)value;
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static uint ClampToUInt(long value)
         {
             if (value < uint.MinValue)
@@ -509,6 +513,7 @@ namespace UnityEngine
             return (int)System.Math.Max(0.0, -System.Math.Floor(System.Math.Log10(System.Math.Abs(minDifference))));
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static float RoundBasedOnMinimumDifference(float valueToRound, float minDifference)
         {
             if (minDifference == 0)
@@ -517,6 +522,7 @@ namespace UnityEngine
                 System.MidpointRounding.AwayFromZero);
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static double RoundBasedOnMinimumDifference(double valueToRound, double minDifference)
         {
             if (minDifference == 0)

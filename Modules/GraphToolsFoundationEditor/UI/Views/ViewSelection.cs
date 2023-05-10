@@ -279,7 +279,7 @@ namespace Unity.GraphToolsFoundation.Editor
             foreach (var selected in selection.Reverse())
             {
                 var ui = selected.GetView_Internal(m_View);
-                if (ui != null && ui.HandlePasteOperation(operation, operationName, delta, data))
+                if (ui is ModelView modelView && modelView.HandlePasteOperation(operation, operationName, delta, data))
                     return;
             }
 

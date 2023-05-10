@@ -17,7 +17,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class BlackboardView : RootView, IDragSource
     {
-        static List<ModelView> s_UIList = new List<ModelView>();
+        static List<ChildView> s_UIList = new();
 
         public new static readonly string ussClassName = "blackboard-view";
 
@@ -55,7 +55,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="viewSelectionProvider">A delegate to create the <see cref="ViewSelection"/> for this view. If null, an instance of <see cref="BlackboardViewSelection"/> will be created and used.</param>
         protected BlackboardView(EditorWindow window, GraphView parentGraphView,
             Func<BlackboardView, BlackboardViewModel, ViewSelection> viewSelectionProvider = null)
-            : base(window, parentGraphView.GraphTool)
+            : base(window, parentGraphView.GraphTool, parentGraphView.TypeHandleInfos)
         {
             Model = new BlackboardViewModel(parentGraphView, GraphTool.HighlighterState);
 
@@ -153,7 +153,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 Blackboard.ScrollView.scrollOffset = BlackboardViewModel.ViewState.ScrollOffset;
                 Blackboard.ScrollView.horizontalScroller.slider.RegisterCallback<ChangeEvent<float>>(OnHorizontalScroll);
                 Blackboard.ScrollView.verticalScroller.slider.RegisterCallback<ChangeEvent<float>>(OnVerticalScroll);
-                Blackboard.AddToRootView(this);
                 Add(Blackboard);
             }
         }
@@ -194,7 +193,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 else
                 {
                     var graphModel = BlackboardViewModel.GraphModelState.GraphModel;
-                    List<SerializableGUID> deletedModels = new List<SerializableGUID>();
+                    List<Hash128> deletedModels = new List<Hash128>();
 
                     GraphElementModel renamedModel = null;
 
@@ -278,7 +277,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     foreach (var ui in s_UIList.Distinct())
                     {
                         // Check ui.View != null because ui.UpdateFromModel can remove other ui from the view.
-                        if (ui != null && ui.RootView != null && !deletedModels.Contains(ui.Model.Guid))
+                        if (ui is ModelView modelView && ui.RootView != null && !deletedModels.Contains(modelView.Model.Guid))
                         {
                             ui.UpdateFromModel();
                         }
@@ -291,7 +290,10 @@ namespace Unity.GraphToolsFoundation.Editor
                         renamedModel.GetAllViews(this, null, s_UIList);
                         foreach (var ui in s_UIList)
                         {
-                            ui.ActivateRename();
+                            if (ui is ModelView modelView)
+                            {
+                                modelView.ActivateRename();
+                            }
                         }
                     }
 
@@ -385,9 +387,9 @@ namespace Unity.GraphToolsFoundation.Editor
             var lastSelectedItem = GetSelection().LastOrDefault(x => x.IsRenamable());
             if (ModelView.IsRenameKey(e) && lastSelectedItem.IsRenamable())
             {
-                var uiList = new List<ModelView>();
+                var uiList = new List<ChildView>();
                 lastSelectedItem.GetAllViews(this, null, uiList);
-                if (uiList.Any(ui => ui?.Rename() ?? false))
+                if (uiList.Any(ui => (ui as ModelView)?.Rename() ?? false))
                 {
                     e.StopPropagation();
                 }

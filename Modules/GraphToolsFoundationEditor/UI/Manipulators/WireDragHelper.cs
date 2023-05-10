@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -111,6 +112,9 @@ namespace Unity.GraphToolsFoundation.Editor
             m_GhostWire = null;
             ClearWireCandidate();
             EnableAllWires_Internal(GraphView);
+
+            if (GraphView?.elementPanel != null)
+                ContentDragger.ChangeMouseCursorTo_Internal(GraphView.elementPanel, (int)MouseCursor.Arrow);
         }
 
         /// <summary>
@@ -173,6 +177,9 @@ namespace Unity.GraphToolsFoundation.Editor
 
             WireCandidateModel.EndPoint = mousePosition;
             m_WireCandidate.UpdateFromModel();
+
+            if (GraphView?.elementPanel != null)
+                ContentDragger.ChangeMouseCursorTo_Internal(GraphView.elementPanel, (int)MouseCursor.Link);
 
             // Draw ghost wire if possible port exists.
             var endPort = GetEndPort(mousePosition);

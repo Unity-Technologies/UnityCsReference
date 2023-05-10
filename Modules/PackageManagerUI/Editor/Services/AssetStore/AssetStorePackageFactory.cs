@@ -183,9 +183,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             if (operation.state == DownloadState.Error)
-                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, operation.errorMessage, UIError.Attribute.IsClearable));
+                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, operation.errorMessage, UIError.Attribute.Clearable));
             else if (operation.state == DownloadState.Aborted)
-                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, operation.errorMessage ?? L10n.Tr("Download aborted"), UIError.Attribute.IsWarning | UIError.Attribute.IsClearable));
+                AddPackageError(package, new UIError(UIErrorCode.AssetStoreOperationError, operation.errorMessage ?? L10n.Tr("Download aborted"), UIError.Attribute.Warning | UIError.Attribute.Clearable));
 
             SetPackageProgress(package, PackageProgress.None);
         }

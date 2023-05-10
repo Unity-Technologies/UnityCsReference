@@ -17,14 +17,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="name">The name of the part.</param>
         /// <param name="models">The models displayed in this part.</param>
-        /// <param name="rootView">The root view.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="filter">A filter function to select which fields are displayed in the inspector. If null, defaults to <see cref="NodeOptionsInspector.CanBeInspected"/>.</param>
         /// <returns>A new instance of <see cref="NodeOptionsInspector"/>.</returns>
-        public new static NodeOptionsInspector Create(string name, IEnumerable<Model> models, RootView rootView,
+        public new static NodeOptionsInspector Create(string name, IReadOnlyList<Model> models, ChildView ownerElement,
             string parentClassName, Func<FieldInfo, bool> filter = null)
         {
-            return new NodeOptionsInspector(name, models, rootView, parentClassName, filter);
+            return new NodeOptionsInspector(name, models, ownerElement, parentClassName, filter);
         }
 
         /// <summary>
@@ -32,15 +32,28 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="name">The name of the part.</param>
         /// <param name="models">The models displayed in this part.</param>
-        /// <param name="rootView">The root view.</param>
+        /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
         /// <param name="filter">A filter function to select which fields are displayed in the inspector. If null, defaults to <see cref="NodeOptionsInspector.CanBeInspected"/>.</param>
-        NodeOptionsInspector(string name, IEnumerable<Model> models, RootView rootView, string parentClassName, Func<FieldInfo, bool> filter)
-            : base(name, models, rootView, parentClassName, filter) { }
+        NodeOptionsInspector(string name, IReadOnlyList<Model> models, ChildView ownerElement, string parentClassName, Func<FieldInfo, bool> filter)
+            : base(name, models, ownerElement, parentClassName, filter) { }
+
+
+
+        struct OptionFieldInfo
+        {
+            public string name;
+            public TypeHandle type;
+            public bool inspectorOnly;
+        }
+
+        List<OptionFieldInfo> m_MutableFieldInfos = new List<OptionFieldInfo>();
 
         /// <inheritdoc />
         protected override IEnumerable<BaseModelPropertyField> GetFields()
         {
+            m_MutableFieldInfos.Clear();
+
             var targets = GetInspectedObjects();
 
             if (targets == null)
@@ -88,9 +101,14 @@ namespace Unity.GraphToolsFoundation.Editor
 
             BaseModelPropertyField GetFieldFromNodeOptions(IReadOnlyCollection<NodeOption> options)
             {
+                if (options.Count == 1)
+                {
+                    var option = options.First();
+                    m_MutableFieldInfos.Add(new OptionFieldInfo(){name = option.PortModel.UniqueName, type = option.PortModel.DataTypeHandle, inspectorOnly = option.IsInInspectorOnly});
+                }
                 var constants = options.Select(o => o.PortModel.EmbeddedValue);
                 var nodeOptionEditor = InlineValueEditor.CreateEditorForConstants(
-                    RootView, constants.Select(c => c.OwnerModel), constants,
+                    OwnerRootView, constants.Select(c => c.OwnerModel), constants,
                     false, options.First().PortModel.UniqueName ?? "");
 
                 return nodeOptionEditor;
@@ -100,7 +118,7 @@ namespace Unity.GraphToolsFoundation.Editor
         List<List<NodeOption>> GetNodeOptionsToDisplay()
         {
             var nodeOptionsDict = new Dictionary<string, List<NodeOption>>();
-            var isInspectorModelView = RootView is ModelInspectorView;
+            var isInspectorModelView = OwnerRootView is ModelInspectorView;
 
             for (var i = 0; i < m_Models.Count; i++)
             {
@@ -130,6 +148,44 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             return nodeOptionsDict.Values.ToList();
+        }
+
+        protected override void UpdatePartFromModel()
+        {
+            if ( ShouldRebuildFields())
+            {
+                BuildFields();
+            }
+
+            base.UpdatePartFromModel();
+        }
+
+        bool ShouldRebuildFields()
+        {
+            if (m_Models.Count != 1)
+                return false;
+            var nodeModel = m_Models[0] as NodeModel;
+
+            if (nodeModel == null)
+                return false;
+
+            if (nodeModel.NodeOptions.Count != m_MutableFieldInfos.Count)
+                return true;
+
+            var isInspectorModelView = OwnerRootView is ModelInspectorView;
+
+            foreach (var oldNCurrent in nodeModel.NodeOptions.Zip(m_MutableFieldInfos, (a, b) => new { old = b, current = a }))
+            {
+                if( oldNCurrent.current.PortModel.UniqueName != oldNCurrent.old.name)
+                    return true;
+                if( oldNCurrent.current.PortModel.DataTypeHandle != oldNCurrent.old.type)
+                    return true;
+                if( ! isInspectorModelView)
+                    if( oldNCurrent.current.IsInInspectorOnly != oldNCurrent.old.inspectorOnly)
+                        return true;
+            }
+
+            return false;
         }
     }
 }

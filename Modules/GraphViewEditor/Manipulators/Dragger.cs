@@ -77,6 +77,14 @@ namespace UnityEditor.Experimental.GraphView
                 return;
             }
 
+            // SGB-549: Prevent stealing capture from a child element. This shouldn't be necessary if children
+            // elements call StopPropagation when they capture the mouse, but we can't be sure of that and thus
+            // we are being a bit overprotective here.
+            if (target.panel?.GetCapturingElement(PointerId.mousePointerId) != null)
+            {
+                return;
+            }
+
             if (CanStartManipulation(e))
             {
                 m_Start = e.localMousePosition;

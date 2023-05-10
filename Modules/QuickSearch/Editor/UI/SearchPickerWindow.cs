@@ -83,11 +83,6 @@ namespace UnityEditor.Search
             return SearchService.CreateContext(context?.GetProviders(), query.searchText, context?.options ?? SearchFlags.Default);
         }
 
-        internal protected override bool IsSavedSearchQueryEnabled()
-        {
-            return m_ViewState.HasFlag(SearchViewFlags.EnableSearchQuery);
-        }
-
         public static SearchPickerWindow ShowPicker(SearchViewState args)
         {
             var qs = Create<SearchPickerWindow>(args.LoadDefaults(SearchFlags.OpenPicker));

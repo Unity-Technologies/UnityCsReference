@@ -514,6 +514,7 @@ namespace UnityEngine
 
         internal static int maxRenderTextureSize
         {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get { return GetMaxRenderTextureSize(); }
         }
 

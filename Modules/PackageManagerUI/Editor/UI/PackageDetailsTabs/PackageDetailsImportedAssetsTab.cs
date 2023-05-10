@@ -23,8 +23,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string k_VersionColumnTitle = L10n.Tr("Version");
 
         private MultiColumnListView m_ListView;
-        private IOProxy m_IOProxy;
-        private PackageManagerPrefs m_PackageManagerPrefs;
 
         private IList<Asset> assets => m_ListView.itemsSource as IList<Asset>;
 
@@ -33,7 +31,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version?.importedAssets?.Any() == true;
         }
 
-        public PackageDetailsImportedAssetsTab(IOProxy iOProxy, PackageManagerPrefs packageManagerPrefs)
+        private readonly IOProxy m_IOProxy;
+        private readonly PackageManagerPrefs m_PackageManagerPrefs;
+        public PackageDetailsImportedAssetsTab(UnityConnectProxy unityConnect, IOProxy iOProxy,
+            PackageManagerPrefs packageManagerPrefs) : base(unityConnect)
         {
             m_IOProxy = iOProxy;
             m_PackageManagerPrefs = packageManagerPrefs;
@@ -45,19 +46,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ListView = new MultiColumnListView
             {
                 sortingEnabled = true,
-                name = "InstalledAssetsList",
+                name = "ImportedAssetsList",
                 scrollView = { verticalScrollerVisibility = ScrollerVisibility.Auto},
                 selectionType = SelectionType.None,
                 itemsSource = Array.Empty<Asset>(),
                 columns = { reorderable = false }
             };
-            Add(m_ListView);
+            m_ContentContainer.Add(m_ListView);
             AddColumnsAndRestoreSorting();
 
             m_ListView.columnSortingChanged += OnColumnSortingChanged;
         }
 
-        public override void Refresh(IPackageVersion version)
+        protected override void RefreshContent(IPackageVersion version)
         {
             SortAssetsAndRefreshItems(version.importedAssets);
         }
@@ -163,10 +164,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ListView.RefreshItems();
         }
 
-        public void RecalculateTabHeight(float detailHeight, float scrollViewHeight, float detailsHeaderHeight, float tabViewHeaderContainerHeight, float customContainerHeight, float extensionContainerHeight)
+        protected override void DerivedRefreshHeight(float detailHeight, float scrollViewHeight, float detailsHeaderHeight, float tabViewHeaderContainerHeight, float customContainerHeight, float extensionContainerHeight)
         {
-            if (!UIUtils.IsElementVisible(this))
-                return;
             var headerTotalHeight = detailsHeaderHeight + tabViewHeaderContainerHeight + customContainerHeight + extensionContainerHeight;
             var leftOverHeight = detailHeight - headerTotalHeight - layout.height;
             style.height = scrollViewHeight -  headerTotalHeight - leftOverHeight;

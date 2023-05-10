@@ -47,7 +47,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Initializes a new instance of the <see cref="GraphViewModel"/> class.
         /// </summary>
         public GraphViewModel(string graphViewName, GraphModel graphModel)
-        : base(new SerializableGUID(graphViewName))
+        : base(Hash128.Compute(graphViewName))
         {
             var graphKey = PersistedState.MakeGraphKey(graphModel);
 

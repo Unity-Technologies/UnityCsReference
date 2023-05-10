@@ -43,7 +43,7 @@ namespace Unity.GraphToolsFoundation.Editor
             get => m_Model as PortModel;
         }
 
-        string m_CurrentDataClassName;
+        TypeHandle m_CurrentTypeHandle;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PortConnectorWithIconPart"/> class.
@@ -81,7 +81,12 @@ namespace Unity.GraphToolsFoundation.Editor
             base.UpdatePartFromModel();
             m_Icon.tintColor = (m_OwnerElement as Port)?.PortColor ?? Color.white;
 
-            m_Icon.ReplaceAndCacheClassName(Port.dataTypeClassPrefix + Port.GetClassNameSuffixForDataType_Internal(PortModel.PortDataType), ref m_CurrentDataClassName);
+            if (m_CurrentTypeHandle != PortModel.DataTypeHandle)
+            {
+                m_OwnerElement.RootView.TypeHandleInfos.RemoveUssClasses(Port.dataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
+                m_CurrentTypeHandle = PortModel.DataTypeHandle;
+                m_OwnerElement.RootView.TypeHandleInfos.AddUssClasses(Port.dataTypeClassPrefix, m_Icon, m_CurrentTypeHandle);
+            }
         }
     }
 }

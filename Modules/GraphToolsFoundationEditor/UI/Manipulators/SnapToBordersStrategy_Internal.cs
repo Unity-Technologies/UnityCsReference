@@ -103,7 +103,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        static readonly List<ModelView> k_GetNotSelectedElementRectsInViewAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_GetNotSelectedElementRectsInViewAllUIs = new();
         List<Rect> GetNotSelectedElementRectsInView(GraphElement selectedElement)
         {
             var notSelectedElementRects = new List<Rect>();
@@ -114,7 +114,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var rectToFit = graphView.layout;
 
             graphView.GraphModel.GraphElementModels.GetAllViewsInList_Internal(graphView, null, k_GetNotSelectedElementRectsInViewAllUIs);
-            foreach (var element in k_GetNotSelectedElementRectsInViewAllUIs)
+            foreach (var element in k_GetNotSelectedElementRectsInViewAllUIs.OfType<ModelView>())
             {
                 if (selectedElement is Placemat placemat && element.layout.Overlaps(placemat.layout))
                 {

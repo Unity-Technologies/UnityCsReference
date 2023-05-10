@@ -277,10 +277,13 @@ namespace UnityEditorInternal
         }
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
-        internal static extern void GetCounterValuesWithAvailabilityBatch(ProfilerArea area, string name, int firstFrameIndex, float scale, [Out] float[] counterValuesBuffer, [Out] int[] dataAvailableBuffer, out float maxValue);
+        internal static extern void GetCounterValuesWithAvailabilityBatch(ProfilerArea area, string name, int firstFrameIndex, float scale, float[] counterValuesBuffer, [Out] int[] dataAvailableBuffer, out float maxValue);
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         internal static extern void GetCounterValuesWithAvailabilityBatchByCategory(string category, string name, int firstFrameIndex, float scale, [Out] float[] counterValuesBuffer, [Out] int[] dataAvailableBuffer, out float maxValue);
+
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        internal static extern void GetCounterValuesBatchByCategoryFast(string categoryName, string name, int firstFrameIndex, Span<float> counterValuesBuffer, out float maxValue);
 
         static public void GetGpuStatisticsAvailabilityStates(int firstFrame, [Out] GpuProfilingStatisticsAvailabilityStates[] buffer)
         {
@@ -588,7 +591,7 @@ namespace UnityEditorInternal
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SendSetAudioCaptureFlags")]
         static public extern void SetAudioCaptureFlags(int flags);
-        
+
         internal static System.Guid profilerInternalSessionMetaDataGuid
         {
             get

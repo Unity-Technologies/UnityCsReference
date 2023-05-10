@@ -113,6 +113,7 @@ namespace UnityEditor
         internal const string k_MenuKeyOriginalName = "original_name";
         internal const string k_MenuKeyPlatform = "platform";
         internal const string k_MenuKeyPriority = "priority";
+        internal const string k_MenuKeySecondaryPriority = "secondary_priority";
         internal const string k_MenuKeyShortcut = "shortcut";
         internal const string k_MenuKeyValidateCommandId = "validate_command_id";
 
@@ -578,7 +579,6 @@ namespace UnityEditor
                     var fullMenuName = prefix + menuName;
                     var menuItemId = menuId + fullMenuName;
                     var platform = JsonUtils.JsonReadString(menu, k_MenuKeyPlatform);
-                    var hasExplicitPriority = menu.Contains(k_MenuKeyPriority);
 
                     // Check the menu item platform
                     if (!string.IsNullOrEmpty(platform) && !Application.platform.ToString().ToLowerInvariant().StartsWith(platform.ToLowerInvariant()))

@@ -169,6 +169,7 @@ namespace UnityEngine.Networking
             return null;
         }
 
+        [VisibleToOtherModules("UnityEngine.UnityWebRequestAudioModule", "UnityEngine.UnityWebRequestTextureModule")]
         internal static NativeArray<byte> InternalGetNativeArray(DownloadHandler dh, ref NativeArray<byte> nativeArray)
         {
             unsafe
@@ -187,6 +188,7 @@ namespace UnityEngine.Networking
             }
         }
 
+        [VisibleToOtherModules("UnityEngine.UnityWebRequestAudioModule", "UnityEngine.UnityWebRequestTextureModule")]
         internal static void DisposeNativeArray(ref NativeArray<byte> data)
         {
             if (!data.IsCreated)

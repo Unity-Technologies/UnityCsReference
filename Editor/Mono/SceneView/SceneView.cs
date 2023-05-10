@@ -1030,6 +1030,11 @@ namespace UnityEditor
 
         RectSelection m_RectSelection;
 
+        [SerializeField]
+        SceneViewViewpoint m_Viewpoint;
+
+        internal SceneViewViewpoint viewpoint => m_Viewpoint;
+
         const float kDefaultPerspectiveFov = 60;
 
         static ArrayList s_SceneViews = new ArrayList();
@@ -1236,6 +1241,8 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            m_Viewpoint = new SceneViewViewpoint(this);
+
             baseRootVisualElement.Insert(0, prefabToolbar);
             rootVisualElement.Add(cameraViewVisualElement);
             rootVisualElement.RegisterCallback<MouseEnterEvent>(e => SceneViewMotion.s_ViewportsUnderMouse = true);
@@ -1244,6 +1251,7 @@ namespace UnityEditor
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
 
             titleContent = GetLocalizedTitleContent();
+
             m_RectSelection = new RectSelection(this);
             SceneViewMotion.ResetDragState();
 
@@ -1722,7 +1730,7 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("GameObject/Set as first sibling %=")]
+        [MenuItem("GameObject/Set as first sibling %=", secondaryPriority = 1)]
         internal static void MenuMoveToFront()
         {
             var selectedTransforms = Selection.transforms;
@@ -1740,7 +1748,7 @@ namespace UnityEditor
             return ValidateMenuMoveToFrontOrBack(Selection.transforms, true);
         }
 
-        [MenuItem("GameObject/Set as last sibling %-")]
+        [MenuItem("GameObject/Set as last sibling %-", secondaryPriority = 2)]
         internal static void MenuMoveToBack()
         {
             var selectedTransforms = Selection.transforms;
@@ -1758,7 +1766,7 @@ namespace UnityEditor
             return ValidateMenuMoveToFrontOrBack(Selection.transforms, false);
         }
 
-        [MenuItem("GameObject/Move To View %&f")]
+        [MenuItem("GameObject/Move To View %&f", secondaryPriority = 3)]
         internal static void MenuMoveToView()
         {
             if (ValidateMoveToView())
@@ -1771,7 +1779,7 @@ namespace UnityEditor
             return lastActiveSceneView != null && (Selection.transforms.Length != 0);
         }
 
-        [MenuItem("GameObject/Align With View %#f")]
+        [MenuItem("GameObject/Align With View %#f", secondaryPriority = 4)]
         internal static void MenuAlignWithView()
         {
             if (ValidateAlignWithView())
@@ -1784,7 +1792,7 @@ namespace UnityEditor
             return lastActiveSceneView != null && (Selection.activeTransform != null);
         }
 
-        [MenuItem("GameObject/Align View to Selected")]
+        [MenuItem("GameObject/Align View to Selected", secondaryPriority = 5)]
         internal static void MenuAlignViewToSelected()
         {
             if (ValidateAlignViewToSelected())
@@ -1797,7 +1805,7 @@ namespace UnityEditor
             return lastActiveSceneView != null && (Selection.activeTransform != null);
         }
 
-        [MenuItem("GameObject/Toggle Active State &#a")]
+        [MenuItem("GameObject/Toggle Active State &#a", secondaryPriority = 6)]
         internal static void ActivateSelection()
         {
             if (Selection.activeTransform != null)
@@ -2540,6 +2548,11 @@ namespace UnityEditor
             // Avoiding using it as input too avoids errors accumulating.
             SceneViewMotion.DoViewTool(this);
 
+            // Update active viewpoint if there's one.
+            // Must happen after SceneViewMotion.DoViewTool() so it knows
+            // it needs to reflect a motion to the viewpoint (regardless of their nature).
+            m_Viewpoint.UpdateViewpointMotion(m_Position.isAnimating || m_Rotation.isAnimating);
+
             Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 
             // Handle scene commands after EditorTool.OnSceneGUI so that tools can handle commands
@@ -2578,6 +2591,9 @@ namespace UnityEditor
 
             s_CurrentDrawingSceneView = null;
             m_Camera.rect = origCameraRect;
+
+            if (m_Viewpoint.hasActiveViewpoint)
+                m_Viewpoint.OnGUIDrawCameraOverscan();
 
             onGUIEnded?.Invoke(this);
             if (m_StageHandling != null)
@@ -2931,7 +2947,7 @@ namespace UnityEditor
             }
         }
 
-        float CalcCameraDist()
+        internal float CalcCameraDist()
         {
             float fov = m_Ortho.Fade(perspectiveFov, 0);
             if (fov > kOrthoThresholdAngle)
@@ -3059,35 +3075,16 @@ namespace UnityEditor
             m_Camera.renderCloudsInSceneView = m_SceneViewState.cloudsEnabled;
             ResetIfNaN();
 
-            m_Camera.transform.rotation = m_2DMode && !m_Rotation.isAnimating ? Quaternion.identity : m_Rotation.value;
+            m_Camera.transform.rotation = GetTransformRotation();
+            m_Camera.transform.position = GetTransformPosition();
 
-            float fov = m_Ortho.Fade(perspectiveFov, 0);
-
-            if (fov > kOrthoThresholdAngle)
+            if (m_Viewpoint.hasActiveViewpoint)
             {
-                m_Camera.orthographic = false;
-                m_Camera.fieldOfView = GetVerticalFOV(fov);
+                bool isPerspective = m_Ortho.Fade(perspectiveFov, 0) > kOrthoThresholdAngle;
+                m_Viewpoint.ApplyCameraLensFromViewpoint(isPerspective);
             }
             else
-            {
-                m_Camera.orthographic = true;
-                m_Camera.orthographicSize = GetVerticalOrthoSize();
-            }
-
-            if (m_CameraSettings.dynamicClip)
-            {
-                var clip = GetDynamicClipPlanes();
-                m_Camera.nearClipPlane = clip.x;
-                m_Camera.farClipPlane = clip.y;
-            }
-            else
-            {
-                m_Camera.nearClipPlane = m_CameraSettings.nearClip;
-                m_Camera.farClipPlane = m_CameraSettings.farClip;
-            }
-
-            m_Camera.useOcclusionCulling = m_CameraSettings.occlusionCulling;
-            m_Camera.transform.position = m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
+                ApplyDefaultCameraLens();
 
             // In 2D mode, camera position z should not go to positive value
             if (m_2DMode && m_Camera.transform.position.z >= 0)
@@ -3153,6 +3150,41 @@ namespace UnityEditor
             }
         }
 
+        /// <summary>
+        /// Applies CameraSettings properties to the camera.
+        /// </summary>
+        internal void ApplyDefaultCameraLens()
+        {
+            float fov = m_Ortho.Fade(perspectiveFov, 0);
+
+            if (fov > kOrthoThresholdAngle)
+            {
+                // View is in perspective mode.
+                m_Camera.orthographic = false;
+                m_Camera.fieldOfView = GetVerticalFOV(fov);
+            }
+            else
+            {
+                // View is orthographic.
+                m_Camera.orthographic = true;
+                m_Camera.orthographicSize = GetVerticalOrthoSize();
+            }
+
+            if (cameraSettings.dynamicClip)
+            {
+                var clip = GetDynamicClipPlanes();
+                m_Camera.nearClipPlane = clip.x;
+                m_Camera.farClipPlane = clip.y;
+            }
+            else
+            {
+                m_Camera.nearClipPlane = m_CameraSettings.nearClip;
+                m_Camera.farClipPlane = m_CameraSettings.farClip;
+            }
+
+            m_Camera.useOcclusionCulling = m_CameraSettings.occlusionCulling;
+        }
+
         void OnBecameVisible()
         {
             EditorApplication.update += UpdateAnimatedMaterials;
@@ -3193,11 +3225,10 @@ namespace UnityEditor
         internal Vector3 cameraTargetPosition => m_Position.target + m_Rotation.target * new Vector3(0, 0, -cameraDistance);
 
         // ReSharper disable once MemberCanBePrivate.Global - used in tests
-        internal float GetVerticalFOV(float aspectNeutralFOV)
+        internal float GetVerticalFOV(float aspectNeutralFOV, float multiplier = 1.0f)
         {
             // We want Scene view camera "FOV" to be the vertical FOV if the
             // Scene view is wider than tall, and the horizontal FOV otherwise.
-            float multiplier = 1.0f;
             if (m_Camera.aspect < 1)
                 multiplier /= m_Camera.aspect;
             float halfFovRad = aspectNeutralFOV * 0.5f * Mathf.Deg2Rad;
@@ -3215,6 +3246,26 @@ namespace UnityEditor
             if (m_Camera.aspect < 1.0)
                 res /= m_Camera.aspect;
             return res;
+        }
+
+        /// <summary>
+        /// Get the final representation of the rotation data that
+        /// will be applied to the camera transform.
+        /// </summary>
+        /// <returns></returns>
+        internal Quaternion GetTransformRotation()
+        {
+            return m_2DMode && !m_Rotation.isAnimating ? Quaternion.identity : m_Rotation.value;
+        }
+
+        /// <summary>
+        /// Get the final representation of the position data that
+        /// will be applied to the camera transform.
+        /// </summary>
+        /// <returns></returns>
+        internal Vector3 GetTransformPosition()
+        {
+            return m_Position.value + m_Camera.transform.rotation * new Vector3(0, 0, -cameraDistance);
         }
 
         // Look at a specific point.

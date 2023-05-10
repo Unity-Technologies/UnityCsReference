@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections;
 using UnityEngineInternal;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -16,6 +17,7 @@ namespace UnityEngine
     //This class should be internal. Next time we can break backwardscompatibility we should do it.
     public class TrackedReference
     {
+        [VisibleToOtherModules("UnityEngine.AnimationModule")]
         internal IntPtr m_Ptr;
 
         protected TrackedReference() {}

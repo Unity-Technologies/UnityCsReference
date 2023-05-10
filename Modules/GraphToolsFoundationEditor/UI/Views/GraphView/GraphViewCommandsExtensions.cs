@@ -71,14 +71,14 @@ namespace Unity.GraphToolsFoundation.Editor
                 DispatchFrameAllCommand(self);
         }
 
-        static readonly List<ModelView> k_DispatchFramePrevCommandAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_DispatchFramePrevCommandAllUIs = new();
         /// <summary>
         /// Dispatch a command to select and frame the previous graph element that matches the predicate.
         /// Elements are ordered by their order of creation.
         /// </summary>
         /// <param name="self">The GraphView.</param>
         /// <param name="predicate">A function to filter the graph elements.</param>
-        public static void DispatchFramePrevCommand(this GraphView self, Func<ModelView, bool> predicate)
+        public static void DispatchFramePrevCommand(this GraphView self, Func<ChildView, bool> predicate)
         {
             self.GraphModel.GraphElementModels
                 .Where(ge => ge.IsSelectable() && !(ge is WireModel))
@@ -89,14 +89,14 @@ namespace Unity.GraphToolsFoundation.Editor
             DispatchFrameNextAndSelectElementCommand(self, list.OfType<GraphElement>().ToList());
         }
 
-        static readonly List<ModelView> k_DispatchFrameNextCommandAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_DispatchFrameNextCommandAllUIs = new();
         /// <summary>
         /// Dispatch a command to select and frame the next graph element that matches the predicate.
         /// Elements are ordered by their order of creation.
         /// </summary>
         /// <param name="self">The GraphView.</param>
         /// <param name="predicate">A function to filter the graph elements.</param>
-        public static void DispatchFrameNextCommand(this GraphView self, Func<ModelView, bool> predicate)
+        public static void DispatchFrameNextCommand(this GraphView self, Func<ChildView, bool> predicate)
         {
             self.GraphModel.GraphElementModels
                 .Where(ge => ge.IsSelectable() && !(ge is WireModel))

@@ -99,9 +99,6 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (m_MiniMap != null)
             {
-                m_MiniMap.SetupBuildAndUpdate(MiniMapViewModel.GraphModel, this);
-
-                m_MiniMap.AddToRootView(this);
                 Add(m_MiniMap);
             }
 

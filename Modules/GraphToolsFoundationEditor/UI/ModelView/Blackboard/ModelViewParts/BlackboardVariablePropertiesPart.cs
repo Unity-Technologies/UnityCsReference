@@ -55,8 +55,6 @@ namespace Unity.GraphToolsFoundation.Editor
             m_VariablePropertiesView.AddToClassList(ussClassName);
             m_VariablePropertiesView.AddToClassList(m_ParentClassName.WithUssElement(PartName));
 
-            m_VariablePropertiesView.AddToRootView(m_OwnerElement.RootView);
-
             if (parent is BlackboardRow row)
                 row.PropertiesSlot.Add(m_VariablePropertiesView);
             else
@@ -71,14 +69,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <inheritdoc />
         protected override void PartOwnerAddedToView()
         {
-            m_VariablePropertiesView.AddToRootView(m_OwnerElement.RootView);
+            m_VariablePropertiesView?.AddToRootView(m_OwnerElement.RootView);
             base.PartOwnerAddedToView();
         }
 
         /// <inheritdoc />
         protected override void PartOwnerRemovedFromView()
         {
-            m_VariablePropertiesView.RemoveFromRootView();
+            m_VariablePropertiesView?.RemoveFromRootView();
             base.PartOwnerRemovedFromView();
         }
     }

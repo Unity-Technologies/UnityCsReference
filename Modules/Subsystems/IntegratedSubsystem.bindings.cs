@@ -14,7 +14,9 @@ namespace UnityEngine
     [NativeHeader("Modules/Subsystems/Subsystem.h")]
     public class IntegratedSubsystem : ISubsystem
     {
+        [VisibleToOtherModules("UnityEngine.XRModule")]
         internal IntPtr m_Ptr;
+
         internal ISubsystemDescriptor m_SubsystemDescriptor;
 
         extern internal void SetHandle([Unmarshalled] IntegratedSubsystem subsystem);

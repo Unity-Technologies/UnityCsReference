@@ -31,6 +31,7 @@ sealed class AudioContainerWindow : EditorWindow
     VisualElement m_PlayButtonImage;
     Button m_SkipButton;
     VisualElement m_SkipButtonImage;
+    AudioLevelMeter m_Meter;
     Slider m_VolumeSlider;
     FloatField m_VolumeField;
     Button m_VolumeRandomizationButton;
@@ -205,6 +206,7 @@ sealed class AudioContainerWindow : EditorWindow
         m_PlayButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "play-button-image");
         m_SkipButton = UIToolkitUtilities.GetChildByName<Button>(rootVisualElement, "skip-button");
         m_SkipButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "skip-button-image");
+        m_Meter = UIToolkitUtilities.GetChildByName<AudioLevelMeter>(rootVisualElement, "meter");
         m_VolumeSlider = UIToolkitUtilities.GetChildByName<Slider>(rootVisualElement, "volume-slider");
         m_VolumeField = UIToolkitUtilities.GetChildByName<FloatField>(rootVisualElement, "volume-field");
         m_VolumeRandomizationButton = UIToolkitUtilities.GetChildByName<Button>(rootVisualElement, "volume-randomization-button");
@@ -307,7 +309,6 @@ sealed class AudioContainerWindow : EditorWindow
 
         m_ClipsListView.BindProperty(clipsProperty);
         m_ClipsListView.TrackPropertyValue(clipsProperty, OnAudioClipListChanged);
-        m_ClipsListView.showBorder = true;
 
         m_TriggerRadioButtonGroup.BindProperty(triggerProperty);
         m_PlaybackModeRadioButtonGroup.BindProperty(playbackModeProperty);
@@ -382,6 +383,23 @@ sealed class AudioContainerWindow : EditorWindow
         m_ClipsListView.reorderable = true;
         m_ClipsListView.reorderMode = ListViewReorderMode.Animated;
         EditorApplication.update -= OnEditorApplicationUpdate;
+    }
+
+    private void Update()
+    {
+        if (m_Meter == null)
+        {
+            return;
+        }
+
+        if (m_State != null)
+        {
+            m_Meter.Value = m_State.GetMeterValue();
+        }
+        else
+        {
+            m_Meter.Value = -80.0f;
+        }
     }
 
     void OnSerializedObjectChanged(SerializedObject obj)

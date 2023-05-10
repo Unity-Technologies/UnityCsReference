@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
+
 namespace Unity.GraphToolsFoundation.Editor
 {
     /// <summary>
@@ -13,7 +15,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The GUID of the placeholder.
         /// </summary>
-        SerializableGUID Guid { get; }
+        Hash128 Guid { get; }
 
         /// <summary>
         /// The reference ID of the model.

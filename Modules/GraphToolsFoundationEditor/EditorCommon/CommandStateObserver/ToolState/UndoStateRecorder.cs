@@ -39,8 +39,8 @@ namespace Unity.GraphToolsFoundation.Editor
         class OperationRecord
         {
             public uint OperationId { get; }
-            public List<(SerializableGUID, uint)> ToNextChangesets { get; } = new();
-            public List<(SerializableGUID, uint)> FromPreviousChangesets { get; } = new();
+            public List<(Hash128, uint)> ToNextChangesets { get; } = new();
+            public List<(Hash128, uint)> FromPreviousChangesets { get; } = new();
 
             public OperationRecord(uint operationId)
             {
@@ -48,8 +48,8 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        static Dictionary<(SerializableGUID, uint), SerializedChangeset> s_ToNextVersionChangesets = new();
-        static Dictionary<(SerializableGUID, uint), SerializedChangeset> s_FromPreviousVersionChangesets = new();
+        static Dictionary<(Hash128, uint), SerializedChangeset> s_ToNextVersionChangesets = new();
+        static Dictionary<(Hash128, uint), SerializedChangeset> s_FromPreviousVersionChangesets = new();
         static List<OperationRecord> s_Operations = new();
         static uint s_LastOperationId;
 

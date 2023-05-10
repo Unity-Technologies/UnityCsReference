@@ -196,7 +196,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnOperationError(string errorMessage)
         {
             Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] {0}"), errorMessage));
-            onError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, errorMessage, UIError.Attribute.IsDetailInConsole));
+            onError?.Invoke(new UIError(UIErrorCode.AssetStoreAuthorizationError, errorMessage, UIError.Attribute.DetailInConsole));
 
             // when we have trouble getting access token, it's most likely because the auth code is no longer valid.
             // therefore we want to clear the auth code in the case of error, such that new auth code will be fetched in the next refresh

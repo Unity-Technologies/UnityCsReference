@@ -65,8 +65,7 @@ namespace UnityEditor.Search.Providers
 
         private static MethodInfo[] FetchStaticAPIMethodInfo()
         {
-            bool isDevBuild = Unsupported.IsDeveloperBuild();
-            return AppDomain.CurrentDomain.GetAllStaticMethods(isDevBuild);
+            return AppDomain.CurrentDomain.GetAllStaticMethods(false);
         }
 
         private static MethodInfo[] GetAllStaticMethods(this AppDomain aAppDomain, bool showInternalAPIs)

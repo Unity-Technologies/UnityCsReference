@@ -150,6 +150,7 @@ namespace UnityEngine.TextCore.LowLevel
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [System.Diagnostics.DebuggerDisplay("{familyName} - {styleName}")]
+    [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
     internal struct FontReference
     {
         /// <summary>
@@ -494,6 +495,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// <param name="styleName">The style name of the font.</param>
         /// <param name="fontRef">A FontReference to the matching system font.</param>
         /// <returns>Returns true if a reference to the system font was found. Otherwise returns false.</returns>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static bool TryGetSystemFontReference(string familyName, string styleName, out FontReference fontRef)
         {
             return TryGetSystemFontReference_Internal(familyName, styleName, out fontRef);
@@ -564,6 +566,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// <param name="variantSelectorUnicode">The Unicode value of the variant selector.</param>
         /// <returns>Returns the index of the glyph used by the character using the Unicode value as modified by the variant selector. Returns zero if no glyph variant exists for the given Unicode value.</returns>
         [NativeMethod(Name = "TextCore::FontEngine::GetVariantGlyphIndex", IsThreadSafe = true, IsFreeFunction = true)]
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static extern uint GetVariantGlyphIndex(uint unicode, uint variantSelectorUnicode);
 
         /// <summary>
@@ -572,6 +575,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// <param name="unicode">The Unicode value of the character for which to lookup the glyph index.</param>
         /// <returns>Returns the index of the glyph used by the character using the Unicode value. Returns zero if no glyph exists for the given Unicode value.</returns>
         [NativeMethod(Name = "TextCore::FontEngine::GetGlyphIndex", IsThreadSafe = true, IsFreeFunction = true)]
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static extern uint GetGlyphIndex(uint unicode);
 
 
@@ -976,11 +980,13 @@ namespace UnityEngine.TextCore.LowLevel
         /// Internal function used to control if texture changes resulting from adding glyphs to an atlas texture will be uploaded to the graphic device immediately or delayed and batched.
         /// </summary>
         [NativeMethod(Name = "TextCore::FontEngine::SetTextureUploadMode", IsThreadSafe = true, IsFreeFunction = true)]
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal extern static void SetTextureUploadMode(bool shouldUploadImmediately);
 
         /// <summary>
         /// Internal function used to add glyph to atlas texture.
         /// </summary>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static bool TryAddGlyphToTexture(uint glyphIndex, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture, out Glyph glyph)
         {
             // Determine potential total allocations required for glyphs and glyph rectangles.
@@ -1047,6 +1053,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// <summary>
         /// Internal function used to add glyph to atlas texture.
         /// </summary>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static bool TryAddGlyphsToTexture(List<Glyph> glyphsToAdd, List<Glyph> glyphsAdded, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture)
         {
             Profiler.BeginSample("FontEngine.TryAddGlyphsToTexture");
@@ -1184,6 +1191,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// <summary>
         /// Internal function used to add multiple glyphs to atlas texture.
         /// </summary>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static bool TryAddGlyphsToTexture(List<uint> glyphIndexes, int padding, GlyphPackingMode packingMode, List<GlyphRect> freeGlyphRects, List<GlyphRect> usedGlyphRects, GlyphRenderMode renderMode, Texture2D texture, out Glyph[] glyphs)
         {
             Profiler.BeginSample("FontEngine.TryAddGlyphsToTexture");
@@ -1506,6 +1514,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <returns>An array that contains all ligature substitution records.</returns>
         [NativeMethod(Name = "TextCore::FontEngine::GetAllLigatureSubstitutionRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal extern static LigatureSubstitutionRecord[] GetAllLigatureSubstitutionRecords();
 
         /// <summary>
@@ -1513,6 +1522,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
         /// <returns>An array that contains the substitution records for the given glyph index.</returns>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static LigatureSubstitutionRecord[] GetLigatureSubstitutionRecords(uint glyphIndex)
         {
             GlyphIndexToMarshallingArray(glyphIndex, ref s_GlyphIndexes_MarshallingArray_A);
@@ -1525,6 +1535,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <param name="glyphIndex">Index of the glyph to check for potential substitution records.</param>
         /// <returns>An array that contains the substitution records for the provided list of glyph indexes.</returns>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static LigatureSubstitutionRecord[] GetLigatureSubstitutionRecords(List<uint> glyphIndexes)
         {
             GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
@@ -1736,6 +1747,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <param name="glyphIndexes">Array of glyph indexes to check for potential positional adjustment records.</param>
         /// <returns>Array containing the positional adjustments for pairs of glyphs.</returns>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentTable(uint[] glyphIndexes)
         {
             int recordCount;
@@ -1927,6 +1939,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// <param name="baseGlyphIndex">The index of the glyph.</param>
         /// <returns>An array that contains the adjustment records for the given glyph.</returns>
         [NativeMethod(Name = "TextCore::FontEngine::GetPairAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal extern static GlyphPairAdjustmentRecord[] GetPairAdjustmentRecords(uint glyphIndex);
 
         /// <summary>
@@ -1943,6 +1956,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <returns>An array that contains the adjustment records.</returns>
         [NativeMethod(Name = "TextCore::FontEngine::GetAllPairAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal extern static GlyphPairAdjustmentRecord[] GetAllPairAdjustmentRecords();
 
         /// <summary>
@@ -1950,6 +1964,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <param name="glyphIndexes">List of glyph indexes to check for potential adjustment records.</param>
         /// <returns>An array that contains the glyph pair adjustment records.</returns>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static GlyphPairAdjustmentRecord[] GetPairAdjustmentRecords(List<uint> glyphIndexes)
         {
             GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
@@ -2038,6 +2053,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <returns>An array that contains the Mark-to-Base adjustment records.</returns>
         [NativeMethod(Name = "TextCore::FontEngine::GetAllMarkToBaseAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal extern static MarkToBaseAdjustmentRecord[] GetAllMarkToBaseAdjustmentRecords();
 
         /// <summary>
@@ -2062,6 +2078,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <param name="glyphIndexes">The list of glyph indexes.</param>
         /// <returns>An array that contains the adjustment records for the given list of glyph indexes.</returns>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static MarkToBaseAdjustmentRecord[] GetMarkToBaseAdjustmentRecords(List<uint> glyphIndexes)
         {
             // Copy source list data to array of same type.
@@ -2138,6 +2155,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <returns>An array that contains the Mark-to-Base adjustment records.</returns>
         [NativeMethod(Name = "TextCore::FontEngine::GetAllMarkToMarkAdjustmentRecords", IsThreadSafe = true, IsFreeFunction = true)]
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal extern static MarkToMarkAdjustmentRecord[] GetAllMarkToMarkAdjustmentRecords();
 
         /// <summary>
@@ -2162,6 +2180,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <param name="glyphIndexes">The list of glyph indexes.</param>
         /// <returns>An array that contains the adjustment records for the given list of glyph indexes.</returns>
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static MarkToMarkAdjustmentRecord[] GetMarkToMarkAdjustmentRecords(List<uint> glyphIndexes)
         {
             GenericListToMarshallingArray(ref glyphIndexes, ref s_GlyphIndexes_MarshallingArray_A);
@@ -2291,6 +2310,7 @@ namespace UnityEngine.TextCore.LowLevel
         /// </summary>
         /// <param name="srcTexture"></param>
         [NativeMethod(Name = "TextCore::FontEngine::ResetAtlasTexture", IsFreeFunction = true)]
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal extern static void ResetAtlasTexture(Texture2D texture);
 
         /// <summary>

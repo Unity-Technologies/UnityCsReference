@@ -43,16 +43,19 @@ namespace Unity.GraphToolsFoundation.Editor
         public ContextData[] Data;
         public bool Duplicate;
 
+        public bool CorrectForPlaceholders;
+
         /// <summary>
         /// Initializes a new <see cref="InsertBlocksInContextCommand" />.
         /// </summary>
         /// <param name="context">The context in which to add the block.</param>
         /// <param name="index">The index in the context to which add the block.</param>
         /// <param name="blocks">The blocks to insert.</param>
+        /// <param name="correctForPlaceholders">Whether the index should be corrected for eventual placeholder blocks.</param>
         /// <param name="duplicate">If true the blocks will be duplicated before being inserted.</param>
         /// <param name="undoText">The undo string.</param>
-        public InsertBlocksInContextCommand(ContextNodeModel context, int index, IEnumerable<BlockNodeModel> blocks, bool duplicate = false, string undoText = null) :
-            this(new[] { new ContextData { Context = context, Index = index, Blocks = blocks?.ToList() ?? Enumerable.Empty<BlockNodeModel>().ToList() }}, duplicate, undoText)
+        public InsertBlocksInContextCommand(ContextNodeModel context, int index, IEnumerable<BlockNodeModel> blocks, bool correctForPlaceholders, bool duplicate = false, string undoText = null) :
+            this(new[] { new ContextData { Context = context, Index = index, Blocks = blocks?.ToList() ?? Enumerable.Empty<BlockNodeModel>().ToList() }}, correctForPlaceholders, duplicate, undoText)
         {
         }
 
@@ -61,8 +64,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="data">The data containing blocks and their target context.</param>
         /// <param name="duplicate">If true the blocks will be duplicated before being inserted.</param>
+        /// <param name="correctForPlaceholders">Whether the index should be corrected for eventual placeholder blocks.</param>
         /// <param name="undoText">The undo string.</param>
-        public InsertBlocksInContextCommand(ContextData[] data, bool duplicate = true, string undoText = null)
+        public InsertBlocksInContextCommand(ContextData[] data, bool correctForPlaceholders, bool duplicate = true, string undoText = null)
         {
             if (data == null)
             {
@@ -80,6 +84,7 @@ namespace Unity.GraphToolsFoundation.Editor
             Data = data;
 
             Duplicate = data.Length > 1 || duplicate;
+            CorrectForPlaceholders = correctForPlaceholders;
         }
 
         /// <summary>
@@ -109,6 +114,18 @@ namespace Unity.GraphToolsFoundation.Editor
                     selected.ClearSelection();
                     foreach (var contextData in command.Data)
                     {
+                        //Correct for any possible placeholder blocks
+                        int placeHolderOffset = 0;
+
+                        if (command.CorrectForPlaceholders)
+                        {
+                            for (int i = 0; i < contextData.Index + 1 && i < contextData.Context.BlockCount ; ++i)
+                            {
+                                if (contextData.Context.GetBlock(i) == null)
+                                    placeHolderOffset++;
+                            }
+                        }
+
                         IEnumerable<BlockNodeModel> newNodes;
                         if (!command.Duplicate)
                         {
@@ -143,7 +160,7 @@ namespace Unity.GraphToolsFoundation.Editor
                         {
                             if (block.IsCompatibleWith(contextData.Context))
                             {
-                                contextData.Context.InsertBlock(block, currentIndex++);
+                                contextData.Context.InsertBlock(block, placeHolderOffset + currentIndex++);
 
                                 // If the block was duplicated, mark it as new, otherwise remove it from the deleted model
                                 // as the block was only moved, i.e. not deleted nor added.

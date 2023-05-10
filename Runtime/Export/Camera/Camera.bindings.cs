@@ -463,8 +463,20 @@ namespace UnityEngine
         [FreeFunction("CameraScripting::CopyFrom", HasExplicitThis = true)] extern public void CopyFrom(Camera other);
 
         extern public int  commandBufferCount { get; }
-        extern public void RemoveCommandBuffers(CameraEvent evt);
-        extern public void RemoveAllCommandBuffers();
+        [NativeName("RemoveCommandBuffers")] extern void RemoveCommandBuffersImpl(CameraEvent evt);
+        [NativeName("RemoveAllCommandBuffers")] extern void RemoveAllCommandBuffersImpl();
+
+        public void RemoveCommandBuffers(CameraEvent evt)
+        {
+            m_NonSerializedVersion++;
+            RemoveCommandBuffersImpl(evt);
+        }
+
+        public void RemoveAllCommandBuffers()
+        {
+            m_NonSerializedVersion++;
+            RemoveAllCommandBuffersImpl();
+        }
 
         // in old bindings these functions code like this:
         //   self->AddCommandBuffer(evt, &*buffer);
@@ -483,6 +495,7 @@ namespace UnityEngine
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
             AddCommandBufferImpl(evt, buffer);
+            m_NonSerializedVersion++;
         }
 
         public void AddCommandBufferAsync(CameraEvent evt, CommandBuffer buffer, ComputeQueueType queueType)
@@ -491,6 +504,7 @@ namespace UnityEngine
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
             AddCommandBufferAsyncImpl(evt, buffer, queueType);
+            m_NonSerializedVersion++;
         }
 
         public void RemoveCommandBuffer(CameraEvent evt, CommandBuffer buffer)
@@ -499,10 +513,13 @@ namespace UnityEngine
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
             RemoveCommandBufferImpl(evt, buffer);
+            m_NonSerializedVersion++;
         }
 
         [FreeFunction("CameraScripting::GetCommandBuffers", HasExplicitThis = true)]
         extern public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.CameraEvent evt);
+
+        internal uint m_NonSerializedVersion;
     }
 
     public partial class Camera
@@ -550,6 +567,12 @@ namespace UnityEngine
         {
             if (onPostRender != null)
                 onPostRender(cam);
+        }
+
+        [RequiredByNativeCode]
+        private static void BumpNonSerializedVersion(Camera cam)
+        {
+            cam.m_NonSerializedVersion++;
         }
 
         // These two empty internal methods (which will always be stripped) are required to make the EmptyBuildGotStrippedEnough test work.

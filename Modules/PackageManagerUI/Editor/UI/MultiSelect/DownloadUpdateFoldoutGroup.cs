@@ -8,8 +8,9 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public DownloadUpdateFoldoutGroup(AssetStoreDownloadManager assetStoreDownloadManager,
                                           AssetStoreCache assetStoreCache,
-                                          PackageOperationDispatcher operationDispatcher)
-            : base(new PackageDownloadUpdateButton(assetStoreDownloadManager, assetStoreCache, operationDispatcher),
+                                          PackageOperationDispatcher operationDispatcher,
+                                          UnityConnectProxy unityConnectProxy)
+            : base(new PackageDownloadUpdateButton(assetStoreDownloadManager, assetStoreCache, operationDispatcher, unityConnectProxy),
                    new PackageCancelDownloadButton(assetStoreDownloadManager, operationDispatcher))
         {
             mainFoldout.headerTextTemplate = L10n.Tr("Update {0}");

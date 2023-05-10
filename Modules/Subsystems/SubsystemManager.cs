@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.SubsystemsImplementation;
 
 namespace UnityEngine
@@ -49,6 +50,7 @@ namespace UnityEngine
         public static event Action afterReloadSubsystems;
 #pragma warning restore CS0067
 
+        [VisibleToOtherModules("UnityEngine.XRModule")]
         internal static IntegratedSubsystem GetIntegratedSubsystemByPtr(IntPtr ptr)
         {
             foreach (var subsystem in s_IntegratedSubsystems)

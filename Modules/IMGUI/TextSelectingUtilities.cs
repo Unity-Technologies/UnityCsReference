@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 using static UnityEngine.TextEditor;
 
 namespace UnityEngine
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal class TextSelectingUtilities
     {
         public DblClickSnapping dblClickSnap = DblClickSnapping.WORDS;
@@ -114,6 +116,7 @@ namespace UnityEngine
             this.textHandle = textHandle;
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal bool HandleKeyEvent(Event e)
         {
             InitKeyActions();
@@ -834,8 +837,11 @@ namespace UnityEngine
             return NextCodePointIndex(p);
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal Action OnCursorIndexChange;
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal Action OnSelectIndexChange;
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal Action OnRevealCursorChange;
 
         int ClampTextIndex(int index)

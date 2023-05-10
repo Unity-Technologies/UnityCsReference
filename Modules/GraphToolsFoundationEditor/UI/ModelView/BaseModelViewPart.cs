@@ -13,8 +13,6 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         protected Model m_Model;
 
-        protected ModelView m_OwnerElement;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="BaseModelViewPart"/> class.
         /// </summary>
@@ -22,11 +20,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="model">The model displayed in this part.</param>
         /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
-        protected BaseModelViewPart(string name, Model model, ModelView ownerElement, string parentClassName) :
-        base(name, parentClassName)
+        protected BaseModelViewPart(string name, Model model, ChildView ownerElement, string parentClassName) :
+        base(name, ownerElement, parentClassName)
         {
             m_Model = model;
-            m_OwnerElement = ownerElement;
         }
     }
 }

@@ -61,8 +61,11 @@ namespace Unity.ItemLibrary.Editor
 
         double m_LastFavoriteClickTime;
 
-        public LibraryTreeView_Internal()
+        TypeHandleInfos m_TypeHandleInfos;
+
+        public LibraryTreeView_Internal(TypeHandleInfos typeHandleInfos)
         {
+            m_TypeHandleInfos = typeHandleInfos;
             m_MultiSelectSelection = new HashSet<ItemLibraryItem>();
             m_SearchItemToVisualToggle = new Dictionary<ItemLibraryItem, Toggle>();
             m_FavoriteCategoryView = new CategoryView_Internal("Favorites")
@@ -393,7 +396,9 @@ namespace Unity.ItemLibrary.Editor
                                 imageIcon.tintColor = portColorValue;
                         });
                     }
-                    imageIcon.PrefixEnableInClassList(Port.dataTypeClassPrefix, Port.GetClassNameSuffixForDataType_Internal(portToConnect.PortDataType));
+
+                    m_TypeHandleInfos.AddUssClasses(Port.dataTypeClassPrefix, imageIcon, portToConnect.DataTypeHandle);
+
                     iconElement.Add(imageIcon);
                 }
 
@@ -439,7 +444,9 @@ namespace Unity.ItemLibrary.Editor
                 var portToConnect = itemView.GetPortToConnect();
                 if (portToConnect != null)
                 {
-                    iconElement.RemoveFromClassList(Port.dataTypeClassPrefix + Port.GetClassNameSuffixForDataType_Internal(portToConnect.PortDataType));
+
+                    m_TypeHandleInfos.RemoveUssClasses(Port.dataTypeClassPrefix, iconElement, portToConnect.DataTypeHandle);
+
                     for (var i = 0; i < iconElement.childCount; i++)
                     {
                         if (iconElement[i] is Image)

@@ -27,6 +27,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Guid to give to the node on creation.
         /// </summary>
-        SerializableGUID Guid { get; }
+        Hash128 Guid { get; }
     }
 }

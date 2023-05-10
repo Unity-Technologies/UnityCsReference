@@ -16,6 +16,7 @@ internal class InProjectPage : SimplePage
 
     public override string id => k_Id;
     public override string displayName => L10n.Tr("In Project");
+    public override PageIcon icon => PageIcon.InProject;
 
     [SerializeField]
     private PageFilters.Status[] m_SupportedStatusFilters = Array.Empty<PageFilters.Status>();

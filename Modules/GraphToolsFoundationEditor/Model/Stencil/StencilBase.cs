@@ -28,7 +28,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// Whether it is allowed to have multiple instances of a data output variable.
         /// </summary>
-        /// <returns>The answer to whether it is allowed to have multiple instances of a data output variable.</returns>
+        /// <returns>Whether it is allowed to have multiple instances of a data output variable.</returns>
         public virtual AllowMultipleDataOutputInstances AllowMultipleDataOutputInstances => AllowMultipleDataOutputInstances.AllowWithWarning;
 
         /// <summary>
@@ -38,6 +38,12 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             GraphModel = graphModel;
         }
+
+        /// <summary>
+        /// Whether it is allowed to create <see cref="WirePortalModel"/> and add them to the graph.
+        /// </summary>
+        /// <returns>Whether it is allowed to create portals.</returns>
+        public virtual bool AllowPortalCreation => true;
 
         /// <summary>
         /// Performs tasks that need to be done when the <see cref="GraphModel"/> is enabled.

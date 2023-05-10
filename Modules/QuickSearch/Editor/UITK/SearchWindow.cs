@@ -565,9 +565,7 @@ namespace UnityEditor.Search
 
         internal protected virtual bool IsSavedSearchQueryEnabled()
         {
-            if (m_ViewState.HasFlag(SearchViewFlags.DisableSavedSearchQuery))
-                return false;
-            return true;
+            return m_ViewState.hasQueryPanel;
         }
 
         public bool CanSaveQuery()
@@ -880,7 +878,7 @@ namespace UnityEditor.Search
         {
             FocusSearch();
             if (m_SearchToolbar != null)
-                m_SearchToolbar.FocusSearchField();
+                m_SearchToolbar.searchField.FocusSearchField();
         }
 
         public void FocusSearch()

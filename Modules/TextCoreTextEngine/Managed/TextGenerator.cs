@@ -12,6 +12,7 @@ using System.Text;
 
 namespace UnityEngine.TextCore.Text
 {
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal class TextGenerationSettings : IEquatable<TextGenerationSettings>
     {
         public string text;
@@ -196,6 +197,7 @@ namespace UnityEngine.TextCore.Text
         }
     }
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal class TextGenerator
     {
         // Character codes

@@ -22,10 +22,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="classNameCache"></param>
         public static void ReplaceAndCacheClassName(this VisualElement ve, string newClassName, ref string classNameCache)
         {
+            if (newClassName == classNameCache)
+                return;
             if (classNameCache != null)
                 ve.RemoveFromClassList(classNameCache);
             classNameCache = newClassName;
-            ve.AddToClassList(classNameCache);
+            if( classNameCache != null)
+                ve.AddToClassList(classNameCache);
         }
 
         public static void PreallocForMoreClasses(this VisualElement ve, int numNewClasses)

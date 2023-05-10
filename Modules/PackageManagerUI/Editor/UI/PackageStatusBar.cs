@@ -149,7 +149,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 errorMessage = k_OfflineErrorMessage;
             else if (refreshError != null)
             {
-                var seeDetailInConsole = (UIError.Attribute.IsDetailInConsole & refreshError.attribute) != 0;
+                var seeDetailInConsole = (UIError.Attribute.DetailInConsole & refreshError.attribute) != 0;
                 errorMessage = seeDetailInConsole
                     ? L10n.Tr("Refresh error, see Console window")
                     : L10n.Tr("Refresh error");

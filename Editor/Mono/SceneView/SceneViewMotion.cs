@@ -55,6 +55,11 @@ namespace UnityEditor
             get { return s_FlySpeed.value; }
         }
 
+        internal static bool isDragging
+        {
+            get { return s_Drag; }
+        }
+
         enum MotionState
         {
             kInactive,
@@ -92,7 +97,7 @@ namespace UnityEditor
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        class SceneViewViewport : IShortcutToolContext
+        internal class SceneViewViewport : IShortcutToolContext
         {
             public bool active => IsActive;
 
@@ -117,7 +122,8 @@ namespace UnityEditor
         class SceneViewViewport3D : IShortcutToolContext
         {
             public bool active => SceneViewViewport.IsActive
-                && ((!SceneView.lastActiveSceneView?.in2DMode ?? false) && (!SceneView.lastActiveSceneView?.isRotationLocked ?? false));
+                                  && ((!SceneView.lastActiveSceneView?.in2DMode ?? false)
+                                  && (!SceneView.lastActiveSceneView?.isRotationLocked ?? false));
         }
 
         [ClutchShortcut(k_TemporaryPanTool2D, typeof(SceneViewViewport2D), KeyCode.Mouse1)]
@@ -599,6 +605,10 @@ namespace UnityEditor
             }
             else
             {
+                // When in camera view mode, change the FoV of the selected camera instead.
+                if (view.viewpoint.hasActiveViewpoint)
+                    return;
+
                 float zoomDelta = Event.current.delta.y;
                 float targetSize;
 

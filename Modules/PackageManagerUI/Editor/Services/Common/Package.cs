@@ -40,10 +40,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var numWarnings = 0;
                 foreach (var error in GetAllErrorsInPackageAndVersions())
                 {
+                    // We don't count HiddenFromUI errors when calculating the package state because the state is tightly coupled to the UI.
+                    // The icon to display in the package list is directly mapped to the package state using a USS class name.
+                    // For that reason, we need to disregard HiddenFromUI errors to avoid showing the error or warning icons.
+                    if (error.HasAttribute(UIError.Attribute.HiddenFromUI))
+                        continue;
+
                     ++numErrors;
-                    if (error.HasAttribute(UIError.Attribute.IsWarning))
+                    if (error.HasAttribute(UIError.Attribute.Warning))
                         ++numWarnings;
-                    else if (!error.HasAttribute(UIError.Attribute.IsClearable))
+                    else if (!error.HasAttribute(UIError.Attribute.Clearable))
                         return PackageState.Error;
                 }
 

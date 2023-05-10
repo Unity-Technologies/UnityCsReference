@@ -146,13 +146,15 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        public virtual void OnBeforeSerialize()
+        public override void OnBeforeSerialize()
         {
+            base.OnBeforeSerialize();
             m_Version = SerializationVersion.Latest;
         }
 
-        public virtual void OnAfterDeserialize()
+        public override void OnAfterDeserialize()
         {
+            base.OnAfterDeserialize();
             GraphModel = null;
         }
 

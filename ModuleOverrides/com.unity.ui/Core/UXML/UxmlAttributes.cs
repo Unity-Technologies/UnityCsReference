@@ -27,15 +27,15 @@ namespace UnityEngine.UIElements
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_ExampleElement.cs"/>
     /// </example>
     /// <example>
-    /// The following UXMLl document uses the custom control:
+    /// The following UXML document uses the custom control:
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_ExampleElement.uxml"/>
     /// </example>
     /// <example>
-    /// When you create a custom control, the default name used in UXML and UI Builder for it is the type name of the element.
-    /// However, you can customize the name to make it easier to refer to the element.
-    /// __Note__: You still require to reference the classes' namespace in UXML.
-    /// To provide a custom name for an element, you can use the @@name@@ attribute in the UXML file.
-    /// For example, if you create the following custom button:
+    /// <para>When you create a custom control, the default name used in UXML and UI Builder is the element type name (C# class name).
+    /// However, you can customize the name to make it easier to refer to the element.</para>
+    /// <para>__Note__: You are still required to reference the classes' namespace in UXML.</para>
+    /// <para>To create a custom name for an element, provide a value to the @@name@@ property.
+    /// For example, if you create the following custom button:</para>
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_CustomButtonElement.cs"/>
     /// </example>
     /// <example>

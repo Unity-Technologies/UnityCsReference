@@ -22,6 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
         private BackgroundFetchHandler m_BackgroundFetchHandler;
+        private UnityConnectProxy m_UnityConnectProxy;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -35,6 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
+            m_UnityConnectProxy = container.Resolve<UnityConnectProxy>();
         }
 
         private UnlockFoldout m_UnlockFoldout;
@@ -109,11 +111,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpdateFoldoutGroup = new UpdateFoldoutGroup(m_Application, m_PackageDatabase, m_OperationDispatcher, m_PageManager);
             m_UpdateFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfInstallOrUninstallInProgress);
 
-            m_DownloadFoldoutGroup = new DownloadFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher);
+            m_DownloadFoldoutGroup = new DownloadFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnectProxy);
             m_DownloadFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfNoNetwork);
             m_DownloadFoldoutGroup.cancelButton.SetGlobalDisableConditions(disableIfCompiling);
 
-            m_DownloadUpdateFoldoutGroup = new DownloadUpdateFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher);
+            m_DownloadUpdateFoldoutGroup = new DownloadUpdateFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnectProxy);
             m_DownloadUpdateFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfNoNetwork);
             m_DownloadUpdateFoldoutGroup.cancelButton.SetGlobalDisableConditions(disableIfCompiling);
 

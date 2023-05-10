@@ -3,7 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using System.Linq;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.SceneManagement;
+using UnityEngine.Rendering;
+using System;
 
 namespace UnityEditor
 {
@@ -26,6 +29,14 @@ namespace UnityEditor
 
         public static void HandleFrustum(Camera c, int cameraEditorTargetIndex)
         {
+            bool ContainsHandleId(int targetId)
+            {
+                foreach (int id in s_FrustumHandleIds)
+                    if (id == targetId)
+                        return true;
+                return false;
+            }
+
             if (c.projectionMatrixMode == Camera.ProjectionMatrixMode.Explicit)
                 return;
             Color orgHandlesColor = Handles.color;
@@ -55,16 +66,15 @@ namespace UnityEditor
             // manage our own gui changed state, so we can use it for individual slider changes
             bool guiChanged = GUI.changed;
 
-
             Vector3 farMid = Vector3.Lerp(leftBottomFar, rightTopFar, 0.5f);
             if (s_MovingHandleId != 0)
             {
-                if (!s_FrustumHandleIds.Contains(GUIUtility.hotControl - cameraEditorTargetIndex))
+                if (!ContainsHandleId(GUIUtility.hotControl - cameraEditorTargetIndex))
                     s_MovingHandleId = GUIUtility.hotControl;
                 else
                     farMid = s_InitialFarMid;
             }
-            else if (s_FrustumHandleIds.Contains(GUIUtility.hotControl - cameraEditorTargetIndex))
+            else if (ContainsHandleId(GUIUtility.hotControl - cameraEditorTargetIndex))
             {
                 s_MovingHandleId = GUIUtility.hotControl;
                 s_InitialFarMid = farMid;
@@ -304,6 +314,189 @@ namespace UnityEditor
         {
             Vector3 midPoint = Vector3.Lerp(position1, position2, 0.5f);
             return Handles.Slider(controlID, midPoint, direction, HandleUtility.GetHandleSize(midPoint) * 0.03f, Handles.DotHandleCap, 0f);
+        }
+    }
+
+    internal static class CameraPreviewUtils
+    {
+        static Camera s_PreviewCamera;
+        static RenderTexture s_PreviewTexture;
+
+        internal struct PreviewSettings
+        {
+            public Vector2 size;
+            public ulong overrideSceneCullingMask;
+            public Scene scene;
+            public bool useHDR;
+
+            public float aspect => size.x / size.y;
+
+            internal PreviewSettings(Vector2 previewSize)
+            {
+                size = previewSize;
+                overrideSceneCullingMask = 0;
+                scene = default;
+                useHDR = false;
+            }
+        }
+
+        class SavedStateForCameraPreview : IDisposable
+        {
+            Camera m_Target;
+
+            public CameraType cameraType;
+            public ulong overrideSceneCullingMask;
+            public RenderTexture renderTarget;
+            public Scene scene;
+
+            public SavedStateForCameraPreview()
+            {
+                m_Target = null;
+                renderTarget = null;
+                overrideSceneCullingMask = 0;
+                cameraType = CameraType.Game;
+                scene = default;
+            }
+
+            public SavedStateForCameraPreview(Camera source)
+            {
+                m_Target = source;
+
+                renderTarget = source.targetTexture;
+                overrideSceneCullingMask = source.overrideSceneCullingMask;
+                cameraType = source.cameraType;
+                scene = source.scene;
+            }
+
+            public void Dispose()
+            {
+                m_Target.targetTexture = renderTarget;
+                m_Target.overrideSceneCullingMask = overrideSceneCullingMask;
+                m_Target.cameraType = cameraType;
+                m_Target.scene = scene;
+            }
+        }
+
+        static RenderTexture GetPreviewTexture(int width,  int height, bool hdr)
+        {
+            int antiAliasing = Mathf.Max(1, QualitySettings.antiAliasing);
+            if (s_PreviewTexture == null || s_PreviewTexture.width != width || s_PreviewTexture.height != height || s_PreviewTexture.antiAliasing != antiAliasing)
+            {
+                if (s_PreviewTexture != null)
+                    s_PreviewTexture.Release();
+
+                GraphicsFormat format = (hdr) ? SystemInfo.GetGraphicsFormat(DefaultFormat.HDR) : SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
+                s_PreviewTexture = new RenderTexture(width, height, 24, format);
+                s_PreviewTexture.antiAliasing = antiAliasing;
+            }
+
+            return s_PreviewTexture;
+        }
+
+        static Camera previewCamera
+        {
+            get
+            {
+                if (s_PreviewCamera == null)
+                {
+                    s_PreviewCamera = EditorUtility.CreateGameObjectWithHideFlags("Preview Camera",
+                        HideFlags.HideAndDontSave,
+                        typeof(Camera)).GetComponent<Camera>();
+
+                    s_PreviewCamera.enabled = false;
+                    s_PreviewCamera.cameraType = CameraType.Preview;
+                }
+                return s_PreviewCamera;
+            }
+        }
+
+        internal static RenderTexture GetPreview(Camera camera, PreviewSettings settings)
+        {
+            if (RenderPipeline.SupportsRenderRequest(camera, new RenderPipeline.StandardRequest()))
+                return RenderInternal(camera, settings);
+            return RenderPreviewWithCameraCopy(camera, settings);
+        }
+
+        internal static RenderTexture GetPreview(IViewpoint virtualCameraSource, PreviewSettings settings)
+        {
+            var sourceCamera = virtualCameraSource.TargetObject as Camera;
+            if (sourceCamera)
+                return GetPreview(sourceCamera, settings);
+
+            // Viewpoint represents a virtual camera.
+            ViewpointUtility.ApplyTransformData(virtualCameraSource, previewCamera.gameObject.transform);
+            ViewpointUtility.ApplyCameraLensData(virtualCameraSource as ICameraLensData, previewCamera);
+
+            return RenderInternal(previewCamera, settings);
+        }
+
+        static RenderTexture RenderPreviewWithCameraCopy(Camera sourceCamera, PreviewSettings settings)
+        {
+            previewCamera.CopyFrom(sourceCamera);
+
+            // Only for Legacy/Built-in Render Pipeline.
+            if (GraphicsSettings.currentRenderPipeline == null)
+            {
+                // Make sure to sync any Skybox component on the preview camera
+                var dstSkybox = previewCamera.GetComponent<Skybox>();
+                if (dstSkybox == null)
+                    dstSkybox = previewCamera.gameObject.AddComponent<Skybox>();
+
+                var srcSkybox = sourceCamera.GetComponent<Skybox>();
+                if (srcSkybox && srcSkybox.enabled)
+                {
+                    dstSkybox.enabled = true;
+                    dstSkybox.material = srcSkybox.material;
+                }
+                else
+                {
+                    dstSkybox.enabled = false;
+                }
+            }
+
+            Handles.EmitGUIGeometryForCamera(sourceCamera, previewCamera);
+
+            return RenderInternal(previewCamera, settings);
+        }
+
+        static RenderTexture RenderInternal(Camera cameraToRender, PreviewSettings settings)
+        {
+            var rt = GetPreviewTexture((int)settings.size.x, (int)settings.size.y, settings.useHDR);
+
+            // When sensor size is reduced, the previous frame is still visible behind so we need to clear the texture before rendering.
+            if (cameraToRender.usePhysicalProperties)
+            {
+                RenderTexture oldRt = RenderTexture.active;
+                RenderTexture.active = rt;
+                GL.Clear(false, true, Color.clear);
+                RenderTexture.active = oldRt;
+            }
+
+            using (new SavedStateForCameraPreview(cameraToRender))
+            {
+                // make sure the preview camera is rendering the same stage as the SceneView is
+                if (settings.overrideSceneCullingMask != 0)
+                    cameraToRender.overrideSceneCullingMask = settings.overrideSceneCullingMask;
+                else
+                    cameraToRender.scene = settings.scene;
+
+                RenderPipeline.StandardRequest request = new RenderPipeline.StandardRequest()
+                {
+                    destination = rt,
+                };
+
+                // Use RenderRequest API when the active SRP supports it for implementation-agnostic rendering.
+                if (RenderPipeline.SupportsRenderRequest(cameraToRender, request))
+                    cameraToRender.SubmitRenderRequest<RenderPipeline.StandardRequest>(request);
+                else
+                {
+                    // Built-in RP and SRPs that don't support the RenderRequest API will
+                    // render the old way.
+                    previewCamera.targetTexture = rt;
+                    previewCamera.Render();
+                }
+            }
+            return rt;
         }
     }
 }

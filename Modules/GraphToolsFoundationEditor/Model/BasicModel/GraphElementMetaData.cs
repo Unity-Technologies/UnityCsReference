@@ -8,10 +8,15 @@ using UnityEngine;
 namespace Unity.GraphToolsFoundation.Editor
 {
     [Serializable]
-    class GraphElementMetaData
+    class GraphElementMetaData : ISerializationCallbackReceiver
     {
-        [SerializeField]
+        [SerializeField, Obsolete]
+#pragma warning disable CS0618
         SerializableGUID m_Guid;
+#pragma warning restore CS0618
+
+        [SerializeField]
+        Hash128 m_HashGuid;
 
         [SerializeField]
         ManagedMissingTypeModelCategory m_Category;
@@ -32,10 +37,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The GUID of the graph element.
         /// </summary>
-        public SerializableGUID Guid
+        public Hash128 Guid
         {
-            get => m_Guid;
-            set => m_Guid = value;
+            get => m_HashGuid;
+            set => m_HashGuid = value;
         }
 
         /// <summary>
@@ -64,6 +69,22 @@ namespace Unity.GraphToolsFoundation.Editor
             Guid = model.Guid;
             Index = index;
             Category = PlaceholderModelHelper.ModelToMissingTypeCategory_Internal(model);
+        }
+
+        /// <inheritdoc />
+        public virtual void OnBeforeSerialize()
+        {
+#pragma warning disable CS0612
+            m_Guid = m_HashGuid;
+#pragma warning restore CS0612
+        }
+
+        /// <inheritdoc />
+        public virtual void OnAfterDeserialize()
+        {
+#pragma warning disable CS0612
+            m_HashGuid = m_Guid;
+#pragma warning restore CS0612
         }
     }
 }

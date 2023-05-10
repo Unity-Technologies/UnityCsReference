@@ -66,11 +66,28 @@ namespace UnityEngine
         public extern Vector2 renderingDisplaySize { get; }
         public extern StandaloneRenderResize updateRectTransformForStandalone { get; set; }
 
-        internal static Action<int> externBeginRenderOverlays { get; set; }
-        internal static Action<int, int> externRenderOverlaysBefore { get; set; }
-        internal static Action<int> externEndRenderOverlays { get; set; }
+        internal static Action<int> externBeginRenderOverlays
+        {
+            get;
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            set;
+        }
+        internal static Action<int, int> externRenderOverlaysBefore
+        {
+            get;
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            set;
+        }
+        internal static Action<int> externEndRenderOverlays
+        {
+            get;
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            set;
+        }
 
-        [FreeFunction("UI::CanvasManager::SetExternalCanvasEnabled")] internal static extern void SetExternalCanvasEnabled(bool enabled);
+        [FreeFunction("UI::CanvasManager::SetExternalCanvasEnabled")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern void SetExternalCanvasEnabled(bool enabled);
 
         [NativeProperty("Camera", false, TargetType.Function)] public extern Camera worldCamera { get; set; }
         [NativeProperty("SortingBucketNormalizedSize", false, TargetType.Function)] public extern float normalizedSortingGridSize { get; set; }

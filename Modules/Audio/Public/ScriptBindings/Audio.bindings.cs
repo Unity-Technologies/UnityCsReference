@@ -17,7 +17,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 namespace UnityEngine
 {
     [NativeHeader("Modules/Audio/Public/AudioResource.h")]
-    public abstract class AudioResource : Object 
+    public abstract class AudioResource : Object
     {
         protected internal AudioResource() {}
     }
@@ -1000,6 +1000,8 @@ namespace UnityEngine
 
         extern public bool GetAmbisonicDecoderFloat(int index, out float value);
         extern public bool SetAmbisonicDecoderFloat(int index, float value);
+
+        extern internal float GetAudioRandomContainerRuntimeMeterValue();
     }
 
     // Reverb Zones are used when you want to gradually change from a point

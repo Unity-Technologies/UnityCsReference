@@ -22,11 +22,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElement m_ThumbnailsContainer;
 
-        private AssetStoreCache m_AssetStoreCache;
-
         private List<Texture2D> m_ImageTextures;
 
-        public PackageDetailsImagesTab(AssetStoreCache assetStoreCache)
+        protected override bool requiresUserSignIn => true;
+
+        private readonly AssetStoreCache m_AssetStoreCache;
+        public PackageDetailsImagesTab(UnityConnectProxy unityConnect, AssetStoreCache assetStoreCache) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Images");
@@ -34,18 +35,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_ImageTextures = new List<Texture2D>();
 
-            m_MainImage = new Image() { name = "mainImage", classList = { "image" } };
-            m_MainImage.scaleMode = ScaleMode.ScaleToFit;
+            m_MainImage = new Image
+            {
+                name = "mainImage", classList = { "image" },
+                scaleMode = ScaleMode.ScaleToFit
+            };
 
             // Wrap main image in two layers of containers to lock the aspect ratio
-            var mainImageOuterContainer = new VisualElement() { name = "mainImageOuterContainer" };
-            m_MainImageInnerContainer = new VisualElement() { name = "mainImageInnerContainer" };
+            var mainImageOuterContainer = new VisualElement { name = "mainImageOuterContainer" };
+            m_MainImageInnerContainer = new VisualElement { name = "mainImageInnerContainer" };
             m_MainImageInnerContainer.Add(m_MainImage);
             mainImageOuterContainer.Add(m_MainImageInnerContainer);
-            Add(mainImageOuterContainer);
+            m_ContentContainer.Add(mainImageOuterContainer);
 
-            m_ThumbnailsContainer = new VisualElement() { name = "thumbnailsContainer" };
-            Add(m_ThumbnailsContainer);
+            m_ThumbnailsContainer = new VisualElement { name = "thumbnailsContainer" };
+            m_ContentContainer.Add(m_ThumbnailsContainer);
 
             m_Version = null;
         }
@@ -55,7 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version?.package?.product?.images?.Any() ?? false;
         }
 
-        public override void Refresh(IPackageVersion version)
+        protected override void RefreshContent(IPackageVersion version)
         {
             m_Version = version;
             var package = version.package;

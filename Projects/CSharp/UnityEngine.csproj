@@ -1760,9 +1760,6 @@
     <Compile Include="..\..\Modules\CommandStateObserver\States\IChangeset.cs">
       <Link>Modules\CommandStateObserver\States\IChangeset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\CommandStateObserver\States\IChangesetManager.cs">
-      <Link>Modules\CommandStateObserver\States\IChangesetManager.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\CommandStateObserver\States\IState.cs">
       <Link>Modules\CommandStateObserver\States\IState.cs</Link>
     </Compile>
@@ -1859,6 +1856,9 @@
     <Compile Include="..\..\Modules\GraphToolsFoundation\Extensions\StringExtensions_Internal.cs">
       <Link>Modules\GraphToolsFoundation\Extensions\StringExtensions_Internal.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundation\Hash128Extensions.cs">
+      <Link>Modules\GraphToolsFoundation\Hash128Extensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundation\SerializableGUID.cs">
       <Link>Modules\GraphToolsFoundation\SerializableGUID.cs</Link>
     </Compile>
@@ -1882,6 +1882,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundation\TypeSystem\TypeMetadataResolver.cs">
       <Link>Modules\GraphToolsFoundation\TypeSystem\TypeMetadataResolver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\CollectionExtensions.cs">
+      <Link>Modules\GraphToolsFoundation\Utility\CollectionExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\Enumeration.cs">
       <Link>Modules\GraphToolsFoundation\Utility\Enumeration.cs</Link>
@@ -1909,6 +1912,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\MathExpressionParsing\Variable.cs">
       <Link>Modules\GraphToolsFoundation\Utility\MathExpressionParsing\Variable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphToolsFoundation\Utility\StringUtilsExtensions.cs">
+      <Link>Modules\GraphToolsFoundation\Utility\StringUtilsExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Grid\Managed\Grid.cs">
       <Link>Modules\Grid\Managed\Grid.cs</Link>
@@ -2038,6 +2044,60 @@
     </Compile>
     <Compile Include="..\..\Modules\ImageConversion\ScriptBindings\ImageConversion.bindings.cs">
       <Link>Modules\ImageConversion\ScriptBindings\ImageConversion.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\AssemblyInfo.cs">
+      <Link>Modules\InputForUI\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Events\CommandEvent.cs">
+      <Link>Modules\InputForUI\Events\CommandEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Events\Event.cs">
+      <Link>Modules\InputForUI\Events\Event.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Events\EventModifiers.cs">
+      <Link>Modules\InputForUI\Events\EventModifiers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Events\EventSource.cs">
+      <Link>Modules\InputForUI\Events\EventSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Events\IEventProperties.cs">
+      <Link>Modules\InputForUI\Events\IEventProperties.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Events\IMECompositionEvent.cs">
+      <Link>Modules\InputForUI\Events\IMECompositionEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Events\KeyEvent.cs">
+      <Link>Modules\InputForUI\Events\KeyEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Events\NavigationEvent.cs">
+      <Link>Modules\InputForUI\Events\NavigationEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Events\PointerEvent.cs">
+      <Link>Modules\InputForUI\Events\PointerEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Events\TextInputEvent.cs">
+      <Link>Modules\InputForUI\Events\TextInputEvent.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Provider\EventProvider.cs">
+      <Link>Modules\InputForUI\Provider\EventProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Provider\IEventProviderImpl.cs">
+      <Link>Modules\InputForUI\Provider\IEventProviderImpl.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Provider\InputEventPartialProvider.cs">
+      <Link>Modules\InputForUI\Provider\InputEventPartialProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Provider\InputManagerProvider.cs">
+      <Link>Modules\InputForUI\Provider\InputManagerProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Provider\NavigationEventRepeatHelper.cs">
+      <Link>Modules\InputForUI\Provider\NavigationEventRepeatHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Provider\PointerState.cs">
+      <Link>Modules\InputForUI\Provider\PointerState.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InputForUI\Sanitizer\EventSanitizer.cs">
+      <Link>Modules\InputForUI\Sanitizer\EventSanitizer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\InputLegacy\AndroidInput.bindings.cs">
       <Link>Modules\InputLegacy\AndroidInput.bindings.cs</Link>
@@ -3215,8 +3275,8 @@
     <Compile Include="..\..\Runtime\Export\Graphics\HDROutputFaking.bindings.cs">
       <Link>Runtime\Export\Graphics\HDROutputFaking.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Graphics\ISRPGraphicsSetting.cs">
-      <Link>Runtime\Export\Graphics\ISRPGraphicsSetting.cs</Link>
+    <Compile Include="..\..\Runtime\Export\Graphics\IRenderPipelineGraphicsSettings.cs">
+      <Link>Runtime\Export\Graphics\IRenderPipelineGraphicsSettings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\LOD.bindings.cs">
       <Link>Runtime\Export\Graphics\LOD.bindings.cs</Link>
@@ -3524,8 +3584,11 @@
     <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineAsset.cs">
       <Link>Runtime\Export\RenderPipeline\RenderPipelineAsset.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineDefaultSettings.cs">
-      <Link>Runtime\Export\RenderPipeline\RenderPipelineDefaultSettings.cs</Link>
+    <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineGlobalSettings.cs">
+      <Link>Runtime\Export\RenderPipeline\RenderPipelineGlobalSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineGraphicsSettingsContainer.cs">
+      <Link>Runtime\Export\RenderPipeline\RenderPipelineGraphicsSettingsContainer.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineManager.cs">
       <Link>Runtime\Export\RenderPipeline\RenderPipelineManager.cs</Link>
@@ -3544,9 +3607,6 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\RendererList.bindings.cs">
       <Link>Runtime\Export\RenderPipeline\RendererList.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Export\RenderPipeline\SRPGraphicsSettingsContainer.cs">
-      <Link>Runtime\Export\RenderPipeline\SRPGraphicsSettingsContainer.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\ScopedRenderPass.cs">
       <Link>Runtime\Export\RenderPipeline\ScopedRenderPass.cs</Link>

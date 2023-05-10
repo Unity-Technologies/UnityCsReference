@@ -4,10 +4,13 @@
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using System;
+using UnityEngine.Bindings;
+
 namespace UnityEngine
 {
     public partial class AsyncOperation : YieldInstruction
     {
+        [VisibleToOtherModules("UnityEngine.AssetBundleModule")]
         internal IntPtr m_Ptr;
 
         ~AsyncOperation()

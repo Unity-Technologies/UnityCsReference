@@ -145,7 +145,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return placematsOnBoundingRect;
         }
 
-        static readonly List<ModelView> k_AdjustPlacematBoundingRectAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_AdjustPlacematBoundingRectAllUIs = new();
         void AdjustPlacematBoundingRect(ref Rect boundingRect, ref List<Model> elementsOnBoundingRect, List<Placemat> placematsOnBoundingRect)
         {
             m_GraphView.GraphModel.GraphElementModels

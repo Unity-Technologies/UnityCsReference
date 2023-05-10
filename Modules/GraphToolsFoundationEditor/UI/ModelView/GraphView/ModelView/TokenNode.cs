@@ -23,7 +23,7 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string constantEditorPartName = "constant-editor";
         public static readonly string inputPortContainerPartName = "inputs";
         public static readonly string outputPortContainerPartName = "outputs";
-        
+
         /// The name of the LOD cache part
         public static readonly string cachePartName = "cache";
 
@@ -33,7 +33,7 @@ namespace Unity.GraphToolsFoundation.Editor
         protected override void BuildPartList()
         {
             PartList.AppendPart(SinglePortContainerPart.Create(inputPortContainerPartName, ExtractInputPortModel(Model), this, ussClassName));
-            PartList.AppendPart(IconTitleProgressPart.Create(titleIconContainerPartName, Model, this, ussClassName, true));
+            PartList.AppendPart(NodeTitlePart.Create(titleIconContainerPartName, NodeModel, this, ussClassName, EditableTitlePart.Options.UseEllipsis | EditableTitlePart.Options.SetWidth));
             PartList.AppendPart(ConstantNodeEditorPart.Create(constantEditorPartName, Model, this, ussClassName));
             PartList.AppendPart(SinglePortContainerPart.Create(outputPortContainerPartName, ExtractOutputPortModel(Model), this, ussClassName));
             PartList.AppendPart(TokenLodCachePart.Create(cachePartName, Model, this, tokenModifierUssClassName));

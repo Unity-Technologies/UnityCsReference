@@ -54,10 +54,20 @@ namespace Unity.GraphToolsFoundation.Editor
                 if (observation.UpdateType == UpdateType.None)
                     return;
 
-                changeset = m_AutoPlacementState.GetAggregatedChangeset(observation.LastObservedVersion);
+                if (observation.UpdateType == UpdateType.Partial)
+                {
+                    changeset = m_AutoPlacementState.GetAggregatedChangeset(observation.LastObservedVersion);
 
-                models = changeset.ModelsToAutoAlign.Select(graphModel.GetModel).Where(m => m != null).ToList();
-                elementsToReposition = changeset.ModelsToRepositionAtCreation.ToList();
+                    models = changeset.ModelsToAutoAlign.Select(graphModel.GetModel).Where(m => m != null).ToList();
+                    elementsToReposition = changeset.ModelsToRepositionAtCreation.ToList();
+                }
+                else
+                {
+                    changeset = null;
+                    models = graphModel.NodeModels.ToList<GraphElementModel>();
+                    elementsToReposition = new List<AutoPlacementStateComponent.Changeset.ModelToReposition>();
+                }
+
                 var elementsToRepositionModels = elementsToReposition.SelectMany(mtr => new[] { graphModel.GetModel(mtr.Model), graphModel.GetModel(mtr.WireModel) });
 
                 // If any view is missing, then it will be created and layed out during this frame. So, wait until all relevant views are available.
@@ -70,7 +80,7 @@ namespace Unity.GraphToolsFoundation.Editor
             using (var graphUpdater = m_GraphModelState.UpdateScope)
             using (var changeScope = graphModel.ChangeDescriptionScope)
             {
-                if (models.Any())
+                if (models.Count > 0)
                 {
                     m_GraphView.PositionDependenciesManager_Internal.AlignNodes(true, models);
                 }
@@ -78,12 +88,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 // Nodes created from wires need to recompute their position after their creation to make sure that the
                 // last hovered position corresponds to the connected port or, in the case of an incompatible connection,
                 // to the nodes' middle height or width (depending on the orientation).
-                if (elementsToReposition.Any())
+                if (elementsToReposition.Count > 0)
                 {
                     RepositionModelsAtCreation(elementsToReposition, graphModel, graphUpdater);
                 }
 
-                if (changeset.ModelsToHideDuringAutoPlacement.Any())
+                if (changeset != null && changeset.ModelsToHideDuringAutoPlacement.Count > 0)
                 {
                     SetHiddenModelsToVisible(changeset.ModelsToHideDuringAutoPlacement);
                 }
@@ -149,7 +159,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        void SetHiddenModelsToVisible(IEnumerable<SerializableGUID> hiddenModels)
+        void SetHiddenModelsToVisible(IEnumerable<Hash128> hiddenModels)
         {
             foreach (var hiddenModel in hiddenModels)
             {

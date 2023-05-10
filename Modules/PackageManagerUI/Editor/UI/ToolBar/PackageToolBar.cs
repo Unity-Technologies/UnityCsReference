@@ -69,7 +69,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private ProgressBar m_DownloadProgress;
 
         private VisualElement m_BuiltInActions;
-        public VisualElement extensions { get; private set; }
+        public VisualElement extensions { get; }
 
         public PackageToolbar()
         {
@@ -78,7 +78,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_MainContainer = new VisualElement { name = "toolbarMainContainer" };
             Add(m_MainContainer);
 
-            m_ErrorState = new PackageToolBarError() { name = "toolbarErrorState" };
+            m_ErrorState = new PackageToolBarError { name = "toolbarErrorState" };
             m_MainContainer.Add(m_ErrorState);
 
             var leftItems = new VisualElement();
@@ -113,6 +113,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UnlockButton = new PackageUnlockButton(m_PageManager);
             m_UnlockButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_UnlockButton.element);
+
+            m_SignInButton = new PackageSignInButton(m_UnityConnectProxy);
+            m_SignInButton.SetGlobalDisableConditions(m_DisableIfNoNetwork);
+            m_SignInButton.onAction += RefreshBuiltInButtons;
+            m_BuiltInActions.Add(m_SignInButton.element);
 
             m_AddButton = new PackageAddButton(m_Application, m_PackageDatabase, m_OperationDispatcher);
             m_AddButton.SetGlobalDisableConditions(m_DisableIfInstallOrUninstallInProgress, m_DisableIfCompiling);
@@ -155,30 +160,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_RemoveImportedButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_RemoveImportedButton.element);
 
-            m_RedownloadButton = new PackageRedownloadButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher);
+            m_RedownloadButton = new PackageRedownloadButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnectProxy);
             m_RedownloadButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
             m_RedownloadButton.onAction += RefreshBuiltInButtons;
             m_BuiltInActions.Add(m_RedownloadButton.element);
 
-            m_DownloadButton = new PackageDownloadButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher);
+            m_DownloadButton = new PackageDownloadButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnectProxy);
             m_DownloadButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
             m_DownloadButton.onAction += Refresh;
             m_BuiltInActions.Add(m_DownloadButton.element);
 
-            m_DownloadUpdateButton = new PackageDownloadUpdateButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher);
+            m_DownloadUpdateButton = new PackageDownloadUpdateButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnectProxy);
             m_DownloadUpdateButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
             m_DownloadUpdateButton.onAction += Refresh;
             m_BuiltInActions.Add(m_DownloadUpdateButton.element);
 
-            m_DowngradeButton = new PackageDowngradeButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher);
+            m_DowngradeButton = new PackageDowngradeButton(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnectProxy);
             m_DowngradeButton.SetGlobalDisableConditions(m_DisableIfNoNetwork, m_DisableIfCompiling);
             m_DowngradeButton.onAction += Refresh;
             m_BuiltInActions.Add(m_DowngradeButton.element);
-
-            m_SignInButton = new PackageSignInButton(m_UnityConnectProxy);
-            m_SignInButton.SetGlobalDisableConditions(m_DisableIfNoNetwork);
-            m_SignInButton.onAction += RefreshBuiltInButtons;
-            m_BuiltInActions.Add(m_SignInButton.element);
 
             // Since pause, resume, cancel buttons are only used to control the download progress, we want to put them in the progress container instead
             m_ResumeButton = new PackageResumeDownloadButton(m_AssetStoreDownloadManager, m_OperationDispatcher, true);
@@ -235,7 +235,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool RefreshProgressContainer(IOperation operation = null)
         {
             operation ??= m_AssetStoreDownloadManager.GetDownloadOperation(m_Version?.package?.product?.id);
-            var progressVisible = operation != null && m_Version?.package.uniqueId == operation.packageUniqueId && m_DownloadProgress.UpdateProgress(operation);
+            var progressVisible = operation != null && m_Version?.package?.uniqueId == operation.packageUniqueId && m_DownloadProgress.UpdateProgress(operation);
             UIUtils.SetElementDisplay(m_ProgressContainer, progressVisible);
             if (progressVisible)
             {

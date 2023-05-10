@@ -158,7 +158,7 @@ namespace Unity.GraphToolsFoundation.Editor
             ComputeSpacingPositions(m_HorizontalReferenceRects, sourceRect);
         }
 
-        static readonly List<ModelView> k_GetRectsToConsiderInViewAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_GetRectsToConsiderInViewAllUIs = new();
         void GetRectsToConsiderInView(GraphElement selectedElement)
         {
             var graphView = selectedElement.GraphView;

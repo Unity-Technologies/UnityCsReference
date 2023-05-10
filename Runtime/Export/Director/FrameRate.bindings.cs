@@ -13,6 +13,7 @@ namespace UnityEngine.Playables
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode("FrameRate")]
     [NativeHeader("Runtime/Director/Core/FrameRate.h")]
+    [VisibleToOtherModules("UnityEngine.DirectorModule")]
     internal struct FrameRate : IEquatable<FrameRate>
     {
         [Ignore] public static readonly FrameRate k_24Fps = new FrameRate(24U, false);

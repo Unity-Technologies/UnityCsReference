@@ -163,7 +163,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnError(UIError error)
         {
-            if (logErrorInConsole && !error.HasAttribute(UIError.Attribute.IsDetailInConsole))
+            if (logErrorInConsole && !error.HasAttribute(UIError.Attribute.DetailInConsole))
             {
                 var consoleErrorMessage = operationErrorMessage ?? string.Empty;
                 if (error.operationErrorCode >= 500 && error.operationErrorCode < 600)
@@ -175,7 +175,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!string.IsNullOrEmpty(error.message))
                     consoleErrorMessage += !string.IsNullOrEmpty(consoleErrorMessage) ? $"\n{error.message}" : error.message;
                 Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] {0}"), consoleErrorMessage));
-                error.attribute |= UIError.Attribute.IsDetailInConsole;
+                error.attribute |= UIError.Attribute.DetailInConsole;
             }
             onOperationError?.Invoke(this, error);
 

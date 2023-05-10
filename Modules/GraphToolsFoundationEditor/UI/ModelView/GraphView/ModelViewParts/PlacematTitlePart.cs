@@ -24,11 +24,11 @@ class PlacematTitlePart : EditableTitlePart
     /// <param name="parentClassName">The class name of the parent.</param>
     /// <param name="multiline">Whether the text should be displayed on multiple lines.</param>
     /// <returns>A new instance of <see cref="EditableTitlePart"/>.</returns>
-    public new static PlacematTitlePart Create(string name, Model model, ModelView ownerElement, string parentClassName, bool multiline = false, bool useEllipsis = false, bool setWidth = true)
+    public new static PlacematTitlePart Create(string name, Model model, ModelView ownerElement, string parentClassName, int options = Options.SetWidth)
     {
         if (model is PlacematModel)
         {
-            return new PlacematTitlePart(name, model, ownerElement, parentClassName, multiline, useEllipsis, setWidth);
+            return new PlacematTitlePart(name, model, ownerElement, parentClassName, options);
         }
 
         return null;
@@ -42,13 +42,13 @@ class PlacematTitlePart : EditableTitlePart
     /// <param name="ownerElement">The owner of the part.</param>
     /// <param name="parentClassName">The class name of the parent.</param>
     /// <param name="multiline">Whether the text should be displayed on multiple lines.</param>
-    protected PlacematTitlePart(string name, Model model, ModelView ownerElement, string parentClassName, bool multiline = false, bool useEllipsis = false, bool setWidth = true)
-        : base(name, model, ownerElement, parentClassName, multiline, useEllipsis, setWidth)
+    protected PlacematTitlePart(string name, Model model, ModelView ownerElement, string parentClassName, int options)
+        : base(name, model, ownerElement, parentClassName, options)
     {
     }
 
-    static readonly string s_PlatformPath = (Application.platform == RuntimePlatform.WindowsEditor) ? "Windows/" : "macOS/";
-    static readonly Cursor s_MoveTitle = new Cursor{texture = EditorGUIUtility.Load("Cursors/" + s_PlatformPath + "Grid.MoveTool.png") as Texture2D,
+    static readonly string k_PlatformPath = (Application.platform == RuntimePlatform.WindowsEditor) ? "Windows/" : "macOS/";
+    static readonly Cursor k_MoveTitle = new Cursor{texture = EditorGUIUtility.Load("Cursors/" + k_PlatformPath + "Grid.MoveTool.png") as Texture2D,
         hotspot = new Vector2(7, 6), defaultCursorId = (int)MouseCursor.CustomCursor};
 
     public static readonly string leftAlignClassName = ussClassName.WithUssModifier("left-align");
@@ -60,7 +60,7 @@ class PlacematTitlePart : EditableTitlePart
     {
         base.BuildPartUI(container);
 
-        TitleContainer.Q<Label>().style.cursor = TitleContainer.style.cursor = s_MoveTitle;
+        TitleContainer.Q<Label>().style.cursor = TitleContainer.style.cursor = k_MoveTitle;
     }
 
     /// <inheritdoc />

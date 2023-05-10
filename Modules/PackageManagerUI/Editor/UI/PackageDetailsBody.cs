@@ -23,6 +23,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreCache m_AssetStoreCache;
         private PageManager m_PageManager;
         private UpmCache m_UpmCache;
+        private UnityConnectProxy m_UnityConnect;
 
         private PackageDetailsTabView m_TabView;
 
@@ -41,6 +42,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_PageManager = container.Resolve<PageManager>();
             m_UpmCache = container.Resolve<UpmCache>();
+            m_UnityConnect = container.Resolve<UnityConnectProxy>();
         }
 
         private IPackageVersion m_Version;
@@ -63,15 +65,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void AddTabs()
         {
             // The following list of tabs are added in the order we want them to be shown to the users.
-            m_TabView.AddTab(new PackageDetailsDescriptionTab(m_ResourceLoader, m_PackageManagerPrefs));
-            m_TabView.AddTab(new PackageDetailsOverviewTab(m_ResourceLoader));
-            m_TabView.AddTab(new PackageDetailsReleasesTab());
-            m_TabView.AddTab(new PackageDetailsImportedAssetsTab(m_IOProxy, m_PackageManagerPrefs));
-            m_TabView.AddTab(new PackageDetailsVersionsTab(m_ResourceLoader, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_SettingsProxy, m_UpmCache, m_IOProxy));
-            m_TabView.AddTab(new PackageDetailsDependenciesTab(m_ResourceLoader, m_PackageDatabase));
-            m_TabView.AddTab(new FeatureDependenciesTab(m_ResourceLoader, m_PackageDatabase, m_PackageManagerPrefs, m_SettingsProxy, m_Application));
-            m_TabView.AddTab(new PackageDetailsSamplesTab(m_ResourceLoader, m_PackageDatabase, m_Selection, m_AssetDatabase, m_Application, m_IOProxy));
-            m_TabView.AddTab(new PackageDetailsImagesTab(m_AssetStoreCache));
+            m_TabView.AddTab(new PackageDetailsDescriptionTab(m_UnityConnect, m_ResourceLoader, m_PackageManagerPrefs));
+            m_TabView.AddTab(new PackageDetailsOverviewTab(m_UnityConnect, m_ResourceLoader));
+            m_TabView.AddTab(new PackageDetailsReleasesTab(m_UnityConnect));
+            m_TabView.AddTab(new PackageDetailsImportedAssetsTab(m_UnityConnect, m_IOProxy, m_PackageManagerPrefs));
+            m_TabView.AddTab(new PackageDetailsVersionsTab(m_UnityConnect, m_ResourceLoader, m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager, m_SettingsProxy, m_UpmCache, m_IOProxy));
+            m_TabView.AddTab(new PackageDetailsDependenciesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase));
+            m_TabView.AddTab(new FeatureDependenciesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase, m_PackageManagerPrefs, m_Application));
+            m_TabView.AddTab(new PackageDetailsSamplesTab(m_UnityConnect, m_ResourceLoader, m_PackageDatabase, m_Selection, m_AssetDatabase, m_Application, m_IOProxy));
+            m_TabView.AddTab(new PackageDetailsImagesTab(m_UnityConnect, m_AssetStoreCache));
         }
 
         public void OnEnable()

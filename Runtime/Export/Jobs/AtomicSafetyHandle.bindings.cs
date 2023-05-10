@@ -271,6 +271,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             handle.staticSafetyId = staticSafetyId;
         }
 
+        [VisibleToOtherModules("UnityEngine.AIModule")]
         internal static void CreateHandle(out AtomicSafetyHandle safety, Allocator allocator)
         {
             safety = (allocator == Allocator.Temp) ? GetTempMemoryHandle() : Create();
@@ -284,6 +285,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
         }
 
+        [VisibleToOtherModules("UnityEngine.AIModule")]
         internal static void DisposeHandle(ref AtomicSafetyHandle safety)
         {
             CheckDeallocateAndThrow(safety);

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor.Experimental;
 using UnityEngine;
@@ -17,8 +18,10 @@ namespace UnityEditor.UIElements
         internal static readonly string s_DefaultCommonLightStyleSheetPath =
             Path.Combine(UIElementsPackageUtility.EditorResourcesBasePath, "StyleSheets/Generated/DefaultCommonLight.uss.asset");
 
-        private static StyleSheet s_DefaultCommonDarkStyleSheet;
-        private static StyleSheet s_DefaultCommonLightStyleSheet;
+        static StyleSheet s_DefaultCommonDarkStyleSheet;
+        static StyleSheet s_DefaultCommonLightStyleSheet;
+
+        public const string hiddenClassName = "unity-hidden";
 
         internal static string GetStyleSheetPathForFont(string sheetPath, string fontName)
         {
@@ -118,7 +121,7 @@ namespace UnityEditor.UIElements
             return (int)MouseCursor.Arrow;
         }
 
-        private static readonly string k_DefaultStylesAppliedPropertyName = "DefaultStylesApplied";
+        static readonly string k_DefaultStylesAppliedPropertyName = "DefaultStylesApplied";
         internal static void AddDefaultEditorStyleSheets(VisualElement ve)
         {
             if (ve.styleSheets.count == 0 || ve.GetProperty(k_DefaultStylesAppliedPropertyName) == null)
@@ -153,6 +156,120 @@ namespace UnityEditor.UIElements
                     e = e.parent;
                 }
             }
+        }
+
+        internal static Action CreateDynamicVisibilityCallback(VisualElement element, Func<bool> visibilityCheck)
+        {
+            var messageCheck = () => element.EnableInClassList(hiddenClassName, !visibilityCheck.Invoke());
+            messageCheck?.Invoke();
+            return messageCheck;
+        }
+
+        internal static Action BindSerializedProperty<T>(BaseField<T> field, SerializedProperty property, Func<SerializedProperty, T> getter, Action<T, SerializedProperty> setter)
+            where T : struct
+        {
+            BindingsStyleHelpers.RegisterRightClickMenu(field, property);
+            field.TrackPropertyValue(property);
+            field.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
+
+            field.RegisterValueChangedCallback(e =>
+            {
+                setter.Invoke(e.newValue, property);
+            });
+
+            var updateCallback = () =>
+            {
+                field.value = getter.Invoke(property);
+                field.schedule.Execute(() => BindingsStyleHelpers.UpdateElementStyle(field, property));
+            };
+            updateCallback?.Invoke();
+            return updateCallback;
+        }
+
+        internal static Action BindSerializedProperty(DropdownField dropdown, SerializedProperty property, GUIContent[] stringValues, int[] values)
+        {
+            var boolProperty = property.type == "bool";
+
+            dropdown.choices = new List<string>(stringValues.Length);
+
+            foreach (var val in stringValues)
+                dropdown.choices.Add(val.text);
+
+            dropdown.TrackPropertyValue(property);
+
+            return BindSerializedProperty(dropdown, property, p =>
+                {
+                    var value = boolProperty ? (property.boolValue ? 1 : 0) : property.intValue;
+                    return Array.IndexOf(values, value);
+                },
+                (i, p) =>
+                {
+                    if (boolProperty)
+                        property.boolValue = i == 1;
+                    else
+                        property.intValue = values[i];
+
+                    property.serializedObject.ApplyModifiedProperties();
+                    dropdown.schedule.Execute(() => BindingsStyleHelpers.UpdateElementStyle(dropdown, property));
+                });
+        }
+
+        internal static Action BindSerializedProperty(DropdownField dropdown, SerializedProperty property, Func<SerializedProperty, int> getter, Action<int, SerializedProperty> setter)
+        {
+            BindingsStyleHelpers.RegisterRightClickMenu(dropdown, property);
+            dropdown.TrackPropertyValue(property);
+            dropdown.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
+
+            dropdown.RegisterValueChangedCallback(e =>
+            {
+                setter.Invoke(dropdown.index, property);
+            });
+
+            var updateCallback = () =>
+            {
+                dropdown.index = getter.Invoke(property);
+                dropdown.schedule.Execute(() => BindingsStyleHelpers.UpdateElementStyle(dropdown, property));
+            };
+            updateCallback?.Invoke();
+            return updateCallback;
+        }
+
+        internal static Action BindSerializedProperty<T>(EnumField enumField, SerializedProperty property, Action<T> onValueChange = null)
+            where T : struct, Enum, IConvertible
+        {
+            var boolProperty = property.type == "bool";
+
+            BindingsStyleHelpers.RegisterRightClickMenu(enumField, property);
+            enumField.AddToClassList(BaseField<bool>.alignedFieldUssClassName);
+
+            enumField.RegisterValueChangedCallback(e =>
+            {
+                if (boolProperty)
+                    property.boolValue = Convert.ToInt32(e.newValue) == 1;
+                else
+                    property.intValue = Convert.ToInt32(e.newValue);
+
+                property.serializedObject.ApplyModifiedProperties();
+                onValueChange?.Invoke((T)e.newValue);
+            });
+
+            var updateCallback = () =>
+            {
+                foreach (T value in Enum.GetValues(typeof(T)))
+                {
+                    var propertyValue = boolProperty ? (property.boolValue ? 1 : 0) : property.intValue;
+
+                    if (value.ToInt32(null) != propertyValue)
+                        continue;
+
+                    enumField.value = value;
+                    break;
+                }
+
+                enumField.schedule.Execute(() => BindingsStyleHelpers.UpdateElementStyle(enumField, property));
+            };
+            updateCallback?.Invoke();
+            return updateCallback;
         }
     }
 }

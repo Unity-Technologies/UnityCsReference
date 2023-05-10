@@ -165,7 +165,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_UnityConnect.isUserInfoReady && !m_UnityConnect.isUserLoggedIn)
             {
                 var errorMessage = L10n.Tr("You need to be signed in.");
-                errorCallback?.Invoke(new UIError(UIErrorCode.UserNotSignedIn, L10n.Tr(errorMessage)));
+                errorCallback?.Invoke(new UIError(UIErrorCode.UserNotSignedIn, L10n.Tr(errorMessage), UIError.Attribute.HiddenFromUI));
                 return;
             }
 

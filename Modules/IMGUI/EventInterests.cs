@@ -2,8 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
+
 namespace UnityEngine
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct EventInterests
     {
         public bool wantsMouseMove { get; set; }

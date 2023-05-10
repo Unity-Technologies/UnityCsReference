@@ -34,12 +34,12 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The unique identifier of the node from which the wire originates.
         /// </summary>
-        public override SerializableGUID FromNodeGuid => FromPort?.NodeModel?.Guid ?? default;
+        public override Hash128 FromNodeGuid => FromPort?.NodeModel?.Guid ?? default;
 
         /// <summary>
         /// The unique identifier of the node to which the wire goes.
         /// </summary>
-        public override SerializableGUID ToNodeGuid => FromPort?.NodeModel?.Guid ?? default;
+        public override Hash128 ToNodeGuid => FromPort?.NodeModel?.Guid ?? default;
 
         /// <summary>
         /// The port to which the wire goes.

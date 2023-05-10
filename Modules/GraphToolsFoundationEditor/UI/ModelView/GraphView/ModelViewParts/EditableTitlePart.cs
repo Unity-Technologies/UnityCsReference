@@ -25,6 +25,29 @@ namespace Unity.GraphToolsFoundation.Editor
 
         static UnityEngine.TextCore.Text.TextGenerationSettings s_TextGenerationSettings = new();
 
+        public class Options
+        {
+            public const int None = 0;
+            /// <summary>
+            /// Whether to use ellipsis when the text is too large.
+            /// </summary>
+            public const int UseEllipsis = 1 << 0;
+
+            /// <summary>
+            /// Whether to set the width of the element to its text width at 100%.
+            /// </summary>
+            public const int SetWidth = 1 << 1;
+
+            /// <summary>
+            /// Whether the text should be displayed on multiple lines.
+            /// </summary>
+            public const int Multiline = 1 << 2;
+
+            protected const int optionCount = 3;
+
+            public const int Default = SetWidth | UseEllipsis;
+        }
+
         /// <summary>
         /// Creates a new instance of the <see cref="EditableTitlePart"/> class.
         /// </summary>
@@ -32,15 +55,13 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="model">The model displayed in this part.</param>
         /// <param name="ownerElement">The owner of the part.</param>
         /// <param name="parentClassName">The class name of the parent.</param>
-        /// <param name="multiline">Whether the text should be displayed on multiple lines.</param>
-        /// <param name="useEllipsis">Whether to use ellipsis when the text is too large.</param>
-        /// <param name="setWidth">Whether to set the width of the element to its text width at 100%.</param>
+        /// <param name="options">The options for this <see cref="EditableTitlePart"/>. See <see cref="Options"/>.</param>
         /// <returns>A new instance of <see cref="EditableTitlePart"/>.</returns>
-        public static EditableTitlePart Create(string name, Model model, ModelView ownerElement, string parentClassName, bool multiline = false, bool useEllipsis = false, bool setWidth = true)
+        public static EditableTitlePart Create(string name, Model model, ModelView ownerElement, string parentClassName, int options = Options.Default)
         {
             if (model is IHasTitle)
             {
-                return new EditableTitlePart(name, model, ownerElement, parentClassName, multiline, useEllipsis, setWidth);
+                return new EditableTitlePart(name, model, ownerElement, parentClassName, options);
             }
 
             return null;
@@ -80,11 +101,12 @@ namespace Unity.GraphToolsFoundation.Editor
             return size.x;
         }
 
-        bool m_Multiline;
-        bool m_UseEllipsis;
-        bool m_SetWidth;
-
         string m_PreviousTitle;
+
+        /// <summary>
+        /// The options, see <see cref="Options"/>.
+        /// </summary>
+        protected int m_Options;
 
         /// <summary>
         /// The current zoom level of the graph.
@@ -129,12 +151,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="multiline">Whether the text should be displayed on multiple lines.</param>
         /// <param name="useEllipsis">Whether to use ellipsis when the text is too large.</param>
         /// <param name="setWidth">Whether to leave the width of the element automated.</param>
-        protected EditableTitlePart(string name, Model model, ModelView ownerElement, string parentClassName, bool multiline, bool useEllipsis, bool setWidth)
+        protected EditableTitlePart(string name, Model model, ModelView ownerElement, string parentClassName, int options)
             : base(name, model, ownerElement, parentClassName)
         {
-            m_Multiline = multiline;
-            m_UseEllipsis = useEllipsis;
-            m_SetWidth = setWidth;
+            m_Options = options;
         }
 
         protected virtual bool HasEditableLabel => (m_Model as GraphElementModel).IsRenamable();
@@ -163,7 +183,7 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             if (HasEditableLabel)
             {
-                TitleLabel = new EditableLabel { name = titleLabelName, EditActionName = "Rename", multiline = m_Multiline};
+                TitleLabel = new EditableLabel { name = titleLabelName, EditActionName = "Rename", multiline = (m_Options & Options.Multiline) != 0};
                 TitleLabel.RegisterCallback<ChangeEvent<string>>(OnRename);
             }
             else
@@ -171,7 +191,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 TitleLabel = new Label { name = titleLabelName };
             }
 
-            if (m_UseEllipsis)
+            if ((m_Options & Options.UseEllipsis) != 0)
             {
                 LabelContainer = new VisualElement();
                 LabelContainer.AddToClassList(ussClassName.WithUssElement("label-container"));
@@ -198,7 +218,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 (TitleLabel is Label && HasEditableLabel))
 
             {
-                TitleContainer.Remove(m_UseEllipsis ? TitleLabel.parent : TitleLabel);
+                TitleContainer.Remove((m_Options & Options.UseEllipsis) != 0 ? TitleLabel.parent : TitleLabel);
                 CreateTitleLabel();
                 labelTypeChanged = true;
             }
@@ -322,7 +342,7 @@ namespace Unity.GraphToolsFoundation.Editor
             else if (TitleLabel is Label label)
                 te = label;
 
-            if (!m_SetWidth)
+            if ((m_Options & Options.SetWidth) == 0)
             {
                 TitleLabel.parent.style.flexGrow = 1;
                 return;

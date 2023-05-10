@@ -269,7 +269,7 @@ namespace Unity.GraphToolsFoundation.Editor
             painter.Stroke();
         }
 
-        static readonly List<ModelView> k_DrawElementsAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_DrawElementsAllUIs = new();
         void DrawElements(Painter2D painter)
         {
             if (GraphModel == null)
@@ -319,7 +319,7 @@ namespace Unity.GraphToolsFoundation.Editor
             painter.ClosePath();
         }
 
-        static readonly List<ModelView> k_OnMouseDownAllUIs = new List<ModelView>();
+        static readonly List<ChildView> k_OnMouseDownAllUIs = new();
         void OnMouseDown(MouseDownEvent e)
         {
             if (GraphView == null)

@@ -74,7 +74,7 @@ internal class Sidebar : ScrollView
     private void CreateAndAddSidebarRow(IPage page, bool isScopedRegistryPage = false, bool isIndented = false)
     {
         var pageId = page.id;
-        var sidebarRow = new SidebarRow(page.id, page.displayName, isIndented);
+        var sidebarRow = new SidebarRow(page.id, page.displayName, page.icon, isIndented);
         sidebarRow.OnLeftClick(() => OnRowClick(pageId));
         if (isScopedRegistryPage)
             m_ScopedRegistryRows[page.id] = sidebarRow;

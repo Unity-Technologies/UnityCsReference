@@ -61,7 +61,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     [Serializable]
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Model")]
-    abstract class GraphModel : Model, IGraphElementContainer, ISerializationCallbackReceiver
+    abstract class GraphModel : Model, IGraphElementContainer
     {
         [SerializeReference]
         List<AbstractNodeModel> m_GraphNodeModels;
@@ -90,7 +90,7 @@ namespace Unity.GraphToolsFoundation.Editor
         [HideInInspector]
         List<GraphElementMetaData> m_GraphElementMetaData;
 
-        SerializedValueDictionary<SerializableGUID, PlaceholderData> m_PlaceholderData;
+        SerializedValueDictionary<Hash128, PlaceholderData> m_PlaceholderData;
 
         /// <summary>
         /// Holds created variables names to make creation of unique names faster.
@@ -104,9 +104,9 @@ namespace Unity.GraphToolsFoundation.Editor
         Type m_StencilType;
 
         // As this field is not serialized, use GetElementsByGuid() to access it.
-        Dictionary<SerializableGUID, GraphElementModel> m_ElementsByGuid;
+        Dictionary<Hash128, GraphElementModel> m_ElementsByGuid;
 
-        PortWireIndex_Internal m_PortWireIndex;
+        PortWireIndex_Internal<WireModel> m_PortWireIndex;
 
         /// <summary>
         /// The default stencil type, used when <see cref="StencilType"/> is set to null.
@@ -328,7 +328,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <summary>
         /// The index that maps ports to the wires connected to them.
         /// </summary>
-        internal PortWireIndex_Internal PortWireIndex_Internal => m_PortWireIndex;
+        internal PortWireIndex_Internal<WireModel> PortWireIndex_Internal => m_PortWireIndex ??= new PortWireIndex_Internal<WireModel>(WireModels);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="GraphModel"/> class.
@@ -346,9 +346,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             m_ExistingVariableNames = new HashSet<string>();
 
-            m_PortWireIndex = new PortWireIndex_Internal(this);
             m_Placeholders = new List<IPlaceholder>();
-            m_PlaceholderData = new SerializedValueDictionary<SerializableGUID, PlaceholderData>();
+            m_PlaceholderData = new SerializedValueDictionary<Hash128, PlaceholderData>();
 
             m_GraphChangeDescriptionStack = new Stack<GraphChangeDescription>();
         }
@@ -360,7 +359,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The list of wires connected to the port.</returns>
         public virtual IReadOnlyList<WireModel> GetWiresForPort(PortModel portModel)
         {
-            return m_PortWireIndex.GetWiresForPort(portModel);
+            return PortWireIndex_Internal.GetWiresForPort(portModel);
         }
 
         /// <summary>
@@ -373,7 +372,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var fromPort = wireModel.FromPort;
             if (fromPort != null && fromPort.HasReorderableWires)
             {
-                PortWireIndex_Internal.ReorderWire(wireModel, reorderType);
+                m_PortWireIndex?.WireReordered(wireModel, reorderType);
                 ApplyReorderToGraph(fromPort);
 
                 var siblingWires = fromPort.GetConnectedWires().ToList();
@@ -390,7 +389,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="port">The new port value.</param>
         internal void UpdateWire_Internal(WireModel wireModel, PortModel oldPort, PortModel port)
         {
-            PortWireIndex_Internal.UpdateWire(wireModel, oldPort, port);
+            m_PortWireIndex?.WirePortsChanged(wireModel, oldPort, port);
 
             if (oldPort != null)
             {
@@ -430,7 +429,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="fromPort">The port from which the reordered wires start.</param>
         void ApplyReorderToGraph(PortModel fromPort)
         {
-            var orderedList = PortWireIndex_Internal.GetWiresForPort(fromPort);
+            var orderedList = GetWiresForPort(fromPort);
             if (orderedList.Count == 0)
                 return;
 
@@ -524,7 +523,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Returns the dictionary associating a <see cref="GraphElementModel" /> with its GUID.
         /// </summary>
         /// <returns>the dictionary associating a <see cref="GraphElementModel" /> with its GUID.</returns>
-        protected virtual Dictionary<SerializableGUID, GraphElementModel> GetElementsByGuid()
+        protected virtual Dictionary<Hash128, GraphElementModel> GetElementsByGuid()
         {
             if (m_ElementsByGuid == null)
                 BuildElementByGuidDictionary();
@@ -573,7 +572,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="guid">The guid of the model to retrieve.</param>
         /// <param name="model">The model matching the guid, or null if no model were found.</param>
         /// <returns>True if the model was found. False otherwise.</returns>
-        public virtual bool TryGetModelFromGuid(SerializableGUID guid, out GraphElementModel model)
+        public virtual bool TryGetModelFromGuid(Hash128 guid, out GraphElementModel model)
         {
             return GetElementsByGuid().TryGetValue(guid, out model);
         }
@@ -585,7 +584,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="model">The model matching the guid and type, or null if no model were found.</param>
         /// <typeparam name="T">The type of the model to retrieve.</typeparam>
         /// <returns>True if the model was found and is of the requested type. False otherwise.</returns>
-        public bool TryGetModelFromGuid<T>(SerializableGUID guid, out T model) where T : GraphElementModel
+        public bool TryGetModelFromGuid<T>(Hash128 guid, out T model) where T : GraphElementModel
         {
             var returnValue = TryGetModelFromGuid(guid, out var graphElementModel);
             model = graphElementModel as T;
@@ -598,6 +597,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="nodeModel">The node model to add.</param>
         protected virtual void AddNode(AbstractNodeModel nodeModel)
         {
+            if (Stencil is { AllowPortalCreation: false } && nodeModel is WirePortalModel)
+            {
+                throw new ArgumentException("Portal creation is disabled by the Stencil.", nameof(nodeModel));
+            }
+
             if (nodeModel.NeedsContainer())
                 throw new ArgumentException("Can't add a node model that does not need a container to the graph");
             RegisterElement(nodeModel);
@@ -618,6 +622,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="nodeModel">The new node model.</param>
         protected virtual void ReplaceNode(int index, AbstractNodeModel nodeModel)
         {
+            if (Stencil is { AllowPortalCreation: false } && nodeModel is WirePortalModel)
+            {
+                throw new ArgumentException("Portal creation is disabled by the Stencil", nameof(nodeModel));
+            }
+
             if (index < 0 || index >= m_GraphNodeModels.Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
@@ -762,6 +771,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="declarationModel">The portal declaration to add.</param>
         protected virtual void AddPortal(DeclarationModel declarationModel)
         {
+            if (Stencil is { AllowPortalCreation: false })
+            {
+                throw new InvalidOperationException("Portal creation is disabled by the Stencil");
+            }
+
             RegisterElement(declarationModel);
             AddMetaData(declarationModel, m_GraphPortalModels.Count);
             m_GraphPortalModels.Add(declarationModel);
@@ -775,6 +789,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The new portal declaration model.</returns>
         public virtual DeclarationModel DuplicatePortal(DeclarationModel declarationModel)
         {
+            if (Stencil is { AllowPortalCreation: false })
+            {
+                throw new InvalidOperationException("Portal creation is disabled by the Stencil");
+            }
+
             var newDeclarationModel = declarationModel.Clone();
 
             RegisterElement(newDeclarationModel);
@@ -813,7 +832,7 @@ namespace Unity.GraphToolsFoundation.Editor
             RegisterElement(wireModel);
             AddMetaData(wireModel, m_GraphWireModels.Count);
             m_GraphWireModels.Add(wireModel);
-            m_PortWireIndex.AddWire(wireModel);
+            m_PortWireIndex?.WireAdded(wireModel);
             CurrentGraphChangeDescription?.AddNewModels(wireModel);
         }
 
@@ -835,7 +854,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 RemoveFromMetadata(indexToRemove, ManagedMissingTypeModelCategory.Wire);
                 CurrentGraphChangeDescription?.AddDeletedModels(wireModel);
             }
-            m_PortWireIndex.RemoveWire(wireModel);
+            m_PortWireIndex?.WireRemoved(wireModel);
 
             // Remove missing port with no connections.
             if (wireModel.ToPort?.PortType == PortType.MissingPort && (!wireModel.ToPort?.GetConnectedWires().Any() ?? false))
@@ -935,7 +954,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>A new object.</returns>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="type"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="type"/> does not derive from <typeparamref name="TBaseType"/></exception>
-        protected TBaseType Instantiate<TBaseType>(Type type)
+        protected static TBaseType Instantiate<TBaseType>(Type type)
         {
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
@@ -958,7 +977,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </remarks>
         protected virtual void BuildElementByGuidDictionary()
         {
-            m_ElementsByGuid = new Dictionary<SerializableGUID, GraphElementModel>();
+            m_ElementsByGuid = new Dictionary<Hash128, GraphElementModel>();
 
             foreach (var model in m_GraphNodeModels)
             {
@@ -1003,13 +1022,18 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="nodeTypeToCreate">The type of the new node to create.</param>
         /// <param name="nodeName">The name of the node to create.</param>
         /// <param name="position">The position of the node to create.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="initializationCallback">An initialization method to be called right after the node is created.</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         /// <returns>The newly created node.</returns>
         public virtual AbstractNodeModel CreateNode(Type nodeTypeToCreate, string nodeName, Vector2 position,
-            SerializableGUID guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.None)
+            Hash128 guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.None)
         {
+            if (Stencil is { AllowPortalCreation: false } && typeof(WirePortalModel).IsAssignableFrom(nodeTypeToCreate))
+            {
+                throw new ArgumentException("Portal creation is disabled by the Stencil.", nameof(nodeTypeToCreate));
+            }
+
             var nodeModel = InstantiateNode(nodeTypeToCreate, nodeName, position, guid, initializationCallback, spawnFlags);
 
             if (!spawnFlags.IsOrphan() && nodeModel.Container == this)
@@ -1026,15 +1050,20 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="nodeTypeToCreate">The type of the new node to create.</param>
         /// <param name="nodeName">The name of the node to create.</param>
         /// <param name="position">The position of the node to create.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="initializationCallback">An initialization method to be called right after the node is created.</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         /// <returns>The newly created node.</returns>
         protected virtual AbstractNodeModel InstantiateNode(Type nodeTypeToCreate, string nodeName, Vector2 position,
-            SerializableGUID guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.None)
+            Hash128 guid = default, Action<AbstractNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.None)
         {
             if (nodeTypeToCreate == null)
                 throw new ArgumentNullException(nameof(nodeTypeToCreate));
+
+            if (Stencil is { AllowPortalCreation: false } && typeof(WirePortalModel).IsAssignableFrom(nodeTypeToCreate))
+            {
+                throw new ArgumentException("Portal creation is disabled by the Stencil.", nameof(nodeTypeToCreate));
+            }
 
             AbstractNodeModel nodeModel;
             if (typeof(Constant).IsAssignableFrom(nodeTypeToCreate))
@@ -1049,7 +1078,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
             nodeModel.SpawnFlags = spawnFlags;
             nodeModel.Position = position;
-            if (guid.Valid)
+            if (guid.isValid)
                 nodeModel.SetGuid(guid);
             nodeModel.GraphModel = this;
             initializationCallback?.Invoke(nodeModel);
@@ -1063,11 +1092,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="declarationModel">The declaration for the variable.</param>
         /// <param name="position">The position of the node to create.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         /// <returns>The newly created variable node.</returns>
         public virtual VariableNodeModel CreateVariableNode(VariableDeclarationModel declarationModel,
-            Vector2 position, SerializableGUID guid = default, SpawnFlags spawnFlags = SpawnFlags.Default)
+            Vector2 position, Hash128 guid = default, SpawnFlags spawnFlags = SpawnFlags.Default)
         {
             var nodeType = GetVariableNodeType();
             Debug.Assert(typeof(VariableNodeModel).IsAssignableFrom(nodeType));
@@ -1087,10 +1116,10 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="referenceGraph">The Graph Model of the reference graph.</param>
         /// <param name="position">The position of the node to create.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         /// <returns>The newly created subgraph node.</returns>
-        public virtual SubgraphNodeModel CreateSubgraphNode(GraphModel referenceGraph, Vector2 position, SerializableGUID guid = default, SpawnFlags spawnFlags = SpawnFlags.Default)
+        public virtual SubgraphNodeModel CreateSubgraphNode(GraphModel referenceGraph, Vector2 position, Hash128 guid = default, SpawnFlags spawnFlags = SpawnFlags.Default)
         {
             if (referenceGraph.IsContainerGraph())
             {
@@ -1117,11 +1146,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="constantTypeHandle">The type of the new constant node to create.</param>
         /// <param name="constantName">The name of the constant node to create.</param>
         /// <param name="position">The position of the node to create.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="initializationCallback">An initialization method to be called right after the constant node is created.</param>
         /// <param name="spawnFlags">The flags specifying how the node is to be spawned.</param>
         /// <returns>The newly created constant node.</returns>
-        public virtual ConstantNodeModel CreateConstantNode(TypeHandle constantTypeHandle, string constantName, Vector2 position, SerializableGUID guid = default, Action<ConstantNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.None)
+        public virtual ConstantNodeModel CreateConstantNode(TypeHandle constantTypeHandle, string constantName, Vector2 position, Hash128 guid = default, Action<ConstantNodeModel> initializationCallback = null, SpawnFlags spawnFlags = SpawnFlags.None)
         {
             var constantType = Stencil.GetConstantType(constantTypeHandle);
             Debug.Assert(typeof(Constant).IsAssignableFrom(constantType));
@@ -1145,6 +1174,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The new node.</returns>
         public virtual AbstractNodeModel DuplicateNode(AbstractNodeModel sourceNode, Vector2 delta)
         {
+            if (Stencil is { AllowPortalCreation: false } && sourceNode is WirePortalModel)
+            {
+                throw new ArgumentException("Portal creation is disabled by the Stencil.", nameof(sourceNode));
+            }
+
             var pastedNodeModel = sourceNode.Clone();
 
             // Set graphmodel BEFORE define node as it is commonly use during Define
@@ -1285,9 +1319,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="toPort">The port from which the wire originates.</param>
         /// <param name="fromPort">The port to which the wire goes.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <returns>The newly created wire</returns>
-        public virtual WireModel CreateWire(PortModel toPort, PortModel fromPort, SerializableGUID guid = default)
+        public virtual WireModel CreateWire(PortModel toPort, PortModel fromPort, Hash128 guid = default)
         {
             var existing = this.GetWireConnectedToPorts(toPort, fromPort);
             if (existing != null)
@@ -1304,14 +1338,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="toPort">The port from which the wire originates.</param>
         /// <param name="fromPort">The port to which the wire goes.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <returns>The newly created wire</returns>
-        protected virtual WireModel InstantiateWire(PortModel toPort, PortModel fromPort, SerializableGUID guid = default)
+        protected virtual WireModel InstantiateWire(PortModel toPort, PortModel fromPort, Hash128 guid = default)
         {
             var wireType = GetWireType(toPort, fromPort);
             var wireModel = Instantiate<WireModel>(wireType);
             wireModel.GraphModel = this;
-            if (guid.Valid)
+            if (guid.isValid)
                 wireModel.SetGuid(guid);
             wireModel.SetPorts(toPort, fromPort);
             return wireModel;
@@ -1406,9 +1440,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         /// <param name="position">The position of the placemat to create.</param>
         /// <param name="spawnFlags">The flags specifying how the sticky note is to be spawned.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <returns>The newly created placemat</returns>
-        public PlacematModel CreatePlacemat(Rect position, SerializableGUID guid = default, SpawnFlags spawnFlags = SpawnFlags.Default)
+        public PlacematModel CreatePlacemat(Rect position, Hash128 guid = default, SpawnFlags spawnFlags = SpawnFlags.Default)
         {
             var placematModel = InstantiatePlacemat(position, guid);
             if (!spawnFlags.IsOrphan())
@@ -1423,9 +1457,9 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Instantiates a new placemat.
         /// </summary>
         /// <param name="position">The position of the placemat to create.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <returns>The newly created placemat</returns>
-        protected virtual PlacematModel InstantiatePlacemat(Rect position, SerializableGUID guid)
+        protected virtual PlacematModel InstantiatePlacemat(Rect position, Hash128 guid)
         {
             var placematModelType = GetPlacematType();
             var placematModel = Instantiate<PlacematModel>(placematModelType);
@@ -1433,7 +1467,7 @@ namespace Unity.GraphToolsFoundation.Editor
             placematModel.TitleAlignment = TextAlignment.Left;
             placematModel.PositionAndSize = position;
             placematModel.GraphModel = this;
-            if (guid.Valid)
+            if (guid.isValid)
                 placematModel.SetGuid(guid);
             return placematModel;
         }
@@ -1480,11 +1514,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="group">The group in which the variable is added. If null, it will go to the root group.</param>
         /// <param name="indexInGroup">The index of the variable in the group. For indexInGroup &lt;= 0, The item will be added at the beginning. For indexInGroup &gt;= Items.Count, items will be added at the end.</param>
         /// <param name="initializationModel">The initialization model of the new variable declaration to create. Can be <code>null</code>.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="spawnFlags">The flags specifying how the variable declaration is to be spawned.</param>
         /// <returns>The newly created variable declaration.</returns>
         public virtual VariableDeclarationModel CreateGraphVariableDeclaration(TypeHandle variableDataType, string variableName,
-            ModifierFlags modifierFlags, bool isExposed, GroupModel group = null, int indexInGroup = int.MaxValue, Constant initializationModel = null, SerializableGUID guid = default,
+            ModifierFlags modifierFlags, bool isExposed, GroupModel group = null, int indexInGroup = int.MaxValue, Constant initializationModel = null, Hash128 guid = default,
             SpawnFlags spawnFlags = SpawnFlags.Default)
         {
             return CreateGraphVariableDeclaration(GetVariableDeclarationType(), variableDataType, variableName,
@@ -1525,14 +1559,14 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="group">The group in which the variable is added. If null, it will go to the root group.</param>
         /// <param name="indexInGroup">The index of the variable in the group. For indexInGroup &lt;= 0, The item will be added at the beginning. For indexInGroup &gt;= Items.Count, items will be added at the end.</param>
         /// <param name="initializationModel">The initialization model of the new variable declaration to create. Can be <code>null</code>.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="initializationCallback">An initialization method to be called right after the variable declaration is created.</param>
         /// <param name="spawnFlags">The flags specifying how the variable declaration is to be spawned.</param>
         /// <returns>The newly created variable declaration.</returns>
         public virtual VariableDeclarationModel CreateGraphVariableDeclaration(Type variableTypeToCreate,
             TypeHandle variableDataType, string variableName, ModifierFlags modifierFlags, bool isExposed,
             GroupModel group = null, int indexInGroup = Int32.MaxValue, Constant initializationModel = null,
-            SerializableGUID guid = default, Action<VariableDeclarationModel, Constant> initializationCallback = null,
+            Hash128 guid = default, Action<VariableDeclarationModel, Constant> initializationCallback = null,
             SpawnFlags spawnFlags = SpawnFlags.None)
         {
             var variableDeclaration = InstantiateVariableDeclaration(variableTypeToCreate, variableDataType,
@@ -1579,17 +1613,17 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="modifierFlags">The modifier flags of the new variable declaration to create.</param>
         /// <param name="isExposed">Whether the variable is exposed externally or not.</param>
         /// <param name="initializationModel">The initialization model of the new variable declaration to create. Can be <code>null</code>.</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item. If none is provided, a new
-        /// SerializableGUID will be generated for it.</param>
+        /// <param name="guid">The guid to assign to the newly created item. If none is provided, a new
+        /// guid will be generated for it.</param>
         /// <param name="initializationCallback">An initialization method to be called right after the variable declaration is created.</param>
         /// <returns>The newly created variable declaration.</returns>
         protected virtual VariableDeclarationModel InstantiateVariableDeclaration(Type variableTypeToCreate,
             TypeHandle variableDataType, string variableName, ModifierFlags modifierFlags, bool isExposed,
-            Constant initializationModel, SerializableGUID guid, Action<VariableDeclarationModel, Constant> initializationCallback = null)
+            Constant initializationModel, Hash128 guid, Action<VariableDeclarationModel, Constant> initializationCallback = null)
         {
             var variableDeclaration = Instantiate<VariableDeclarationModel>(variableTypeToCreate);
 
-            if (guid.Valid)
+            if (guid.isValid)
                 variableDeclaration.SetGuid(guid);
             variableDeclaration.GraphModel = this;
             variableDeclaration.DataType = variableDataType;
@@ -1742,11 +1776,16 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Creates a new declaration model representing a portal and optionally add it to the graph.
         /// </summary>
         /// <param name="portalName">The name of the portal</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <param name="spawnFlags">The flags specifying how the portal is to be spawned.</param>
         /// <returns>The newly created declaration model</returns>
-        public virtual DeclarationModel CreateGraphPortalDeclaration(string portalName, SerializableGUID guid = default, SpawnFlags spawnFlags = SpawnFlags.None)
+        public virtual DeclarationModel CreateGraphPortalDeclaration(string portalName, Hash128 guid = default, SpawnFlags spawnFlags = SpawnFlags.None)
         {
+            if (Stencil is { AllowPortalCreation: false })
+            {
+                throw new InvalidOperationException("Portal creation is disabled by the Stencil");
+            }
+
             var decl = InstantiatePortalDeclaration(portalName, guid);
 
             if (!spawnFlags.IsOrphan())
@@ -1761,14 +1800,19 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Instantiates a new portal model.
         /// </summary>
         /// <param name="portalName">The name of the portal</param>
-        /// <param name="guid">The SerializableGUID to assign to the newly created item.</param>
+        /// <param name="guid">The guid to assign to the newly created item.</param>
         /// <returns>The newly created declaration model</returns>
-        protected virtual DeclarationModel InstantiatePortalDeclaration(string portalName, SerializableGUID guid = default)
+        protected virtual DeclarationModel InstantiatePortalDeclaration(string portalName, Hash128 guid = default)
         {
+            if (Stencil is { AllowPortalCreation: false })
+            {
+                throw new InvalidOperationException("Portal creation is disabled by the Stencil");
+            }
+
             var portalModelType = GetPortalType();
             var portalModel = Instantiate<DeclarationModel>(portalModelType);
             portalModel.Title = portalName;
-            if (guid.Valid)
+            if (guid.isValid)
                 portalModel.SetGuid(guid);
             portalModel.GraphModel = this;
             return portalModel;
@@ -1783,6 +1827,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The new portal.</returns>
         public virtual WirePortalModel CreateOppositePortal(WirePortalModel wirePortalModel, Vector2 position, SpawnFlags spawnFlags = SpawnFlags.Default)
         {
+            if (Stencil is { AllowPortalCreation: false })
+            {
+                throw new InvalidOperationException("Portal creation is disabled by the Stencil");
+            }
+
             WirePortalModel createdPortal = null;
             Type oppositeType = null;
             switch (wirePortalModel)
@@ -1822,6 +1871,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual void CreatePortalsFromWire(WireModel wireModel, Vector2 entryPortalPosition, Vector2 exitPortalPosition, int portalHeight,
             Dictionary<PortModel, WirePortalModel> existingPortalEntries, Dictionary<PortModel, List<WirePortalModel>> existingPortalExits)
         {
+            if (Stencil is { AllowPortalCreation: false })
+            {
+                throw new InvalidOperationException("Portal creation is disabled by the Stencil");
+            }
+
             var inputPortModel = wireModel.ToPort;
             var outputPortModel = wireModel.FromPort;
 
@@ -1862,6 +1916,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The created entry portal.</returns>
         public virtual WirePortalModel CreateEntryPortalFromPort(PortModel outputPortModel, Vector2 position, int height)
         {
+            if (Stencil is { AllowPortalCreation: false })
+            {
+                throw new InvalidOperationException("Portal creation is disabled by the Stencil");
+            }
+
             WirePortalModel portalEntry;
 
             if (!(outputPortModel.NodeModel is InputOutputPortsNodeModel nodeModel))
@@ -1904,6 +1963,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The created exit portal.</returns>
         public virtual WirePortalModel CreateExitPortalToPort(PortModel inputPortModel, Vector2 position, int height, WirePortalModel entryPortal)
         {
+            if (Stencil is { AllowPortalCreation: false })
+            {
+                throw new InvalidOperationException("Portal creation is disabled by the Stencil");
+            }
+
             WirePortalModel portalExit;
 
             if (inputPortModel.PortType == PortType.Execution)
@@ -2065,7 +2129,7 @@ namespace Unity.GraphToolsFoundation.Editor
         void CheckNodeList()
         {
             var nodesAndBlocks = NodeAndBlockModels.ToList();
-            var existingGuids = new Dictionary<SerializableGUID, int>(nodesAndBlocks.Count);
+            var existingGuids = new Dictionary<Hash128, int>(nodesAndBlocks.Count);
 
             for (var i = 0; i < nodesAndBlocks.Count; i++)
             {
@@ -2074,7 +2138,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 Assert.IsTrue(node.GraphModel != null, $"Node {i} {node} graph is null");
                 Assert.IsNotNull(node, $"Node {i} is null");
                 Assert.IsTrue(ReferenceEquals(this, node.GraphModel), $"Node {i} graph is not matching its actual graph");
-                Assert.IsFalse(!node.Guid.Valid, $"Node {i} ({node.GetType()}) has an empty Guid");
+                Assert.IsFalse(!node.Guid.isValid, $"Node {i} ({node.GetType()}) has an empty Guid");
                 Assert.IsFalse(existingGuids.TryGetValue(node.Guid, out var oldIndex), $"duplicate GUIDs: Node {i} ({node.GetType()}) and Node {oldIndex} have the same guid {node.Guid}");
                 existingGuids.Add(node.Guid, i);
 
@@ -2164,15 +2228,19 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc />
-        public virtual void OnBeforeSerialize()
+        public override void OnBeforeSerialize()
         {
+            base.OnBeforeSerialize();
+
             if (StencilType != null)
                 m_StencilTypeName = StencilType.AssemblyQualifiedName;
         }
 
         /// <inheritdoc />
-        public virtual void OnAfterDeserialize()
+        public override void OnAfterDeserialize()
         {
+            base.OnAfterDeserialize();
+
             if (!string.IsNullOrEmpty(m_StencilTypeName))
             {
                 StencilType = TypeHandleHelpers.GetTypeFromName_Internal(m_StencilTypeName) ?? DefaultStencilType;
@@ -2390,7 +2458,7 @@ namespace Unity.GraphToolsFoundation.Editor
             // Add new placeholders using managed references with missing types.
             foreach (var referenceWithMissingType in SerializationUtility.GetManagedReferencesWithMissingTypes(Asset))
             {
-                if (YamlParsingHelper_Internal.TryParseSerializableGUID(referenceWithMissingType.serializedData, guidFieldName_Internal, 0, out var guid))
+                if (YamlParsingHelper_Internal.TryParseGUID(referenceWithMissingType.serializedData, hashGuidFieldName_Internal, obsoleteGuidFieldName_Internal, 0, out var guid))
                 {
                     var metadataIndex = m_GraphElementMetaData.FindIndex(m => m.Guid == guid);
 
@@ -2449,9 +2517,9 @@ namespace Unity.GraphToolsFoundation.Editor
             }
             foreach (var context in contextWithNullBlocks)
             {
-                for (var i = 0; i < context.GraphElementModels.Count(); ++i)
+                for (var i = 0; i < context.BlockCount; ++i)
                 {
-                    var block = context.GraphElementModels.ElementAt(i);
+                    var block = context.GetBlock(i);
                     // Create placeholders for null models for which the data is not serialized anymore.
                     if (block == null && context.BlockPlaceholders.All(t => t.Guid != context.BlockGuids[i]))
                         CreateBlockNodePlaceholder_Internal(PlaceholderModelHelper.missingTypeWontBeRestored, context.BlockGuids[i], context);
@@ -2525,7 +2593,7 @@ namespace Unity.GraphToolsFoundation.Editor
             RemoveFromMetadata(metadata.Index, metadata.Category);
         }
 
-        internal NodePlaceholder CreateNodePlaceholder_Internal(string nodeName, Vector2 position, SerializableGUID guid, long referenceId = -1)
+        internal NodePlaceholder CreateNodePlaceholder_Internal(string nodeName, Vector2 position, Hash128 guid, long referenceId = -1)
         {
             var node = InstantiateNode(typeof(NodePlaceholder), nodeName, position, guid) as NodePlaceholder;
             RegisterElement(node);
@@ -2539,7 +2607,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return node;
         }
 
-        internal ContextNodePlaceholder CreateContextNodePlaceholder_Internal(string nodeName, Vector2 position, SerializableGUID guid, IEnumerable<BlockNodeModel> blocks = null, long referenceId = -1)
+        internal ContextNodePlaceholder CreateContextNodePlaceholder_Internal(string nodeName, Vector2 position, Hash128 guid, IEnumerable<BlockNodeModel> blocks = null, long referenceId = -1)
         {
             var contextNode = InstantiateNode(typeof(ContextNodePlaceholder), nodeName, position, guid) as ContextNodePlaceholder;
             RegisterElement(contextNode);
@@ -2561,7 +2629,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 else
                 {
                     // Keep the blocks' guids to be able to recreate the placeholder in case the missing type serialized data is lost.
-                    m_PlaceholderData ??= new SerializedValueDictionary<SerializableGUID, PlaceholderData>();
+                    m_PlaceholderData ??= new SerializedValueDictionary<Hash128, PlaceholderData>();
                     if (m_PlaceholderData.ContainsKey(guid))
                         m_PlaceholderData[guid].BlockGuids = blockGuids;
                     else
@@ -2578,7 +2646,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return contextNode;
         }
 
-        internal BlockNodePlaceholder CreateBlockNodePlaceholder_Internal(string nodeName, SerializableGUID guid, ContextNodeModel contextNodeModel, long referenceId = -1)
+        internal BlockNodePlaceholder CreateBlockNodePlaceholder_Internal(string nodeName, Hash128 guid, ContextNodeModel contextNodeModel, long referenceId = -1)
         {
             var node = InstantiateNode(typeof(BlockNodePlaceholder), nodeName, Vector2.zero, guid) as BlockNodePlaceholder;
             RegisterElement(node);
@@ -2593,7 +2661,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return node;
         }
 
-        internal VariableDeclarationPlaceholder CreateVariableDeclarationPlaceholder_Internal(string variableName, SerializableGUID guid, long referenceId = -1)
+        internal VariableDeclarationPlaceholder CreateVariableDeclarationPlaceholder_Internal(string variableName, Hash128 guid, long referenceId = -1)
         {
             var variableDeclaration = InstantiateVariableDeclaration(typeof(VariableDeclarationPlaceholder), TypeHandle.MissingType,
                 variableName, ModifierFlags.None, false, null, guid) as VariableDeclarationPlaceholder;
@@ -2612,12 +2680,12 @@ namespace Unity.GraphToolsFoundation.Editor
             return variableDeclaration;
         }
 
-        internal PortalDeclarationPlaceholder CreatePortalDeclarationPlaceholder_Internal(string portalName, SerializableGUID guid, long referenceId = -1)
+        internal PortalDeclarationPlaceholder CreatePortalDeclarationPlaceholder_Internal(string portalName, Hash128 guid, long referenceId = -1)
         {
             var portalModel = Instantiate<PortalDeclarationPlaceholder>(typeof(PortalDeclarationPlaceholder));
             portalModel.Title = portalName;
 
-            if (guid.Valid)
+            if (guid.isValid)
                 portalModel.SetGuid(guid);
 
             portalModel.GraphModel = this;
@@ -2633,7 +2701,7 @@ namespace Unity.GraphToolsFoundation.Editor
             return portalModel;
         }
 
-        internal WirePlaceholder CreateWirePlaceholder_Internal(PortModel toPort, PortModel fromPort, SerializableGUID guid, long referenceId = -1)
+        internal WirePlaceholder CreateWirePlaceholder_Internal(PortModel toPort, PortModel fromPort, Hash128 guid, long referenceId = -1)
         {
             var existing = this.GetWireConnectedToPorts(toPort, fromPort);
             if (existing != null)
@@ -2642,7 +2710,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var wireModel = Instantiate<WirePlaceholder>(typeof(WirePlaceholder));
             wireModel.GraphModel = this;
 
-            if (guid.Valid)
+            if (guid.isValid)
                 wireModel.SetGuid(guid);
 
             wireModel.SetPorts(toPort, fromPort);
@@ -2654,7 +2722,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 wireModel.ReferenceId = referenceId;
 
             m_Placeholders.Add(wireModel);
-            m_PortWireIndex.AddWire(wireModel);
+            m_PortWireIndex?.WireAdded(wireModel);
 
             return wireModel;
         }
@@ -2670,7 +2738,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 container.Repair();
             }
 
-            var validGuids = new HashSet<SerializableGUID>(m_GraphNodeModels.Select(t => t.Guid));
+            var validGuids = new HashSet<Hash128>(m_GraphNodeModels.Select(t => t.Guid));
 
             m_GraphWireModels.RemoveAll(t => t is null or IPlaceholder);
             m_GraphWireModels.RemoveAll(t => !validGuids.Contains(t.FromNodeGuid) || !validGuids.Contains(t.ToNodeGuid));

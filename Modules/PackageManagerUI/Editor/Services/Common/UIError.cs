@@ -16,16 +16,16 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal static readonly string k_UnsignedUnityPackageWarningMessage = L10n.Tr("This package version has no signature. For your security, install a different version or review your scoped registry and load the package from the Unity registry.");
         internal static readonly string k_ReadMoreDocsUrl = "https://docs.unity3d.com/Manual/upm-errors.html";
         public static readonly UIError k_EntitlementError = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage);
-        public static readonly UIError k_EntitlementWarning = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage, Attribute.IsWarning);
+        public static readonly UIError k_EntitlementWarning = new UIError(UIErrorCode.UpmError_Forbidden, k_EntitlementErrorMessage, Attribute.Warning);
         internal static readonly UIError k_InvalidSignatureWarning = new UIError(
             UIErrorCode.UpmError_InvalidSignature,
             k_InvalidSignatureWarningMessage,
-            Attribute.IsWarning,
+            Attribute.Warning,
             readMoreUrl: k_ReadMoreDocsUrl);
         internal static readonly UIError k_UnsignedUnityPackageWarning = new UIError(
             UIErrorCode.UpmError_UnsignedUnityPackage,
             k_UnsignedUnityPackageWarningMessage,
-            Attribute.IsWarning,
+            Attribute.Warning,
             readMoreUrl: k_ReadMoreDocsUrl);
 
         [SerializeField]
@@ -48,10 +48,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Flags]
         internal enum Attribute
         {
-            None                = 0,
-            IsDetailInConsole   = 1 << 0,
-            IsWarning           = 1 << 1,
-            IsClearable         = 1 << 2
+            None              = 0,
+            DetailInConsole   = 1 << 0,
+            Warning           = 1 << 1,
+            Clearable         = 1 << 2,
+            HiddenFromUI      = 1 << 3
         }
 
         public UIErrorCode errorCode => m_ErrorCode;
