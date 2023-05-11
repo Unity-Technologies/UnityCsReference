@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements.Samples
             /// <sample>
             // Note: See also RadioButtonGroup in the ChoiceField section of UI Toolkit Samples
 
-            // Get a reference to the first radio button from UXML and assign it its value.
+            // Get a reference to the first radio button from UXML and assign a value to it.
             var uxmlField1 = container.Q<RadioButton>("the-uxml-field1");
             var uxmlField2 = container.Q<RadioButton>("the-uxml-field2");
             uxmlField1.value = true;
@@ -35,7 +35,7 @@ namespace UnityEditor.UIElements.Samples
 
             csharpField1.value = uxmlField1.value;
 
-            // Mirror value of uxml field into the C# field.
+            // Mirror the value of the UXML field into the C# field.
             uxmlField1.RegisterCallback<ChangeEvent<bool>>((evt) =>
             {
                 csharpField1.value = evt.newValue;

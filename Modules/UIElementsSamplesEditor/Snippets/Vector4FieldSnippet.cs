@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements.Samples
         internal override void Apply(VisualElement container)
         {
             /// <sample>
-            // Get a reference to the field from UXML and assign it its value.
+            // Get a reference to the field from UXML and assign a value to it.
             var uxmlField = container.Q<Vector4Field>("the-uxml-field");
             uxmlField.value = new Vector4(23.8f, 12.6f, 88.3f, 92.1f);
 
@@ -24,7 +24,7 @@ namespace UnityEditor.UIElements.Samples
             csharpField.value = uxmlField.value;
             container.Add(csharpField);
 
-            // Mirror value of uxml field into the C# field.
+            // Mirror the value of the UXML field into the C# field.
             uxmlField.RegisterCallback<ChangeEvent<Vector4>>((evt) =>
             {
                 csharpField.value = evt.newValue;

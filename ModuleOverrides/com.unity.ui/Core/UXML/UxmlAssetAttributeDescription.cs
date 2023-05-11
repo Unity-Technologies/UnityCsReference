@@ -7,7 +7,7 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Describes a XML <c>Object</c> attribute referencing an asset in the project. In uxml, this is referenced as a string URI.
+    /// Describes a UXML <c>Object</c> attribute referencing an asset in the project. In UXML, this is referenced as a string URI.
     /// </summary>
     public class UxmlAssetAttributeDescription<T> : TypedUxmlAttributeDescription<T>, IUxmlAssetAttributeDescription where T : Object
     {
@@ -41,12 +41,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Tries to retrieve the value of this attribute from the attribute bag. Returns true if it is found, otherwise returns false.
+        /// Attempts to retrieve the value of this attribute from the attribute bag and returns true if found, otherwise false.
         /// </summary>
         /// <param name="bag">The bag of attributes.</param>
         /// <param name="cc">The context in which the values are retrieved.</param>
         /// <param name="value">The value of the attribute.</param>
-        /// <returns>True if the value could be retrieved, false otherwise.</returns>
+        /// <returns>True if the value is found, false otherwise.</returns>
         public bool TryGetValueFromBag(IUxmlAttributes bag, CreationContext cc, out T value)
         {
             if (TryGetValueFromBagAsString(bag, cc, out var path, out var sourceAsset) && sourceAsset != null)

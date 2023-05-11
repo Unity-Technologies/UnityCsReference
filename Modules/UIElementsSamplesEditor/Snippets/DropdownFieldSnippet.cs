@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements.Samples
             // <DropdownField .... choices="Option 1,Option 2,Option 3" .... />
             var choices = new List<string> { "Option 1", "Option 2", "Option 3" };
 
-            // Get a reference to the dropdown field from UXML and assign it its value.
+            // Get a reference to the dropdown field from UXML and assign a value to it.
             var uxmlField = container.Q<DropdownField>("the-uxml-field");
             uxmlField.choices = choices;
             uxmlField.value = choices[0];
@@ -28,7 +28,7 @@ namespace UnityEditor.UIElements.Samples
             csharpField.AddToClassList("some-styled-field");
             container.Add(csharpField);
 
-            // Mirror value of uxml field into the C# field.
+            // Mirror the value of the UXML field into the C# field.
             uxmlField.RegisterCallback<ChangeEvent<string>>((evt) =>
             {
                 csharpField.value = evt.newValue;

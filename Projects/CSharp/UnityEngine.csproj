@@ -332,6 +332,12 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\UnsignedIntegerField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\UnsignedIntegerField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\UnsignedLongField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\UnsignedLongField.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Conversions\SetValueVisitor.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Conversions\SetValueVisitor.cs</Link>
     </Compile>

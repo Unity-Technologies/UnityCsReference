@@ -711,6 +711,13 @@ namespace UnityEditor.UIElements
                     if (property.type == "long")
                         return ConfigureField<LongField, long>(originalField as LongField, property,
                             () => new LongField());
+                    if (property.type == "ulong")
+                        return ConfigureField<UnsignedLongField, ulong>(originalField as UnsignedLongField, property,
+                            () => new UnsignedLongField());
+                    if (property.type == "uint")
+                        return ConfigureField<UnsignedIntegerField, uint>(originalField as UnsignedIntegerField, property,
+                            () => new UnsignedIntegerField());
+
                 {
                     var intField = ConfigureField<IntegerField, int>(originalField as IntegerField, property,
                         () => new IntegerField()) as IntegerField;

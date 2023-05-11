@@ -145,6 +145,16 @@ namespace UnityEditor
                     newField = new LongField(preferredLabel);
                     ((BaseField<long>)newField).onValidateValue += OnValidateValue;
                 }
+                else if (property.type == "uint")
+                {
+                    newField = new UnsignedIntegerField(preferredLabel);
+                    ((BaseField<uint>)newField).onValidateValue += OnValidateValue;
+                }
+                else if (property.type == "ulong")
+                {
+                    newField = new UnsignedLongField(preferredLabel);
+                    ((BaseField<ulong>)newField).onValidateValue += OnValidateValue;
+                }
             }
             else if (property.propertyType == SerializedPropertyType.Vector2)
             {
@@ -201,6 +211,16 @@ namespace UnityEditor
         private long OnValidateValue(long value)
         {
             return Math.Max((long)minAttribute.min, value);
+        }
+
+        private uint OnValidateValue(uint value)
+        {
+            return Math.Max((uint)minAttribute.min, value);
+        }
+
+        private ulong OnValidateValue(ulong value)
+        {
+            return Math.Max((ulong)minAttribute.min, value);
         }
 
         private Vector2 OnValidateValue(Vector2 value)

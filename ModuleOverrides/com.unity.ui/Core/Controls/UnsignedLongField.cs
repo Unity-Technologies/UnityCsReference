@@ -4,53 +4,51 @@
 
 using System;
 using System.Globalization;
-using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Makes a text field for entering long integers.
+    /// Makes a text field for entering unsigned long integers.
     /// </summary>
-    [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    public class LongField : TextValueField<long>
+    public class UnsignedLongField : TextValueField<ulong>
     {
         // This property to alleviate the fact we have to cast all the time
-        LongInput longInput => (LongInput)textInputBase;
+        UnsignedLongInput unsignedLongInput => (UnsignedLongInput)textInputBase;
 
         /// <summary>
-        /// Instantiates a <see cref="LongField"/> using the data read from a UXML file.
+        /// Instantiates a <see cref="UnsignedLongField"/> using the data read from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<LongField, UxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<UnsignedLongField, UxmlTraits> {}
         /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="LongField"/>.
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="UnsignedLongField"/>.
         /// </summary>
-        public new class UxmlTraits : TextValueFieldTraits<long, UxmlLongAttributeDescription> {}
+        public new class UxmlTraits : TextValueFieldTraits<ulong, UxmlUnsignedLongAttributeDescription> {}
 
         /// <summary>
-        /// Converts the given long integer to a string.
+        /// Converts the given unsigned long integer to a string.
         /// </summary>
-        /// <param name="v">The long integer to be converted to string.</param>
-        /// <returns>The long integer as string.</returns>
-        protected override string ValueToString(long v)
+        /// <param name="v">The unsigned long integer to be converted to string.</param>
+        /// <returns>The ulong integer as string.</returns>
+        protected override string ValueToString(ulong v)
         {
             return v.ToString(formatString, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         /// <summary>
-        /// Converts a string to a long integer.
+        /// Converts a string to a unsigned long integer.
         /// </summary>
         /// <param name="str">The string to convert.</param>
-        /// <returns>The long integer parsed from the string.</returns>
-        protected override long StringToValue(string str)
+        /// <returns>The unsigned long integer parsed from the string.</returns>
+        protected override ulong StringToValue(string str)
         {
-            var success = UINumericFieldsUtils.TryConvertStringToLong(str, textInputBase.originalText, out var v);
+            var success = UINumericFieldsUtils.TryConvertStringToULong(str, textInputBase.originalText, out var v);
             return success ? v : rawValue;
         }
 
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
-        public new static readonly string ussClassName = "unity-long-field";
+        public new static readonly string ussClassName = "unity-unsigned-long-field";
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
@@ -63,30 +61,30 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Constructor.
         /// </summary>
-        public LongField()
+        public UnsignedLongField()
             : this((string)null) {}
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="maxLength">Maximum number of characters the field can take.</param>
-        public LongField(int maxLength)
+        public UnsignedLongField(int maxLength)
             : this(null, maxLength) {}
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="maxLength">Maximum number of characters the field can take.</param>
-        public LongField(string label, int maxLength = kMaxLengthNone)
-            : base(label, maxLength, new LongInput())
+        public UnsignedLongField(string label, int maxLength = kMaxLengthNone)
+            : base(label, maxLength, new UnsignedLongInput())
         {
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
-            AddLabelDragger<long>();
+            AddLabelDragger<ulong>();
         }
 
-        internal override bool CanTryParse(string textString) => long.TryParse(textString, out _);
+        internal override bool CanTryParse(string textString) => ulong.TryParse(textString, out _);
 
         /// <summary>
         /// Applies the values of a 3D delta and a speed from an input device.
@@ -94,73 +92,71 @@ namespace UnityEngine.UIElements
         /// <param name="delta">A vector used to compute the value change.</param>
         /// <param name="speed">A multiplier for the value change.</param>
         /// <param name="startValue">The start value.</param>
-        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, long startValue)
+        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, ulong startValue)
         {
-            longInput.ApplyInputDeviceDelta(delta, speed, startValue);
+            unsignedLongInput.ApplyInputDeviceDelta(delta, speed, startValue);
         }
 
-        class LongInput : TextValueInput
+        class UnsignedLongInput : TextValueInput
         {
-            LongField parentLongField => (LongField)parent;
+            UnsignedLongField parentUnsignedLongField => (UnsignedLongField)parent;
 
-            internal LongInput()
+            internal UnsignedLongInput()
             {
                 formatString = UINumericFieldsUtils.k_IntFieldFormatString;
             }
 
-            protected override string allowedCharacters
-            {
-                get { return UINumericFieldsUtils.k_AllowedCharactersForInt; }
-            }
+            protected override string allowedCharacters => UINumericFieldsUtils.k_AllowedCharactersForInt;
 
-            public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, long startValue)
+            public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, ulong startValue)
             {
                 double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue);
                 var acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
                 var v = StringToValue(text);
                 var niceDelta = (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
 
-                v = ClampMinMaxLongValue(niceDelta, v);
+                v = ClampToMinMaxULongValue(niceDelta, v);
 
-                if (parentLongField.isDelayed)
+                if (parentUnsignedLongField.isDelayed)
                 {
                     text = ValueToString(v);
                 }
                 else
                 {
-                    parentLongField.value = v;
+                    parentUnsignedLongField.value = v;
                 }
             }
 
-            private long ClampMinMaxLongValue(long niceDelta, long value)
+            private ulong ClampToMinMaxULongValue(long niceDelta, ulong value)
             {
-                var niceDeltaAbs = Math.Abs(niceDelta);
+                var niceDeltaAbs = (ulong)Math.Abs(niceDelta);
+
                 if (niceDelta > 0)
                 {
-                    if (value > 0 && niceDeltaAbs > long.MaxValue - value)
+                    if (niceDeltaAbs > ulong.MaxValue - value)
                     {
-                        return long.MaxValue;
+                        return ulong.MaxValue;
                     }
 
-                    return value + niceDelta;
+                    return value + niceDeltaAbs;
                 }
 
-                if (value < 0 && value < long.MinValue + niceDeltaAbs)
+                if (niceDeltaAbs > value)
                 {
-                    return long.MinValue;
+                    return ulong.MinValue;
                 }
 
                 return value - niceDeltaAbs;
             }
 
-            protected override string ValueToString(long v)
+            protected override string ValueToString(ulong v)
             {
                 return v.ToString(formatString);
             }
 
-            protected override long StringToValue(string str)
+            protected override ulong StringToValue(string str)
             {
-                UINumericFieldsUtils.TryConvertStringToLong(str, originalText, out var v);
+                UINumericFieldsUtils.TryConvertStringToULong(str, originalText, out var v);
                 return v;
             }
         }

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine
@@ -153,27 +154,41 @@ namespace UnityEngine
             var res = false;
             if (typeof(T) == typeof(float))
             {
-                var v = (double)(float)(object)value;
+                var v = (double) UnsafeUtility.As<T, float>(ref value);
                 res = EvaluateDouble(tokens, ref v, index, count);
-                value = (T)(object)(float)v;
+                var outValue = (float)v;
+                value = UnsafeUtility.As<float, T>(ref outValue);
             }
             else if (typeof(T) == typeof(int))
             {
-                var v = (double)(int)(object)value;
+                var v = (double) UnsafeUtility.As<T, int>(ref value);
                 res = EvaluateDouble(tokens, ref v, index, count);
-                value = (T)(object)(int)v;
+                var outValue = (int)v;
+                value = UnsafeUtility.As<int, T>(ref outValue);
             }
             else if (typeof(T) == typeof(long))
             {
-                var v = (double)(long)(object)value;
+                var v = (double) UnsafeUtility.As<T, long>(ref value);
                 res = EvaluateDouble(tokens, ref v, index, count);
-                value = (T)(object)(long)v;
+                var outValue = (long)v;
+                value = UnsafeUtility.As<long, T>(ref outValue);
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                var v = (double) UnsafeUtility.As<T, ulong>(ref value);
+                res = EvaluateDouble(tokens, ref v, index, count);
+                if (v < 0d)
+                {
+                    v = 0d;
+                }
+                var outValue = (ulong)v;
+                value = UnsafeUtility.As<ulong, T>(ref outValue);
             }
             else if (typeof(T) == typeof(double))
             {
-                var v = (double)(object)value;
+                var v = UnsafeUtility.As<T, double>(ref value);
                 res = EvaluateDouble(tokens, ref v, index, count);
-                value = (T)(object)v;
+                value = UnsafeUtility.As<double, T>(ref v);
             }
             return res;
         }
@@ -512,6 +527,11 @@ namespace UnityEngine
             else if (typeof(T) == typeof(long))
             {
                 success = long.TryParse(expressionLowerCase, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
+                result = (T)(object)temp;
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                success = ulong.TryParse(expressionLowerCase, NumberStyles.Integer, CultureInfo.InvariantCulture.NumberFormat, out var temp);
                 result = (T)(object)temp;
             }
             return success;

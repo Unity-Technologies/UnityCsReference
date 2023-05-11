@@ -16,6 +16,11 @@ namespace UnityEditor.UIElements.Bindings
             return p.intValue;
         }
 
+        public static uint GetUIntPropertyValue(SerializedProperty p)
+        {
+            return p.uintValue;
+        }
+
         public static object GetManagedReferenceValue(SerializedProperty p)
         {
             return p.managedReferenceValue;
@@ -24,6 +29,11 @@ namespace UnityEditor.UIElements.Bindings
         public static long GetLongPropertyValue(SerializedProperty p)
         {
             return p.longValue;
+        }
+
+        public static ulong GetULongPropertyValue(SerializedProperty p)
+        {
+            return p.ulongValue;
         }
 
         public static bool GetBoolPropertyValue(SerializedProperty p)
@@ -164,9 +174,19 @@ namespace UnityEditor.UIElements.Bindings
             p.intValue = v;
         }
 
+        public static void SetUIntPropertyValue(SerializedProperty p, uint v)
+        {
+            p.uintValue = v;
+        }
+
         public static void SetLongPropertyValue(SerializedProperty p, long v)
         {
             p.longValue = v;
+        }
+
+        public static void SetULongPropertyValue(SerializedProperty p, ulong v)
+        {
+            p.ulongValue = v;
         }
 
         public static void SetBoolPropertyValue(SerializedProperty p, bool v)
