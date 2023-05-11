@@ -802,23 +802,20 @@ namespace UnityEngine.UIElements
                 if (e.oldRect.size == e.newRect.size)
                     return;
 
-                var widthChanged = Math.Abs(e.oldRect.size.x - e.newRect.size.x) > float.Epsilon;
+                var widthChanged = Math.Abs(e.oldRect.size.x - e.newRect.size.x) > UIRUtility.k_Epsilon;
 
                 UpdateScrollOffset(isBackspace: false, widthChanged);
             }
 
             internal void OnInputCustomStyleResolved(CustomStyleResolvedEvent e)
             {
-                Color selectionValue = Color.clear;
-                Color cursorValue = Color.clear;
-
                 // These don't quite follow the inline style behavior
                 // (aka setting the value via code should always overrides the one from styleSheets)
                 ICustomStyle customStyle = e.customStyle;
-                if (customStyle.TryGetValue(s_SelectionColorProperty, out selectionValue))
+                if (customStyle.TryGetValue(s_SelectionColorProperty, out Color selectionValue))
                     textSelection.selectionColor = selectionValue;
 
-                if (customStyle.TryGetValue(s_CursorColorProperty, out cursorValue))
+                if (customStyle.TryGetValue(s_CursorColorProperty, out Color cursorValue))
                     textSelection.cursorColor = cursorValue;
 
                 SetScrollViewMode();
