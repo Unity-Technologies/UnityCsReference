@@ -454,6 +454,8 @@ namespace UnityEngine
         {
             unsafe
             {
+                if (string.IsNullOrEmpty(s))
+                    return true;
                 int capacity = s.Length * 2;
                 byte* bytes = stackalloc byte[capacity];
                 int length;

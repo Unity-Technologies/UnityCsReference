@@ -94,16 +94,6 @@ namespace UnityEditor.PackageManager
             return new GetRegistriesRequest(operationId, status);
         }
 
-        internal static GetCachedPackagesRequest GetCachedPackages(string registryId)
-        {
-            if (string.IsNullOrWhiteSpace(registryId))
-                throw new ArgumentException("Registry id cannot be null, empty or whitespace", nameof(registryId));
-
-            long operationId;
-            var status = GetCachedPackages(out operationId, registryId);
-            return new GetCachedPackagesRequest(operationId, status);
-        }
-
         internal static ListBuiltInPackagesRequest ListBuiltInPackages()
         {
             long operationId;

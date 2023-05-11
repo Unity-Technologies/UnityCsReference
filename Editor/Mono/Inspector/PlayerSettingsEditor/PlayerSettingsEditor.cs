@@ -21,6 +21,7 @@ using UnityEngine.SceneManagement;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEngine.Rendering;
+using UnityEngine.Scripting;
 
 // ************************************* READ BEFORE EDITING **************************************
 //
@@ -500,8 +501,10 @@ namespace UnityEditor
             return property;
         }
 
+        private static List<PlayerSettingsEditor> s_activeEditors = new List<PlayerSettingsEditor>();
         void OnEnable()
         {
+            s_activeEditors.Add(this);
             isPreset = PresetEditor.IsPreset(target);
             validPlatforms = BuildPlatforms.instance.GetValidPlatforms(true).ToArray();
 
@@ -676,12 +679,35 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            s_activeEditors.Remove(this);
+            HandlePendingChangesRequiringRecompilation();
+
+            // Ensure script compilation handling is returned to to EditorOnlyPlayerSettings
+            if (!isPreset)
+                PlayerSettings.isHandlingScriptRecompile = true;
+        }
+
+        [RequiredByNativeCode]
+        private static void HandlePendingChangesBeforeEnterPlaymode()
+        {
+            foreach (var editor in s_activeEditors)
+            {
+                editor.HandlePendingChangesRequiringRecompilation();
+            }
+        }
+
+        private void HandlePendingChangesRequiringRecompilation()
+        {
             if (hasScriptingDefinesBeenModified)
             {
                 if (EditorUtility.DisplayDialog("Scripting Define Symbols Have Been Modified", "Do you want to apply changes?", "Apply", "Revert"))
                 {
                     SetScriptingDefineSymbolsForGroup(lastNamedBuildTarget, scriptingDefinesList.ToArray());
                     SetReason(RecompileReason.scriptingDefineSymbolsModified);
+                }
+                else
+                {
+                    InitReorderableScriptingDefineSymbolsList(lastNamedBuildTarget);
                 }
 
                 hasScriptingDefinesBeenModified = false;
@@ -694,6 +720,10 @@ namespace UnityEditor
                     SetAdditionalCompilerArgumentsForGroup(lastNamedBuildTarget, additionalCompilerArgumentsList.ToArray());
                     SetReason(RecompileReason.additionalCompilerArgumentsModified);
                 }
+                else
+                {
+                    InitReorderableAdditionalCompilerArgumentsList(lastNamedBuildTarget);
+                }
 
                 hasAdditionalCompilerArgumentsBeenModified = false;
             }
@@ -703,10 +733,6 @@ namespace UnityEditor
                 serializedObject.ApplyModifiedProperties();
                 RecompileScripts();
             }
-
-            // Ensure script compilation handling is returned to to EditorOnlyPlayerSettings
-            if (!isPreset)
-                PlayerSettings.isHandlingScriptRecompile = true;
         }
 
         public void SetValueChangeListeners(UnityAction action)

@@ -198,9 +198,9 @@ namespace UnityEditor.Experimental.GraphView
             foreach (StickyNoteTheme value in System.Enum.GetValues(typeof(StickyNoteTheme)))
             {
                 if (m_Theme != value)
-                    RemoveFromClassList("theme-" + value.ToString().ToLower());
+                    RemoveFromClassList("theme-" + value.ToString().ToLowerInvariant());
                 else
-                    AddToClassList("theme-" + value.ToString().ToLower());
+                    AddToClassList("theme-" + value.ToString().ToLowerInvariant());
             }
         }
 
@@ -209,9 +209,9 @@ namespace UnityEditor.Experimental.GraphView
             foreach (StickyNoteFontSize value in System.Enum.GetValues(typeof(StickyNoteFontSize)))
             {
                 if (m_FontSize != value)
-                    RemoveFromClassList("size-" + value.ToString().ToLower());
+                    RemoveFromClassList("size-" + value.ToString().ToLowerInvariant());
                 else
-                    AddToClassList("size-" + value.ToString().ToLower());
+                    AddToClassList("size-" + value.ToString().ToLowerInvariant());
             }
         }
 

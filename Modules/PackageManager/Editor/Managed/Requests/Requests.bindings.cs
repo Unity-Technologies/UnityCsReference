@@ -47,13 +47,6 @@ namespace UnityEditor.PackageManager.Requests
         private static extern PackageInfo GetOperationData(long operationId);
     }
 
-    internal partial class GetCachedPackagesRequest
-    {
-        [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
-        [StaticAccessor("PackageManager::GetCachedPackages", StaticAccessorType.DoubleColon)]
-        private static extern CachedPackageInfo[] GetOperationData(long operationId);
-    }
-
     internal partial class GetRegistriesRequest
     {
         [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
