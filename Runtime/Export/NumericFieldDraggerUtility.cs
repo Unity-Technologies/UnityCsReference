@@ -59,7 +59,17 @@ namespace UnityEngine
 
         internal static long CalculateIntDragSensitivity(long value)
         {
-            return (long)Math.Max(1, Math.Pow(Math.Abs((double)value), 0.5) * kDragSensitivity);
+            return (long)CalculateIntDragSensitivity((double)value);
+        }
+
+        internal static ulong CalculateIntDragSensitivity(ulong value)
+        {
+            return (ulong)CalculateIntDragSensitivity((double)value);
+        }
+
+        private static double CalculateIntDragSensitivity(double value)
+        {
+            return Math.Max(1, Math.Pow(Math.Abs(value), 0.5) * kDragSensitivity);
         }
 
         internal static long CalculateIntDragSensitivity(long value, long minValue, long maxValue)

@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements.Samples
             /// <sample>
             // Get a reference to the field from UXML,
             // initialize it with an Enum type,
-            // and assign it its value.
+            // and assign a value to it.
             var uxmlField = container.Q<EnumField>("the-uxml-field");
             uxmlField.Init(TextAlignment.Center);
             uxmlField.value = TextAlignment.Left;
@@ -27,7 +27,7 @@ namespace UnityEditor.UIElements.Samples
             csharpField.value = uxmlField.value;
             container.Add(csharpField);
 
-            // Mirror value of uxml field into the C# field.
+            // Mirror the value of the UXML field into the C# field.
             uxmlField.RegisterCallback<ChangeEvent<Enum>>((evt) =>
             {
                 csharpField.value = evt.newValue;

@@ -173,6 +173,9 @@ namespace UnityEngine
         // Clears errors from the developer console.
         public static extern void ClearDeveloperConsole();
 
+        // Prevent the developer console from opening in developer builds
+        public static extern bool developerConsoleEnabled { get; set; }
+
         // Opens or closes developer console.
         public static extern bool developerConsoleVisible { get; set; }
 

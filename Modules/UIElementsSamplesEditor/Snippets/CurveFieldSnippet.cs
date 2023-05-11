@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements.Samples
         internal override void Apply(VisualElement container)
         {
             /// <sample>
-            // Get a reference to the field from UXML and assign it its value.
+            // Get a reference to the field from UXML and assign a value to it.
             var uxmlField = container.Q<CurveField>("the-uxml-field");
             uxmlField.value = new AnimationCurve(new Keyframe[]
                 { new Keyframe(0, 0), new Keyframe(5, 8), new Keyframe(10, 4) });
@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements.Samples
             csharpField.value = uxmlField.value;
             container.Add(csharpField);
 
-            // Mirror value of uxml field into the C# field.
+            // Mirror the value of the UXML field into the C# field.
             uxmlField.RegisterCallback<ChangeEvent<AnimationCurve>>((evt) =>
             {
                 csharpField.value = evt.newValue;

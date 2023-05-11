@@ -4,53 +4,51 @@
 
 using System;
 using System.Globalization;
-using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Makes a text field for entering an integer.
+    /// Makes a text field for entering an unsigned integer.
     /// </summary>
-    [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
-    public class IntegerField : TextValueField<int>
+    public class UnsignedIntegerField : TextValueField<uint>
     {
         // This property to alleviate the fact we have to cast all the time
-        IntegerInput integerInput => (IntegerInput)textInputBase;
+        UnsignedIntegerInput integerInput => (UnsignedIntegerInput)textInputBase;
 
         /// <summary>
-        /// Instantiates an <see cref="IntegerField"/> using the data read from a UXML file.
+        /// Instantiates an <see cref="UnsignedIntegerField"/> using the data read from a UXML file.
         /// </summary>
-        public new class UxmlFactory : UxmlFactory<IntegerField, UxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<UnsignedIntegerField, UxmlTraits> {}
         /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="IntegerField"/>.
+        /// Defines <see cref="UxmlTraits"/> for the <see cref="UnsignedIntegerField"/>.
         /// </summary>
-        public new class UxmlTraits : TextValueFieldTraits<int, UxmlIntAttributeDescription> {}
+        public new class UxmlTraits : TextValueFieldTraits<uint, UxmlUnsignedIntAttributeDescription> {}
 
         /// <summary>
-        /// Converts the given integer to a string.
+        /// Converts the given unsigned integer to a string.
         /// </summary>
-        /// <param name="v">The integer to be converted to string.</param>
-        /// <returns>The integer as string.</returns>
-        protected override string ValueToString(int v)
+        /// <param name="v">The unsigned integer to be converted to string.</param>
+        /// <returns>The unsigned integer as string.</returns>
+        protected override string ValueToString(uint v)
         {
             return v.ToString(formatString, CultureInfo.InvariantCulture.NumberFormat);
         }
 
         /// <summary>
-        /// Converts a string to an integer.
+        /// Converts a string to an unsigned integer.
         /// </summary>
         /// <param name="str">The string to convert.</param>
-        /// <returns>The integer parsed from the string.</returns>
-        protected override int StringToValue(string str)
+        /// <returns>The unsigned integer parsed from the string.</returns>
+        protected override uint StringToValue(string str)
         {
-            var success = UINumericFieldsUtils.TryConvertStringToInt(str, textInputBase.originalText, out var v);
+            var success = UINumericFieldsUtils.TryConvertStringToUInt(str, textInputBase.originalText, out var v);
             return success ? v : rawValue;
         }
 
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
-        public new static readonly string ussClassName = "unity-integer-field";
+        public new static readonly string ussClassName = "unity-unsigned-integer-field";
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
@@ -63,30 +61,30 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Constructor.
         /// </summary>
-        public IntegerField()
+        public UnsignedIntegerField()
             : this((string)null) {}
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="maxLength">Maximum number of characters the field can take.</param>
-        public IntegerField(int maxLength)
+        public UnsignedIntegerField(int maxLength)
             : this(null, maxLength) {}
 
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="maxLength">Maximum number of characters the field can take.</param>
-        public IntegerField(string label, int maxLength = kMaxLengthNone)
-            : base(label, maxLength, new IntegerInput())
+        public UnsignedIntegerField(string label, int maxLength = kMaxLengthNone)
+            : base(label, maxLength, new UnsignedIntegerInput())
         {
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
-            AddLabelDragger<int>();
+            AddLabelDragger<uint>();
         }
 
-        internal override bool CanTryParse(string textString) => int.TryParse(textString, out _);
+        internal override bool CanTryParse(string textString) => uint.TryParse(textString, out _);
 
         /// <summary>
         /// Applies the values of a 3D delta and a speed from an input device.
@@ -94,46 +92,47 @@ namespace UnityEngine.UIElements
         /// <param name="delta">A vector used to compute the value change.</param>
         /// <param name="speed">A multiplier for the value change.</param>
         /// <param name="startValue">The start value.</param>
-        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, int startValue)
+        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, uint startValue)
         {
             integerInput.ApplyInputDeviceDelta(delta, speed, startValue);
         }
 
-        class IntegerInput : TextValueInput
+        class UnsignedIntegerInput : TextValueInput
         {
-            IntegerField parentIntegerField => (IntegerField)parent;
+            UnsignedIntegerField parentUnsignedIntegerField => (UnsignedIntegerField)parent;
 
-            internal IntegerInput()
+            internal UnsignedIntegerInput()
             {
                 formatString = UINumericFieldsUtils.k_IntFieldFormatString;
             }
 
             protected override string allowedCharacters => UINumericFieldsUtils.k_AllowedCharactersForInt;
 
-            public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, int startValue)
+            public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, uint startValue)
             {
                 double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue);
-                float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
+                var acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
                 long v = StringToValue(text);
                 v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
-                if (parentIntegerField.isDelayed)
+
+                if (parentUnsignedIntegerField.isDelayed)
                 {
-                    text = ValueToString(Mathf.ClampToInt(v));
+                    text = ValueToString(Mathf.ClampToUInt(v));
                 }
                 else
                 {
-                    parentIntegerField.value = Mathf.ClampToInt(v);
+                    parentUnsignedIntegerField.value = Mathf.ClampToUInt(v);
                 }
             }
 
-            protected override string ValueToString(int v)
+            protected override string ValueToString(uint v)
             {
                 return v.ToString(formatString);
             }
 
-            protected override int StringToValue(string str)
+            protected override uint StringToValue(string str)
             {
-                UINumericFieldsUtils.TryConvertStringToInt(str, originalText, out var v);
+                UINumericFieldsUtils.TryConvertStringToUInt(str, originalText, out var v);
                 return v;
             }
         }

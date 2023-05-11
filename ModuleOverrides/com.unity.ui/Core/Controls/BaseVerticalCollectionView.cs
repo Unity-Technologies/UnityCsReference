@@ -162,6 +162,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// This callback receives an enumerable that contains the item or items chosen.
+        /// <para>__Note__: A single-click only changes the selection. Use a double-click to submit the selection.</para>
         /// </remarks>
         public event Action<IEnumerable<object>> itemsChosen;
 

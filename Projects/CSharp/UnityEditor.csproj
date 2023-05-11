@@ -9737,6 +9737,12 @@
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\TreeViewSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\TreeViewSnippet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\UnsignedIntegerFieldSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\UnsignedIntegerFieldSnippet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\UnsignedLongFieldSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\UnsignedLongFieldSnippet.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\Vector2FieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\Vector2FieldSnippet.cs</Link>
     </Compile>
