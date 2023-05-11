@@ -189,12 +189,51 @@ namespace UnityEngine.UIElements
                 selectingManipulator.m_SelectingUtilities.MoveTextEnd();
         }
 
-        Color ITextSelection.selectionColor { get; set; } = new Color(0.239f, 0.502f, 0.875f, 0.65f);
+        private Color m_SelectionColor = new Color(0.239f, 0.502f, 0.875f, 0.65f);
 
+        Color ITextSelection.selectionColor
+        {
+            get => m_SelectionColor;
+            set
+            {
+                if (m_SelectionColor == value)
+                    return;
+                m_SelectionColor = value;
+                MarkDirtyRepaint();
+            }
+        }
 
-        Color ITextSelection.cursorColor { get; set; } = new Color(0.706f, 0.706f, 0.706f, 1.0f);
+        private Color m_CursorColor = new Color(0.706f, 0.706f, 0.706f, 1.0f);
+        Color ITextSelection.cursorColor {
+            get => m_CursorColor;
+            set
+            {
+                if (m_CursorColor == value)
+                    return;
+                m_CursorColor = value;
+                MarkDirtyRepaint();
+            }
+        }
 
-        float ITextSelection.cursorWidth { get; set; } = 1.0f;
+        private Color cursorColor
+        {
+            get => selection.cursorColor;
+            set => selection.cursorColor = value;
+        }
+
+        private float m_CursorWidth = 1.0f;
+
+        float ITextSelection.cursorWidth
+        {
+            get => m_CursorWidth;
+            set
+            {
+                if (Mathf.Approximately(m_CursorWidth, value))
+                    return;
+                m_CursorWidth = value;
+                MarkDirtyRepaint();
+            }
+        }
 
         // Always return a valid selecting manipulator and rely on isSelectable to use it/not
         internal TextSelectingManipulator selectingManipulator =>

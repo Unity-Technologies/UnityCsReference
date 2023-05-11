@@ -1661,5 +1661,7 @@ namespace UnityEditor
             [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
             set;
         }
+
+        internal static extern bool platformRequiresReadableAssets { get; set; }
     }
 }

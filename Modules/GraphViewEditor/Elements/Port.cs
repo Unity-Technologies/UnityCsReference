@@ -78,9 +78,9 @@ namespace UnityEditor.Experimental.GraphView
             {
                 if (m_Direction != value)
                 {
-                    RemoveFromClassList(m_Direction.ToString().ToLower());
+                    RemoveFromClassList(m_Direction.ToString().ToLowerInvariant());
                     m_Direction = value;
-                    AddToClassList(m_Direction.ToString().ToLower());
+                    AddToClassList(m_Direction.ToString().ToLowerInvariant());
                 }
             }
         }
@@ -377,7 +377,7 @@ namespace UnityEditor.Experimental.GraphView
             capacity = portCapacity;
 
             AddToClassList("port");
-            AddToClassList(portDirection.ToString().ToLower());
+            AddToClassList(portDirection.ToString().ToLowerInvariant());
             AddStyleSheetPath("StyleSheets/GraphView/Port.uss");
         }
 

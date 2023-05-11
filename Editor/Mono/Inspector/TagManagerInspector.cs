@@ -151,7 +151,8 @@ namespace UnityEditor
                 }
 
                 GUI.enabled = m_NewTagName.Length != 0;
-                if (GUILayout.Button("Save") || hitEnter)
+                var savePressed = GUILayout.Button("Save");
+                if (!string.IsNullOrWhiteSpace(m_NewTagName) && (savePressed || hitEnter))
                 {
                     EnterCB(m_NewTagName);
                     editorWindow.Close();

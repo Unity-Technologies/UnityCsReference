@@ -344,9 +344,9 @@ namespace UnityEditor.UIElements.StyleSheets
                     }
                 }
 
+                using (var so = new SerializedObject(font))
                 {
-                    var so = new SerializedObject(font);
-                    var oldTex = so.FindProperty("m_Texture").objectReferenceValue;
+                        var oldTex = so.FindProperty("m_Texture").objectReferenceValue;
                     if (oldTex != null)
                     {
                         //Reuse the same texture if the reference was equal

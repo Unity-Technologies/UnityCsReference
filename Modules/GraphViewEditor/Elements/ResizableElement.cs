@@ -44,7 +44,7 @@ namespace UnityEditor.Experimental.GraphView
 
             foreach (ResizerDirection value in System.Enum.GetValues(typeof(ResizerDirection)))
             {
-                VisualElement resizer = this.Q(value.ToString().ToLower() + "-resize");
+                VisualElement resizer = this.Q(value.ToString().ToLowerInvariant() + "-resize");
                 if (resizer != null)
                     resizer.AddManipulator(new ElementResizer(this, value));
             }
@@ -52,7 +52,7 @@ namespace UnityEditor.Experimental.GraphView
             foreach (ResizerDirection vertical in new[] { ResizerDirection.Top, ResizerDirection.Bottom })
                 foreach (ResizerDirection horizontal in new[] { ResizerDirection.Left, ResizerDirection.Right })
                 {
-                    VisualElement resizer = this.Q(vertical.ToString().ToLower() + "-" + horizontal.ToString().ToLower() + "-resize");
+                    VisualElement resizer = this.Q(vertical.ToString().ToLowerInvariant() + "-" + horizontal.ToString().ToLowerInvariant() + "-resize");
                     if (resizer != null)
                         resizer.AddManipulator(new ElementResizer(this, vertical | horizontal));
                 }

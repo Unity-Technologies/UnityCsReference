@@ -228,7 +228,7 @@ namespace UnityEditor.Experimental
 
             if (LocalizationDatabase.currentEditorLanguage == SystemLanguage.English)
             {
-                string currentFontStyleSheet = "StyleSheets/Extensions/fonts/" + currentFontName.ToLower() + ".uss";
+                string currentFontStyleSheet = "StyleSheets/Extensions/fonts/" + currentFontName.ToLowerInvariant() + ".uss";
 
                 catalogFiles.Add(currentFontStyleSheet);
             }

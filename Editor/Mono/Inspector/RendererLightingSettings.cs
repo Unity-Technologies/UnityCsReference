@@ -379,6 +379,7 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(Styles.giNotEnabledInfo.text, MessageType.Info);
                     EditorGUI.indentLevel -= 1;
+                    EditorGUILayout.EndFoldoutHeaderGroup();
                     return;
                 }
 
