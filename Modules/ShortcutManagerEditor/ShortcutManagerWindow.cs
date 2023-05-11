@@ -51,10 +51,10 @@ namespace UnityEditor.ShortcutManagement
         {
             get; set;
         }
-        bool CanCreateProfile(string newProfileId);
+        string CanCreateProfile(string newProfileId);
         void CreateProfile(string newProfileId);
         bool CanRenameActiveProfile();
-        bool CanRenameActiveProfile(string newProfileId);
+        string CanRenameActiveProfile(string newProfileId);
         void RenameActiveProfile(string newProfileId);
         bool CanDeleteActiveProfile();
         void DeleteActiveProfile();

@@ -5725,14 +5725,14 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistryAddedPopup.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistryAddedPopup.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs">
+      <Link>Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AuthorInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\AuthorInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\BuildUtilities.cs">
       <Link>Modules\PackageManager\Editor\Managed\BuildUtilities.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\CachedPackageInfo.cs">
-      <Link>Modules\PackageManager\Editor\Managed\CachedPackageInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Client.cs">
       <Link>Modules\PackageManager\Editor\Managed\Client.cs</Link>
@@ -5823,9 +5823,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\EmbedRequest.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetCachedPackagesRequest.cs">
-      <Link>Modules\PackageManager\Editor\Managed\Requests\GetCachedPackagesRequest.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\GetRegistriesRequest.cs</Link>

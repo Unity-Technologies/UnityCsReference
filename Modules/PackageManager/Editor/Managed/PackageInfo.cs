@@ -151,6 +151,10 @@ namespace UnityEditor.PackageManager
         [NativeName("upmReserved")]
         private string m_UpmReserved = "";
 
+        [SerializeField]
+        [NativeName("assetStore")]
+        private AssetStoreInfo m_AssetStore = new AssetStoreInfo();
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -184,6 +188,7 @@ namespace UnityEditor.PackageManager
         internal string projectDependenciesEntry { get { return m_ProjectDependenciesEntry; } }
         internal string upmReserved { get { return m_UpmReserved; } }
         public RegistryInfo registry { get { return m_Registry; } }
+        internal AssetStoreInfo assetStore { get { return m_Entitlements.licenseType == EntitlementLicenseType.AssetStore ? m_AssetStore : null; } }
 
         public DateTime? datePublished
         {
