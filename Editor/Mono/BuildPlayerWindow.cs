@@ -239,6 +239,10 @@ namespace UnityEditor
             for (int i = 0; i < SceneManager.sceneCount; i++)
             {
                 Scene scene = SceneManager.GetSceneAt(i);
+
+                if (EditorSceneManager.IsAuthoringScene(scene))
+                    continue;
+
                 if (scene.path.Length == 0 && !EditorSceneManager.SaveScene(scene, "", false))
                     continue;
 

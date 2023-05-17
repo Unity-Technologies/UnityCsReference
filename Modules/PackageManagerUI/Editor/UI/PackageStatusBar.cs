@@ -91,7 +91,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnInternetReachabilityChange(bool value)
         {
-            refreshButton.SetEnabled(value);
             UpdateStatusMessage();
         }
 
@@ -151,7 +150,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (status == StatusType.Loading)
             {
                 loadingSpinner.Start();
-                UIUtils.SetElementDisplay(refreshButton,false);
+                UIUtils.SetElementDisplay(refreshButton, false);
             }
             else
             {
@@ -189,7 +188,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 menu.AppendAction(L10n.Tr("Check for updates"), a =>
                 {
                     m_AssetStoreCallQueue.ForceCheckUpdateForAllLocalInfos();
-                },action => m_AssetStoreCallQueue.isCheckUpdateInProgress ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+                }, action => m_AssetStoreCallQueue.isCheckUpdateInProgress ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
                 refreshButton.menu = menu;
             }
             else

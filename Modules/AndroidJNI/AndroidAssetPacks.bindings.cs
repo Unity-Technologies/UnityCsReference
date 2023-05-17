@@ -148,7 +148,8 @@ namespace UnityEngine.Android
                         }
                         else
                         {
-                            downloadProgress += info.bytesDownloaded / info.size;
+                            double result = (double)info.bytesDownloaded / (double)info.size;
+                            downloadProgress += (float)result;
                             transferProgress += info.transferProgress;
                         }
                     }
