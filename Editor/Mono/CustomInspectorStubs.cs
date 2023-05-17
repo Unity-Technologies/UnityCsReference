@@ -68,10 +68,21 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
-                "Project/Input Manager", "ProjectSettings/InputManager.asset",
-                SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/InputManager.asset"));
-            return provider;
+            // The new input system adds objects to InputManager.asset. This means we can't use AssetSettingsProvider.CreateProviderFromAssetPath
+            // as it will load *all* objects at that path and try to create an editor for it.
+            // NOTE: When the input system package is uninstalled, InputManager.asset will contain serialized MonoBehaviour objects for which
+            //       the C# classes are no longer available. They will thus not load correctly and appear as null entries.
+            var objects = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/InputManager.asset");
+            foreach (var obj in objects)
+            {
+                if (obj != null && obj.name == "InputManager")
+                {
+                    var provider = AssetSettingsProvider.CreateProviderFromObject("Project/Input Manager", obj,
+                        SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/InputManager.asset"));
+                    return provider;
+                }
+            }
+            return null;
         }
     }
 

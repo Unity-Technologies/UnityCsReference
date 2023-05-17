@@ -23,7 +23,7 @@ namespace UnityEditor
         public override string GetInfoString()
         {
             var tex = (Texture2DArray)target;
-            var info = $"{tex.width}x{tex.height} {tex.depth} slice{(tex.depth != 1 ? "s" : "")} {TextureUtil.GetTextureFormatString(tex.format)} {EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(tex))}";
+            var info = $"{tex.width}x{tex.height} {tex.depth} slice{(tex.depth != 1 ? "s" : "")} {TextureUtil.GetTextureFormatString(tex.format)} {EditorUtility.FormatBytes(TextureUtil.GetStorageMemorySizeLong(tex))}";
             return info;
         }
 

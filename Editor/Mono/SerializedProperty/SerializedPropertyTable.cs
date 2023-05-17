@@ -120,12 +120,13 @@ namespace UnityEditor
             r.y += m_FilterHeight;
             Rect tableRect = r;
 
+            // filter
+            m_TreeView.OnFilterGUI(filterRect);
+
             // table
             Profiler.BeginSample("TreeView.OnGUI");
             m_TreeView.OnGUI(tableRect);
             Profiler.EndSample();
-
-            m_TreeView.OnFilterGUI(filterRect);
 
             if (m_TreeView.IsFilteredDirty())
                 m_TreeView.Reload();

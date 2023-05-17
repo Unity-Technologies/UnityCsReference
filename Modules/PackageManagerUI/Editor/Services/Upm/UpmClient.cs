@@ -386,8 +386,7 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var package in upmPackages.Concat(productPackages))
             {
-                if (!showPreview && HasHidablePreviewVersions(package))
-                    RemovePreviewVersions(package);
+                RemovePreviewVersionsIfNeeded(package, showPreview);
                 UnloadVersionsIfNeeded(package);
                 UpdateExtraPackageInfos(package.name, package.versions);
             }
@@ -436,8 +435,7 @@ namespace UnityEditor.PackageManager.UI
 
             foreach (var package in updatedUpmPackages.Concat(updatedProductPackages))
             {
-                if (!showPreview)
-                    RemovePreviewVersions(package);
+                RemovePreviewVersionsIfNeeded(package, showPreview);
                 UnloadVersionsIfNeeded(package);
                 UpdateExtraPackageInfos(package.name, package.versions);
             }
@@ -457,8 +455,7 @@ namespace UnityEditor.PackageManager.UI
             var package = CreateUpmPackage(searchInfo, installedInfo);
 
             var showPreview = m_SettingsProxy.enablePreviewPackages;
-            if (!showPreview)
-                RemovePreviewVersions(package);
+            RemovePreviewVersionsIfNeeded(package, showPreview);
             UnloadVersionsIfNeeded(package);
             UpdateExtraPackageInfos(package.name, package.versions);
 
@@ -511,7 +508,7 @@ namespace UnityEditor.PackageManager.UI
                 ExtraFetch(primaryVersion.uniqueId);
         }
 
-        // check if this package have preview packages that's `hidable` (will be filtered out if `show preview` is not selected).
+        // check if this package have preview versions that's `hidable` (will be filtered out if `show preview` is not selected).
         // if the installed version is preview, then we we always show other preview versions
         // if no installed version or installed version is not preview, we hide the preview versions according to the `show previews` toggle
         private static bool HasHidablePreviewVersions(IPackage package)
@@ -525,9 +522,10 @@ namespace UnityEditor.PackageManager.UI
             return package.versions.Any(v => !v.HasTag(PackageTag.Release));
         }
 
-        private static void RemovePreviewVersions(UpmPackage package)
+        private static void RemovePreviewVersionsIfNeeded(UpmPackage package, bool showPreview)
         {
-            package.UpdateVersions(package.versions.Where(v => v.HasTag(PackageTag.Release)).Cast<UpmPackageVersion>(), 0);
+            if (!showPreview && HasHidablePreviewVersions(package))
+                package.UpdateVersions(package.versions.Where(v => v.HasTag(PackageTag.Release)).Cast<UpmPackageVersion>(), 0);
         }
 
         private void UnloadVersionsIfNeeded(UpmPackage package)

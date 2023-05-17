@@ -476,7 +476,6 @@ namespace UnityEditor.ShortcutManagement
             m_Root.AddToClassList("ShortcutManagerView");
             if (EditorGUIUtility.isProSkin)
                 m_Root.AddToClassList("isProSkin");
-            m_Root.AddStyleSheetPath("StyleSheets/ShortcutManager/ShortcutManagerView.uss");
 
             // Set up resize handle manipulator
             // TODO: replace k_PixelsPadding with width of the text from the left header element after UXML/USS migration.
