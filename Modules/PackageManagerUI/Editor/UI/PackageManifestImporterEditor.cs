@@ -247,7 +247,7 @@ namespace UnityEditor.PackageManager.UI
             rect.x += 4;
             rect.width = w / 3 * 2 - 2;
             rect.height -= EditorGUIUtility.standardVerticalSpacing;
-            packageName.stringValue = EditorGUI.DelayedTextField(rect, packageName.stringValue);
+            packageName.stringValue = EditorGUI.TextField(rect, packageName.stringValue);
 
             if (!IsNullOrEmptyTrim(packageName.stringValue) && !PackageValidation.ValidateName(packageName.stringValue))
                 errorMessages.Add($"Invalid Dependency Package Name '{packageName.stringValue}'");
@@ -256,7 +256,7 @@ namespace UnityEditor.PackageManager.UI
             {
                 rect.x += w / 3 * 2;
                 rect.width = w / 3 - 4;
-                version.stringValue = EditorGUI.DelayedTextField(rect, version.stringValue);
+                version.stringValue = EditorGUI.TextField(rect, version.stringValue);
 
                 if (!IsNullOrEmptyTrim(version.stringValue) && !PackageValidation.ValidateVersion(version.stringValue))
                     errorMessages.Add(
@@ -295,24 +295,24 @@ namespace UnityEditor.PackageManager.UI
         {
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
-                EditorGUILayout.DelayedTextField(m_Name, Styles.name);
-                m_OrganizationName.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames);
-                EditorGUILayout.DelayedTextField(m_DisplayName, Styles.displayName);
-                EditorGUILayout.DelayedTextField(m_Version, Styles.version);
+                EditorGUILayout.PropertyField(m_Name, Styles.name);
+                m_OrganizationName.stringValue = EditorGUILayout.TextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames);
+                EditorGUILayout.PropertyField(m_DisplayName, Styles.displayName);
+                EditorGUILayout.PropertyField(m_Version, Styles.version);
                 EditorGUILayout.PropertyField(m_UnityVersionEnabled, Styles.unity);
                 if (m_UnityVersionEnabled.boolValue)
                 {
                     EditorGUI.showMixedValue = m_UnityMajor.hasMultipleDifferentValues;
-                    m_UnityMajor.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.unityMajor,
+                    m_UnityMajor.stringValue = EditorGUILayout.TextFieldDropDown(Styles.unityMajor,
                         m_UnityMajor.stringValue, MajorUnityVersions.ToArray());
 
                     EditorGUI.showMixedValue = m_UnityMinor.hasMultipleDifferentValues;
-                    m_UnityMinor.stringValue = EditorGUILayout.DelayedTextFieldDropDown(Styles.unityMinor,
+                    m_UnityMinor.stringValue = EditorGUILayout.TextFieldDropDown(Styles.unityMinor,
                         m_UnityMinor.stringValue, MinorUnityVersions.ToArray());
 
                     EditorGUI.showMixedValue = m_UnityRelease.hasMultipleDifferentValues;
                     m_UnityRelease.stringValue =
-                        EditorGUILayout.DelayedTextField(Styles.unityRelease, m_UnityRelease.stringValue);
+                        EditorGUILayout.TextField(Styles.unityRelease, m_UnityRelease.stringValue);
                     EditorGUI.showMixedValue = false;
                 }
             }

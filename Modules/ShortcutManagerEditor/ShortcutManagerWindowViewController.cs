@@ -11,9 +11,15 @@ namespace UnityEditor.ShortcutManagement
 {
     class ShortcutManagerWindowViewController : IShortcutManagerWindowViewController, IKeyBindingStateProvider
     {
-        readonly string m_AllUnityCommands = L10n.Tr("All Unity Commands");
-        readonly string m_CommandsWithConflicts = L10n.Tr("Binding Conflicts");
-        readonly string m_MainMenu = L10n.Tr("Main Menu");
+        static readonly string k_AllUnityCommands = L10n.Tr("All Unity Commands");
+        static readonly string k_CommandsWithConflicts = L10n.Tr("Binding Conflicts");
+        readonly string k_MainMenu = L10n.Tr("Main Menu");
+
+        static readonly string k_ProfileNameEmpty = L10n.Tr("Profile name is empty");
+        static readonly string k_ProfileNameUnsupported = L10n.Tr("Name contains unsupported characters");
+        static readonly string k_ProfileExists = L10n.Tr("Profile already exists");
+        static readonly string k_DefaultRename = L10n.Tr("Default profile cannot be renamed");
+        static readonly string k_ProfileNotFound = L10n.Tr("Couldn't find active profile");
 
         const int k_AllUnityCommandsIndex = 0;
         const int k_ConflictsIndex = 1;
@@ -170,7 +176,7 @@ namespace UnityEditor.ShortcutManagement
                 var identifier = entry.displayName;
                 m_AllEntries.Add(entry);
 
-                if (entry.type == ShortcutType.Menu)
+                if (entry.type == ShortcutType.Menu && entry.displayName.StartsWith(k_MainMenu))
                 {
                     menuItems.Add(entry);
                 }
@@ -194,27 +200,27 @@ namespace UnityEditor.ShortcutManagement
             var shortcutNameComparer = new ShortcutNameComparer();
             m_AllEntries.Sort(shortcutNameComparer);
 
-            m_CategoryToEntriesList.Add(m_AllUnityCommands, m_AllEntries);
+            m_CategoryToEntriesList.Add(k_AllUnityCommands, m_AllEntries);
 
 
-            m_CategoryToEntriesList.Add(m_CommandsWithConflicts, new List<ShortcutEntry>());
+            m_CategoryToEntriesList.Add(k_CommandsWithConflicts, new List<ShortcutEntry>());
 
             UpdateCommandsWithConflicts();
             menuItems.Sort(shortcutNameComparer);
-            m_CategoryToEntriesList.Add(m_MainMenu, menuItems);
+            m_CategoryToEntriesList.Add(k_MainMenu, menuItems);
 
 
             m_Categories = categories.ToList();
 
             m_Categories.Sort();
-            m_Categories.Insert(k_AllUnityCommandsIndex, m_AllUnityCommands);
-            m_Categories.Insert(k_ConflictsIndex, m_CommandsWithConflicts);
-            m_Categories.Insert(k_MainMenuIndex, m_MainMenu);
+            m_Categories.Insert(k_AllUnityCommandsIndex, k_AllUnityCommands);
+            m_Categories.Insert(k_ConflictsIndex, k_CommandsWithConflicts);
+            m_Categories.Insert(k_MainMenuIndex, k_MainMenu);
         }
 
         void UpdateCommandsWithConflicts()
         {
-            GetAllCommandsWithConflicts(m_CategoryToEntriesList[m_CommandsWithConflicts]);
+            GetAllCommandsWithConflicts(m_CategoryToEntriesList[k_CommandsWithConflicts]);
         }
 
         void GetAllCommandsWithConflicts(List<ShortcutEntry> output)
@@ -251,9 +257,19 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        public bool CanCreateProfile(string newProfileId)
+        public string CanCreateProfile(string newProfileId)
         {
-            return m_ShortcutProfileManager.CanCreateProfile(newProfileId) == CanCreateProfileResult.Success;
+            var canCreateProfileResult = m_ShortcutProfileManager.CanCreateProfile(newProfileId);
+
+            switch (canCreateProfileResult)
+            {
+                case CanCreateProfileResult.InvalidProfileId:
+                    return string.IsNullOrEmpty(newProfileId) ? k_ProfileNameEmpty : k_ProfileNameUnsupported;
+                case CanCreateProfileResult.DuplicateProfileId:
+                    return k_ProfileExists;
+                default:
+                    return null;
+            }
         }
 
         public void CreateProfile(string newProfileId)
@@ -267,12 +283,22 @@ namespace UnityEditor.ShortcutManagement
             return CanDeleteActiveProfile();
         }
 
-        public bool CanRenameActiveProfile(string newProfileId)
+        public string CanRenameActiveProfile(string newProfileId)
         {
             if (m_ShortcutProfileManager.activeProfile == null)
-                return false;
+                return k_DefaultRename;
 
-            return m_ShortcutProfileManager.CanRenameProfile(m_ShortcutProfileManager.activeProfile, newProfileId) == CanRenameProfileResult.Success;
+            switch (m_ShortcutProfileManager.CanRenameProfile(m_ShortcutProfileManager.activeProfile, newProfileId))
+            {
+                case CanRenameProfileResult.ProfileNotFound:
+                    return k_ProfileNotFound;
+                case CanRenameProfileResult.InvalidProfileId:
+                    return string.IsNullOrEmpty(newProfileId) ? k_ProfileNameEmpty : k_ProfileNameUnsupported;
+                case CanRenameProfileResult.DuplicateProfileId:
+                    return k_ProfileExists;
+                default:
+                    return null;
+            }
         }
 
         public void RenameActiveProfile(string newProfileId)
@@ -383,7 +409,7 @@ namespace UnityEditor.ShortcutManagement
         {
             if (m_SelectedCategoryIndex != k_AllUnityCommandsIndex)
                 filters.Add(m_Categories[m_SelectedCategoryIndex]);
-            filters.Add(m_AllUnityCommands);
+            filters.Add(k_AllUnityCommands);
         }
 
         public string GetSelectedSearchFilter()
@@ -391,7 +417,7 @@ namespace UnityEditor.ShortcutManagement
             switch (m_SerializedState.searchCategoryFilter)
             {
                 case SearchCategoryFilter.IgnoreCategory:
-                    return m_AllUnityCommands;
+                    return k_AllUnityCommands;
                 case SearchCategoryFilter.SearchWithinSelectedCategory:
                     return m_Categories[m_SelectedCategoryIndex];
                 default:
@@ -401,7 +427,7 @@ namespace UnityEditor.ShortcutManagement
 
         public void SetSelectedSearchFilter(string filter)
         {
-            if (filter == m_AllUnityCommands)
+            if (filter == k_AllUnityCommands)
                 m_SerializedState.searchCategoryFilter = SearchCategoryFilter.IgnoreCategory;
             else if (filter == m_Categories[m_SelectedCategoryIndex])
                 m_SerializedState.searchCategoryFilter = SearchCategoryFilter.SearchWithinSelectedCategory;
@@ -424,7 +450,7 @@ namespace UnityEditor.ShortcutManagement
             var category = selectedCategory;
 
             if (IsSearching() && m_SerializedState.searchCategoryFilter == SearchCategoryFilter.IgnoreCategory)
-                category = m_AllUnityCommands;
+                category = k_AllUnityCommands;
 
             var identifierList = m_CategoryToEntriesList[category];
 
@@ -598,7 +624,7 @@ namespace UnityEditor.ShortcutManagement
                     return pair.Key;
             }
 
-            return m_AllUnityCommands;
+            return k_AllUnityCommands;
         }
 
         public void SetKeySelected(KeyCode keyCode, EventModifiers eventModifier)
@@ -674,7 +700,7 @@ namespace UnityEditor.ShortcutManagement
 
         public bool IsEntryPartOfConflict(ShortcutEntry shortcutEntry)
         {
-            return m_CategoryToEntriesList[m_CommandsWithConflicts].Contains(shortcutEntry);
+            return m_CategoryToEntriesList[k_CommandsWithConflicts].Contains(shortcutEntry);
         }
 
         //TODO: find a better place for this logic, Directory maybe?
@@ -789,7 +815,7 @@ namespace UnityEditor.ShortcutManagement
 
         public void SelectConflictCategory()
         {
-            SetCategorySelected(m_CommandsWithConflicts);
+            SetCategorySelected(k_CommandsWithConflicts);
             GetView().RefreshCategoryList();
         }
     }

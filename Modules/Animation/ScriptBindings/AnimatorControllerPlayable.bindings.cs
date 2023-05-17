@@ -282,10 +282,10 @@ namespace UnityEngine.Animations
 
         public AnimatorControllerParameter GetParameter(int index)
         {
-            AnimatorControllerParameter[] parameters = GetParametersArrayInternal(ref m_Handle);
-            if (index < 0 || index >= parameters.Length)
+            var parameter = GetParameterInternal(ref m_Handle, index);
+            if ((int)parameter.m_Type == AnimatorControllerParameterTypeConstants.InvalidType)
                 throw new IndexOutOfRangeException("Invalid parameter index.");
-            return parameters[index];
+            return parameter;
         }
 
         public void CrossFadeInFixedTime(string stateName, float transitionDuration)
@@ -465,6 +465,9 @@ namespace UnityEngine.Animations
 
         [NativeThrows]
         extern private static AnimatorControllerParameter[] GetParametersArrayInternal(ref PlayableHandle handle);
+
+        [NativeThrows]
+        extern private static AnimatorControllerParameter GetParameterInternal(ref PlayableHandle handle, int index);
 
         [NativeThrows]
         extern private static int GetParameterCountInternal(ref PlayableHandle handle);

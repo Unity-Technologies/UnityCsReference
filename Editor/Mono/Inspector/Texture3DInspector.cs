@@ -163,7 +163,7 @@ namespace UnityEditor
         {
             Texture3D tex = target as Texture3D;
             var format = TextureUtil.GetTextureFormatString(tex.format);
-            var size = EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(tex));
+            var size = EditorUtility.FormatBytes(TextureUtil.GetStorageMemorySizeLong(tex));
             string info = $"{tex.width}x{tex.height}x{tex.depth} {format} {size}";
             return info;
         }
