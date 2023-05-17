@@ -333,15 +333,76 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement == null || panelSettings == null || panelSettings.panel == null)
                 return;
 
+            AddOrRemoveRendererComponent();
+
             if (!panelSettings.panel.isFlat)
             {
                 // TODO: In editor we may loose the m_RuntimePanel connection when manipulation
                 // the hierarchy. This is weird and should be investigated.
                 ResolveRuntimePanel();
-                SetTransform();
-            }
+				SetTransform();
+                UpdateRenderer();
+			}
             else if (m_RootHasWorldTransform)
                 ClearTransform();
+        }
+
+        void UpdateRenderer()
+        {
+            UIRenderer renderer;
+            if (!TryGetComponent<UIRenderer>(out renderer))
+            {
+                rootVisualElement.uiRenderer = null;
+                UpdateCutRenderChainFlag();
+                return;
+            }
+
+            rootVisualElement.uiRenderer = renderer;
+            renderer.skipRendering = (parentUI != null); // Don't render embedded documents which will be rendered as part of their parents
+
+            BaseRuntimePanel rtp = (BaseRuntimePanel)m_RootVisualElement.panel;
+            if (rtp == null)
+                return;
+
+            Debug.Assert(rtp.drawsInCameras);
+
+            float ppu = m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
+            float ppuScale = 1.0f / ppu;
+
+            // TODO: Compute actual aabb by accounting for 3D transforms.
+            var layout = rootVisualElement.layout;
+            renderer.localBounds = new Bounds(Vector3.zero, new Vector3(layout.width * ppuScale, layout.height * ppuScale, 0.0f));
+
+            UpdateCutRenderChainFlag();
+        }
+
+        void AddOrRemoveRendererComponent()
+        {
+            // Automatically add the UIRenderer component when working in world-space
+            TryGetComponent<UIRenderer>(out var renderer);
+            if (m_PanelSettings != null && m_PanelSettings.panel?.drawsInCameras == true)
+            {
+                if (renderer == null)
+                    gameObject.AddComponent<UIRenderer>();
+            }
+            else
+            {
+                UIRUtility.Destroy(renderer);
+            }
+        }
+
+        void UpdateCutRenderChainFlag()
+        {
+            // Every UIDocument associated with a world-space panel should cut the render-chain.
+            // If we don't, some UIDocument may try to render from the main thread, or risk being
+            // rendered as part of a previous UIDocument.
+
+            bool shouldCutRenderChain = (parentUI == null);
+            if (rootVisualElement.shouldCutRenderChain != shouldCutRenderChain)
+            {
+                rootVisualElement.shouldCutRenderChain = shouldCutRenderChain;
+                rootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command
+            }
         }
 
         void SetTransform()
@@ -371,22 +432,16 @@ namespace UnityEngine.UIElements
             float ppu = m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
             float ppuScale = 1.0f / ppu;
 
+            var scale = Vector3.one * ppuScale;
+            var flipRotation = Quaternion.AngleAxis(180.0f, Vector3.right); // Y-axis flip
+
             if (parentUI == null)
             {
-                var scale = transform.lossyScale;
-                scale *= ppuScale;
-
-                var q = transform.rotation;
-                q *= Quaternion.AngleAxis(180.0f, Vector3.right); // Y-axis flip
-
-                matrix = Matrix4x4.TRS(transform.position, q, scale);
+                matrix = Matrix4x4.TRS(Vector3.zero, flipRotation, scale);
             }
             else
             {
-                var scale = Vector3.one * ppuScale;
-                var q = Quaternion.AngleAxis(180.0f, Vector3.right); // Y-axis flip
-
-                var ui2World = Matrix4x4.TRS(Vector3.zero, q, scale);
+                var ui2World = Matrix4x4.TRS(Vector3.zero, flipRotation, scale);
                 var world2UI = ui2World.inverse;
 
                 var childGoToWorld = transform.localToWorldMatrix;
@@ -490,7 +545,8 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement != null)
             {
                RemoveFromHierarchy();
-                m_PanelSettings?.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
+                if (m_PanelSettings != null)
+                    m_PanelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
                 m_RootVisualElement = null;
             }
 
@@ -667,8 +723,6 @@ namespace UnityEngine.UIElements
             SetupRootClassList();
         }
 
-
-
         private void OnGUI()
         {
             if (m_PanelSettings != null)
@@ -686,7 +740,9 @@ namespace UnityEngine.UIElements
             {
                 m_LiveReloadVisualTreeAssetTracker = CreateLiveReloadVisualTreeAssetTracker.Invoke(this);
             }
-            m_PanelSettings?.panel.liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, m_RootVisualElement);
+
+            if (m_PanelSettings != null)
+                m_PanelSettings.panel.liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, m_RootVisualElement);
         }
 
         internal void OnLiveReloadOptionChanged()

@@ -376,6 +376,8 @@ namespace UnityEngine.UIElements
             if (m_EnumType == null)
                 return;
 
+            var isPlayer = elementPanel?.contextType == ContextType.Player;
+
             IGenericMenu menu;
             if (createMenuCallback != null)
             {
@@ -383,7 +385,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
+                menu = isPlayer ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
             }
 
             int selectedIndex = Array.IndexOf(m_EnumData.values, value);
@@ -394,7 +396,16 @@ namespace UnityEngine.UIElements
                 menu.AddItem(m_EnumData.displayNames[i], isSelected, contentView => ChangeValueFromMenu(contentView), m_EnumData.values[i]);
             }
 
-            menu.DropDown(visualInput.worldBound, this, true);
+            var genericDropdownMenu = menu as GenericDropdownMenu;
+
+            if (isPlayer || genericDropdownMenu == null)
+            {
+                menu.DropDown(visualInput.worldBound, this, true);
+            }
+            else
+            {
+                DropdownUtility.ShowDropdown(genericDropdownMenu, visualInput.worldBound.position + Vector2.up * visualInput.worldBound.size.y, this);
+            }
         }
 
         private void ChangeValueFromMenu(object menuItem)

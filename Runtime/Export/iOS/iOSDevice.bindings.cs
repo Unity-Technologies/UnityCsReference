@@ -121,7 +121,7 @@ namespace UnityEngine.iOS
 
         extern public static string vendorIdentifier
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+            [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
             [FreeFunction("UnityVendorIdentifier")]
             get;
         }
@@ -133,7 +133,7 @@ namespace UnityEngine.iOS
         //   poterntially finding UnityAdvertisingIdentifier/IsAdvertisingTrackingEnabled
         // thats why we renamed these functions to be less like apple api
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("UnityAdIdentifier")]
         extern private static string GetAdIdentifier();
 
@@ -201,11 +201,11 @@ namespace UnityEngine.iOS
             set { deferSystemGesturesModeInternal = (int)value; }
         }
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [NativeMethod(Name = "IOSScripting::SetNoBackupFlag", IsFreeFunction = true, IsThreadSafe = true)]
         extern public static void SetNoBackupFlag(string path);
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [NativeMethod(Name = "IOSScripting::ResetNoBackupFlag", IsFreeFunction = true, IsThreadSafe = true)]
         extern public static void ResetNoBackupFlag(string path);
 

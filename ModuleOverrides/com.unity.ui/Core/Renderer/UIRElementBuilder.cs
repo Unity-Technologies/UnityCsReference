@@ -15,17 +15,20 @@ namespace UnityEngine.UIElements.UIR
             var ve = mgc.visualElement;
             Debug.Assert(ve.areAncestorsAndSelfDisplayed);
 
+            if (ve.shouldCutRenderChain)
+                mgc.entryRecorder.CutRenderChain(mgc.parentEntry);
+
             bool isGroupTransform = ve.renderChainData.isGroupTransform;
             if (isGroupTransform)
-                mgc.entryRecorder.PushGroupMatrix();
+                mgc.entryRecorder.PushGroupMatrix(mgc.parentEntry);
 
             bool usesSubRenderTargetMode = ve.subRenderTargetMode != VisualElement.RenderTargetMode.None;
             if (usesSubRenderTargetMode)
-                mgc.entryRecorder.PushRenderTexture();
+                mgc.entryRecorder.PushRenderTexture(mgc.parentEntry);
 
             bool changesDefaultMaterial = ve.defaultMaterial != null;
             if (changesDefaultMaterial)
-                mgc.entryRecorder.PushDefaultMaterial(ve.defaultMaterial);
+                mgc.entryRecorder.PushDefaultMaterial(mgc.parentEntry, ve.defaultMaterial);
 
             bool mustPopClipping = false;
 
@@ -50,19 +53,19 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
-            mgc.entryRecorder.DrawChildren();
+            mgc.entryRecorder.DrawChildren(mgc.parentEntry);
 
             if (mustPopClipping)
                 PopVisualElementClipping(mgc);
 
             if (changesDefaultMaterial)
-                mgc.entryRecorder.PopDefaultMaterial();
+                mgc.entryRecorder.PopDefaultMaterial(mgc.parentEntry);
 
             if (isGroupTransform)
-                mgc.entryRecorder.PopGroupMatrix();
+                mgc.entryRecorder.PopGroupMatrix(mgc.parentEntry);
 
             if (usesSubRenderTargetMode)
-                mgc.entryRecorder.BlitAndPopRenderTexture();
+                mgc.entryRecorder.BlitAndPopRenderTexture(mgc.parentEntry);
         }
 
         protected abstract void DrawVisualElementBackground(MeshGenerationContext mgc);
@@ -71,33 +74,35 @@ namespace UnityEngine.UIElements.UIR
 
         protected abstract void DrawVisualElementStencilMask(MeshGenerationContext mgc);
 
+        public abstract void ScheduleMeshGenerationJobs(MeshGenerationContext mgc);
+
         void PushVisualElementClipping(MeshGenerationContext mgc)
         {
             var ve = mgc.visualElement;
 
             if (ve.renderChainData.clipMethod == ClipMethod.Scissor)
             {
-                mgc.entryRecorder.PushScissors();
+                mgc.entryRecorder.PushScissors(mgc.parentEntry);
             }
             else if (ve.renderChainData.clipMethod == ClipMethod.Stencil)
             {
-                mgc.entryRecorder.BeginStencilMask();
+                mgc.entryRecorder.BeginStencilMask(mgc.parentEntry);
                 DrawVisualElementStencilMask(mgc);
-                mgc.entryRecorder.EndStencilMask();
+                mgc.entryRecorder.EndStencilMask(mgc.parentEntry);
             }
-            mgc.entryRecorder.PushClippingRect();
+            mgc.entryRecorder.PushClippingRect(mgc.parentEntry);
         }
 
         static void PopVisualElementClipping(MeshGenerationContext mgc)
         {
             var ve = mgc.visualElement;
 
-            mgc.entryRecorder.PopClippingRect();
+            mgc.entryRecorder.PopClippingRect(mgc.parentEntry);
 
             if (ve.renderChainData.clipMethod == ClipMethod.Scissor)
-                mgc.entryRecorder.PopScissors();
+                mgc.entryRecorder.PopScissors(mgc.parentEntry);
             else if (ve.renderChainData.clipMethod == ClipMethod.Stencil)
-                mgc.entryRecorder.PopStencilMask();
+                mgc.entryRecorder.PopStencilMask(mgc.parentEntry);
         }
 
         static void InvokeGenerateVisualContent(MeshGenerationContext mgc)
@@ -303,7 +308,8 @@ namespace UnityEngine.UIElements.UIR
                         bottomColorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.borderBottomColorID),
                         playmodeTintColor = ve.panel.contextType == ContextType.Editor ? UIElementsUtility.editorPlayModeTintColor : Color.white
                     };
-                    MeshGenerator.GetVisualElementRadii(ve,
+                    MeshGenerator.GetVisualElementRadii(
+                        ve,
                         out borderParams.topLeftRadius,
                         out borderParams.bottomLeftRadius,
                         out borderParams.topRightRadius,
@@ -368,6 +374,13 @@ namespace UnityEngine.UIElements.UIR
             }
 
             mgc.meshGenerator.DrawRectangle(rp);
+        }
+
+        public override void ScheduleMeshGenerationJobs(MeshGenerationContext mgc)
+        {
+            mgc.meshGenerator.ScheduleJobs(mgc);
+            if (mgc.hasPainter2D)
+                mgc.painter2D.ScheduleJobs(mgc);
         }
     }
 }

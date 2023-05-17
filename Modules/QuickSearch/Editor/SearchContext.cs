@@ -468,7 +468,9 @@ namespace UnityEditor.Search
 
         public SearchContext(SearchContext context)
             : this(context.providers, context.searchText, context.options, context.runtimeContext)
-        {}
+        {
+            m_UseExplicitProvidersAsNormalProviders = context.m_UseExplicitProvidersAsNormalProviders;
+        }
 
         /// <summary>
         /// Search context finalizer.

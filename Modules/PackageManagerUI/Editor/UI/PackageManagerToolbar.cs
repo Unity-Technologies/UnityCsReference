@@ -343,6 +343,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 PackageManagerWindow.GetWindow<PackageManagerWindow>().RepaintImmediately();
                 // Same as above, the worldBound of the toolbar is used rather than the addMenu
                 var rect = GUIUtility.GUIToScreenRect(worldBound);
+
+                // GUIToScreenRect calculates screen space coordinates in relation to contextual menu
+                // which is the last active view. Since we know the exact offset of contextual menu in
+                // relation to package manager we can compensate this by subtracting contextual menu origin.
+                rect.y -= worldBound.yMax;
+
                 var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, PackageManagerWindow.instance) { position = rect };
                 DropdownContainer.ShowDropdown(dropdown);
             };

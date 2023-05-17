@@ -261,30 +261,11 @@ namespace UnityEditor
             return UnityString.Format("{0:0.##} {1}", val, scale[idx]);
         }
 
-        private float SumSizes(float[] sizes)
-        {
-            float sum = 0.0f;
-            foreach (var size in sizes)
-                sum += size;
-
-            return sum;
-        }
-
-        private System.UInt64 SumCounts(System.UInt64[] counts)
-        {
-            System.UInt64 sum = 0;
-            foreach (var count in counts)
-                sum += count;
-
-            return sum;
-        }
-
         private void DebugInfoSection(LightmapData[] lightmaps)
         {
             if (!showDebugInfo)
                 return;
 
-            Lightmapping.ResetExplicitlyShownMemLabels();
             float oldWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 400.0f;
 
@@ -303,67 +284,6 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
             EditorGUIUtility.labelWidth = oldWidth;
-        }
-
-        private void ShowObjectNamesSizesAndCounts(string foldoutName, string editorPrefsName, string[] objectNames, float[] sizes, System.UInt64[] counts)
-        {
-            Debug.Assert(objectNames.Length == sizes.Length);
-
-            if (objectNames.Length == 0)
-                return;
-
-            string countString = counts.Length > 0 ? (SumCounts(counts) + " tris, ") : "";
-            string sizeString = SizeString(SumSizes(sizes));
-            string foldoutNameFull = foldoutName + " (" + countString + sizeString + ")";
-            bool showDetailsOld = EditorPrefs.GetBool(editorPrefsName, false);
-
-            bool showDetails = EditorGUILayout.FoldoutTitlebar(showDetailsOld, new GUIContent(foldoutNameFull), true);
-
-            if (showDetails != showDetailsOld)
-                EditorPrefs.SetBool(editorPrefsName, showDetails);
-
-            if (!showDetails)
-                return;
-
-            GUILayout.BeginHorizontal();
-            {
-                string[] stringSeparators = new string[] { " | " };
-
-                GUILayout.Space(20);
-
-                GUILayout.BeginVertical();
-                for (int i = 0; i < objectNames.Length; ++i)
-                {
-                    string fullName = objectNames[i];
-                    string[] result = fullName.Split(stringSeparators, StringSplitOptions.RemoveEmptyEntries);
-                    Debug.Assert(result.Length > 0);
-                    string objectName = result[0];
-                    string tooltip = "";
-                    if (result.Length > 1)
-                        tooltip = result[1];
-
-                    GUILayout.Label(new GUIContent(objectName, tooltip), EditorStyles.miniLabel);
-                }
-                GUILayout.EndVertical();
-
-                GUILayout.BeginVertical();
-                for (int i = 0; i < counts.Length; ++i)
-                {
-                    GUILayout.Label(counts[i].ToString(), EditorStyles.miniLabel);
-                }
-                GUILayout.EndVertical();
-
-                GUILayout.BeginVertical();
-                for (int i = 0; i < sizes.Length; ++i)
-                {
-                    GUILayout.Label(SizeString(sizes[i]), EditorStyles.miniLabel);
-                }
-                GUILayout.EndVertical();
-
-                GUILayout.FlexibleSpace();
-            }
-            GUILayout.EndHorizontal();
-            GUILayout.Space(10);
         }
     }
 } // namespace

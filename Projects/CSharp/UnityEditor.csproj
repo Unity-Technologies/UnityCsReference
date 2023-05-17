@@ -647,9 +647,6 @@
     <Compile Include="..\..\Editor\Mono\BuildPipeline\DesktopStandaloneUserBuildSettings.cs">
       <Link>Editor\Mono\BuildPipeline\DesktopStandaloneUserBuildSettings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\BuildPipeline\EnsureSinglePipelineOnBuild.cs">
-      <Link>Editor\Mono\BuildPipeline\EnsureSinglePipelineOnBuild.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\IL2CPPUtils.cs">
       <Link>Editor\Mono\BuildPipeline\Il2Cpp\IL2CPPUtils.cs</Link>
     </Compile>
@@ -661,6 +658,15 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\PostprocessBuildPlayer.cs">
       <Link>Editor\Mono\BuildPipeline\PostprocessBuildPlayer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\RenderPipeline\EnsureSinglePipelineOnBuild.cs">
+      <Link>Editor\Mono\BuildPipeline\RenderPipeline\EnsureSinglePipelineOnBuild.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\RenderPipeline\RenderPipelineBuildProcessor.cs">
+      <Link>Editor\Mono\BuildPipeline\RenderPipeline\RenderPipelineBuildProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\RenderPipeline\RenderPipelineGlobalSettingsStripper.cs">
+      <Link>Editor\Mono\BuildPipeline\RenderPipeline\RenderPipelineGlobalSettingsStripper.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\RuntimeClassMetadata.cs">
       <Link>Editor\Mono\BuildPipeline\RuntimeClassMetadata.cs</Link>
@@ -2468,6 +2474,9 @@
     <Compile Include="..\..\Editor\Mono\MenuCommand.cs">
       <Link>Editor\Mono\MenuCommand.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\MenuController.bindings.cs">
+      <Link>Editor\Mono\MenuController.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\MenuItem.cs">
       <Link>Editor\Mono\MenuItem.cs</Link>
     </Compile>
@@ -2707,6 +2716,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsAndroid.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsAndroid.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\PlayerSettingsBratwurst.bindings.cs">
+      <Link>Editor\Mono\PlayerSettingsBratwurst.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsDefaultTextureCompressionHandler.cs">
       <Link>Editor\Mono\PlayerSettingsDefaultTextureCompressionHandler.cs</Link>
@@ -3635,9 +3647,6 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Drawers\Internal\UnityEventItem.cs">
       <Link>Editor\Mono\UIElements\Drawers\Internal\UnityEventItem.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\EditorGenericDropdownMenu.cs">
-      <Link>Editor\Mono\UIElements\EditorGenericDropdownMenu.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\EditorMenuExtensions.cs">
       <Link>Editor\Mono\UIElements\EditorMenuExtensions.cs</Link>
     </Compile>
@@ -4111,6 +4120,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\UIDocumentInspector.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\UIDocumentInspector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\UIRendererEditor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\Inspector\UIRendererEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\GameObjects\LiveReloadTrackerCreator.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\GameObjects\LiveReloadTrackerCreator.cs</Link>

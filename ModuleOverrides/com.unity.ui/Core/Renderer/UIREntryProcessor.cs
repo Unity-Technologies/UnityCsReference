@@ -421,6 +421,15 @@ namespace UnityEngine.UIElements.UIR
                         AppendCommand(cmd);
                         break;
                     }
+                    case EntryType.CutRenderChain:
+                    {
+                        var cmd = m_RenderChain.AllocCommand();
+                        cmd.type = CommandType.CutRenderChain;
+                        cmd.owner = m_CurrentElement;
+                        cmd.isTail= m_IsTail;
+                        AppendCommand(cmd);
+                        break;
+                    }
                     default:
                         throw new NotImplementedException();
                 }

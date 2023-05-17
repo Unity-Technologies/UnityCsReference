@@ -240,7 +240,7 @@ namespace UnityEngine.UIElements
 
             // Access to the painter is internal and is not exposed to public
             // The IStylePainter is kept as an interface rather than a concrete class for now to support tests
-            mgc.entryRecorder.DrawImmediate(DoIMGUIRepaint, cullingEnabled);
+            mgc.entryRecorder.DrawImmediate(mgc.parentEntry, DoIMGUIRepaint, cullingEnabled);
         }
 
         // global GUI values.

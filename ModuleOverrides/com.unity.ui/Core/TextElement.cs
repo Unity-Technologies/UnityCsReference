@@ -150,6 +150,11 @@ namespace UnityEngine.UIElements
         public static readonly string ussClassName = "unity-text-element";
 
         /// <summary>
+        /// USS class name of selectable text elements.
+        /// </summary>
+        public static readonly string selectableUssClassName = ussClassName + "__selectable";
+
+        /// <summary>
         /// Initializes and returns an instance of TextElement.
         /// </summary>
         public TextElement()

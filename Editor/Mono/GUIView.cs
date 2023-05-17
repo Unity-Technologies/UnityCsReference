@@ -268,8 +268,6 @@ namespace UnityEditor
 
         public static void EndOffsetArea()
         {
-            if (Event.current.type == EventType.Used)
-                return;
             GUILayoutUtility.EndLayoutGroup();
             GUI.EndGroup();
         }

@@ -417,7 +417,15 @@ namespace UnityEditor
             }
         }
 
+        [Obsolete($"Use {nameof(onFocusedWindowChanged)} instead.", true)]
         static public Action focusedWindowChanged;
+
+        static public event Action onFocusedWindowChanged;
+
+        static internal void OnFocusWindowChanged()
+        {
+            onFocusedWindowChanged?.Invoke();
+        }
 
         // The EditorWindow currently under the mouse cursor (RO)
         static public EditorWindow mouseOverWindow
@@ -761,44 +769,44 @@ namespace UnityEditor
             return win;
         }
 
-        public static EditorWindow GetWindow(System.Type t, [DefaultValue("false")] bool utility, [DefaultValue("null")] string title, [DefaultValue("true")] bool focus)
+        public static EditorWindow GetWindow(System.Type windowType, [DefaultValue("false")] bool utility, [DefaultValue("null")] string title, [DefaultValue("true")] bool focus)
         {
-            return GetWindowPrivate(t, utility, title, focus);
+            return GetWindowPrivate(windowType, utility, title, focus);
         }
 
         [ExcludeFromDocs]
-        public static EditorWindow GetWindow(System.Type t, bool utility, string title)
+        public static EditorWindow GetWindow(System.Type windowType, bool utility, string title)
         {
-            return GetWindowPrivate(t, utility, title, true);
+            return GetWindowPrivate(windowType, utility, title, true);
         }
 
         [ExcludeFromDocs]
-        public static EditorWindow GetWindow(System.Type t, bool utility)
+        public static EditorWindow GetWindow(System.Type windowType, bool utility)
         {
-            return GetWindowPrivate(t, utility, null, true);
+            return GetWindowPrivate(windowType, utility, null, true);
         }
 
         [ExcludeFromDocs]
-        public static EditorWindow GetWindow(System.Type t)
+        public static EditorWindow GetWindow(System.Type windowType)
         {
-            return GetWindowPrivate(t, false, null, true);
+            return GetWindowPrivate(windowType, false, null, true);
         }
 
-        public static EditorWindow GetWindowWithRect(System.Type t, Rect rect, [DefaultValue("false")] bool utility, [DefaultValue("null")] string title)
+        public static EditorWindow GetWindowWithRect(System.Type windowType, Rect rect, [DefaultValue("false")] bool utility, [DefaultValue("null")] string title)
         {
-            return GetWindowWithRectPrivate(t, rect, utility, title);
-        }
-
-        [ExcludeFromDocs]
-        public static EditorWindow GetWindowWithRect(System.Type t, Rect rect, bool utility)
-        {
-            return GetWindowWithRectPrivate(t, rect, utility, null);
+            return GetWindowWithRectPrivate(windowType, rect, utility, title);
         }
 
         [ExcludeFromDocs]
-        public static EditorWindow GetWindowWithRect(System.Type t, Rect rect)
+        public static EditorWindow GetWindowWithRect(System.Type windowType, Rect rect, bool utility)
         {
-            return GetWindowWithRectPrivate(t, rect, false, null);
+            return GetWindowWithRectPrivate(windowType, rect, utility, null);
+        }
+
+        [ExcludeFromDocs]
+        public static EditorWindow GetWindowWithRect(System.Type windowType, Rect rect)
+        {
+            return GetWindowWithRectPrivate(windowType, rect, false, null);
         }
 
         public static T GetWindow<T>() where T : EditorWindow

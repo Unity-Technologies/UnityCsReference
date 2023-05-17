@@ -57,7 +57,7 @@ namespace UnityEngine.UIElements.UIR
         {
             public UInt32 handle;
             public Page page;
-            public CommandList[] commandLists;
+            public List<CommandList>[] commandLists;
 
             public void Dispose()
             {
@@ -72,7 +72,8 @@ namespace UnityEngine.UIElements.UIR
                 {
                     for (int i = 0; i < commandLists.Length; ++i)
                     {
-                        commandLists[i].Dispose();
+                        foreach (var c in commandLists[i])
+                            c.Dispose();
                         commandLists[i] = null;
                     }
                 }
@@ -92,7 +93,7 @@ namespace UnityEngine.UIElements.UIR
         float m_IndexToVertexCountRatio;
         List<List<AllocToFree>> m_DeferredFrees;
         List<List<AllocToUpdate>> m_Updates;
-        CommandList[] m_CommandLists;
+        List<CommandList>[] m_CommandLists;
         UInt32[] m_Fences;
         MaterialPropertyBlock m_ConstantProps; // Properties that are constant throughout the evaluation of the commands
         MaterialPropertyBlock m_BatchProps;
@@ -122,7 +123,11 @@ namespace UnityEngine.UIElements.UIR
         internal bool breakBatches { get; set; }
         internal bool isFlat { get; set; }
         internal bool drawsInCameras { get; set; }
-        public uint frameIndex => m_FrameIndex;
+        internal uint frameIndex => m_FrameIndex;
+
+        internal List<CommandList>[] commandLists => m_CommandLists;
+        internal List<CommandList> currentFrameCommandLists => m_CommandLists == null ? null : m_CommandLists[(int)(m_FrameIndex % m_CommandLists.Length)];
+        internal int currentFrameCommandListCount = 0;
 
 
         static UIRenderDevice()
@@ -259,12 +264,9 @@ namespace UnityEngine.UIElements.UIR
                 zFailOperationBack = StencilOp.DecrementSaturate, // Pop
             });
 
-            if (drawsInCameras)
-            {
-                m_CommandLists = new CommandList[k_MaxQueuedFrameCount];
-                for (int i = 0; i < k_MaxQueuedFrameCount; ++i)
-                    m_CommandLists[i] = new CommandList(m_VertexDecl, m_DefaultStencilState);
-            }
+            m_CommandLists = new List<CommandList>[k_MaxQueuedFrameCount];
+            for (int i = 0; i < k_MaxQueuedFrameCount; ++i)
+                m_CommandLists[i] = new List<CommandList>();
         }
 
         bool fullyCreated { get { return m_Fences != null; } }
@@ -642,7 +644,7 @@ namespace UnityEngine.UIElements.UIR
 
         struct EvaluationState
         {
-            public CommandList commandList;
+            public CommandList activeCommandList;
             public MaterialPropertyBlock constantProps; // Must be applied on material change only
             public MaterialPropertyBlock batchProps;
             public Material defaultMat;
@@ -662,7 +664,6 @@ namespace UnityEngine.UIElements.UIR
         {
             if (newMatDiffers)
             {
-                Debug.Assert(st.commandList == null); // We can't set the material in a command list
                 st.curState.material = newMat;
                 st.mustApplyMaterial = true;
             }
@@ -674,7 +675,7 @@ namespace UnityEngine.UIElements.UIR
                 if (textureSlot < 0)
                 {
                     textureSlot = m_TextureSlotManager.FindOldestSlot();
-                    m_TextureSlotManager.Bind(cmd.state.texture, cmd.state.sdfScale, cmd.state.sharpness, textureSlot, st.batchProps, st.commandList);
+                    m_TextureSlotManager.Bind(cmd.state.texture, cmd.state.sdfScale, cmd.state.sharpness, textureSlot, st.batchProps, st.activeCommandList);
                     st.mustApplyBatchProps = true;
                 }
                 else
@@ -717,16 +718,16 @@ namespace UnityEngine.UIElements.UIR
 
                 if (st.mustApplyBatchProps)
                 {
-                    if (st.commandList == null)
+                    if (st.activeCommandList == null)
                         Utility.SetPropertyBlock(st.batchProps);
                     else
-                        st.commandList.ApplyBatchProps();
+                        st.activeCommandList.ApplyBatchProps();
                 }
 
                 if (st.mustApplyStencil)
                 {
                     ++m_DrawStats.stencilRefChanges;
-                    if (st.commandList == null)
+                    if (st.activeCommandList == null)
                         Utility.SetStencilState(m_DefaultStencilState, st.curState.stencilRef);
                 }
             }
@@ -754,9 +755,10 @@ namespace UnityEngine.UIElements.UIR
             int curDrawIndex = -1;
             int disableCounter = 0;
 
+            currentFrameCommandListCount = 0;
+
             var st = new EvaluationState
             {
-                commandList = null,
                 constantProps = m_ConstantProps,
                 batchProps = m_BatchProps,
                 defaultMat = defaultMat,
@@ -764,15 +766,6 @@ namespace UnityEngine.UIElements.UIR
                 mustApplyBatchProps = true,
                 mustApplyStencil = true
             };
-
-            if (drawsInCameras)
-            {
-                st.commandList = m_CommandLists[(int)(m_FrameIndex % m_CommandLists.Length)];
-                st.constantProps = st.commandList.constantProps;
-                st.batchProps = st.commandList.batchProps;
-
-                st.commandList.Clear();
-            }
 
             var drawParams = m_DrawParams;
             drawParams.Reset();
@@ -940,7 +933,36 @@ namespace UnityEngine.UIElements.UIR
                     if (rangesReady > 0)
                     {
                         ApplyBatchState(ref st);
-                        KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.commandList);
+                        KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
+                    }
+
+                    if (fullyCreated && head.type == CommandType.CutRenderChain)
+                    {
+                        // Reuse command lists whenever possible
+                        CommandList cmdList = null;
+                        if (currentFrameCommandListCount < currentFrameCommandLists.Count)
+                        {
+                            cmdList = currentFrameCommandLists[currentFrameCommandListCount];
+                            cmdList.Reset(head.owner);
+                        }
+                        else
+                        {
+                            cmdList = new CommandList(head.owner, m_VertexDecl, m_DefaultStencilState);
+                            currentFrameCommandLists.Add(cmdList);
+                        }
+
+                        ++currentFrameCommandListCount;
+
+                        st.activeCommandList = cmdList;
+                        st.constantProps = st.activeCommandList.constantProps;
+                        st.batchProps = st.activeCommandList.batchProps;
+
+                        st.batchProps.Clear();
+                        if (gradientSettings != null)
+                            st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
+                        if (shaderInfo != null)
+                            st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
+                        Utility.SetPropertyBlock(st.constantProps);
                     }
 
                     if (head.type != CommandType.Draw)
@@ -984,7 +1006,7 @@ namespace UnityEngine.UIElements.UIR
             if (rangesReady > 0)
             {
                 ApplyBatchState(ref st);
-                KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.commandList);
+                KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
             }
 
             Debug.Assert(disableCounter == 0, "Rendering disabled counter is not 0, indicating a mismatch of commands");
@@ -993,12 +1015,6 @@ namespace UnityEngine.UIElements.UIR
 
             Utility.ProfileDrawChainEnd();
 
-        }
-
-        public void ExecuteCommandList(uint frameIndex)
-        {
-            CommandList list = m_CommandLists[frameIndex % m_CommandLists.Length];
-            list.Execute();
         }
 
         unsafe void UpdateFenceValue()
@@ -1051,14 +1067,16 @@ namespace UnityEngine.UIElements.UIR
 
         unsafe void DrawRanges(Utility.GPUBuffer<ushort> ib, Utility.GPUBuffer<Vertex> vb, NativeSlice<DrawBufferRange> ranges, CommandList commandList)
         {
-            if (commandList == null)
+            if (commandList != null)
+            {
+                commandList.DrawRanges(ib, vb, ranges);
+            }
+            else if (!drawsInCameras)
             {
                 IntPtr* vStream = stackalloc IntPtr[1];
                 vStream[0] = vb.BufferPointer;
                 Utility.DrawRanges(ib.BufferPointer, vStream, 1, new IntPtr(ranges.GetUnsafePtr()), ranges.Length, m_VertexDecl);
             }
-            else
-                commandList.DrawRanges(ib, vb, ranges);
         }
 
         // Used for testing purposes only (e.g. performance test warmup)

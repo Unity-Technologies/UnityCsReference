@@ -1397,8 +1397,6 @@ namespace UnityEditor
                 menu.AddSeparator("");
                 menu.AddItem(new GUIContent("Properties..."), false, () => PropertyEditor.OpenPropertyEditorOnSelection());
             }
-
-            menu.ShowAsContext();
         }
 
         private void FindReferenceInScene()

@@ -478,7 +478,8 @@ namespace UnityEngine.UIElements
         internal Rect lastLayout;
         internal Rect lastPseudoPadding;
         internal RenderChainVEData renderChainData;
-
+        internal bool shouldCutRenderChain;
+        internal UIRenderer uiRenderer; // Null for non-world panels
 
         /// <summary>
         /// Returns a transform object for this VisualElement.

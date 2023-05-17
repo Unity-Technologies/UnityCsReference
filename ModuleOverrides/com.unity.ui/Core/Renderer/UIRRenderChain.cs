@@ -6,6 +6,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Unity.Collections;
 using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
@@ -23,7 +25,6 @@ namespace UnityEngine.UIElements.UIR
         public uint nudgeTransformed, boneTransformed, skipTransformed, visualUpdateTransformed;
         public uint updatedMeshAllocations, newMeshAllocations;
         public uint groupTransformElementsChanged;
-        public uint immedateRenderersActive;
     }
 
     // We want to pool MeshWriteData instances, but unlike usual pooling, we don't explicitly return them to a pool. So instead,
@@ -34,22 +35,6 @@ namespace UnityEngine.UIElements.UIR
 
         public MeshWriteDataPool()
             : base(k_CreateAction, null, 100, 1000) { }
-    }
-
-    class EntryPool : ImplicitPool<Entry>
-    {
-        static readonly Func<Entry> k_CreateAction = () => new Entry();
-        static readonly Action<Entry> k_ResetAction = e =>
-        {
-            e.firstChild = null;
-            e.nextSibling = null;
-            e.texture = null;
-            e.material = null;
-            e.gradientsOwner = null;
-        };
-
-        public EntryPool(int maxCapacity = 1000)
-            : base(k_CreateAction, k_ResetAction, 100, maxCapacity) { }
     }
 
     partial class RenderChain : IDisposable
@@ -134,59 +119,16 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        struct RenderChainStaticIndexAllocator
-        {
-            static List<RenderChain> renderChains = new List<RenderChain>(4);
-            public static int AllocateIndex(RenderChain renderChain)
-            {
-                int index = renderChains.IndexOf(null);
-                if (index >= 0)
-                    renderChains[index] = renderChain;
-                else
-                {
-                    index = renderChains.Count;
-                    renderChains.Add(renderChain);
-                }
-                return index;
-            }
-
-            public static void FreeIndex(int index)
-            {
-                renderChains[index] = null;
-            }
-
-            public static RenderChain AccessIndex(int index)
-            {
-                return renderChains[index];
-            }
-        };
-
-        struct RenderNodeData
-        {
-            public Material standardMaterial;
-            public Material initialMaterial;
-            public MaterialPropertyBlock matPropBlock;
-            public RenderChainCommand firstCommand;
-
-            public UIRenderDevice device;
-            public Texture vectorAtlas, shaderInfoAtlas;
-            public float dpiScale;
-
-            public uint frameIndex;
-        };
-
         RenderChainCommand m_FirstCommand;
         DepthOrderedDirtyTracking m_DirtyTracker;
         VisualChangesProcessor m_VisualChangesProcessor;
         LinkedPool<RenderChainCommand> m_CommandPool = new LinkedPool<RenderChainCommand>(() => new RenderChainCommand(), cmd => {});
         BasicNodePool<TextureEntry> m_TexturePool = new BasicNodePool<TextureEntry>();
-        List<RenderNodeData> m_RenderNodesData = new List<RenderNodeData>();
+
         MeshGenerationDeferrer m_MeshGenerationDeferrer = new();
         Shader m_DefaultShader, m_DefaultWorldSpaceShader;
         Material m_DefaultMat, m_DefaultWorldSpaceMat;
         bool m_BlockDirtyRegistration;
-        int m_StaticIndex = -1;
-        int m_ActiveRenderNodes = 0;
         int m_CustomMaterialCommands = 0; // TODO: Get rid of this
         ChainBuilderStats m_Stats;
         uint m_StatsElementsAdded, m_StatsElementsRemoved;
@@ -206,11 +148,6 @@ namespace UnityEngine.UIElements.UIR
         static readonly ProfilerMarker k_MarkerTransformProcessing = new("RenderChain.UpdateTransforms");
         static readonly ProfilerMarker k_MarkerVisualsProcessing = new("RenderChain.UpdateVisuals");
 
-        static RenderChain()
-        {
-            UIR.Utility.RegisterIntermediateRenderers += OnRegisterIntermediateRenderers;
-            UIR.Utility.RenderNodeExecute += OnRenderNodeExecute;
-        }
 
         public RenderChain(BaseVisualElementPanel panel) : this(panel, new UIRenderDevice(panel.vertexBudget), panel.atlas, new VectorImageManager(panel.atlas))
         {
@@ -225,9 +162,6 @@ namespace UnityEngine.UIElements.UIR
             m_DirtyTracker.maxDepths = new int[(int)RenderDataDirtyTypeClasses.Count];
             m_DirtyTracker.Reset();
 
-            if (m_RenderNodesData.Count < 1)
-                m_RenderNodesData.Add(new RenderNodeData() { matPropBlock = new MaterialPropertyBlock() });
-
             this.panel = panel;
             this.device = device;
             this.atlas = atlas;
@@ -236,17 +170,13 @@ namespace UnityEngine.UIElements.UIR
             // TODO: Share across all panels
             tempMeshAllocator = new TempMeshAllocatorImpl();
             jobManager = new JobManager();
-
             shaderInfoAllocator.Construct();
             opacityIdAccelerator = new OpacityIdAccelerator();
-
+            meshGenerationNodeManager = new MeshGenerationNodeManager(entryRecorder);
             m_VisualChangesProcessor = new VisualChangesProcessor(this);
 
             if (panel is BaseRuntimePanel { drawsInCameras: true })
-            {
                 device.drawsInCameras = drawInCameras = true;
-                m_StaticIndex = RenderChainStaticIndexAllocator.AllocateIndex(this);
-            }
 
             device.isFlat = isFlat = panel.isFlat;
         }
@@ -269,10 +199,6 @@ namespace UnityEngine.UIElements.UIR
 
             if (disposing)
             {
-                if (m_StaticIndex >= 0)
-                    RenderChainStaticIndexAllocator.FreeIndex(m_StaticIndex);
-                m_StaticIndex = -1;
-
                 var ve = GetFirstElementInPanel(m_FirstCommand?.owner);
                 while (ve != null)
                 {
@@ -308,9 +234,10 @@ namespace UnityEngine.UIElements.UIR
                 m_MeshGenerationDeferrer?.Dispose();
                 m_MeshGenerationDeferrer = null;
 
+                meshGenerationNodeManager.Dispose();
+                meshGenerationNodeManager = null;
+
                 atlas = null;
-                m_ActiveRenderNodes = 0;
-                m_RenderNodesData.Clear();
             }
             else DisposeHelper.NotifyMissingDispose(this);
 
@@ -452,6 +379,8 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
+            m_VisualChangesProcessor.ScheduleMeshGenerationJobs();
+
             m_MeshGenerationDeferrer.ProcessDeferredWork(m_VisualChangesProcessor.meshGenerationContext);
             m_VisualChangesProcessor.ConvertEntriesToCommands(ref m_Stats);
             jobManager.CompleteConvertMeshJobs();
@@ -460,6 +389,7 @@ namespace UnityEngine.UIElements.UIR
             k_MarkerVisualsProcessing.End();
             m_BlockDirtyRegistration = false;
 
+            meshGenerationNodeManager.ResetAll();
             tempMeshAllocator.Clear();
             meshWriteDataPool.ReturnAll();
             entryPool.ReturnAll();
@@ -501,6 +431,28 @@ namespace UnityEngine.UIElements.UIR
                 device.EvaluateChain(m_FirstCommand, standardMaterial, standardMaterial, vectorImageManager?.atlas, shaderInfoAllocator.atlas,
                     panel.scaledPixelsPerPoint, ref immediateException);
                 //m_BlockDirtyRegistration = false;
+
+                // Assign the command lists to the UIRenderer components.
+                // Note that the device may be null at this point (e.g., EvaluateChain may had to
+                // dispose of the RenderChain when evaluating an immediate element that closed a window).
+                var frameCommandLists = device?.currentFrameCommandLists;
+                if (drawInCameras && frameCommandLists != null)
+                {
+                    var worldMat = GetStandardWorldSpaceMaterial();
+                    for (int cmdListIndex = 0; cmdListIndex < device.currentFrameCommandListCount; ++cmdListIndex)
+                    {
+                        var cmdList = frameCommandLists[cmdListIndex];
+                        var renderer = cmdList.m_Owner?.uiRenderer;
+                        if (renderer != null)
+                        {
+                            var commandLists = device.commandLists;
+                            renderer.commandLists = commandLists;
+
+                            int safeFrameIndex = (int)device.frameIndex % commandLists.Length;
+                            renderer.SetNativeData(safeFrameIndex, cmdListIndex, worldMat);
+                        }
+                    }
+                }
             }
 
             if (immediateException != null)
@@ -666,8 +618,10 @@ namespace UnityEngine.UIElements.UIR
         internal VectorImageManager vectorImageManager { get; private set; }
         internal TempMeshAllocatorImpl tempMeshAllocator { get; private set; }
         internal MeshWriteDataPool meshWriteDataPool { get; } = new();
+        public EntryRecorder entryRecorder = new (s_SharedEntryPool);
         internal EntryPool entryPool => s_SharedEntryPool;
         public MeshGenerationDeferrer meshGenerationDeferrer => m_MeshGenerationDeferrer;
+        public MeshGenerationNodeManager meshGenerationNodeManager { get; private set; }
         internal JobManager jobManager { get; private set; }
         internal UIRVEShaderInfoAllocator shaderInfoAllocator; // Not a property because this is a struct we want to mutate
         internal bool drawStats { get; set; }
@@ -760,111 +714,6 @@ namespace UnityEngine.UIElements.UIR
         {
             if (firstCommand.prev == null)
                 m_FirstCommand = lastCommand.next;
-        }
-
-        unsafe static RenderNodeData AccessRenderNodeData(IntPtr obj)
-        {
-            int *indices = (int*)obj.ToPointer();
-            RenderChain rc = RenderChainStaticIndexAllocator.AccessIndex(indices[0]);
-            return rc.m_RenderNodesData[indices[1]];
-        }
-
-        private unsafe static void OnRenderNodeExecute(IntPtr obj)
-        {
-            RenderNodeData rnd = AccessRenderNodeData(obj);
-            rnd.device.ExecuteCommandList(rnd.frameIndex);
-        }
-
-        private static void OnRegisterIntermediateRenderers(Camera camera)
-        {
-            int commandOrder = 0;
-            var panels = UIElementsUtility.GetPanelsIterator();
-            while (panels.MoveNext())
-            {
-                var p = panels.Current.Value;
-                RenderChain renderChain = (p.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater)?.renderChain;
-                if (renderChain == null || renderChain.m_StaticIndex < 0 || renderChain.m_FirstCommand == null)
-                    continue;
-
-                BaseRuntimePanel rtp = (BaseRuntimePanel)p;
-                Material standardMaterial = renderChain.GetStandardWorldSpaceMaterial();
-                RenderNodeData rndSource = new RenderNodeData();
-                rndSource.device = renderChain.device;
-                rndSource.standardMaterial = standardMaterial;
-                rndSource.vectorAtlas = renderChain.vectorImageManager?.atlas;
-                rndSource.shaderInfoAtlas = renderChain.shaderInfoAllocator.atlas;
-                rndSource.dpiScale = rtp.scaledPixelsPerPoint;
-                rndSource.frameIndex = renderChain.device.frameIndex;
-
-                if (renderChain.m_CustomMaterialCommands == 0)
-                {
-                    // Trivial case, custom materials not used, so we don't have to chop the chain
-                    // to multiple intermediate renderers
-                    rndSource.initialMaterial = standardMaterial;
-                    rndSource.firstCommand = renderChain.m_FirstCommand;
-                    OnRegisterIntermediateRendererMat(rtp, renderChain, ref rndSource, camera, commandOrder++);
-                    continue;
-                }
-
-                // Complex case, custom materials used
-                // TODO: Early out once all custom materials have been counted
-                Material lastMaterial = null;
-                var command = renderChain.m_FirstCommand;
-                RenderChainCommand commandToStartWith = command;
-                while (command != null)
-                {
-                    if (command.type != CommandType.Draw)
-                    {
-                        command = command.next;
-                        continue;
-                    }
-                    Material commandMat = command.state.material == null ? standardMaterial : command.state.material;
-                    if (commandMat != lastMaterial)
-                    {
-                        if (lastMaterial != null)
-                        {
-                            rndSource.initialMaterial = lastMaterial;
-                            rndSource.firstCommand = commandToStartWith;
-                            OnRegisterIntermediateRendererMat(rtp, renderChain, ref rndSource, camera, commandOrder++);
-                            commandToStartWith = command;
-                        }
-                        lastMaterial = commandMat;
-                    }
-                    command = command.next;
-                } // While render chain commands to execute
-
-                if (commandToStartWith != null)
-                {
-                    rndSource.initialMaterial = lastMaterial;
-                    rndSource.firstCommand = commandToStartWith;
-                    OnRegisterIntermediateRendererMat(rtp, renderChain, ref rndSource, camera, commandOrder++);
-                }
-            } // For each panel
-        }
-
-        private unsafe static void OnRegisterIntermediateRendererMat(BaseRuntimePanel rtp, RenderChain renderChain, ref RenderNodeData rnd, Camera camera, int sameDistanceSortPriority)
-        {
-            int renderNodeIndex = renderChain.m_ActiveRenderNodes++;
-            if (renderNodeIndex < renderChain.m_RenderNodesData.Count)
-            {
-                var reuseRND = renderChain.m_RenderNodesData[renderNodeIndex];
-                rnd.matPropBlock = reuseRND.matPropBlock;
-                renderChain.m_RenderNodesData[renderNodeIndex] = rnd;
-            }
-            else
-            {
-                rnd.matPropBlock = new MaterialPropertyBlock();
-                renderNodeIndex = renderChain.m_RenderNodesData.Count;
-                renderChain.m_RenderNodesData.Add(rnd);
-            }
-
-            int* userData = stackalloc int[2];
-            userData[0] = renderChain.m_StaticIndex;
-            userData[1] = renderNodeIndex;
-            UIR.Utility.RegisterIntermediateRenderer(camera, rnd.initialMaterial, Matrix4x4.identity,
-                new Bounds(Vector3.zero, new Vector3(float.MaxValue, float.MaxValue, float.MaxValue)),
-                rtp.worldSpaceLayer, 0, false, sameDistanceSortPriority, (int)UIR.Utility.RendererCallbacks.RendererCallback_Exec,
-                new IntPtr(userData), sizeof(int) * 2);
         }
 
         internal void RepaintTexturedElements()

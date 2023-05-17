@@ -8,11 +8,23 @@ namespace UnityEngine.UIElements
 {
     internal static class DropdownUtility
     {
-        internal static Func<IGenericMenu> MakeDropdownFunc;
+        internal static Func<bool, GenericDropdownMenu> MakeDropdownFunc;
+        internal static Action<GenericDropdownMenu, Rect, VisualElement, bool, bool> ShowDropdownFunc;
 
-        internal static IGenericMenu CreateDropdown()
+        internal static GenericDropdownMenu CreateDropdown(bool allowSubmenus = false)
         {
-            return MakeDropdownFunc != null ? MakeDropdownFunc.Invoke() : new GenericDropdownMenu();
+            return MakeDropdownFunc != null ? MakeDropdownFunc.Invoke(allowSubmenus) : new GenericDropdownMenu();
+        }
+
+        internal static void ShowDropdown(GenericDropdownMenu menu, Vector2 position, VisualElement target = null, bool anchored = false, bool parseShortcuts = false, bool autoClose = true)
+        {
+            var positionRect = new Rect(position, Vector2.zero);
+
+            if (ShowDropdownFunc != null)
+                ShowDropdownFunc.Invoke(menu, positionRect, target, parseShortcuts, autoClose);
+            else
+                menu.DropDown(positionRect, target, anchored);
         }
     }
 }
+

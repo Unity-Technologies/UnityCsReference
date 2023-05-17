@@ -566,7 +566,7 @@ namespace UnityEngine
             int nextPower = NextPowerOfTwo(value);
             int prevPower = nextPower >> 1;
             if (value - prevPower < nextPower - value)
- 
+
                 return prevPower;
             else
                 return nextPower;

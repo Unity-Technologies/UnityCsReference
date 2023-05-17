@@ -25,6 +25,7 @@ using System.Reflection;
 using Unity.Profiling;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.UIElements;
+using UnityEditor.UIElements;
 
 namespace UnityEditor
 {
@@ -521,7 +522,7 @@ namespace UnityEditor
 
             internal bool IsEditingControl(int id)
             {
-                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && GUIView.current.hasFocus;
+                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && (GUIView.current.hasFocus || EditorMenuExtensions.isEditorContextMenuActive);
             }
 
             public virtual void BeginEditing(int id, string newText, Rect position, GUIStyle style, bool multiline, bool passwordField)
@@ -573,6 +574,9 @@ namespace UnityEditor
 
             public virtual void EndEditing()
             {
+                if (EditorMenuExtensions.isEditorContextMenuActive)
+                    return;
+
                 if (activeEditor == this)
                 {
                     activeEditor = null;
@@ -1628,12 +1632,7 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (interactionRect.Contains(evt.mousePosition))
                     {
-                        if (evt.button == 1 && IsValidForContextMenu(targetObjs[0]))
-                        {
-                            EditorUtility.DisplayObjectContextMenu(new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0), targetObjs, 0);
-                            evt.Use();
-                        }
-                        else if (evt.button == 0 && !(Application.platform == RuntimePlatform.OSXEditor && evt.control))
+                        if (evt.button == 0 && !(Application.platform == RuntimePlatform.OSXEditor && evt.control))
                         {
                             GUIUtility.hotControl = id;
                             GUIUtility.keyboardControl = id;
@@ -4019,11 +4018,6 @@ namespace UnityEditor
                 case EventType.MouseDown:
                     if (evt.button == 0 && position.Contains(evt.mousePosition))
                     {
-                        if (Application.platform == RuntimePlatform.OSXEditor)
-                        {
-                            position.y = position.y - selected * 16 - 19;
-                        }
-
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
                         EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
                         GUIUtility.keyboardControl = controlID;
@@ -4033,11 +4027,6 @@ namespace UnityEditor
                 case EventType.KeyDown:
                     if (evt.MainActionKeyForControl(controlID))
                     {
-                        if (Application.platform == RuntimePlatform.OSXEditor)
-                        {
-                            position.y = position.y - selected * 16 - 19;
-                        }
-
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
                         EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
                         evt.Use();
@@ -5479,49 +5468,14 @@ namespace UnityEditor
                         hovered ^= hoveredEyedropper;
                     }
 
-                    if (hovered)
+                    if (hovered && evt.button == 0)
                     {
-                        switch (evt.button)
-                        {
-                            case 0:
-                                // Left click: Show the ColorPicker
-                                GUIUtility.keyboardControl = id;
-                                showMixedValue = false;
-                                ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
-                                GUIUtility.ExitGUI();
-                                break;
-
-                            case 1:
-                                // Right click: Show color context menu
-                                // See ExecuteCommand section below to see handling for copy & paste
-                                GUIUtility.keyboardControl = id;
-
-                                var names = new[] { L10n.Tr("Copy"), L10n.Tr("Paste") };
-                                var enabled = new[] { true, wasEnabled && Clipboard.hasColor };
-                                var currentView = GUIView.current;
-
-                                EditorUtility.DisplayCustomMenu(
-                                    new Rect(Event.current.mousePosition, Vector2.zero),
-                                    names,
-                                    enabled,
-                                    null,
-                                    delegate (object data, string[] options, int selected)
-                                    {
-                                        if (selected == 0)
-                                        {
-                                            Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Copy);
-                                            currentView.SendEvent(e);
-                                        }
-                                        else if (selected == 1)
-                                        {
-                                            Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Paste);
-                                            currentView.SendEvent(e);
-                                        }
-                                    },
-                                    null);
-                                evt.Use();
-                                return origColor;
-                        }
+                        // Left click: Show the ColorPicker
+                        GUIUtility.keyboardControl = id;
+                        showMixedValue = false;
+                        ColorPicker.Show(GUIView.current, value, showAlpha, hdr);
+                        GUIUtility.ExitGUI();
+                        break;
                     }
 
                     if (showEyedropper)
@@ -5535,6 +5489,41 @@ namespace UnityEditor
                         }
                     }
                     break;
+
+                case EventType.ContextClick:
+                    if (!hovered)
+                        break;
+
+                    // Right click: Show color context menu
+                    // See ExecuteCommand section below to see handling for copy & paste
+                    GUIUtility.keyboardControl = id;
+
+                    var names = new[] { L10n.Tr("Copy"), L10n.Tr("Paste") };
+                    var enabled = new[] { true, wasEnabled && Clipboard.hasColor };
+                    var currentView = GUIView.current;
+
+                    EditorUtility.DisplayCustomMenu(
+                        new Rect(Event.current.mousePosition, Vector2.zero),
+                        names,
+                        enabled,
+                        null,
+                        delegate (object data, string[] options, int selected)
+                        {
+                            if (selected == 0)
+                            {
+                                Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Copy);
+                                currentView.SendEvent(e);
+                            }
+                            else if (selected == 1)
+                            {
+                                Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Paste);
+                                currentView.SendEvent(e);
+                            }
+                        },
+                        null);
+
+                    return origColor;
+
                 case EventType.Repaint:
                     Rect position2;
                     position2 = showEyedropper ? style.padding.Remove(position) : EditorStyles.colorPickerBox.padding.Remove(position);

@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     [NativeHeader("ModuleOverrides/com.unity.ui/Core/Native/Renderer/UIPainter2D.bindings.h")]
     internal static class UIPainter2D
     {
-        public static extern IntPtr Create(float maxArcRadius);
+        public static extern IntPtr Create();
         public static extern void Destroy(IntPtr handle);
 
         public static extern void Reset(IntPtr handle);
@@ -52,6 +52,12 @@ namespace UnityEngine.UIElements
 
         public static extern MeshWriteDataInterface Stroke(IntPtr handle);
         public static extern MeshWriteDataInterface Fill(IntPtr handle, FillRule fillRule);
+
+        public static extern int TakeStrokeSnapshot(IntPtr handle);
+        public static extern int TakeFillSnapshot(IntPtr handle, FillRule fillRule);
+        public static extern void ClearSnapshots(IntPtr handle);
+
+        [ThreadSafe] public static extern MeshWriteDataInterface ExecuteSnapshotFromJob(IntPtr painterHandle, int i);
     }
 
     /// <summary>

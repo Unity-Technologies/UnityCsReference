@@ -84,6 +84,10 @@ namespace UnityEditor.ShortcutManagement
 
         static void UpdateContext()
         {
+            // We don't consider contextual menu a window
+            if (focusedWindow?.GetType() == typeof(EditorMenuExtensions.ContextMenu))
+                return;
+
             HandleKey(Event.current);
 
             shortcuts.Clear();

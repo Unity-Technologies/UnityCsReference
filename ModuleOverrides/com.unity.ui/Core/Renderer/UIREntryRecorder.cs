@@ -31,6 +31,7 @@ namespace UnityEngine.UIElements.UIR
         BlitAndPopRenderTexture,
         PushDefaultMaterial,
         PopDefaultMaterial,
+        CutRenderChain,
         DedicatedPlaceholder
     }
 
@@ -50,7 +51,9 @@ namespace UnityEngine.UIElements.UIR
         public Action immediateCallback;
 
         public Entry nextSibling;
+
         public Entry firstChild;
+        public Entry lastChild;
     }
 
     // This class converts the most basic operations into entries. It performs no transformation of any kind,
@@ -58,11 +61,6 @@ namespace UnityEngine.UIElements.UIR
     // must be the ONLY place where we create entries.
     class EntryRecorder
     {
-        Entry m_Parent;
-        Entry m_Previous;
-
-        // True when the previous entry is a dedicated placeholder or used like a placeholder
-        bool m_PreviousAsPlaceholder;
         EntryPool m_EntryPool;
 
         public EntryRecorder(EntryPool entryPool)
@@ -71,43 +69,27 @@ namespace UnityEngine.UIElements.UIR
             m_EntryPool = entryPool;
         }
 
-        public void Begin(Entry parent)
+        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices)
         {
-            Debug.Assert(m_Parent == null);
-            Debug.Assert(m_Previous == null);
-            Debug.Assert(parent.firstChild == null);
-            m_Parent = parent;
+            DrawMesh(parentEntry, vertices, indices, null, false);
         }
 
-        public void End()
-        {
-            Debug.Assert(m_Parent != null);
-            m_Parent = null;
-            m_Previous = null;
-            m_PreviousAsPlaceholder = false;
-        }
-
-        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices)
-        {
-            DrawMesh(vertices, indices, null, false);
-        }
-
-        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, bool skipAtlas)
+        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, bool skipAtlas)
         {
             var entry = m_EntryPool.Get();
             entry.vertices = vertices;
             entry.indices = indices;
             entry.texture = texture;
 
-            if (texture == null)
+            if (object.ReferenceEquals(null, texture))
                 entry.type = EntryType.DrawSolidMesh;
             else
                 entry.type = skipAtlas ? EntryType.DrawTexturedMeshSkipAtlas : EntryType.DrawTexturedMesh;
 
-            AppendMeshEntry(entry);
+            AppendMeshEntry(parentEntry, entry);
         }
 
-        public void DrawSdfText(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale, float sharpness)
+        public void DrawSdfText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale, float sharpness)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.DrawSdfTextMesh;
@@ -116,161 +98,159 @@ namespace UnityEngine.UIElements.UIR
             entry.texture = texture;
             entry.textScale = scale;
             entry.fontSharpness = sharpness;
-            AppendMeshEntry(entry);
+            AppendMeshEntry(parentEntry, entry);
         }
 
         // Note: A vector image that doesn't use gradients must NOT be submitted with this call.
-        public void DrawGradients(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, VectorImage gradientsOwner)
+        public void DrawGradients(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, VectorImage gradientsOwner)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.DrawGradients;
             entry.vertices = vertices;
             entry.indices = indices;
             entry.gradientsOwner = gradientsOwner;
-            AppendMeshEntry(entry);
+            AppendMeshEntry(parentEntry, entry);
         }
 
-        public void DrawImmediate(Action callback, bool cullingEnabled)
+        public void DrawImmediate(Entry parentEntry, Action callback, bool cullingEnabled)
         {
             var entry = m_EntryPool.Get();
             entry.type = cullingEnabled ? EntryType.DrawImmediateCull : EntryType.DrawImmediate;
             entry.immediateCallback = callback;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void DrawChildren()
+        public void DrawChildren(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.DrawChildren;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void BeginStencilMask()
+        public void BeginStencilMask(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.BeginStencilMask;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void EndStencilMask()
+        public void EndStencilMask(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.EndStencilMask;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PopStencilMask()
+        public void PopStencilMask(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PopStencilMask;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PushClippingRect()
+        public void PushClippingRect(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PushClippingRect;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PopClippingRect()
+        public void PopClippingRect(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PopClippingRect;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PushScissors()
+        public void PushScissors(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PushScissors;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PopScissors()
+        public void PopScissors(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PopScissors;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PushGroupMatrix()
+        public void PushGroupMatrix(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PushGroupMatrix;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PopGroupMatrix()
+        public void PopGroupMatrix(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PopGroupMatrix;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PushRenderTexture()
+        public void PushRenderTexture(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PushRenderTexture;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void BlitAndPopRenderTexture()
+        public void BlitAndPopRenderTexture(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.BlitAndPopRenderTexture;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PushDefaultMaterial(Material material)
+        public void PushDefaultMaterial(Entry parentEntry, Material material)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PushDefaultMaterial;
             entry.material = material;
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PopDefaultMaterial()
+        public void PopDefaultMaterial(Entry parentEntry)
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PopDefaultMaterial;
-            Append(entry);
+            Append(parentEntry, entry);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void CutRenderChain(Entry parentEntry)
+        {
+            var entry = m_EntryPool.Get();
+            entry.type = EntryType.CutRenderChain;
+            Append(parentEntry, entry);
         }
 
         // Returns an entry to which children can be added
-        // The entry itself might be a dedicated placeholder or the previous entry if it can be used as a parent
-        public Entry InsertPlaceholder()
+        public Entry InsertPlaceholder(Entry parentEntry)
         {
-            Entry entry;
-
-            if (m_Previous == null || m_PreviousAsPlaceholder)
-            {
-                entry = m_EntryPool.Get();
-                entry.type = EntryType.DedicatedPlaceholder;
-                Append(entry);
-            }
-            else
-                entry = m_Previous;
-
-            m_PreviousAsPlaceholder = true;
+            var entry = m_EntryPool.Get();
+            entry.type = EntryType.DedicatedPlaceholder;
+            Append(parentEntry, entry);
             return entry;
         }
 
-        void AppendMeshEntry(Entry entry)
+        static void AppendMeshEntry(Entry parentEntry, Entry entry)
         {
             int vertexCount = entry.vertices.Length;
             int indexCount = entry.indices.Length;
@@ -293,18 +273,23 @@ namespace UnityEngine.UIElements.UIR
                 return;
             }
 
-            Append(entry);
+            Append(parentEntry, entry);
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
-        void Append(Entry entry)
+        static void Append(Entry parentEntry, Entry entry)
         {
-            if (m_Previous != null)
-                m_Previous.nextSibling = entry;
+            if (parentEntry.lastChild == null)
+            {
+                Debug.Assert(parentEntry.firstChild == null);
+                parentEntry.firstChild = entry;
+                parentEntry.lastChild = entry;
+            }
             else
-                m_Parent.firstChild = entry;
-            m_Previous = entry;
-            m_PreviousAsPlaceholder = entry.type == EntryType.DedicatedPlaceholder;
+            {
+                parentEntry.lastChild.nextSibling = entry;
+                parentEntry.lastChild = entry;
+            }
         }
     }
 }

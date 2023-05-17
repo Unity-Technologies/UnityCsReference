@@ -2,7 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.CompilerServices;
+using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Profiling;
 using UnityEngine.UIElements.UIR;
 
@@ -193,6 +195,22 @@ namespace UnityEngine.UIElements
             }
 
             return exp;
+        }
+
+        [ThreadStatic]
+        static int? s_ThreadIndex;
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        public static int GetThreadIndex()
+        {
+            // This code was optimized to avoid querying TLS twice.
+            int? threadIndex = s_ThreadIndex;
+            if (threadIndex.HasValue)
+                return threadIndex.Value;
+
+            int initValue = JobsUtility.ThreadIndex;
+            s_ThreadIndex = initValue;
+            return initValue;
         }
     }
 }

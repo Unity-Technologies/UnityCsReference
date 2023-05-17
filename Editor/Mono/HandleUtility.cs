@@ -1849,6 +1849,8 @@ namespace UnityEditor
                     tempParentInstanceIDs.Add(renderer.GetInstanceID());
                 else if (go.TryGetComponent(out Terrain terrain))
                     tempParentInstanceIDs.Add(terrain.GetInstanceID());
+                // Render commands from the Graphics API can use the gameobject instance ID for selection and outline rendering
+                tempParentInstanceIDs.Add(go.GetInstanceID());
             }
 
             var tempChildInstanceIDs = new HashSet<int>();
@@ -1866,6 +1868,18 @@ namespace UnityEditor
                 for (int i = 0; i < childTerrains.Length; i++)
                 {
                     var id = childTerrains[i].GetInstanceID();
+                    if (!tempParentInstanceIDs.Contains(id))
+                        tempChildInstanceIDs.Add(id);
+                }
+
+                // Script components can issue Render commands that are rendered in the outline so we need to take that in account
+                var userScriptObjects = go.GetComponentsInChildren<MonoBehaviour>();
+                for (int i = 0; i < userScriptObjects.Length; i++)
+                {
+                    var script = userScriptObjects[i];
+                    if (script == null)
+                        continue;
+                    var id = script.gameObject.GetInstanceID();
                     if (!tempParentInstanceIDs.Contains(id))
                         tempChildInstanceIDs.Add(id);
                 }

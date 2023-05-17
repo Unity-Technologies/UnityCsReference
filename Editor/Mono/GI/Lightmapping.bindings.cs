@@ -256,25 +256,6 @@ namespace UnityEditor
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern LightProbesConvergence GetLightProbesConvergence();
 
-        [FreeFunction]
-        internal static extern MemLabels GetLightProbeMemLabels();
-
-        [FreeFunction]
-        internal static extern MemLabels GetTransmissionTexturesMemLabels();
-
-        [FreeFunction]
-        internal static extern MemLabels GetMaterialTexturesMemLabels();
-
-        [StaticAccessor("PVRMemoryLabelTracker::Get()", StaticAccessorType.Arrow)]
-        internal static extern void ResetExplicitlyShownMemLabels();
-
-        [StaticAccessor("PVROpenRLMemoryTracker::Get()", StaticAccessorType.Arrow)]
-        [NativeName("GetGeometryMemory")]
-        internal static extern GeoMemLabels GetGeometryMemory();
-
-        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern float ComputeTotalCPUMemoryUsageInBytes();
-
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float ComputeTotalGPUMemoryUsageInBytes();
 
@@ -369,6 +350,7 @@ namespace UnityEditor
 
         internal static event Action startedRendering;
 
+        [RequiredByNativeCode]
         internal static void Internal_CallStartedRenderingFunctions()
         {
             if (startedRendering != null)
@@ -385,6 +367,7 @@ namespace UnityEditor
 
         public static event Action lightingDataCleared;
 
+        [RequiredByNativeCode]
         internal static void Internal_CallLightingDataCleared()
         {
             if (lightingDataCleared != null)
@@ -393,6 +376,7 @@ namespace UnityEditor
 
         public static event Action lightingDataAssetCleared;
 
+        [RequiredByNativeCode]
         internal static void Internal_CallLightingDataAssetCleared()
         {
             if (lightingDataAssetCleared != null)
@@ -401,6 +385,7 @@ namespace UnityEditor
 
         internal static event Action wroteLightingDataAsset;
 
+        [RequiredByNativeCode]
         internal static void Internal_CallOnWroteLightingDataAsset()
         {
             if (wroteLightingDataAsset != null)
@@ -439,6 +424,7 @@ namespace UnityEditor
 
         internal static event Action<string> bakeAnalytics;
 
+        [RequiredByNativeCode]
         private static void Internal_CallBakeAnalyticsFunctions(string analytics)
         {
             if (bakeAnalytics != null)
@@ -745,6 +731,8 @@ namespace UnityEditor.Experimental
         static extern bool BakeScene(Scene targetScene);
 
         public static event Action additionalBakedProbesCompleted;
+
+        [RequiredByNativeCode]
         internal static void Internal_CallAdditionalBakedProbesCompleted()
         {
             if (additionalBakedProbesCompleted != null)

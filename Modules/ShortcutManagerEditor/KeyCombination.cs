@@ -211,15 +211,14 @@ namespace UnityEditor.ShortcutManagement
 
             var modifiers = ShortcutModifiers.None;
             var startIndex = 0;
-            var found = false;
+            var shortcutStarted = false;
+
+            bool found;
             do
             {
                 found = true;
                 if (startIndex >= menuItemBindingString.Length)
-                {
-                    found = false;
                     break;
-                }
 
                 switch (menuItemBindingString[startIndex])
                 {
@@ -251,13 +250,15 @@ namespace UnityEditor.ShortcutManagement
                         found = false;
                         break;
                 }
+
+                shortcutStarted |= found;
             }
             while (found);
 
             var keyCodeString = menuItemBindingString.Substring(startIndex, menuItemBindingString.Length - startIndex);
             KeyCode keyCode;
             ShortcutModifiers additionalModifiers;
-            if (!TryParseMenuItemKeyCodeString(keyCodeString, out keyCode, out additionalModifiers))
+            if (!shortcutStarted || !TryParseMenuItemKeyCodeString(keyCodeString, out keyCode, out additionalModifiers))
             {
                 keyCombination = default(KeyCombination);
                 return false;
@@ -276,7 +277,7 @@ namespace UnityEditor.ShortcutManagement
             if (string.IsNullOrEmpty(keyCodeString))
                 return false;
 
-            if (s_MenuItemKeyCodeStringToKeyCode.TryGetValue(keyCodeString, out keyCode))
+            if (s_MenuItemKeyCodeStringToKeyCode.TryGetValue(keyCodeString.ToUpperInvariant(), out keyCode))
                 return true;
 
             if (keyCodeString.Length != 1)

@@ -13,6 +13,12 @@ namespace UnityEngine.Rendering
         [NativeName("UnregisterRenderPipelineSettings")] static extern void Internal_UnregisterRenderPipeline(string renderpipelineName);
         [NativeName("GetSettingsForRenderPipeline")] static extern Object Internal_GetSettingsForRenderPipeline(string renderpipelineName);
 
+        [NativeName("CurrentRenderPipelineGlobalSettings")] private static extern Object INTERNAL_currentRenderPipelineGlobalSettings { set; }
+        internal static RenderPipelineGlobalSettings currentRenderPipelineGlobalSettings
+        {
+            set => INTERNAL_currentRenderPipelineGlobalSettings = value;
+        }
+
         private static void CheckRenderPipelineType(Type renderPipelineType)
         {
             if (renderPipelineType == null)
@@ -22,6 +28,7 @@ namespace UnityEngine.Rendering
                 throw new ArgumentException($"{renderPipelineType} must be a valid {nameof(RenderPipeline)}");
         }
 
+        [Obsolete("RenderPipelineGlobalSettings edition has been moved to EditorGraphicsSettings. #from(23.2)", false)]
         public static void UpdateGraphicsSettings(RenderPipelineGlobalSettings newSettings, Type renderPipelineType)
         {
             CheckRenderPipelineType(renderPipelineType);
@@ -32,24 +39,28 @@ namespace UnityEngine.Rendering
                 Internal_UnregisterRenderPipeline(renderPipelineType.FullName);
         }
 
+        [Obsolete("RenderPipelineGlobalSettings edition has been moved to EditorGraphicsSettings. #from(23.2)", false)]
         public static void RegisterRenderPipelineSettings(Type renderPipelineType, RenderPipelineGlobalSettings settings)
         {
             CheckRenderPipelineType(renderPipelineType);
             Internal_RegisterRenderPipeline(renderPipelineType.FullName, settings);
         }
 
+        [Obsolete("RenderPipelineGlobalSettings edition has been moved to EditorGraphicsSettings. #from(23.2)", false)]
         public static void RegisterRenderPipelineSettings<T>(RenderPipelineGlobalSettings settings)
             where T : RenderPipeline
         {
             Internal_RegisterRenderPipeline(typeof(T).FullName, settings);
         }
 
+        [Obsolete("RenderPipelineGlobalSettings edition has been moved to EditorGraphicsSettings. #from(23.2)", false)]
         public static void UnregisterRenderPipelineSettings<T>()
             where T : RenderPipeline
         {
             Internal_UnregisterRenderPipeline(typeof(T).FullName);
         }
 
+        [Obsolete("RenderPipelineGlobalSettings edition has been moved to EditorGraphicsSettings. #from(23.2)", false)]
         public static void UnregisterRenderPipelineSettings(Type renderPipelineType)
         {
             CheckRenderPipelineType(renderPipelineType);

@@ -199,8 +199,7 @@ namespace UnityEditor
             else if (visualType == ObjectFieldVisualType.LargePreview)
                 EditorGUIUtility.SetIconSize(new Vector2(64, 64));
 
-            if ((eventType == EventType.MouseDown && Event.current.button == 1 ||
-                (eventType == EventType.ContextClick && visualType == ObjectFieldVisualType.IconAndText)) &&
+            if ((eventType == EventType.ContextClick && visualType == ObjectFieldVisualType.IconAndText) &&
                 position.Contains(Event.current.mousePosition))
             {
                 var actualObject = property != null ? property.objectReferenceValue : obj;

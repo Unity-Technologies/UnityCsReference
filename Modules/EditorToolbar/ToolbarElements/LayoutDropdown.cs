@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -39,6 +38,7 @@ namespace UnityEditor.Toolbars
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(buttonRect.x, buttonRect.y));
             buttonRect.x = temp.x;
             buttonRect.y = temp.y;
+            MenuController.positionOverride = buttonRect;
             EditorUtility.Internal_DisplayPopupMenu(buttonRect, "Window/Layouts", Toolbar.get, 0, true);
         }
 

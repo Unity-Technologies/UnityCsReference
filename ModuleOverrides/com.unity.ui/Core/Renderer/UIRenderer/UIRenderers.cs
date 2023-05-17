@@ -44,6 +44,7 @@ namespace UnityEngine.UIElements.UIR
         BlitToPreviousRT, //From Active target to previous on RT stack
         PushDefaultMaterial, PopDefaultMaterial,
         BeginDisable, EndDisable,
+        CutRenderChain
     }
 
     internal class DrawParams

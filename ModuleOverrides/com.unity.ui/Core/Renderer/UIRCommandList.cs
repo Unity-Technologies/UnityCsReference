@@ -4,6 +4,7 @@
 
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 
@@ -33,19 +34,34 @@ namespace UnityEngine.UIElements.UIR
 
     class CommandList : IDisposable
     {
+        public VisualElement m_Owner;
         readonly IntPtr m_VertexDecl;
         readonly IntPtr m_StencilState;
         public MaterialPropertyBlock constantProps = new();
         public MaterialPropertyBlock batchProps = new();
+        public GCHandle handle; // GCHandle for native-side interactions
 
         List<SerializedCommand> m_Commands = new();
         Vector4[] m_GpuTextureData = new Vector4[TextureSlotManager.k_SlotSize * TextureSlotManager.k_SlotCount];
-        NativeList<DrawBufferRange> m_DrawRanges = new(1024);
+        NativeList<DrawBufferRange> m_DrawRanges;
 
-        public CommandList(IntPtr vertexDecl, IntPtr stencilState)
+        public CommandList(VisualElement owner, IntPtr vertexDecl, IntPtr stencilState)
         {
+            m_Owner = owner;
             m_VertexDecl = vertexDecl;
             m_StencilState = stencilState;
+            m_DrawRanges = new(1024);
+            handle = GCHandle.Alloc(this);
+        }
+
+        public void Reset(VisualElement newOwner)
+        {
+            m_Owner = newOwner;
+            m_Commands.Clear();
+            m_DrawRanges.Clear();
+
+            for (int i = 0; i < m_GpuTextureData.Length; ++i)
+                m_GpuTextureData[i] = Vector4.zero;
         }
 
         public unsafe void Execute()
@@ -119,12 +135,6 @@ namespace UnityEngine.UIElements.UIR
             m_DrawRanges.Add(ranges);
         }
 
-        public void Clear()
-        {
-            m_Commands.Clear();
-            m_DrawRanges.Clear();
-        }
-
         #region Dispose Pattern
 
         protected bool disposed { get; private set; }
@@ -145,6 +155,8 @@ namespace UnityEngine.UIElements.UIR
             {
                 m_DrawRanges.Dispose();
                 m_DrawRanges = null;
+                if (handle.IsAllocated)
+                    handle.Free();
             }
             else DisposeHelper.NotifyMissingDispose(this);
 

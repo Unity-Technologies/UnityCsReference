@@ -65,6 +65,8 @@ namespace UnityEditor.Search.Providers
 
         private static MethodInfo[] FetchStaticAPIMethodInfo()
         {
+            // Note: since 23.2 an internal api causes a hard crash when fetching for it.
+            // bool isDevBuild = Unsupported.IsDeveloperBuild();
             return AppDomain.CurrentDomain.GetAllStaticMethods(false);
         }
 

@@ -68,10 +68,16 @@ namespace UnityEditor
             m_FirstExecuteImmediate = firstExecuteImmediate;
         }
 
-        public void Dispose()
+        public void Abort()
         {
             EditorApplication.tick -= Debounce;
             EditorApplication.tick -= Throttle;
+        }
+
+        public void Dispose()
+        {
+            Abort();
+
             m_Context = null;
             m_Action = null;
             m_DelayInProgress = false;

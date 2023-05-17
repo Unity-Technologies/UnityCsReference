@@ -45,9 +45,8 @@ namespace Unity.UI.Builder
                 !BuilderSharedStyles.IsSelectorElement(documentElement))
                 return;
 
-            SetReorderingZonesEnabled(false);
-
-            FocusOnRenameTextField();
+            // Need to wait for context menu to give focus back
+            documentElement.schedule.Execute(FocusOnRenameTextField).ExecuteLater(100);
         }
 
         internal void SetReorderingZonesEnabled(bool value)

@@ -15,7 +15,16 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Abstract base class for controls.
+    /// <para>Abstract base class for controls.</para>
+    /// <para>A BaseField is a base class for field elements like <see cref="TextField"/> and <see cref="IntegerField"/>.
+    /// To align a BaseField element automatically with other fields in an Inspector window, 
+    /// use the @@.unity-base-field__aligned@@ USS class. This style class is designed for use with 
+    /// Inspector elements like <see cref="PropertyField"/>, which has the style class by default.
+    /// However, if you manually add a child BaseField element to a PropertyField, you must add 
+    /// the style class manually.</para>
+    /// <para>When the style class is present, the field automatically calculates the label width 
+    /// to align with other fields in the Inspector window. If there are IMGUI fields present, 
+    /// UI Toolkit fields are aligned with them for consistency and compatibility.</para>
     /// </summary>
     public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel
     {

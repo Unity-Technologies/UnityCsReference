@@ -195,6 +195,7 @@ namespace UnityEngine.UIElements
                 isClicking = true;
                 m_TextElement.CapturePointer(evt.pointerId);
                 m_ClickStartPosition = pointerPosition;
+                evt.StopPropagation();
             }
         }
 

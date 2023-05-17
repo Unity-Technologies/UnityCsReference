@@ -79,6 +79,9 @@ namespace UnityEditor.UIElements.Debugger
         [SerializeField]
         private bool m_ShowWireframe = false;
 
+        [SerializeField]
+        private bool m_RetainContextMenu = false;
+
         public DebuggerSelection selection { get; } = new DebuggerSelection();
         public VisualElement selectedElement => selection.element;
         public IPanelDebug panelDebug => selection.panelDebug;
@@ -165,6 +168,19 @@ namespace UnityEditor.UIElements.Debugger
                 if (m_ShowWireframe == value)
                     return;
                 m_ShowWireframe = value;
+                onStateChange?.Invoke();
+            }
+        }
+
+        public bool retainContextMenu
+        {
+            get { return m_RetainContextMenu; }
+            set
+            {
+                if (m_RetainContextMenu == value)
+                    return;
+                EditorMenuExtensions.CloseAllContextMenus();
+                m_RetainContextMenu = EditorMenuExtensions.s_DebugMode = value;
                 onStateChange?.Invoke();
             }
         }
@@ -267,6 +283,7 @@ namespace UnityEditor.UIElements.Debugger
         private ToolbarToggle m_ShowDrawStatsToggle;
         private ToolbarToggle m_BreakBatchesToggle;
         private ToolbarToggle m_ShowWireframeToggle;
+        private ToolbarToggle m_RetainContextMenuToggle;
         private EnumField m_ShowTextMetrics;
 
         private DebuggerTreeView m_TreeViewContainer;
@@ -348,6 +365,11 @@ namespace UnityEditor.UIElements.Debugger
                 m_ShowWireframeToggle.RegisterValueChangedCallback((e) => { m_Context.showWireframe = e.newValue; });
                 m_Toolbar.Add(m_ShowWireframeToggle);
 
+                m_RetainContextMenuToggle = new ToolbarToggle() { name = "retainContextMenuToggle" };
+                m_RetainContextMenuToggle.text = "Retain Context Menu";
+                m_RetainContextMenuToggle.RegisterValueChangedCallback((e) => { m_Context.retainContextMenu = e.newValue; });
+                m_Toolbar.Add(m_RetainContextMenuToggle);
+
                 m_ShowTextMetrics = new EnumField() { name = "showTextMetrics" };
                 m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
 
@@ -396,6 +418,8 @@ namespace UnityEditor.UIElements.Debugger
             base.OnDisable();
 
             EditorApplication.update -= EditorUpdate;
+            EditorMenuExtensions.s_DebugMode = false;
+            GenericDropdownMenu.s_Picking = false;
 
             if (DebuggerEventDispatchUtilities.s_GlobalPanelDebug == this)
                 DebuggerEventDispatchUtilities.s_GlobalPanelDebug = null;
@@ -447,9 +471,13 @@ namespace UnityEditor.UIElements.Debugger
                 m_ShowDrawStatsToggle.SetValueWithoutNotify(m_Context.showDrawStats);
                 m_BreakBatchesToggle.SetValueWithoutNotify(m_Context.breakBatches);
                 m_ShowWireframeToggle.SetValueWithoutNotify(m_Context.showWireframe);
+                m_RetainContextMenuToggle.SetValueWithoutNotify(m_Context.retainContextMenu);
 
                 ApplyToPanel(m_Context);
             }
+
+            EditorMenuExtensions.s_DebugMode = m_Context.retainContextMenu;
+            GenericDropdownMenu.s_Picking = EditorMenuExtensions.s_DebugMode && m_Context.pickElement;
 
             panelDebug?.MarkDirtyRepaint();
             panelDebug?.MarkDebugContainerDirtyRepaint();

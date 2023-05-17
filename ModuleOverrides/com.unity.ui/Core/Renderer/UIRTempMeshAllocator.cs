@@ -13,10 +13,12 @@ namespace UnityEngine.UIElements
 {
     using UIR;
 
-    // This struct can be used in jobs. It's a handle to a TempMeshAllocatorImpl instance.
+    /// <summary>
+    /// Used in jobs to allocate UI Toolkit temporary meshes.
+    /// </summary>
     [NativeContainer]
     [NativeContainerIsReadOnly]
-    struct TempMeshAllocator
+    public struct TempMeshAllocator
     {
         GCHandle m_Handle;
         AtomicSafetyHandle m_Safety;
@@ -27,6 +29,16 @@ namespace UnityEngine.UIElements
             allocator = new TempMeshAllocator { m_Handle = handle, m_Safety = safety };
         }
 
+        /// <summary>
+        /// Allocates the specified number of vertices and indices from a temporary allocator.
+        /// </summary>
+        /// <remarks>
+        /// You can only call this method during the mesh generation phase of the panel and shouldn't use it beyond.
+        /// </remarks>
+        /// <param name="vertexCount">The number of vertices to allocate, with a maximum limit of 65535 (or UInt16.MaxValue).</param>
+        /// <param name="indexCount">The number of triangle list indices to allocate, where every three indices represent one triangle. Therefore, this value should always be a multiple of three.</param>
+        /// <param name="vertices">The returned vertices.</param>
+        /// <param name="indices">The returned indices.</param>
         public void AllocateTempMesh(int vertexCount, int indexCount, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices)
         {
             // TempMeshAllocatorImpl is thread-safe: reading from multiple jobs is OK. However, the safety must not
@@ -82,12 +94,12 @@ namespace UnityEngine.UIElements.UIR
 
         NativeSlice<T> Allocate<T>(int count, int alignment) where T : struct
         {
-            ref ThreadData threadData = ref m_ThreadData[JobsUtility.ThreadIndex];
+            ref ThreadData threadData = ref m_ThreadData[UIRUtility.GetThreadIndex()];
 
             Debug.Assert(count > 0);
 
             long size = UnsafeUtility.SizeOf<T>() * count;
-            void* address = UnsafeUtility.MallocTracked(size, UnsafeUtility.AlignOf<T>(), Allocator.TempJob, 0);
+            void* address = UnsafeUtility.Malloc(size, UnsafeUtility.AlignOf<T>(), Allocator.TempJob);
             threadData.allocations.Add((IntPtr)address);
             NativeArray<T> array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(address, count, Allocator.Invalid);
 
@@ -155,7 +167,7 @@ namespace UnityEngine.UIElements.UIR
                 safetyHandles.Clear();
 
                 foreach (IntPtr ptr in m_ThreadData[i].allocations)
-                    UnsafeUtility.FreeTracked(ptr.ToPointer(), Allocator.TempJob);
+                    UnsafeUtility.Free(ptr.ToPointer(), Allocator.TempJob);
 
                 m_ThreadData[i].allocations.Clear();
             }

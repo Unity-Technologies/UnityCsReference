@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static void ShowDropdown(DropdownContent content)
         {
-            if (instance != null || content == null)
+            if (content == null)
                 return;
 
             instance = CreateInstance<DropdownContainer>();
@@ -37,8 +37,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             content.container = instance;
             instance.m_Content = content;
 
-            instance.ShowAsDropDown(content.position, content.windowSize);
-            content.OnDropdownShown();
+            // If called from a context menu, without delay this newly created dropdown
+            // content would be treated as a part of contextual menu auxiliary window chain.
+            // In that case, if contextual menu is set to auto close (this is by default and
+            // is the most frequent use case), this content would be instantly destroyed and
+            // not shown at all.
+            EditorApplication.delayCall += ShowDropdownContainer;
+        }
+
+        static void ShowDropdownContainer()
+        {
+            instance.ShowAsDropDown(instance.m_Content.position, instance.m_Content.windowSize);
+            instance.m_Content.OnDropdownShown();
+
+            // Make sure delayCall has no chance to execute twice or more for the same menu. We had some issues like this in UI Elements tests suite
+            EditorApplication.delayCall -= ShowDropdownContainer;
         }
     }
 }

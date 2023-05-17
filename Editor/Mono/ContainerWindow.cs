@@ -44,6 +44,8 @@ namespace UnityEditor
         private static ContainerWindow s_MainWindow;
         static internal ContainerWindow mainWindow { get => s_MainWindow; }
 
+        static readonly string s_ContextMenuID = "UnityEditor.UIElements.EditorMenuExtensions+ContextMenu";
+
         private static class Styles
         {
             public static float borderSize => macEditor ? osxBorderSize : winBorderSize;
@@ -490,7 +492,7 @@ namespace UnityEditor
         internal void SaveGeometry()
         {
             string ID = windowID;
-            if (String.IsNullOrEmpty(ID))
+            if (string.IsNullOrEmpty(ID))
                 return;
 
             // save position/size
@@ -507,10 +509,16 @@ namespace UnityEditor
             SaveGeometry();
         }
 
+        bool IsValidContextMenu()
+        {
+            return string.Equals(s_ContextMenuID, windowID) && m_PixelRect.x == 0 && m_PixelRect.y == 0;
+        }
+
         internal void LoadGeometry(bool loadPosition)
         {
             string ID = windowID;
-            if (String.IsNullOrEmpty(ID))
+            // Check for invalid ID and validate context menu to avoid soft locks on invalid positions UW-105
+            if (string.IsNullOrEmpty(ID) || IsValidContextMenu())
                 return;
 
             // get position/size

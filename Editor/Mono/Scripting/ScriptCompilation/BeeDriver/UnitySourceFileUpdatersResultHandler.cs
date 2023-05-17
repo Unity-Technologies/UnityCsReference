@@ -35,7 +35,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         protected override bool ProcessUpdaterResults(SourceFileUpdaterBase.Update[] updates)
         {
-            NPath libraryPackageCache = "Library/PackageCache";
             var problemUpdates = new List<(SourceFileUpdaterBase.Update update, Exception exception)>();
             bool didUpdate = false;
             void ExecuteUpdates(IEnumerable<SourceFileUpdaterBase.Update> updates)
@@ -55,29 +54,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
-            var packageResolvePathsAndNames = PackageManager.PackageInfo.GetAllRegisteredPackages().Where(p => new NPath(p.resolvedPath).ToString().Contains("Library/PackageCache")).Select(p => (p.resolvedPath, p.name)).ToArray();
-
-            string VirtualizedPathFor(NPath file)
-            {
-                foreach (var packageResolvePathAndName in packageResolvePathsAndNames)
-                    if (file.IsChildOf(packageResolvePathAndName.resolvedPath))
-                        return $"Packages/{packageResolvePathAndName.name}/{file.RelativeTo(packageResolvePathAndName.resolvedPath)}";
-                throw new ArgumentException($"Failed to virtualize path: {file}");
-            }
-
-            var(immutablePackageUpdates, nonImmutableUpdates) = updates.SplitBy(u => new NPath(u.originalFileWithError).IsChildOf(libraryPackageCache));
+            var libraryPackageCache = "Library/PackageCache/";
+            var(immutablePackageUpdates, nonImmutableUpdates) = updates.SplitBy(u => u.originalFileWithError.StartsWith(libraryPackageCache));
 
             Console.WriteLine("[API Updater] Updated Files:");
             if (immutablePackageUpdates.Any())
             {
-                var virtualizedPackageFiles = immutablePackageUpdates.Select(u => VirtualizedPathFor(u.originalFileWithError)).ToArray();
-                ImmutableAssets.SetAssetsAllowedToBeModified(virtualizedPackageFiles);
+                var immutablePackageFiles = immutablePackageUpdates.Select(u => u.originalFileWithError).ToArray();
+                APIUpdaterHelper.HandlePackageFilePaths(immutablePackageFiles);
                 ExecuteUpdates(immutablePackageUpdates);
             }
 
             if (nonImmutableUpdates.Any())
             {
-                var nonImmutableTargetFiles = nonImmutableUpdates.Select(u => new NPath(u.originalFileWithError)).ToArray();
+                var nonImmutableTargetFiles = nonImmutableUpdates.Select(u => u.originalFileWithError).ToArray();
 
                 if (MayOverwrite(nonImmutableTargetFiles) && PrepareForOverwritingUpdatedFiles(nonImmutableTargetFiles))
                     ExecuteUpdates(nonImmutableUpdates);
@@ -97,7 +87,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return didUpdate;
         }
 
-        bool MayOverwrite(NPath[] files)
+        bool MayOverwrite(string[] files)
         {
             if (m_HaveConsentToOverwriteUserScripts)
                 return true;
@@ -116,7 +106,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        bool PrepareForOverwritingUpdatedFiles(NPath[] destFiles)
+        bool PrepareForOverwritingUpdatedFiles(string[] destFiles)
         {
             if (!APIUpdaterManager.WaitForVCSServerConnection())
             {
@@ -127,7 +117,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return false;
             }
 
-            if (!AssetDatabase.MakeEditable(destFiles.Select(d => d.ToString()).ToArray()))
+            if (!AssetDatabase.MakeEditable(destFiles))
             {
                 Debug.LogError($"Failed to make VCS provider make the scripts to be update editable.{Environment.NewLine}" + string.Join(Environment.NewLine, destFiles.Select(d => d.ToString())));
                 return false;

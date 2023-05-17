@@ -71,11 +71,14 @@ namespace UnityEditor
     // iOS status bar style
     public enum iOSStatusBarStyle
     {
-        // A dark status bar, intended for use on light backgrounds
+        // Default syle: iOS picks the automatically based on the user interface style.
         Default = 0,
 
         // A light status bar, intended for use on dark backgrounds
         LightContent = 1,
+
+        // A dark status bar, intended for use on light backgrounds
+        DarkContent = 2,
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("BlackTranslucent has no effect, use LightContent instead (UnityUpgradable) -> LightContent", true)]

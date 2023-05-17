@@ -216,7 +216,7 @@ namespace UnityEditor
         const string k_DropdownButtonUSSClass = "unity-cameras-overlay-selector";
 
         static readonly string k_NoCameraFound = L10n.Tr("No camera found");
-        static readonly string k_Tooltip = L10n.Tr("Active camera in the Scene View.");
+        static readonly string k_Tooltip = L10n.Tr("Select a camera in the Scene.");
 
         [SerializeField]
         CamerasOverlay m_Overlay;
@@ -285,7 +285,7 @@ namespace UnityEditor
         public CameraInspectProperties(CamerasOverlay overlay) : base()
         {
             icon = EditorGUIUtility.FindTexture("UnityEditor.InspectorWindow");
-            tooltip = L10n.Tr("Open Camera properties");
+            tooltip = L10n.Tr("Open camera component properties.");
 
             m_Overlay = overlay;
 
@@ -318,11 +318,51 @@ namespace UnityEditor
         }
     }
 
-    sealed class CameraViewToggle : EditorToolbarToggle
+    sealed class CameraOverscanSettingsWindow : OverlayPopupWindow
+    {
+        readonly string k_OverscanScaleTooltip = L10n.Tr("Configure size of overscan view guides.");
+        readonly string k_OverscanOpacityTooltip = L10n.Tr("Configure overscan opacity.");
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+
+            var sceneView = SceneView.lastActiveSceneView;
+            var settings = sceneView.viewpoint.cameraOverscanSettings;
+
+            var scale = new Slider(L10n.Tr("Overscan"), SceneViewViewpoint.ViewpointSettings.minScale, SceneViewViewpoint.ViewpointSettings.maxScale, SliderDirection.Horizontal, 1f);
+            scale.tooltip = k_OverscanScaleTooltip;
+            scale.SetValueWithoutNotify(settings.scale);
+            scale.showInputField = true;
+            scale.RegisterValueChangedCallback(evt =>
+            {
+                settings.scale = evt.newValue;
+                sceneView.Repaint();
+            });
+            rootVisualElement.Add(scale);
+
+            var opacity = new SliderInt(L10n.Tr("Overscan Opacity"), SceneViewViewpoint.ViewpointSettings.minOpacity, SceneViewViewpoint.ViewpointSettings.maxOpacity, SliderDirection.Horizontal, 1);
+            opacity.tooltip = k_OverscanOpacityTooltip;
+            opacity.SetValueWithoutNotify(settings.opacity);
+            opacity.showInputField = true;
+            opacity.RegisterValueChangedCallback(evt =>
+            {
+                settings.opacity = evt.newValue;
+                sceneView.Repaint();
+            });
+            rootVisualElement.Add(opacity);
+        }
+    }
+
+    sealed class CameraViewToggle : EditorToolbarDropdownToggle
     {
         const string k_ShortcutIdPrefx = "Scene View/Camera View/";
+        const string k_IconPathNormal = "Overlays/Fullscreen";
+        const string k_IconPathActive = "Overlays/FullscreenOn";
+        readonly string k_TooltipNormal = L10n.Tr("Control the selected camera in first person.");
+        readonly string k_TooltipActive = L10n.Tr("Return to Scene Camera.");
 
-        [Shortcut(k_ShortcutIdPrefx + "Toggle View With Last Viewpoint", typeof(SceneView))]
+        [Shortcut(k_ShortcutIdPrefx + "Toggle Between Scene Camera and Last Controlled Camera", typeof(SceneView))]
         static void ToggleViewWithLastViewpoint(ShortcutArguments args)
         {
             SceneView sv = SceneView.focusedWindow as SceneView;
@@ -334,7 +374,7 @@ namespace UnityEditor
                     return;
 
                 if (toggleInstance.canActivate)
-                toggleInstance.ToggleValue();
+                    toggleInstance.value = !toggleInstance.value;
             }
         }
 
@@ -347,9 +387,6 @@ namespace UnityEditor
 
         public CameraViewToggle(CamerasOverlay overlay) : base()
         {
-            onIcon = EditorGUIUtility.FindTexture("Overlays/FullscreenOn");
-            offIcon = EditorGUIUtility.FindTexture("Overlays/Fullscreen");
-            tooltip = L10n.Tr("Lock the selected camera.");
             schedule.Execute(Initialize).StartingIn(100).Until(() => sceneView != null);
 
             m_Overlay = overlay;
@@ -365,6 +402,7 @@ namespace UnityEditor
             this.RegisterValueChangedCallback(ValueChanged);
 
             m_Overlay.onViewpointSelected += ViewpointChanged;
+            dropdownClicked += OnDropdownClicked;
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -372,6 +410,7 @@ namespace UnityEditor
             this.UnregisterValueChangedCallback(ValueChanged);
 
             m_Overlay.onViewpointSelected -= ViewpointChanged;
+            dropdownClicked -= OnDropdownClicked;
         }
 
         void OnDisplayChanged(bool display)
@@ -405,14 +444,21 @@ namespace UnityEditor
             }
         }
 
+        void OnDropdownClicked()
+        {
+            OverlayPopupWindow.Show<CameraOverscanSettingsWindow>(this, new Vector2(300, 88));
+        }
+
         void EnableCameraViewTool()
         {
             sceneView.viewpoint.SetViewpoint(m_Overlay.viewpoint);
+            UpdateStyling();
         }
 
         void DisableCameraViewTool()
         {
             sceneView.viewpoint.ClearViewpoint();
+            UpdateStyling();
         }
 
         void SwitchCamera()
@@ -425,7 +471,6 @@ namespace UnityEditor
         void ViewpointChanged(IViewpoint viewpoint)
         {
             UpdateEnableState();
-
             // If toggle is on, it means the SceneView is looking though a camera.
             // In that case, switch camera.
             if (viewpoint != null && value)
@@ -442,56 +487,17 @@ namespace UnityEditor
             SetValueWithoutNotify(sceneView.viewpoint.hasActiveViewpoint);
         }
 
+        void UpdateStyling()
+        {
+            icon = EditorGUIUtility.FindTexture(value? k_IconPathActive : k_IconPathNormal);
+            tooltip = value? k_TooltipActive : k_TooltipNormal;
+        }
+
         void Initialize()
         {
             UpdateEnableState();
             UpdateToggleValue();
-        }
-    }
-
-    sealed class CameraOverscanOptions : EditorToolbarDropdown
-    {
-        class CameraOverscanWindow : OverlayPopupWindow
-        {
-            protected override void OnEnable()
-            {
-                base.OnEnable();
-
-                var sceneView = SceneView.lastActiveSceneView;
-                var settings = sceneView.viewpoint.cameraOverscanSettings;
-
-                var scale = new Slider(L10n.Tr("Overscan"), SceneViewViewpoint.ViewpointSettings.minScale, SceneViewViewpoint.ViewpointSettings.maxScale, SliderDirection.Horizontal, 1f);
-                scale.SetValueWithoutNotify(settings.scale);
-                scale.showInputField = true;
-                scale.RegisterValueChangedCallback(evt =>
-                {
-                    settings.scale = evt.newValue;
-                    sceneView.Repaint();
-                });
-                rootVisualElement.Add(scale);
-
-                var opacity = new SliderInt(L10n.Tr("Overscan Opacity"), SceneViewViewpoint.ViewpointSettings.minOpacity, SceneViewViewpoint.ViewpointSettings.maxOpacity, SliderDirection.Horizontal, 1);
-                opacity.SetValueWithoutNotify(settings.opacity);
-                opacity.showInputField = true;
-                opacity.RegisterValueChangedCallback(evt =>
-                {
-                    settings.opacity = evt.newValue;
-                    sceneView.Repaint();
-                });
-                rootVisualElement.Add(opacity);
-            }
-        }
-
-        public CameraOverscanOptions(CamerasOverlay overlay) : base()
-        {
-            icon = EditorGUIUtility.FindTexture("Settings");
-
-            RegisterCallback<ClickEvent>(ShowOverscanSettingsPanel);
-        }
-
-        void ShowOverscanSettingsPanel(ClickEvent evt)
-        {
-            OverlayPopupWindow.Show<CameraOverscanWindow>(this, new Vector2(300, 88));
+            UpdateStyling();
         }
     }
 
@@ -781,10 +787,7 @@ namespace UnityEditor
         {
             Add(new CameraLookThrough(overlay));
             Add(new CameraInspectProperties(overlay));
-            Add(new CameraOverscanOptions(overlay));
             Add(new CameraViewToggle(overlay));
-
-            SetupChildrenAsButtonStrip();
         }
     }
 }

@@ -545,7 +545,7 @@ namespace UnityEngine
         internal extern static Object FindObjectFromInstanceID(int instanceID);
 
         [FreeFunction("UnityEngineObjectBindings::GetPtrFromInstanceID")]
-        private extern static IntPtr GetPtrFromInstanceID(int instanceID, out bool isMonoBehaviour);
+        private extern static IntPtr GetPtrFromInstanceID(int instanceID, Type objectType, out bool isMonoBehaviour);
 
         [VisibleToOtherModules]
         [FreeFunction("UnityEngineObjectBindings::ForceLoadFromInstanceID")]
@@ -563,7 +563,7 @@ namespace UnityEngine
         internal static class MarshalledUnityObject
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr Marshal(Object obj)
+            public static IntPtr Marshal<T>(T obj) where T: Object
             {
                 // Do not to an == null or .Equals(null) check in here or anything that would make an icall
                 // This may be called during AppDomain shutdown and there is code called during shutdown
@@ -575,7 +575,7 @@ namespace UnityEngine
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr MarshalNotNull(Object obj)
+            public static IntPtr MarshalNotNull<T>(T obj) where T : Object
             {
                 // obj has already been checked and is guaranteed to not be null
                 if (obj.m_CachedPtr != IntPtr.Zero)
@@ -583,12 +583,12 @@ namespace UnityEngine
                 return MarshalFromInstanceId(obj);
             }
 
-            private static IntPtr MarshalFromInstanceId(Object obj)
+            private static IntPtr MarshalFromInstanceId<T>(T obj) where T:Object
             {
                 if (obj.m_InstanceID == kInstanceID_None)
                     return IntPtr.Zero;
 
-                var retPtr = GetPtrFromInstanceID(obj.m_InstanceID, out var isNativeInstanceMonoBehaviour);
+                var retPtr = GetPtrFromInstanceID(obj.m_InstanceID, typeof(T), out var isNativeInstanceMonoBehaviour);
                 if (retPtr == IntPtr.Zero)
                     return IntPtr.Zero;
 

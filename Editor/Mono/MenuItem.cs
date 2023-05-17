@@ -7,7 +7,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEngine;
-using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -29,13 +28,16 @@ namespace UnityEditor
         // scene hierarchy dropdown and context menu).
 
         // Creates a menu item and invokes the static function following it, when the menu item is selected.
-        public MenuItem(string itemName, bool isValidateFunction, int priority) : this(itemName, isValidateFunction, priority, false) {}
+        public MenuItem(string itemName, bool isValidateFunction, int priority) : this(itemName, isValidateFunction, priority, string.Empty) {}
+
+        public MenuItem(string itemName, bool isValidateFunction, int priority, string disabledTooltip) : this(itemName, isValidateFunction, priority, false, disabledTooltip) { }
 
         // Creates a menu item and invokes the static function following it, when the menu item is selected.
-        internal MenuItem(string itemName, bool isValidateFunction, int priority, bool internalMenu) : this(itemName, isValidateFunction, priority, internalMenu, new string[] { "default" }) {}
+        internal MenuItem(string itemName, bool isValidateFunction, int priority, bool internalMenu, string disabledTooltip = "", string iconResource = null)
+            : this(itemName, isValidateFunction, priority, internalMenu, new string[] { "default" }, disabledTooltip, iconResource) {}
 
         // Creates a menu item and invokes the static function following it, when the menu item is selected.
-        internal MenuItem(string itemName, bool isValidateFunction, int priority, bool internalMenu, string[] editorModes)
+        internal MenuItem(string itemName, bool isValidateFunction, int priority, bool internalMenu, string[] editorModes, string disabledTooltip, string iconResource)
         {
             itemName = NormalizeMenuItemName(itemName);
             if (internalMenu)
@@ -45,6 +47,8 @@ namespace UnityEditor
             validate = isValidateFunction;
             this.priority = priority;
             this.editorModes = editorModes;
+            this.disabledTooltip = disabledTooltip;
+            this.iconResource = iconResource;
             secondaryPriority = float.MaxValue;
         }
 
@@ -58,6 +62,8 @@ namespace UnityEditor
         public int priority;
         public float secondaryPriority; // transition period until UW-65 lands.
         public string[] editorModes;
+        public string disabledTooltip;
+        internal string iconResource;
     }
 
     [RequiredByNativeCode(GenerateProxy = true)]
@@ -73,6 +79,8 @@ namespace UnityEditor
         public Delegate commandValidate;
         public bool @checked;
         public string shortcut;
+        public string disabledTooltip;
+        internal string iconResource;
 
         public string Name => name;
 
@@ -84,7 +92,7 @@ namespace UnityEditor
         public static MenuItemScriptCommand Initialize(string menuName, MenuItem menuItemAttribute, MethodInfo methodInfo)
         {
             if (!menuItemAttribute.validate)
-                return InitializeFromExecute(menuName, menuItemAttribute.priority, menuItemAttribute.secondaryPriority, methodInfo);
+                return InitializeFromExecute(menuName, menuItemAttribute.priority, menuItemAttribute.secondaryPriority, methodInfo, menuItemAttribute.disabledTooltip, menuItemAttribute.iconResource);
             else
                 return InitializeFromValidate(menuName, methodInfo);
         }
@@ -98,14 +106,16 @@ namespace UnityEditor
             };
         }
 
-        private static MenuItemScriptCommand InitializeFromExecute(string menuName, int priority, float secondaryPriority, MethodInfo execute)
+        private static MenuItemScriptCommand InitializeFromExecute(string menuName, int priority, float secondaryPriority, MethodInfo execute, string disabledTooltip, string iconResource)
         {
             return new MenuItemScriptCommand()
             {
                 name = menuName,
                 priority = priority,
                 secondaryPriority = secondaryPriority,
-                execute = execute
+                execute = execute,
+                disabledTooltip = disabledTooltip,
+                iconResource = iconResource
             };
         }
 

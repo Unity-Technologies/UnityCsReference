@@ -23,7 +23,6 @@ namespace UnityEditor.Search
         public static readonly string resetSearchColumnsTooltip = L10n.Tr("Reset search result columns.");
 
         private Action m_DeferredSortColumnOff;
-        private readonly Button m_AddColumnButton;
 
         public SearchTable tableConfig
         {
@@ -52,13 +51,7 @@ namespace UnityEditor.Search
                 sortingEnabled = true
             };
             m_ListView.AddToClassList(resultsListClassName);
-
-            m_AddColumnButton = Create<Button>(null, addColumnButtonClassName);
-            m_AddColumnButton.tooltip = addMoreColumnsTooltip;
-            m_AddColumnButton.RegisterCallback<ClickEvent>(OnAddColumn);
-
             Add(m_ListView);
-            Add(m_AddColumnButton);
 
             if (tableConfig == null)
                 SetupColumns();
@@ -233,6 +226,12 @@ namespace UnityEditor.Search
         {
             var container = evt.GetArgument<VisualElement>(0);
 
+            var addColumnButton = new Button { tooltip = addMoreColumnsTooltip };
+            addColumnButton.RegisterCallback<ClickEvent>(OnAddColumn);
+            addColumnButton.AddToClassList(SearchGroupBar.groupBarButtonClassName);
+            addColumnButton.AddToClassList(addColumnButtonClassName);
+            container.Add(addColumnButton);
+
             var resetColumnsButton = new Button(ResetColumnLayout) { tooltip = resetSearchColumnsTooltip };
             resetColumnsButton.AddToClassList(SearchGroupBar.groupBarButtonClassName);
             resetColumnsButton.AddToClassList(resetColumnsButtonClassName);
@@ -285,7 +284,7 @@ namespace UnityEditor.Search
 
             if (columnUnderMouse != null)
             {
-                var colName = (columnUnderMouse as SearchTableViewColumn)?.searchColumn?.name ?? columnUnderMouse.name;
+                var colName = (columnUnderMouse as SearchTableViewColumn)?.title ?? columnUnderMouse.title;
                 evt.menu.AppendAction(EditorGUIUtility.TrTextContent($"Edit {colName}...").text, (a) => EditColumn(activeColumnIndex));
                 evt.menu.AppendAction(EditorGUIUtility.TrTextContent($"Remove {colName}").text, (a) => RemoveColumn(activeColumnIndex));
             }
@@ -369,29 +368,9 @@ namespace UnityEditor.Search
             if (m_ViewModel != null)
             {
                 var providers = m_ViewModel.context.GetProviders();
-                if (providers.Count == 1 || m_ViewModel.currentGroup != GroupedSearchList.allGroupId)
-                {
-                    var provider = providers.Count == 1 ? providers.FirstOrDefault() : SearchService.GetProvider(m_ViewModel.currentGroup);
-                    if (provider?.tableConfig != null)
-                        return provider.tableConfig(context);
-                }
-                else
-                {
-                    IEnumerable<SearchColumn> columns = null;
-                    foreach (var searchProvider in providers)
-                    {
-                        if (searchProvider?.tableConfig != null)
-                        {
-                            var tc = searchProvider.tableConfig(context);
-                            columns = columns == null ? tc.columns : columns.Intersect(tc.columns);
-                        }
-                    }
-
-                    if (columns != null && columns.Any())
-                    {
-                        return new SearchTable("Default", columns);
-                    }
-                }
+                var provider = providers.Count == 1 ? providers.FirstOrDefault() : SearchService.GetProvider(m_ViewModel.currentGroup);
+                if (provider?.tableConfig != null)
+                    return provider.tableConfig(context);
             }
 
             return defaultConfig ?? SearchTable.CreateDefault();

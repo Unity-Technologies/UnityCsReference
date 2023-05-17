@@ -737,6 +737,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\ProjectionUtils.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\ProjectionUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\GCHandlePool.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\GCHandlePool.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\LayoutDebuggerVisualElement.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\LayoutDebuggerVisualElement.cs</Link>
     </Compile>
@@ -766,6 +769,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRElementBuilder.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRElementBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryPool.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryPool.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryPreProcessor.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIREntryPreProcessor.cs</Link>
@@ -799,6 +805,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationDeferrer.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationDeferrer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationNode.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerationNode.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerator.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Renderer\UIRMeshGenerator.cs</Link>

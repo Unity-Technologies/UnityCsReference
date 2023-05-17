@@ -261,12 +261,6 @@ namespace UnityEngine.UIElements
         }
     }
 
-    // Keeping it internal for now
-    struct MeshGenerationNode
-    {
-        internal Entry placeholder;
-    }
-
     /// <summary>
     /// Provides methods for generating a <see cref="VisualElement"/>'s visual content during the <see cref="generateVisualContent"/> callback.
     /// </summary>
@@ -358,28 +352,36 @@ namespace UnityEngine.UIElements
         {
             get
             {
+                if (disposed)
+                {
+                    Debug.LogError("Accessing painter2D on disposed MeshGenerationContext");
+                    return null;
+                }
                 if (m_Painter2D == null)
                     m_Painter2D = new Painter2D(this);
                 return m_Painter2D;
             }
         }
+        internal bool hasPainter2D => (m_Painter2D != null);
         Painter2D m_Painter2D;
 
         MeshWriteDataPool m_MeshWriteDataPool;
         TempMeshAllocatorImpl m_Allocator;
         MeshGenerationDeferrer m_MeshGenerationDeferrer;
+        MeshGenerationNodeManager m_MeshGenerationNodeManager;
 
         internal IMeshGenerator meshGenerator { get; set; }
 
         internal EntryRecorder entryRecorder { get; private set; }
+        internal Entry parentEntry { get; private set; }
 
-        internal MeshGenerationContext(MeshWriteDataPool meshWriteDataPool, EntryPool entryPool, TempMeshAllocatorImpl allocator, MeshGenerationDeferrer meshGenerationDeferrer)
+        internal MeshGenerationContext(MeshWriteDataPool meshWriteDataPool, EntryRecorder entryRecorder, TempMeshAllocatorImpl allocator, MeshGenerationDeferrer meshGenerationDeferrer, MeshGenerationNodeManager meshGenerationNodeManager)
         {
             m_MeshWriteDataPool = meshWriteDataPool;
             m_Allocator = allocator;
             m_MeshGenerationDeferrer = meshGenerationDeferrer;
-
-            entryRecorder = new EntryRecorder(entryPool);
+            m_MeshGenerationNodeManager = meshGenerationNodeManager;
+            this.entryRecorder = entryRecorder;
             meshGenerator = new MeshGenerator(this);
         }
 
@@ -432,7 +434,7 @@ namespace UnityEngine.UIElements
 
                 mwd.Reset(vertices, indices);
 
-                entryRecorder.DrawMesh(mwd.m_Vertices, mwd.m_Indices, texture, false);
+                entryRecorder.DrawMesh(parentEntry, mwd.m_Vertices, mwd.m_Indices, texture, false);
 
                 return mwd;
             }
@@ -458,7 +460,7 @@ namespace UnityEngine.UIElements
             if (vertices.Length == 0 || indices.Length == 0)
                 return;
 
-            entryRecorder.DrawMesh(vertices, indices, texture, false);
+            entryRecorder.DrawMesh(parentEntry, vertices, indices, texture, false);
         }
 
         /// <summary>
@@ -494,19 +496,25 @@ namespace UnityEngine.UIElements
         /// have the same scope as those allocated by <see cref="AllocateTempMesh"/>.
         /// </summary>
         /// <param name="allocator">The allocator.</param>
-        internal void GetTempMeshAllocator(out TempMeshAllocator allocator)
+        public void GetTempMeshAllocator(out TempMeshAllocator allocator)
         {
             m_Allocator.CreateNativeHandle(out allocator);
         }
 
         /// <summary>
-        /// Inserts a node into the rendering tree that can be populated in a mesh generation callback.
+        /// Inserts a node into the rendering tree that can be populated from the job system.
         /// </summary>
-        /// <returns>The inserted mesh generation node.</returns>
-        internal MeshGenerationNode InsertMeshGenerationNode()
+        /// <param name="node">The inserted mesh generation node.</param>
+        public void InsertMeshGenerationNode(out MeshGenerationNode node)
         {
-            var placeHolder = entryRecorder.InsertPlaceholder();
-            return new MeshGenerationNode { placeholder = placeHolder };
+            var entry = entryRecorder.InsertPlaceholder(parentEntry);
+            m_MeshGenerationNodeManager.CreateNode(entry, out node);
+        }
+
+        internal void InsertUnsafeMeshGenerationNode(out UnsafeMeshGenerationNode node)
+        {
+            var entry = entryRecorder.InsertPlaceholder(parentEntry);
+            m_MeshGenerationNodeManager.CreateUnsafeNode(entry, out node);
         }
 
         /// <summary>
@@ -540,18 +548,18 @@ namespace UnityEngine.UIElements
             m_MeshGenerationDeferrer.AddMeshGenerationCallback(callback, userData, callbackType, isJobDependent);
         }
 
-        internal void Begin(MeshGenerationNode node, VisualElement ve)
+        internal void Begin(Entry parentEntry, VisualElement ve)
         {
             if (visualElement != null)
                 throw new InvalidOperationException($"{nameof(Begin)} can only be called when there is no target set. Did you forget to call {nameof(End)}?");
-            if (node.placeholder == null)
+            if (parentEntry == null)
                 throw new ArgumentException($"The state of the provided {nameof(MeshGenerationNode)} is invalid (entry is null).");
-            if (node.placeholder.firstChild != null)
+            if (parentEntry.firstChild != null)
                 throw new ArgumentException($"The state of the provided {nameof(MeshGenerationNode)} is invalid (entry isn't empty).");
             if (ve == null)
                 throw new ArgumentException(nameof(ve));
 
-            entryRecorder.Begin(node.placeholder);
+            this.parentEntry = parentEntry;
             visualElement = ve;
             meshGenerator.currentElement = ve;
         }
@@ -563,7 +571,7 @@ namespace UnityEngine.UIElements
 
             meshGenerator.currentElement = null;
             visualElement = null;
-            entryRecorder.End();
+            parentEntry = null;
             m_Painter2D?.Reset();
         }
 
@@ -589,9 +597,11 @@ namespace UnityEngine.UIElements
                 m_Painter2D = null;
                 m_MeshWriteDataPool = null;
                 entryRecorder = null;
+                (meshGenerator as MeshGenerator)?.Dispose();
                 meshGenerator = null;
                 m_Allocator = null;
                 m_MeshGenerationDeferrer = null;
+                m_MeshGenerationNodeManager = null;
             }
 
             disposed = true;

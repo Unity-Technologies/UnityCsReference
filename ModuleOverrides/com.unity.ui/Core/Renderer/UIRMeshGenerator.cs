@@ -5,12 +5,17 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Unity.Collections;
+using Unity.Jobs;
+using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Profiling;
 using UnityEngine.TextCore.Text;
+using GCHandlePool = UnityEngine.UIElements.UIR.GCHandlePool;
 
 namespace UnityEngine.UIElements.UIR
 {
+    // For tests
     interface IMeshGenerator
     {
         VisualElement currentElement { get; set; }
@@ -20,9 +25,11 @@ namespace UnityEngine.UIElements.UIR
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale);
         public void DrawRectangleRepeat(MeshGenerator.RectangleParams rectParams, Rect totalRect);
+
+        public void ScheduleJobs(MeshGenerationContext mgc);
     }
 
-    class MeshGenerator : IMeshGenerator
+    class MeshGenerator : IMeshGenerator, IDisposable
     {
         struct RepeatRectUV
         {
@@ -39,9 +46,14 @@ namespace UnityEngine.UIElements.UIR
 
         List<RepeatRectUV>[] m_RepeatRectUVList = null;
 
+        GCHandlePool m_GCHandlePool = new();
+
+        NativeArray<TessellationJobParameters> m_JobParameters;
+
         public MeshGenerator(MeshGenerationContext mgc)
         {
             m_MeshGenerationContext = mgc;
+            m_OnMeshGenerationDelegate = OnMeshGeneration;
         }
 
         public VisualElement currentElement { get; set; }
@@ -524,6 +536,7 @@ namespace UnityEngine.UIElements.UIR
                     topRightRadius = topRightRadius,
                     bottomRightRadius = bottomRightRadius,
                     bottomLeftRadius = bottomLeftRadius,
+                    spriteGeomRect = spriteGeomRect,
                     contentSize = contentSize,
                     textureSize = textureSize,
                     texturePixelsPerPoint = texture is Texture2D ? (texture as Texture2D).pixelsPerPoint : 1.0f,
@@ -532,7 +545,8 @@ namespace UnityEngine.UIElements.UIR
                     rightSlice = rightSlice,
                     bottomSlice = bottomSlice,
                     sliceScale = sliceScale,
-                    colorPage = colorPage.ToNativeColorPage()
+                    colorPage = colorPage.ToNativeColorPage(),
+                    meshFlags = (int)meshFlags
                 };
             }
         }
@@ -576,52 +590,6 @@ namespace UnityEngine.UIElements.UIR
             if (style.borderTopWidth >= 1.0f && style.borderTopColor.a >= 1.0f) { rect.y += 0.5f; rect.height -= 0.5f; }
             if (style.borderRightWidth >= 1.0f && style.borderRightColor.a >= 1.0f) { rect.width -= 0.5f; }
             if (style.borderBottomWidth >= 1.0f && style.borderBottomColor.a >= 1.0f) { rect.height -= 0.5f; }
-        }
-
-        void BuildEntryFromNativeMesh(MeshWriteDataInterface meshData, Texture texture, bool skipAtlas)
-        {
-            if (meshData.vertexCount == 0 || meshData.indexCount == 0)
-                return;
-
-            NativeSlice<Vertex> nativeVertices;
-            NativeSlice<UInt16> nativeIndices;
-            unsafe
-            {
-                nativeVertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
-                nativeIndices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
-            }
-            if (nativeVertices.Length == 0 || nativeIndices.Length == 0)
-                return;
-
-            m_MeshGenerationContext.AllocateTempMesh(nativeVertices.Length, nativeIndices.Length, out var vertices, out var indices);
-
-            Debug.Assert(vertices.Length == nativeVertices.Length);
-            Debug.Assert(indices.Length == nativeIndices.Length);
-            vertices.CopyFrom(nativeVertices);
-            indices.CopyFrom(nativeIndices);
-
-            m_MeshGenerationContext.entryRecorder.DrawMesh(vertices, indices, texture, skipAtlas);
-        }
-
-        void BuildGradientEntryFromNativeMesh(MeshWriteDataInterface meshData, VectorImage gradientsOwner)
-        {
-            if (meshData.vertexCount == 0 || meshData.indexCount == 0)
-                return;
-            NativeSlice<Vertex> nativeVertices;
-            NativeSlice<UInt16> nativeIndices;
-            unsafe
-            {
-                nativeVertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
-                nativeIndices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
-            }
-            if (nativeVertices.Length == 0 || nativeIndices.Length == 0)
-                return;
-            m_MeshGenerationContext.AllocateTempMesh(nativeVertices.Length, nativeIndices.Length, out var vertices, out var indices);
-            Debug.Assert(vertices.Length == nativeVertices.Length);
-            Debug.Assert(indices.Length == nativeIndices.Length);
-            vertices.CopyFrom(nativeVertices);
-            indices.CopyFrom(nativeIndices);
-            m_MeshGenerationContext.entryRecorder.DrawGradients(vertices, indices, gradientsOwner);
         }
 
         public void DrawText(MeshInfo[] meshInfo, Vector2 offset)
@@ -756,9 +724,9 @@ namespace UnityEngine.UIElements.UIR
             }
 
             if (isSdf)
-                m_MeshGenerationContext.entryRecorder.DrawSdfText(vertices, indices, texture, sdfScale, sharpness);
+                m_MeshGenerationContext.entryRecorder.DrawSdfText(m_MeshGenerationContext.parentEntry, vertices, indices, texture, sdfScale, sharpness);
             else
-                m_MeshGenerationContext.entryRecorder.DrawMesh(vertices, indices, texture, true);
+                m_MeshGenerationContext.entryRecorder.DrawMesh(m_MeshGenerationContext.parentEntry, vertices, indices, texture, true);
         }
 
         public void DrawRectangle(RectangleParams rectParams)
@@ -770,21 +738,22 @@ namespace UnityEngine.UIElements.UIR
             if (currentElement.panel.contextType == ContextType.Editor)
                 rectParams.color *= rectParams.playmodeTintColor;
 
-            if (rectParams.vectorImage != null)
-                DrawVectorImage(rectParams);
-            else if (rectParams.sprite != null)
-                DrawSprite(rectParams);
-            else
-            {
-                MeshWriteDataInterface meshData;
-                if (rectParams.texture != null)
-                    meshData = MeshBuilderNative.MakeTexturedRect(rectParams.ToNativeParams(), UIRUtility.k_MeshPosZ);
-                else
-                    meshData = MeshBuilderNative.MakeSolidRect(rectParams.ToNativeParams(), UIRUtility.k_MeshPosZ);
+            var rectangleJobParameters = new TessellationJobParameters() { isBorderJob = false, rectParams = rectParams.ToNativeParams() };
 
-                bool skipAtlas = (rectParams.meshFlags & MeshGenerationContext.MeshFlags.SkipDynamicAtlas) == MeshGenerationContext.MeshFlags.SkipDynamicAtlas;
-                BuildEntryFromNativeMesh(meshData, rectParams.texture, skipAtlas);
+            rectangleJobParameters.rectParams.texture = m_GCHandlePool.GetIntPtr(rectParams.texture);
+            rectangleJobParameters.rectParams.sprite = m_GCHandlePool.GetIntPtr(rectParams.sprite);
+            if (rectParams.sprite != null && rectParams.sprite.texture != null)
+            {
+                rectangleJobParameters.rectParams.spriteTexture = m_GCHandlePool.GetIntPtr(rectParams.sprite.texture);
+                rectangleJobParameters.rectParams.spriteVertices = m_GCHandlePool.GetIntPtr(rectParams.sprite.vertices);
+                rectangleJobParameters.rectParams.spriteUVs = m_GCHandlePool.GetIntPtr(rectParams.sprite.uv);
+                rectangleJobParameters.rectParams.spriteTriangles = m_GCHandlePool.GetIntPtr(rectParams.sprite.triangles);
             }
+            rectangleJobParameters.rectParams.vectorImage = m_GCHandlePool.GetIntPtr(rectParams.vectorImage);
+
+            m_MeshGenerationContext.InsertUnsafeMeshGenerationNode(out var unsafeNode);
+            rectangleJobParameters.node = unsafeNode;
+            m_TesselationJobParameters.Add(rectangleJobParameters);
 
             k_MarkerDrawRectangle.End();
         }
@@ -800,8 +769,11 @@ namespace UnityEngine.UIElements.UIR
                 borderParams.bottomColor *= borderParams.playmodeTintColor;
             }
 
-            var meshData = MeshBuilderNative.MakeBorder(borderParams.ToNativeParams(), UIRUtility.k_MeshPosZ);
-            BuildEntryFromNativeMesh(meshData, null, true);
+            var borderJobParams = new TessellationJobParameters() { isBorderJob = true, borderParams = borderParams };
+            m_MeshGenerationContext.InsertUnsafeMeshGenerationNode(out var unsafeNode);
+            borderJobParams.node = unsafeNode;
+            m_TesselationJobParameters.Add(borderJobParams);
+
             k_MarkerDrawBorder.End();
         }
 
@@ -815,9 +787,9 @@ namespace UnityEngine.UIElements.UIR
 
             bool hasGradients = vectorImage.atlas != null;
             if (hasGradients)
-                m_MeshGenerationContext.entryRecorder.DrawGradients(vertices, indices, vectorImage);
+                m_MeshGenerationContext.entryRecorder.DrawGradients(m_MeshGenerationContext.parentEntry, vertices, indices, vectorImage);
             else
-                m_MeshGenerationContext.entryRecorder.DrawMesh(vertices, indices);
+                m_MeshGenerationContext.entryRecorder.DrawMesh(m_MeshGenerationContext.parentEntry, vertices, indices);
 
             var matrix = Matrix4x4.TRS(offset, Quaternion.AngleAxis(rotationAngle.ToDegrees(), Vector3.forward), new Vector3(scale.x, scale.y, 1.0f));
             bool flipWinding = (scale.x < 0.0f) ^ (scale.y < 0.0f);
@@ -1346,7 +1318,7 @@ namespace UnityEngine.UIElements.UIR
             DrawRectangle(rectParams);
         }
 
-        static void AdjustSpriteWinding(Vector2[] vertices, ushort[] indices, NativeSlice<ushort> newIndices)
+        static void AdjustSpriteWinding(Vector2[] vertices, UInt16[] indices, NativeSlice<UInt16> newIndices)
         {
             for (int i = 0; i < indices.Length; i += 3)
             {
@@ -1372,96 +1344,271 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        void DrawSprite(RectangleParams rectParams)
+        public void ScheduleJobs(MeshGenerationContext mgc)
         {
-            var sprite = rectParams.sprite;
-            System.Diagnostics.Debug.Assert(sprite != null);
+            int parameterCount = m_TesselationJobParameters.Count;
+            if (parameterCount == 0)
+                return;
 
-            if (sprite.texture == null || sprite.triangles.Length == 0)
-                return; // Textureless sprites not supported, should use VectorImage instead
-
-            System.Diagnostics.Debug.Assert(sprite.border == Vector4.zero, "Sliced sprites should be rendered as regular textured rectangles");
-
-            // Remap vertices inside rect
-            var spriteVertices = sprite.vertices;
-            var spriteIndices = sprite.triangles;
-            var spriteUV = sprite.uv;
-
-            var vertexCount = sprite.vertices.Length;
-
-            m_MeshGenerationContext.AllocateTempMesh(vertexCount, spriteIndices.Length, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices);
-
-            AdjustSpriteWinding(spriteVertices, spriteIndices, indices);
-
-            var colorPage = rectParams.colorPage;
-            var pageAndID = colorPage.pageAndID;
-
-            var flags = new Color32(0, 0, 0, colorPage.isValid ? (byte)1 : (byte)0);
-            var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
-            var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
-
-            for (int i = 0; i < vertexCount; ++i)
+            if (m_JobParameters.Length < parameterCount)
             {
-                var v = spriteVertices[i];
-                v -= rectParams.spriteGeomRect.position;
-                v /= rectParams.spriteGeomRect.size;
-                v.y = 1.0f - v.y;
-                v *= rectParams.rect.size;
-                v += rectParams.rect.position;
+                m_JobParameters.Dispose();
+                m_JobParameters = new NativeArray<TessellationJobParameters>(parameterCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            }
 
-                vertices[i] = new Vertex
+            for (int i = 0; i < parameterCount; ++i)
+                m_JobParameters[i] = m_TesselationJobParameters[i];
+            m_TesselationJobParameters.Clear();
+
+            var job = new TessellationJob() { jobParameters = m_JobParameters.Slice(0, parameterCount) };
+            mgc.GetTempMeshAllocator(out job.allocator);
+
+            var jobHandle = job.Schedule(parameterCount, 1);
+
+            mgc.AddMeshGenerationJob(jobHandle);
+            mgc.AddMeshGenerationCallback(m_OnMeshGenerationDelegate, null, MeshGenerationCallbackType.Work, true);
+        }
+
+        UIR.MeshGenerationCallback m_OnMeshGenerationDelegate;
+        void OnMeshGeneration(MeshGenerationContext ctx, object data)
+        {
+            m_GCHandlePool.ReturnAll();
+        }
+
+        struct TessellationJobParameters
+        {
+            public bool isBorderJob;
+            public MeshBuilderNative.NativeRectParams rectParams;
+            public MeshGenerator.BorderParams borderParams;
+            public UnsafeMeshGenerationNode node;
+        }
+        List<TessellationJobParameters> m_TesselationJobParameters = new(256);
+
+        struct TessellationJob : IJobParallelFor
+        {
+            [ReadOnly] public TempMeshAllocator allocator;
+            [ReadOnly] public NativeSlice<TessellationJobParameters> jobParameters;
+
+            public unsafe void Execute(int i)
+            {
+                var jobParams = jobParameters[i];
+
+                if (jobParams.isBorderJob)
                 {
-                    position = new Vector3(v.x, v.y, Vertex.nearZ),
-                    tint = rectParams.color,
-                    uv = spriteUV[i],
-                    flags = flags,
-                    opacityColorPages = page,
-                    ids = ids
-                };
+                    DrawBorder(jobParams.node, ref jobParams.borderParams);
+                }
+                else
+                {
+                    ref var rectParams = ref jobParams.rectParams;
+                    if (rectParams.vectorImage != IntPtr.Zero)
+                        DrawVectorImage(jobParams.node, ref rectParams, ExtractHandle<VectorImage>(rectParams.vectorImage));
+                    else if (rectParams.sprite != IntPtr.Zero)
+                        DrawSprite(jobParams.node, ref rectParams, ExtractHandle<Sprite>(rectParams.sprite));
+                    else
+                        DrawRectangle(jobParams.node, ref rectParams, ExtractHandle<Texture>(rectParams.texture));
+                }
             }
 
-            bool skipAtlas = rectParams.meshFlags == MeshGenerationContext.MeshFlags.SkipDynamicAtlas;
-            m_MeshGenerationContext.entryRecorder.DrawMesh(vertices, indices, sprite.texture, skipAtlas);
+            T ExtractHandle<T>(IntPtr handlePtr) where T : class
+            {
+                var handle = handlePtr != IntPtr.Zero ? GCHandle.FromIntPtr(handlePtr) : new GCHandle();
+                return handle.IsAllocated ? handle.Target as T : null;
+            }
+
+            void DrawBorder(UnsafeMeshGenerationNode node, ref BorderParams borderParams)
+            {
+                var meshData = MeshBuilderNative.MakeBorder(borderParams.ToNativeParams(), UIRUtility.k_MeshPosZ);
+
+                if (meshData.vertexCount == 0 || meshData.indexCount == 0)
+                    return;
+
+                NativeSlice<Vertex> nativeVertices;
+                NativeSlice<UInt16> nativeIndices;
+                unsafe
+                {
+                    nativeVertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
+                    nativeIndices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
+                }
+                if (nativeVertices.Length == 0 || nativeIndices.Length == 0)
+                    return;
+
+                allocator.AllocateTempMesh(nativeVertices.Length, nativeIndices.Length, out var vertices, out var indices);
+
+                Debug.Assert(vertices.Length == nativeVertices.Length);
+                Debug.Assert(indices.Length == nativeIndices.Length);
+                vertices.CopyFrom(nativeVertices);
+                indices.CopyFrom(nativeIndices);
+
+                node.DrawMesh(vertices, indices);
+            }
+
+            void DrawRectangle(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Texture tex)
+            {
+                MeshWriteDataInterface meshData;
+                if (rectParams.texture != IntPtr.Zero)
+                    meshData = MeshBuilderNative.MakeTexturedRect(rectParams, UIRUtility.k_MeshPosZ);
+                else
+                    meshData = MeshBuilderNative.MakeSolidRect(rectParams, UIRUtility.k_MeshPosZ);
+
+                if (meshData.vertexCount == 0 || meshData.indexCount == 0)
+                    return;
+
+                var meshFlags = (MeshGenerationContext.MeshFlags)rectParams.meshFlags;
+                bool skipAtlas = (meshFlags & MeshGenerationContext.MeshFlags.SkipDynamicAtlas) == MeshGenerationContext.MeshFlags.SkipDynamicAtlas;
+
+                NativeSlice<Vertex> nativeVertices;
+                NativeSlice<UInt16> nativeIndices;
+                unsafe
+                {
+                    nativeVertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
+                    nativeIndices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
+                }
+                if (nativeVertices.Length == 0 || nativeIndices.Length == 0)
+                    return;
+
+                allocator.AllocateTempMesh(nativeVertices.Length, nativeIndices.Length, out var vertices, out var indices);
+
+                Debug.Assert(vertices.Length == nativeVertices.Length);
+                Debug.Assert(indices.Length == nativeIndices.Length);
+                vertices.CopyFrom(nativeVertices);
+                indices.CopyFrom(nativeIndices);
+
+                node.DrawMesh(vertices, indices, tex);
+            }
+
+            void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, Sprite sprite)
+            {
+                if (rectParams.spriteTexture == IntPtr.Zero)
+                    return; // Textureless sprites not supported, should use VectorImage instead
+
+                var spriteTexture = ExtractHandle<Texture2D>(rectParams.spriteTexture);
+                var spriteVertices = ExtractHandle<Vector2[]>(rectParams.spriteVertices);
+                var spriteUV = ExtractHandle<Vector2[]>(rectParams.spriteUVs);
+                var spriteIndices = ExtractHandle<UInt16[]>(rectParams.spriteTriangles);
+
+                if (spriteIndices?.Length == 0)
+                    return;
+
+                var vertexCount = spriteVertices.Length;
+                allocator.AllocateTempMesh(vertexCount, spriteIndices.Length, out NativeSlice<Vertex> vertices, out NativeSlice<UInt16> indices);
+
+                AdjustSpriteWinding(spriteVertices, spriteIndices, indices);
+
+                var colorPage = rectParams.colorPage;
+                var pageAndID = colorPage.pageAndID;
+
+                var flags = new Color32(0, 0, 0, (colorPage.isValid != 0) ? (byte)1 : (byte)0);
+                var page = new Color32(0, 0, colorPage.pageAndID.r, colorPage.pageAndID.g);
+                var ids = new Color32(0, 0, 0, colorPage.pageAndID.b);
+
+                for (int i = 0; i < vertexCount; ++i)
+                {
+                    var v = spriteVertices[i];
+                    v -= rectParams.spriteGeomRect.position;
+                    v /= rectParams.spriteGeomRect.size;
+                    v.y = 1.0f - v.y;
+                    v *= rectParams.rect.size;
+                    v += rectParams.rect.position;
+
+                    vertices[i] = new Vertex
+                    {
+                        position = new Vector3(v.x, v.y, Vertex.nearZ),
+                        tint = rectParams.color,
+                        uv = spriteUV[i],
+                        flags = flags,
+                        opacityColorPages = page,
+                        ids = ids
+                    };
+                }
+
+                var meshFlags = (MeshGenerationContext.MeshFlags)rectParams.meshFlags;
+                bool skipAtlas = (meshFlags == MeshGenerationContext.MeshFlags.SkipDynamicAtlas);
+
+                node.DrawMeshInternal(vertices, indices, spriteTexture, skipAtlas);
+            }
+
+            void DrawVectorImage(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, VectorImage vi)
+            {
+                bool isUsingGradients = vi.atlas != null;
+
+                // Convert the VectorImage's serializable vertices to Vertex instances
+                int vertexCount = vi.vertices.Length;
+                var svgVertices = new Vertex[vertexCount];
+                for (int i = 0; i < vertexCount; ++i)
+                {
+                    var v = vi.vertices[i];
+                    svgVertices[i] = new Vertex() {
+                        position = v.position,
+                        tint = v.tint,
+                        uv = v.uv,
+                        settingIndex = new Color32((byte)(v.settingIndex >> 8), (byte)v.settingIndex, 0, 0),
+                        flags = v.flags,
+                        circle = v.circle
+                    };
+                }
+                MeshWriteDataInterface meshData;
+                if (rectParams.leftSlice <= UIRUtility.k_Epsilon &&
+                    rectParams.topSlice <= UIRUtility.k_Epsilon &&
+                    rectParams.rightSlice <= UIRUtility.k_Epsilon &&
+                    rectParams.bottomSlice <= UIRUtility.k_Epsilon)
+                {
+                    meshData = MeshBuilderNative.MakeVectorGraphicsStretchBackground(svgVertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, rectParams.colorPage);
+                }
+                else
+                {
+                    var sliceLTRB = new Vector4(rectParams.leftSlice, rectParams.topSlice, rectParams.rightSlice, rectParams.bottomSlice);
+                    meshData = MeshBuilderNative.MakeVectorGraphics9SliceBackground(svgVertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, sliceLTRB, rectParams.color, rectParams.colorPage);
+                }
+
+                NativeSlice<Vertex> nativeVertices;
+                NativeSlice<UInt16> nativeIndices;
+                unsafe
+                {
+                    nativeVertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
+                    nativeIndices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
+                }
+                if (nativeVertices.Length == 0 || nativeIndices.Length == 0)
+                    return;
+
+                allocator.AllocateTempMesh(nativeVertices.Length, nativeIndices.Length, out var vertices, out var indices);
+
+                Debug.Assert(vertices.Length == nativeVertices.Length);
+                Debug.Assert(indices.Length == nativeIndices.Length);
+                vertices.CopyFrom(nativeVertices);
+                indices.CopyFrom(nativeIndices);
+
+                if (isUsingGradients)
+                    node.DrawGradientsInternal(vertices, indices, vi);
+                else
+                    node.DrawMesh(vertices, indices);
+            }
         }
 
-        void DrawVectorImage(RectangleParams rectParams)
+        #region Dispose Pattern
+
+        internal bool disposed { get; private set; }
+
+
+        public void Dispose()
         {
-            var vi = rectParams.vectorImage;
-            bool isUsingGradients = vi.atlas != null;
-            Debug.Assert(vi != null);
-            // Convert the VectorImage's serializable vertices to Vertex instances
-            int vertexCount = vi.vertices.Length;
-            var vertices = new Vertex[vertexCount];
-            for (int i = 0; i < vertexCount; ++i)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        void Dispose(bool disposing)
+        {
+            if (disposed)
+                return;
+
+            if (disposing)
             {
-                var v = vi.vertices[i];
-                vertices[i] = new Vertex() {
-                    position = v.position,
-                    tint = v.tint,
-                    uv = v.uv,
-                    settingIndex = new Color32((byte)(v.settingIndex >> 8), (byte)v.settingIndex, 0, 0),
-                    flags = v.flags,
-                    circle = v.circle
-                };
-            }
-            MeshWriteDataInterface meshData;
-            if (rectParams.leftSlice <= UIRUtility.k_Epsilon &&
-                rectParams.topSlice <= UIRUtility.k_Epsilon &&
-                rectParams.rightSlice <= UIRUtility.k_Epsilon &&
-                rectParams.bottomSlice <= UIRUtility.k_Epsilon)
-            {
-                meshData = MeshBuilderNative.MakeVectorGraphicsStretchBackground(vertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, rectParams.uv, rectParams.scaleMode, rectParams.color, rectParams.colorPage.ToNativeColorPage());
-            }
-            else
-            {
-                var sliceLTRB = new Vector4(rectParams.leftSlice, rectParams.topSlice, rectParams.rightSlice, rectParams.bottomSlice);
-                meshData = MeshBuilderNative.MakeVectorGraphics9SliceBackground(vertices, vi.indices, vi.size.x, vi.size.y, rectParams.rect, sliceLTRB, rectParams.color, rectParams.colorPage.ToNativeColorPage());
+                m_GCHandlePool.Dispose();
+                m_JobParameters.Dispose();
             }
 
-            if (isUsingGradients)
-                BuildGradientEntryFromNativeMesh(meshData, vi);
-            else
-                BuildEntryFromNativeMesh(meshData, null, true);
+            disposed = true;
         }
+
+        #endregion // Dispose Pattern
     }
 }

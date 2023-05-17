@@ -295,6 +295,17 @@ namespace UnityEngine
         public extern static MarshallingTestObject Create();
 
         extern private static void Internal_CreateMarshallingTestObject([Writable] MarshallingTestObject notSelf);
+
+        [RequiredByNativeCode]
+        private int TestField;
+    }
+
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    [ExcludeFromDocs]
+    [StructLayout(LayoutKind.Sequential)]
+    internal class DifferentMarshallingTestObject : Object
+    {
+
     }
 
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
@@ -350,6 +361,8 @@ namespace UnityEngine
         public static extern MarshallingTestObject ReturnInUnityObject(MarshallingTestObject obj);
 
         public static extern MarshallingTestObject ReturnUnityObjectFakeNull();
+
+        public static extern MarshallingTestObject ReturnUnassignedErrorObject();
 
         public static extern MarshallingTestObject ReturnUnityObjectPPtr();
 
@@ -794,6 +807,20 @@ namespace UnityEngine
         public static extern void OutArrayOfNestedBlittableStructTypeWorks([Out] StructNestedBlittable[] array, StructNestedBlittable value);
 
         public static extern void OutArrayOfNonBlittableTypeWorks([Out] StructWithStringIntAndFloat[] array, StructWithStringIntAndFloat value);
+    }
+
+    [NativeHeader("Modules/Marshalling/ReturnArrayMarshallingTests.h")]
+    [ExcludeFromDocs]
+    internal static class ReturnArrayMarshallingTests
+    {
+        [return: Unmarshalled]
+        public static extern float[] ReturnArrayOfPrimitiveTypeWorks_Float1D();
+
+        [return: Unmarshalled]
+        public static extern float[,] ReturnArrayOfPrimitiveTypeWorks_Float2D();
+
+        [return: Unmarshalled]
+        public static extern float[,,] ReturnArrayOfPrimitiveTypeWorks_Float3D();
     }
 
     // --------------------------------------------------------------------

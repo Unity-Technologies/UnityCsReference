@@ -98,6 +98,7 @@ namespace UnityEngine.UIElements.UIR
                     case EntryType.BlitAndPopRenderTexture:
                     case EntryType.PushDefaultMaterial:
                     case EntryType.PopDefaultMaterial:
+                    case EntryType.CutRenderChain:
                     case EntryType.DedicatedPlaceholder:
                         break; // Keep this to differentiate from unhandled cases
                     default:

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditor.AI;
 using UnityEditorInternal;
 using EditorNavMeshBuilder = UnityEditor.AI.NavMeshBuilder;
@@ -443,6 +444,7 @@ namespace UnityEditor
             Unsupported.SmartReset(EditorNavMeshBuilder.navMeshSettingsObject);
         }
 
+        [RequiredByNativeCode]
         public static void BackgroundTaskStatusChanged()
         {
             if (s_NavMeshEditorWindow != null)

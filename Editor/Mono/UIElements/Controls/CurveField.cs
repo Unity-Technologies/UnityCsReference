@@ -282,9 +282,9 @@ namespace UnityEditor.UIElements
                 rawValue = new AnimationCurve();
             onShowPresets?.Invoke();
 
-            CurveEditorWindow.instance.Show(OnCurveChanged, settings);
             CurveEditorWindow.curve = rawValue;
             CurveEditorWindow.color = curveColor;
+            CurveEditorWindow.instance.Show(OnCurveChanged, settings);
         }
 
         void OnKeyDown(KeyDownEvent kde)

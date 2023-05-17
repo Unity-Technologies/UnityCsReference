@@ -63,7 +63,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            mgc.entryRecorder.DrawImmediate(CallImmediateRepaint, cullingEnabled);
+            mgc.entryRecorder.DrawImmediate(mgc.parentEntry, CallImmediateRepaint, cullingEnabled);
         }
 
         void CallImmediateRepaint()

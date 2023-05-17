@@ -136,8 +136,6 @@ namespace UnityEditor.Search
 
         internal ISearchQuery searchQuery => m_SearchQuery;
 
-        internal static readonly string tabCountTextColorFormat = EditorGUIUtility.isProSkin ? "<color=#7B7B7B>{0}</color>" : "<color=#6A6A6A>{0}</color>";
-
         public static readonly string ussClassName = "search-query-listview-item";
         public static readonly string nameLabelClassName = ussClassName.WithUssElement("label");
         public static readonly string countLabelClassName = ussClassName.WithUssElement("count");
@@ -241,7 +239,7 @@ namespace UnityEditor.Search
                 return;
 
             string formattedCount = Utils.FormatCount(Convert.ToUInt64(itemCount));
-            m_CountLabel.text = string.Format(tabCountTextColorFormat, formattedCount);
+            m_CountLabel.text = string.Format(formattedCount);
         }
 
         public void Rename()
@@ -286,6 +284,7 @@ namespace UnityEditor.Search
         public Action saveSearchQuery { get; set; }
         public Action<ISearchQuery, SearchQueryListViewItem> bindItem { get; set; }
         public Action<SearchQueryListView, bool> expandStateChanged { get; set; }
+        public IEnumerable<ISearchQuery> itemSource => m_Source;
 
         public const string headerIdName = "SearchQueryListViewHeader";
         public const string saveIconIdName = "SaveQueryButton";

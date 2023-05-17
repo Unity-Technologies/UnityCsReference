@@ -1179,6 +1179,7 @@ namespace UnityEditor
             return s_AllSceneCameraList;
         }
 
+        [RequiredByNativeCode]
         public static Camera[] GetAllSceneCameras()
         {
             List<Camera> newSceneCameras = GetAllSceneCamerasAsList();
@@ -1201,6 +1202,7 @@ namespace UnityEditor
             return s_AllSceneCameras;
         }
 
+        [RequiredByNativeCode]
         public static void RepaintAll()
         {
             foreach (SceneView sv in s_SceneViews)

@@ -9,7 +9,7 @@ namespace UnityEditor.Build.Rendering
 {
     class EnsureSinglePipelineOnBuild : IPreprocessBuildWithReport
     {
-        public int callbackOrder => int.MinValue; // We want it to be the first preprocessor to be executed
+        public int callbackOrder => (int) ExecutionOrder.EnsureSinglePipeline;
 
         public void OnPreprocessBuild(BuildReport report)
         {

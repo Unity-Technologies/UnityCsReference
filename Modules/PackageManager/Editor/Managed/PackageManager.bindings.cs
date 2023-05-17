@@ -117,6 +117,6 @@ namespace UnityEditor.PackageManager
     [StaticAccessor("PackageManager::ImmutableAssets::GetInstance()", StaticAccessorType.Arrow)]
     internal class ImmutableAssets
     {
-        public static extern void SetAssetsAllowedToBeModified(string[] assetsAllowedToBeModified);
+        public static extern void SetAssetsToBeModified(string[] assetsAllowedToBeModified);
     }
 }

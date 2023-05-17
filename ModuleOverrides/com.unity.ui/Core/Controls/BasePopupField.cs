@@ -39,6 +39,8 @@ namespace UnityEngine.UIElements
 
         // Set this callback to provide a specific implementation of the menu.
         internal Func<IGenericMenu> createMenuCallback;
+        internal IGenericMenu m_GenericMenu;
+        internal bool m_AutoCloseMenu = true;
 
         // This is the value to display to the user
         internal abstract string GetValueToDisplay();
@@ -187,18 +189,29 @@ namespace UnityEngine.UIElements
         // Used in tests
         internal void ShowMenu()
         {
-            IGenericMenu menu;
+            var isPlayer = elementPanel?.contextType == ContextType.Player;
+
             if (createMenuCallback != null)
             {
-                menu = createMenuCallback.Invoke();
+                m_GenericMenu = createMenuCallback.Invoke();
             }
             else
             {
-                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
+                m_GenericMenu = isPlayer ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
             }
 
-            AddMenuItems(menu);
-            menu.DropDown(visualInput.worldBound, this, true);
+            AddMenuItems(m_GenericMenu);
+
+            var genericDropdownMenu = m_GenericMenu as GenericDropdownMenu;
+
+            if (isPlayer || genericDropdownMenu == null)
+            {
+                m_GenericMenu.DropDown(visualInput.worldBound, this, true);
+            }
+            else
+            {
+                DropdownUtility.ShowDropdown(genericDropdownMenu, visualInput.worldBound.position + Vector2.up * visualInput.worldBound.size.y, this, false, false, m_AutoCloseMenu);
+            }
         }
 
         private class PopupTextElement : TextElement

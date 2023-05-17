@@ -4,12 +4,44 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using Unity.Profiling;
 using UnityEngine.Scripting;
 using UnityEngine.Rendering;
+
+namespace UnityEngine.UIElements
+{
+    using UIR;
+
+    /// <summary>
+    /// A renderer Component that should be added next to a UIDocument Component to allow
+    /// world-space rendering. This Component is added automatically by the UIDocument when
+    /// the PanelSettings asset is configured in world-space.
+    /// </summary>
+    [NativeType(Header = "ModuleOverrides/com.unity.ui/Core/Native/Renderer/UIRenderer.h")]
+    public sealed class UIRenderer : Renderer
+    {
+        internal volatile List<CommandList>[] commandLists;
+        internal volatile bool skipRendering;
+
+        internal extern void SetNativeData(int safeFrameIndex, int cmdListIndex, Material mat);
+
+        [RequiredByNativeCode]
+        static void OnRenderNodeExecute(UIRenderer renderer, int safeFrameIndex, int cmdListIndex)
+        {
+            if (renderer.skipRendering)
+                return;
+
+            var commandLists = renderer.commandLists;
+            var cmdList = commandLists != null ? commandLists[safeFrameIndex] : null;
+            if (cmdList != null && cmdListIndex < cmdList.Count)
+                cmdList[cmdListIndex]?.Execute();
+        }
+    }
+}
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -34,7 +66,6 @@ namespace UnityEngine.UIElements.UIR
     [VisibleToOtherModules("Unity.UIElements")]
     internal partial class Utility
     {
-        [Flags] internal enum RendererCallbacks { RendererCallback_Init = 1, RendererCallback_Exec = 2, RendererCallback_Cleanup = 4 } // Combinable bit-wise flags
         internal enum GPUBufferType { Vertex, Index }
         unsafe public class GPUBuffer<T> : IDisposable where T : struct
         {
@@ -73,8 +104,6 @@ namespace UnityEngine.UIElements.UIR
         public static event Action<bool> GraphicsResourcesRecreate;
         public static event Action EngineUpdate;
         public static event Action FlushPendingResources;
-        public static event Action<Camera> RegisterIntermediateRenderers;
-        public static event Action<IntPtr> RenderNodeAdd, RenderNodeExecute, RenderNodeCleanup;
 
         [RequiredByNativeCode]
         internal static void RaiseGraphicsResourcesRecreate(bool recreate)
@@ -101,40 +130,12 @@ namespace UnityEngine.UIElements.UIR
             FlushPendingResources?.Invoke();
         }
 
-        [RequiredByNativeCode]
-        internal static void RaiseRegisterIntermediateRenderers(Camera camera)
-        {
-            RegisterIntermediateRenderers?.Invoke(camera);
-        }
-
-        [RequiredByNativeCode]
-        internal static void RaiseRenderNodeAdd(IntPtr userData)
-        {
-            RenderNodeAdd?.Invoke(userData);
-        }
-
-        [RequiredByNativeCode]
-        internal static void RaiseRenderNodeExecute(IntPtr userData)
-        {
-            RenderNodeExecute?.Invoke(userData);
-        }
-
-        [RequiredByNativeCode]
-        internal static void RaiseRenderNodeCleanup(IntPtr userData)
-        {
-            RenderNodeCleanup?.Invoke(userData);
-        }
-
         [ThreadSafe] extern static IntPtr AllocateBuffer(int elementCount, int elementStride, bool vertexBuffer);
         [ThreadSafe] extern static void FreeBuffer(IntPtr buffer);
         [ThreadSafe] extern static void UpdateBufferRanges(IntPtr buffer, IntPtr ranges, int rangeCount, int writeRangeStart, int writeRangeEnd);
         [ThreadSafe] extern static void SetVectorArray(MaterialPropertyBlock props, int name, IntPtr vector4s, int count);
         [ThreadSafe] public extern static IntPtr GetVertexDeclaration(VertexAttributeDescriptor[] vertexAttributes);
 
-        public extern static void RegisterIntermediateRenderer(
-            Camera camera, Material material, Matrix4x4 transform, Bounds aabb,
-            int renderLayer, int shadowCasting, bool receiveShadows, int sameDistanceSortPriority,
-            int rendererCallbackFlags, IntPtr userData, int userDataSize);
         [ThreadSafe] public extern unsafe static void DrawRanges(IntPtr ib, IntPtr* vertexStreams, int streamCount, IntPtr ranges, int rangeCount, IntPtr vertexDecl);
         [ThreadSafe] public extern static void SetPropertyBlock(MaterialPropertyBlock props);
         [ThreadSafe] public extern static void SetScissorRect(RectInt scissorRect);

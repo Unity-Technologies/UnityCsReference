@@ -7,7 +7,7 @@ using UnityEngine.Bindings;
 namespace UnityEngine.WSA
 {
     [NativeConditional("PLATFORM_WINRT")]
-    [NativeHeader("PlatformDependent/MetroPlayer/MetroCursor.h")]
+    [NativeHeader("PlatformDependent/MetroPlayer/Input/PlatformCursor.h")]
     public static class Cursor
     {
         [FreeFunction("Cursors::SetHardwareCursor")]

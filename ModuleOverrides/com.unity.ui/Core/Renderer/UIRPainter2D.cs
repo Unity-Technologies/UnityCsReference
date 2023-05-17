@@ -3,12 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 using Unity.Profiling;
 using UnityEngine.Profiling;
 using UnityEngine.UIElements.UIR;
@@ -111,11 +111,16 @@ namespace UnityEngine.UIElements
 
         internal bool isDetached => m_DetachedAllocator != null;
 
+        List<Painter2DJobData> m_JobSnapshots = null;
+        NativeArray<Painter2DJobData> m_JobParameters;
+
         // Instantiated internally by UIR, users shouldn't derive from this class.
         internal Painter2D(MeshGenerationContext ctx)
         {
-            m_Handle = new SafeHandleAccess(UIPainter2D.Create(maxArcRadius));
+            m_Handle = new SafeHandleAccess(UIPainter2D.Create());
             m_Ctx = ctx;
+            m_JobSnapshots = new(32);
+            m_OnMeshGenerationDelegate = OnMeshGeneration;
             Reset();
         }
 
@@ -124,9 +129,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Painter2D()
         {
-            m_Handle = new SafeHandleAccess(UIPainter2D.Create(maxArcRadius));
+            m_Handle = new SafeHandleAccess(UIPainter2D.Create());
             m_DetachedAllocator = new DetachedAllocator();
             isPainterActive = true;
+            m_OnMeshGenerationDelegate = OnMeshGeneration;
             Reset();
         }
 
@@ -183,6 +189,8 @@ namespace UnityEngine.UIElements
 
                 if (m_DetachedAllocator != null)
                     m_DetachedAllocator.Dispose();
+
+                m_JobParameters.Dispose();
             }
             else
                 UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
@@ -270,8 +278,6 @@ namespace UnityEngine.UIElements
 
             return isValid;
         }
-
-        private static float maxArcRadius => 1.0e5f;
 
         /// <summary>
         /// Begins a new path and empties the list of recorded sub-paths and resets the pen position to (0,0).
@@ -388,20 +394,29 @@ namespace UnityEngine.UIElements
                 if (!ValidateState())
                     return;
 
-                var meshData = UIPainter2D.Stroke(m_Handle);
-
-                if (meshData.vertexCount == 0)
-                    return;
-
-                // transfer all data in a single batch
-                var meshWrite = Allocate(meshData.vertexCount, meshData.indexCount);
-                unsafe
+                if (isDetached)
                 {
-                    var vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
-                    var indices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
-                    meshWrite.SetAllVertices(vertices);
-                    meshWrite.SetAllIndices(indices);
+                    var meshData = UIPainter2D.Stroke(m_Handle);
+
+                    if (meshData.vertexCount == 0)
+                        return;
+
+                    // transfer all data in a single batch
+                    var meshWrite = Allocate(meshData.vertexCount, meshData.indexCount);
+                    unsafe
+                    {
+                        var vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
+                        var indices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
+                        meshWrite.SetAllVertices(vertices);
+                        meshWrite.SetAllIndices(indices);
+                    }
                 }
+                else
+                {
+                    // Take a snapshot for the job system
+                    m_Ctx.InsertUnsafeMeshGenerationNode(out var unsafeNode);
+                    int snapshotIndex = UIPainter2D.TakeStrokeSnapshot(m_Handle);
+                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = snapshotIndex });                }
             }
         }
 
@@ -418,20 +433,99 @@ namespace UnityEngine.UIElements
                 if (!ValidateState())
                     return;
 
-                var meshData = UIPainter2D.Fill(m_Handle, fillRule);
-                if (meshData.vertexCount == 0)
-                    return;
-
-                // transfer all data in a single batch
-                var meshWrite = Allocate(meshData.vertexCount, meshData.indexCount);
-                unsafe
+                if (isDetached)
                 {
-                    var vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
-                    var indices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
-                    meshWrite.SetAllVertices(vertices);
-                    meshWrite.SetAllIndices(indices);
+                    var meshData = UIPainter2D.Fill(m_Handle, fillRule);
+                    if (meshData.vertexCount == 0)
+                        return;
+
+                    // transfer all data in a single batch
+                    var meshWrite = Allocate(meshData.vertexCount, meshData.indexCount);
+                    unsafe
+                    {
+                        var vertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
+                        var indices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
+                        meshWrite.SetAllVertices(vertices);
+                        meshWrite.SetAllIndices(indices);
+                    }
+                }
+                else
+                {
+                    // Take a snapshot for the job system
+                    m_Ctx.InsertUnsafeMeshGenerationNode(out var unsafeNode);
+                    int jobIndex = UIPainter2D.TakeFillSnapshot(m_Handle, fillRule);
+                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = jobIndex });
                 }
             }
+        }
+
+        struct Painter2DJobData
+        {
+            public UnsafeMeshGenerationNode node;
+            public int snapshotIndex;
+        }
+
+        struct Painter2DJob : IJobParallelFor
+        {
+            [NativeDisableUnsafePtrRestriction] public IntPtr painterHandle;
+            [ReadOnly] public TempMeshAllocator allocator;
+            [ReadOnly] public NativeSlice<Painter2DJobData> jobParameters;
+
+            public void Execute(int i)
+            {
+                var data = jobParameters[i];
+                var meshData = UIPainter2D.ExecuteSnapshotFromJob(painterHandle, data.snapshotIndex);
+
+                NativeSlice<Vertex> nativeVertices;
+                NativeSlice<UInt16> nativeIndices;
+                unsafe
+                {
+                    nativeVertices = UIRenderDevice.PtrToSlice<Vertex>((void*)meshData.vertices, meshData.vertexCount);
+                    nativeIndices = UIRenderDevice.PtrToSlice<UInt16>((void*)meshData.indices, meshData.indexCount);
+                }
+                if (nativeVertices.Length == 0 || nativeIndices.Length == 0)
+                    return;
+
+                allocator.AllocateTempMesh(nativeVertices.Length, nativeIndices.Length, out var vertices, out var indices);
+
+                Debug.Assert(vertices.Length == nativeVertices.Length);
+                Debug.Assert(indices.Length == nativeIndices.Length);
+                vertices.CopyFrom(nativeVertices);
+                indices.CopyFrom(nativeIndices);
+
+                data.node.DrawMesh(vertices, indices);
+            }
+        }
+
+        internal void ScheduleJobs(MeshGenerationContext mgc)
+        {
+            int snapshotCount = m_JobSnapshots.Count;
+            if (snapshotCount == 0)
+                return;
+
+            if (m_JobParameters.Length < snapshotCount)
+            {
+                m_JobParameters.Dispose();
+                m_JobParameters = new NativeArray<Painter2DJobData>(snapshotCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            }
+
+            for (int i = 0; i < snapshotCount; ++i)
+                m_JobParameters[i] = m_JobSnapshots[i];
+            m_JobSnapshots.Clear();
+
+            var job = new Painter2DJob { painterHandle = m_Handle, jobParameters = m_JobParameters.Slice(0, snapshotCount) };
+            mgc.GetTempMeshAllocator(out job.allocator);
+
+            var jobHandle = job.Schedule(snapshotCount, 1);
+
+            mgc.AddMeshGenerationJob(jobHandle);
+            mgc.AddMeshGenerationCallback(m_OnMeshGenerationDelegate, null, MeshGenerationCallbackType.Work, true);
+        }
+
+        UIR.MeshGenerationCallback m_OnMeshGenerationDelegate;
+        void OnMeshGeneration(MeshGenerationContext ctx, object data)
+        {
+            UIPainter2D.ClearSnapshots(m_Handle);
         }
 
         /// <summary>

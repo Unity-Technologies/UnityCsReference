@@ -47,17 +47,10 @@ namespace UnityEditor.UIElements
         int m_FullChoiceMask;
         internal int fullChoiceMask => m_FullChoiceMask;
 
-        EditorGenericDropdownMenu m_GenericDropdownMenu;
-
         internal BaseMaskField(string label) : base(label)
         {
-            createMenuCallback = () =>
-            {
-                m_GenericDropdownMenu = new EditorGenericDropdownMenu();
-                return m_GenericDropdownMenu;
-            };
-
             textElement.RegisterCallback<GeometryChangedEvent>(OnTextElementGeometryChanged);
+            m_AutoCloseMenu = false;
         }
 
         private void OnTextElementGeometryChanged(GeometryChangedEvent evt)
@@ -373,38 +366,18 @@ namespace UnityEditor.UIElements
         private bool IsItemSelected(int maskOfItem)
         {
             int valueMask = ValueToMask(value);
-            var isSelected = false;
 
-            switch (maskOfItem)
-            {
-                case 0:
-                    if (valueMask == 0)
-                    {
-                        isSelected = true;
-                    }
-                    break;
+            if (maskOfItem == 0)
+                return valueMask == 0;
 
-                case ~0:
-                    if (valueMask == ~0)
-                    {
-                        isSelected = true;
-                    }
-                    break;
-
-                default:
-                    if ((maskOfItem & valueMask) == maskOfItem)
-                    {
-                        isSelected = true;
-                    }
-                    break;
-            }
-
-            return isSelected;
+            return (maskOfItem & valueMask) == maskOfItem;
         }
 
         private void UpdateMenuItems()
         {
-            if (m_GenericDropdownMenu == null)
+            var menu = m_GenericMenu as GenericDropdownMenu;
+
+            if (menu == null)
             {
                 return;
             }
@@ -414,7 +387,7 @@ namespace UnityEditor.UIElements
                 var maskOfItem = GetMaskValueOfItem(item);
                 var isSelected = IsItemSelected(maskOfItem);
 
-                m_GenericDropdownMenu.UpdateItem(GetListItemToDisplay(MaskToValue(maskOfItem)), isSelected);
+                menu.UpdateItem(GetListItemToDisplay(MaskToValue(maskOfItem)), isSelected);
             }
         }
 
@@ -475,14 +448,13 @@ namespace UnityEditor.UIElements
             }
             // Finally, make sure to update the value of the mask...
             value = MaskToValue(newMask);
-
             UpdateMenuItems();
         }
 
         // Returns the mask to be used for the item...
         int GetMaskValueOfItem(string item)
         {
-            var maskValue = 0;
+            int maskValue;
             var indexOfItem = m_Choices.IndexOf(item);
             switch (indexOfItem)
             {

@@ -15,6 +15,8 @@ using UnityEngine.Rendering;
 using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -429,13 +431,9 @@ namespace UnityEditor
 
         internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey)
         {
-            Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
-            position.x = temp.x;
-            position.y = temp.y;
-
             bool[] enabled = Enumerable.Repeat(true, options.Length).ToArray();
-            Internal_DisplayCustomMenu(position, options, enabled, separator, selected, callback, userData, showHotkey);
-            ResetMouseDown();
+
+            DoCustomMenu(position, options, enabled, selected, callback, userData, showHotkey);
         }
 
         internal static void DisplayCustomMenu(Rect position, string[] options, bool[] enabled, int[] selected, SelectMenuItemFunction callback, object userData)
@@ -461,12 +459,20 @@ namespace UnityEditor
 
         internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames, bool shouldDiscardMenuOnSecondClick = false)
         {
-            Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
-            position.x = temp.x;
-            position.y = temp.y;
+            DoCustomMenu(position, options, enabled, selected, callback, userData, showHotkey);
+        }
 
-            Internal_DisplayCustomMenu(position, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames, shouldDiscardMenuOnSecondClick);
-            ResetMouseDown();
+        static void DoCustomMenu(Rect position, string[] options, bool[] enabled, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey)
+        {
+            var menu = DropdownUtility.CreateDropdown(true) as GenericDropdownMenu;
+
+            for (int i = 0; i < options.Length; i++)
+            {
+                var index = i;
+                menu.AddItem(options[i], selected?.Contains(i) ?? false, enabled[i], null, e => callback?.Invoke(userData, options, index), userData, null);
+            }
+
+            DropdownUtility.ShowDropdown(menu, position.position + Vector2.up * position.size.y, null, false, showHotkey);
         }
 
         internal static void DisplayObjectContextMenu(Rect position, Object context, int contextUserData)

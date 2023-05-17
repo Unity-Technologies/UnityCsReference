@@ -297,7 +297,7 @@ namespace UnityEditor
             sv.Repaint();
         }
 
-        [Shortcut(k_CameraPreviewShortcutIdPrefix + "Increase Amount of Overscan", typeof(SceneView), KeyCode.WheelUp)]
+        [Shortcut(k_CameraPreviewShortcutIdPrefix + "Decrease Size Of Overscan View Guides", typeof(SceneView), KeyCode.WheelUp)]
         static void IncreaseOverscan(ShortcutArguments args)
         {
             SceneView sv = SceneView.lastActiveSceneView as SceneView;
@@ -312,7 +312,7 @@ namespace UnityEditor
             sv.Repaint();
         }
 
-        [Shortcut(k_CameraPreviewShortcutIdPrefix + "Decrease Amount of Overscan", typeof(SceneView), KeyCode.WheelDown)]
+        [Shortcut(k_CameraPreviewShortcutIdPrefix + "Increase Size Of Overscan View Guides", typeof(SceneView), KeyCode.WheelDown)]
         static void DecreaseOverscan(ShortcutArguments args)
         {
             SceneView sv = SceneView.lastActiveSceneView;

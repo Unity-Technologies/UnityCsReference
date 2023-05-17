@@ -569,7 +569,7 @@ namespace UnityEditor.Search
             }
 
             var searchWindow = this.GetHostWindow() as SearchWindow;
-            if (endSearch && (action?.closeWindowAfterExecution ?? true) && !(searchWindow?.docked ?? false))
+            if (searchWindow != null && endSearch && (action?.closeWindowAfterExecution ?? true) && !searchWindow.docked)
                 searchWindow.CloseSearchWindow();
         }
 

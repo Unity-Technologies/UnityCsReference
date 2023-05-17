@@ -44,12 +44,18 @@ namespace UnityEngine.UIElements.UIR
                 m_RenderChain = renderChain;
                 m_MeshGenerationContext = new MeshGenerationContext(
                     m_RenderChain.meshWriteDataPool,
-                    m_RenderChain.entryPool,
+                    m_RenderChain.entryRecorder,
                     m_RenderChain.tempMeshAllocator,
-                    m_RenderChain.meshGenerationDeferrer);
+                    m_RenderChain.meshGenerationDeferrer,
+                    m_RenderChain.meshGenerationNodeManager);
                 m_ElementBuilder = new DefaultElementBuilder(m_RenderChain);
                 m_EntryProcessingList = new List<EntryProcessingInfo>();
                 m_Processors = new List<EntryProcessor>(4);
+            }
+
+            public void ScheduleMeshGenerationJobs()
+            {
+                m_ElementBuilder.ScheduleMeshGenerationJobs(m_MeshGenerationContext);
             }
 
             public void ProcessOnVisualsChanged(VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
@@ -111,7 +117,7 @@ namespace UnityEngine.UIElements.UIR
                 });
 
                 k_GenerateEntriesMarker.Begin();
-                m_MeshGenerationContext.Begin(new MeshGenerationNode { placeholder = rootEntry }, ve);
+                m_MeshGenerationContext.Begin(rootEntry, ve);
                 m_ElementBuilder.Build(m_MeshGenerationContext);
                 m_MeshGenerationContext.End();
                 k_GenerateEntriesMarker.End();

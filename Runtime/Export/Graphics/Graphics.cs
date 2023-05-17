@@ -164,11 +164,15 @@ namespace UnityEngine
             receiveShadows = false;
             lightProbeUsage = LightProbeUsage.Off;
             lightProbeProxyVolume = null;
+            overrideSceneCullingMask = false;
+            sceneCullingMask = 0;
+            instanceID = 0;
         }
 
         public int layer {get; set;}
         public uint renderingLayerMask {get; set;}
         public int rendererPriority {get; set;}
+        public int instanceID {get; set;}
         public Bounds worldBounds {get; set;}
         public Camera camera {get; set;}
         public MotionVectorGenerationMode motionVectorMode {get; set;}
@@ -182,6 +186,9 @@ namespace UnityEngine
 
         public LightProbeUsage lightProbeUsage {get; set;}
         public LightProbeProxyVolume lightProbeProxyVolume {get; set;}
+
+        public bool overrideSceneCullingMask { get; set; }
+        public ulong sceneCullingMask { get; set; }
     }
 
     internal readonly struct RenderInstancedDataLayout
