@@ -421,6 +421,12 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\TwoPaneSplitViewResizer.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\UnsignedIntegerField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\UnsignedIntegerField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\UnsignedLongField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\UnsignedLongField.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\CountingBloomFilter.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\CountingBloomFilter.cs</Link>
     </Compile>
@@ -3018,6 +3024,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Math\Vector4.cs">
       <Link>Runtime\Export\Math\Vector4.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Misc\ObjectDispatcher.bindings.cs">
+      <Link>Runtime\Export\Misc\ObjectDispatcher.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\NativeArray\DisposeSentinel.cs">
       <Link>Runtime\Export\NativeArray\DisposeSentinel.cs</Link>

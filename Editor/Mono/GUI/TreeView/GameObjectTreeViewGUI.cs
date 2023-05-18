@@ -413,8 +413,6 @@ namespace UnityEditor
             if (goItem == null)
                 return;
 
-            EnsureLazyInitialization(goItem);
-
             if (goItem.isSceneHeader)
             {
                 useBoldFont = (goItem.scene == SceneManager.GetActiveScene());
@@ -685,6 +683,8 @@ namespace UnityEditor
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
             if (goItem == null)
                 return;
+
+            EnsureLazyInitialization(goItem);
 
             rect.xMax = m_ContentRectRight;
 

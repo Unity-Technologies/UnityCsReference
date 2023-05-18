@@ -128,6 +128,18 @@ namespace UnityEngine
             set;
         }
 
+        extern IntPtr GetCurrentMeshDataPtr();
+        
+        internal unsafe Mesh.MeshDataArray GetCurrentMeshData()
+        {
+            var ptr = GetCurrentMeshDataPtr();
+            if (ptr == IntPtr.Zero)
+                return new Mesh.MeshDataArray(0);
+            var result = new Mesh.MeshDataArray(1);
+            result.m_Ptrs[0] = ptr;
+            return result;
+        }
+
         [NativeMethod(Name = "GetSpriteBounds")]
         internal extern Bounds Internal_GetSpriteBounds(SpriteDrawMode mode);
         extern internal void GetSecondaryTextureProperties([NotNull]MaterialPropertyBlock mbp);

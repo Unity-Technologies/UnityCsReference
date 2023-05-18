@@ -313,6 +313,8 @@ namespace UnityEngine.PlayerLoop
         public struct PhysicsSkinnedClothFinishUpdate {}
         [RequiredByNativeCode]
         public struct TriggerEndOfFrameCallbacks {}
+        [RequiredByNativeCode]
+        public struct ObjectDispatcherPostLateUpdate { }
     }
 }
 

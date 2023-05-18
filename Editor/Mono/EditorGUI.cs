@@ -2417,7 +2417,7 @@ namespace UnityEditor
             if (value.isDouble)
             {
                 double oldValue = default;
-                if (UINumericFieldsUtils.StringToDouble(s_OriginalText, out oldValue) && oldValue != value.doubleVal)
+                if (UINumericFieldsUtils.TryConvertStringToDouble(s_OriginalText, out oldValue) && oldValue != value.doubleVal)
                 {
                     value.doubleVal = oldValue;
                     return;
@@ -2426,7 +2426,7 @@ namespace UnityEditor
             else
             {
                 long oldValue = default;
-                if (UINumericFieldsUtils.StringToLong(s_OriginalText, out oldValue) && oldValue != value.longVal)
+                if (UINumericFieldsUtils.TryConvertStringToLong(s_OriginalText, out oldValue) && oldValue != value.longVal)
                 {
                     value.longVal = oldValue;
                     return;
@@ -2504,7 +2504,7 @@ namespace UnityEditor
 
         static void StringToDouble(string str, ref NumberFieldValue value)
         {
-            value.success = UINumericFieldsUtils.StringToDouble(str, out value.doubleVal, out value.expression);
+            value.success = UINumericFieldsUtils.TryConvertStringToDouble(str, out value.doubleVal, out value.expression);
         }
 
         internal static bool StringToLong(string str, out long value)
@@ -2518,7 +2518,7 @@ namespace UnityEditor
         static void StringToLong(string str, ref NumberFieldValue value)
         {
             value.expression = null;
-            value.success = UINumericFieldsUtils.StringToLong(str, out value.longVal, out value.expression);
+            value.success = UINumericFieldsUtils.TryConvertStringToLong(str, out value.longVal, out value.expression);
         }
 
         internal static int ArraySizeField(Rect position, GUIContent label, int value, GUIStyle style)

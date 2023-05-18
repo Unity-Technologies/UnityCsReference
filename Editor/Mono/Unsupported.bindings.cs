@@ -88,6 +88,9 @@ namespace UnityEditor
         [FreeFunction("GetSceneTracker().FlushDirty")]
         public static extern void SceneTrackerFlushDirty();
 
+        [FreeFunction("GetSceneTracker().TickHierarchyHasChanged")]
+        internal static extern void TickHierarchyHasChanged();
+
         [FreeFunction("GetScreenManager().SetAllowCursorHide")]
         public static extern void SetAllowCursorHide(bool allow);
 

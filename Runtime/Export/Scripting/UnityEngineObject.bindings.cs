@@ -518,5 +518,8 @@ namespace UnityEngine
         {
             return new Object { m_InstanceID = instanceID };
         }
+
+        [FreeFunction("UnityEngineObjectBindings::MarkObjectDirty", HasExplicitThis = true)]
+        internal extern void MarkDirty();
     }
 }

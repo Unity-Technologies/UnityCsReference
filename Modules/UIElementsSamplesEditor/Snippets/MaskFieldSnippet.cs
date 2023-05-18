@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements.Samples
             /// <sample>
             var choices = new List<string> { "First", "Second", "Third" };
 
-            // Get a reference to the field from UXML and assign it its value.
+            // Get a reference to the field from UXML and assign a value to it.
             var uxmlField = container.Q<MaskField>("the-uxml-field");
             uxmlField.value = 1;
             uxmlField.choices = choices;
@@ -28,7 +28,7 @@ namespace UnityEditor.UIElements.Samples
             csharpField.value = uxmlField.value;
             container.Add(csharpField);
 
-            // Mirror value of uxml field into the C# field.
+            // Mirror the value of the UXML field into the C# field.
             uxmlField.RegisterCallback<ChangeEvent<int>>((evt) =>
             {
                 csharpField.value = evt.newValue;

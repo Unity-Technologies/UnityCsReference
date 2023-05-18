@@ -94,8 +94,10 @@ namespace UnityEngine
         extern public   string sortingLayerName  { get; set; }
         extern public   int    sortingLayerID    { get; set; }
         extern public   int    sortingOrder      { get; set; }
+        extern internal UInt32 sortingKey        { get; }
         extern internal int    sortingGroupID    { get; set; }
         extern internal int    sortingGroupOrder { get; set; }
+        extern internal UInt32 sortingGroupKey   { get; }
 
         internal extern byte stagePriority { get; set; }
 
