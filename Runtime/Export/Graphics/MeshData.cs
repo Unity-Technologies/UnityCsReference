@@ -22,7 +22,7 @@ namespace UnityEngine
         [NativeContainerSupportsMinMaxWriteRestriction]
         public unsafe partial struct MeshDataArray : IDisposable
         {
-            [NativeDisableUnsafePtrRestriction] IntPtr* m_Ptrs;
+            [NativeDisableUnsafePtrRestriction] internal IntPtr* m_Ptrs;
             internal int m_Length;
 
             internal int m_MinIndex;

@@ -285,7 +285,7 @@ namespace Unity.UI.Builder
 
             var numericFields = CreateItem("Numeric Fields", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>
             {
-                CreateItem("Integer", nameof(IntegerField), typeof(IntegerField), () => new IntegerField("Int Field") { value = 42 }),
+                CreateItem("Integer", nameof(IntegerField), typeof(IntegerField), () => new IntegerField("Integer Field") { value = 42 }),
                 CreateItem("Float", nameof(FloatField), typeof(FloatField), () => new FloatField("Float Field") { value = 42.2f }),
                 CreateItem("Long", nameof(LongField), typeof(LongField), () => new LongField("Long Field") { value = 42 }),
                 CreateItem("Double", nameof(DoubleField), typeof(DoubleField), () => new DoubleField("Double Field") { value = 42.2 }),
@@ -295,6 +295,8 @@ namespace Unity.UI.Builder
                 CreateItem("Vector4", nameof(Vector4Field), typeof(Vector4Field), () => new Vector4Field("Vec4 Field")),
                 CreateItem("Rect", nameof(RectField), typeof(RectField), () => new RectField("Rect")),
                 CreateItem("Bounds", nameof(BoundsField), typeof(BoundsField), () => new BoundsField("Bounds")),
+                CreateItem("Integer (Unsigned)", nameof(UnsignedIntegerField), typeof(UnsignedIntegerField), () => new UnsignedIntegerField("Unsigned Integer Field") { value = 42 }),
+                CreateItem("Long (Unsigned)", nameof(UnsignedLongField), typeof(UnsignedLongField), () => new UnsignedLongField("Unsigned Long Field") { value = 42 }),
                 CreateItem("Vector2 (Int)", nameof(Vector2IntField), typeof(Vector2IntField), () => new Vector2IntField("Vector2Int")),
                 CreateItem("Vector3 (Int)", nameof(Vector3IntField), typeof(Vector3IntField), () => new Vector3IntField("Vector3Int")),
                 CreateItem("Rect (Int)", nameof(RectIntField), typeof(RectIntField), () => new RectIntField("RectInt")),

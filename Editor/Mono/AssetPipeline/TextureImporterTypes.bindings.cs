@@ -604,6 +604,8 @@ namespace UnityEditor
         [SerializeField]
         int m_Overridden = 0;
         [SerializeField]
+        int m_IgnorePlatformSupport = 0;
+        [SerializeField]
         int m_MaxTextureSize = 2048;
         [SerializeField]
         int m_ResizeAlgorithm = (int)TextureResizeAlgorithm.Mitchell;
@@ -634,6 +636,12 @@ namespace UnityEditor
         {
             get { return m_Overridden != 0; }
             set { m_Overridden = value ? 1 : 0; }
+        }
+
+        public bool ignorePlatformSupport
+        {
+            get { return m_IgnorePlatformSupport != 0; }
+            set { m_IgnorePlatformSupport = value ? 1 : 0; }
         }
 
         public int maxTextureSize

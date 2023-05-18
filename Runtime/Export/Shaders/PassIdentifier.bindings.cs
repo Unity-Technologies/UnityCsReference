@@ -17,6 +17,12 @@ namespace UnityEngine.Rendering
         public uint SubshaderIndex { get { return m_SubShaderIndex; } }
         public uint PassIndex { get { return m_PassIndex; } }
 
+        public PassIdentifier(uint subshaderIndex, uint passIndex)
+        {
+            m_SubShaderIndex = subshaderIndex;
+            m_PassIndex = passIndex;
+        }
+
         public override bool Equals(object o)
         {
             return o is PassIdentifier other && this.Equals(other);

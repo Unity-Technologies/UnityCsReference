@@ -102,7 +102,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshTags();
             RefreshVersionLabel();
             RefreshVersionInfoIcon();
-            RefreshRegistry();
+            RefreshDetailRegistry();
             RefreshEntitlement();
             RefreshEmbeddedFeatureSetWarningBox();
             RefreshHiddenAssetInfo();
@@ -184,7 +184,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnVisualStateChange(IEnumerable<VisualState> visualStates)
         {
-            var visualState = visualStates.FirstOrDefault(vs => vs.packageUniqueId == m_Package.uniqueId);
+            var visualState = visualStates.FirstOrDefault(vs => vs.packageUniqueId == m_Package?.uniqueId);
             if (visualState != null)
                 RefreshFeatureSetElements(visualState);
         }
@@ -386,38 +386,45 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(versionInfoIcon, false);
         }
 
-        private void RefreshRegistry()
+        private void RefreshDetailRegistry()
         {
             var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
             var registry = packageInfo?.registry;
             var showRegistry = registry != null && !m_Package.Is(PackageType.AssetStore);
             UIUtils.SetElementDisplay(detailRegistry, showRegistry);
+
+            if (showRegistry)
+            {
+                var isByUnity = packageInfo.versions.all.Length > 0 && registry.isDefault;
+
+                var detailRegistryName = isByUnity && !m_Version.HasTag(PackageTag.Custom) ? "Unity Registry" : registry.name;
+                var detailRegistryAuthor = isByUnity ? "Unity Technologies Inc." : m_Version?.author;
+                detailRegistry.tooltip = isByUnity ? registry.url : string.Empty;
+                detailRegistry.enableRichText = true;
+
+                if (!string.IsNullOrEmpty(detailRegistryName) && !string.IsNullOrEmpty(detailRegistryAuthor))
+                    detailRegistry.text = string.Format(L10n.Tr("From <b>{0}</b> by {1}"), detailRegistryName, detailRegistryAuthor);
+                else if (!string.IsNullOrEmpty(detailRegistryName))
+                    detailRegistry.text = string.Format(L10n.Tr("From <b>{0}</b>"), detailRegistryName);
+                else if (!string.IsNullOrEmpty(detailRegistryAuthor))
+                    detailRegistry.text = string.Format(L10n.Tr("By {0}"), detailRegistryAuthor);
+                else
+                    detailRegistry.text = L10n.Tr("Author unknown");
+            }
+
+            RefreshScopedRegistryInfoBox(registry, showRegistry);
+        }
+
+        private void RefreshScopedRegistryInfoBox(RegistryInfo registry, bool showRegistry)
+        {
             UIUtils.SetElementDisplay(scopedRegistryInfoBox, showRegistry);
+
             if (showRegistry)
             {
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
                 UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
-
-                var detailRegistryName = L10n.Tr("Unknown");
-                detailRegistry.tooltip = string.Empty;
-                if (packageInfo.versions.all.Any() && !m_Package.Is(PackageType.AssetStore))
-                {
-                    detailRegistryName = registry.isDefault ? "Unity Technologies Inc." : registry.name;
-                    detailRegistry.tooltip = registry.url;
-                }
-                detailRegistry.enableRichText = true;
-                if(registry.isDefault)
-                {
-                    detailRegistry.text = string.Format(L10n.Tr("From <b>Unity Registry</b> by {0}"), detailRegistryName);
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(m_Version?.author))
-                        detailRegistry.text = L10n.Tr($"From <b>{detailRegistryName}</b> by {m_Version?.author}");
-                    else
-                        detailRegistry.text = L10n.Tr($"From <b>{detailRegistryName}</b>");
-                }
             }
+
             if (m_Version.HasTag(PackageTag.Experimental))
             {
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.Experimental];

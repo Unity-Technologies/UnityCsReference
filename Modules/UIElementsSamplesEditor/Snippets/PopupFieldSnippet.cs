@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements.Samples
 
             var choices = new List<string> { "First", "Second", "Third" };
 
-            // Create a new field and assign it its value.
+            // Create a new field and assign a value to it.
             var normalField = new PopupField<string>("Normal Field", choices, 0);
             normalField.value = "Second";
             container.Add(normalField);
@@ -29,7 +29,7 @@ namespace UnityEditor.UIElements.Samples
             styledField.value = normalField.value;
             container.Add(styledField);
 
-            // Mirror value of uxml field into the C# field.
+            // Mirror the value of the UXML field into the C# field.
             normalField.RegisterCallback<ChangeEvent<string>>((evt) =>
             {
                 styledField.value = evt.newValue;

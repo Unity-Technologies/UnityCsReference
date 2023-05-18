@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements.Samples
             // <DropdownField .... choices="Option 1,Option 2,Option 3" .... />
             var choices = new List<string> { "Option 1", "Option 2", "Option 3" };
 
-            // Get a reference to the radio button group field from UXML and assign it its value.
+            // Get a reference to the radio button group field from UXML and assign a value to it.
             var uxmlField = container.Q<RadioButtonGroup>("the-uxml-field");
             uxmlField.choices = choices;
             uxmlField.value = 0;
@@ -30,7 +30,7 @@ namespace UnityEditor.UIElements.Samples
             csharpField.value = uxmlField.value;
             container.Add(csharpField);
 
-            // Mirror value of uxml field into the C# field.
+            // Mirror the value of the UXML field into the C# field.
             uxmlField.RegisterCallback<ChangeEvent<int>>((evt) =>
             {
                 csharpField.value = evt.newValue;

@@ -40,7 +40,7 @@ namespace UnityEngine.UIElements
         T value { get; set; }
 
         /// <summary>
-        /// Modify the value using a 3D delta and a speed, typically coming from an input device.
+        /// Applies the values of a 3D delta and a speed from an input device.
         /// </summary>
         /// <param name="delta">A vector used to compute the value change.</param>
         /// <param name="speed">A multiplier for the value change.</param>
@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Modify the value using a 3D delta and a speed, typically coming from an input device.
+        /// Applies the values of a 3D delta and a speed from an input device.
         /// </summary>
         /// <param name="delta">A vector used to compute the value change.</param>
         /// <param name="speed">A multiplier for the value change.</param>

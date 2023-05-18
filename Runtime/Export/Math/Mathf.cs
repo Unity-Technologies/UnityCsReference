@@ -474,6 +474,17 @@ namespace UnityEngine
             return (int)value;
         }
 
+        internal static uint ClampToUInt(long value)
+        {
+            if (value < uint.MinValue)
+                return uint.MinValue;
+
+            if (value > uint.MaxValue)
+                return uint.MaxValue;
+
+            return (uint)value;
+        }
+
         internal static float RoundToMultipleOf(float value, float roundingValue)
         {
             if (roundingValue == 0)

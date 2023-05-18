@@ -131,6 +131,8 @@ namespace UnityEngine.UIElements
                 new Hash128Field.UxmlFactory(),
                 new IntegerField.UxmlFactory(),
                 new LongField.UxmlFactory(),
+                new UnsignedIntegerField.UxmlFactory(),
+                new UnsignedLongField.UxmlFactory(),
                 new RectField.UxmlFactory(),
                 new Vector2Field.UxmlFactory(),
                 new RectIntField.UxmlFactory(),
