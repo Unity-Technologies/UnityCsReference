@@ -932,6 +932,9 @@
     <Compile Include="..\..\Editor\Mono\EditorGUI.cs">
       <Link>Editor\Mono\EditorGUI.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\EditorGUILayout.cs">
+      <Link>Editor\Mono\EditorGUILayout.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\EditorGUIUtility.bindings.cs">
       <Link>Editor\Mono\EditorGUIUtility.bindings.cs</Link>
     </Compile>

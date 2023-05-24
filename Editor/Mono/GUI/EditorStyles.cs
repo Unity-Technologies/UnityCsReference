@@ -475,13 +475,13 @@ namespace UnityEditor
             m_ToolbarCreateAddNewDropDown = GetStyle("ToolbarCreateAddNewDropDown");
             m_ToolbarTextField = GetStyle("toolbarTextField");
             m_ToolbarLabel = GetStyle("ToolbarLabel");
-            m_ToolbarSearchField = GetStyle("ToolbarSeachTextField");
-            m_ToolbarSearchFieldPopup = GetStyle("ToolbarSeachTextFieldPopup");
+            m_ToolbarSearchField = GetStyle("ToolbarSearchTextField");
+            m_ToolbarSearchFieldPopup = GetStyle("ToolbarSearchTextFieldPopup");
             m_ToolbarSearchFieldWithJump = GetStyle("ToolbarSearchTextFieldWithJump");
             m_ToolbarSearchFieldWithJumpPopup = GetStyle("ToolbarSearchTextFieldWithJumpPopup");
             m_ToolbarSearchFieldJumpButton = GetStyle("ToolbarSearchTextFieldJumpButton");
-            m_ToolbarSearchFieldCancelButton = GetStyle("ToolbarSeachCancelButton");
-            m_ToolbarSearchFieldCancelButtonEmpty = GetStyle("ToolbarSeachCancelButtonEmpty");
+            m_ToolbarSearchFieldCancelButton = GetStyle("ToolbarSearchCancelButton");
+            m_ToolbarSearchFieldCancelButtonEmpty = GetStyle("ToolbarSearchCancelButtonEmpty");
             m_ToolbarSearchFieldCancelButtonWithJump = GetStyle("ToolbarSearchCancelButtonWithJump");
             m_ToolbarSearchFieldCancelButtonWithJumpEmpty = GetStyle("ToolbarSearchCancelButtonWithJumpEmpty");
             m_ToolbarSearchFieldWithJumpSynced = GetStyle("ToolbarSearchTextFieldWithJumpSynced");

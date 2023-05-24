@@ -97,7 +97,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshHeader(bool multipleVersionsVisible, bool isLatestVersion)
         {
-            versionHistoryItemToggle.text = m_Version?.version?.ToString() ?? m_Version?.versionString;
+            versionHistoryItemToggle.text = m_Version?.versionString;
             m_VersionHistoryItemTag.Refresh(m_Version);
 
             RefreshState(multipleVersionsVisible, isLatestVersion);

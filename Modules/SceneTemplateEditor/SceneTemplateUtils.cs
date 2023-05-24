@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.PackageManager;
 using UnityEditor.SceneManagement;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -153,16 +154,26 @@ namespace UnityEditor.SceneTemplate
             directory = Path.GetDirectoryName(uniqueAssetPath);
             filename = Path.GetFileName(uniqueAssetPath);
             var result = EditorUtility.SaveFilePanel(title, directory, filename, extension);
-            if (!string.IsNullOrEmpty(result))
+            if (string.IsNullOrEmpty(result))
             {
-                SetLastFolder(result);
-                if (Path.IsPathRooted(result))
-                {
-                    result = FileUtil.GetProjectRelativePath(result);
-                }
+                // User has cancelled.
+                return null;
             }
 
-            return result;
+            directory = Paths.ConvertSeparatorsToUnity(Path.GetDirectoryName(result));
+            if (!Search.Utils.IsPathUnderProject(directory))
+            {
+                UnityEngine.Debug.LogWarning($"Not a valid folder to save an asset: {directory}.");
+                return null;
+            }
+            if (!Paths.IsValidAssetPath(result, ".scenetemplate", out var errorMessage))
+            {
+                UnityEngine.Debug.LogWarning($"Save SceneTemplate has failed. {errorMessage}.");
+                return null;
+            }
+
+            SetLastFolder(directory);
+            return Search.Utils.GetPathUnderProject(result);
         }
 
         internal static void OpenDocumentationUrl()

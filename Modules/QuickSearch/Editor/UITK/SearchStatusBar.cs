@@ -170,7 +170,8 @@ namespace UnityEditor.Search
                 var firstLineIndex = string.IsNullOrEmpty(err.reason) ? -1 : err.reason.IndexOf("\n");
                 if (firstLineIndex >= 0)
                     firstLineReason = err.reason.Substring(0, firstLineIndex);
-                m_StatusMessage.text = Utils.TrimText(firstLineReason);
+                var msg = $"[in {err.provider.name}] {Utils.TrimText(firstLineReason)}";
+                m_StatusMessage.text = msg;
                 m_StatusMessage.tooltip = $"({err.provider.name}) {err.reason}";
                 m_StatusMessage.style.color = Color.red;
             }

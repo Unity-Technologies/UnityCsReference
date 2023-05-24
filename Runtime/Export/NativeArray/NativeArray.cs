@@ -11,7 +11,10 @@ using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Jobs;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
+using UnityEngine.Scripting;
 
 namespace Unity.Collections
 {
@@ -931,6 +934,7 @@ namespace Unity.Collections
     }
 
     // [BurstCompile] - can't use attribute since it's inside com.unity.Burst.
+    [NativeClass(null)]
     internal struct NativeArrayDisposeJob : IJob
     {
         internal NativeArrayDispose Data;
@@ -938,6 +942,14 @@ namespace Unity.Collections
         public void Execute()
         {
             Data.Dispose();
+        }
+
+        [RequiredByNativeCode]
+        internal static void RegisterNativeArrayDisposeJobReflectionData()
+        {
+            // Necessary so we may schedule NativeArrayDisposeJob from
+            // burst compiled codepaths
+            IJobExtensions.EarlyJobInit<NativeArrayDisposeJob>();
         }
     }
 
@@ -1071,3 +1083,4 @@ namespace Unity.Collections.LowLevel.Unsafe
         }
     }
 }
+

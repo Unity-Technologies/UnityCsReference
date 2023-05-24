@@ -404,13 +404,36 @@ namespace UnityEditor.Search
             if (prefabStage != null)
                 return SceneModeUtility.GetObjects(new[] { prefabStage.prefabContentsRoot }, true);
 
-            var goRoots = new List<UnityEngine.Object>();
-            for (int i = 0; i < SceneManager.sceneCount; ++i)
+            void AddScene(Scene scene, List<Scene> outScenes)
             {
-                var scene = SceneManager.GetSceneAt(i);
                 if (!scene.IsValid() || !scene.isLoaded)
-                    continue;
+                    return;
+                outScenes.Add(scene);
+            }
 
+
+            var scenes = new List<Scene>();
+            var stage = StageUtility.GetCurrentStage();
+            if (stage != null)
+            {
+                for (int i = 0, c = stage.sceneCount; i < c; ++i)
+                {
+                    var scene = stage.GetSceneAt(i);
+                    AddScene(scene, scenes);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < SceneManager.sceneCount; ++i)
+                {
+                    var scene = SceneManager.GetSceneAt(i);
+                    AddScene(scene, scenes);
+                }
+            }
+
+            var goRoots = new List<UnityEngine.Object>();
+            foreach (var scene in scenes)
+            {
                 var sceneRootObjects = scene.GetRootGameObjects();
                 if (sceneRootObjects != null && sceneRootObjects.Length > 0)
                     goRoots.AddRange(sceneRootObjects);
@@ -557,7 +580,7 @@ namespace UnityEditor.Search
                 return SearchProposition.invalid;
             return new SearchProposition(
                 priority: (ownerType.Name[0] << 4) + tokens[1][0],
-                category: $"Properties/{ownerType.Name}",
+                category: $"Properties/{ObjectNames.NicifyVariableName(ownerType.Name)}",
                 label: $"{tokens[1]} ({blockType?.Name ?? valueType})",
                 replacement: replacement,
                 help: tokens[2],

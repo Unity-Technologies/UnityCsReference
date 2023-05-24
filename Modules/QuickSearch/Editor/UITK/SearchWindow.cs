@@ -170,7 +170,9 @@ namespace UnityEditor.Search
 
         private bool HandleKeyboardNavigation(VisualElement target, KeyDownEvent evt, Event imguiEvt)
         {
-            if ((target is TextElement) && !SearchElement.IsPartOf<SearchToolbar>(target))
+            // Note: Inspector done with IMGUI (ex: transform, Light...) can allow TextField editing that is not done through a UIElements.TextElement so
+            // assume all KeyDownEvent coming from UIElements.InspectorElement needs to be handle by the Embedded Inspector.
+            if ((target is TextElement || target?.parent is UIElements.InspectorElement) && !SearchElement.IsPartOf<SearchToolbar>(target))
                 return false;
 
             // Ignore tabbing and line return in quicksearch
@@ -1007,7 +1009,7 @@ namespace UnityEditor.Search
                 return;
             if (!Paths.IsValidAssetPath(searchQueryPath, ".asset", out var errorMessage))
             {
-                Debug.LogWarning($"Search query path: {searchQueryPath} is invalid: {errorMessage}.");
+                Debug.LogWarning($"Save Search Query has failed. {errorMessage}.");
                 return;
             }
 

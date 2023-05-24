@@ -35,9 +35,10 @@ namespace UnityEditor.Connect
 
         const string k_LinkProjectWindowTitle = "Link Project";
         const string k_DialogConfirmationMessage = "Are you sure you want to link to the project '{0}' in organization '{1}'?";
+        const string k_NetworkIssueWarningMessage = "This might be caused by network issues. Try using the refresh button.";
         const string k_CouldNotCreateProjectMessage = "Could not create project.";
-        const string k_CouldNotObtainProjectMessage = "Could not obtain projects.";
-        const string k_CouldNotObtainOrganizationsMessage = "Could not obtain organizations.";
+        const string k_CouldNotObtainProjectMessage = $"Could not obtain projects. {k_NetworkIssueWarningMessage}";
+        const string k_CouldNotObtainOrganizationsMessage = $"Could not obtain organizations. {k_NetworkIssueWarningMessage}";
         const string k_ProjectLinkSuccessMessage = "Project was linked successfully.";
 
         const string k_ProjectBindContainerName = "ProjectBindContainer";
@@ -48,6 +49,7 @@ namespace UnityEditor.Connect
         const string k_ReuseProjectIdLinkBtnName = "ReuseProjectIdLinkBtn";
         const string k_CreateProjectIdLinkBtnName = "CreateProjectIdLinkBtn";
         const string k_ProjectIdFieldName = "ProjectIdField";
+        const string k_RefreshBtnName = "RefreshBtn";
         const string k_LinkBtnName = "LinkBtn";
         const string k_CancelBtnName = "CancelBtn";
 
@@ -68,6 +70,10 @@ namespace UnityEditor.Connect
         const string k_JsonRoleNodeName = "role";
         const string k_JsonOrgNameNodeName = "org_name";
         internal const string k_FakeSlashUnicode = "\uff0f";
+
+        PopupField<string> m_CreateOrganizationPopupField;
+        PopupField<string> m_ReuseOrganizationPopupField;
+        PopupField<string> m_ReuseProjectIdPopupField;
 
         Dictionary<string, ProjectInfoData> m_ProjectInfoByName;
         VisualElement m_CreateProjectIdBlock;
@@ -211,10 +217,16 @@ namespace UnityEditor.Connect
             EditorGameServicesAnalytics.SendProjectBindDisplayEvent();
         }
 
+        void OnRefreshButtonClicked()
+        {
+            LoadCreateOrganizationField(m_CreateOrganizationPopupField);
+            LoadReuseOrganizationField(m_ReuseOrganizationPopupField, m_ReuseProjectIdPopupField);
+        }
+
         void SetupCreateProjectIdBlock()
         {
-            var popupField = BuildPopupField(m_CreateProjectIdBlock, k_OrganizationFieldName);
-            popupField.RegisterValueChangedCallback(delegate(ChangeEvent<string> evt)
+            m_CreateOrganizationPopupField = BuildPopupField(m_CreateProjectIdBlock, k_OrganizationFieldName);
+            m_CreateOrganizationPopupField.RegisterValueChangedCallback(delegate(ChangeEvent<string> evt)
             {
                 if (evt.newValue != m_LastCreateBlockOrganization)
                 {
@@ -222,10 +234,9 @@ namespace UnityEditor.Connect
                     m_CreateProjectIdBlock.Q(k_CreateProjectIdBtnName).SetEnabled(m_LastCreateBlockOrganization != L10n.Tr(k_SelectOrganizationText));
                 }
             });
-            popupField.choices.Add(L10n.Tr(k_SelectOrganizationText));
-            popupField.value = L10n.Tr(k_SelectOrganizationText);
-            popupField.SetEnabled(false);
-            LoadCreateOrganizationField(popupField);
+            m_CreateOrganizationPopupField.choices.Add(L10n.Tr(k_SelectOrganizationText));
+            m_CreateOrganizationPopupField.value = L10n.Tr(k_SelectOrganizationText);
+            m_CreateOrganizationPopupField.SetEnabled(false);
 
             var reuseProjectIdClickable = new Clickable(() =>
             {
@@ -246,14 +257,18 @@ namespace UnityEditor.Connect
                     RequestCreateOperation();
                 }
             };
+
+            var refreshBtn = m_CreateProjectIdBlock.Q<Button>(k_RefreshBtnName);
+            refreshBtn.clicked += OnRefreshButtonClicked;
+
+            LoadCreateOrganizationField(m_CreateOrganizationPopupField);
         }
 
         void SetupReuseProjectIdBlock()
         {
-            var organizationPopupField = BuildPopupField(m_ReuseProjectIdBlock, k_OrganizationFieldName);
-            var projectIdPopupField = BuildPopupField(m_ReuseProjectIdBlock, k_ProjectIdFieldName);
-
-            organizationPopupField.RegisterValueChangedCallback(delegate(ChangeEvent<string> evt)
+            m_ReuseOrganizationPopupField = BuildPopupField(m_ReuseProjectIdBlock, k_OrganizationFieldName);
+            m_ReuseProjectIdPopupField = BuildPopupField(m_ReuseProjectIdBlock, k_ProjectIdFieldName);
+            m_ReuseOrganizationPopupField.RegisterValueChangedCallback(delegate(ChangeEvent<string> evt)
             {
                 if (evt.newValue != m_LastReuseBlockOrganization)
                 {
@@ -269,17 +284,16 @@ namespace UnityEditor.Connect
                     else
                     {
                         var projectIdField = m_ReuseProjectIdBlock.Q<PopupField<string>>(k_ProjectIdFieldName);
-                        LoadProjectField(organizationPopupField.value, projectIdField);
+                        LoadProjectField(m_ReuseOrganizationPopupField.value, projectIdField);
                         projectIdField.value = L10n.Tr(k_SelectProjectText);
                     }
                 }
             });
-            organizationPopupField.choices.Add(L10n.Tr(k_SelectOrganizationText));
-            organizationPopupField.value = L10n.Tr(k_SelectOrganizationText);
-            organizationPopupField.SetEnabled(false);
-            LoadReuseOrganizationField(organizationPopupField, projectIdPopupField);
-
-            projectIdPopupField.RegisterValueChangedCallback(delegate(ChangeEvent<string> evt)
+            m_ReuseOrganizationPopupField.choices.Add(L10n.Tr(k_SelectOrganizationText));
+            m_ReuseOrganizationPopupField.value = L10n.Tr(k_SelectOrganizationText);
+            m_ReuseOrganizationPopupField.SetEnabled(false);
+            
+            m_ReuseProjectIdPopupField.RegisterValueChangedCallback(delegate(ChangeEvent<string> evt)
             {
                 m_LastReuseBlockProject.LastProjectName = evt.newValue;
                 if (m_LastReuseBlockOrganization == L10n.Tr(k_SelectOrganizationText))
@@ -290,8 +304,8 @@ namespace UnityEditor.Connect
                 m_ReuseProjectIdBlock.Q<Button>(k_LinkBtnName)
                     .SetEnabled(m_LastReuseBlockProject.LastProjectName != L10n.Tr(k_SelectProjectText));
             });
-            projectIdPopupField.choices.Add(L10n.Tr(k_SelectProjectText));
-            projectIdPopupField.value = L10n.Tr(k_SelectProjectText);
+            m_ReuseProjectIdPopupField.choices.Add(L10n.Tr(k_SelectProjectText));
+            m_ReuseProjectIdPopupField.value = L10n.Tr(k_SelectProjectText);
 
             m_ReuseProjectIdBlock.style.display = DisplayStyle.None;
 
@@ -313,8 +327,8 @@ namespace UnityEditor.Connect
                     var abort = false;
                     var projectInfo = m_ProjectInfoByName[m_LastReuseBlockProject.LastProjectName];
                     if (EditorUtility.DisplayDialog(L10n.Tr(k_LinkProjectWindowTitle),
-                        string.Format(L10n.Tr(k_DialogConfirmationMessage), projectInfo.name, projectInfo.organizationName),
-                        L10n.Tr(k_Yes), L10n.Tr(k_No)))
+                            string.Format(L10n.Tr(k_DialogConfirmationMessage), projectInfo.name, projectInfo.organizationName),
+                            L10n.Tr(k_Yes), L10n.Tr(k_No)))
                     {
                         try
                         {
@@ -344,6 +358,11 @@ namespace UnityEditor.Connect
                     }
                 }
             };
+
+            var refreshBtn = m_ReuseProjectIdBlock.Q<Button>(k_RefreshBtnName);
+            refreshBtn.clicked += OnRefreshButtonClicked;
+
+            LoadReuseOrganizationField(m_ReuseOrganizationPopupField, m_ReuseProjectIdPopupField);
         }
 
         void RequestCreateOperation()
