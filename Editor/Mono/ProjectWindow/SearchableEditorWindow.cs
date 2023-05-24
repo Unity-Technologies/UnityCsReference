@@ -67,7 +67,7 @@ namespace UnityEditor
         string m_SearchStringDebounced;
         Action m_DeregisterDebounceCall;
 
-        [MenuItem("CONTEXT/Component/Find References In Scene")]
+        [MenuItem("CONTEXT/Component/Find References In Scene", secondaryPriority = 15)]
         private static void OnSearchForReferencesToComponent(MenuCommand command)
         {
             var component = command.context as Component;
@@ -75,7 +75,7 @@ namespace UnityEditor
                 SearchForReferencesToInstanceID(component.GetInstanceID());
         }
 
-        [MenuItem("CONTEXT/Component/Properties...", false, 99999)]
+        [MenuItem("CONTEXT/Component/Properties...", priority = 99999)]
         private static void OnOpenPropertiesToComponent(MenuCommand command)
         {
             var component = command.context as Component;

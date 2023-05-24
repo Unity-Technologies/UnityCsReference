@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -500,6 +501,11 @@ namespace UnityEditor
                 return;
 
             DoWindowDecorationStart();
+
+            //We backup and restore the group count to properly identify the ongui method where the unbalance occurs.
+            int backup = GUILayoutUtility.unbalancedgroupscount;
+
+            GUILayoutUtility.unbalancedgroupscount = 0;
             BeginOffsetArea(m_ActualView.rootVisualElement.worldBound, GUIContent.none, Styles.tabWindowBackground);
 
             EditorGUIUtility.ResetGUIState();
@@ -507,28 +513,35 @@ namespace UnityEditor
             bool isExitGUIException = false;
             try
             {
-                GUILayoutUtility.unbalancedgroupscount = 0;
                 m_OnGUI?.Invoke();
-                if (GUILayoutUtility.unbalancedgroupscount > 0)
-                {
-                    Debug.LogError("GUI Error: Invalid GUILayout state in " + GetActualViewName() + " view. Verify that all layout Begin/End calls match");
-                    GUILayoutUtility.unbalancedgroupscount = 0;
                 }
-            }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException is ExitGUIException)
+                Exception exception = e;
+                while (exception is TargetInvocationException && exception.InnerException != null)
+                    exception = exception.InnerException;
+
+                isExitGUIException = exception is ExitGUIException;
+
+                throw;
+            }
+            catch(ExitGUIException)
+            {
                     isExitGUIException = true;
                 throw;
             }
             finally
             {
                 // We can't reset gui state after ExitGUI we just want to bail completely
-                if (!isExitGUIException)
+                if (!(isExitGUIException || GUIUtility.guiIsExiting))
                 {
                     CheckNotificationStatus();
 
                     EndOffsetArea();
+                    if (GUILayoutUtility.unbalancedgroupscount != 0)
+                    {
+                        Debug.LogError("GUI Error: Invalid GUILayout state in " + GetActualViewName() + " view. Verify that all layout Begin/End calls match");
+                    }
 
                     EditorGUIUtility.ResetGUIState();
 
@@ -537,6 +550,8 @@ namespace UnityEditor
                     if (Event.current != null && Event.current.type == EventType.Repaint)
                         Styles.overlay.Draw(onGUIPosition, GUIContent.none, 0);
                 }
+
+                GUILayoutUtility.unbalancedgroupscount = backup;
             }
         }
 

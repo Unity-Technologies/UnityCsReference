@@ -2061,9 +2061,21 @@ namespace UnityEditor.UIElements.Bindings
                 // enumData.names, because the display names may actually be different (if the enum has the InspectorName
                 // attribute, for example).
                 var sortedEnumNames = EditorGUI.EnumNamesCache.GetEnumNames(property);
-                foreach (var enumName in enumData.names)
-                    displayIndexToEnumIndex.Add(Array.IndexOf(sortedEnumNames, enumName));
+
+                // Remove values from the list that don't have a valid display index
+                // Fixes: UUM-31056
+                List<string> filteredSortedEnumNames = new List<string>();
                 foreach (var sortedEnumName in sortedEnumNames)
+                {
+                    if (Array.IndexOf(enumData.names, sortedEnumName) != -1)
+                    {
+                        filteredSortedEnumNames.Add(sortedEnumName);
+                    }
+                }
+
+                foreach (var enumName in enumData.names)
+                    displayIndexToEnumIndex.Add(filteredSortedEnumNames.FindIndex(name => name == enumName));
+                foreach (var sortedEnumName in filteredSortedEnumNames)
                     enumIndexToDisplayIndex.Add(Array.IndexOf(enumData.names, sortedEnumName));
             }
             else

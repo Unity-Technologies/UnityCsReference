@@ -113,7 +113,10 @@ namespace UnityEngine.UIElements
 
         private void OnPointerDownEvent(PointerDownEvent evt)
         {
-            if (evt.button != (int)MouseButton.LeftMouse)
+            if (evt.button != (int)MouseButton.LeftMouse
+                // UUM-15264: An IMGUIContainer inside the ListView doesn't react to PointerDown properly so we should
+                // conservatively prevent the drag. A real, better fix is available starting from 2023.2.
+                || evt.leafTarget is VisualElement leafTarget && leafTarget.isIMGUIContainer)
             {
                 m_DragState = DragState.None;
                 return;

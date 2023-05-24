@@ -367,6 +367,7 @@ namespace UnityEngine
         // Generic helper - use this when creating a layout group. It will make sure everything is wired up correctly.
         internal static GUILayoutGroup BeginLayoutArea(GUIStyle style, Type layoutType)
         {
+            unbalancedgroupscount++;
             GUILayoutGroup g;
             switch (Event.current.type)
             {
@@ -387,6 +388,13 @@ namespace UnityEngine
             current.layoutGroups.Push(g);
             current.topLevel = g;
             return g;
+        }
+
+        internal static void EndLayoutArea()
+        {
+            unbalancedgroupscount--;
+            GUILayoutUtility.current.layoutGroups.Pop();
+            GUILayoutUtility.current.topLevel = (GUILayoutGroup)GUILayoutUtility.current.layoutGroups.Peek();
         }
 
         // Trampoline for Editor stuff

@@ -366,19 +366,19 @@ namespace UnityEditor.Connect
         }
 
         // End for Javascript Only
-        [MenuItem("Window/Unity Connect/Clear Access Token", false, 1000, true)]
+        [MenuItem("Window/Unity Connect/Clear Access Token", false, 1000, true, secondaryPriority = 1)]
         public static void InvokeClearAccessTokenForTesting()
         {
             instance.ClearAccessToken();
         }
 
-        [MenuItem("Window/Unity Connect/Computer GoesToSleep", false, 1000, true)]
+        [MenuItem("Window/Unity Connect/Computer GoesToSleep", false, 1000, true, secondaryPriority = 2)]
         public static void TestComputerGoesToSleep()
         {
             instance.ComputerGoesToSleep();
         }
 
-        [MenuItem("Window/Unity Connect/Computer DidWakeUp", false, 1000, true)]
+        [MenuItem("Window/Unity Connect/Computer DidWakeUp", false, 1000, true, secondaryPriority = 3)]
         public static void TestComputerDidWakeUp()
         {
             instance.ComputerDidWakeUp();
