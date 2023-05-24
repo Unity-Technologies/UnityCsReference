@@ -1673,7 +1673,7 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("GameObject/Set as first sibling %=")]
+        [MenuItem("GameObject/Set as first sibling %=", secondaryPriority = 1)]
         internal static void MenuMoveToFront()
         {
             var selectedTransforms = Selection.transforms;
@@ -1691,7 +1691,7 @@ namespace UnityEditor
             return ValidateMenuMoveToFrontOrBack(Selection.transforms, true);
         }
 
-        [MenuItem("GameObject/Set as last sibling %-")]
+        [MenuItem("GameObject/Set as last sibling %-", secondaryPriority = 2)]
         internal static void MenuMoveToBack()
         {
             var selectedTransforms = Selection.transforms;
@@ -1709,7 +1709,7 @@ namespace UnityEditor
             return ValidateMenuMoveToFrontOrBack(Selection.transforms, false);
         }
 
-        [MenuItem("GameObject/Move To View %&f")]
+        [MenuItem("GameObject/Move To View %&f", secondaryPriority = 3)]
         internal static void MenuMoveToView()
         {
             if (ValidateMoveToView())
@@ -1722,7 +1722,7 @@ namespace UnityEditor
             return lastActiveSceneView != null && (Selection.transforms.Length != 0);
         }
 
-        [MenuItem("GameObject/Align With View %#f")]
+        [MenuItem("GameObject/Align With View %#f", secondaryPriority = 4)]
         internal static void MenuAlignWithView()
         {
             if (ValidateAlignWithView())
@@ -1735,7 +1735,7 @@ namespace UnityEditor
             return lastActiveSceneView != null && (Selection.activeTransform != null);
         }
 
-        [MenuItem("GameObject/Align View to Selected")]
+        [MenuItem("GameObject/Align View to Selected", secondaryPriority = 5)]
         internal static void MenuAlignViewToSelected()
         {
             if (ValidateAlignViewToSelected())
@@ -1748,7 +1748,7 @@ namespace UnityEditor
             return lastActiveSceneView != null && (Selection.activeTransform != null);
         }
 
-        [MenuItem("GameObject/Toggle Active State &#a")]
+        [MenuItem("GameObject/Toggle Active State &#a", secondaryPriority = 6)]
         internal static void ActivateSelection()
         {
             if (Selection.activeTransform != null)
@@ -2310,7 +2310,7 @@ namespace UnityEditor
         {
             // Don't do callbacks in search mode, as editors calling Handles.BeginGUI
             // will break camera setup.
-            if (UseSceneFiltering())
+            if (hasSearchFilter)
                 return;
 
             CallOnPreSceneGUI();

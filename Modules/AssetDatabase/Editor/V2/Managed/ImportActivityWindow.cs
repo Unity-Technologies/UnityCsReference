@@ -31,7 +31,7 @@ namespace UnityEditor
             OpenWindow(guid, true);
         }
 
-        [MenuItem("Assets/View in Import Activity Window")]
+        [MenuItem("Assets/View in Import Activity Window", secondaryPriority = 2)]
         public static void ViewInImportActivity()
         {
             var guid = Selection.assetGUIDs.Length > 0 ? Selection.assetGUIDs[0] : "";

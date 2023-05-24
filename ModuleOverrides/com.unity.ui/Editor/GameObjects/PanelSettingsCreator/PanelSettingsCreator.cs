@@ -52,7 +52,7 @@ namespace UnityEditor.UIElements
             return defaultTssAsset;
         }
 
-        [MenuItem("Assets/Create/UI Toolkit/Panel Settings Asset", false, 701, false)]
+        [MenuItem("Assets/Create/UI Toolkit/Panel Settings Asset", priority = 702)]
         static void CreatePanelSettings()
         {
             var defaultTssAsset = GetOrCreateDefaultTheme();

@@ -253,7 +253,7 @@ namespace UnityEditor
 
     internal class TerrainLayersContextMenus
     {
-        [MenuItem("CONTEXT/TerrainLayers/Create Layer...")]
+        [MenuItem("CONTEXT/TerrainLayers/Create Layer...", secondaryPriority = 16)]
         internal static void CreateLayer(MenuCommand item)
         {
             ObjectSelector.get.Show(null, typeof(Texture2D), null, false, null,
@@ -272,7 +272,7 @@ namespace UnityEditor
                 }, null);
         }
 
-        [MenuItem("CONTEXT/TerrainLayers/Add Layer...")]
+        [MenuItem("CONTEXT/TerrainLayers/Add Layer...", secondaryPriority = 17)]
         internal static void AddLayer(MenuCommand item)
         {
             var terrain = (Terrain)item.context;
@@ -280,7 +280,7 @@ namespace UnityEditor
                 selection => { TerrainLayerUtility.AddTerrainLayer(terrain, (TerrainLayer)selection); }, null);
         }
 
-        [MenuItem("CONTEXT/TerrainLayers/Replace Layer...")]
+        [MenuItem("CONTEXT/TerrainLayers/Replace Layer...", secondaryPriority = 18)]
         internal static void ReplaceLayer(MenuCommand item)
         {
             var terrain = (Terrain)item.context;
@@ -289,21 +289,21 @@ namespace UnityEditor
                 selection => { TerrainLayerUtility.ReplaceTerrainLayer(terrain, (int)item.userData, (TerrainLayer)selection); });
         }
 
-        [MenuItem("CONTEXT/TerrainLayers/Replace Layer...", true)]
+        [MenuItem("CONTEXT/TerrainLayers/Replace Layer...", validate = true)]
         internal static bool ReplaceLayerCheck(MenuCommand item)
         {
             var terrain = (Terrain)item.context;
             return item.userData >= 0 && item.userData < terrain.terrainData.terrainLayers.Length;
         }
 
-        [MenuItem("CONTEXT/TerrainLayers/Remove layer")]
+        [MenuItem("CONTEXT/TerrainLayers/Remove layer", secondaryPriority = 19)]
         internal static void RemoveSplat(MenuCommand item)
         {
             var terrain = (Terrain)item.context;
             TerrainLayerUtility.RemoveTerrainLayer(terrain, item.userData);
         }
 
-        [MenuItem("CONTEXT/TerrainLayers/Remove layer", true)]
+        [MenuItem("CONTEXT/TerrainLayers/Remove layer", validate = true)]
         internal static bool RemoveSplatCheck(MenuCommand item)
         {
             var terrain = (Terrain)item.context;

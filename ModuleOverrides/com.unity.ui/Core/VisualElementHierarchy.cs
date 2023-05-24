@@ -83,8 +83,7 @@ namespace UnityEngine.UIElements
         // usually same as this element, but can be overridden by more complex types
         // see ScrollView.contentContainer for an example
         /// <summary>
-        ///  child elements are added to this element, usually this
-        ///
+        /// Child elements are added to it, usually this is the same as the element itself. 
         /// </summary>
         public virtual VisualElement contentContainer
         {

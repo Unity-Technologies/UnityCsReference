@@ -89,13 +89,13 @@ namespace UnityEditor
 
     class TerrainDetailContextMenus
     {
-        [MenuItem("CONTEXT/TerrainEngineDetails/Add Detail Mesh")]
+        [MenuItem("CONTEXT/TerrainEngineDetails/Add Detail Mesh", secondaryPriority = 20)]
         static internal void AddDetailMesh(MenuCommand item)
         {
             TerrainWizard.DisplayTerrainWizard<TerrainDetailMeshWizard>("Add Detail Mesh", "Add").ResetDefaults((Terrain)item.context, -1);
         }
 
-        [MenuItem("CONTEXT/TerrainEngineDetails/Add Grass Texture")]
+        [MenuItem("CONTEXT/TerrainEngineDetails/Add Grass Texture", secondaryPriority = 21)]
         static internal void AddDetailTexture(MenuCommand item)
         {
             TerrainWizard.DisplayTerrainWizard<TerrainDetailTextureWizard>("Add Grass Texture", "Add").ResetDefaults((Terrain)item.context, -1);
@@ -109,7 +109,7 @@ namespace UnityEditor
                 || UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline.terrainDetailGrassShader != null;
         }
 
-        [MenuItem("CONTEXT/TerrainEngineDetails/Edit")]
+        [MenuItem("CONTEXT/TerrainEngineDetails/Edit", secondaryPriority = 22)]
         static internal void EditDetail(MenuCommand item)
         {
             Terrain terrain = (Terrain)item.context;
@@ -125,21 +125,21 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("CONTEXT/TerrainEngineDetails/Edit", true)]
+        [MenuItem("CONTEXT/TerrainEngineDetails/Edit", validate = true)]
         static internal bool EditDetailCheck(MenuCommand item)
         {
             Terrain terrain = (Terrain)item.context;
             return item.userData >= 0 && item.userData < terrain.terrainData.detailPrototypes.Length;
         }
 
-        [MenuItem("CONTEXT/TerrainEngineDetails/Remove")]
+        [MenuItem("CONTEXT/TerrainEngineDetails/Remove", secondaryPriority = 23)]
         static internal void RemoveDetail(MenuCommand item)
         {
             Terrain terrain = (Terrain)item.context;
             TerrainEditorUtility.RemoveDetail(terrain, item.userData);
         }
 
-        [MenuItem("CONTEXT/TerrainEngineDetails/Remove", true)]
+        [MenuItem("CONTEXT/TerrainEngineDetails/Remove", validate = true)]
         static internal bool RemoveDetailCheck(MenuCommand item)
         {
             Terrain terrain = (Terrain)item.context;
@@ -148,34 +148,34 @@ namespace UnityEditor
     }
     class TerrainTreeContextMenus
     {
-        [MenuItem("CONTEXT/TerrainEngineTrees/Add Tree")]
+        [MenuItem("CONTEXT/TerrainEngineTrees/Add Tree", secondaryPriority = 24)]
         static internal void AddTree(MenuCommand item)
         {
             TreeWizard wizard = TerrainWizard.DisplayTerrainWizard<TreeWizard>("Add Tree", "Add");
             wizard.InitializeDefaults((Terrain)item.context, -1);
         }
 
-        [MenuItem("CONTEXT/TerrainEngineTrees/Edit Tree")]
+        [MenuItem("CONTEXT/TerrainEngineTrees/Edit Tree", secondaryPriority = 25)]
         static internal void EditTree(MenuCommand item)
         {
             TreeWizard wizard = TerrainWizard.DisplayTerrainWizard<TreeWizard>("Edit Tree", "Apply");
             wizard.InitializeDefaults((Terrain)item.context, item.userData);
         }
 
-        [MenuItem("CONTEXT/TerrainEngineTrees/Edit Tree", true)]
+        [MenuItem("CONTEXT/TerrainEngineTrees/Edit Tree", validate = true)]
         static internal bool EditTreeCheck(MenuCommand item)
         {
             return PaintTreesTool.instance.selectedTree >= 0;
         }
 
-        [MenuItem("CONTEXT/TerrainEngineTrees/Remove Tree")]
+        [MenuItem("CONTEXT/TerrainEngineTrees/Remove Tree", secondaryPriority = 26)]
         static internal void RemoveTree(MenuCommand item)
         {
             Terrain terrain = (Terrain)item.context;
             TerrainEditorUtility.RemoveTree(terrain, item.userData);
         }
 
-        [MenuItem("CONTEXT/TerrainEngineTrees/Remove Tree", true)]
+        [MenuItem("CONTEXT/TerrainEngineTrees/Remove Tree", validate = true)]
         static internal bool RemoveTreeCheck(MenuCommand item)
         {
             return PaintTreesTool.instance.selectedTree >= 0;

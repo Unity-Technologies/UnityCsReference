@@ -187,7 +187,7 @@ namespace UnityEditor.UIElements.Debugger
         // Used in tests.
         internal DebuggerContext debuggerContext => m_DebuggerContext;
 
-        [MenuItem(k_WindowPath, false, 3010, false)]
+        [MenuItem(k_WindowPath, false, 3010, false, secondaryPriority = 3)]
         private static void OpenUIElementsDebugger()
         {
             if (CommandService.Exists(OpenWindowCommand))

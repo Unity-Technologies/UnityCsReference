@@ -399,7 +399,7 @@ namespace UnityEditor.Search.Providers
         }
 
         [ShortcutManagement.Shortcut("Help/Search/Find Files")]
-        [MenuItem("Window/Search/Find Files", priority = 1269)]
+        [MenuItem("Window/Search/Find Files", priority = 1269, secondaryPriority = 2)]
         internal static void OpenShortcut()
         {
             SearchUtils.OpenWithContextualProvider(providerId);

@@ -66,7 +66,7 @@ namespace UnityEditor
         }
 
         // Add item to the context menu of the AudioMixerGroupController inspector header
-        [MenuItem("CONTEXT/AudioMixerGroupController/Copy all effect settings to all snapshots")]
+        [MenuItem("CONTEXT/AudioMixerGroupController/Copy all effect settings to all snapshots", secondaryPriority = 10)]
         static void CopyAllEffectToSnapshots(MenuCommand command)
         {
             AudioMixerGroupController group = command.context as AudioMixerGroupController;
@@ -78,7 +78,7 @@ namespace UnityEditor
             controller.CopyAllSettingsToAllSnapshots(group, controller.TargetSnapshot);
         }
 
-        [MenuItem("CONTEXT/AudioMixerGroupController/Toggle CPU usage display (only available on first editor instance)")]
+        [MenuItem("CONTEXT/AudioMixerGroupController/Toggle CPU usage display (only available on first editor instance)", secondaryPriority = 11)]
         static void ShowCPUUsage(MenuCommand command)
         {
             bool value = EditorPrefs.GetBool(kPrefKeyForShowCpuUsage, false);

@@ -83,14 +83,14 @@ namespace UnityEditor
 
         // Clear default references
         // ReSharper disable once UnusedMember.Local - registers as menu handler
-        [MenuItem("CONTEXT/MonoImporter/Reset", isValidateFunction: true)]
+        [MenuItem("CONTEXT/MonoImporter/Reset", validate = true)]
         static bool ResetDefaultReferencesValidate(MenuCommand command)
         {
             return AssetDatabase.IsOpenForEdit(command.context);
         }
 
         // ReSharper disable once UnusedMember.Local - registers as menu handler
-        [MenuItem("CONTEXT/MonoImporter/Reset")]
+        [MenuItem("CONTEXT/MonoImporter/Reset", secondaryPriority = 13)]
         static void ResetDefaultReferences(MenuCommand command)
         {
             MonoImporter importer = command.context as MonoImporter;

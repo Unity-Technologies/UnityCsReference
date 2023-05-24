@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -17,6 +18,9 @@ namespace UnityEditor
         public static Texture2D CreatePreview(Object obj, Object[] subAssets, string assetPath, int width, int height)
         {
             if (obj == null)
+                return null;
+
+            if (!RenderPipelineManager.pipelineSwitchCompleted)
                 return null;
 
             System.Type type = CustomEditorAttributes.FindCustomEditorType(obj, false);

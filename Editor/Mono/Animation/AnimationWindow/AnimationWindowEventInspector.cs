@@ -582,7 +582,7 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("CONTEXT/AnimationWindowEvent/Reset")]
+        [MenuItem("CONTEXT/AnimationWindowEvent/Reset", secondaryPriority = 7)]
         static void ResetValues(MenuCommand command)
         {
             AnimationWindowEvent awEvent = command.context as AnimationWindowEvent;

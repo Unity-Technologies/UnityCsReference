@@ -20,7 +20,7 @@ namespace UnityEditor.TextCore.Text
         // ================================================================================
 
         // Select the currently assigned material or material preset.
-        [MenuItem("CONTEXT/Material/Select Material", false, 500)]
+        [MenuItem("CONTEXT/Material/Select Material", priority = 500)]
         static void SelectMaterial(MenuCommand command)
         {
             Material mat = command.context as Material;
@@ -92,14 +92,14 @@ namespace UnityEditor.TextCore.Text
         // }
 
         // Add a Context Menu to the Texture Editor Panel to allow Copy / Paste of Texture.
-        [MenuItem("CONTEXT/Texture/Copy", false, 2000)]
+        [MenuItem("CONTEXT/Texture/Copy", priority = 2000)]
         static void CopyTexture(MenuCommand command)
         {
             m_copiedTexture = command.context as Texture;
         }
 
         //This function is used for debugging and fixing potentially broken font atlas links.
-        [MenuItem("CONTEXT/Material/Copy Atlas", false, 2000)]
+        [MenuItem("CONTEXT/Material/Copy Atlas", priority = 2000)]
         static void CopyAtlas(MenuCommand command)
         {
             Material mat = command.context as Material;
@@ -109,7 +109,7 @@ namespace UnityEditor.TextCore.Text
         }
 
         // This function is used for debugging and fixing potentially broken font atlas links
-        [MenuItem("CONTEXT/Material/Paste Atlas", true, 2001)]
+        [MenuItem("CONTEXT/Material/Paste Atlas", validate = true)]
         static bool PasteAtlasValidate(MenuCommand command)
         {
             if (m_copiedAtlasProperties == null && m_copiedTexture == null)
@@ -118,7 +118,7 @@ namespace UnityEditor.TextCore.Text
             return AssetDatabase.IsOpenForEdit(command.context);
         }
 
-        [MenuItem("CONTEXT/Material/Paste Atlas", false, 2001)]
+        [MenuItem("CONTEXT/Material/Paste Atlas", priority = 2001)]
         static void PasteAtlas(MenuCommand command)
         {
             Material mat = command.context as Material;
@@ -152,7 +152,7 @@ namespace UnityEditor.TextCore.Text
         }
 
         // COPY MATERIAL PROPERTIES
-        [MenuItem("CONTEXT/Material/Copy Material Properties", false)]
+        [MenuItem("CONTEXT/Material/Copy Material Properties", secondaryPriority = 1)]
         static void CopyMaterialProperties(MenuCommand command)
         {
             Material mat = null;
@@ -171,7 +171,7 @@ namespace UnityEditor.TextCore.Text
         }
 
         // PASTE MATERIAL PROPERTIES
-        [MenuItem("CONTEXT/Material/Paste Material Properties", true)]
+        [MenuItem("CONTEXT/Material/Paste Material Properties", validate = true)]
         static bool PasteMaterialPropertiesValidate(MenuCommand command)
         {
             if (m_copiedProperties == null)
@@ -180,7 +180,7 @@ namespace UnityEditor.TextCore.Text
             return AssetDatabase.IsOpenForEdit(command.context);
         }
 
-        [MenuItem("CONTEXT/Material/Paste Material Properties", false)]
+        [MenuItem("CONTEXT/Material/Paste Material Properties", secondaryPriority = 2)]
         static void PasteMaterialProperties(MenuCommand command)
         {
             if (m_copiedProperties == null)
@@ -219,13 +219,13 @@ namespace UnityEditor.TextCore.Text
         }
 
         // Enable Resetting of Material properties without losing unique properties of the font atlas.
-        [MenuItem("CONTEXT/Material/Reset", true, 2100)]
+        [MenuItem("CONTEXT/Material/Reset", validate = true)]
         static bool ResetSettingsValidate(MenuCommand command)
         {
             return AssetDatabase.IsOpenForEdit(command.context);
         }
 
-        [MenuItem("CONTEXT/Material/Reset", false, 2100)]
+        [MenuItem("CONTEXT/Material/Reset", priority = 2100)]
         static void ResetSettings(MenuCommand command)
         {
             Material mat = null;
@@ -296,7 +296,7 @@ namespace UnityEditor.TextCore.Text
         ///
         /// </summary>
         /// <param name="command"></param>
-        [MenuItem("CONTEXT/FontAsset/Update Atlas Texture...", false, 2000)]
+        [MenuItem("CONTEXT/Font Asset/Update Atlas Texture...", priority = 2000)]
         static void RegenerateFontAsset(MenuCommand command)
         {
             FontAsset fontAsset = command.context as FontAsset;
@@ -311,13 +311,13 @@ namespace UnityEditor.TextCore.Text
         /// Clear Dynamic Font Asset data such as glyph, character and font features.
         /// </summary>
         /// <param name="command"></param>
-        [MenuItem("CONTEXT/FontAsset/Reset", true, 100)]
+        [MenuItem("CONTEXT/Font Asset/Reset", validate = true)]
         static bool ClearFontAssetDataValidate(MenuCommand command)
         {
             return AssetDatabase.IsOpenForEdit(command.context);
         }
 
-        [MenuItem("CONTEXT/FontAsset/Reset", false, 100)]
+        [MenuItem("CONTEXT/Font Asset/Reset", priority = 2100)]
         static void ClearFontAssetData(MenuCommand command)
         {
             FontAsset fontAsset = command.context as FontAsset;
@@ -338,7 +338,7 @@ namespace UnityEditor.TextCore.Text
         /// Create Font Asset
         /// </summary>
         /// <param name="command"></param>
-        [MenuItem("CONTEXT/TrueTypeFontImporter/Create Font Asset...", false, 200)]
+        [MenuItem("CONTEXT/TrueTypeFontImporter/Create Font Asset...", priority = 200, secondaryPriority = 1)]
         static void CreateFontAsset(MenuCommand command)
         {
             TrueTypeFontImporter importer = command.context as TrueTypeFontImporter;
@@ -354,7 +354,7 @@ namespace UnityEditor.TextCore.Text
 
         // Context Menus for TMPro Font Assets
         //This function is used for debugging and fixing potentially broken font atlas links.
-        [MenuItem("CONTEXT/FontAsset/Extract Atlas", false, 2100)]
+        [MenuItem("CONTEXT/Font Asset/Extract Atlas", priority = 2101)]
         static void ExtractAtlas(MenuCommand command)
         {
             FontAsset font = command.context as FontAsset;

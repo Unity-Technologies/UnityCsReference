@@ -36,7 +36,7 @@ namespace UnityEditor
             CodeEditor.Editor.CurrentCodeEditor.SyncIfNeeded(addedAssets, deletedAssets, movedAssets, movedFromAssetPaths, importedAssets);
         }
 
-        [MenuItem("Assets/Open C# Project")]
+        [MenuItem("Assets/Open C# Project", secondaryPriority = 1)]
         static void SyncAndOpenSolution()
         {
             // Ensure that the mono islands are up-to-date

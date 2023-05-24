@@ -45,6 +45,7 @@ namespace UnityEditor
             validate = isValidateFunction;
             this.priority = priority;
             this.editorModes = editorModes;
+            secondaryPriority = float.MaxValue;
         }
 
         private static string NormalizeMenuItemName(string rawName)
@@ -55,6 +56,7 @@ namespace UnityEditor
         public string menuItem;
         public bool validate;
         public int priority;
+        public float secondaryPriority; // transition period until UW-65 lands.
         public string[] editorModes;
     }
 
@@ -64,6 +66,7 @@ namespace UnityEditor
     {
         public string name;
         public int priority;
+        public float secondaryPriority;
         public MethodInfo execute;
         public MethodInfo validate;
         public Delegate commandExecute;
@@ -74,12 +77,14 @@ namespace UnityEditor
         public string Name => name;
 
         public int Priority => priority;
+
+        public float SecondaryPriority => secondaryPriority;
         internal bool IsNotValid => validate != null && execute == null;
 
         public static MenuItemScriptCommand Initialize(string menuName, MenuItem menuItemAttribute, MethodInfo methodInfo)
         {
             if (!menuItemAttribute.validate)
-                return InitializeFromExecute(menuName, menuItemAttribute.priority, methodInfo);
+                return InitializeFromExecute(menuName, menuItemAttribute.priority, menuItemAttribute.secondaryPriority, methodInfo);
             else
                 return InitializeFromValidate(menuName, methodInfo);
         }
@@ -93,12 +98,13 @@ namespace UnityEditor
             };
         }
 
-        private static MenuItemScriptCommand InitializeFromExecute(string menuName, int priority, MethodInfo execute)
+        private static MenuItemScriptCommand InitializeFromExecute(string menuName, int priority, float secondaryPriority, MethodInfo execute)
         {
             return new MenuItemScriptCommand()
             {
                 name = menuName,
                 priority = priority,
+                secondaryPriority = secondaryPriority,
                 execute = execute
             };
         }
@@ -128,6 +134,9 @@ namespace UnityEditor
                     return;
                 }
                 priority = menuItemAttribute.priority;
+
+                secondaryPriority = menuItemAttribute.secondaryPriority;
+
                 execute = methodInfo;
             }
             else
@@ -148,6 +157,7 @@ namespace UnityEditor
     {
         public int position = -1;
         public int parentPosition = -1;
+        public float secondaryPriority;
         public string currentModeFullMenuName; // name of the menu to show
         public string defaultModeFullMenuName; // name to find the default menu
         public bool addChildren; // if true then native should add all children menu
@@ -159,10 +169,11 @@ namespace UnityEditor
             defaultModeFullMenuName = string.Empty;
         }
 
-        public MenuItemOrderingNative(string currentModeFullMenuName, string defaultModeFullMenuName, int position, int parentPosition, bool addChildren = false)
+        public MenuItemOrderingNative(string currentModeFullMenuName, string defaultModeFullMenuName, int position, int parentPosition, float secondaryPriority, bool addChildren = false)
         {
             this.position = position;
             this.parentPosition = parentPosition;
+            this.secondaryPriority = secondaryPriority;
             this.currentModeFullMenuName = currentModeFullMenuName;
             this.defaultModeFullMenuName = defaultModeFullMenuName;
             this.addChildren = addChildren;
@@ -171,11 +182,15 @@ namespace UnityEditor
         public string Name => defaultModeFullMenuName;
 
         public int Priority => position;
+
+        public float SecondaryPriority => secondaryPriority;
     }
 
     interface IMenuItem
     {
         string Name { get; }
         int Priority { get; }
+
+        float SecondaryPriority { get; }
     }
 }

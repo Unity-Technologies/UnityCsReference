@@ -320,10 +320,9 @@ namespace UnityEngine
         static public void EndArea()
         {
             GUIUtility.CheckOnGUI();
+            GUILayoutUtility.EndLayoutArea();
             if (Event.current.type == EventType.Used)
                 return;
-            GUILayoutUtility.current.layoutGroups.Pop();
-            GUILayoutUtility.current.topLevel = (GUILayoutGroup)GUILayoutUtility.current.layoutGroups.Peek();
             GUI.EndGroup();
         }
 

@@ -44,7 +44,7 @@ namespace UnityEditor.UIElements.Debugger
             return value.ToString().ToLower();
         }
 
-        private static StyleLength ParseString(string str, StyleLength defaultValue)
+        internal static StyleLength ParseString(string str, StyleLength defaultValue)
         {
             if (string.IsNullOrEmpty(str))
                 return defaultValue;
@@ -84,6 +84,8 @@ namespace UnityEditor.UIElements.Debugger
                 var unitStr = string.Empty;
                 if (unitIndex > 0)
                     unitStr = str.Substring(unitIndex, str.Length - unitIndex).ToLower();
+                else
+                    unitStr = "px";
 
                 float v;
                 if (float.TryParse(floatStr, out v))

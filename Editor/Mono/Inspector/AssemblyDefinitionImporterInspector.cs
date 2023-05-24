@@ -692,7 +692,7 @@ namespace UnityEditor
             EditorGUI.showMixedValue = false;
         }
 
-        [MenuItem("CONTEXT/AssemblyDefinitionImporter/Reset")]
+        [MenuItem("CONTEXT/AssemblyDefinitionImporter/Reset", secondaryPriority = 8)]
         internal static void ContextReset(MenuCommand command)
         {
             var templatePath = AssetsMenuUtility.GetScriptTemplatePath(ScriptTemplate.AsmDef_NewAssembly);

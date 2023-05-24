@@ -158,7 +158,7 @@ namespace UnityEditor.Search
             return folderPath;
         }
 
-        [MenuItem("Assets/Create/Search/Assets Index")]
+        [MenuItem("Assets/Create/Search/Assets Index", secondaryPriority = 3)]
         internal static void CreateIndexProject()
         {
             CreateTemplateIndex("Assets", GetSelectionFolderPath());
@@ -170,7 +170,7 @@ namespace UnityEditor.Search
             return Directory.Exists(GetSelectionFolderPath());
         }
 
-        [MenuItem("Assets/Create/Search/Prefabs Index")]
+        [MenuItem("Assets/Create/Search/Prefabs Index", secondaryPriority = 4)]
         internal static void CreateIndexPrefab()
         {
             CreateTemplateIndex("Prefabs", GetSelectionFolderPath());
@@ -182,7 +182,7 @@ namespace UnityEditor.Search
             return ValidateTemplateIndexCreation<GameObject>();
         }
 
-        [MenuItem("Assets/Create/Search/Scenes Index")]
+        [MenuItem("Assets/Create/Search/Scenes Index", secondaryPriority = 5)]
         internal static void CreateIndexScene()
         {
             CreateTemplateIndex("Scenes", GetSelectionFolderPath());

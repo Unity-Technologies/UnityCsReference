@@ -48,6 +48,10 @@ namespace UnityEngine.Rendering
         public int width { get { return GetWidth(); } }
         public int height { get { return GetHeight(); } }
         public int depth { get { return GetDepth(); } }
+        public bool forcePlayerLoopUpdate {
+            get { return GetForcePlayerLoopUpdate(); }
+            set { SetForcePlayerLoopUpdate(value); }
+        }
 
         private extern bool IsDone();
         private extern bool HasError();
@@ -56,6 +60,8 @@ namespace UnityEngine.Rendering
         private extern int GetWidth();
         private extern int GetHeight();
         private extern int GetDepth();
+        private extern bool GetForcePlayerLoopUpdate();
+        private extern void SetForcePlayerLoopUpdate(bool b);
 
         internal extern void CreateSafetyHandle();
         private extern AtomicSafetyHandle GetSafetyHandle();

@@ -126,7 +126,7 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("CONTEXT/AssemblyDefinitionReferenceImporter/Reset")]
+        [MenuItem("CONTEXT/AssemblyDefinitionReferenceImporter/Reset", secondaryPriority = 9)]
         internal static void ContextReset(MenuCommand command)
         {
             var templatePath = AssetsMenuUtility.GetScriptTemplatePath(ScriptTemplate.AsmRef_NewAssemblyReference);
