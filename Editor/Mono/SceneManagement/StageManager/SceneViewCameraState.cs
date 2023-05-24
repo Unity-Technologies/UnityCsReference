@@ -19,6 +19,7 @@ namespace UnityEditor
         public Quaternion rotation;
         public float size;
         public bool orthographic;
+        internal bool useInteractiveLightBakingData;
 
         public void SaveStateFromSceneView(SceneView view)
         {
@@ -31,6 +32,7 @@ namespace UnityEditor
             rotation = view.rotation;
             size = view.size;
             orthographic = view.orthographic;
+            useInteractiveLightBakingData = view.useInteractiveLightBakingData;
         }
 
         public void RestoreStateToSceneView(SceneView view)
@@ -45,6 +47,7 @@ namespace UnityEditor
                 view.rotation = rotation;
             view.size = size;
             view.orthographic = orthographic;
+            view.useInteractiveLightBakingData = useInteractiveLightBakingData;
         }
     }
 }

@@ -37,22 +37,28 @@ namespace UnityEditor
     {
         Automatic = -1,
         // Choose a compressed format automatically.
-        [System.Obsolete("Use textureCompression property instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureImporterFormat.AutomaticCompressed is obsolete. Use the TextureImporter.textureCompression property instead.", true)]
         AutomaticCompressed = -1,
         // Choose a 16 bit format automatically.
-        [System.Obsolete("Use textureCompression property instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureImporterFormat.Automatic16bit is obsolete. Use TextureImporter.textureCompression property instead.", true)]
         Automatic16bit = -2,
         // Choose a Truecolor format automatically.
-        [System.Obsolete("Use textureCompression property instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureImporterFormat.AutomaticTruecolor is obsolete. Use the TextureImporter.textureCompression property instead.", true)]
         AutomaticTruecolor = -3,
         // Choose a Crunched format automatically.
-        [System.Obsolete("Use crunchedCompression property instead")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureImporterFormat.AutomaticCrunched is obsolete. Use the TextureImporter.crunchedCompression property instead.", true)]
         AutomaticCrunched = -5,
         // Choose an HDR format automatically.
-        [System.Obsolete("HDR is handled automatically now")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureImporterFormat.AutomaticHDR is obsolete. HDR is handled automatically now.", true)]
         AutomaticHDR = -6,
         // Choose a compresssed HDR format automatically.
-        [System.Obsolete("HDR is handled automatically now")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member TextureImporterFormat.AutomaticCompressedHDR is obsolete. HDR is handled automatically now.", true)]
         AutomaticCompressedHDR = -7,
 
         // DXT1 compressed texture format.
@@ -124,9 +130,11 @@ namespace UnityEditor
         ETC_RGB4 = 34,
 
         // ATC (Android) 4 bits/pixel compressed RGB texture format.
-        [System.Obsolete("Use ETC_RGB4 (UnityUpgradable) -> ETC_RGB4")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member ATC_RGB4 is obsolete. Use ETC_RGB4 (UnityUpgradable) -> ETC_RGB4", true)]
         ATC_RGB4 = 35,
-        [System.Obsolete("Use ETC2_RGBA8 (UnityUpgradable) -> ETC2_RGBA8")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member ATC_RGBA8 is obsolete. Use ETC2_RGBA8 (UnityUpgradable) -> ETC2_RGBA8", true)]
         ATC_RGBA8 = 36,
 
         // EAC 4 bits/pixel compressed 16-bit R texture format
@@ -154,47 +162,49 @@ namespace UnityEditor
         ASTC_12x12 = 53,
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_4x4 (UnityUpgradable) -> ASTC_4x4")]
-        ASTC_RGB_4x4 = 48,
+        [System.Obsolete("Enum member ASTC_RGB_4x4 is obsolete. Use ASTC_4x4 (UnityUpgradable) -> ASTC_4x4", true)]
+        ASTC_RGB_4x4 = -48,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_5x5 (UnityUpgradable) -> ASTC_5x5")]
-        ASTC_RGB_5x5 = 49,
+        [System.Obsolete("Enum member ASTC_RGB_5x5 is obsolete. Use ASTC_5x5 (UnityUpgradable) -> ASTC_5x5", true)]
+        ASTC_RGB_5x5 = -49,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_6x6 (UnityUpgradable) -> ASTC_6x6")]
-        ASTC_RGB_6x6 = 50,
+        [System.Obsolete("Enum member ASTC_RGB_6x6 is obsolete. Use ASTC_6x6 (UnityUpgradable) -> ASTC_6x6", true)]
+        ASTC_RGB_6x6 = -50,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_8x8 (UnityUpgradable) -> ASTC_8x8")]
-        ASTC_RGB_8x8 = 51,
+        [System.Obsolete("Enum member ASTC_RGB_8x8 is obsolete. Use ASTC_8x8 (UnityUpgradable) -> ASTC_8x8", true)]
+        ASTC_RGB_8x8 = -51,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_10x10 (UnityUpgradable) -> ASTC_10x10")]
-        ASTC_RGB_10x10 = 52,
+        [System.Obsolete("Enum member ASTC_RGB_10x10 is obsolete. Use ASTC_10x10 (UnityUpgradable) -> ASTC_10x10", true)]
+        ASTC_RGB_10x10 = -52,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_12x12 (UnityUpgradable) -> ASTC_12x12")]
-        ASTC_RGB_12x12 = 53,
+        [System.Obsolete("Enum member ASTC_RGB_12x12 is obsolete. Use ASTC_12x12 (UnityUpgradable) -> ASTC_12x12", true)]
+        ASTC_RGB_12x12 = -53,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_4x4 (UnityUpgradable) -> ASTC_4x4")]
-        ASTC_RGBA_4x4 = 54,
+        [System.Obsolete("Enum member ASTC_RGBA_4x4 is obsolete. Use ASTC_4x4 (UnityUpgradable) -> ASTC_4x4", true)]
+        ASTC_RGBA_4x4 = -54,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_5x5 (UnityUpgradable) -> ASTC_5x5")]
-        ASTC_RGBA_5x5 = 55,
+        [System.Obsolete("Enum member ASTC_RGBA_5x5 is obsolete. Use ASTC_5x5 (UnityUpgradable) -> ASTC_5x5", true)]
+        ASTC_RGBA_5x5 = -55,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_6x6 (UnityUpgradable) -> ASTC_6x6")]
-        ASTC_RGBA_6x6 = 56,
+        [System.Obsolete("Enum member ASTC_RGBA_6x6 is obsolete. Use ASTC_6x6 (UnityUpgradable) -> ASTC_6x6", true)]
+        ASTC_RGBA_6x6 = -56,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_8x8 (UnityUpgradable) -> ASTC_8x8")]
-        ASTC_RGBA_8x8 = 57,
+        [System.Obsolete("Enum member ASTC_RGBA_8x8 is obsolete. Use ASTC_8x8 (UnityUpgradable) -> ASTC_8x8", true)]
+        ASTC_RGBA_8x8 = -57,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_10x10 (UnityUpgradable) -> ASTC_10x10")]
-        ASTC_RGBA_10x10 = 58,
+        [System.Obsolete("Enum member ASTC_RGBA_10x10 is obsolete. Use ASTC_10x10 (UnityUpgradable) -> ASTC_10x10", true)]
+        ASTC_RGBA_10x10 = -58,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Use ASTC_12x12 (UnityUpgradable) -> ASTC_12x12")]
-        ASTC_RGBA_12x12 = 59,
+        [System.Obsolete("Enum member ASTC_RGBA_12x12 is obsolete. Use ASTC_12x12 (UnityUpgradable) -> ASTC_12x12", true)]
+        ASTC_RGBA_12x12 = -59,
 
         // Nintendo 3DS-flavoured ETC
-        [System.Obsolete("Nintendo 3DS is no longer supported.")]
-        ETC_RGB4_3DS = 60,
-        [System.Obsolete("Nintendo 3DS is no longer supported.")]
-        ETC_RGBA8_3DS = 61,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member ETC_RGB4_3DS is obsolete. Nintendo 3DS is no longer supported.", true)]
+        ETC_RGB4_3DS = -60,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member ETC_RGBA8_3DS is obsolete. Nintendo 3DS is no longer supported.", true)]
+        ETC_RGBA8_3DS = -61,
 
         // ETC1 crunched texture format.
         ETC_RGB4Crunched = 64,

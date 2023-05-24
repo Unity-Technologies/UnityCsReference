@@ -120,6 +120,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
     internal class CachedEventDisplayData
     {
         internal int m_Index;
+        internal int m_RTDisplayIndex;
         internal int m_RenderTargetWidth;
         internal int m_RenderTargetHeight;
         internal int m_RenderTargetShowableRTCount;
@@ -134,6 +135,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         internal bool m_RenderTargetIsBackBuffer;
         internal bool m_RenderTargetIsDepthOnlyRT;
         internal bool m_RenderTargetHasShowableDepth;
+        internal bool m_RenderTargetHasStencilBits;
         internal float m_DetailsGUIWidth;
         internal float m_DetailsGUIHeight;
         internal string m_Title;
@@ -716,6 +718,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             // Initialize some key settings
             m_Index = FrameDebuggerUtility.limit - 1;
             m_Type = curEvent.m_Type;
+            m_RTDisplayIndex = curEventData.m_RTDisplayIndex;
 
             m_IsClearEvent = FrameDebuggerHelper.IsAClearEvent(m_Type);
             m_IsResolveEvent = FrameDebuggerHelper.IsAResolveEvent(m_Type);
@@ -727,6 +730,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             m_RenderTargetFormat = (GraphicsFormat)curEventData.m_RenderTargetFormat;
             m_RenderTargetIsDepthOnlyRT = GraphicsFormatUtility.IsDepthFormat(m_RenderTargetFormat);
             m_RenderTargetHasShowableDepth = (curEventData.m_RenderTargetHasDepthTexture != 0);
+            m_RenderTargetHasStencilBits = (curEventData.m_RenderTargetHasStencilBits != 0);
             m_RenderTargetShowableRTCount = curEventData.m_RenderTargetCount;
 
             // Event title

@@ -649,7 +649,7 @@ namespace UnityEngine.UIElements
                     }
 
                     if (evt.imguiEvent.rawType == EventType.Used)
-                        Debug.Assert(evt.isPropagationStopped);
+                        Debug.Assert(evt.isPropagationStopped, "evt.isPropagationStopped");
                 }
 
                 // IMGUIContainer have no children. We can return without iterating the children list.

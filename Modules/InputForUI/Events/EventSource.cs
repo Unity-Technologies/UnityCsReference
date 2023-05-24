@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine.Bindings;
 namespace UnityEngine.InputForUI;
 
 /// <summary>
 /// Beware values determinate order of some events (pointer events).
 /// </summary>
+[VisibleToOtherModules("UnityEngine.UIElementsModule")]
 internal enum EventSource
 {
     /// <summary>

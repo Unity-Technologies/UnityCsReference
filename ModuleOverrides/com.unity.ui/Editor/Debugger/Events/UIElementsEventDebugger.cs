@@ -849,7 +849,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
                     if (allActive || activeEventTypes.Contains(eventBase.eventTypeId))
                     {
                         var eventDateTimeStr = eventBase.TimestampString() + " #" + eventBase.eventId;
-                        string handler = eventBase.eventBaseName;
+                        string handler = eventBase.eventBaseName + " " + eventBase.eventTypeId;
                         string targetName = (eventBase.target != null
                             ? EventDebugger.GetObjectDisplayName(eventBase.target)
                             : "<null>");
@@ -950,7 +950,6 @@ namespace UnityEditor.UIElements.Experimental.Debugger
                 eventBase.eventTypeId == PointerDownEvent.TypeId() ||
                 eventBase.eventTypeId == PointerUpEvent.TypeId() ||
                 eventBase.eventTypeId == PointerCancelEvent.TypeId() ||
-                eventBase.eventTypeId == PointerStationaryEvent.TypeId() ||
                 eventBase.eventTypeId == PointerEnterEvent.TypeId() ||
                 eventBase.eventTypeId == PointerLeaveEvent.TypeId())
             {
@@ -999,7 +998,6 @@ namespace UnityEditor.UIElements.Experimental.Debugger
                 eventBase.eventTypeId == PointerDownEvent.TypeId() ||
                 eventBase.eventTypeId == PointerUpEvent.TypeId() ||
                 eventBase.eventTypeId == PointerCancelEvent.TypeId() ||
-                eventBase.eventTypeId == PointerStationaryEvent.TypeId() ||
                 eventBase.eventTypeId == PointerEnterEvent.TypeId() ||
                 eventBase.eventTypeId == PointerLeaveEvent.TypeId())
             {

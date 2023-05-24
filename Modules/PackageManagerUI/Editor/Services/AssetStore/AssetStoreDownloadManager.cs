@@ -68,7 +68,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
 
             foreach (var operation in m_DownloadOperations.Values)
-                operation.ResolveDependencies(assetStoreUtils, assetStoreRestAPI, m_AssetStoreCachePathProxy);
+                operation.ResolveDependencies(assetStoreUtils, assetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy);
         }
 
         // The AssetStoreDownloadManager implementation requires the help of a ScriptableObject to dispatch download progress event.
@@ -153,7 +153,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onBeforeDownloadStart?.Invoke(productId);
 
             var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCachePathProxy, productId, localInfo?.packagePath);
+            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy, productId, localInfo?.packagePath);
             SetupDownloadOperation(operation);
             operation.Download(false);
         }

@@ -588,22 +588,6 @@ namespace UnityEngine.TextCore.LowLevel
         [NativeMethod(Name = "TextCore::FontEngine::TryGetGlyphIndex", IsThreadSafe = true, IsFreeFunction = true)]
         public static extern bool TryGetGlyphIndex(uint unicode, out uint glyphIndex);
 
-
-        /// <summary>
-        /// Load the glyph at unicode value using the given load flags.
-        /// </summary>
-        /// <param name="unicode">The Unicode value of the character whose glyph should be loaded.</param>
-        /// <param name="flags">The Load Flags.</param>
-        /// <returns>Returns a value of zero if the glyph was successfully loaded for the character using the Unicode value.</returns>
-        internal static FontEngineError LoadGlyph(uint unicode, GlyphLoadFlags flags)
-        {
-            return (FontEngineError)LoadGlyph_Internal(unicode, flags);
-        }
-
-        [NativeMethod(Name = "TextCore::FontEngine::LoadGlyph", IsThreadSafe = true, IsFreeFunction = true)]
-        static extern int LoadGlyph_Internal(uint unicode, GlyphLoadFlags loadFlags);
-
-
         /// <summary>
         /// Try loading a glyph for the given unicode value. If available, populates the glyph and returns true. Otherwise returns false and populates the glyph with the .notdef / missing glyph data.
         /// </summary>

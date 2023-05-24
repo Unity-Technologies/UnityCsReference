@@ -27,6 +27,7 @@ namespace UnityEditor
             public readonly GUIContent enableMipmaps = EditorGUIUtility.TrTextContent("Enable Mip Maps", "This render texture will have Mip Maps.");
             public readonly GUIContent autoGeneratesMipmaps = EditorGUIUtility.TrTextContent("Auto generate Mip Maps", "This render texture automatically generates its Mip Maps.");
             public readonly GUIContent useDynamicScale = EditorGUIUtility.TrTextContent("Dynamic Scaling", "Allow the texture to be automatically resized by ScalableBufferManager, to support dynamic resolution.");
+            public readonly GUIContent enableRandomWrite = EditorGUIUtility.TrTextContent("Random Write", "Enable/disable random access write into the color buffer of this render texture.");
             public readonly GUIContent shadowSamplingMode = EditorGUIUtility.TrTextContent("Shadow Sampling Mode", "Enable/disable shadow depth-compare sampling and percentage closer filtering.");
 
             public readonly GUIContent[] renderTextureAntiAliasing =
@@ -68,6 +69,7 @@ namespace UnityEditor
         SerializedProperty m_Dimension;
         SerializedProperty m_sRGB;
         SerializedProperty m_UseDynamicScale;
+        SerializedProperty m_EnableRandomWrite;
         SerializedProperty m_ShadowSamplingMode;
 
         protected override void OnEnable()
@@ -85,6 +87,7 @@ namespace UnityEditor
             m_Dimension = serializedObject.FindProperty("m_Dimension");
             m_sRGB = serializedObject.FindProperty("m_SRGB");
             m_UseDynamicScale = serializedObject.FindProperty("m_UseDynamicScale");
+            m_EnableRandomWrite = serializedObject.FindProperty("m_EnableRandomWrite");
             m_ShadowSamplingMode = serializedObject.FindProperty("m_ShadowSamplingMode");
 
             Undo.undoRedoEvent += OnUndoRedoPerformed;
@@ -220,6 +223,7 @@ namespace UnityEditor
             }
 
             EditorGUILayout.PropertyField(m_UseDynamicScale, styles.useDynamicScale);
+            EditorGUILayout.PropertyField(m_EnableRandomWrite, styles.enableRandomWrite);
 
             var rt = target as RenderTexture;
             if (GUI.changed && rt != null)
@@ -282,26 +286,13 @@ namespace UnityEditor
 
         private bool RenderTextureHasDepth()
         {
-            if (((GraphicsFormat)m_ColorFormat.enumValueIndex == GraphicsFormat.None) ||
-                GraphicsFormatUtility.IsDepthFormat((GraphicsFormat)m_ColorFormat.enumValueIndex)) /* This should be removed if ShadowAuto and DepthAuto formats are finally removed (they are currently deprecated already)*/
-                return true;
-
-            return m_DepthStencilFormat.enumValueIndex != 0;
+            return RenderTextureIsDepthOnly() || m_DepthStencilFormat.enumValueIndex != 0;
         }
 
         private bool RenderTextureIsDepthOnly()
         {
             GraphicsFormat colorFormat = (GraphicsFormat)m_ColorFormat.enumValueIndex;
-            if ((colorFormat == GraphicsFormat.None) ||
-#pragma warning disable 0618 //Deprecation warning, simply remove the code below once these formats are really removed
-                (colorFormat == GraphicsFormat.DepthAuto) ||
-                (colorFormat == GraphicsFormat.ShadowAuto)
-#pragma warning restore 0618
-            )
-            {
-                return true;
-            }
-            return false;
+            return colorFormat == GraphicsFormat.None;
         }
 
         override public string GetInfoString()

@@ -617,7 +617,14 @@ namespace UnityEngine.Rendering
         extern private void Blit_Identifier(ref UnityEngine.Rendering.RenderTargetIdentifier source, ref UnityEngine.Rendering.RenderTargetIdentifier dest, Material mat, int pass, Vector2 scale, Vector2 offset, int sourceDepthSlice, int destDepthSlice);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::GetTemporaryRT", HasExplicitThis = true)]
-        extern public void GetTemporaryRT(int nameID, int width, int height, int depthBuffer, FilterMode filter, GraphicsFormat format, int antiAliasing, bool enableRandomWrite, RenderTextureMemoryless memorylessMode, bool useDynamicScale);
+        extern private void GetTemporaryRT(int nameID, int width, int height, FilterMode filter, GraphicsFormat colorFormat, GraphicsFormat depthStencilFormat, int antiAliasing, bool enableRandomWrite, RenderTextureMemoryless memorylessMode, bool useDynamicScale, ShadowSamplingMode shadowSamplingMode);
+
+        public void GetTemporaryRT(int nameID, int width, int height, int depthBuffer, FilterMode filter, GraphicsFormat format, int antiAliasing, bool enableRandomWrite, RenderTextureMemoryless memorylessMode, bool useDynamicScale)
+        {
+            GraphicsFormat depthStencilFormat = RenderTexture.GetDepthStencilFormatLegacy(depthBuffer, format);
+
+            GetTemporaryRT(nameID, width, height, filter, format, depthStencilFormat, antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale, ShadowSamplingMode.None);
+        }
 
         public void GetTemporaryRT(int nameID, int width, int height, int depthBuffer, FilterMode filter, GraphicsFormat format, int antiAliasing, bool enableRandomWrite, RenderTextureMemoryless memorylessMode)
         {
@@ -641,7 +648,11 @@ namespace UnityEngine.Rendering
 
         public void GetTemporaryRT(int nameID, int width, int height, int depthBuffer, FilterMode filter, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing, bool enableRandomWrite, RenderTextureMemoryless memorylessMode, bool useDynamicScale)
         {
-            GetTemporaryRT(nameID, width, height, depthBuffer, filter, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite), antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale);
+            ShadowSamplingMode shadowSamplingMode = RenderTexture.GetShadowSamplingModeForFormat(format);
+            GraphicsFormat colorFormat = GraphicsFormatUtility.GetGraphicsFormat(format, readWrite);
+            GraphicsFormat depthStencilFormat = RenderTexture.GetDepthStencilFormatLegacy(depthBuffer, format);
+
+            GetTemporaryRT(nameID, width, height, filter, colorFormat, depthStencilFormat, antiAliasing, enableRandomWrite, memorylessMode, useDynamicScale, shadowSamplingMode);
         }
 
         public void GetTemporaryRT(int nameID, int width, int height, int depthBuffer, FilterMode filter, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing, bool enableRandomWrite, RenderTextureMemoryless memorylessMode)
@@ -666,12 +677,12 @@ namespace UnityEngine.Rendering
 
         public void GetTemporaryRT(int nameID, int width, int height, int depthBuffer, FilterMode filter, RenderTextureFormat format)
         {
-            GetTemporaryRT(nameID, width, height, depthBuffer, filter, GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default));
+            GetTemporaryRT(nameID, width, height, depthBuffer, filter, format, RenderTextureReadWrite.Default);
         }
 
         public void GetTemporaryRT(int nameID, int width, int height, int depthBuffer, FilterMode filter)
         {
-            GetTemporaryRT(nameID, width, height, depthBuffer, filter, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR));
+            GetTemporaryRT(nameID, width, height, depthBuffer, filter, RenderTextureFormat.Default);
         }
 
         public void GetTemporaryRT(int nameID, int width, int height, int depthBuffer)
@@ -698,7 +709,14 @@ namespace UnityEngine.Rendering
         }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::GetTemporaryRTArray", HasExplicitThis = true)]
-        extern public void GetTemporaryRTArray(int nameID, int width, int height, int slices, int depthBuffer, FilterMode filter, GraphicsFormat format, int antiAliasing, bool enableRandomWrite, bool useDynamicScale);
+        extern private void GetTemporaryRTArray(int nameID, int width, int height, int slices, FilterMode filter, GraphicsFormat colorFormat, GraphicsFormat depthStencilFormat, int antiAliasing, bool enableRandomWrite, bool useDynamicScale, ShadowSamplingMode shadowSamplingMode);
+
+        public void GetTemporaryRTArray(int nameID, int width, int height, int slices, int depthBuffer, FilterMode filter, GraphicsFormat format, int antiAliasing, bool enableRandomWrite, bool useDynamicScale)
+        {
+            GraphicsFormat depthStencilFormat = RenderTexture.GetDepthStencilFormatLegacy(depthBuffer, format);
+
+            GetTemporaryRTArray(nameID, width, height, slices, filter, format, depthStencilFormat, antiAliasing, enableRandomWrite, useDynamicScale, ShadowSamplingMode.None);
+        }
 
         public void GetTemporaryRTArray(int nameID, int width, int height, int slices, int depthBuffer, FilterMode filter, GraphicsFormat format, int antiAliasing, bool enableRandomWrite)
         {
@@ -717,27 +735,31 @@ namespace UnityEngine.Rendering
 
         public void GetTemporaryRTArray(int nameID, int width, int height, int slices, int depthBuffer, FilterMode filter, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing, bool enableRandomWrite)
         {
-            GetTemporaryRTArray(nameID, width, height, slices, depthBuffer, filter, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite), antiAliasing, enableRandomWrite, false);
+            ShadowSamplingMode shadowSamplingMode = RenderTexture.GetShadowSamplingModeForFormat(format);
+            GraphicsFormat colorFormat = GraphicsFormatUtility.GetGraphicsFormat(format, readWrite);
+            GraphicsFormat depthStencilFormat = RenderTexture.GetDepthStencilFormatLegacy(depthBuffer, format);
+
+            GetTemporaryRTArray(nameID, width, height, slices, filter, colorFormat, depthStencilFormat, antiAliasing, enableRandomWrite, false, shadowSamplingMode);
         }
 
         public void GetTemporaryRTArray(int nameID, int width, int height, int slices, int depthBuffer, FilterMode filter, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing)
         {
-            GetTemporaryRTArray(nameID, width, height, slices, depthBuffer, filter, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite), antiAliasing, false);
+            GetTemporaryRTArray(nameID, width, height, slices, depthBuffer, filter, format, readWrite, antiAliasing, false);
         }
 
         public void GetTemporaryRTArray(int nameID, int width, int height, int slices, int depthBuffer, FilterMode filter, RenderTextureFormat format, RenderTextureReadWrite readWrite)
         {
-            GetTemporaryRTArray(nameID, width, height, slices, depthBuffer, filter, GraphicsFormatUtility.GetGraphicsFormat(format, readWrite), 1, false);
+            GetTemporaryRTArray(nameID, width, height, slices, depthBuffer, filter, format, readWrite, 1);
         }
 
         public void GetTemporaryRTArray(int nameID, int width, int height, int slices, int depthBuffer, FilterMode filter, RenderTextureFormat format)
         {
-            GetTemporaryRTArray(nameID, width, height, slices, depthBuffer, filter, GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default), 1, false);
+            GetTemporaryRTArray(nameID, width, height, slices, depthBuffer, filter, format, RenderTextureReadWrite.Default);
         }
 
         public void GetTemporaryRTArray(int nameID, int width, int height, int slices, int depthBuffer, FilterMode filter)
         {
-            GetTemporaryRTArray(nameID, width, height, slices, depthBuffer, filter, SystemInfo.GetGraphicsFormat(DefaultFormat.LDR), 1, false);
+            GetTemporaryRTArray(nameID, width, height, slices, depthBuffer, filter, RenderTextureFormat.Default);
         }
 
         public void GetTemporaryRTArray(int nameID, int width, int height, int slices, int depthBuffer)

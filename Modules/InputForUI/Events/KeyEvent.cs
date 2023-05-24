@@ -8,10 +8,12 @@ using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.IntegerTime;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.InputForUI
 {
     // Keyboard key event
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct KeyEvent : IEventProperties
     {
         public enum Type

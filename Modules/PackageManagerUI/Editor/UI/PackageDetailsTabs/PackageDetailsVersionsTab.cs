@@ -29,7 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly PageManager m_PageManager;
         private readonly PackageManagerProjectSettingsProxy m_SettingsProxy;
         private readonly UpmCache m_UpmCache;
-        private readonly IOProxy m_IOProxy;
+        private readonly PackageLinkFactory m_PackageLinkFactory;
         public PackageDetailsVersionsTab(UnityConnectProxy unityConnect,
             ResourceLoader resourceLoader,
             ApplicationProxy applicationProxyProxy,
@@ -39,7 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             PageManager pageManager,
             PackageManagerProjectSettingsProxy settingsProxy,
             UpmCache upmCache,
-            IOProxy ioProxy) : base(unityConnect)
+            PackageLinkFactory packageLinkFactory) : base(unityConnect)
         {
             m_Id = k_Id;
             m_DisplayName = L10n.Tr("Version History");
@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = pageManager;
             m_SettingsProxy = settingsProxy;
             m_UpmCache = upmCache;
-            m_IOProxy = ioProxy;
+            m_PackageLinkFactory = packageLinkFactory;
 
             m_DisableIfCompiling = new ButtonDisableCondition(() => m_ApplicationProxy.isCompiling,
                 L10n.Tr("You need to wait until the compilation is finished to perform this action."));
@@ -109,7 +109,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            var seeVersionsToolbar = versions.numUnloadedVersions > 0 && (m_SettingsProxy.seeAllPackageVersions || m_Version.availableRegistry == RegistryType.MyRegistries || m_Version.package.versions.installed?.HasTag(PackageTag.Experimental) == true);
+            var seeVersionsToolbar = versions.numUnloadedVersions > 0 && (m_SettingsProxy.seeAllPackageVersions || m_Version.availableRegistry != RegistryType.UnityRegistry || m_Version.package.versions.installed?.HasTag(PackageTag.Experimental) == true);
             UIUtils.SetElementDisplay(m_VersionsToolbar, seeVersionsToolbar);
 
             var latestVersion = m_Version.package?.versions.latest;
@@ -145,7 +145,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_OperationDispatcher,
                     m_UpmCache,
                     m_ApplicationProxy,
-                    m_IOProxy,
+                    m_PackageLinkFactory,
                     v,
                     multipleVersionsVisible,
                     isLatest,

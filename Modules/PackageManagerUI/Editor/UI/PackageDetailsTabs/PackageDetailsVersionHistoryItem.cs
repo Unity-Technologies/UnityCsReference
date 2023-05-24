@@ -21,8 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly PackageDatabase m_PackageDatabase;
         private readonly PackageOperationDispatcher m_OperationDispatcher;
         private readonly UpmCache m_UpmCache;
-        private readonly ApplicationProxy m_ApplicationProxy;
-        private readonly IOProxy m_IOProxy;
+        private readonly PackageLinkFactory m_PackageLinkFactory;
 
         private PackageDynamicTagLabel m_VersionHistoryItemTag;
 
@@ -33,7 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageOperationDispatcher operationDispatcher,
             UpmCache upmCache,
             ApplicationProxy applicationProxy,
-            IOProxy ioProxy,
+            PackageLinkFactory packageLinkFactory,
             IPackageVersion version,
             bool multipleVersionsVisible,
             bool isLatestVersion,
@@ -44,8 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = packageDatabase;
             m_OperationDispatcher = operationDispatcher;
             m_UpmCache = upmCache;
-            m_ApplicationProxy = applicationProxy;
-            m_IOProxy = ioProxy;
+            m_PackageLinkFactory = packageLinkFactory;
 
             var root = resourceLoader.GetTemplate("PackageDetailsVersionHistoryItem.uxml");
             Add(root);
@@ -53,6 +51,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_VersionHistoryItemTag = new PackageDynamicTagLabel(true);
             versionHistoryItemToggleLeftContainer.Insert(0, m_VersionHistoryItemTag);
+
+            var versionHistoryChangelogLink = m_PackageLinkFactory.CreateVersionHistoryChangelogLink(version);
+            if (versionHistoryChangelogLink?.isVisible == true)
+                versionHistoryItemChangeLogContainer.Add(new PackageLinkButton(applicationProxy, versionHistoryChangelogLink));
 
             SetExpanded(expanded);
             versionHistoryItemToggle.RegisterValueChangedCallback(evt =>
@@ -65,8 +67,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Button != null)
                 versionHistoryItemToggleRightContainer.Add(m_Button.element);
 
-            versionHistoryItemChangeLogLink.clickable.clicked += VersionHistoryItemChangeLogClicked;
-
             Refresh(multipleVersionsVisible, isLatestVersion);
         }
 
@@ -74,13 +74,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (m_Version?.isFullyFetched == false)
                 versionHistoryItemToggleSpinner?.Stop();
-        }
-
-        private void VersionHistoryItemChangeLogClicked()
-        {
-            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            var isUnityPackage = m_Version?.HasTag(PackageTag.Unity) == true;
-            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetChangelogUrl(packageInfo, isUnityPackage), UpmPackageDocs.GetOfflineChangelog(m_IOProxy, packageInfo), L10n.Tr("changelog"), "viewChangelog", m_Version, m_Version.package, m_ApplicationProxy);
         }
 
         private void Refresh(bool multipleVersionsVisible, bool isLatestVersion)
@@ -97,7 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshHeader(bool multipleVersionsVisible, bool isLatestVersion)
         {
-            versionHistoryItemToggle.text = m_Version?.version?.ToString() ?? m_Version?.versionString;
+            versionHistoryItemToggle.text = m_Version?.versionString;
             m_VersionHistoryItemTag.Refresh(m_Version);
 
             RefreshState(multipleVersionsVisible, isLatestVersion);
@@ -177,10 +170,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshChangeLog()
         {
-            UIUtils.SetElementDisplay(versionHistoryItemChangeLogContainer, false);
             UIUtils.SetElementDisplay(versionHistoryItemChangeLogTitle, false);
             UIUtils.SetElementDisplay(versionHistoryItemChangeLogLabel, false);
-            UIUtils.SetElementDisplay(versionHistoryItemChangeLogLink, false);
 
             var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
             var upmReserved = m_UpmCache.ParseUpmReserved(packageInfo);
@@ -192,17 +183,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UIUtils.SetElementDisplay(versionHistoryItemChangeLogTitle, true);
                 UIUtils.SetElementDisplay(versionHistoryItemChangeLogLabel, true);
                 UIUtils.SetElementDisplay(versionHistoryItemChangeLogContainer, true);
-            }
-
-            if (UpmPackageDocs.HasChangelog(packageInfo))
-            {
-                versionHistoryItemChangeLogLink.text = hasChangeLogInInfo ? L10n.Tr("See full changelog") : L10n.Tr("See changelog");
-                UIUtils.SetElementDisplay(versionHistoryItemChangeLogLink, true);
-                UIUtils.SetElementDisplay(versionHistoryItemChangeLogContainer, true);
-
-                var disableIfNotInstall =  m_Version?.isInstalled != true && m_Version?.package.product != null && string.IsNullOrEmpty(packageInfo?.changelogUrl);
-                versionHistoryItemChangeLogLink.SetEnabled(!disableIfNotInstall);
-                versionHistoryItemChangeLogLink.tooltip = disableIfNotInstall ? PackageDetailsLinks.k_InstallToViewChangelogTooltip : string.Empty;
             }
         }
 
@@ -329,7 +309,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement versionHistoryItemChangeLogContainer => m_Cache.Get<VisualElement>("versionHistoryItemChangeLogContainer");
         private Label versionHistoryItemChangeLogTitle => m_Cache.Get<Label>("versionHistoryItemChangeLogTitle");
         private SelectableLabel versionHistoryItemChangeLogLabel => m_Cache.Get<SelectableLabel>("versionHistoryItemChangeLogLabel");
-        private Button versionHistoryItemChangeLogLink => m_Cache.Get<Button>("versionHistoryItemChangeLogLink");
         private VisualElement versionHistoryItemDependenciesContainer => m_Cache.Get<VisualElement>("versionHistoryItemDependenciesContainer");
         private Label versionHistoryItemDependenciesLabel => m_Cache.Get<Label>("versionHistoryItemDependenciesLabel");
         private VisualElement versionHistoryItemDependenciesList => m_Cache.Get<VisualElement>("versionHistoryItemDependenciesList");

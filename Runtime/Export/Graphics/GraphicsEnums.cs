@@ -387,14 +387,6 @@ namespace UnityEngine
         PVRTC_RGBA4 = 33,
         ETC_RGB4    = 34,
 
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ATC_RGB4 has been deprecated. Use ETC_RGB4 instead (UnityUpgradable) -> ETC_RGB4", true)]
-        ATC_RGB4 = -127,
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ATC_RGBA8 has been deprecated. Use ETC2_RGBA8 instead (UnityUpgradable) -> ETC2_RGBA8", true)]
-        ATC_RGBA8 = -127,
-
         EAC_R = 41,
         EAC_R_SIGNED = 42,
         EAC_RG = 43,
@@ -411,10 +403,12 @@ namespace UnityEngine
         ASTC_12x12 = 53,
 
         // Nintendo 3DS
-        [System.Obsolete("Nintendo 3DS is no longer supported.")]
-        ETC_RGB4_3DS = 60,
-        [System.Obsolete("Nintendo 3DS is no longer supported.")]
-        ETC_RGBA8_3DS = 61,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member ETC_RGB4_3DS is obsolete. Nintendo 3DS is no longer supported.", true)]
+        ETC_RGB4_3DS = -60,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.Obsolete("Enum member ETC_RGB4_3DS is obsolete. Nintendo 3DS is no longer supported.", true)]
+        ETC_RGBA8_3DS = -61,
 
         RG16 = 62,
         R8 = 63,
@@ -443,57 +437,41 @@ namespace UnityEngine
         RGBA64_SIGNED = 82,
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_4x4 has been deprecated. Use ASTC_4x4 instead (UnityUpgradable) -> ASTC_4x4")]
-        ASTC_RGB_4x4 = 48,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_4x4 is obsolete. Use ASTC_4x4 instead (UnityUpgradable) -> ASTC_4x4", true)]
+        ASTC_RGB_4x4 = -48,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_5x5 has been deprecated. Use ASTC_5x5 instead (UnityUpgradable) -> ASTC_5x5")]
-        ASTC_RGB_5x5 = 49,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_5x5 is obsolete. Use ASTC_5x5 instead (UnityUpgradable) -> ASTC_5x5", true)]
+        ASTC_RGB_5x5 = -49,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_6x6 has been deprecated. Use ASTC_6x6 instead (UnityUpgradable) -> ASTC_6x6")]
-        ASTC_RGB_6x6 = 50,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_6x6 is obsolete. Use ASTC_6x6 instead (UnityUpgradable) -> ASTC_6x6", true)]
+        ASTC_RGB_6x6 = -50,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_8x8 has been deprecated. Use ASTC_8x8 instead (UnityUpgradable) -> ASTC_8x8")]
-        ASTC_RGB_8x8 = 51,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_8x8 is obsolete. Use ASTC_8x8 instead (UnityUpgradable) -> ASTC_8x8", true)]
+        ASTC_RGB_8x8 = -51,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_10x10 has been deprecated. Use ASTC_10x10 instead (UnityUpgradable) -> ASTC_10x10")]
-        ASTC_RGB_10x10 = 52,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_10x10 is obsolete. Use ASTC_10x10 instead (UnityUpgradable) -> ASTC_10x10", true)]
+        ASTC_RGB_10x10 = -52,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_12x12 has been deprecated. Use ASTC_12x12 instead (UnityUpgradable) -> ASTC_12x12")]
-        ASTC_RGB_12x12 = 53,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGB_12x12 is obsolete. Use ASTC_12x12 instead (UnityUpgradable) -> ASTC_12x12", true)]
+        ASTC_RGB_12x12 = -53,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_4x4 has been deprecated. Use ASTC_4x4 instead (UnityUpgradable) -> ASTC_4x4")]
-        ASTC_RGBA_4x4 = 54,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_4x4 is obsolete. Use ASTC_4x4 instead (UnityUpgradable) -> ASTC_4x4", true)]
+        ASTC_RGBA_4x4 = -54,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_5x5 has been deprecated. Use ASTC_5x5 instead (UnityUpgradable) -> ASTC_5x5")]
-        ASTC_RGBA_5x5 = 55,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_5x5 is obsolete. Use ASTC_5x5 instead (UnityUpgradable) -> ASTC_5x5", true)]
+        ASTC_RGBA_5x5 = -55,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_6x6 has been deprecated. Use ASTC_6x6 instead (UnityUpgradable) -> ASTC_6x6")]
-        ASTC_RGBA_6x6 = 56,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_6x6 is obsolete. Use ASTC_6x6 instead (UnityUpgradable) -> ASTC_6x6", true)]
+        ASTC_RGBA_6x6 = -56,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_8x8 has been deprecated. Use ASTC_8x8 instead (UnityUpgradable) -> ASTC_8x8")]
-        ASTC_RGBA_8x8 = 57,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_8x8 is obsolete. Use ASTC_8x8 instead (UnityUpgradable) -> ASTC_8x8", true)]
+        ASTC_RGBA_8x8 = -57,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_10x10 has been deprecated. Use ASTC_10x10 instead (UnityUpgradable) -> ASTC_10x10")]
-        ASTC_RGBA_10x10 = 58,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_10x10 is obsolete. Use ASTC_10x10 instead (UnityUpgradable) -> ASTC_10x10", true)]
+        ASTC_RGBA_10x10 = -58,
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_12x12 has been deprecated. Use ASTC_12x12 instead (UnityUpgradable) -> ASTC_12x12")]
-        ASTC_RGBA_12x12 = 59,
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.PVRTC_2BPP_RGB has been deprecated. Use PVRTC_RGB2 instead (UnityUpgradable) -> PVRTC_RGB2", true)]
-        PVRTC_2BPP_RGB = -127,
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.PVRTC_2BPP_RGBA has been deprecated. Use PVRTC_RGBA2 instead (UnityUpgradable) -> PVRTC_RGBA2", true)]
-        PVRTC_2BPP_RGBA = -127,
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.PVRTC_4BPP_RGB has been deprecated. Use PVRTC_RGB4 instead (UnityUpgradable) -> PVRTC_RGB4", true)]
-        PVRTC_4BPP_RGB = -127,
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("Enum member TextureFormat.PVRTC_4BPP_RGBA has been deprecated. Use PVRTC_RGBA4 instead (UnityUpgradable) -> PVRTC_RGBA4", true)]
-        PVRTC_4BPP_RGBA = -127,
+        [System.Obsolete("Enum member TextureFormat.ASTC_RGBA_12x12 is obsolete. Use ASTC_12x12 instead (UnityUpgradable) -> ASTC_12x12", true)]
+        ASTC_RGBA_12x12 = -59,
     }
 
     // Keep in sync with TextureColorSpace in Runtime\GfxDevice\GfxDeviceTypes.h
@@ -840,9 +818,13 @@ namespace UnityEngine
                 RGBA_ASTC12X12_UNorm = 140,
 
                 YUV2 = 141,
-                [Obsolete("Enum member GraphicsFormat.DepthAuto has been deprecated. Use GraphicsFormat.None as a color format to indicate depth only rendering and DefaultFormat to get the default depth buffer format.", false)] DepthAuto = 142,
-                [Obsolete("Enum member GraphicsFormat.ShadowAuto has been deprecated. Use GraphicsFormat.None as a color format to indicate depth only rendering and DefaultFormat to get the default shadow buffer format.", false)] ShadowAuto = 143,
-                [Obsolete("Enum member GraphicsFormat.VideoAuto has been deprecated. Use DefaultFormat instead.", false)] VideoAuto = 144,
+
+                [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+                [Obsolete("Enum member GraphicsFormat.DepthAuto is obsolete. Use GraphicsFormat.None as a color format to indicate depth only rendering and DefaultFormat to get the default depth buffer format.", true)] DepthAuto = 142,
+                [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+                [Obsolete("Enum member GraphicsFormat.ShadowAuto is obsolete. Use GraphicsFormat.None as a color format to indicate depth only rendering, DefaultFormat to get the default shadow buffer format and ShadowSamplingMode.CompareDepths to enable shadowmap sampling.", true)] ShadowAuto = 143,
+                [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+                [Obsolete("Enum member GraphicsFormat.VideoAuto is obsolete. Use DefaultFormat instead.", true)] VideoAuto = 144,
 
                 RGBA_ASTC4X4_UFloat = 145,
                 RGBA_ASTC5X5_UFloat = 146,

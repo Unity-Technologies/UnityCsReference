@@ -26,7 +26,7 @@ namespace UnityEditor
             public static readonly GUIContent desiredImportWorkerCountPctOfLogicalCPUs = EditorGUIUtility.TrTextContent("Import Worker Count %", "Desired asset import worker count for new projects in percentage of available logical CPU cores.");
             public static readonly GUIContent desiredImportWorkerCountPctOfLogicalCPUsLearnMore = new GUIContent("Learn more...", "Go to import worker documentation.");
             public static readonly GUIContent directoryMonitoring = EditorGUIUtility.TrTextContent("Directory Monitoring", "Monitor directories instead of scanning all project files to detect asset changes.");
-            public static readonly GUIContent compressAssetsOnImport = EditorGUIUtility.TrTextContent("Compress Textures on Import", "Disable to skip texture compression during import process (textures will be imported into uncompressed formats, and compressed when making a build).");
+            public static readonly GUIContent compressAssetsOnImport = EditorGUIUtility.TrTextContent("Compress Textures on Import", "Disable to skip texture compression during import process (textures will be imported into uncompressed formats, and compressed when making a build). This preference is per project and local to a single user, to prevent cross project pollution.");
             public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets", "Show confirmation dialog whenever Unity saves any assets.");
             public static readonly GUIContent enterSafeModeDialog = EditorGUIUtility.TrTextContent("Show Enter Safe Mode Dialog", "Show confirmation dialog when Unity would enter Safe Mode due to script compilation errors.");
 
@@ -109,7 +109,11 @@ namespace UnityEditor
             m_AutoRefresh = AutoRefreshModeEditorPref;
             m_DirectoryMonitoring = EditorPrefs.GetBool("DirectoryMonitoring", true);
             m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
-            m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
+
+            // This used to be a preference, but we now get it from the Editor User Settings
+            // because having a cross project preference that affects imports causes a lot of
+            // problems which we would like to avoid
+            m_CompressAssetsOnImport = EditorUserSettings.compressAssetsOnImport; 
             m_EnterSafeModeDialog = EditorPrefs.GetBool("EnterSafeModeDialog", true);
             m_DesiredImportWorkerCountPctOfLogicalCPUs = GetDesiredImportWorkerCountPctOfLogicalCPUs();
         }
@@ -291,7 +295,7 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 if (GUI.changed && m_CompressAssetsOnImport != oldCompressOnImport)
-                    Unsupported.SetApplicationSettingCompressAssetsOnImport(m_CompressAssetsOnImport);
+                    EditorUserSettings.compressAssetsOnImport = m_CompressAssetsOnImport;
                 WriteAssetImportPreferences();
                 ReadAssetImportPreferences();
             }

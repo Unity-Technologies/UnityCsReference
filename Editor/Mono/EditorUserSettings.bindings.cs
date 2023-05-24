@@ -73,6 +73,9 @@ namespace UnityEditor
         [NativeProperty("ArtifactGarbageCollection")]
         public static extern bool artifactGarbageCollection { get; set; }
 
+        [NativeProperty("CompressAssetsOnImport")]
+        public static extern bool compressAssetsOnImport { get; set; }
+
         public static extern SemanticMergeMode semanticMergeMode { get; set; }
 
         public static extern int desiredImportWorkerCount { get; set; }

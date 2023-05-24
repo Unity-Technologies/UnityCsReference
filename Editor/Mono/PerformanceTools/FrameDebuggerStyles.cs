@@ -111,6 +111,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             };
 
             internal static readonly GUIContent s_DepthLabel = EditorGUIUtility.TrTextContent("Depth", "Show depth buffer");
+            internal static readonly GUIContent s_StencilLabel = EditorGUIUtility.TrTextContent("Stencil", "Show stencil buffer");
             internal static readonly GUIContent s_ChannelHeader = EditorGUIUtility.TrTextContent("Channels", "Which render target color channels to show");
             internal static readonly GUIContent s_ChannelAll = EditorGUIUtility.TrTextContent("All");
             internal static readonly GUIContent s_ChannelR = EditorGUIUtility.TrTextContent("R");

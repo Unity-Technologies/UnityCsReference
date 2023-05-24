@@ -68,6 +68,7 @@ namespace UnityEditor
         }
 
         // Called from native code - TilemapScripting.cpp
+        [UsedByNativeCode]
         private static ITilemap CreateInstance()
         {
             s_Instance = new EditorPreviewTilemap();

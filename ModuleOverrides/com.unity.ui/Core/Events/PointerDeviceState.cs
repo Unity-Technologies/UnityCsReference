@@ -89,15 +89,15 @@ namespace UnityEngine.UIElements
 
         public static void PressButton(int pointerId, int buttonId)
         {
-            Debug.Assert(buttonId >= 0);
-            Debug.Assert(buttonId < 32);
+            Debug.Assert(buttonId >= 0, "PressButton expects buttonId >= 0");
+            Debug.Assert(buttonId < 32, "PressButton expects buttonId < 32");
             s_PressedButtons[pointerId] |= (1 << buttonId);
         }
 
         public static void ReleaseButton(int pointerId, int buttonId)
         {
-            Debug.Assert(buttonId >= 0);
-            Debug.Assert(buttonId < 32);
+            Debug.Assert(buttonId >= 0, "ReleaseButton expects buttonId >= 0");
+            Debug.Assert(buttonId < 32, "ReleaseButton expects buttonId < 32");
             s_PressedButtons[pointerId] &= ~(1 << buttonId);
         }
 

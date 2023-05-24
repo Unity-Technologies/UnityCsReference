@@ -448,7 +448,7 @@ namespace UnityEngine.UIElements
 
         static bool DoDispatch(BaseVisualElementPanel panel)
         {
-            Debug.Assert(panel.contextType == ContextType.Editor);
+            Debug.Assert(panel.contextType == ContextType.Editor, "panel.contextType == ContextType.Editor");
 
             bool usesEvent = false;
 

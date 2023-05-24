@@ -24,6 +24,8 @@ namespace UnityEngine.InputForUI
         private string _compositionString = string.Empty;
 
         private Configuration _configuration = Configuration.GetDefaultConfiguration();
+        private IInput _input = new Input();
+        private ITime _time = new Time();
 
         private EventModifiers _eventModifiers => _inputEventPartialProvider._eventModifiers;
 
@@ -45,10 +47,20 @@ namespace UnityEngine.InputForUI
         private const float kSmallestReportedMovementSqrDist = 0.01f;
         const float kScrollUGUIScaleFactor = 3.0f;
 
+        public InputManagerProvider() { }
+
+        // For unit testing
+        internal InputManagerProvider(IInput inputOverride, ITime timeOverride)
+        {
+            _input = inputOverride;
+            _time = timeOverride;
+        }
+
         public void Initialize()
         {
             _inputEventPartialProvider ??= new InputEventPartialProvider();
             _inputEventPartialProvider.Initialize();
+            _inputEventPartialProvider._sendNavigationEventOnTabKey = true;
 
             _mouseState.Reset();
 
@@ -71,13 +83,13 @@ namespace UnityEngine.InputForUI
         {
             _inputEventPartialProvider.Update();
 
-            var currentTime = (DiscreteTime)Time.timeAsRational;
+            var currentTime = (DiscreteTime)_time.timeAsRational;
 
             DetectPen();
 
             // Report touch events
             var touchWasReported = false;
-            if (Input.touchSupported)
+            if (_input.touchSupported)
                 touchWasReported = CheckTouchEvents(currentTime);
 
             // GetPenEvent doesn't work because on Windows PenStatus is always Contact,
@@ -85,19 +97,25 @@ namespace UnityEngine.InputForUI
             // so we need to use contactType which is only present via GetLastPenContactEvent.
             var penWasReported = false;
             if (!touchWasReported && _isPenPresent)
-                penWasReported = CheckPenEvent(currentTime, Input.GetLastPenContactEvent());
+                penWasReported = CheckPenEvent(currentTime, _input.GetLastPenContactEvent());
             else
                 _penState.Reset();
 
             // Don't report mouse at all if pen was reported this frame,
             // this filters out any events based on simulated mouse movements.
-            if (!penWasReported && !touchWasReported && Input.mousePresent)
+            if (!penWasReported && !touchWasReported && _input.mousePresent)
+            {
                 CheckMouseEvents(currentTime);
+            }
             else
-                _mouseState.Reset();
+            {
+                // Silently update the internal mouse state to avoid sending mouse events on the next frame.
+                CheckMouseEvents(currentTime, muted:true);
+                _mouseState.LastPositionValid = false;
+            }
 
             // Always process scroll
-            if (Input.mousePresent)
+            if (_input.mousePresent)
                 CheckMouseScroll(currentTime);
 
             CheckIfIMEChanged(currentTime);
@@ -113,11 +131,11 @@ namespace UnityEngine.InputForUI
         {
             var allAreReleased = true;
             var touchWasReported = false;
-            for (var i = 0; i < Input.touchCount; ++i)
+            for (var i = 0; i < _input.touchCount; ++i)
             {
-                var touch = Input.GetTouch(i);
+                var touch = _input.GetTouch(i);
 
-                if (touch.type == TouchType.Indirect)
+                if (touch.type == TouchType.Indirect || touch.phase == TouchPhase.Stationary)
                     continue;
 
                 if (!_touchFingerIdToFingerIndex.TryGetValue(touch.fingerId, out var fingerIndex))
@@ -142,17 +160,24 @@ namespace UnityEngine.InputForUI
                         break;
                     }
                     case TouchPhase.Ended:
-                    case TouchPhase.Canceled:
                     {
                         type = PointerEvent.Type.ButtonReleased;
                         button = PointerEvent.Button.FingerInTouch;
                         _touchState.OnButtonUp(currentTime, button);
                         break;
                     }
+                    case TouchPhase.Canceled:
+                    {
+                        type = PointerEvent.Type.TouchCanceled;
+                        button = PointerEvent.Button.FingerInTouch;
+                        _touchState.OnButtonUp(currentTime, button);
+                        break;
+                    }
                     case TouchPhase.Moved:
-                    case TouchPhase.Stationary:
+                    {
                         allAreReleased = false;
                         break;
+                    }
                 }
 
                 EventProvider.Dispatch(Event.From(new PointerEvent()
@@ -197,7 +222,7 @@ namespace UnityEngine.InputForUI
                 return;
 
             // Detect pen by checking for not-insignificant movement of the pen.
-            var position = Input.GetLastPenContactEvent().position;
+            var position = _input.GetLastPenContactEvent().position;
             if (_seenAtLeastOnePenPosition)
             {
                 var sqrDist = (position - _lastSeenPenPositionForDetection).sqrMagnitude;
@@ -293,35 +318,36 @@ namespace UnityEngine.InputForUI
             return penWasReported;
         }
 
-        private void CheckMouseEvents(DiscreteTime currentTime)
+        private void CheckMouseEvents(DiscreteTime currentTime, bool muted = false)
         {
-            var position = MultiDisplayBottomLeftToPanelPosition(Input.mousePosition, out var targetDisplay);
+            var position = MultiDisplayBottomLeftToPanelPosition(_input.mousePosition, out var targetDisplay);
 
             if (_mouseState.LastPositionValid)
             {
                 var delta = position - _mouseState.LastPosition;
                 if (delta.sqrMagnitude >= kSmallestReportedMovementSqrDist)
                 {
-                    EventProvider.Dispatch(Event.From(new PointerEvent()
-                    {
-                        type = PointerEvent.Type.PointerMoved,
-                        pointerIndex = 0,
-                        position = position,
-                        deltaPosition = delta,
-                        scroll = Vector2.zero,
-                        displayIndex = targetDisplay,
-                        tilt = Vector2.zero,
-                        twist = 0.0f,
-                        pressure = 0.0f,
-                        isInverted = false,
-                        button = 0,
-                        buttonsState = _mouseState.ButtonsState,
-                        clickCount = 0,
-                        timestamp = currentTime,
-                        eventSource = EventSource.Mouse,
-                        playerId = kDefaultPlayerId,
-                        eventModifiers = _eventModifiers
-                    }));
+                    if (!muted)
+                        EventProvider.Dispatch(Event.From(new PointerEvent()
+                        {
+                            type = PointerEvent.Type.PointerMoved,
+                            pointerIndex = 0,
+                            position = position,
+                            deltaPosition = delta,
+                            scroll = Vector2.zero,
+                            displayIndex = targetDisplay,
+                            tilt = Vector2.zero,
+                            twist = 0.0f,
+                            pressure = 0.0f,
+                            isInverted = false,
+                            button = 0,
+                            buttonsState = _mouseState.ButtonsState,
+                            clickCount = 0,
+                            timestamp = currentTime,
+                            eventSource = EventSource.Mouse,
+                            playerId = kDefaultPlayerId,
+                            eventModifiers = _eventModifiers
+                        }));
 
                     // Only adjust lastMousePosition if we send a PointerMoveEvent, otherwise let the delta accumulate.
                     _mouseState.OnMove(currentTime, position, targetDisplay);
@@ -334,9 +360,9 @@ namespace UnityEngine.InputForUI
             {
                 var button = PointerEvent.ButtonFromButtonIndex(buttonIndex);
                 var previousState = _mouseState.ButtonsState.Get(button);
-                var isDown = Input.GetMouseButtonDown(buttonIndex);
-                var isUp = Input.GetMouseButtonUp(buttonIndex);
-                var currentState = Input.GetMouseButton(buttonIndex);
+                var isDown = _input.GetMouseButtonDown(buttonIndex);
+                var isUp = _input.GetMouseButtonUp(buttonIndex);
+                var currentState = _input.GetMouseButton(buttonIndex);
 
                 var it = ButtonEventsIterator.FromState(previousState, isDown, isUp, currentState);
                 var previousStateInIterator = previousState;
@@ -345,33 +371,34 @@ namespace UnityEngine.InputForUI
                     _mouseState.OnButtonChange(currentTime, button, previousStateInIterator, it.Current);
                     previousStateInIterator = it.Current;
 
-                    EventProvider.Dispatch(Event.From(new PointerEvent()
-                    {
-                        type = it.Current ? PointerEvent.Type.ButtonPressed : PointerEvent.Type.ButtonReleased,
-                        pointerIndex = 0,
-                        position = _mouseState.LastPosition, // TODO Keep old mouse position so not to allow movement during mouse button events.
-                        deltaPosition = Vector2.zero,
-                        scroll = Vector2.zero,
-                        displayIndex = _mouseState.LastDisplayIndex,
-                        tilt = Vector2.zero,
-                        twist = 0.0f,
-                        pressure = 0.0f,
-                        isInverted = false,
-                        button = button,
-                        buttonsState = _mouseState.ButtonsState,
-                        clickCount = _mouseState.ClickCount,
-                        timestamp = currentTime,
-                        eventSource = EventSource.Mouse,
-                        playerId = kDefaultPlayerId,
-                        eventModifiers = _eventModifiers
-                    }));
+                    if (!muted)
+                        EventProvider.Dispatch(Event.From(new PointerEvent()
+                        {
+                            type = it.Current ? PointerEvent.Type.ButtonPressed : PointerEvent.Type.ButtonReleased,
+                            pointerIndex = 0,
+                            position = _mouseState.LastPosition, // TODO Keep old mouse position so not to allow movement during mouse button events.
+                            deltaPosition = Vector2.zero,
+                            scroll = Vector2.zero,
+                            displayIndex = _mouseState.LastDisplayIndex,
+                            tilt = Vector2.zero,
+                            twist = 0.0f,
+                            pressure = 0.0f,
+                            isInverted = false,
+                            button = button,
+                            buttonsState = _mouseState.ButtonsState,
+                            clickCount = _mouseState.ClickCount,
+                            timestamp = currentTime,
+                            eventSource = EventSource.Mouse,
+                            playerId = kDefaultPlayerId,
+                            eventModifiers = _eventModifiers
+                        }));
                 }
             }
         }
 
         private void CheckMouseScroll(DiscreteTime currentTime)
         {
-            var scrollDelta = Input.mouseScrollDelta;
+            var scrollDelta = _input.mouseScrollDelta;
             if (scrollDelta.sqrMagnitude < kSmallestReportedMovementSqrDist)
                 return;
 
@@ -384,7 +411,7 @@ namespace UnityEngine.InputForUI
                 targetDisplay = _mouseState.LastDisplayIndex;
             }
             else // we have no other way but to poll the position
-                position = MultiDisplayBottomLeftToPanelPosition(Input.mousePosition, out targetDisplay);
+                position = MultiDisplayBottomLeftToPanelPosition(_input.mousePosition, out targetDisplay);
 
             // Make it look similar to IMGUI event scroll values.
             scrollDelta.x *= kScrollUGUIScaleFactor;
@@ -439,8 +466,7 @@ namespace UnityEngine.InputForUI
         private void NextPreviousNavigation(DiscreteTime currentTime)
         {
             var navigateNext = (InputManagerGetButtonDownOrDefault(_configuration.NavigateNextButton) ? 1 : 0) +
-                               (InputManagerGetButtonDownOrDefault(_configuration.NavigatePreviousButton) ? -1 : 0) +
-                               (_configuration.UseTabForNavigation && Input.GetKeyDown(KeyCode.Tab) ? 1 : 0);
+                               (InputManagerGetButtonDownOrDefault(_configuration.NavigatePreviousButton) ? -1 : 0);
 
             if (navigateNext != 0)
             {
@@ -520,8 +546,8 @@ namespace UnityEngine.InputForUI
 
         private void CheckIfIMEChanged(DiscreteTime currentTime)
         {
-            var currentCompositionString = Input.compositionString;
-            if (string.IsNullOrEmpty(_compositionString) != string.IsNullOrEmpty(currentCompositionString) ||
+            var currentCompositionString = _input.compositionString;
+            if (string.IsNullOrEmpty(_compositionString) != string.IsNullOrEmpty(currentCompositionString) &&
                 _compositionString != currentCompositionString)
             {
                 _compositionString = currentCompositionString;
@@ -539,7 +565,7 @@ namespace UnityEngine.InputForUI
             if (_inputEventPartialProvider.RequestCurrentState(type))
                 return true;
 
-            var currentTime = (DiscreteTime)Time.timeAsRational;
+            var currentTime = (DiscreteTime)_time.timeAsRational;
 
             switch (type)
             {
@@ -575,12 +601,12 @@ namespace UnityEngine.InputForUI
         /// </summary>
         /// <remarks> Checks if keyboard or joystick keys were pressed and returns the appropriate
         /// <see cref="EventSource"/> </remarks>
-        private static EventSource GetEventSourceFromPressedKey()
+        private EventSource GetEventSourceFromPressedKey()
         {
             if (InputManagerKeyboardWasPressed())
                 return EventSource.Keyboard;
 
-            if(InputManagerJoystickWasPressed())
+            if (InputManagerJoystickWasPressed())
                 return EventSource.Gamepad;
 
             return EventSource.Unspecified;
@@ -590,14 +616,14 @@ namespace UnityEngine.InputForUI
         /// Checks if the button pressed was from a Keyboard
         /// </summary>
         /// TODO should this be checked with from joystick button state instead? We don't have joystick button state
-        private static bool InputManagerJoystickWasPressed()
+        private bool InputManagerJoystickWasPressed()
         {
             const KeyCode keyStart = KeyCode.Joystick1Button0;
             const KeyCode keyEnd = KeyCode.Joystick8Button19;
             // Check all joystick keycodes only
             for (var key = keyStart; key <= keyEnd; key++)
             {
-                if (Input.GetKey(key))
+                if (_input.GetKey(key))
                 {
                     return true;
                 }
@@ -609,14 +635,14 @@ namespace UnityEngine.InputForUI
         /// Checks if the button pressed was from a Keyboard
         /// </summary>
         /// TODO should this be checked with from keyboard button state instead? We don't have keyboard button state
-        private static bool InputManagerKeyboardWasPressed()
+        private bool InputManagerKeyboardWasPressed()
         {
             const KeyCode keyStart = KeyCode.None;
             const KeyCode keyEnd = KeyCode.Menu;
             // Check all keyboard keycodes only
             for (var key = keyStart; key <= keyEnd; key++)
             {
-                if (Input.GetKey(key))
+                if (_input.GetKey(key))
                 {
                     return true;
                 }
@@ -627,11 +653,11 @@ namespace UnityEngine.InputForUI
         /// <summary>
         /// Tries to read input manager axis, returns default value if axis doesn't exist.
         /// </summary>
-        private static float InputManagerGetAxisRawOrDefault(string axisName)
+        private float InputManagerGetAxisRawOrDefault(string axisName)
         {
             try
             {
-                return !string.IsNullOrEmpty(axisName) ? Input.GetAxisRaw(axisName) : default;
+                return !string.IsNullOrEmpty(axisName) ? _input.GetAxisRaw(axisName) : default;
             }
             catch
             {
@@ -642,12 +668,12 @@ namespace UnityEngine.InputForUI
         /// <summary>
         /// Tries to read input manager axis button down state, returns default value if axis doesn't exist.
         /// </summary>
-        private static bool InputManagerGetButtonDownOrDefault(string axisName)
+        private bool InputManagerGetButtonDownOrDefault(string axisName)
         {
             try
             {
                 var validAxis = !string.IsNullOrEmpty(axisName);
-                return validAxis ? Input.GetButtonDown(axisName) : default;
+                return validAxis ? _input.GetButtonDown(axisName) : default;
             }
             catch
             {
@@ -872,8 +898,6 @@ namespace UnityEngine.InputForUI
 
             public string NavigatePreviousButton;
 
-            public bool UseTabForNavigation;
-
             public float InputActionsPerSecond;
 
             public float RepeatDelay;
@@ -888,11 +912,60 @@ namespace UnityEngine.InputForUI
                     CancelButton = "Cancel",
                     NavigateNextButton = "Next",
                     NavigatePreviousButton = "Previous",
-                    UseTabForNavigation = true,
                     InputActionsPerSecond = 10,
                     RepeatDelay = 0.5f,
                 };
             }
+        }
+
+        internal interface IInput
+        {
+            string compositionString { get; }
+            bool GetKey(KeyCode keyCode);
+            bool GetKeyDown(KeyCode keyCode);
+            bool GetButtonDown(string button);
+            float GetAxisRaw(string axis);
+            PenData GetPenEvent(int index);
+            PenData GetLastPenContactEvent();
+            bool touchSupported { get; }
+            int touchCount { get; }
+            Touch GetTouch(int index);
+            bool mousePresent { get; }
+            bool GetMouseButton(int button);
+            bool GetMouseButtonDown(int button);
+            bool GetMouseButtonUp(int button);
+            Vector3 mousePosition { get; }
+            Vector2 mouseScrollDelta { get; }
+        }
+
+        private class Input : IInput
+        {
+            public string compositionString => UnityEngine.Input.compositionString;
+            public bool GetKey(KeyCode key) => UnityEngine.Input.GetKey(key);
+            public bool GetKeyDown(KeyCode key) => UnityEngine.Input.GetKeyDown(key);
+            public bool GetButtonDown(string button) => UnityEngine.Input.GetButtonDown(button);
+            public float GetAxisRaw(string axis) => UnityEngine.Input.GetAxis(axis);
+            public PenData GetPenEvent(int index) => UnityEngine.Input.GetPenEvent(index);
+            public PenData GetLastPenContactEvent() => UnityEngine.Input.GetLastPenContactEvent();
+            public bool touchSupported => UnityEngine.Input.touchSupported;
+            public int touchCount => UnityEngine.Input.touchCount;
+            public Touch GetTouch(int index) => UnityEngine.Input.GetTouch(index);
+            public bool mousePresent => UnityEngine.Input.mousePresent;
+            public bool GetMouseButton(int button) => UnityEngine.Input.GetMouseButton(button);
+            public bool GetMouseButtonDown(int button) => UnityEngine.Input.GetMouseButtonDown(button);
+            public bool GetMouseButtonUp(int button) => UnityEngine.Input.GetMouseButtonUp(button);
+            public Vector3 mousePosition => UnityEngine.Input.mousePosition;
+            public Vector2 mouseScrollDelta => UnityEngine.Input.mouseScrollDelta;
+        }
+
+        internal interface ITime
+        {
+            Unity.IntegerTime.RationalTime timeAsRational { get; }
+        }
+
+        private class Time : ITime
+        {
+            public Unity.IntegerTime.RationalTime timeAsRational => UnityEngine.Time.timeAsRational;
         }
     }
 }

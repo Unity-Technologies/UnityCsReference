@@ -81,7 +81,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                Debug.Assert(!useOwnerObjectGUIState);
+                Debug.Assert(!useOwnerObjectGUIState, "!useOwnerObjectGUIState");
                 if (m_ObjectGUIState == null)
                 {
                     m_ObjectGUIState = new ObjectGUIState();
@@ -594,11 +594,6 @@ namespace UnityEngine.UIElements
                     {
                         sendPointerEvent = true;
                         evt.imguiEvent.type = EventType.TouchEnter;
-                    }
-                    else if (evt is PointerStationaryEvent)
-                    {
-                        sendPointerEvent = true;
-                        evt.imguiEvent.type = EventType.TouchStationary;
                     }
 
                     if (sendPointerEvent)

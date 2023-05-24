@@ -36,6 +36,8 @@ namespace UnityEditor.Modules
 
         public virtual ISettingEditorExtension CreateSettingsEditorExtension() { return null; }
 
+        public virtual IAdaptiveVsyncSetting CreateAdaptiveSettingEditorExtension() { return null; }
+
         public virtual IPreferenceWindowExtension CreatePreferenceWindowExtension() { return null; }
 
         public virtual ITextureImportSettingsExtension CreateTextureImportSettingsExtension() { return textureSettingsExtension != null ? textureSettingsExtension : textureSettingsExtension = new DefaultTextureImportSettingsExtension(); }

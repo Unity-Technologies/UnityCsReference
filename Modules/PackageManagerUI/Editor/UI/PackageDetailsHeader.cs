@@ -44,6 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PageManager m_PageManager;
         private PackageDatabase m_PackageDatabase;
         private UpmCache m_UpmCache;
+        private PackageLinkFactory m_PackageLinkFactory;
 
         private void ResolveDependencies()
         {
@@ -53,6 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageManager = container.Resolve<PageManager>();
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_UpmCache = container.Resolve<UpmCache>();
+            m_PackageLinkFactory = container.Resolve<PackageLinkFactory>();
         }
 
         private IPackage m_Package;
@@ -69,9 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             CreateTags();
 
             m_PageManager.onVisualStateChange += OnVisualStateChange;
-            detailAuthorLink.clickable.clicked += AuthorClick;
             scopedRegistryInfoBox.Q<Button>().clickable.clicked += OnInfoBoxClickMore;
-            quickStart.clickable.clicked += ViewQuickStartClick;
         }
 
         private void CreateTags()
@@ -95,7 +95,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_Version = version;
 
             detailTitle.SetValueWithoutNotify(m_Version.displayName);
-            detailsLinks.Refresh(m_Package, m_Version);
+            detailsLinks.Refresh(m_Version);
 
             UIUtils.SetElementDisplay(disabledWarningBox, version.HasTag(PackageTag.Disabled));
 
@@ -143,21 +143,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshQuickStart()
         {
-            var featurePackageInfo = m_Version != null && m_Version.HasTag(PackageTag.Feature) ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            var showQuickStartButton = !string.IsNullOrEmpty(UpmPackageDocs.GetQuickStartUrl(featurePackageInfo, m_UpmCache));
-            if (showQuickStartButton)
-            {
-                quickStart.Clear();
-                quickStart.Add(new VisualElement { classList = { "quickStartIcon" } });
-                quickStart.Add(new TextElement { text = L10n.Tr("QuickStart"), classList = { "quickStartText" } });
-            }
-            UIUtils.SetElementDisplay(quickStart, showQuickStartButton);
-        }
+            quickStartContainer.Clear();
 
-        private void ViewQuickStartClick()
-        {
-            var packageInfo = m_Version != null ? m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString) : null;
-            UpmPackageDocs.ViewUrl(UpmPackageDocs.GetQuickStartUrl(packageInfo, m_UpmCache), string.Empty, L10n.Tr("quick start documentation"), "viewQuickstart", m_Version, m_Package, m_Application);
+            var quickStartLink = m_PackageLinkFactory.CreateUpmQuickStartLink(m_Version);
+
+            if (quickStartLink?.isVisible == true)
+                quickStartContainer.Add(new PackageQuickStartButton(m_Application, quickStartLink));
         }
 
         private void RefreshDependency()
@@ -278,30 +269,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshAuthor()
         {
-            var publisherName = m_Package?.product?.publisherName;
-            var publisherLink = m_Package?.product?.publisherLink;
-
-            var showDetailAuthorLink = !string.IsNullOrEmpty(publisherName) && !string.IsNullOrEmpty(publisherLink);
-            if (showDetailAuthorLink)
-                detailAuthorLink.text = publisherName;
-
-            UIUtils.SetElementDisplay(detailAuthorLink, showDetailAuthorLink);
+            authorContainer.Clear();
+            var authorLink = m_PackageLinkFactory.CreateAuthorLink(m_Version);
+            if (authorLink?.isVisible == true)
+                authorContainer.Add(new PackageLinkButton(m_Application, authorLink));
         }
 
         private void RefreshTags()
         {
             foreach (var tag in versionContainer.Children().OfType<PackageBaseTagLabel>())
                 tag.Refresh(m_Version);
-        }
-
-        private void AuthorClick()
-        {
-            var authorLink = m_Package?.product?.publisherLink ?? string.Empty;
-            if (!string.IsNullOrEmpty(authorLink))
-            {
-                m_Application.OpenURL(authorLink);
-                PackageManagerWindowAnalytics.SendEvent("viewAuthorLink", m_Version?.uniqueId);
-            }
         }
 
         private void RefreshEntitlement()
@@ -468,7 +445,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Application.OpenURL($"{infoBoxUrl}{k_InfoBoxReadMoreUrl[(int)InfoBoxState.ScopedRegistry]}");
         }
 
-        private VisualElementCache cache { get; set; }
+        private VisualElementCache cache { get; }
 
         private SelectableLabel detailTitle => cache.Get<SelectableLabel>("detailTitle");
         private Label detailEntitlement => cache.Get<Label>("detailEntitlement");
@@ -477,7 +454,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private SelectableLabel detailName => cache.Get<SelectableLabel>("detailName");
 
-        private Button detailAuthorLink => cache.Get<Button>("detailAuthorLink");
+        private VisualElement authorContainer => cache.Get<VisualElement>("detailAuthorContainer");
 
         private PackageDetailsLinks detailsLinks => cache.Get<PackageDetailsLinks>("detailLinksContainer");
 
@@ -487,8 +464,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private HelpBox scopedRegistryInfoBox => cache.Get<HelpBox>("scopedRegistryInfoBox");
         private HelpBox deprecatedWarningInfoBox => cache.Get<HelpBox>("deprecatedWarningInfoBox");
         private HelpBox deprecatedErrorInfoBox => cache.Get<HelpBox>("deprecatedErrorInfoBox");
-        private Button quickStart => cache.Get<Button>("quickStart");
-
+        private VisualElement quickStartContainer => cache.Get<VisualElement>("quickStartContainer");
         private VisualElement usedInFeatureSetMessageContainer => cache.Get<VisualElement>("usedInFeatureSetMessageContainer");
         private VisualElement dependencyContainer => cache.Get<VisualElement>("dependencyContainer");
         private HelpBox featureSetDependentVersionDifferentInfoBox => cache.Get<HelpBox>("featureSetDependentVersionDifferentInfoBox");

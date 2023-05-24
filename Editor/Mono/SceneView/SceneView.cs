@@ -408,6 +408,7 @@ namespace UnityEditor
         public event Action<bool> gridVisibilityChanged;
         internal event Action<bool> sceneLightingChanged;
         internal event Action<bool> sceneAudioChanged;
+        internal event Action<bool> sceneUseInteractiveLightBakingDataChanged;
         internal event Action<bool> sceneVisActiveChanged;
         internal event Action<bool> drawGizmosChanged;
         internal event Action<bool> modeChanged2D;
@@ -582,6 +583,22 @@ namespace UnityEditor
         }
 
         static SceneView s_AudioSceneView;
+
+        [SerializeField]
+        bool m_UseInteractiveLightBakingData = false;
+
+        internal bool useInteractiveLightBakingData
+        {
+            get => m_UseInteractiveLightBakingData;
+
+            set
+            {
+                if (value == m_UseInteractiveLightBakingData)
+                    return;
+                ChangeUseInteractiveLightBakingData(value);
+                sceneUseInteractiveLightBakingDataChanged?.Invoke(m_UseInteractiveLightBakingData);
+            }
+        }
 
         [SerializeField]
         AnimVector3 m_Position = new AnimVector3(kDefaultPivot);
@@ -1241,8 +1258,28 @@ namespace UnityEditor
             }
         }
 
+        internal bool IsAnySceneViewUsingInteractiveLightBakingData()
+        {
+            return m_UseInteractiveLightBakingData || IsAnySceneViewUsingInteractiveLightBakingDataExceptMe();
+        }
+
+        internal bool IsAnySceneViewUsingInteractiveLightBakingDataExceptMe()
+        {
+            foreach (SceneView sv in SceneView.sceneViews)
+                if (sv.useInteractiveLightBakingData && sv != this)
+                    return true;
+            return false;
+        }
+
+        private void ChangeUseInteractiveLightBakingData(bool newValue)
+        {
+            m_UseInteractiveLightBakingData = newValue;
+            Lightmapping.isInteractive = IsAnySceneViewUsingInteractiveLightBakingData();
+        }
+
         public override void OnEnable()
         {
+            ChangeUseInteractiveLightBakingData(m_UseInteractiveLightBakingData);
             m_Viewpoint = new SceneViewViewpoint(this);
 
             baseRootVisualElement.Insert(0, prefabToolbar);
@@ -1471,6 +1508,7 @@ namespace UnityEditor
             m_PreviousScene = lastActiveSceneView;
         }
 
+        [RequiredByNativeCode]
         internal static void PlaceGameObjectInFrontOfSceneView(GameObject go)
         {
             if (s_SceneViews.Count >= 1)
@@ -1489,6 +1527,9 @@ namespace UnityEditor
 
         public override void OnDisable()
         {
+            if (!IsAnySceneViewUsingInteractiveLightBakingDataExceptMe())
+                Lightmapping.isInteractive = false;
+
             EditorApplication.modifierKeysChanged -= RepaintAll;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             SceneVisibilityManager.visibilityChanged -= VisibilityChanged;
@@ -2369,7 +2410,7 @@ namespace UnityEditor
         {
             // Don't do callbacks in search mode, as editors calling Handles.BeginGUI
             // will break camera setup.
-            if (UseSceneFiltering())
+            if (hasSearchFilter)
                 return;
 
             CallOnPreSceneGUI();
@@ -3019,6 +3060,8 @@ namespace UnityEditor
         private void UpdateSceneCameraSettings()
         {
             var mainCamera = GetMainCamera();
+
+            m_Camera.useInteractiveLightBakingData = m_UseInteractiveLightBakingData;
 
             // update physical camera properties
             if (mainCamera != null)

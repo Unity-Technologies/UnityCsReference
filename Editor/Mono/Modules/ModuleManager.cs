@@ -267,6 +267,20 @@ namespace UnityEditor.Modules
             return null;
         }
 
+        internal static IAdaptiveVsyncSetting GetAdaptiveSettingEditorExtension(string target)
+        {
+            if (string.IsNullOrEmpty(target))
+                return null;
+
+            IPlatformSupportModule module;
+            if (platformSupportModules.TryGetValue(target, out module))
+            {
+                return platformSupportModules[target].CreateAdaptiveSettingEditorExtension();
+            }
+
+            return null;
+        }
+
         internal static ITextureImportSettingsExtension GetTextureImportSettingsExtension(BuildTarget target)
         {
             return GetTextureImportSettingsExtension(GetTargetStringFromBuildTarget(target));

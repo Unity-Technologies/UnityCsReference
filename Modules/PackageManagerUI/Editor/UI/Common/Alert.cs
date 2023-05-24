@@ -78,11 +78,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else if (error.errorCode is UIErrorCode.UpmError_NotAcquired)
             {
-                var assetStoreLink = packageVersion?.package?.product?.assetStoreLink;
-                if (!string.IsNullOrEmpty(assetStoreLink))
+                var productUrl = packageVersion?.package?.product?.productUrl;
+                if (!string.IsNullOrEmpty(productUrl))
                 {
                     buttonText = L10n.Tr("View in Asset Store");
-                    buttonAction = () => Application.OpenURL(assetStoreLink);
+                    buttonAction = () => Application.OpenURL(productUrl);
                 }
             }
             else if (!string.IsNullOrEmpty(error.readMoreURL))

@@ -7,6 +7,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using System.Diagnostics.CodeAnalysis;
+using UnityEngine.Networking;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -62,6 +63,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        public const string k_UnityDocsUrl = "https://docs.unity3d.com/";
+        public virtual string docsUrlWithShortUnityVersion => $"{k_UnityDocsUrl}{shortUnityVersion}/";
+
         public virtual bool isDeveloperBuild => Unsupported.IsDeveloperBuild();
 
         public void OnEnable()
@@ -114,6 +118,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onFinishCompiling();
         }
 
+        // Eventually we want a better way of opening urls, to be further addressed in  https://jira.unity3d.com/browse/PAX-2592
         public virtual void OpenURL(string url)
         {
             Application.OpenURL(url);
@@ -151,6 +156,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual T Load<T>(string path) where T : Object
         {
             return EditorGUIUtility.Load(path) as T;
+        }
+
+        public virtual void CheckUrlValidity(string uri, Action success, Action failure)
+        {
+            var request = UnityWebRequest.Head(uri);
+            var operation = request.SendWebRequest();
+            try
+            {
+                operation.completed += _ =>
+                {
+                    if (request.responseCode is >= 200 and < 300)
+                        success?.Invoke();
+                    else
+                        failure?.Invoke();
+                };
+            }
+            catch (InvalidOperationException e)
+            {
+                if (e.Message != "Insecure connection not allowed")
+                    throw e;
+            }
         }
     }
 }

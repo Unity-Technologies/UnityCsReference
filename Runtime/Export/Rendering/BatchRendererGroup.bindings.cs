@@ -271,12 +271,14 @@ namespace UnityEngine.Rendering
     {
         public uint renderingLayerMask;
         public int rendererPriority;
+        private ulong m_sceneCullingMask;
         public byte layer;
         private byte m_motionMode;
         private byte m_shadowMode;
         private byte m_receiveShadows;
         private byte m_staticShadowCaster;
         private byte m_allDepthSorted;
+        private byte m_isSceneCullingMaskSet;
 
         public MotionVectorGenerationMode motionMode
         {
@@ -306,6 +308,19 @@ namespace UnityEngine.Rendering
         {
             get => m_allDepthSorted != 0;
             set => m_allDepthSorted = (byte)(value ? 1 : 0);
+        }
+        
+        [FreeFunction("BatchFilterSettings::DefaultCullingMask", IsThreadSafe = true)]
+        private extern static ulong DefaultCullingMask();
+        
+        public ulong sceneCullingMask
+        {
+            get => (m_isSceneCullingMaskSet != 0) ? m_sceneCullingMask : DefaultCullingMask();
+            set
+            {
+                m_isSceneCullingMaskSet = 1;
+                m_sceneCullingMask = value;
+            }
         }
     }
 

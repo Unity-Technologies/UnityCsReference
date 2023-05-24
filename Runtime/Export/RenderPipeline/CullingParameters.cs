@@ -104,6 +104,7 @@ namespace UnityEngine.Rendering
         uint cameraType;
         private int projectionIsOblique;
         private int isImplicitProjectionMatrix;
+        internal bool useInteractiveLightBakingData;
 
         public Plane GetShadowCullingPlane(int index)
         {

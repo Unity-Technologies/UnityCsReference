@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
+using Unity.IntegerTime;
+using UnityEngine.InputForUI;
 
 namespace UnityEngine.UIElements
 {
@@ -265,18 +267,19 @@ namespace UnityEngine.UIElements
     {
         bool triggeredByOS { get; set; }
         IMouseEvent compatibilityMouseEvent { get; set; }
+        int displayIndex { get; set; }
     }
 
     internal static class PointerEventHelper
     {
         public static EventBase GetPooled(EventType eventType, Vector3 mousePosition, Vector2 delta, int button,
-            int clickCount, EventModifiers modifiers)
+            int clickCount, EventModifiers modifiers, int displayIndex)
         {
             if (eventType == EventType.MouseDown && !PointerDeviceState.HasAdditionalPressedButtons(PointerId.mousePointerId, button))
-                return PointerDownEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers);
+                return PointerDownEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers, displayIndex);
             if (eventType == EventType.MouseUp && !PointerDeviceState.HasAdditionalPressedButtons(PointerId.mousePointerId, button))
-                return PointerUpEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers);
-            return PointerMoveEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers);
+                return PointerUpEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers, displayIndex);
+            return PointerMoveEvent.GetPooled(eventType, mousePosition, delta, button, clickCount, modifiers, displayIndex);
         }
     }
 
@@ -547,6 +550,7 @@ namespace UnityEngine.UIElements
 
         bool IPointerEventInternal.triggeredByOS { get; set; }
         IMouseEvent IPointerEventInternal.compatibilityMouseEvent { get; set; }
+        int IPointerEventInternal.displayIndex { get; set; }
 
         /// <summary>
         /// Resets the event members to their initial values.
@@ -785,13 +789,14 @@ namespace UnityEngine.UIElements
             return e;
         }
 
-        internal static T GetPooled(EventType eventType, Vector3 mousePosition, Vector2 delta, int button, int clickCount, EventModifiers modifiers)
+        internal static T GetPooled(EventType eventType, Vector3 mousePosition, Vector2 delta, int button, int clickCount, EventModifiers modifiers, int displayIndex)
         {
             T e = GetPooled();
 
             e.pointerId = PointerId.mousePointerId;
             e.pointerType = PointerType.mouse;
             e.isPrimary = true;
+            ((IPointerEventInternal) e).displayIndex = displayIndex;
 
             if (eventType == EventType.MouseDown)
             {
@@ -827,12 +832,16 @@ namespace UnityEngine.UIElements
         /// <param name="touch">A <see cref="Touch"/> structure from the InputManager.</param>
         /// <param name="modifiers">The modifier keys held down during the event.</param>
         /// <returns>An initialized event.</returns>
-        public static T GetPooled(Touch touch, EventModifiers modifiers = EventModifiers.None)
+        public static T GetPooled(Touch touch, EventModifiers modifiers = EventModifiers.None) =>
+            GetPooled(touch, modifiers, 0);
+
+        internal static T GetPooled(Touch touch, EventModifiers modifiers, int displayIndex)
         {
             T e = GetPooled();
 
             e.pointerId = touch.fingerId + PointerId.touchPointerIdBase;
             e.pointerType = PointerType.touch;
+            ((IPointerEventInternal) e).displayIndex = displayIndex;
 
             // TODO: Rethink this logic. When two fingers are down, PointerMoveEvents should still have 1 primary touch.
             bool otherTouchDown = false;
@@ -894,12 +903,16 @@ namespace UnityEngine.UIElements
         /// <param name="pen">A <see cref="PenData"/> structure from the InputManager containing pen event information.</param>
         /// <param name="modifiers">The modifier keys held down during the event.</param>
         /// <returns>An initialized event.</returns>
-        public static T GetPooled(PenData pen, EventModifiers modifiers = EventModifiers.None)
+        public static T GetPooled(PenData pen, EventModifiers modifiers = EventModifiers.None) =>
+            GetPooled(pen, modifiers, 0);
+
+        internal static T GetPooled(PenData pen, EventModifiers modifiers, int displayIndex)
         {
             T e = GetPooled();
 
             e.pointerId = PointerId.penPointerIdBase;
             e.pointerType = PointerType.pen;
+            ((IPointerEventInternal) e).displayIndex = displayIndex;
 
             e.isPrimary = true;
 
@@ -942,6 +955,133 @@ namespace UnityEngine.UIElements
             e.radius = Vector2.zero;
             e.radiusVariance = Vector2.zero;
 
+            e.modifiers = modifiers;
+
+            ((IPointerEventInternal)e).triggeredByOS = true;
+
+            return e;
+        }
+
+        internal static T GetPooled(PointerEvent pointerEvent, Vector2 position, Vector2 deltaPosition, int pointerId, float deltaTime)
+        {
+            T e = GetPooled();
+
+            e.position = position;
+            e.localPosition = position;
+            e.deltaPosition = deltaPosition;
+            e.pointerId = pointerId;
+            e.deltaTime = deltaTime;
+
+            ((IPointerEventInternal) e).displayIndex = pointerEvent.displayIndex;
+
+            e.isPrimary = pointerEvent.isPrimaryPointer;
+            e.button = -1;
+
+            if (pointerEvent.eventSource == EventSource.Mouse)
+            {
+                e.pointerType = PointerType.mouse;
+
+                Debug.Assert(pointerEvent.isPrimaryPointer, "PointerEvent from Mouse source is expected to be a primary pointer.");
+                Debug.Assert(pointerId == PointerId.mousePointerId, "PointerEvent from Mouse source is expected to have mouse pointer id.");
+
+                if (pointerEvent.button == PointerEvent.Button.MouseLeft)
+                {
+                    e.button = (int)MouseButton.LeftMouse;
+                }
+                else if (pointerEvent.button == PointerEvent.Button.MouseRight)
+                {
+                    e.button = (int)MouseButton.RightMouse;
+                }
+                else if (pointerEvent.button == PointerEvent.Button.MouseMiddle)
+                {
+                    e.button = (int)MouseButton.MiddleMouse;
+                }
+            }
+            else if (pointerEvent.eventSource == EventSource.Touch)
+            {
+                e.pointerType = PointerType.touch;
+
+                Debug.Assert(e.pointerId >= PointerId.touchPointerIdBase && e.pointerId < PointerId.touchPointerIdBase + PointerId.touchPointerCount, "PointerEvent from Touch source is expected to have touch-based pointer id.");
+
+                if (pointerEvent.button == PointerEvent.Button.FingerInTouch)
+                    e.button = 0;
+            }
+            else if (pointerEvent.eventSource == EventSource.Pen)
+            {
+                e.pointerType = PointerType.pen;
+
+                Debug.Assert(e.pointerId >= PointerId.penPointerIdBase && e.pointerId < PointerId.penPointerIdBase + PointerId.penPointerCount, "PointerEvent from Pen source is expected to have pen-based pointer id.");
+
+                if (pointerEvent.button == PointerEvent.Button.PenTipInTouch)
+                    e.button = (int)PenButton.PenContact;
+                else if (pointerEvent.button == PointerEvent.Button.PenBarrelButton)
+                    e.button = (int)PenButton.PenBarrel;
+                else if (pointerEvent.button == PointerEvent.Button.PenEraserInTouch)
+                    e.button = (int)PenButton.PenEraser;
+            }
+            else
+            {
+                throw new ArgumentOutOfRangeException(nameof(pointerEvent), "Unsupported EventSource for pointer event");
+            }
+
+            if (pointerEvent.type == PointerEvent.Type.ButtonPressed)
+            {
+                Debug.Assert(e.button != -1, "PointerEvent of type ButtonPressed is expected to have button != -1.");
+                PointerDeviceState.PressButton(e.pointerId, e.button);
+            }
+            else if (pointerEvent.type == PointerEvent.Type.ButtonReleased)
+            {
+                Debug.Assert(e.button != -1, "PointerEvent of type ButtonReleased is expected to have button != -1.");
+                PointerDeviceState.ReleaseButton(e.pointerId, e.button);
+            }
+            else if (pointerEvent.type != PointerEvent.Type.TouchCanceled)
+            {
+                Debug.Assert(e.button == -1, "PointerEvent of type other than ButtonPressed, ButtonReleased, or TouchCanceled is expected to have button set to none.");
+            }
+
+            e.pressedButtons = PointerDeviceState.GetPressedButtons(e.pointerId);
+
+            if (pointerEvent.eventSource == EventSource.Pen)
+            {
+                e.penStatus = PenStatus.None;
+                if ((e.pressedButtons & (1 << (int) PenButton.PenContact)) != 0)
+                    e.penStatus |= PenStatus.Contact;
+                if ((e.pressedButtons & (1 << (int) PenButton.PenBarrel)) != 0)
+                    e.penStatus |= PenStatus.Barrel;
+                if ((e.pressedButtons & (1 << (int) PenButton.PenEraser)) != 0)
+                    e.penStatus |= PenStatus.Eraser;
+                if (pointerEvent.isInverted)
+                    e.penStatus |= PenStatus.Inverted;
+            }
+
+            e.clickCount = pointerEvent.clickCount;
+            e.pressure = pointerEvent.pressure;
+            e.altitudeAngle = pointerEvent.altitude;
+            e.azimuthAngle = pointerEvent.azimuth;
+            e.twist = pointerEvent.twist;
+            e.tilt = pointerEvent.tilt;
+
+            // Not supported by InputForUI: e.tangentialPressure, e.radius, e.radiusVariance
+            // Not supported by UIToolkit: pointerEvent.deltaBeforeAccelerationCurve
+
+            EventModifiers modifiers = EventModifiers.None;
+
+            if (pointerEvent.eventModifiers.isShiftPressed)
+            {
+                modifiers |= EventModifiers.Shift;
+            }
+            if (pointerEvent.eventModifiers.isCtrlPressed)
+            {
+                modifiers |= EventModifiers.Control;
+            }
+            if (pointerEvent.eventModifiers.isAltPressed)
+            {
+                modifiers |= EventModifiers.Alt;
+            }
+            if (pointerEvent.eventModifiers.isFunctionKeyPressed)
+            {
+                modifiers |= EventModifiers.FunctionKey;
+            }
             e.modifiers = modifiers;
 
             ((IPointerEventInternal)e).triggeredByOS = true;
@@ -1202,6 +1342,7 @@ namespace UnityEngine.UIElements
     ///
     /// See <see cref="UIElements.PointerEventBase{T}"/> to see how PointerStationaryEvent relates to other pointer events.
     /// </remarks>
+    [Obsolete("Not sent by input backend.")]
     public sealed class PointerStationaryEvent : PointerEventBase<PointerStationaryEvent>
     {
         static PointerStationaryEvent()

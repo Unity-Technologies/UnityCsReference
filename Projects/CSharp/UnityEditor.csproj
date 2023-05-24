@@ -569,6 +569,9 @@
     <Compile Include="..\..\Editor\Mono\Audio\StreamedAudioClipPreview.cs">
       <Link>Editor\Mono\Audio\StreamedAudioClipPreview.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Audio\UIElements\AudioContainerElementClipField.cs">
+      <Link>Editor\Mono\Audio\UIElements\AudioContainerElementClipField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Audio\UIElements\AudioLevelMeter.cs">
       <Link>Editor\Mono\Audio\UIElements\AudioLevelMeter.cs</Link>
     </Compile>
@@ -592,6 +595,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\AvatarUtility.bindings.cs">
       <Link>Editor\Mono\AvatarUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BaseBuildTarget.cs">
+      <Link>Editor\Mono\BaseBuildTarget.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\BlendTree.bindings.cs">
       <Link>Editor\Mono\BlendTree.bindings.cs</Link>
@@ -1726,6 +1732,9 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\HyperLinkClickedEventArgs.cs">
       <Link>Editor\Mono\HyperLinkClickedEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\IBuildTarget.cs">
+      <Link>Editor\Mono\IBuildTarget.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\ICleanuppable.cs">
       <Link>Editor\Mono\ICleanuppable.cs</Link>
@@ -2932,6 +2941,12 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\RenderDoc\RenderDocUtil.cs">
       <Link>Editor\Mono\RenderDoc\RenderDocUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\RenderPipelineGlobalSettingsEditor.cs">
+      <Link>Editor\Mono\RenderPipelineGlobalSettingsEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\RenderPipelineGraphicsSettingsContainerPropertyDrawer.cs">
+      <Link>Editor\Mono\RenderPipelineGraphicsSettingsContainerPropertyDrawer.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\RuntimeInitializeOnLoadManager.bindings.cs">
       <Link>Editor\Mono\RuntimeInitializeOnLoadManager.bindings.cs</Link>
@@ -6524,6 +6539,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Package.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\Package.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageInfoExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageInfoExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageManagerPrefs.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageManagerPrefs.cs</Link>
     </Compile>
@@ -6587,8 +6605,23 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageImage.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageLink.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageLink.cs</Link>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageLink.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageLink.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageLinkFactory.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageLinkFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageUpmChangelogLink.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageUpmChangelogLink.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageUpmDocumentationLink.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageUpmDocumentationLink.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageUpmLicenseLink.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageUpmLicenseLink.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageUpmVersionHistoryChangelogLink.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageLink\PackageUpmVersionHistoryChangelogLink.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageOperationDispatcher.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageOperationDispatcher.cs</Link>
@@ -6763,9 +6796,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageDocs.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageDocs.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageFactory.cs</Link>
@@ -6997,6 +7027,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageLinks\PackageLinkButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageLinks\PackageLinkButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageLinks\PackageQuickStartButton.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageLinks\PackageQuickStartButton.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageList.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageList.cs</Link>
@@ -10310,7 +10346,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_bfe3/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_c6ae/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

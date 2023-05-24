@@ -26,12 +26,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string publishNotes;
         public string firstPublishedDate;
 
-        public string publisherLink;
-        public PackageLink assetStoreLink;
+        public string assetStoreProductUrl;
+        public string assetStorePublisherUrl;
+        public string publisherWebsiteUrl;
+        public string publisherSupportUrl;
 
         public List<string> supportedVersions;
         public List<PackageImage> images;
-        public List<PackageLink> links;
         public List<PackageSizeInfo> sizeInfos;
 
         public bool Equals(AssetStoreProductInfo other)
@@ -106,33 +107,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
-        private List<PackageLink> GetLinksFromProductDetails(string assetStoreUrl, IDictionary<string, object> productDetail)
-        {
-            var result = new List<PackageLink>();
-
-            result.Add(GetAssetStoreLinkFromProductDetails(assetStoreUrl, productDetail));
-
-            var publisher = productDetail.GetDictionary("productPublisher");
-            if (publisher != null)
-            {
-                var url = publisher.GetString("url");
-                if (!string.IsNullOrEmpty(url) && Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute))
-                    result.Add(GetPackageLink(assetStoreUrl, L10n.Tr("Publisher Website"), url, "viewPublisherWebsite"));
-
-                var supportUrl = publisher.GetString("supportUrl");
-                if (!string.IsNullOrEmpty(supportUrl) && Uri.IsWellFormedUriString(supportUrl, UriKind.RelativeOrAbsolute))
-                    result.Add(GetPackageLink(assetStoreUrl, L10n.Tr("Publisher Support"), supportUrl, "viewPublisherSupport"));
-            }
-            return result;
-        }
-
-        private PackageLink GetAssetStoreLinkFromProductDetails(string assetStoreUrl, IDictionary<string, object> productDetail)
-        {
-            var slug = productDetail.GetString("slug") ?? productDetail.GetString("id");
-            var packagePath = $"/packages/p/{slug}";
-            return GetPackageLink(assetStoreUrl, L10n.Tr("View in Asset Store"), packagePath, "viewProductInAssetStore");
-        }
-
         private List<PackageSizeInfo> GetSizeInfoFromProductDetails(IDictionary<string, object> productDetail)
         {
             var result = new List<PackageSizeInfo>();
@@ -164,13 +138,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
-        private PackageLink GetPackageLink(string assetStoreUrl, string name, string url, string analyticsEventName)
-        {
-            if (!url.StartsWith("http:", StringComparison.InvariantCulture) && !url.StartsWith("https:", StringComparison.InvariantCulture))
-                url = assetStoreUrl + url;
-            return new PackageLink { name = name, url = url, analyticsEventName = analyticsEventName };
-        }
-
         public virtual AssetStoreProductInfo ParseProductInfo(string assetStoreUrl, long productId, IDictionary<string, object> productDetail)
         {
             if (productId <= 0 || productDetail == null || !productDetail.Any())
@@ -194,7 +161,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             if (!string.IsNullOrEmpty(publisherId))
-                productInfo.publisherLink = $"{assetStoreUrl}/publishers/{publisherId}";
+                productInfo.assetStorePublisherUrl = $"{assetStoreUrl}/publishers/{publisherId}";
 
             productInfo.packageName = productDetail.GetString("packageName") ?? string.Empty;
             productInfo.category = productDetail.GetDictionary("category")?.GetString("name") ?? string.Empty;
@@ -216,12 +183,42 @@ namespace UnityEditor.PackageManager.UI.Internal
             productInfo.state = productDetail.GetString("state");
 
             productInfo.images = GetImagesFromProductDetails(productDetail);
-            productInfo.links = GetLinksFromProductDetails(assetStoreUrl, productDetail);
             productInfo.sizeInfos = GetSizeInfoFromProductDetails(productDetail);
 
-            productInfo.assetStoreLink = GetAssetStoreLinkFromProductDetails(assetStoreUrl, productDetail);
+            productInfo.assetStoreProductUrl = GetProductUrlFromProductDetails(assetStoreUrl, productDetail);
+            productInfo.publisherWebsiteUrl = GetPublisherWebsiteUrlFromProductDetails(assetStoreUrl, productDetail);
+            productInfo.publisherSupportUrl = GetPublisherSupportUrlFromProductDetails(assetStoreUrl, productDetail);
 
             return productInfo;
+        }
+
+        private string GetProductUrlFromProductDetails(string assetStoreUrl, IDictionary<string, object> productDetail)
+        {
+            var slug = productDetail.GetString("slug") ?? productDetail.GetString("id");
+            return $"{assetStoreUrl}/packages/p/{slug}";
+        }
+
+        private string GetPublisherWebsiteUrlFromProductDetails(string assetStoreUrl, IDictionary<string, object> productDetail)
+        {
+            var url = productDetail.GetDictionary("productPublisher")?.GetString("url");
+            return BuildUrl(assetStoreUrl, url);
+        }
+
+        private string GetPublisherSupportUrlFromProductDetails(string assetStoreUrl, IDictionary<string, object> productDetail)
+        {
+            var supportUrl = productDetail.GetDictionary("productPublisher")?.GetString("supportUrl");
+            return BuildUrl(assetStoreUrl, supportUrl);
+        }
+
+        private string BuildUrl(string assetStoreUrl, string url)
+        {
+            if (string.IsNullOrEmpty(url) || !Uri.IsWellFormedUriString(url, UriKind.RelativeOrAbsolute))
+                return string.Empty;
+
+            if (!url.StartsWith("http:", StringComparison.InvariantCulture) && !url.StartsWith("https:", StringComparison.InvariantCulture))
+                return assetStoreUrl + url;
+
+            return url;
         }
     }
 }

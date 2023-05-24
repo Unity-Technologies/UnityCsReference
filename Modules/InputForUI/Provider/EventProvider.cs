@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using Unity.IntegerTime;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.InputForUI
@@ -13,13 +13,13 @@ namespace UnityEngine.InputForUI
     /// <summary>
     /// Events provider
     /// </summary>
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static class EventProvider
     {
-        // TODO is pimpl a good pattern here?
         private static IEventProviderImpl s_impl;
         private static EventSanitizer s_sanitizer;
 
-        private static IEventProviderImpl s_implMockBackup; // storing original impl when using mock
+        private static IEventProviderImpl s_implMockBackup = null; // storing original impl when using mock
         private static bool s_focusStateBeforeMock;
         private static bool s_focusChangedRegistered;
 
@@ -53,6 +53,10 @@ namespace UnityEngine.InputForUI
 
         internal static void Dispatch(in Event ev)
         {
+            // Don't run sanitizers if there are no users. Avoid unexpected InputForUI errors in the console.
+            if (_registrations.Count == 0)
+                return;
+
             s_sanitizer.Inspect(ev);
 
             foreach (var registration in _registrations)
@@ -95,11 +99,18 @@ namespace UnityEngine.InputForUI
 
         private static void Bootstrap()
         {
-            // TODO implement detection if InputManager is disabled (in this case some Input. calls will throw exception, see default input system in UITK)
+            // The logic for deciding which provider is used is mostly inside InputSystem Package.
+            // InputSystem will call SetInputSystemProvider() if it wishes to enable itself.
+            // If not, then we ALWAYS fallback to using InputManager here, to ensure we always have a provider.
+            //
+            // InputSystem will NOT enable itself if PlayerSettings explicitly enables InputManager ONLY.
+            // InputSystem will be used (and therefore InputManager will NOT be) if PlayerSettings enables InputSystem
+            // (either just InputSystem by itself or enabling Both input backends).
+            // InputSystem Package cannot enable itself if it is not installed; therefore in this case InputManager
+            // will ALWAYS be used regardless of the PlayerSettings.
+            s_impl ??= new InputManagerProvider();
 
             s_sanitizer.Reset();
-
-            s_impl ??= new InputManagerProvider();
             s_impl.Initialize();
 
             if (!s_focusChangedRegistered)
@@ -109,8 +120,6 @@ namespace UnityEngine.InputForUI
             }
         }
 
-
-
         private static void OnFocusChanged(bool focus)
         {
             s_impl?.OnFocusChanged(focus);
@@ -119,7 +128,9 @@ namespace UnityEngine.InputForUI
         [RequiredByNativeCode]
         internal static void NotifyUpdate()
         {
-            // TODO implement detection if InputManager is disabled (in this case some Input. calls will throw exception, see default input system in UITK)
+            // Don't Update if there are no registered users. Avoid unexpected InputForUI errors in the console.
+            if (_registrations.Count == 0)
+                return;
 
             s_sanitizer.BeforeProviderUpdate();
             s_impl?.Update();
@@ -142,11 +153,10 @@ namespace UnityEngine.InputForUI
         /// </summary>
         internal static void SetMockProvider(IEventProviderImpl impl)
         {
-            s_implMockBackup = s_impl;
+            if (s_implMockBackup == null)
+                s_implMockBackup = s_impl;
             s_focusStateBeforeMock = Application.isFocused;
 
-            // TODO FIX: calling this function more than once overwrites the first _implMockBackup and it will not be
-            // restored correctly by ClearMockProvider.
             s_impl = impl;
 
             Bootstrap();
@@ -160,6 +170,7 @@ namespace UnityEngine.InputForUI
             s_impl?.Shutdown();
 
             s_impl = s_implMockBackup;
+            s_implMockBackup = null;
 
             s_sanitizer.Reset();
 
@@ -180,5 +191,6 @@ namespace UnityEngine.InputForUI
         }
     }
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal delegate bool EventConsumer(in Event ev);
 }

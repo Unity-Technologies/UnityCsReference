@@ -110,9 +110,6 @@ namespace UnityEditor
         // Handle the UI.
         public void HandleUI(string searchContext)
         {
-            EditorGUILayout.Space();
-            EditorGUI.indentLevel++;
-
             // Collider Preferences.
             EditorGUILayout.LabelField(SettingsContent.CollidersLabelContent, EditorStyles.boldLabel);
             {
@@ -225,8 +222,6 @@ namespace UnityEditor
                 SetColor(CompositedColorKey, compositedColor = DefaultCompositedColor);
                 EditorPrefs.SetFloat(ContactArrowScaleKey, contactArrowScale = DefaultContactArrowScale);
             }
-
-            EditorGUI.indentLevel--;
         }
 
         private Color GetColor(string key, Color defaultColor)
@@ -265,7 +260,11 @@ namespace UnityEditor
             m_PreferenceState = ScriptableObject.CreateInstance<Physics2DPreferenceState>();
 
             // Hook-up the UI handling.
-            guiHandler = (string searchContext) => { m_PreferenceState.HandleUI(searchContext); };
+            guiHandler = searchContext =>
+            {
+                using (new SettingsWindow.GUIScope())
+                    m_PreferenceState.HandleUI(searchContext);
+            };
 
             base.OnActivate(searchContext, rootElement);
         }

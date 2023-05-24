@@ -4,6 +4,7 @@
 
 using System.Text;
 using Unity.IntegerTime;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.InputForUI
 {
@@ -16,6 +17,7 @@ namespace UnityEngine.InputForUI
     ///
     /// This event shouldn't be relied upon for text editing like backspace, tab, del, etc.
     /// </summary>
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct TextInputEvent : IEventProperties
     {
         // TODO Store UTF-32 because UTF-16 might store individual codepoint over multiple UTF-16 code units.
@@ -37,6 +39,7 @@ namespace UnityEngine.InputForUI
         public static bool ShouldBeProcessed(char character)
         {
             // Only process printable characters
+            //TODO: also accept Tab and Return characters in all their representations
             return (character > 31 && character != 127);
         }
     }

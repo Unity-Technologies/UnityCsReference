@@ -191,6 +191,18 @@ namespace UnityEditor
             set { GetOrCreateLightingsSettings().albedoBoost = value; }
         }
 
+        [FreeFunction]
+        private static extern void SetLightBakingIsInteractive(bool value);
+
+        [FreeFunction]
+        private static extern bool GetLightBakingIsInteractive();
+
+        internal static bool isInteractive
+        {
+            set { SetLightBakingIsInteractive(value); }
+            get { return GetLightBakingIsInteractive(); }
+        }
+
         // Set concurrent jobs type. Warning, high priority can impact Editor performance
         [StaticAccessor("EnlightenPrecompManager::Get()", StaticAccessorType.Arrow)]
         internal static extern ConcurrentJobsType concurrentJobsType { get; set; }

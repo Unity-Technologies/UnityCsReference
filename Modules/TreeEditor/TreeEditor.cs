@@ -5,6 +5,7 @@
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEngine.Scripting;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using System.Collections.Generic;
@@ -324,6 +325,7 @@ namespace TreeEditor
             Undo.RegisterCreatedObjectUndo(prefabInstance, "Create Tree");
         }
 
+        [RequiredByNativeCode]
         public static void ResetTree(Tree tree)
         {
             TreeData data = GetTreeData(tree);

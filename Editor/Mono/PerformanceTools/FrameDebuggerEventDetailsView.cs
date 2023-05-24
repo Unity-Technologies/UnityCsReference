@@ -252,6 +252,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             bool isDepthOnlyRT = GraphicsFormatUtility.IsDepthFormat((GraphicsFormat)curEventData.m_RenderTargetFormat);
             bool isClearAction = (int)curEvent.m_Type <= 7;
             bool hasShowableDepth = (curEventData.m_RenderTargetHasDepthTexture != 0);
+            bool hasStencil = (curEventData.m_RenderTargetHasStencilBits != 0);
             int showableRTCount = curEventData.m_RenderTargetCount;
 
             if (hasShowableDepth)
@@ -263,17 +264,22 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             EditorGUI.BeginChangeCheck();
             GUI.enabled = showableRTCount > 1;
 
-            var rtNames = new GUIContent[showableRTCount];
+            var rtNames = new GUIContent[showableRTCount + (hasStencil ? 1 : 0)];
             for (var i = 0; i < showableRTCount; ++i)
                 rtNames[i] = FrameDebuggerStyles.EventToolbar.s_MRTLabels[i];
 
             if (hasShowableDepth)
                 rtNames[curEventData.m_RenderTargetCount] = FrameDebuggerStyles.EventToolbar.s_DepthLabel;
 
-            // If we showed depth before then try to keep showing depth
+            if (hasStencil)
+                rtNames[rtNames.Length - 1] = FrameDebuggerStyles.EventToolbar.s_StencilLabel;
+
+            // If we showed depth/stencil before then try to keep showing depth/stencil
             // otherwise try to keep showing color
             if (m_RTIndexLastSet == -1)
                 m_RTIndex = hasShowableDepth ? showableRTCount - 1 : 0;
+            else if (m_RTIndexLastSet == -2)
+                m_RTIndex = hasStencil ? showableRTCount : 0;
             else if (m_RTIndex > curEventData.m_RenderTargetCount)
                 m_RTIndex = 0;
 
@@ -347,6 +353,9 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             int rtIndexToSet = m_RTIndex;
             if (hasShowableDepth && rtIndexToSet == (showableRTCount - 1))
                 rtIndexToSet = -1;
+
+            if (hasStencil && rtIndexToSet == showableRTCount)
+                rtIndexToSet = -2;
 
             if (EditorGUI.EndChangeCheck() || rtIndexToSet != m_RTIndexLastSet || forceUpdate)
             {

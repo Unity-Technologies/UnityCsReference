@@ -48,8 +48,17 @@ namespace UnityEngine.Rendering
         // The format of this attachment, legacy.
         public RenderTextureFormat format
         {
-            get { return GraphicsFormatUtility.GetRenderTextureFormat(m_Format); }
-            set { m_Format = GraphicsFormatUtility.GetGraphicsFormat(value, RenderTextureReadWrite.Default); }
+            get
+            {
+                if (GraphicsFormatUtility.IsDepthStencilFormat(m_Format))
+                {
+                    return RenderTextureFormat.Depth;
+                    // Note that there is no way for us to identify the descriptor as "RenderTextureFormat.ShadowMap".
+                    // This is because the ShadowSamplingMode is not relevant to AttachmentDescriptors. (attachments aren't sampled)
+                }
+                return GraphicsFormatUtility.GetRenderTextureFormat(m_Format);
+            }
+            set { m_Format = GetAdjustedFormat(value, RenderTextureReadWrite.Default); }
         }
 
         // The render texture where the load/store operations take place
@@ -139,13 +148,26 @@ namespace UnityEngine.Rendering
         }
 
         public AttachmentDescriptor(RenderTextureFormat format)
-            : this(GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default))
+            : this(GetAdjustedFormat(format, RenderTextureReadWrite.Default))
         {
         }
 
         public AttachmentDescriptor(RenderTextureFormat format, RenderTargetIdentifier target, bool loadExistingContents = false, bool storeResults = false, bool resolve = false)
-            : this(GraphicsFormatUtility.GetGraphicsFormat(format, RenderTextureReadWrite.Default))
+            : this(GetAdjustedFormat(format, RenderTextureReadWrite.Default))
         {}
+
+        private static GraphicsFormat GetAdjustedFormat(RenderTextureFormat format, RenderTextureReadWrite readWrite)
+        {
+            switch (format)
+            {
+                case RenderTextureFormat.Depth:
+                case RenderTextureFormat.Shadowmap:
+                    // Outside of the AttachmentDescriptor case, RTF.Depth / RTF.Shadowmap don't equate to the DefaultFormats. We need this to keep the behavior intact though.
+                    return SystemInfo.GetGraphicsFormat(format == RenderTextureFormat.Depth ? DefaultFormat.DepthStencil : DefaultFormat.Shadow);
+                default:
+                    return GraphicsFormatUtility.GetGraphicsFormat(format, readWrite);
+            }
+        }
 
         public bool Equals(AttachmentDescriptor other)
         {

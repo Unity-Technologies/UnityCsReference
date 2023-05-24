@@ -399,7 +399,6 @@ namespace Unity.GraphToolsFoundation.Editor
                 RegisterCallback<PointerLeaveEvent>(StopEvent, TrickleDown.TrickleDown);
                 RegisterCallback<PointerOverEvent>(StopEvent, TrickleDown.TrickleDown);
                 RegisterCallback<PointerOutEvent>(StopEvent, TrickleDown.TrickleDown);
-                RegisterCallback<PointerStationaryEvent>(StopEvent, TrickleDown.TrickleDown);
 
                 RegisterCallback<KeyDownEvent>(StopEvent, TrickleDown.TrickleDown);
                 RegisterCallback<KeyUpEvent>(StopEvent, TrickleDown.TrickleDown);

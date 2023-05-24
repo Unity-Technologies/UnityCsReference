@@ -184,7 +184,7 @@ namespace UnityEditor
 
             for (int i = 0; i < m_OptionNames.Length; i++)
             {
-                var index = (int)Math.Log(m_OptionMaskValues[i], 2);
+                var index = (int)Math.Log((uint) m_OptionMaskValues[i], 2);
                 bool toggleVal = m_SelectionMatch[index] == SelectionModes.All || m_SelectionMatch[index] == SelectionModes.Mixed ? true : false;
                 toggleStyle = m_SelectionMatch[index] == SelectionModes.Mixed ? Styles.menuItemMixed : Styles.menuItem;
 

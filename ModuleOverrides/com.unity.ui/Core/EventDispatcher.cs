@@ -241,7 +241,7 @@ namespace UnityEngine.UIElements
 
         internal void OpenGate()
         {
-            Debug.Assert(m_GateCount > 0);
+            Debug.Assert(m_GateCount > 0, "m_GateCount > 0");
 
             if (m_GateCount > 0)
             {

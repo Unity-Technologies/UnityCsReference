@@ -525,7 +525,7 @@ namespace UnityEngine.UIElements
 
         internal void SendEvent(EventBase e, DispatchMode dispatchMode = DispatchMode.Queued)
         {
-            Debug.Assert(dispatcher != null);
+            Debug.Assert(dispatcher != null, "dispatcher != null");
             dispatcher?.Dispatch(e, this, dispatchMode);
         }
 

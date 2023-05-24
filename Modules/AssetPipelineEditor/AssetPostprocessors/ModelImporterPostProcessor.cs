@@ -15,8 +15,6 @@ namespace UnityEditor
 {
     internal class ModelImporterPostProcessor : AssetPostprocessor
     {
-        static bool AskedForBumpMap = false;
-
         private static bool IsTypeOf(System.Type query, System.Type desiredType)
         {
             return query != null && (query.IsSubclassOf(desiredType) || query == desiredType);
@@ -64,9 +62,8 @@ namespace UnityEditor
             }
             finally
             {
-                if (oneFound && !AskedForBumpMap)
+                if (oneFound && !HasRegisteredOpenBumpMapCheckWindow())
                 {
-                    AskedForBumpMap = true;
                     // We cannot open the BumpMapTexturesWindow here because the Editor Layout may not have been loaded yet
                     // and will destroy the window when doing so. So lets wait for the first frame to open it.
                     EditorApplication.update += OpenBumpMapCheckWindow;
@@ -78,9 +75,20 @@ namespace UnityEditor
             }
         }
 
+        static bool HasRegisteredOpenBumpMapCheckWindow()
+        {
+            var invocationList = EditorApplication.update.GetInvocationList();
+            for (int i = 0; i < invocationList.Length; ++i)
+            {
+                if (invocationList[i] == OpenBumpMapCheckWindow)
+                    return true;
+            }
+
+            return false;
+        }
+
         static void OpenBumpMapCheckWindow()
         {
-            AskedForBumpMap = false;
             EditorApplication.update -= OpenBumpMapCheckWindow;
             InternalEditorUtility.PerformUnmarkedBumpMapTexturesFixing();
         }

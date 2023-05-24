@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
-using UnityEngine.Bindings;
-using static UnityEngine.Bindings.ManagedListWrapper;
 
 namespace UnityEngine
 {
@@ -15,7 +13,7 @@ namespace UnityEngine
     //   on il2cpp/mono we can "resize" List<T> (up to Capacity, sure, but this is/should-be handled higher level)
     //   also we can easily "convert" List<T> to System.Array
     // NB .net backend is treated as second-class citizen going through ToArray call
-    internal sealed class NoAllocHelpers
+    internal static class NoAllocHelpers
     {
         public static void EnsureListElemCount<T>(List<T> list, int count)
         {
@@ -52,8 +50,40 @@ namespace UnityEngine
             if (list == null)
                 return null;
 
-            ListPrivateFieldAccess<T> tListAccess = UnsafeUtility.As<List<T>, ListPrivateFieldAccess<T>>(ref list);
+            var tListAccess = UnsafeUtility.As<ListPrivateFieldAccess<T>>(list);
             return tListAccess._items;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ResetListContents<T>(List<T> list, ReadOnlySpan<T> span) 
+        {
+            var tListAccess = UnsafeUtility.As<ListPrivateFieldAccess<T>>(list);
+            tListAccess._items = span.ToArray();
+            tListAccess._size = span.Length;
+            tListAccess._version++;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ResetListSize<T>(List<T> list, int size) where T: unmanaged
+        {
+            Debug.Assert(list.Capacity >= size);
+
+            var tListAccess = UnsafeUtility.As<ListPrivateFieldAccess<T>>(list);
+            tListAccess._size = size;
+            tListAccess._version++;
+        }
+
+        // This is a helper class to allow the binding code to manipulate the internal fields of
+        // System.Collections.Generic.List.  The field order below must not be changed.
+        private class ListPrivateFieldAccess<T>
+        {
+#pragma warning disable CS0649
+#pragma warning disable CS8618
+            internal T[] _items; // Do not rename (binary serialization)
+#pragma warning restore CS8618
+            internal int _size; // Do not rename (binary serialization)
+            internal int _version; // Do not rename (binary serialization)
+#pragma warning restore CS0649
         }
     }
 }

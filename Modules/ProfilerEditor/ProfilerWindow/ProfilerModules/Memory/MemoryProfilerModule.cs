@@ -13,6 +13,7 @@ using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Networking.PlayerConnection;
 using UnityEngine.Profiling;
+using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
 namespace UnityEditorInternal.Profiling
@@ -744,6 +745,7 @@ namespace UnityEditorInternal.Profiling
         /// </summary>
         /// <param name="memoryInfo"></param>
         /// <param name="referencedIndices"></param>
+        [RequiredByNativeCode]
         static void SetMemoryProfilerInfo(ObjectMemoryInfo[] memoryInfo, int[] referencedIndices)
         {
             if (instance.IsAlive && (instance.Target as MemoryProfilerModule).wantsMemoryRefresh)

@@ -299,23 +299,8 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         public Texture2D[] atlasTextures
         {
-            get
-            {
-                if (m_AtlasTextures == null)
-                {
-                    //
-                }
-
-                //if (m_IsUsingDynamicTextures)
-                //    return TMP_DynamicAtlasTextureGroup.managedDynamicTextures;
-
-                return m_AtlasTextures;
-            }
-
-            set
-            {
-                m_AtlasTextures = value;
-            }
+            get => m_AtlasTextures;
+            set => m_AtlasTextures = value;
         }
         [SerializeField]
         internal Texture2D[] m_AtlasTextures;

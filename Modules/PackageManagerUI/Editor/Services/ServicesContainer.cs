@@ -113,6 +113,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStorePackageFactory m_AssetStorePackageFactory;
         private UpmPackageFactory m_UpmPackageFactory;
         private UpmOnAssetStorePackageFactory m_UpmOnAssetStorePackageFactory;
+        private PackageLinkFactory m_PackageLinkFactory;
 
         private OperationFactory m_OperationFactory;
 
@@ -191,6 +192,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStorePackageFactory = new AssetStorePackageFactory();
             m_UpmPackageFactory = new UpmPackageFactory();
             m_UpmOnAssetStorePackageFactory = new UpmOnAssetStorePackageFactory();
+            m_PackageLinkFactory = new PackageLinkFactory();
 
             m_OperationFactory = new OperationFactory();
 
@@ -236,6 +238,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStorePackageFactory.ResolveDependencies(m_UniqueIdMapper, m_UnityConnectProxy, m_AssetStoreCache, m_AssetStoreClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_FetchStatusTracker, m_IOProxy, m_BackgroundFetchHandler);
             m_UpmPackageFactory.ResolveDependencies(m_UniqueIdMapper, m_UpmCache, m_UpmClient, m_BackgroundFetchHandler, m_PackageDatabase, m_SettingsProxy);
             m_UpmOnAssetStorePackageFactory.ResolveDependencies(m_UniqueIdMapper, m_UnityConnectProxy, m_AssetStoreCache, m_BackgroundFetchHandler, m_PackageDatabase, m_FetchStatusTracker, m_UpmCache, m_UpmClient);
+            m_PackageLinkFactory.ResolveDependencies(m_UpmCache, m_AssetStoreCache, m_ApplicationProxy, m_IOProxy);
 
             m_ExtensionManager.ResolveDependencies(m_PackageManagerPrefs);
 
@@ -352,6 +355,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(m_AssetStorePackageFactory);
             Register(m_UpmPackageFactory);
             Register(m_UpmOnAssetStorePackageFactory);
+            Register(m_PackageLinkFactory);
 
             Register(m_AssetStorePackageInstaller);
             Register(m_AssetStoreDownloadManager);

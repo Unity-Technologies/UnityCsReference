@@ -353,6 +353,12 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Cursor.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Cursor.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.InputForUIProcessor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.InputForUIProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.LegacyInputProcessor.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.LegacyInputProcessor.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\DefaultEventSystem.cs</Link>
     </Compile>
@@ -1255,6 +1261,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIElementsUtility.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UIElementsUtility.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UIToolkitInputConfiguration.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UIToolkitInputConfiguration.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UQuery.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UQuery.cs</Link>
@@ -2978,9 +2987,6 @@
     <Compile Include="..\..\Runtime\Export\Caching\Caching.deprecated.cs">
       <Link>Runtime\Export\Caching\Caching.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Camera\AssetNotificationSystem.bindings.cs">
-      <Link>Runtime\Export\Camera\AssetNotificationSystem.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs">
       <Link>Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs</Link>
     </Compile>
@@ -4226,11 +4232,14 @@
     <Compile Include="..\..\Runtime\Scripting\Marshalling\BindingsHelpers.bindings.cs">
       <Link>Runtime\Scripting\Marshalling\BindingsHelpers.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Marshalling\BlittableArrayWrapper.cs">
+      <Link>Runtime\Scripting\Marshalling\BlittableArrayWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Marshalling\BlittableListWrapper.cs">
+      <Link>Runtime\Scripting\Marshalling\BlittableListWrapper.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\ExceptionMarshaller.cs">
       <Link>Runtime\Scripting\Marshalling\ExceptionMarshaller.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Runtime\Scripting\Marshalling\ManagedListWrapper.cs">
-      <Link>Runtime\Scripting\Marshalling\ManagedListWrapper.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs">
       <Link>Runtime\Scripting\Marshalling\ManagedSpanWrapper.cs</Link>

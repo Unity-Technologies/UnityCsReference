@@ -434,7 +434,7 @@ namespace UnityEngine.UIElements
                 {
                     if (lineIndex == firstLineIndex)
                     {
-                        lastCharacterOnLine = uitkTextHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
+                        lastCharacterOnLine = GetLastCharacterAt(lineIndex);
                         endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine, true);
                     }
                     else if (lineIndex == lastLineIndex)
@@ -451,7 +451,7 @@ namespace UnityEngine.UIElements
                             uitkTextHandle.textInfo.lineInfo[lineIndex].firstCharacterIndex;
                         startPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(firstCharacterOnLine);
 
-                        lastCharacterOnLine = uitkTextHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
+                        lastCharacterOnLine = GetLastCharacterAt(lineIndex);
                         endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine, true);
                     }
 
@@ -484,6 +484,19 @@ namespace UnityEngine.UIElements
                 color = selection.cursorColor,
                 playmodeTintColor = playmodeTintColor
             });
+        }
+
+        int GetLastCharacterAt(int lineIndex)
+        {
+            var lastCharacterIndex = uitkTextHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
+            var firstCharacterIndex = uitkTextHandle.textInfo.lineInfo[lineIndex].firstCharacterIndex;
+            var lastCharacter = uitkTextHandle.textInfo.textElementInfo[lastCharacterIndex];
+
+            // Select the last character that is not a \n or a \r
+            while (lastCharacter.character is '\n' or '\r' && lastCharacterIndex > firstCharacterIndex)
+                lastCharacter = uitkTextHandle.textInfo.textElementInfo[--lastCharacterIndex];
+
+            return lastCharacterIndex;
         }
     }
 }

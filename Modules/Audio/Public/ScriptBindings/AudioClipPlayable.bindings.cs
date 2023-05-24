@@ -103,6 +103,11 @@ namespace UnityEngine.Audio
             SetVolumeInternal(ref m_Handle, value);
         }
 
+        internal float GetClipPositionSec()
+        {
+            return GetClipPositionSecInternal(ref m_Handle);
+        }
+        
         internal float GetStereoPan()
         {
             return GetStereoPanInternal(ref m_Handle);
@@ -218,6 +223,9 @@ namespace UnityEngine.Audio
         [NativeThrows]
         extern private static void SetVolumeInternal(ref PlayableHandle hdl, float volume);
 
+        [NativeThrows]
+        extern private static float GetClipPositionSecInternal(ref PlayableHandle hdl);
+        
         [NativeThrows]
         extern private static float GetStereoPanInternal(ref PlayableHandle hdl);
 

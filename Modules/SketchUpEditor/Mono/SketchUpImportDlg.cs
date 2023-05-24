@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Scripting;
 using System;
 using UnityEditor.IMGUI.Controls;
 using Object = UnityEngine.Object;
@@ -264,6 +265,7 @@ namespace UnityEditor
             win.ShowAuxWindow();
         }
 
+        [RequiredByNativeCode]
         internal static int[] LaunchAsModal(SketchUpNodeInfo[] nodes)
         {
             SketchUpImportDlg win = EditorWindow.GetWindowDontShow<SketchUpImportDlg>();

@@ -380,6 +380,15 @@ namespace UnityEditor
                 set;
             }
 
+            // Enable Armv8.5a MTE - Memory Tagging for Arm64 builds
+            internal static extern bool enableArm64MTE
+            {
+                [NativeMethod("GetEnableArm64MTE")]
+                get;
+                [NativeMethod("SetEnableArm64MTE")]
+                set;
+            }
+
             // Support different CPU architectures with each APK (a.k.a. Multiple APK support).
             public static extern bool buildApkPerCpuArchitecture
             {

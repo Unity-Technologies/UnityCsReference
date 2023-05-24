@@ -492,7 +492,7 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", icon, null);
         }
 
-        static private void CreateAudioRandomContainer()
+        static internal void CreateAudioRandomContainer()
         {
             var icon = EditorGUIUtility.IconContent<AudioRandomContainer>().image as Texture2D;
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAudioRandomContainer>(), "New Audio Random Container.asset", icon, null);

@@ -5,9 +5,11 @@
 using System;
 using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.InputForUI
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct EventModifiers
     {
         // Types of modifier key that can be active during a keystroke event.
@@ -39,7 +41,8 @@ namespace UnityEngine.InputForUI
             // TODO For some reason IMGUI also has a flag if any F1-F15 keys are pressed + extra keys.
             // TODO Not sure what it is about or how it is used exactly.
             // TODO https://github.cds.internal.unity3d.com/unity/unity/blob/trunk/Modules/IMGUI/Event.cs#L228-L256
-            FunctionKey = 1u << 9
+            FunctionKey = 1u << 10,
+            Numeric = 1u << 11
         }
 
         private uint _state;
@@ -54,6 +57,7 @@ namespace UnityEngine.InputForUI
         public bool isCapsLockEnabled => IsPressed(Modifiers.CapsLock);
         public bool isNumLockEnabled => IsPressed(Modifiers.Numlock);
         public bool isFunctionKeyPressed => IsPressed(Modifiers.FunctionKey);
+        public bool isNumericPressed => IsPressed(Modifiers.Numeric);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetPressed(Modifiers modifier, bool pressed)
@@ -99,6 +103,8 @@ namespace UnityEngine.InputForUI
                 Append(ref str, "Numlock");
             if (IsPressed(Modifiers.FunctionKey))
                 Append(ref str, "FunctionKey");
+            if (IsPressed(Modifiers.Numeric))
+                Append(ref str, "Numeric");
             return str;
         }
     }

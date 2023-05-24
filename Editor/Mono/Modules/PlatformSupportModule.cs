@@ -58,6 +58,8 @@ namespace UnityEditor.Modules
         // See DefaultPlayerSettingsEditorExtension.cs for abstract implementation
         ISettingEditorExtension CreateSettingsEditorExtension();
 
+        IAdaptiveVsyncSetting CreateAdaptiveSettingEditorExtension();
+
         // Return an instance of IPreferenceWindowExtension or null if not used
         IPreferenceWindowExtension CreatePreferenceWindowExtension();
 
@@ -124,6 +126,11 @@ namespace UnityEditor.Modules
         IEnumerable<ScriptAssemblyPlatform> GetExtraScriptAssemblyPlatforms(BuildTarget buildTarget);
 
         IEditorAnalyticsExtension GetEditorAnalyticsExtension();
+    }
+
+    internal interface IAdaptiveVsyncSetting
+    {
+        void AdaptiveVsyncUI(SerializedProperty currentSettings);
     }
 
     struct ScriptAssemblyPlatform

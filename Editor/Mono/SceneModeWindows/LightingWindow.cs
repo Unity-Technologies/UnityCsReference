@@ -621,6 +621,10 @@ namespace UnityEditor
 
         private void DoBake()
         {
+            // Before we bake, kick every scene view out of preview mode
+            foreach (SceneView sv in SceneView.sceneViews)
+                sv.useInteractiveLightBakingData = false;
+
             Lightmapping.BakeAsync();
         }
 

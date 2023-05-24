@@ -24,12 +24,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string displayName => m_DisplayName;
 
         [SerializeField]
-        protected string m_PublisherName;
-        public string publisherName => m_PublisherName;
-
-        [SerializeField]
-        protected string m_PublisherLink;
-        public string publisherLink => m_PublisherLink;
+        protected string m_ProductUrl;
+        public string productUrl => m_ProductUrl;
 
         [SerializeField]
         protected string m_Description;
@@ -54,15 +50,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public DateTime? firstPublishedDate => TicksToDateTime(m_FirstPublishedDateTicks);
 
         [SerializeField]
-        protected string m_AssetStoreLink;
-        public string assetStoreLink => m_AssetStoreLink;
-
-        [SerializeField]
         protected List<PackageImage> m_Images;
-        [SerializeField]
-        protected List<PackageLink> m_Links;
         public IEnumerable<PackageImage> images => m_Images;
-        public IEnumerable<PackageLink> links => m_Links;
 
         [SerializeField]
         protected long m_PurchasedTimeTicks;
@@ -85,13 +74,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_DisplayName = productInfo?.displayName ?? purchaseInfo?.displayName ?? string.Empty;
             m_Description = productInfo?.description;
             m_PublishNotes = productInfo?.publishNotes;
-            m_PublisherName = productInfo?.publisherName;
-            m_PublisherLink = productInfo?.publisherLink;
 
             m_Images = productInfo?.images ?? new List<PackageImage>();
-            m_Links = productInfo?.links ?? new List<PackageLink>();
 
-            m_AssetStoreLink = productInfo?.assetStoreLink.url;
+            m_ProductUrl = productInfo?.assetStoreProductUrl;
 
             m_FirstPublishedDateTicks = DateTimeStringToTicks(productInfo?.firstPublishedDate);
             SetPurchaseInfo(purchaseInfo);

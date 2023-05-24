@@ -10,6 +10,16 @@ using System.Runtime.CompilerServices;
 // UITK user
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]
 
-// testing
+// Input testing
 [assembly: InternalsVisibleTo("UnityEngine.InputForUITests")]
 [assembly: InternalsVisibleTo("UnityEngine.InputForUIVisualizer")]
+
+// UITK testing
+[assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
+[assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")]
+[assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
+
+// other testing
+[assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]

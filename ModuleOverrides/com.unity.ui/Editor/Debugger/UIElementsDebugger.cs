@@ -343,6 +343,25 @@ namespace UnityEditor.UIElements.Debugger
 
             m_Toolbar.Add(m_ShowLayoutToggle);
 
+            m_ShowTextMetrics = new EnumField() { name = "showTextMetrics" };
+            m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
+
+            // Update USS classes so it looks like other ToolbarToggles
+            m_ShowTextMetrics.AddToClassList(ToolbarToggle.ussClassName);
+            m_ShowTextMetrics.Q<VisualElement>(classes: EnumField.inputUssClassName).AddToClassList(Toggle.inputUssClassName);
+            m_ShowTextMetrics.Q<VisualElement>(classes: EnumField.inputUssClassName).RemoveFromClassList(EnumField.inputUssClassName);
+            m_ShowTextMetrics.Q<TextElement>().RemoveFromClassList(EnumField.textUssClassName);
+            m_ShowTextMetrics.Q<TextElement>().AddToClassList(Toggle.textUssClassName);
+            m_ShowTextMetrics.Init(TextInfoOverlay.DisplayOption.None);
+            m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
+
+            m_ShowTextMetrics.RegisterValueChangedCallback((e) =>
+            {
+                m_TextInfoOverlay.displayOption = (TextInfoOverlay.DisplayOption)e.newValue;
+                m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
+            });
+            m_Toolbar.Add(m_ShowTextMetrics);
+
             if (Unsupported.IsDeveloperBuild())
             {
                 m_RepaintOverlayToggle = new ToolbarToggle() { name = "repaintOverlayToggle" };
@@ -364,30 +383,11 @@ namespace UnityEditor.UIElements.Debugger
                 m_ShowWireframeToggle.text = "Show Wireframe";
                 m_ShowWireframeToggle.RegisterValueChangedCallback((e) => { m_Context.showWireframe = e.newValue; });
                 m_Toolbar.Add(m_ShowWireframeToggle);
-
                 m_RetainContextMenuToggle = new ToolbarToggle() { name = "retainContextMenuToggle" };
                 m_RetainContextMenuToggle.text = "Retain Context Menu";
                 m_RetainContextMenuToggle.RegisterValueChangedCallback((e) => { m_Context.retainContextMenu = e.newValue; });
                 m_Toolbar.Add(m_RetainContextMenuToggle);
 
-                m_ShowTextMetrics = new EnumField() { name = "showTextMetrics" };
-                m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
-
-                // Update USS classes so it looks like other ToolbarToggles
-                m_ShowTextMetrics.AddToClassList(ToolbarToggle.ussClassName);
-                m_ShowTextMetrics.Q<VisualElement>(classes: EnumField.inputUssClassName).AddToClassList(Toggle.inputUssClassName);
-                m_ShowTextMetrics.Q<VisualElement>(classes: EnumField.inputUssClassName).RemoveFromClassList(EnumField.inputUssClassName);
-                m_ShowTextMetrics.Q<TextElement>().RemoveFromClassList(EnumField.textUssClassName);
-                m_ShowTextMetrics.Q<TextElement>().AddToClassList(Toggle.textUssClassName);
-                m_ShowTextMetrics.Init(TextInfoOverlay.DisplayOption.None);
-                m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
-
-                m_ShowTextMetrics.RegisterValueChangedCallback((e) =>
-                {
-                    m_TextInfoOverlay.displayOption = (TextInfoOverlay.DisplayOption)e.newValue;
-                    m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
-                });
-                m_Toolbar.Add(m_ShowTextMetrics);
             }
 
             var splitter = new DebuggerSplitter();

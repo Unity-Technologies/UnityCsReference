@@ -33,7 +33,7 @@ namespace UnityEngine.UIElements
 
         internal void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId, Vector2 pointerPos)
         {
-            Debug.Assert(pointerId >= 0);
+            Debug.Assert(pointerId >= 0, "SetElementUnderPointer expects pointerId >= 0");
 
             VisualElement previousTopElementUnderPointer = m_TopElementUnderPointer[pointerId];
             m_IsPickingPointerTemporaries[pointerId] = false;
@@ -79,7 +79,7 @@ namespace UnityEngine.UIElements
 
         void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId, EventBase triggerEvent, bool temporary)
         {
-            Debug.Assert(pointerId >= 0);
+            Debug.Assert(pointerId >= 0, "SetElementUnderPointer expects pointerId >= 0");
 
             m_IsPickingPointerTemporaries[pointerId] = temporary;
             m_PickingPointerPositions[pointerId] = GetEventPointerPosition(triggerEvent);

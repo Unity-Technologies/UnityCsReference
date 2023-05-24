@@ -233,6 +233,8 @@ namespace UnityEngine.UIElements
                 var unitStr = string.Empty;
                 if (unitIndex > 0)
                     unitStr = str.Substring(unitIndex, str.Length - unitIndex);
+                else
+                    unitStr = "px";
 
                 float value = defaultValue.value;
                 LengthUnit unit = defaultValue.unit;

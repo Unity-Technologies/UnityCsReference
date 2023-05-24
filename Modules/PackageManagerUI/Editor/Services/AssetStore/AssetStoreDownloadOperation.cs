@@ -16,7 +16,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal static readonly string k_DownloadErrorMessage = L10n.Tr("The download could not be completed. See details in console.");
         internal static readonly string k_AbortErrorMessage = L10n.Tr("The download could not be aborted. Please try again.");
         internal static readonly string k_AssetStoreDownloadPrefix = "content__";
-        internal static readonly string k_ForbiddenErrorMessage = L10n.Tr("The Asset Store package you are trying to download is not available to the current Unity account. If you purchased this asset from the Asset Store using a different account, use that Unity account to sign into the Editor.");
+        internal static readonly string k_NotPurchasedErrorMessage = L10n.Tr("The Asset Store package you are trying to download is not available to the current Unity account. If you purchased this asset from the Asset Store using a different account, use that Unity account to sign into the Editor.");
+        internal static readonly string k_ForbiddenErrorMessage = L10n.Tr("The Asset Store package couldn't be downloaded at this time. Please try again later. Should the issue persist, please contact our <a href=\"https://support.unity.com\">customer support</a> for assistance.");
         private static readonly string k_ConsoleLogPrefix = L10n.Tr("[Package Manager Window]");
 
         [SerializeField]
@@ -90,19 +91,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private AssetStoreRestAPI m_AssetStoreRestAPI;
         [NonSerialized]
+        private AssetStoreCache m_AssetStoreCache;
+        [NonSerialized]
         private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
         public void ResolveDependencies(AssetStoreUtils assetStoreUtils,
             AssetStoreRestAPI assetStoreRestAPI,
+            AssetStoreCache assetStoreCache,
             AssetStoreCachePathProxy assetStoreCachePathProxy)
         {
             m_AssetStoreUtils = assetStoreUtils;
             m_AssetStoreRestAPI = assetStoreRestAPI;
+            m_AssetStoreCache = assetStoreCache;
             m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
         }
 
-        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCachePathProxy assetStoreCachePathProxy, long productId, string oldPath)
+        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCache assetStoreCache, AssetStoreCachePathProxy assetStoreCachePathProxy, long productId, string oldPath)
         {
-            ResolveDependencies(assetStoreUtils, assetStoreRestAPI, assetStoreCachePathProxy);
+            ResolveDependencies(assetStoreUtils, assetStoreRestAPI, assetStoreCache, assetStoreCachePathProxy);
 
             m_ProductId = productId;
             m_ProductOldPath = oldPath;
@@ -151,19 +156,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             onOperationProgress?.Invoke(this);
         }
 
-        private void OnErrorMessage(string errorMessage, int operationErrorCode = -1, UIError.Attribute attr = UIError.Attribute.None)
+        private void OnErrorMessage(string message, int operationErrorCode = -1, UIError.Attribute attr = UIError.Attribute.None)
         {
             state = DownloadState.Error;
 
             if ((attr & UIError.Attribute.Warning) != 0)
-                Debug.LogWarning($"{k_ConsoleLogPrefix} {errorMessage}");
+                Debug.LogWarning($"{k_ConsoleLogPrefix} {message}");
             else
-                Debug.LogError($"{k_ConsoleLogPrefix} {errorMessage}");
+                Debug.LogError($"{k_ConsoleLogPrefix} {message}");
 
             attr |= UIError.Attribute.DetailInConsole;
             if (operationErrorCode == 403)
             {
-                m_ErrorMessage = k_ForbiddenErrorMessage;
+                var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(m_ProductId);
+                m_ErrorMessage = purchaseInfo == null ? k_NotPurchasedErrorMessage : k_ForbiddenErrorMessage;
             }
             else
             {

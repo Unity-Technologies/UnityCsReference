@@ -67,6 +67,12 @@ namespace UnityEngine.Rendering
         private extern AtomicSafetyHandle GetSafetyHandle();
         internal extern void SetScriptingCallback(Action<AsyncGPUReadbackRequest> callback);
         unsafe private extern IntPtr GetDataRaw(int layer);
+
+        [RequiredByNativeCode]
+        static void InvokeCallback(Action<AsyncGPUReadbackRequest> callback, AsyncGPUReadbackRequest obj)
+        {
+            callback(obj);
+        }
     }
 
     [UsedByNativeCode]

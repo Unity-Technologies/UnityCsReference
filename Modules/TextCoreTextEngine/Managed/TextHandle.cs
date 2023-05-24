@@ -44,7 +44,7 @@ namespace UnityEngine.TextCore.Text
 
         /// <summary>
         /// The TextInfo instance, use from this instead of the m_TextInfo member.
-        /// References a cached textInfo if dynamic, or a static instance (textInfoCommon) if not cached. 
+        /// References a cached textInfo if dynamic, or a static instance (textInfoCommon) if not cached.
         /// </summary>
         internal TextInfo textInfo
         {
@@ -383,7 +383,7 @@ namespace UnityEngine.TextCore.Text
                 if (visibleOnly && !cInfo.isVisible) continue;
 
                 // Ignore Carriage Returns <CR>
-                if (cInfo.character == '\r')
+                if (cInfo.character == '\r' || cInfo.character == '\n')
                     continue;
 
                 // Get Bottom Left and Top Right position of the current character
@@ -729,7 +729,7 @@ namespace UnityEngine.TextCore.Text
         {
             if (textInfo.characterCount <= 0)
                 return;
-          
+
             var maxAscender = float.MinValue;
             var maxDescender = textInfo.textElementInfo[textInfo.characterCount - 1].descender;
             var renderedWidth = 0f;

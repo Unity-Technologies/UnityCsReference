@@ -226,16 +226,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void SetPurchaseInfos(IEnumerable<AssetStorePurchaseInfo> purchaseInfos)
         {
-            var updatedPurcahseInfos = new List<AssetStorePurchaseInfo>();
+            var updatedPurchaseInfos = new List<AssetStorePurchaseInfo>();
             foreach (var purchaseInfo in purchaseInfos)
             {
                 var oldPurchaseInfo = GetPurchaseInfo(purchaseInfo.productId);
                 m_PurchaseInfos[purchaseInfo.productId] = purchaseInfo;
                 if (!purchaseInfo.Equals(oldPurchaseInfo))
-                    updatedPurcahseInfos.Add(purchaseInfo);
+                    updatedPurchaseInfos.Add(purchaseInfo);
             }
-            if (updatedPurcahseInfos.Any())
-                onPurchaseInfosChanged?.Invoke(updatedPurcahseInfos);
+            if (updatedPurchaseInfos.Count > 0)
+                onPurchaseInfosChanged?.Invoke(updatedPurchaseInfos);
         }
 
         public virtual void SetProductInfo(AssetStoreProductInfo productInfo)

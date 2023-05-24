@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.IntegerTime;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.InputForUI
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct CommandEvent : IEventProperties
     {
         public enum Type

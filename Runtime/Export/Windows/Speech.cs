@@ -162,11 +162,11 @@ namespace UnityEngine.Windows.Speech
         public bool IsRunning { get { return m_Recognizer != IntPtr.Zero && IsRunning_Internal(m_Recognizer); } }
 
         [RequiredByNativeCode]
-        private void InvokePhraseRecognizedEvent(string text, ConfidenceLevel confidence, SemanticMeaning[] semanticMeanings, long phraseStartFileTime, long phraseDurationTicks)
+        private unsafe void InvokePhraseRecognizedEvent(IntPtr rawText, int rawTextLength, ConfidenceLevel confidence, SemanticMeaning[] semanticMeanings, long phraseStartFileTime, long phraseDurationTicks)
         {
             var onPhraseRecognized = OnPhraseRecognized;
             if (onPhraseRecognized != null)
-                onPhraseRecognized(new PhraseRecognizedEventArgs(text, confidence, semanticMeanings, DateTime.FromFileTime(phraseStartFileTime), TimeSpan.FromTicks(phraseDurationTicks)));
+                onPhraseRecognized(new PhraseRecognizedEventArgs(new string((char*)rawText, 0, rawTextLength), confidence, semanticMeanings, DateTime.FromFileTime(phraseStartFileTime), TimeSpan.FromTicks(phraseDurationTicks)));
         }
 
         [RequiredByNativeCode]
@@ -357,19 +357,19 @@ namespace UnityEngine.Windows.Speech
         }
 
         [RequiredByNativeCode]
-        private void DictationRecognizer_InvokeHypothesisGeneratedEvent(string keyword)
+        private unsafe void DictationRecognizer_InvokeHypothesisGeneratedEvent(IntPtr keyword, int keywordLength)
         {
             var handler = DictationHypothesis;
             if (handler != null)
-                handler(keyword);
+                handler(new string((char*)keyword, 0, keywordLength));
         }
 
         [RequiredByNativeCode]
-        private void DictationRecognizer_InvokeResultGeneratedEvent(string keyword, ConfidenceLevel minimumConfidence)
+        private unsafe void DictationRecognizer_InvokeResultGeneratedEvent(IntPtr keyword, int keywordLength, ConfidenceLevel minimumConfidence)
         {
             var handler = DictationResult;
             if (handler != null)
-                handler(keyword, minimumConfidence);
+                handler(new string((char*)keyword, 0, keywordLength), minimumConfidence);
         }
 
         [RequiredByNativeCode]

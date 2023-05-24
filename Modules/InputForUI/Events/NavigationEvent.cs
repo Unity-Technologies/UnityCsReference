@@ -4,9 +4,11 @@
 
 using Unity.IntegerTime;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.InputForUI
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct NavigationEvent : IEventProperties
     {
         public enum Type
@@ -63,7 +65,9 @@ namespace UnityEngine.InputForUI
 
         public override string ToString()
         {
-            return type == Type.Move ? $"Navigation {type} {direction}" : $"Navigation {type}";
+            return $"Navigation {type}" +
+                   (type == Type.Move ? $" {direction}" : "") +
+                   (eventSource != EventSource.Keyboard ? $" {eventSource}" : "");
         }
 
         /// <summary>

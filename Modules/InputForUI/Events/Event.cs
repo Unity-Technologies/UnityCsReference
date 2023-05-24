@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using Unity.IntegerTime;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.InputForUI
 {
@@ -14,6 +15,7 @@ namespace UnityEngine.InputForUI
     /// Is unmanaged for most event types.
     /// TODO maybe we can make it fully unmanaged if composition string can be fixed size?
     /// </summary>
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [StructLayout(LayoutKind.Explicit)]
     internal struct Event : IEventProperties
     {

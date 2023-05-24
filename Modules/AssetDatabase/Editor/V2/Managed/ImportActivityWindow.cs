@@ -2982,30 +2982,25 @@ namespace UnityEditor
 
     internal class ArtifactBrowserPostProcessor : AssetPostprocessor
     {
-        private static string[] m_ImportedAssets;
-        private static string[] m_AssetPathsGone;
-        private static string[] m_RenamedAssets;
-
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            //handle imported assets
+            // Handle imported assets
             if (ImportActivityWindow.m_Instance != null)
             {
-                EditorApplication.delayCall += UpdateImportedAssetsNextTick;
-                m_ImportedAssets = importedAssets;
-                m_AssetPathsGone = deletedAssets.Union(movedFromAssetPaths).ToArray();
-                m_RenamedAssets = movedAssets;
+                string[] assetPathsGone = deletedAssets.Union(movedFromAssetPaths).ToArray();
+
+                // Create a lambda expression that captures the desired variables and calls the method with parameters
+                EditorApplication.delayCall += () => UpdateImportedAssetsNextTick(importedAssets, assetPathsGone, movedAssets);
             }
         }
 
-        private static void UpdateImportedAssetsNextTick()
+        private static void UpdateImportedAssetsNextTick(string[] importedAssets, string[] assetPathsGone, string[] renamedAssets)
         {
             var artifactBrowser = ImportActivityWindow.m_Instance;
-            if (artifactBrowser != null && m_ImportedAssets != null)
+            if (artifactBrowser != null)
             {
-                artifactBrowser.NotifyAssetImported(m_ImportedAssets, m_AssetPathsGone, m_RenamedAssets);
-                m_ImportedAssets = null;
+                artifactBrowser.NotifyAssetImported(importedAssets, assetPathsGone, renamedAssets);
             }
         }
     }

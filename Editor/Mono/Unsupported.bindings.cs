@@ -185,7 +185,7 @@ namespace UnityEditor
 
         public static void CopyStateMachineDataToPasteboard(UnityEngine.Object stateMachineObject, AnimatorController controller, int layerIndex)
         {
-            CopyStateMachineDataToPasteboard(new UnityEngine.Object[] {stateMachineObject}, null, new Vector3[] {new Vector3()}, controller, layerIndex);
+            CopyStateMachineDataToPasteboard(new UnityEngine.Object[] { stateMachineObject }, null, new Vector3[] { new Vector3() }, controller, layerIndex);
         }
 
         [FreeFunction("UnityEditor::StateMachineCopyPaste::CopyDataToPasteboard")]
@@ -212,11 +212,17 @@ namespace UnityEditor
         [FreeFunction("GetPhysicalPath")]
         public static extern string ResolveRedirectedPath(string path);
 
-        [FreeFunction("AssetDatabaseDeprecated::SetApplicationSettingCompressAssetsOnImport")]
-        public static extern void SetApplicationSettingCompressAssetsOnImport(bool value);
+        [Obsolete("SetApplicationSettingCompressAssetsOnImport is deprecated. Use EditorUserSettings.compressAssetsOnImport", false)]
+        public static void SetApplicationSettingCompressAssetsOnImport(bool value)
+        {
+            EditorUserSettings.compressAssetsOnImport = value;
+        }
 
-        [StaticAccessor("AssetDatabaseDeprecated", StaticAccessorType.DoubleColon)]
-        public static extern bool GetApplicationSettingCompressAssetsOnImport();
+        [Obsolete("GetApplicationSettingCompressAssetsOnImportis deprecated. Use EditorUserSettings.compressAssetsOnImport", false)]
+        public static bool GetApplicationSettingCompressAssetsOnImport()
+        {
+            return EditorUserSettings.compressAssetsOnImport;
+        }
 
         // This function has always wrongly returned int but we have test data
         // that relies on this returning int, specifically the model importer test

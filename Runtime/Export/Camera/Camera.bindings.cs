@@ -92,6 +92,9 @@ namespace UnityEngine
         [NativeConditional("UNITY_EDITOR")]
         extern internal ulong sceneCullingMask { get; }
 
+        [NativeConditional("UNITY_EDITOR")]
+        extern internal bool useInteractiveLightBakingData { get; set; }
+
         [FreeFunction("CameraScripting::GetLayerCullDistances", HasExplicitThis = true)] extern private float[] GetLayerCullDistances();
         [FreeFunction("CameraScripting::SetLayerCullDistances", HasExplicitThis = true)] extern private void SetLayerCullDistances([NotNull] float[] d);
         public float[] layerCullDistances

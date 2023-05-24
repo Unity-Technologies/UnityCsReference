@@ -183,6 +183,18 @@ namespace UnityEditor
         ASTC = 4,
     }
 
+    // Client browser type
+    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    public enum WebGLClientBrowserType
+    {
+        Default = 0,
+        Edge = 1,
+        Safari = 2,
+        Firefox = 3,
+        Chrome = 4,
+        Chromium = 5
+    }
+
     [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
     [Obsolete("WSASubtarget is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
     public enum WSASubtarget
@@ -607,6 +619,16 @@ namespace UnityEditor
             set;
         }
 
+        public static extern string webGLClientBrowserPath { get; set; }
+        
+        public static extern WebGLClientBrowserType webGLClientBrowserType
+        {
+            [NativeMethod("GetWebGLClientBrowserType")]
+            get;
+            [NativeMethod("SetWebGLClientBrowserType")]
+            set;
+        }
+
         //Compression set/get methods for the map containing type for BuildTargetGroup
         internal static Compression GetCompressionType(BuildTargetGroup targetGroup)
         {
@@ -973,12 +995,21 @@ namespace UnityEditor
             set;
         }
 
-        // Enable linkage of the Heap inspector tool for Nintendo Switch.
-        public static extern bool switchEnableHeapInspector
+        // Enable linkage of the Memory Tracker tool for Nintendo Switch.
+        public static extern bool switchEnableMemoryTracker
         {
-            [NativeMethod("GetEnableHeapInspectorForSwitch")]
+            [NativeMethod("GetEnableMemoryTrackerForSwitch")]
             get;
-            [NativeMethod("SetEnableHeapInspectorForSwitch")]
+            [NativeMethod("SetEnableMemoryTrackerForSwitch")]
+            set;
+        }
+
+        // On startup the application waits for Memory Tracker to connect.
+        public static extern bool switchWaitForMemoryTrackerOnStartup
+        {
+            [NativeMethod("GetWaitForSwitchMemoryTrackerOnStartup")]
+            get;
+            [NativeMethod("SetWaitForSwitchMemoryTrackerOnStartup")]
             set;
         }
 

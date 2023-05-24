@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
+using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using Unity.Collections.LowLevel.Unsafe;
 
@@ -745,27 +746,35 @@ namespace UnityEngine
         {
             get
             {
-                RenderTextureFormat format;
-
-                if(graphicsFormat != GraphicsFormat.None)
+                if (graphicsFormat != GraphicsFormat.None)
                 {
-                    format = GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat);
+                    return GraphicsFormatUtility.GetRenderTextureFormat(graphicsFormat);
                 }
-                else //if graphicsFormat is None then it is a depth only RT
+                else // If graphicsFormat is None, then the RT is a depth-only RT.
                 {
-                    if(GetDescriptor().shadowSamplingMode != Rendering.ShadowSamplingMode.None)
-                    {
-                        format = RenderTextureFormat.Shadowmap;
-                    }
-                    else
-                    {
-                        format = RenderTextureFormat.Depth;
-                    }
+                    return (GetDescriptor().shadowSamplingMode != ShadowSamplingMode.None) ? RenderTextureFormat.Shadowmap : RenderTextureFormat.Depth;
                 }
-
-                return format;
             }
-            set { graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB); }
+            // Setter can produce any of these following valid combinations, other combos are invalid. ('depthStencilFormat' untouched unless RTFormat infers a depth-only RT)
+            // graphicsFormat: None                                     depthStencilFormat: a depth-stencil format (D16_UNorm, ...)     <- depth-only RT.
+            // graphicsFormat: a color format (R8G8B8A8_SRGB, ...)      depthStencilFormat: a depth-stencil format (D16_UNorm, ...)     <- color + depth RT.
+            // graphicsFormat: a color format (R8G8B8A8_SRGB, ...)      depthStencilFormat: None                                        <- color-only RT.
+            set
+            {
+                if (value == RenderTextureFormat.Depth || value == RenderTextureFormat.Shadowmap)
+                {
+                    if (depthStencilFormat == GraphicsFormat.None)
+                    {
+                        WarnAboutFallbackTo16BitsDepth(value);
+                        depthStencilFormat = GraphicsFormat.D16_UNorm;
+                    }
+                    if (value == RenderTextureFormat.Shadowmap)
+                    {
+                        SetShadowSamplingMode(ShadowSamplingMode.CompareDepths);
+                    }
+                }
+                graphicsFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB);
+            }
         }
 
         extern public GraphicsFormat stencilFormat { get; set; }
@@ -796,7 +805,7 @@ namespace UnityEngine
 
         extern private void SetMipMapCount(int count);
 
-        extern private void SetShadowSamplingMode(Rendering.ShadowSamplingMode samplingMode);
+        extern internal void SetShadowSamplingMode(Rendering.ShadowSamplingMode samplingMode);
 
         public RenderBuffer colorBuffer { get { return GetColorBuffer(); } }
         public RenderBuffer depthBuffer { get { return GetDepthBuffer(); } }

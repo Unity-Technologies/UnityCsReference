@@ -78,21 +78,5 @@ namespace UnityEngine.TextCore.Text
             this.glyphIndex = glyph.index;
             this.scale = 1.0f;
         }
-
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="unicode"></param>
-        /// <param name="glyphIndex"></param>
-        internal SpriteCharacter(uint unicode, uint glyphIndex)
-        {
-            m_ElementType = TextElementType.Sprite;
-
-            this.unicode = unicode;
-            this.textAsset = null;
-            this.glyph = null;
-            this.glyphIndex = glyphIndex;
-            this.scale = 1.0f;
-        }
     }
 }

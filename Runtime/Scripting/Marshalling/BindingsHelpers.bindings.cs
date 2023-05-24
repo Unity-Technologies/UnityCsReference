@@ -6,12 +6,28 @@ namespace UnityEngine.Bindings
 {
     [VisibleToOtherModules]
     [NativeHeader("Runtime/Scripting/Marshalling/BindingsAllocator.h")]
-    [StaticAccessor("BindingsAllocator", StaticAccessorType.DoubleColon)]
+    [StaticAccessor("Marshalling::BindingsAllocator", StaticAccessorType.DoubleColon)]
     internal static unsafe class BindingsAllocator
     {
         [ThreadSafe]
         public static extern void* Malloc(int size);
         [ThreadSafe]
         public static extern void Free(void* ptr);
+
+        [ThreadSafe]
+        public static extern void FreeNativeOwnedMemory(void* ptr);
+
+        private struct NativeOwnedMemory
+        {
+#pragma warning disable CS0649
+            public void* data;
+#pragma warning restore CS0649
+            // MemLabelId
+        }
+
+        public static void* GetNativeOwnedDataPointer(void* ptr)
+        {
+            return ((NativeOwnedMemory*)ptr)->data;
+        }
     }
 }

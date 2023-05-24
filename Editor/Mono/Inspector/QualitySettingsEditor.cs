@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Build;
+using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -143,6 +144,8 @@ namespace UnityEditor
         private Editor m_PresetEditor;
         private Presets.Preset m_QualitySettingsPreset;
 
+        IAdaptiveVsyncSetting[] m_AdaptiveVsyncSettings;
+
         public void OnEnable()
         {
             m_QualitySettings = new SerializedObject(target);
@@ -158,6 +161,15 @@ namespace UnityEditor
             m_TextureMipmapLimitGroupsList.drawFooterCallback = DrawTextureMipmapLimitGroupsFooter;
             m_TextureMipmapLimitGroupsList.onAddCallback = AddTextureMipmapLimitGroup;
             m_TextureMipmapLimitGroupsList.onRemoveCallback = RemoveTextureMipmapLimitGroup;
+
+            var validPlatforms = m_ValidPlatforms.ToArray();
+            var validPlatformsLength = validPlatforms.Length;
+            m_AdaptiveVsyncSettings = new IAdaptiveVsyncSetting[validPlatformsLength];
+            for (int i = 0; i < validPlatformsLength; i++)
+            {
+                string module = ModuleManager.GetTargetStringFromBuildTargetGroup(validPlatforms[i].namedBuildTarget.ToBuildTargetGroup());
+                m_AdaptiveVsyncSettings[i] = ModuleManager.GetAdaptiveSettingEditorExtension(module);
+            }
         }
 
         private struct QualitySetting
@@ -621,6 +633,7 @@ namespace UnityEditor
             GUILayout.Space(10.0f);
 
             var currentSettings = m_QualitySettingsProperty.GetArrayElementAtIndex(selectedLevel);
+            var buildPlatform = currentSettings.FindPropertyRelative("buildPlatform");
             var nameProperty = currentSettings.FindPropertyRelative("name");
             var pixelLightCountProperty = currentSettings.FindPropertyRelative("pixelLightCount");
             var shadowsProperty = currentSettings.FindPropertyRelative("shadows");
@@ -652,6 +665,9 @@ namespace UnityEditor
             var terrainMaxTreesProperty = currentSettings.FindPropertyRelative("terrainMaxTrees");
             var vSyncCountProperty = currentSettings.FindPropertyRelative("vSyncCount");
             var realtimeGICPUUsageProperty = currentSettings.FindPropertyRelative("realtimeGICPUUsage");
+            var adaptiveVsyncProperty = currentSettings.FindPropertyRelative("adaptiveVsync");
+            var adaptiveVsyncExtraAProperty = currentSettings.FindPropertyRelative("adaptiveVsyncExtraA");
+            var adaptiveVsyncExtraBProperty = currentSettings.FindPropertyRelative("adaptiveVsyncExtraB");
             var lodBiasProperty = currentSettings.FindPropertyRelative("lodBias");
             var maximumLODLevelProperty = currentSettings.FindPropertyRelative("maximumLODLevel");
             var enableLODCrossFadeProperty = currentSettings.FindPropertyRelative("enableLODCrossFade");
@@ -670,6 +686,8 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(nameProperty.stringValue))
                 nameProperty.stringValue = "Level " + selectedLevel;
 
+            GUILayout.Label(EditorGUIUtility.TempContent("Current Build Target: " + Modules.ModuleManager.GetTargetStringFromBuildTarget(EditorUserBuildSettings.activeBuildTarget)), EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("The settings below are only applicable to the current build target. To change the Build Target, go to Build Settings", MessageType.Info);
             GUILayout.Label(EditorGUIUtility.TempContent("Current Active Quality Level"), EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(nameProperty);
@@ -709,6 +727,37 @@ namespace UnityEditor
 
             if (usingSRP)
                 EditorGUILayout.PropertyField(realtimeGICPUUsageProperty, Content.kRealtimeLGiCpuUsageLabel);
+
+            //EditorGUILayout.PropertyField(buildPlatform);
+
+            if (vSyncCountProperty.intValue > 0)
+            {
+                EditorGUILayout.BeginVertical();
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    using (new EditorGUI.DisabledScope(vSyncCountProperty.intValue == 0))
+                    {
+                        var validPlatforms = m_ValidPlatforms.ToArray();
+                        for (int i = 0; i < validPlatforms.Length; i++)
+                        {
+                            if (validPlatforms[i].defaultTarget == EditorUserBuildSettings.activeBuildTarget)
+                            {
+                                if (m_AdaptiveVsyncSettings[i] != null)
+                                {
+                                    m_AdaptiveVsyncSettings[i].AdaptiveVsyncUI(currentSettings);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                EditorGUILayout.EndVertical();
+            }
+
+            if (vSyncCountProperty.intValue == 0)
+            {
+                adaptiveVsyncProperty.boolValue = false;
+            }
 
             bool shadowMaskSupported = SupportedRenderingFeatures.IsMixedLightingModeSupported(MixedLightingMode.Shadowmask);
             bool showShadowMaskUsage = shadowMaskSupported && !SupportedRenderingFeatures.active.overridesShadowmask;

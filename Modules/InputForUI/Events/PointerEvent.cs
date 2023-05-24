@@ -6,9 +6,11 @@ using System;
 using System.Runtime.CompilerServices;
 using Unity.IntegerTime;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.InputForUI
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct PointerEvent : IEventProperties
     {
         public enum Type
@@ -42,6 +44,12 @@ namespace UnityEngine.InputForUI
             /// Used when code requested current state of devices for polling purposes.
             /// </summary>
             State = 5,
+
+            /// <summary>
+            /// Button was released.
+            /// Event is sent strictly between PointerEntered and PointerLeft.
+            /// </summary>
+            TouchCanceled = 6,
         }
 
         [Flags]

@@ -143,6 +143,11 @@ sealed class AudioContainerWindowState
         return false;
     }
 
+    internal ActivePlayable[] GetActivePlayables()
+    {
+        return m_PreviewAudioSource == null ? null : m_PreviewAudioSource.containerActivePlayables;
+    }
+
     internal void UpdateTarget()
     {
         AudioRandomContainer newTarget = null;

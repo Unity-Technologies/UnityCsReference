@@ -14,28 +14,6 @@ namespace UnityEngine.TextCore.Text
         TextMarkupElement = 0x2
     }
 
-    internal struct CharacterElement
-    {
-        public uint Unicode
-        {
-            get { return m_Unicode; }
-            set { m_Unicode = value; }
-        }
-
-        public CharacterElement(TextElement textElement)
-        {
-            m_Unicode = textElement.unicode;
-            m_TextElement = textElement;
-        }
-
-        // =============================================
-        // Private backing fields for public properties.
-        // =============================================
-
-        uint m_Unicode;
-        TextElement m_TextElement;
-    }
-
     internal struct MarkupAttribute
     {
         /// <summary>

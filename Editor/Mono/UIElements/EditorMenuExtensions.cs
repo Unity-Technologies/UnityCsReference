@@ -32,7 +32,8 @@ namespace UnityEditor.UIElements
     {
         const float k_MaxMenuWidth = 512.0f;
         const float k_MinMenuHeight = 100.0f;
-        const float k_SubmenuExpandDelay = 0.4f;
+        internal const string k_AutoExpandDelayKeyName = "ContextMenuAutoExpandDelay";
+        internal const float k_SubmenuExpandDelay = 0.4f;
         internal const string k_SearchShortcutId = "Main Menu/Edit/Find";
 
         internal static readonly Rect k_InvalidRect = new(0, 0, -1, -1);
@@ -174,6 +175,10 @@ namespace UnityEditor.UIElements
                 // Revise once Linux windowing is more robust and predictable.
                 menuWindow.position = new Rect(parent.position, Vector2.one * 100);
                 menuWindow.ShowPopup();
+
+                var menuPanel = menuWindow.rootVisualElement.panel;
+                var imguiContainer = menuPanel.visualTree.Q<IMGUIContainer>();
+                imguiContainer?.parent?.Remove(imguiContainer);
 
                 var scrollBarWidth = 0f;
 
@@ -456,6 +461,10 @@ namespace UnityEditor.UIElements
                 // Allow whitespace so we can search for spaces too
                 if (!string.IsNullOrEmpty(e.newValue))
                     menu.NavigateTo(BuildSearchMenu(e.newValue, menu.current));
+
+                // Workaround for getting window content stretching artifacts
+                // when resizing to fit search results on Mac.
+                menu.menuContainer.MarkDirtyRepaint();
             });
             search.AddManipulator(new KeyboardNavigationManipulator((op, e) =>
             {
@@ -626,7 +635,8 @@ namespace UnityEditor.UIElements
 
                             if (item.isSubmenu)
                                 item.PerformAction();
-                        }, k_SubmenuExpandDelay);
+                        }, EditorPrefs.GetFloat(EditorMenuExtensions.k_AutoExpandDelayKeyName,
+                            EditorMenuExtensions.k_SubmenuExpandDelay));
 
                         if (!item.isCustomContent)
                             s_CachedRect = GUIUtility.GUIToScreenRect(item.element.worldBound);

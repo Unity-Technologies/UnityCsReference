@@ -10,6 +10,7 @@ using UnityEditor.Audio.UIElements;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.Playables;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 
@@ -155,16 +156,24 @@ sealed class AudioContainerWindow : EditorWindow
             rootVisualElement.Unbind();
             rootVisualElement.Clear();
 
-            if (m_State.AudioContainer == null)
-            {
-                return;
-            }
-
             var rootAsset = UIToolkitUtilities.LoadUxml("UXML/Audio/AudioRandomContainer.uxml");
             rootAsset.CloneTree(rootVisualElement);
 
             var styleSheet = UIToolkitUtilities.LoadStyleSheet("StyleSheets/Audio/AudioRandomContainer.uss");
             rootVisualElement.styleSheets.Add(styleSheet);
+
+            var ARCelement = UIToolkitUtilities.GetChildByName<ScrollView>(rootVisualElement, "ARC_ScrollView");
+            var day0Element = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "Day0");
+
+
+            if (m_State.AudioContainer == null)
+            {
+                ARCelement.style.display = DisplayStyle.None;
+                CreateDay0Bindings();
+                return;
+            }
+
+            day0Element.style.display = DisplayStyle.None;
 
             CreateBindings();
             UpdateTransportButtonStates();
@@ -173,6 +182,20 @@ sealed class AudioContainerWindow : EditorWindow
         {
             m_IsLoading = false;
         }
+    }
+
+    void CreateDay0Bindings()
+    {
+        var day0Element = UIToolkitUtilities.GetChildByName<VisualElement>(rootVisualElement, "Day0");
+        var createButtonLabel =  UIToolkitUtilities.GetChildByName<Label>(day0Element, "CreateButtonLabel");
+        var createButton = UIToolkitUtilities.GetChildByName<Button>(day0Element, "CreateButton");
+        createButton.clicked += OnCreateButtonClicked;
+        createButtonLabel.text = "Select an existing Audio Random Container asset in the project browser or create a new one using the button below.";
+    }
+
+    static void OnCreateButtonClicked()
+    {
+        ProjectWindowUtil.CreateAudioRandomContainer();
     }
 
     void OnPauseStateChanged(object sender, EventArgs e)
@@ -376,13 +399,59 @@ sealed class AudioContainerWindow : EditorWindow
         m_TimeRandomRangeTracker = AudioRandomRangeSliderTracker.Create(m_TimeSlider, m_State.AudioContainer.automaticTriggerTimeRandomizationRange);
 
         EditorApplication.update += OnEditorApplicationUpdate;
+		EditorApplication.update  += OneTimeEditorApplicationUpdate;
     }
+
+	void OneTimeEditorApplicationUpdate()
+	{
+        // Setting this is a temp workaround for a UIToolKit bug
+        // https://unity.slack.com/archives/C3414V4UV/p1681828689005249?thread_ts=1676901177.340799&cid=C3414V4UV
+        m_ClipsListView.reorderable = true;
+        m_ClipsListView.reorderMode = ListViewReorderMode.Animated;
+		EditorApplication.update -= OneTimeEditorApplicationUpdate;
+	}
 
     void OnEditorApplicationUpdate()
     {
-        m_ClipsListView.reorderable = true;
-        m_ClipsListView.reorderMode = ListViewReorderMode.Animated;
-        EditorApplication.update -= OnEditorApplicationUpdate;
+        UpdateClipFieldProgressBars();
+    }
+
+    void UpdateClipFieldProgressBars()
+    {
+        var playables = m_State.GetActivePlayables();
+        if (playables == null)
+        {
+            return;
+        }
+
+        // Iterate over the ActivePlayables from the runtime and try and match them to the instance ID on the clip field.
+        // if its a match, set the progress and remove the clip field to avoid overwriting the progress.
+        var clipFields = m_ClipsListView.Query<AudioContainerElementClipField>().ToList();
+        // We need to sort the active playables as the runtime does not guarantee order
+        Array.Sort(playables, (x, y) => x.settings.scheduledTime.CompareTo(y.settings.scheduledTime));
+        for (var i = playables.Length - 1; i >= 0; i--)
+        {
+            var playable = new AudioClipPlayable(playables[i].clipPlayableHandle);
+            for (var j = clipFields.Count - 1; j >= 0; j--)
+            {
+                var field = clipFields[j];
+                if (field.AssetElementInstanceID == playables[i].settings.element.GetInstanceID())
+                {
+                    field.Progress = playable.GetClipPositionSec() / playable.GetClip().length;
+                    clipFields.RemoveAt(j);
+                }
+            }
+        }
+
+        // Any clip fields that did not have a match with active playables should have their progress set to 0.
+        foreach (var field in clipFields)
+        {
+            var clipField = field;
+            if (clipField.Progress != 0.0f)
+            {
+                clipField.Progress = 0.0f;
+            }
+        }
     }
 
     private void Update()
@@ -682,13 +751,15 @@ sealed class AudioContainerWindow : EditorWindow
         var audioClipProperty = serializedObject.FindProperty("m_AudioClip");
         var volumeProperty = serializedObject.FindProperty("m_Volume");
 
-        var enabledToggle = (Toggle)element.Query<Toggle>("enabled-toggle");
-        var audioClipField = (ObjectField)element.Query<ObjectField>("audio-clip-field");
-        var volumeField = (FloatField)element.Query<FloatField>("volume-field");
+        var enabledToggle = UIToolkitUtilities.GetChildByName<Toggle>(element, "enabled-toggle");
+        var audioClipField = UIToolkitUtilities.GetChildByName<AudioContainerElementClipField>(element, "audio-clip-field");
+        var volumeField = UIToolkitUtilities.GetChildByName<FloatField>(element, "volume-field");
         volumeField.formatString = "0.# dB";
 
         audioClipField.objectType = typeof(AudioClip);
         audioClipField.RegisterCallback<DragPerformEvent>(evt => { evt.StopPropagation(); });
+
+        audioClipField.AssetElementInstanceID = listElement.GetInstanceID();
 
         enabledToggle.BindProperty(enabledProperty);
         audioClipField.BindProperty(audioClipProperty);

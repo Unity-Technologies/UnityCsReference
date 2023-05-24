@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using Unity.IntegerTime;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.InputForUI
 {
@@ -11,6 +12,7 @@ namespace UnityEngine.InputForUI
     /// but don't append it to the text, as string might change, reduce in side, etc.
     /// For actual text modification use TextInputEvent.
     /// </summary>
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal struct IMECompositionEvent : IEventProperties
     {
         // TODO most composition strings will be of limited size, like <100 chars, can we avoid a managed object then?

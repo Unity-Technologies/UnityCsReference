@@ -262,6 +262,7 @@ namespace UnityEngine.UIElements
             UIElementsRuntimeUtilityNative.RegisterPlayerloopCallback();
             UIElementsRuntimeUtilityNative.UpdateRuntimePanelsCallback = UpdateRuntimePanels;
             UIElementsRuntimeUtilityNative.RepaintWorldPanelsCallback = RepaintWorldPanels;
+            defaultEventSystem.isInputReady = true;
         }
 
         public static void UnregisterPlayerloopCallback()
@@ -269,6 +270,7 @@ namespace UnityEngine.UIElements
             UIElementsRuntimeUtilityNative.UnregisterPlayerloopCallback();
             UIElementsRuntimeUtilityNative.UpdateRuntimePanelsCallback = null;
             UIElementsRuntimeUtilityNative.RepaintWorldPanelsCallback = null;
+            defaultEventSystem.isInputReady = false;
         }
 
         internal static void SetPanelOrderingDirty()

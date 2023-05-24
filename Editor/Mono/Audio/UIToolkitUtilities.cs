@@ -43,6 +43,16 @@ static class UIToolkitUtilities
         return childElementCast;
     }
 
+    internal static T GetChildByClassName<T>(VisualElement parentElement, string childClassName) where T : VisualElement
+    {
+        var childElement = parentElement.Query<VisualElement>(className: childClassName).First();
+        Assert.IsNotNull(childElement, $"Could not find child element '{childClassName}' in visual tree of element '{parentElement.name}'.");
+        var childElementCast = childElement as T;
+        Assert.IsNotNull(childElementCast, $"Child element '{childClassName}' of '{parentElement.name}' is not of type {nameof(T)}");
+        return childElementCast;
+    }
+
+
     internal static T GetChildAtIndex<T>(VisualElement parentElement, int index) where T : VisualElement
     {
         var childElement = parentElement.ElementAt(index);

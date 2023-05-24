@@ -140,6 +140,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
     internal class FrameDebuggerEventData
     {
         public int m_FrameEventIndex;
+        public int m_RTDisplayIndex;
         public int m_VertexCount;
         public int m_IndexCount;
         public int m_InstanceCount;
@@ -202,6 +203,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         public uint m_RenderTargetClearStencil;
         public short m_RenderTargetCount;
         public sbyte m_RenderTargetHasDepthTexture;
+        public sbyte m_RenderTargetHasStencilBits;
         public sbyte m_RenderTargetMemoryless;
         public bool m_RenderTargetIsBackBuffer;
         public RenderTexture m_RenderTargetRenderTexture;

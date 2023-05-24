@@ -18,7 +18,7 @@ namespace UnityEngine.InputForUI
 
         public Vector2 LastPosition { get; private set; }
         public int LastDisplayIndex { get; private set; }
-        public bool LastPositionValid { get; private set; }
+        public bool LastPositionValid { get; set; }
 
         private static readonly DiscreteTime kClickDelay = new((double)UnityEngine.Event.GetDoubleClickTime() / 1000.0);
 
