@@ -92,7 +92,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_VersionInManifest;
         public override string versionInManifest => m_VersionInManifest;
 
-        public override string versionString => m_Version.ToString();
+
+        public override string versionString => isInvalidSemVerInManifest ? versionInManifest : m_VersionString;
+
+        // When packages are installed from path (git, local, custom) versionInManifest behaves differently so we don't consider them to have invalid SemVer
+        public bool isInvalidSemVerInManifest => !string.IsNullOrEmpty(versionInManifest) && !installedFromPath &&
+                                                          (!SemVersionParser.TryParse(versionInManifest, out var semVersion) || semVersion?.ToString() != versionInManifest);
 
         public override long versionId => 0;
 
@@ -232,7 +237,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageInfo.versions.deprecated.Contains(m_VersionString))
                 m_Tag |= PackageTag.Deprecated;
 
-            if (!HasTag(PackageTag.Unity) || HasTag(PackageTag.Deprecated))
+            if (!HasTag(PackageTag.Unity) || HasTag(PackageTag.Deprecated) || isInvalidSemVerInManifest)
                 return;
 
             var isLifecycleVersionValid = SemVersionParser.TryParse(packageInfo.unityLifecycle?.version, out var lifecycleVersionParsed);

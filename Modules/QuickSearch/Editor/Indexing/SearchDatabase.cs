@@ -622,7 +622,7 @@ namespace UnityEditor.Search
 
         private void ProduceArtifacts(Task resolveTask, in IList<string> paths)
         {
-            if (resolveTask?.Canceled() ?? false)
+            if (paths == null || (resolveTask?.Canceled() ?? false))
                 return;
 
             resolveTask.Report("Producing artifacts...");

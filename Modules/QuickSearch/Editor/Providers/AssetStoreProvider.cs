@@ -1091,7 +1091,7 @@ namespace UnityEditor.Search.Providers
         {
             column.getter = args =>
             {
-                var data = (AssetDocument)args.item.data;
+                var data = args.item.data as AssetDocument;
                 if (data != null)
                 {
                     switch (column.selector)

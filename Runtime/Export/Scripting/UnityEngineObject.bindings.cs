@@ -546,7 +546,7 @@ namespace UnityEngine
         internal extern static Object FindObjectFromInstanceID(int instanceID);
 
         [FreeFunction("UnityEngineObjectBindings::GetPtrFromInstanceID")]
-        private extern static IntPtr GetPtrFromInstanceID(int instanceID, out bool isMonoBehaviour);
+        private extern static IntPtr GetPtrFromInstanceID(int instanceID, Type objectType, out bool isMonoBehaviour);
 
         [VisibleToOtherModules]
         [FreeFunction("UnityEngineObjectBindings::ForceLoadFromInstanceID")]
@@ -560,7 +560,7 @@ namespace UnityEngine
         internal static class MarshalledUnityObject
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr Marshal(Object obj)
+            public static IntPtr Marshal<T>(T obj) where T: Object
             {
                 // Do not to an == null or .Equals(null) check in here or anything that would make an icall
                 // This may be called during AppDomain shutdown and there is code called during shutdown
@@ -572,7 +572,7 @@ namespace UnityEngine
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr MarshalNullCheck(Object obj)
+            public static IntPtr MarshalNullCheck<T>(T obj) where T: Object
             {
                 // We want a NullReferenceExcption to be thrown if obj is null, so we can let the runtime generate that for us
                 var cachedPtr = MarshalAssumeNotNull(obj);
@@ -582,7 +582,9 @@ namespace UnityEngine
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr MarshalNullCheck<TException>(Object obj, string parameterName) where TException: Exception
+            public static IntPtr MarshalNullCheck<T, TException>(T obj, string parameterName) 
+                where T: Object 
+                where TException: Exception
             {
                 if (ReferenceEquals(obj, null))
                     ThrowException<TException>(parameterName);
@@ -592,20 +594,19 @@ namespace UnityEngine
                 return cachedPtr;
             }
 
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static IntPtr MarshalAssumeNotNull(Object obj)
+            public static IntPtr MarshalAssumeNotNull<T>(T obj) where T : Object
             {
                 if (obj.m_CachedPtr != IntPtr.Zero)
                     return obj.m_CachedPtr;
                 return MarshalFromInstanceId(obj);
             }
 
-            private static IntPtr MarshalFromInstanceId(Object obj)
+            private static IntPtr MarshalFromInstanceId<T>(T obj) where T:Object
             {
                 if (obj.m_InstanceID == kInstanceID_None)
                     return IntPtr.Zero;
 
-                var retPtr = GetPtrFromInstanceID(obj.m_InstanceID, out var isNativeInstanceMonoBehaviour);
+                var retPtr = GetPtrFromInstanceID(obj.m_InstanceID, typeof(T), out var isNativeInstanceMonoBehaviour);
                 if (retPtr == IntPtr.Zero)
                     return IntPtr.Zero;
 

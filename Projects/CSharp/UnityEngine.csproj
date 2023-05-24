@@ -2870,9 +2870,6 @@
     <Compile Include="..\..\Runtime\Export\Caching\Caching.deprecated.cs">
       <Link>Runtime\Export\Caching\Caching.deprecated.cs</Link>
     </Compile>
-    <Compile Include="..\..\Runtime\Export\Camera\AssetNotificationSystem.bindings.cs">
-      <Link>Runtime\Export\Camera\AssetNotificationSystem.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs">
       <Link>Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs</Link>
     </Compile>

@@ -45,6 +45,7 @@ namespace UnityEditor.Presets
 
         Editor m_InternalEditor = null;
         ICoupledEditor m_CoupledEditor = null;
+        VisualElement m_Root;
 
         string m_PresetTypeName;
         string m_HeaderTitle;
@@ -86,6 +87,7 @@ namespace UnityEditor.Presets
         public override VisualElement CreateInspectorGUI()
         {
             var root = new VisualElement();
+            m_Root = root;
 
             if (target is Preset p && !p.IsValid())
             {
@@ -278,6 +280,7 @@ namespace UnityEditor.Presets
 
         void OnDisable()
         {
+            m_Root?.Clear();
             DestroyInternalEditor();
 
             EditorGUIUtility.beginProperty -= BeginProperty;

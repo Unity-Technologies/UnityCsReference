@@ -2321,7 +2321,7 @@ namespace UnityEditor
         {
             // Don't do callbacks in search mode, as editors calling Handles.BeginGUI
             // will break camera setup.
-            if (UseSceneFiltering())
+            if (hasSearchFilter)
                 return;
 
             CallOnPreSceneGUI();

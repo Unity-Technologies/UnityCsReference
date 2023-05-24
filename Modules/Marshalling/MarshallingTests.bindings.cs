@@ -277,6 +277,17 @@ namespace UnityEngine
         public extern static MarshallingTestObject Create();
 
         extern private static void Internal_CreateMarshallingTestObject([Writable] MarshallingTestObject notSelf);
+
+        [RequiredByNativeCode]
+        private int TestField;
+    }
+
+    [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
+    [ExcludeFromDocs]
+    [StructLayout(LayoutKind.Sequential)]
+    internal class DifferentMarshallingTestObject : Object
+    {
+
     }
 
     [MarshalUnityObjectAs(typeof(MonoBehaviour))]
@@ -345,6 +356,8 @@ namespace UnityEngine
         public static extern MarshallingTestObject ReturnUnityObject();
 
         public static extern MarshallingTestObject ReturnUnityObjectFakeNull();
+
+        public static extern MarshallingTestObject ReturnUnassignedErrorObject();
 
         public static extern MarshallingTestObject ReturnUnityObjectPPtr();
 

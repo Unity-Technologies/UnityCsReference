@@ -136,6 +136,8 @@ namespace UnityEditor.Search
                 if (selectionCount == 0)
                 {
                     SetVisibleDetail(false);
+                    ResetEditors();
+                    m_EditorContainer.Clear();
                     return;
                 }
             }
@@ -259,6 +261,9 @@ namespace UnityEditor.Search
 
         private void RefreshActions(SearchContext context)
         {
+            if (context == null || context.selection == null)
+                return;
+
             HideElements(m_ActionButtons);
             HideElements(m_MoreButton);
             var selection = context.selection;
