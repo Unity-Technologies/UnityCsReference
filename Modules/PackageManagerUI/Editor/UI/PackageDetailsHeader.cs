@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshName()
         {
-            if (!string.IsNullOrEmpty(m_Version.name) && !m_Package.Is(PackageType.AssetStore))
+            if (!string.IsNullOrEmpty(m_Version.name))
             {
                 UIUtils.SetElementDisplay(detailName, true);
                 detailName.SetValueWithoutNotify(m_Version.name);
@@ -224,15 +224,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshAuthor()
         {
-            var showAuthorContainer = !string.IsNullOrEmpty(m_Version?.author);
+            var authorName = m_Package?.publisherName ?? m_Version?.author;
+            var publisherLink = m_Package?.publisherLink;
+
+            var showAuthorContainer = !string.IsNullOrEmpty(authorName);
             UIUtils.SetElementDisplay(detailAuthorContainer, showAuthorContainer);
             if (showAuthorContainer)
             {
-                if (!string.IsNullOrEmpty(m_Version.authorLink))
+                if (!string.IsNullOrEmpty(publisherLink))
                 {
                     UIUtils.SetElementDisplay(detailAuthorText, false);
                     UIUtils.SetElementDisplay(detailAuthorLink, true);
-                    detailAuthorLink.text = m_Version.author;
+                    detailAuthorLink.text = authorName;
                 }
                 else
                 {
@@ -264,7 +267,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void AuthorClick()
         {
-            var authorLink = m_Version?.authorLink ?? string.Empty;
+            var authorLink = m_Package.publisherLink ?? string.Empty;
             if (!string.IsNullOrEmpty(authorLink))
             {
                 m_Application.OpenURL(authorLink);
@@ -351,7 +354,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshRegistry()
         {
             var registry = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString)?.registry;
-            var showRegistry = registry != null;
+            var showRegistry = registry != null && !m_Package.Is(PackageType.AssetStore);
             UIUtils.SetElementDisplay(detailRegistryContainer, showRegistry);
 
             if (m_Version.HasTag(PackageTag.Experimental))

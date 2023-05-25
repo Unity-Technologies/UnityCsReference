@@ -74,9 +74,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 case PackageFilterTab.BuiltIn:
                     return package.Is(PackageType.BuiltIn);
                 case PackageFilterTab.UnityRegistry:
-                    return package.Is(PackageType.Installable) && package.versions.Any(v => v.availableRegistry == RegistryType.UnityRegistry) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
+                    return !package.Is(PackageType.BuiltIn) && package.Is(PackageType.Upm) && package.versions.Any(v => v.availableRegistry == RegistryType.UnityRegistry) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
                 case PackageFilterTab.MyRegistries:
-                    return package.Is(PackageType.Installable) && package.versions.Any(v => v.availableRegistry == RegistryType.MyRegistries) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
+                    return package.Is(PackageType.Upm) && package.versions.Any(v => v.availableRegistry == RegistryType.MyRegistries) && (package.isDiscoverable || (package.versions.installed?.isDirectDependency ?? false));
                 case PackageFilterTab.InProject:
                     return !package.Is(PackageType.BuiltIn) && (package.progress == PackageProgress.Installing || (package.versions.installed != null && (showDependencies || package.versions.installed.isDirectDependency)));
                 case PackageFilterTab.AssetStore:

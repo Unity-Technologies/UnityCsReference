@@ -16,11 +16,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool reorder;
     }
 
+    internal struct VisualStateChangeArgs
+    {
+        public IPage page;
+        public IEnumerable<VisualState> visualStates;
+    }
+
     internal interface IPage
     {
         event Action<IPackageVersion> onSelectionChanged;
         // triggered when the state of the UI item is updated (expanded, hidden, see all versions toggled)
-        event Action<IEnumerable<VisualState>> onVisualStateChange;
+        event Action<VisualStateChangeArgs> onVisualStateChange;
         // triggered when packages are added/updated or removed
         event Action<ListUpdateArgs> onListUpdate;
         event Action<IPage> onListRebuild;

@@ -21,19 +21,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private ResourceLoader m_ResourceLoader;
         private PageManager m_PageManager;
+        private PackageFiltering m_PackageFiltering;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private PackageDatabase m_PackageDatabase;
-        private void ResolveDependencies(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
+        private void ResolveDependencies(ResourceLoader resourceLoader, PageManager pageManager, PackageFiltering packageFiltering, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
         {
             m_ResourceLoader = resourceLoader;
             m_PageManager = pageManager;
+            m_PackageFiltering = packageFiltering;
             m_SettingsProxy = settingsProxy;
             m_PackageDatabase = packageDatabase;
         }
 
-        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase, string groupName, string displayName, bool expanded = true, bool hidden = false)
+        public PackageGroup(ResourceLoader resourceLoader, PageManager pageManager, PackageFiltering packageFiltering, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase, string groupName, string displayName, bool expanded = true, bool hidden = false)
         {
-            ResolveDependencies(resourceLoader, pageManager, settingsProxy, packageDatabase);
+            ResolveDependencies(resourceLoader, pageManager, packageFiltering, settingsProxy, packageDatabase);
 
             name = groupName;
             var root = m_ResourceLoader.GetTemplate("PackageGroup.uxml");
@@ -69,7 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal PackageItem AddPackageItem(IPackage package, VisualState state)
         {
-            var packageItem = new PackageItem(m_PageManager, m_SettingsProxy, m_PackageDatabase) {packageGroup = this};
+            var packageItem = new PackageItem(m_PageManager, m_PackageFiltering, m_SettingsProxy, m_PackageDatabase) {packageGroup = this};
             packageItem.SetPackageAndVisualState(package, state);
             groupContainer.Add(packageItem);
             return packageItem;

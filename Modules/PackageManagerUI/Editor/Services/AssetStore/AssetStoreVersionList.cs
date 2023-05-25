@@ -36,11 +36,36 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public int numUnloadedVersions => 0;
 
-        public AssetStoreVersionList(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
+        public AssetStoreVersionList()
         {
-            ResolveDependencies(assetStoreUtils, ioProxy);
-
             m_Versions = new List<AssetStorePackageVersion>();
+        }
+
+        public AssetStoreVersionList(AssetStoreUtils assetStoreUtils, IOProxy ioProxy, AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo = null, AssetStoreUpdateInfo updateInfo = null)
+        {
+            m_Versions = new List<AssetStorePackageVersion>();
+
+            if (string.IsNullOrEmpty(productInfo?.id) || string.IsNullOrEmpty(productInfo?.versionId))
+                return;
+
+            // The version we get from the product info the latest on the server
+            // The version we get from the localInfo is the version publisher set when uploading the .unitypackage file
+            // The publisher could update the version on the server but NOT upload a new .unitypackage file, that will
+            // result in a case where localInfo and productInfo have different version numbers but no update is available
+            // Because of this, we prefer showing version from the server (even when localInfo version is different)
+            // and we only want to show the localInfo version when `localInfo.canUpdate` is set to true
+            var latestVersion = new AssetStorePackageVersion(assetStoreUtils, ioProxy, productInfo);
+            if (localInfo != null)
+            {
+                if (updateInfo?.canUpdate == true)
+                    m_Versions.Add(new AssetStorePackageVersion(assetStoreUtils, ioProxy, productInfo, localInfo));
+                else
+                {
+                    latestVersion.SetLocalPath(localInfo.packagePath);
+                    latestVersion.AddDowngradeWarningIfApplicable(localInfo, updateInfo);
+                }
+            }
+            m_Versions.Add(latestVersion);
         }
 
         public void ResolveDependencies(AssetStoreUtils assetStoreUtils, IOProxy ioProxy)
@@ -49,16 +74,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             foreach (var version in m_Versions)
                 version.ResolveDependencies(assetStoreUtils, ioProxy);
-        }
-
-        public void AddVersion(AssetStorePackageVersion version)
-        {
-            m_Versions.Add(version);
-        }
-
-        public void RemoveVersion(AssetStorePackageVersion version)
-        {
-            m_Versions.Remove(version);
         }
 
         public IEnumerator<IPackageVersion> GetEnumerator()

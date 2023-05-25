@@ -257,9 +257,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            m_SerializedUpmPackages = new List<UpmPackage>();
-            m_SerializedAssetStorePackages = new List<AssetStorePackage>();
-            m_SerializedPlaceholderPackages = new List<PlaceholderPackage>();
+            m_SerializedUpmPackages.Clear();
+            m_SerializedAssetStorePackages.Clear();
+            m_SerializedPlaceholderPackages.Clear();
 
             foreach (var package in m_Packages.Values)
             {
@@ -301,7 +301,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnEnable()
         {
             m_UpmClient.onPackagesChanged += OnPackagesChanged;
-            m_UpmClient.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
             m_UpmClient.onAddOperation += OnUpmAddOperation;
             m_UpmClient.onEmbedOperation += OnUpmEmbedOperation;
             m_UpmClient.onRemoveOperation += OnUpmRemoveOperation;
@@ -309,8 +308,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_UpmCache.onVerifiedGitPackageUpToDate += OnVerifiedGitPackageUpToDate;
 
-            m_AssetStoreClient.onPackagesChanged += OnPackagesChanged;
-            m_AssetStoreClient.onPackageVersionUpdated += OnUpmPackageVersionUpdated;
+            m_AssetStoreClient.onPackagesChanged += OnAssetStorePackagesChanged;
 
             m_AssetStoreDownloadManager.onDownloadProgress += OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized += OnDownloadFinalized;
@@ -323,14 +321,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnDisable()
         {
             m_UpmClient.onPackagesChanged -= OnPackagesChanged;
-            m_UpmClient.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
             m_UpmClient.onAddOperation -= OnUpmAddOperation;
             m_UpmClient.onEmbedOperation -= OnUpmEmbedOperation;
             m_UpmClient.onRemoveOperation -= OnUpmRemoveOperation;
             m_UpmClient.onAddAndRemoveOperation -= OnUpmAddAndRemoveOperation;
 
-            m_AssetStoreClient.onPackagesChanged -= OnPackagesChanged;
-            m_AssetStoreClient.onPackageVersionUpdated -= OnUpmPackageVersionUpdated;
+            m_AssetStoreClient.onPackagesChanged -= OnAssetStorePackagesChanged;
 
             m_AssetStoreDownloadManager.onDownloadProgress -= OnDownloadProgress;
             m_AssetStoreDownloadManager.onDownloadFinalized -= OnDownloadFinalized;
@@ -406,12 +402,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (!loggedIn)
             {
-                var assetStorePackages = m_Packages.Where(kp => kp.Value is AssetStorePackage).Select(kp => kp.Value).ToList();
-                foreach (var p in assetStorePackages)
+                var notInstalledAssetStorePackages = m_Packages.Values.Where(p => p.Is(PackageType.AssetStore) && p.versions.installed == null).ToArray();
+                foreach (var p in notInstalledAssetStorePackages)
                     m_Packages.Remove(p.uniqueId);
-                m_SerializedAssetStorePackages = new List<AssetStorePackage>();
-
-                onPackagesChanged?.Invoke(k_EmptyList, assetStorePackages, k_EmptyList, k_EmptyList);
+                onPackagesChanged?.Invoke(k_EmptyList, notInstalledAssetStorePackages, k_EmptyList, k_EmptyList);
             }
         }
 
@@ -441,7 +435,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 if (oldPackage != null && isEmptyPackage)
                 {
-                    packagesRemoved.Add(m_Packages[packageUniqueId]);
+                    packagesRemoved.Add(oldPackage);
                     m_Packages.Remove(packageUniqueId);
                 }
                 else if (!isEmptyPackage)
@@ -460,6 +454,25 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (m_UpmClient.specialInstallations.Any() && package.versions.installed != null)
                         specialInstallationChecklist.Add(package);
                 }
+
+                // It could happen that before the productId info was available, another package was created with packageName as the uniqueId
+                // Once the productId becomes available it should be the new uniqueId, we want to old package such that there won't be two
+                // entries of the same package with different uniqueIds (one productId, one with packageName)
+                if (!string.IsNullOrEmpty(package.productId) && !string.IsNullOrEmpty(package.name))
+                {
+                    var packageWithNameAsUniqueId = GetPackage(package.name);
+                    if (packageWithNameAsUniqueId != null)
+                    {
+                        packagesRemoved.Add(packageWithNameAsUniqueId);
+                        m_Packages.Remove(package.name);
+                    }
+                }
+
+                // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early
+                // since the primary version's display name is used in the package list
+                var primaryVersion = package.versions.primary;
+                if (primaryVersion?.isFullyFetched == false)
+                    m_UpmClient.ExtraFetch(primaryVersion.uniqueId);
             }
 
             if (packagesAdded.Count + packagesRemoved.Count + packagesPostUpdate.Count > 0)
@@ -497,6 +510,20 @@ namespace UnityEditor.PackageManager.UI.Internal
                     RemoveSpecialInstallation(specialUniqueId);
                 }
             }
+        }
+
+        // Since an asset store needs to go through the transition from PlaceholderPackage to AssetStorePackage
+        // the progress we set on the PlaceholderPackage is not preserved when the transition happens
+        // as a result, we need a preprocessing step to set the progress again on newly created AssetStorePackages
+        private void OnAssetStorePackagesChanged(IEnumerable<IPackage> packages)
+        {
+            foreach (var package in packages)
+            {
+                if (package.progress != PackageProgress.Downloading && GetPackage(package.uniqueId)?.progress == PackageProgress.Downloading
+                                                                    && m_AssetStoreDownloadManager.GetDownloadOperation(package.uniqueId)?.isInProgress == true)
+                    package.progress = PackageProgress.Downloading;
+            }
+            OnPackagesChanged(packages);
         }
 
         private void OnUpmAddAndRemoveOperation(UpmAddAndRemoveOperation operation)
@@ -541,7 +568,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var specialUniqueId = !string.IsNullOrEmpty(addOperation.specialUniqueId) ? addOperation.specialUniqueId : addOperation.packageId;
 
                 m_UpmClient.specialInstallations.Add(specialUniqueId);
-                var placeholerPackage = new PlaceholderPackage(specialUniqueId, L10n.Tr("Adding a new package"), PackageType.Installable, addOperation.packageTag, PackageProgress.Installing);
+                var placeholerPackage = new PlaceholderPackage(specialUniqueId, L10n.Tr("Adding a new package"), PackageType.Upm, addOperation.packageTag, PackageProgress.Installing);
                 OnPackagesChanged(new[] { placeholerPackage });
                 operation.onOperationError += (op, error) => RemoveSpecialInstallation(specialUniqueId);
                 return;
@@ -590,18 +617,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnUpmOperationFinalized(IOperation operation)
         {
             SetPackageProgress(GetPackage(operation.packageUniqueId), PackageProgress.None);
-        }
-
-        private void OnUpmPackageVersionUpdated(string packageUniqueId, IPackageVersion version)
-        {
-            var package = GetPackage(packageUniqueId);
-            var upmVersions = package?.versions as UpmVersionList;
-            if (upmVersions != null)
-            {
-                var packagePreUpdate = package.Clone();
-                upmVersions.UpdateVersion(version as UpmPackageVersion);
-                onPackagesChanged?.Invoke(k_EmptyList, k_EmptyList, new[] { packagePreUpdate }, new[] { package });
-            }
         }
 
         public void ClearSamplesCache()

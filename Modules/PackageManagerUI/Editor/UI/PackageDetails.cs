@@ -466,20 +466,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void RefreshErrorDisplay()
         {
             var error = displayVersion?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable)) ?? package?.errors?.FirstOrDefault(e => !e.HasAttribute(UIError.Attribute.IsClearable));
+            detailError.RefreshError(error, package, displayVersion);
+
             var operationError = displayVersion?.errors?.FirstOrDefault(e  => e.HasAttribute(UIError.Attribute.IsClearable)) ?? package?.errors?.FirstOrDefault(e => e.HasAttribute(UIError.Attribute.IsClearable));
-
-            if (error == null && operationError == null)
-            {
-                ClearError();
-                detailError.ClearError();
-                return;
-            }
-
-            if (error == null)
-                detailError.ClearError();
-            else
-                detailError.SetError(error);
-
             if (operationError == null)
             {
                 ClearError();
@@ -701,7 +690,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                         disableIfCompiling);
                 }
 
-                var hasDowngradeAvailable = m_AssetStoreCache.GetLocalInfo(displayVersion.packageUniqueId)?.canDowngrade == true;
+                var localInfo = m_AssetStoreCache.GetLocalInfo(displayVersion.packageUniqueId);
+                var hasDowngradeAvailable = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId)?.canDowngrade == true;
                 var showDowngradeButton = isLatestVersionOnDisk && hasDowngradeAvailable && (isDownloadRequested || operation == null || !showCancelButton);
                 UIUtils.SetElementDisplay(downgradeButton, showDowngradeButton);
                 if (showDowngradeButton)
@@ -824,7 +814,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var localInfo = m_AssetStoreCache.GetLocalInfo(displayVersion.packageUniqueId);
                 if (localInfo == null)
                     return string.Empty;
-                return string.Format(AssetStorePackage.k_IncompatibleWarningMessage, localInfo.supportedVersion);
+                return string.Format(""/*AssetStorePackage.k_IncompatibleWarningMessage*/, localInfo.supportedVersion);
             }
             return string.Format(k_PackageActionTooltips[(int)action], package.GetDescriptor());
         }

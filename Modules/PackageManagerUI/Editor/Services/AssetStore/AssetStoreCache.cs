@@ -24,6 +24,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private Texture2D m_MissingTexture;
 
+        // We use uploadId as a key for the updateInfos dictionary, as the canUpdate value does NOT change for each uploadId
+        // This way we don't need worry about needing to update the entries for this dictionary as each Asset Store package gets updated
+        private Dictionary<string, AssetStoreUpdateInfo> m_UpdateInfos = new Dictionary<string, AssetStoreUpdateInfo>();
+
         [SerializeField]
         private string[] m_SerializedKeys = new string[0];
 
@@ -45,7 +49,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private AssetStoreLocalInfo[] m_SerializedLocalInfos = new AssetStoreLocalInfo[0];
 
+        [SerializeField]
+        private AssetStoreUpdateInfo[] m_SerializedUpdateInfos = new AssetStoreUpdateInfo[0];
+
         public virtual event Action<IEnumerable<AssetStoreLocalInfo> /*addedOrUpdated*/, IEnumerable<AssetStoreLocalInfo> /*removed*/> onLocalInfosChanged;
+        public virtual event Action<AssetStoreProductInfo> onProductInfoChanged;
+        public virtual event Action<IEnumerable<AssetStorePurchaseInfo>> onPurchaseInfosChanged;
+        public virtual event Action<IEnumerable<AssetStoreUpdateInfo>> onUpdatesFound;
 
         public virtual IEnumerable<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
 
@@ -76,6 +86,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SerializedPurchaseInfos = m_PurchaseInfos.Values.ToArray();
             m_SerializedProductInfos = m_ProductInfos.Values.ToArray();
             m_SerializedLocalInfos = m_LocalInfos.Values.ToArray();
+            m_SerializedUpdateInfos = m_UpdateInfos.Values.ToArray();
         }
 
         public void OnAfterDeserialize()
@@ -89,6 +100,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PurchaseInfos = m_SerializedPurchaseInfos.ToDictionary(info => info.productId.ToString(), info => info);
             m_ProductInfos = m_SerializedProductInfos.ToDictionary(info => info.id, info => info);
             m_LocalInfos = m_SerializedLocalInfos.ToDictionary(info => info.id, info => info);
+            m_UpdateInfos = m_SerializedUpdateInfos.ToDictionary(info => info.uploadId, info => info);
         }
 
         public virtual string GetLastETag(string key)
@@ -188,6 +200,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PurchaseInfos.Clear();
             m_ProductInfos.Clear();
             m_LocalInfos.Clear();
+            m_UpdateInfos.Clear();
+
             m_MissingTexture = null;
         }
 
@@ -206,14 +220,32 @@ namespace UnityEditor.PackageManager.UI.Internal
             return m_LocalInfos.Get(productIdString);
         }
 
-        public virtual void SetPurchaseInfo(AssetStorePurchaseInfo info)
+        public virtual AssetStoreUpdateInfo GetUpdateInfo(string uploadIdString)
         {
-            m_PurchaseInfos[info.productId.ToString()] = info;
+            return uploadIdString != null ? m_UpdateInfos.Get(uploadIdString) : null;
         }
 
-        public virtual void SetProductInfo(AssetStoreProductInfo info)
+        public virtual void SetPurchaseInfos(IEnumerable<AssetStorePurchaseInfo> purchaseInfos)
         {
-            m_ProductInfos[info.id] = info;
+            var updatedPurcahseInfos = new List<AssetStorePurchaseInfo>();
+            foreach (var purchaseInfo in purchaseInfos)
+            {
+                var idString = purchaseInfo.productId.ToString();
+                var oldPurcahseInfo = GetPurchaseInfo(idString);
+                m_PurchaseInfos[idString] = purchaseInfo;
+                if (!purchaseInfo.Equals(oldPurcahseInfo))
+                    updatedPurcahseInfos.Add(purchaseInfo);
+            }
+            if (updatedPurcahseInfos.Any())
+                onPurchaseInfosChanged?.Invoke(updatedPurcahseInfos);
+        }
+
+        public virtual void SetProductInfo(AssetStoreProductInfo productInfo)
+        {
+            var oldProductInfo = GetProductInfo(productInfo.id);
+            m_ProductInfos[productInfo.id] = productInfo;
+            if (!productInfo.Equals(oldProductInfo))
+                onProductInfoChanged?.Invoke(productInfo);
         }
 
         public virtual void SetLocalInfos(IEnumerable<AssetStoreLocalInfo> localInfos)
@@ -254,16 +286,25 @@ namespace UnityEditor.PackageManager.UI.Internal
                     oldInfo.versionString != info.versionString || oldInfo.packagePath != info.packagePath;
                 if (localInfoUpdated)
                     addedOrUpdatedLocalInfos.Add(info);
-                else
-                    info.updateStatus = oldInfo.updateStatus;
             }
             if (addedOrUpdatedLocalInfos.Any() || oldLocalInfos.Any())
                 onLocalInfosChanged?.Invoke(addedOrUpdatedLocalInfos, oldLocalInfos.Values);
         }
 
-        public virtual void RemoveProductInfo(string productIdString)
+        public virtual void SetUpdateInfos(IEnumerable<AssetStoreUpdateInfo> updateInfos)
         {
-            m_ProductInfos.Remove(productIdString);
+            var updatesFound = new List<AssetStoreUpdateInfo>();
+            foreach (var info in updateInfos)
+            {
+                if (m_UpdateInfos.ContainsKey(info.uploadId))
+                    continue;
+                m_UpdateInfos[info.uploadId] = info;
+                if (info.canUpdateOrDowngrade)
+                    updatesFound.Add(info);
+            }
+
+            if (updatesFound.Any())
+                onUpdatesFound?.Invoke(updatesFound);
         }
     }
 }

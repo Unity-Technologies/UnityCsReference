@@ -44,7 +44,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             detailDescMore.clickable.clicked += DescMoreClick;
             detailDescLess.clickable.clicked += DescLessClick;
-            detailDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
+            productDesc.RegisterCallback<GeometryChangedEvent>(DescriptionGeometryChangeEvent);
         }
 
         public void OnEnable()
@@ -122,7 +122,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void DescMoreClick()
         {
-            detailDesc.style.maxHeight = float.MaxValue;
+            productDesc.style.maxHeight = float.MaxValue;
             UIUtils.SetElementDisplay(detailDescMore, false);
             UIUtils.SetElementDisplay(detailDescLess, true);
             m_DescriptionExpanded = true;
@@ -130,7 +130,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void DescLessClick()
         {
-            detailDesc.style.maxHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y * 3 + 5;
+            productDesc.style.maxHeight = (int)productDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y * 3 + 5;
             UIUtils.SetElementDisplay(detailDescMore, true);
             UIUtils.SetElementDisplay(detailDescLess, false);
             m_DescriptionExpanded = false;
@@ -145,13 +145,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            var minTextHeight = (int)detailDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y * 3 + 1;
-            var textHeight = (int)detailDesc.MeasureTextSize(detailDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined).y + 1;
+            var minTextHeight = (int)productDesc.MeasureTextSize("|", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined).y * 3 + 1;
+            var textHeight = (int)productDesc.MeasureTextSize(productDesc.text, evt.newRect.width, MeasureMode.AtMost, float.MaxValue, MeasureMode.Undefined).y + 1;
             if (!m_DescriptionExpanded && textHeight > minTextHeight)
             {
                 UIUtils.SetElementDisplay(detailDescMore, true);
                 UIUtils.SetElementDisplay(detailDescLess, false);
-                detailDesc.style.maxHeight = minTextHeight + 4;
+                productDesc.style.maxHeight = minTextHeight + 4;
                 return;
             }
 
@@ -169,10 +169,24 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshDescription()
         {
-            var hasDescription = !string.IsNullOrEmpty(m_Version.description);
-            detailDesc.EnableInClassList(k_EmptyDescriptionClass, !hasDescription);
-            detailDesc.style.maxHeight = int.MaxValue;
-            detailDesc.SetValueWithoutNotify(hasDescription ? m_Version.description : L10n.Tr("There is no description for this package."));
+            var showProductDesc = !string.IsNullOrEmpty(m_Package.productDescription);
+            var showPackageDesc = !string.IsNullOrEmpty(m_Version.description);
+            var showTitles = showProductDesc && showPackageDesc;
+            var showEmptyDescription = !showProductDesc && !showPackageDesc;
+
+            productDesc.SetValueWithoutNotify(m_Package.productDescription ?? string.Empty);
+            UIUtils.SetElementDisplay(productDescTitle, showTitles);
+            UIUtils.SetElementDisplay(productDesc, showProductDesc || showEmptyDescription);
+
+            packageDesc.SetValueWithoutNotify(m_Version.description ?? string.Empty);
+            UIUtils.SetElementDisplay(packageDescTitle, showTitles);
+            UIUtils.SetElementDisplay(packageDesc, showPackageDesc);
+
+            if (showEmptyDescription)
+                productDesc.SetValueWithoutNotify(L10n.Tr("There is no description for this package."));
+            productDesc.EnableInClassList(k_EmptyDescriptionClass, showEmptyDescription);
+
+            productDesc.style.maxHeight = int.MaxValue;
             UIUtils.SetElementDisplay(detailDescMore, false);
             UIUtils.SetElementDisplay(detailDescLess, false);
             m_DescriptionExpanded = !m_Package.Is(PackageType.AssetStore);
@@ -195,7 +209,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (enabledSelf && m_Package.firstPublishedDate != null)
             {
                 detailReleaseDetails.Add(new PackageReleaseDetailsItem($"{m_Version.versionString}{(m_Version is AssetStorePackageVersion ? " (Current)" : string.Empty)}",
-                    m_Version.publishedDate, m_Version.releaseNotes));
+                    m_Version.publishedDate, m_Version.localReleaseNotes));
 
                 if (m_Package.firstPublishedDate != null)
                     detailReleaseDetails.Add(new PackageReleaseDetailsItem("Original", m_Package.firstPublishedDate, string.Empty));
@@ -275,8 +289,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private VisualElementCache cache { get; set; }
-
-        private SelectableLabel detailDesc => cache.Get<SelectableLabel>("detailDesc");
+        private Label productDescTitle => cache.Get<Label>("productDescTitle");
+        private SelectableLabel productDesc => cache.Get<SelectableLabel>("detailDesc");
+        private Label packageDescTitle => cache.Get<Label>("packageDescTitle");
+        private SelectableLabel packageDesc => cache.Get<SelectableLabel>("packageDesc");
         private Button detailDescMore => cache.Get<Button>("detailDescMore");
         private Button detailDescLess => cache.Get<Button>("detailDescLess");
 

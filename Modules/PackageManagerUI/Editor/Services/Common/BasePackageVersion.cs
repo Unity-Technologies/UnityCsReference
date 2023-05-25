@@ -29,8 +29,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         protected string m_PackageUniqueId;
         public string packageUniqueId => m_PackageUniqueId;
-
-        public virtual string authorLink => string.Empty;
+        string IPackageVersion.packageUniqueId
+        {
+            get => m_PackageUniqueId;
+            set => m_PackageUniqueId = value;
+        }
 
         [SerializeField]
         protected string m_VersionString;
@@ -45,11 +48,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected string m_PublishNotes;
-        public string releaseNotes => m_PublishNotes;
+        public string localReleaseNotes => m_PublishNotes;
 
         public virtual DependencyInfo[] dependencies => null;
         public virtual DependencyInfo[] resolvedDependencies => null;
         public virtual EntitlementsInfo entitlements => null;
+
+
+        public virtual bool isRegistryPackage => false;
+
+        public virtual bool isFromScopedRegistry => false;
 
         [SerializeField]
         protected PackageTag m_Tag;
@@ -60,7 +68,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual RegistryType availableRegistry => RegistryType.None;
 
-        public bool hasEntitlements => entitlements != null && (entitlements.licenseType != EntitlementLicenseType.Public || entitlements.status == EntitlementStatus.NotGranted || entitlements.status == EntitlementStatus.Granted);
+        // Currently we don't consider Upm Packages with EntitlementLicensingModel.AssetStore as having entitlements
+        // and it is only used right now to check if a package is from Asset Store. This is also to be consistent with
+        // other Asset Store packages (as in, if Upm Packages on Asset Store are considered with entitlements, then every
+        // package from Asset Store should be considered to have entitlements).
+        public bool hasEntitlements => entitlements != null &&
+                                       (entitlements.licenseType == EntitlementLicenseType.Enterprise
+                                        || entitlements.status == EntitlementStatus.NotGranted
+                                        || entitlements.status == EntitlementStatus.Granted);
 
         public virtual bool hasEntitlementsError => false;
 

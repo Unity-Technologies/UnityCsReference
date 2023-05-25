@@ -11,9 +11,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         None            = 0,
 
-        Installable     = 1 << 0,
+        Upm             = 1 << 0,
         BuiltIn         = 1 << 1,
         AssetStore      = 1 << 2,
-        Feature         = 1 << 3
+        Feature         = 1 << 3,
+        Placeholder     = 1 << 4
     }
 }

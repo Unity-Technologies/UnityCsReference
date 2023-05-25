@@ -121,7 +121,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleEnum<FlexDirection> flexDirection { get; set; }
         /// <summary>
-        /// Specifies how the item will shrink relative to the rest of the flexible items inside the same container.
+        /// Specifies how the item will grow relative to the rest of the flexible items inside the same container.
         /// </summary>
         StyleFloat flexGrow { get; set; }
         /// <summary>

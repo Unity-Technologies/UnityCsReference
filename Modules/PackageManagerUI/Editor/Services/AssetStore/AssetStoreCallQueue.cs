@@ -94,7 +94,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // Right now we only want to check updates for downloaded assets that's also in the purchase list because users
             // don't always load all purchases and we don't want to waste time checking updates for items that are not visible.
             // In the future if we want to check update for all downloaded assets, we can remove the purchase info check here.
-            InsertToCheckUpdateQueue(addedOrUpdated?.Where(info => m_AssetStoreCache.GetPurchaseInfo(info.id) != null && !info.updateInfoFetched).Select(info => info.id));
+            InsertToCheckUpdateQueue(addedOrUpdated?.Where(info => m_AssetStoreCache.GetPurchaseInfo(info.id) != null && m_AssetStoreCache.GetUpdateInfo(info.uploadId) == null).Select(info => info.id));
         }
 
         public virtual void AddToFetchDetailsQueue(string packageUniqueId)
@@ -131,7 +131,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     m_CurrentFetchDetails.Add(packageId);
                     numItemsAdded++;
-                    m_AssetStoreClient.FetchDetail(productId, package => m_CurrentFetchDetails.Remove(packageId));
+                    m_AssetStoreClient.FetchDetail(productId, () => m_CurrentFetchDetails.Remove(packageId));
                 }
             }
         }

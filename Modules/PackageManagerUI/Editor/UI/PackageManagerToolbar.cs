@@ -248,7 +248,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
                 dropdownItem.insertSeparatorBefore = true;
-                dropdownItem.text = L10n.Tr("Reset Package Database");
+                dropdownItem.text = L10n.Tr("Internal/Reset Package Database");
                 dropdownItem.action = () =>
                 {
                     PackageManagerWindow.instance?.Close();
@@ -257,7 +257,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 };
 
                 dropdownItem = toolbarSettingsMenu.AddBuiltInDropdownItem();
-                dropdownItem.text = L10n.Tr("Reset Stylesheets");
+                dropdownItem.text = L10n.Tr("Internal/Reset Stylesheets");
                 dropdownItem.action = () =>
                 {
                     PackageManagerWindow.instance?.Close();

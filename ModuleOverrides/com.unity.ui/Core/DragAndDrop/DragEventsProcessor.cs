@@ -8,7 +8,7 @@ namespace UnityEngine.UIElements
 {
     internal abstract class DragEventsProcessor
     {
-        enum DragState
+        internal enum DragState
         {
             None,
             CanStartDrag,
@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
         }
 
         bool m_IsRegistered;
-        DragState m_DragState;
+        internal DragState m_DragState;
         private Vector3 m_Start;
         internal readonly VisualElement m_Target;
 
@@ -111,7 +111,10 @@ namespace UnityEngine.UIElements
 
         private void OnPointerDownEvent(PointerDownEvent evt)
         {
-            if (evt.button != (int)MouseButton.LeftMouse)
+            if (evt.button != (int)MouseButton.LeftMouse
+                // UUM-15264: An IMGUIContainer inside the ListView doesn't react to PointerDown properly so we should
+                // conservatively prevent the drag. A real, better fix is available starting from 2023.2.
+                || evt.leafTarget is VisualElement leafTarget && leafTarget.isIMGUIContainer)
             {
                 m_DragState = DragState.None;
                 return;

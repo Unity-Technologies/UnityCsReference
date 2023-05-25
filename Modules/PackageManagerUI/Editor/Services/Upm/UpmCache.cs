@@ -14,12 +14,11 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         private Dictionary<string, PackageInfo> m_SearchPackageInfos = new Dictionary<string, PackageInfo>();
         private Dictionary<string, PackageInfo> m_InstalledPackageInfos = new Dictionary<string, PackageInfo>();
-        private Dictionary<string, PackageInfo> m_ProductPackageInfos = new Dictionary<string, PackageInfo>();
+        private Dictionary<string, PackageInfo> m_ProductSearchPackageInfos = new Dictionary<string, PackageInfo>();
+        private Dictionary<string, string> m_ProductIdToNameMap = new Dictionary<string, string>();
+        private Dictionary<string, string> m_NameToProductIdMap = new Dictionary<string, string>();
 
         private Dictionary<string, Dictionary<string, PackageInfo>> m_ExtraPackageInfo = new Dictionary<string, Dictionary<string, PackageInfo>>();
-
-        // the mapping between package name (key) to asset store product id (value)
-        private Dictionary<string, string> m_ProductIdMap = new Dictionary<string, string>();
 
         private readonly Dictionary<string, Dictionary<string, object>> m_ParsedUpmReserved = new Dictionary<string, Dictionary<string, object>>();
 
@@ -34,30 +33,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private PackageInfo[] m_SerializedSearchPackageInfos;
         [SerializeField]
-        private PackageInfo[] m_SerializedProductPackageInfos;
+        private PackageInfo[] m_SerializedProductSearchPackageInfos;
         [SerializeField]
         private PackageInfo[] m_SerializedExtraPackageInfos;
-        [SerializeField]
-        private string[] m_SerializedProductIdMapKeys;
-        [SerializeField]
-        private string[] m_SerializedProductIdMapValues;
         [SerializeField]
         private string[] m_SerializedLoadAllVersions;
 
         public virtual event Action<string, bool> onLoadAllVersionsChanged = delegate {};
         public virtual event Action<IEnumerable<PackageInfo>> onPackageInfosUpdated;
+        public virtual event Action<PackageInfo> onExtraPackageInfoFetched;
         public virtual event Action<string> onVerifiedGitPackageUpToDate;
 
         public virtual IEnumerable<PackageInfo> searchPackageInfos => m_SearchPackageInfos.Values;
         public virtual IEnumerable<PackageInfo> installedPackageInfos => m_InstalledPackageInfos.Values;
-        public virtual IEnumerable<PackageInfo> productPackageInfos => m_ProductPackageInfos.Values;
-
-        [NonSerialized]
-        private PackageManagerPrefs m_PackageManagerPrefs;
-        public void ResolveDependencies(PackageManagerPrefs packageManagerPrefs)
-        {
-            m_PackageManagerPrefs = packageManagerPrefs;
-        }
+        public virtual IEnumerable<PackageInfo> productSearchPackageInfos => m_ProductSearchPackageInfos.Values;
 
         private static List<PackageInfo> FindUpdatedPackageInfos(Dictionary<string, PackageInfo> oldInfos, Dictionary<string, PackageInfo> newInfos)
         {
@@ -89,7 +78,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 p1.projectDependenciesEntry != p2.projectDependenciesEntry ||
                 p1.documentationUrl != p2.documentationUrl ||
                 p1.changelogUrl != p2.changelogUrl ||
-                p1.licensesUrl != p2.licensesUrl)
+                p1.licensesUrl != p2.licensesUrl ||
+                p1.assetStore?.productId != p2.assetStore?.productId)
                 return true;
 
             if (p1.source == PackageSource.BuiltIn || p1.source == PackageSource.Registry)
@@ -121,10 +111,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_SerializedInstalledPackageInfos = m_InstalledPackageInfos.Values.ToArray();
             m_SerializedSearchPackageInfos = m_SearchPackageInfos.Values.ToArray();
-            m_SerializedProductPackageInfos = m_ProductPackageInfos.Values.ToArray();
+            m_SerializedProductSearchPackageInfos = m_ProductSearchPackageInfos.Values.ToArray();
             m_SerializedExtraPackageInfos = m_ExtraPackageInfo.Values.SelectMany(p => p.Values).ToArray();
-            m_SerializedProductIdMapKeys = m_ProductIdMap.Keys.ToArray();
-            m_SerializedProductIdMapValues = m_ProductIdMap.Values.ToArray();
 
             m_SerializedLoadAllVersions = m_LoadAllVersions.ToArray();
         }
@@ -132,31 +120,44 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void OnAfterDeserialize()
         {
             foreach (var p in m_SerializedInstalledPackageInfos)
+            {
                 m_InstalledPackageInfos[p.name] = p;
+                UpdateProductIdAndNameMapping(p);
+            }
 
-            foreach (var p in m_SerializedSearchPackageInfos)
-                m_SearchPackageInfos[p.name] = p;
+            m_SearchPackageInfos = m_SerializedSearchPackageInfos.ToDictionary(p => p.name, p => p);
 
-            m_ProductPackageInfos = m_SerializedProductPackageInfos.ToDictionary(p => p.name, p => p);
+            foreach (var p in m_SerializedProductSearchPackageInfos)
+            {
+                m_ProductSearchPackageInfos[p.name] = p;
+                UpdateProductIdAndNameMapping(p);
+            }
 
             foreach (var p in m_SerializedExtraPackageInfos)
                 AddExtraPackageInfo(p);
 
-            for (var i = 0; i < m_SerializedProductIdMapKeys.Length; i++)
-                m_ProductIdMap[m_SerializedProductIdMapKeys[i]] = m_SerializedProductIdMapValues[i];
-
             m_LoadAllVersions = new HashSet<string>(m_SerializedLoadAllVersions);
+        }
+
+        private void UpdateProductIdAndNameMapping(PackageInfo info)
+        {
+            var productId = info.assetStore?.productId;
+            if (!string.IsNullOrEmpty(productId))
+            {
+                m_ProductIdToNameMap[productId] = info.name;
+                m_NameToProductIdMap[info.name] = productId;
+            }
         }
 
         public virtual void AddExtraPackageInfo(PackageInfo packageInfo)
         {
-            Dictionary<string, PackageInfo> dict;
-            if (!m_ExtraPackageInfo.TryGetValue(packageInfo.name, out dict))
+            if (!m_ExtraPackageInfo.TryGetValue(packageInfo.name, out var dict))
             {
                 dict = new Dictionary<string, PackageInfo>();
                 m_ExtraPackageInfo[packageInfo.name] = dict;
             }
             dict[packageInfo.version] = packageInfo;
+            onExtraPackageInfoFetched?.Invoke(packageInfo);
         }
 
         public virtual Dictionary<string, PackageInfo> GetExtraPackageInfos(string packageName) => m_ExtraPackageInfo.Get(packageName);
@@ -185,6 +186,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var oldInfo = m_InstalledPackageInfos.Get(info.name);
             m_InstalledPackageInfos[info.name] = info;
+            UpdateProductIdAndNameMapping(info);
             if (isSpecialInstallation || oldInfo == null || IsDifferent(oldInfo, info))
                 TriggerOnPackageInfosUpdated(new PackageInfo[] { info });
 
@@ -201,6 +203,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var oldPackageInfos = m_InstalledPackageInfos;
             m_InstalledPackageInfos = newPackageInfos;
+            foreach (var info in installedPackageInfos)
+                UpdateProductIdAndNameMapping(info);
 
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
 
@@ -245,12 +249,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SearchPackageInfosTimestamp = timestamp;
         }
 
-        public virtual PackageInfo GetProductPackageInfo(string packageName) => m_ProductPackageInfos.Get(packageName);
-        public virtual void SetProductPackageInfo(string productId, PackageInfo info)
+        public virtual PackageInfo GetProductSearchPackageInfo(string packageName) => m_ProductSearchPackageInfos.Get(packageName);
+        public virtual void SetProductSearchPackageInfo(string productId, PackageInfo info)
         {
-            m_ProductIdMap[info.name] = productId;
-            var oldInfo = m_ProductPackageInfos.Get(info.name);
-            m_ProductPackageInfos[info.name] = info;
+            var oldInfo = m_ProductSearchPackageInfos.Get(info.name);
+            m_ProductSearchPackageInfos[info.name] = info;
+            UpdateProductIdAndNameMapping(info);
             if (oldInfo == null || IsDifferent(oldInfo, info))
                 TriggerOnPackageInfosUpdated(new PackageInfo[] { info });
         }
@@ -275,14 +279,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             return result;
         }
 
-        public virtual string GetProductId(string packageName) => m_ProductIdMap.Get(packageName);
+        public virtual string GetProductIdByName(string packageName) => m_NameToProductIdMap.Get(packageName);
+        public virtual string GetNameByProductId(string productId) => m_ProductIdToNameMap.Get(productId);
 
         public virtual void ClearCache()
         {
             m_InstalledPackageInfos.Clear();
             m_SearchPackageInfos.Clear();
             m_ExtraPackageInfo.Clear();
-            m_ProductIdMap.Clear();
 
             m_SerializedInstalledPackageInfos = new PackageInfo[0];
             m_SerializedSearchPackageInfos = new PackageInfo[0];
@@ -293,12 +297,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void ClearProductCache()
         {
-            m_ProductPackageInfos.Clear();
-            m_ProductIdMap.Clear();
-
-            m_SerializedProductPackageInfos = new PackageInfo[0];
-            m_SerializedProductIdMapKeys = new string[0];
-            m_SerializedProductIdMapValues = new string[0];
+            m_ProductSearchPackageInfos.Clear();
+            m_SerializedProductSearchPackageInfos = new PackageInfo[0];
+            m_ProductIdToNameMap.Clear();
+            m_NameToProductIdMap.Clear();
+            foreach (var info in installedPackageInfos)
+                UpdateProductIdAndNameMapping(info);
         }
     }
 }

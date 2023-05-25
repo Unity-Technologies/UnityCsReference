@@ -165,7 +165,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var hidden = string.IsNullOrEmpty(groupName);
             var expanded = m_PageManager.IsGroupExpanded(groupName);
-            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_SettingsProxy, m_PackageDatabase, groupName, GetGroupDisplayName(groupName), expanded, hidden);
+            group = new PackageGroup(m_ResourceLoader, m_PageManager, m_PackageFiltering, m_SettingsProxy, m_PackageDatabase, groupName, GetGroupDisplayName(groupName), expanded, hidden);
             if (!hidden)
             {
                 group.onGroupToggle += value =>

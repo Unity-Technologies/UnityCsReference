@@ -162,7 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (installed != null && installed.HasTag(PackageTag.VersionLocked))
                     return installed;
 
-                if (!isUnityPackage)
+                if (m_Versions.Any(v => v.availableRegistry != RegistryType.UnityRegistry))
                     return latest;
 
                 // for Unity packages, we should only recommend versions that have been tested with
@@ -202,17 +202,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool hasLifecycleVersion => m_LifecycleVersion != null || m_LifecycleNextVersion != null;
 
-        internal void UpdateVersion(UpmPackageVersion version)
-        {
-            for (var i = 0; i < m_Versions.Count; ++i)
-            {
-                if (m_Versions[i].uniqueId != version.uniqueId)
-                    continue;
-                m_Versions[i] = version;
-                return;
-            }
-        }
-
         // This function is only used to update the object, not to actually perform the add operation
         public void AddInstalledVersion(UpmPackageVersion newVersion)
         {
@@ -246,46 +235,57 @@ namespace UnityEditor.PackageManager.UI.Internal
             return sortedVersions.Count - 1;
         }
 
+        public UpmVersionList(PackageInfo searchInfo, PackageInfo installedInfo, RegistryType availableRegistry, Dictionary<string, PackageInfo> extraVersions = null)
+        {
+            // We prioritize searchInfo over installedInfo, because searchInfo is fetched from the server
+            // while installedInfo sometimes only contain local data
+            var mainInfo = searchInfo ?? installedInfo;
+            if (mainInfo != null)
+            {
+                var mainVersion = new UpmPackageVersion(mainInfo, mainInfo == installedInfo, availableRegistry);
+                m_Versions = mainInfo.versions.compatible.Select(v =>
+                {
+                    SemVersion? version;
+                    SemVersionParser.TryParse(v, out version);
+                    return new UpmPackageVersion(mainInfo, false, version, mainVersion.displayName, availableRegistry);
+                }).ToList();
+                AddToSortedVersions(m_Versions, mainVersion);
+
+                if (mainInfo != installedInfo && installedInfo != null)
+                    AddInstalledVersion(new UpmPackageVersion(installedInfo, true, availableRegistry));
+            }
+            m_InstalledIndex = m_Versions?.FindIndex(v => v.isInstalled) ?? -1;
+            SetLifecycleVersions(mainInfo?.unityLifecycle?.version, mainInfo?.unityLifecycle?.nextVersion);
+            UpdateExtraPackageInfos(extraVersions, availableRegistry);
+            m_NumUnloadedVersions = 0;
+        }
+
         public UpmVersionList(IEnumerable<UpmPackageVersion> versions = null, string unityLifecycleInfoVersion = null, string unityLifecycleInfoNextVersion = null, int numUnloadedVersions = 0)
         {
             m_Versions = versions?.ToList() ?? new List<UpmPackageVersion>();
             m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
-
-            m_LifecycleVersionString = unityLifecycleInfoVersion;
-            m_LifecycleNextVersionString = unityLifecycleInfoNextVersion;
+            SetLifecycleVersions(unityLifecycleInfoVersion, unityLifecycleInfoNextVersion);
             m_NumUnloadedVersions = numUnloadedVersions;
-
-            if (m_LifecycleVersionString != null)
-                SemVersionParser.TryParse(m_LifecycleVersionString, out m_LifecycleVersion);
-            if (m_LifecycleNextVersionString != null)
-                SemVersionParser.TryParse(m_LifecycleNextVersionString, out m_LifecycleNextVersion);
         }
 
-        public UpmVersionList(PackageInfo info, bool isInstalled, RegistryType availableRegistry)
+        private void UpdateExtraPackageInfos(Dictionary<string, PackageInfo> extraVersions, RegistryType availableRegistry)
         {
-            // Note: Using `versions.verified` as it is computed by UPM from the
-            // "version" and "recommendedVersion" values in the editor manifest.
-            // We cannot use `unityLifecycle.recommendedVersion` in this branch
-            // because it was introduced in 2022.2 and will not be backported
-            m_LifecycleVersionString = info.versions?.verified;
-            m_LifecycleNextVersionString = info.unityLifecycle?.nextVersion;
+            if (extraVersions?.Any() != true)
+                return;
+            foreach (var version in m_Versions.Where(v => !v.isFullyFetched))
+                if (extraVersions.TryGetValue(version.version.ToString(), out var packageInfo))
+                    version.UpdatePackageInfo(packageInfo, availableRegistry);
+        }
 
-            if (m_LifecycleVersionString != null)
+        private void SetLifecycleVersions(string unityLifecycleInfoVersion, string unityLifecycleInfoNextVersion)
+        {
+            m_LifecycleVersionString = unityLifecycleInfoVersion;
+            m_LifecycleNextVersionString = unityLifecycleInfoNextVersion;
+
+            if (!string.IsNullOrEmpty(m_LifecycleVersionString))
                 SemVersionParser.TryParse(m_LifecycleVersionString, out m_LifecycleVersion);
-            if (m_LifecycleNextVersionString != null)
+            if (!string.IsNullOrEmpty(m_LifecycleNextVersionString))
                 SemVersionParser.TryParse(m_LifecycleNextVersionString, out m_LifecycleNextVersion);
-
-            var mainVersion = new UpmPackageVersion(info, isInstalled, availableRegistry);
-            m_Versions = info.versions.compatible.Select(v =>
-            {
-                SemVersion? version;
-                SemVersionParser.TryParse(v, out version);
-                return new UpmPackageVersion(info, false, version, mainVersion.displayName, availableRegistry);
-            }).ToList();
-
-            AddToSortedVersions(m_Versions, mainVersion);
-
-            m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
         }
 
         public IEnumerator<IPackageVersion> GetEnumerator()

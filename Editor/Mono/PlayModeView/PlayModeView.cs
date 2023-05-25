@@ -190,6 +190,15 @@ namespace UnityEditor
             using (var renderingView = new RenderingView(this))
             {
                 SetPlayModeViewSize(targetSize);
+
+                // The target size and GUI rects are communicated to C++ as floats throughout the engine. This means the final size in pixels
+                // of the view will be calculated in C++ so we have to ensure we use the C++ float rounding conventions here. Failure to do so
+                // may result in subtly differences and subtle bugs (like the Screen class thinking something sized 640.5 is 641 pixels but the
+                // RenderTexture being allocated here only being 640 pixels in size with standard C# rounding used by Mathf.RoundToInt.
+                // So we use the c++ AwayFromZero convention when rounding here.
+                int width = (int)Math.Round(targetSize.x, MidpointRounding.AwayFromZero);
+                int height = (int)Math.Round(targetSize.y, MidpointRounding.AwayFromZero);
+
                 var currentTargetDisplay = 0;
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
@@ -199,7 +208,7 @@ namespace UnityEditor
                 }
 
                 bool hdr = (m_Parent != null && m_Parent.actualView == this && m_Parent.hdrActive);
-                ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y, clearTexture, playModeViewName, hdr);
+                ConfigureTargetTexture(width, height, clearTexture, playModeViewName, hdr);
 
                 if (Event.current == null || Event.current.type != EventType.Repaint)
                     return m_TargetTexture;

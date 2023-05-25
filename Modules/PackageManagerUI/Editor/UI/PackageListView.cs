@@ -15,6 +15,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private PackageDatabase m_PackageDatabase;
         private PageManager m_PageManager;
+        private PackageFiltering m_PackageFiltering;
         private AssetStoreCache m_AssetStoreCache;
         private AssetStoreCallQueue m_AssetStoreCallQueue;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
@@ -23,6 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var container = ServicesContainer.instance;
             m_PackageDatabase = container.Resolve<PackageDatabase>();
             m_PageManager = container.Resolve<PageManager>();
+            m_PackageFiltering = container.Resolve<PackageFiltering>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_AssetStoreCallQueue = container.Resolve<AssetStoreCallQueue>();
             m_SettingsProxy = container.Resolve<PackageManagerProjectSettingsProxy>();
@@ -107,14 +109,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_AssetStoreCallQueue.AddToFetchDetailsQueue(visualState.packageUniqueId);
 
                 var localInfo = m_AssetStoreCache.GetLocalInfo(visualState.packageUniqueId);
-                if (localInfo?.updateInfoFetched == false)
+                var updateInfo = m_AssetStoreCache.GetUpdateInfo(localInfo?.uploadId);
+                if (localInfo != null && updateInfo == null)
                     m_AssetStoreCallQueue.InsertToCheckUpdateQueue(visualState.packageUniqueId);
             }
         }
 
         private VisualElement MakeItem()
         {
-            return new PackageItem(m_PageManager, m_SettingsProxy, m_PackageDatabase);
+            return new PackageItem(m_PageManager, m_PackageFiltering, m_SettingsProxy, m_PackageDatabase);
         }
 
         public PackageItem GetPackageItem(string packageUniqueId)

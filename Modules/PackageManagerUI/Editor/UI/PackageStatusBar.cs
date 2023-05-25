@@ -100,7 +100,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnInternetReachabilityChange(bool value)
         {
-            refreshButton.SetEnabled(value);
             UpdateStatusMessage();
         }
 
