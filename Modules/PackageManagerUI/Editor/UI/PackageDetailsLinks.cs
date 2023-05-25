@@ -14,10 +14,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageDetailsLinks : VisualElement
     {
-        public static readonly string k_ViewDocumentationText = L10n.Tr("View documentation");
-        public static readonly string k_ViewChangelogText = L10n.Tr("View changelog");
-        public static readonly string k_ViewLicensesText = L10n.Tr("View licenses");
+        public static readonly string k_ViewDocumentationText = L10n.Tr("Documentation");
+        public static readonly string k_ViewChangelogText = L10n.Tr("Changelog");
+        public static readonly string k_ViewLicensesText = L10n.Tr("Licenses");
         public static readonly string k_ViewQuickStartText = L10n.Tr("QuickStart");
+
+        public static readonly string k_ViewDisabledDocumentationToolTip = L10n.Tr("Install to view documentation");
+        public static readonly string k_ViewDisabledChangelogToolTip = L10n.Tr("Install to view changelog");
+        public static readonly string k_ViewDisabledLicensesToolTip = L10n.Tr("Install to view licenses");
 
         public const string k_LinkClass = "link";
 
@@ -51,15 +55,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package == null || version == null)
                 return;
 
-            var leftItems = new VisualElement { classList = { "left" } };
-            Add(leftItems);
+            var assetStoreLinks = new VisualElement { classList = { "left" }, name = "packageDetailHeaderAssetStoreLinks" };
+            Add(assetStoreLinks);
 
             // add links from the package
             foreach (var link in package.links)
             {
                 if (string.IsNullOrEmpty(link.name) || string.IsNullOrEmpty(link.url))
                     continue;
-                AddToLinks(leftItems, new Button(() =>
+                AddToLinks(assetStoreLinks, new Button(() =>
                 {
                     m_Application.OpenURL(link.url);
                     if (!string.IsNullOrEmpty(link.analyticsEventName))
@@ -73,16 +77,43 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
+            var upmLinks = new VisualElement { classList = { "left" }, name = "packageDetailHeaderUPMLinks" };
+            var documentationButton = new Button(ViewDocClick) { text = k_ViewDocumentationText, classList = { k_LinkClass } };
+            var changelogButton = new Button(ViewChangelogClick) { text = k_ViewChangelogText, classList = { k_LinkClass } };
+            var licensesButton = new Button(ViewLicensesClick) { text = k_ViewLicensesText, classList = { k_LinkClass } };
 
             // add links related to the upm version
             if (UpmPackageDocs.HasDocs(packageInfo))
-                AddToLinks(leftItems, new Button(ViewDocClick) { text = k_ViewDocumentationText, classList = { k_LinkClass } }, false);
+                AddToLinks(upmLinks, documentationButton, false);
 
             if (UpmPackageDocs.HasChangelog(packageInfo))
-                AddToLinks(leftItems, new Button(ViewChangelogClick) { text = k_ViewChangelogText, classList = { k_LinkClass } });
+                AddToLinks(upmLinks, changelogButton);
 
             if (UpmPackageDocs.HasLicenses(packageInfo))
-                AddToLinks(leftItems, new Button(ViewLicensesClick) { text = k_ViewLicensesText, classList = { k_LinkClass } });
+                AddToLinks(upmLinks, licensesButton);
+
+            if (upmLinks.Children().Any())
+            {
+                Add(upmLinks);
+                if (package.Is(PackageType.AssetStore) && !version.isInstalled)
+                {
+                    if (string.IsNullOrEmpty(packageInfo?.documentationUrl))
+                    {
+                        documentationButton.SetEnabled(false);
+                        documentationButton.tooltip = k_ViewDisabledDocumentationToolTip;
+                    }
+                    if (string.IsNullOrEmpty(packageInfo?.changelogUrl))
+                    {
+                        changelogButton.SetEnabled(false);
+                        changelogButton.tooltip = k_ViewDisabledChangelogToolTip;
+                    }
+                    if (string.IsNullOrEmpty(packageInfo?.licensesUrl))
+                    {
+                        licensesButton.SetEnabled(false);
+                        licensesButton.tooltip = k_ViewDisabledLicensesToolTip;
+                    }
+                }
+            }
 
             var topOffset = false;
             if (package.Is(PackageType.Feature) && !string.IsNullOrEmpty(GetQuickStartUrl(m_Version)))
@@ -93,18 +124,19 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 Add(quickStartButton);
 
-                topOffset = leftItems.childCount == 0;
+                topOffset = upmLinks.childCount + assetStoreLinks.childCount == 0;
             }
             // Offset the links container to the top when there are no links and only quick start button visible
             EnableInClassList("topOffset", topOffset);
+
             UIUtils.SetElementDisplay(this, childCount != 0);
         }
 
-        private void AddToLinks(VisualElement parent, VisualElement item, bool showInterpunct = true)
+        private void AddToLinks(VisualElement parent, VisualElement item, bool showSeparator = true)
         {
             // Add a seperator between links to make them less crowded together
-            if (childCount > 0 && showInterpunct)
-                parent.Add(new Label("·") { classList = { "interpunct" } });
+            if (childCount > 0 && showSeparator)
+                parent.Add(new Label("|") { classList = { "separator" } });
             parent.Add(item);
         }
 

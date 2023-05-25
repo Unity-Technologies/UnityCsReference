@@ -168,7 +168,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetSelected(package.uniqueId, version?.uniqueId ?? package.versions.primary?.uniqueId);
         }
 
-        public void OnProductFetched(long productId)
+        public void OnProductExtraFetched(long productId)
         {
             var uniqueId = productId.ToString();
             var isNewItem = !Contains(uniqueId);

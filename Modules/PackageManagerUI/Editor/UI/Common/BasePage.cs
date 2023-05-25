@@ -13,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal abstract class BasePage : IPage
     {
         public event Action<IPackageVersion> onSelectionChanged = delegate {};
-        public event Action<IEnumerable<VisualState>> onVisualStateChange = delegate {};
+        public event Action<VisualStateChangeArgs> onVisualStateChange = delegate {};
         public event Action<ListUpdateArgs> onListUpdate = delegate {};
         public event Action<IPage> onListRebuild = delegate {};
         public event Action<IPage> onSubPageAdded = delegate {};
@@ -128,7 +128,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected void TriggerOnVisualStateChange(IEnumerable<VisualState> visualStates)
         {
-            onVisualStateChange?.Invoke(visualStates);
+            onVisualStateChange?.Invoke(new VisualStateChangeArgs
+            {
+                page = this,
+                visualStates = visualStates
+            });
         }
 
         public virtual void TriggerOnSelectionChanged()
@@ -236,8 +240,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public static string GetDefaultGroupName(PackageFilterTab tab, IPackage package)
         {
-            if (package.Is(PackageType.BuiltIn) || package.Is(PackageType.AssetStore))
+            if (package.Is(PackageType.BuiltIn))
                 return string.Empty;
+
+            if (package.Is(PackageType.AssetStore))
+                return PageManager.k_AssetStorePackageGroupName;
 
             if (package.versions.Any(v => v.HasTag(PackageTag.Unity)))
                 return tab == PackageFilterTab.UnityRegistry ? string.Empty : PageManager.k_UnityPackageGroupName;

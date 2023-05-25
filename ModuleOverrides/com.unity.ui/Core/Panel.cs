@@ -1150,7 +1150,7 @@ namespace UnityEngine.UIElements
 
         public override void Repaint(Event e)
         {
-            // if the renderTarget is not set, we simply render on whatever target is currently set
+            // if the targetTexture is not set, we simply render on whatever target is currently set
             if (targetTexture == null)
             {
                 // This is called after the camera(s) are done rendering, so the
@@ -1164,11 +1164,17 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var toBeRestoredTarget = RenderTexture.active;
+            var oldCam = Camera.current;
+            var oldRT = RenderTexture.active;
+
+            Camera.SetupCurrent(null);
             RenderTexture.active = targetTexture;
+
             GL.Viewport(new Rect(0, 0, targetTexture.width, targetTexture.height));
             base.Repaint(e);
-            RenderTexture.active = toBeRestoredTarget;
+
+            Camera.SetupCurrent(oldCam);
+            RenderTexture.active = oldRT;
         }
 
         internal static readonly Func<Vector2, Vector2> DefaultScreenToPanelSpace = (p) => (p);

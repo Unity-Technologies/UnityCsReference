@@ -11,5 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         None,
         UnityRegistry,
         MyRegistries,
+        AssetStore
     }
 }

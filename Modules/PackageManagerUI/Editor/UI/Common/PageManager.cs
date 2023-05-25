@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal class PageManager : ISerializationCallbackReceiver
     {
+        internal const string k_AssetStorePackageGroupName = "Asset Store";
         internal const string k_UnityPackageGroupName = "Unity";
         internal const string k_OtherPackageGroupName = "Other";
 
@@ -328,24 +329,28 @@ namespace UnityEditor.PackageManager.UI.Internal
             SelectInInspector(m_PackageDatabase.GetPackage(version), version, false);
         }
 
-        private void TriggerOnVisualStateChange(IEnumerable<VisualState> visualStates)
+        private void TriggerOnVisualStateChange(VisualStateChangeArgs args)
         {
-            onVisualStateChange?.Invoke(visualStates);
+            if (args.page.tab == m_PackageFiltering.currentFilterTab)
+                onVisualStateChange?.Invoke(args.visualStates);
         }
 
         private void TriggerOnPageUpdate(ListUpdateArgs args)
         {
-            onListUpdate?.Invoke(args);
+            if (args.page.tab == m_PackageFiltering.currentFilterTab)
+                onListUpdate?.Invoke(args);
         }
 
         private void TriggerOnPageRebuild(IPage page)
         {
-            onListRebuild?.Invoke(page);
+            if (page.tab == m_PackageFiltering.currentFilterTab)
+                onListRebuild?.Invoke(page);
         }
 
         private void TriggerOnSubPageAdded(IPage page)
         {
-            onSubPageAdded?.Invoke(page);
+            if (page.tab == m_PackageFiltering.currentFilterTab)
+                onSubPageAdded?.Invoke(page);
         }
 
         public virtual IPage GetCurrentPage()
@@ -467,9 +472,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package?.Is(PackageType.BuiltIn) == true)
                 return PackageFilterTab.BuiltIn;
 
-            if (package?.Is(PackageType.AssetStore) == true)
-                return PackageFilterTab.AssetStore;
-
             if (version?.isInstalled == true || package?.versions?.installed != null
                 || (package?.progress == PackageProgress.Installing && package is PlaceholderPackage))
                 return PackageFilterTab.InProject;
@@ -483,6 +485,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (package?.versions.Any(v => v.availableRegistry == RegistryType.UnityRegistry) == true)
                 return PackageFilterTab.UnityRegistry;
+
+            if (package?.Is(PackageType.AssetStore) == true)
+                return PackageFilterTab.AssetStore;
 
             return PackageFilterTab.MyRegistries;
         }
@@ -567,9 +572,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).OnProductListFetched(productList);
         }
 
-        private void OnProductFetched(long productId)
+        private void OnProductExtraFetched(long productId)
         {
-            GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).OnProductFetched(productId);
+            GetPageFromTab<PaginatedPage>(PackageFilterTab.AssetStore).OnProductExtraFetched(productId);
         }
 
         public virtual VisualState GetVisualState(IPackage package)
@@ -599,7 +604,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (entitlements.Any())
                 {
                     foreach (var package in entitlements)
-                        package.ClearErrors(error => error.errorCode == UIErrorCode.Forbidden);
+                        package.ClearErrors(error => error.errorCode == UIErrorCode.UpmError_Forbidden);
                     TriggerOnSelectionChanged();
                 }
             }
@@ -662,17 +667,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual void Fetch(string uniqueId)
         {
             if (m_UnityConnect.isUserLoggedIn && long.TryParse(uniqueId, out var productId))
-            {
-                m_AssetStoreClient.Fetch(productId);
-            }
-        }
-
-        public virtual void FetchDetail(IPackage package, Action<IPackage> doneCallbackAction = null)
-        {
-            if (m_UnityConnect.isUserLoggedIn && long.TryParse(package?.uniqueId, out var productId))
-            {
-                m_AssetStoreClient.FetchDetail(productId, doneCallbackAction);
-            }
+                m_AssetStoreClient.ExtraFetch(productId);
         }
 
         public virtual void LoadMore(long numberOfPackages)
@@ -682,12 +677,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
         {
-            var canRefresh = m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore &&
-                m_Application.isInternetReachable &&
-                !EditorApplication.isPlaying &&
+            if (!loggedIn)
+            {
+                // We want to clear the refresh time stamp here so that the next time users visit the Asset Store page, we'll call refresh properly
+                m_RefreshTimestamps[RefreshOptions.Purchased] = 0;
+            }
+            else if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore &&
+                m_Application.isInternetReachable && !EditorApplication.isPlaying &&
                 !EditorApplication.isCompiling &&
-                !IsRefreshInProgress(RefreshOptions.Purchased);
-            if (canRefresh && loggedIn)
+                !IsRefreshInProgress(RefreshOptions.Purchased))
                 Refresh(RefreshOptions.Purchased, m_PackageManagerPrefs.numItemsPerPage ?? k_DefaultPageSize);
         }
 
@@ -721,7 +719,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_AssetStoreClient.onListOperation += OnRefreshOperation;
             m_AssetStoreClient.onProductListFetched += OnProductListFetched;
-            m_AssetStoreClient.onProductFetched += OnProductFetched;
+            m_AssetStoreClient.onProductExtraFetched += OnProductExtraFetched;
 
             m_PackageDatabase.onInstallOrUninstallSuccess += OnInstalledOrUninstalled;
             m_PackageDatabase.onPackagesChanged += OnPackagesChanged;
@@ -744,7 +742,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_AssetStoreClient.onListOperation -= OnRefreshOperation;
             m_AssetStoreClient.onProductListFetched -= OnProductListFetched;
-            m_AssetStoreClient.onProductFetched -= OnProductFetched;
+            m_AssetStoreClient.onProductExtraFetched -= OnProductExtraFetched;
 
             m_PackageDatabase.onInstallOrUninstallSuccess -= OnInstalledOrUninstalled;
             m_PackageDatabase.onPackagesChanged -= OnPackagesChanged;

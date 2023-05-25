@@ -32,12 +32,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IPackageVersion : UI.IPackageVersion
     {
+        new string packageUniqueId { get; set; }
+
         string author { get; }
 
-        string authorLink { get; }
+        // Note that localReleaseNotes here is different from IPackage.latestReleaseNotes
+        // localReleaseNotes is always from the locally downloaded .unitypackage, while
+        // latestReleaseNotes is always from the productInfo we fetch from the server.
+        string localReleaseNotes { get; }
 
-        string releaseNotes { get; }
-
+        // Note that description here is different from IPackage.productDescription
+        // description here is the description for this specific package version (from PackageInfo)
+        // productDescription is the product description we fetch from the Asset Store server
         string description { get; }
 
         string category { get; }
@@ -82,5 +88,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         IEnumerable<PackageSizeInfo> sizes { get; }
 
         EntitlementsInfo entitlements { get; }
+
+        bool isRegistryPackage { get; }
+
+        bool isFromScopedRegistry { get; }
     }
 }

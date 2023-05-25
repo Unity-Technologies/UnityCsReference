@@ -9,6 +9,7 @@ using System.Linq;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine.Serialization;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -24,8 +25,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string category => m_Category;
 
         [SerializeField]
-        private Error[] m_UpmErrors = new Error[0];
-        public override IEnumerable<UIError> errors => hasEntitlementsError ? new[] { UIError.k_EntitlementError } : m_UpmErrors.Select(error => new UIError((UIErrorCode)error.errorCode, error.message));
+        private List<UIError> m_Errors = new List<UIError>();
+        public override IEnumerable<UIError> errors => m_Errors;
 
         [SerializeField]
         private bool m_IsFullyFetched;
@@ -60,17 +61,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private EntitlementsInfo m_Entitlements;
         public override EntitlementsInfo entitlements => m_Entitlements;
 
-        public override bool hasEntitlementsError
-        {
-            get
-            {
-                if (hasEntitlements && !entitlements.isAllowed)
-                    return true;
-                return m_UpmErrors.Any(error =>
-                    error.errorCode == ErrorCode.Forbidden ||
-                    error.message.IndexOf(k_NoSubscriptionErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
-            }
-        }
+
+        [SerializeField]
+        private bool m_HasErrorWithEntitlementMessage;
+        public override bool hasEntitlementsError => (hasEntitlements && !entitlements.isAllowed) || m_HasErrorWithEntitlementMessage;
 
         public string sourcePath
         {
@@ -151,7 +145,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (installedFromPath)
                     m_PackageId = m_PackageId.Replace("\\", "/");
 
-                m_UpmErrors = packageInfo.errors;
+                ProcessErrors(packageInfo);
+
                 m_Dependencies = packageInfo.dependencies;
                 m_ResolvedDependencies = packageInfo.resolvedDependencies;
                 m_Entitlements = packageInfo.entitlements;
@@ -166,23 +161,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 m_PackageId = FormatPackageId(name, version.ToString());
 
-                m_UpmErrors = new Error[0];
+                m_HasErrorWithEntitlementMessage = false;
+                m_Errors.Clear();
                 m_Dependencies = new DependencyInfo[0];
                 m_ResolvedDependencies = new DependencyInfo[0];
                 m_Entitlements = new EntitlementsInfo();
                 m_ResolvedPath = string.Empty;
                 m_Description = string.Empty;
             }
-        }
-
-        internal void UpdateProductInfo(AssetStoreProductInfo productInfo)
-        {
-            m_PackageUniqueId = productInfo.id;
-            m_PublishNotes = productInfo.publishNotes;
-
-            // override version info with product info
-            m_DisplayName = productInfo.displayName;
-            m_Description = productInfo.description;
         }
 
         public void SetInstalled(bool value)
@@ -304,6 +290,27 @@ namespace UnityEditor.PackageManager.UI.Internal
                 version.versionString == package?.versions.primary?.versionInManifest;
 
             return isVersionInProjectManifest && !version.isInstalled;
+        }
+
+        private void ProcessErrors(PackageInfo info)
+        {
+            m_HasErrorWithEntitlementMessage = info.errors.Any(error
+                => error.errorCode == ErrorCode.Forbidden
+                   || error.message.IndexOf(EntitlementsErrorChecker.k_NoSubscriptionUpmErrorMessage, StringComparison.InvariantCultureIgnoreCase) >= 0);
+
+            m_Errors.Clear();
+            if (hasEntitlementsError)
+                m_Errors.Add(UIError.k_EntitlementError);
+
+            foreach (var error in info.errors)
+            {
+                if (error.message.Contains(EntitlementsErrorChecker.k_NotAcquiredUpmErrorMessage))
+                    m_Errors.Add(new UIError(UIErrorCode.UpmError_NotAcquired, error.message));
+                else if (error.message.Contains(EntitlementsErrorChecker.k_NotSignedInUpmErrorMessage))
+                    m_Errors.Add(new UIError(UIErrorCode.UpmError_NotSignedIn, error.message));
+                else
+                    m_Errors.Add(new UIError((UIErrorCode)error.errorCode, error.message));
+            }
         }
     }
 }

@@ -244,6 +244,14 @@ namespace UnityEditor.PackageManager.UI
             instance.Show();
         }
 
+        [InitializeOnLoadMethod]
+        private static void EditorInitializedInSafeMode()
+        {
+            if (EditorUtility.isInSafeMode)
+                OnEditorFinishLoadingProject();
+        }
+
+
         [UsedByNativeCode]
         internal static void OnEditorFinishLoadingProject()
         {

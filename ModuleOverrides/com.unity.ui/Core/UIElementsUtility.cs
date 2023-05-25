@@ -430,10 +430,18 @@ namespace UnityEngine.UIElements
 
         static bool DoDispatch(BaseVisualElementPanel panel)
         {
+            Debug.Assert(panel.contextType == ContextType.Editor);
+
             bool usesEvent = false;
 
             if (s_EventInstance.type == EventType.Repaint)
             {
+                var oldCam = Camera.current;
+                var oldRT = RenderTexture.active;
+
+                Camera.SetupCurrent(null);
+                RenderTexture.active = null;
+
                 using (s_RepaintProfilerMarker.Auto())
                     panel.Repaint(s_EventInstance);
 
@@ -443,6 +451,9 @@ namespace UnityEngine.UIElements
                 // in order to suspend to suspend OnGUI() processing on the native side
                 // since we've already run it if we have an IMGUIContainer
                 usesEvent = panel.IMGUIContainersCount > 0;
+
+                Camera.SetupCurrent(oldCam);
+                RenderTexture.active = oldRT;
             }
             else
             {

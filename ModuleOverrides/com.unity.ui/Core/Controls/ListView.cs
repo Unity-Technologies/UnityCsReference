@@ -204,7 +204,7 @@ namespace UnityEngine.UIElements
         /// This property controls whether the list view displays the collection size (number of items).
         /// </summary>
         /// <remarks>
-        /// The default values if <c>true</c>.
+        /// The default values is <c>true</c>.
         /// When this property is set to <c>true</c>, Unity displays the collection size as the first item in the list, but does
         /// not make it an actual list item that is part of the list index. If you query for list index 0,
         /// Unity returns the first real list item, and not the collection size.
@@ -235,7 +235,7 @@ namespace UnityEngine.UIElements
         /// This property controls whether the list view will display a header, in the form of a foldout that can be expanded or collapsed.
         /// </summary>
         /// <remarks>
-        /// The default values if <c>false</c>.
+        /// The default values is <c>false</c>.
         /// When this property is set to <c>true</c>, Unity adds a foldout in the hierarchy of the list view and moves
         /// the scroll view inside that newly created foldout. The text of this foldout can be changed with <see cref="headerTitle"/>
         /// property on the ListView.
@@ -325,7 +325,7 @@ namespace UnityEngine.UIElements
         /// This property controls whether a footer will be added to the list view.
         /// </summary>
         /// <remarks>
-        /// The default values if <c>false</c>.
+        /// The default values is <c>false</c>.
         /// When this property is set to <c>true</c>, Unity adds a footer under the scroll view.
         /// This footer contains two buttons:
         /// A "+" button. When clicked, adds a single item at the end of the list view.
@@ -555,7 +555,7 @@ namespace UnityEngine.UIElements
         /// This property controls the drag and drop mode for the list view.
         /// </summary>
         /// <remarks>
-        /// The default values if <c>Simple</c>.
+        /// The default values is <c>Simple</c>.
         /// When this property is set to <c>Animated</c>, Unity adds drag handles in front of every item and the drag and
         /// drop manipulation will push items with an animation as the reordering happens.
         /// Multiple item reordering is only supported with the <c>Simple</c> drag mode.

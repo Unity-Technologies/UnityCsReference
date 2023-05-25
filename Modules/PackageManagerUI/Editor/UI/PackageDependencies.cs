@@ -95,7 +95,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private string GetVersionText(DependencyInfo dependency, IPackage package)
         {
-            if (package == null || package.Is(PackageType.Feature))
+            if (package == null)
+                return dependency.version;
+            if (package.Is(PackageType.Feature))
                 return string.Empty;
             if (package.Is(PackageType.BuiltIn))
                 return "---";

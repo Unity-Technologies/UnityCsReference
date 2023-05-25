@@ -42,18 +42,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal IEnumerable<PackageVersionItem> versionItems => m_VersionList?.Children().Cast<PackageVersionItem>() ?? Enumerable.Empty<PackageVersionItem>();
 
         private PageManager m_PageManager;
+        private PackageFiltering m_PackageFiltering;
         private PackageManagerProjectSettingsProxy m_SettingsProxy;
         private PackageDatabase m_PackageDatabase;
-        private void ResolveDependencies(PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
+        private void ResolveDependencies(PageManager pageManager, PackageFiltering packageFiltering, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
         {
             m_PageManager = pageManager;
+            m_PackageFiltering = packageFiltering;
             m_SettingsProxy = settingsProxy;
             m_PackageDatabase = packageDatabase;
         }
 
-        public PackageItem(PageManager pageManager, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
+        public PackageItem(PageManager pageManager, PackageFiltering packageFiltering, PackageManagerProjectSettingsProxy settingsProxy, PackageDatabase packageDatabase)
         {
-            ResolveDependencies(pageManager, settingsProxy, packageDatabase);
+            ResolveDependencies(pageManager, packageFiltering, settingsProxy, packageDatabase);
         }
 
         public void SetPackageAndVisualState(IPackage package, VisualState state)
@@ -169,7 +171,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_NumPackagesInFeature != null)
                 m_NumPackagesInFeature.text = string.Format(L10n.Tr("{0} packages"), package.versions.primary?.dependencies?.Length ?? 0);
 
-            var expandable = !package.Is(PackageType.BuiltIn | PackageType.Feature | PackageType.AssetStore);
+            var expandable = !package.Is(PackageType.BuiltIn | PackageType.Feature) && package.Is(PackageType.Upm) && m_PackageFiltering.currentFilterTab != PackageFilterTab.AssetStore;
             UIUtils.SetElementDisplay(m_ArrowExpander, expandable);
             UIUtils.SetElementDisplay(m_ExpanderHidden, !expandable);
 
@@ -278,7 +280,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var seeAllVersionsLabelVisible = package.versions.numUnloadedVersions > 0
-                && (package.versions.Any(v => v.availableRegistry == RegistryType.MyRegistries) || m_SettingsProxy.seeAllPackageVersions || package.versions.installed?.HasTag(PackageTag.Experimental) == true);
+                && (package.versions.Any(v => v.availableRegistry != RegistryType.UnityRegistry) || m_SettingsProxy.seeAllPackageVersions || package.versions.installed?.HasTag(PackageTag.Experimental) == true);
             UIUtils.SetElementDisplay(m_SeeAllVersionsLabel, seeAllVersionsLabelVisible);
 
             // Hack until ScrollList has a better way to do the same -- Vertical scroll bar is not yet visible

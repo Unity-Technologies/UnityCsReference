@@ -16,8 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string id;
         public string packageName;
         public string description;
-        public string author;
-        public string publisherId;
+        public string publisherName;
         public string category;
         public string versionString;
         public string versionId;
@@ -26,6 +25,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string state;
         public string publishNotes;
         public string firstPublishedDate;
+
+        public string publisherLink;
         public PackageLink assetStoreLink;
 
         public List<string> supportedVersions;
@@ -52,19 +53,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             description = CleanUpHtml(productDetail.GetString("description")) ?? string.Empty;
 
             var publisher = productDetail.GetDictionary("productPublisher");
+            var publisherId = string.Empty;
+            publisherName = string.Empty;
             if (publisher != null)
             {
                 if (publisher.GetString("url") == "http://unity3d.com")
-                    author = "Unity Technologies Inc.";
+                    publisherName = "Unity Technologies Inc.";
                 else
-                    author = publisher.GetString("name") ?? L10n.Tr("Unknown publisher");
+                    publisherName = publisher.GetString("name") ?? L10n.Tr("Unknown publisher");
                 publisherId = publisher.GetString("externalRef") ?? string.Empty;
             }
-            else
-            {
-                author = string.Empty;
-                publisherId = string.Empty;
-            }
+
+            if (!string.IsNullOrEmpty(publisherId))
+                publisherLink = $"{m_AssetStoreUtils.assetStoreUrl}/publishers/{publisherId}";
 
             packageName = productDetail.GetString("packageName") ?? string.Empty;
             category = productDetail.GetDictionary("category")?.GetString("name") ?? string.Empty;
@@ -247,7 +248,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var slug = productDetail.GetString("slug") ?? productDetail.GetString("id");
             var packagePath = $"/packages/p/{slug}";
 
-            return GetPackageLink(L10n.Tr("View in the Asset Store"), packagePath, "viewProductInAssetStore");
+            return GetPackageLink(L10n.Tr("View in Asset Store"), packagePath, "viewProductInAssetStore");
         }
 
         private List<PackageSizeInfo> GetSizeInfoFromProductDetails(IDictionary<string, object> productDetail)
@@ -286,6 +287,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!url.StartsWith("http:", StringComparison.InvariantCulture) && !url.StartsWith("https:", StringComparison.InvariantCulture))
                 url = m_AssetStoreUtils.assetStoreUrl + url;
             return new PackageLink { name = name, url = url, analyticsEventName = analyticsEventName};
+        }
+
+        public bool Equals(AssetStoreProductInfo other)
+        {
+            return other != null && other.id == id && other.versionId == versionId && other.versionString == versionString;
         }
     }
 }

@@ -299,10 +299,9 @@ namespace UnityEngine.UIElements.UIR
             }
             {
                 SetOpacityValue(fullOpacity, fullOpacityValue.w);
-                SetColorValue(clearColor, clearColorValue);
-                SetTextCoreSettingValue(defaultTextCoreSettings, defaultTextCoreSettingsValue);
+                SetColorValue(clearColor, clearColorValue, false); // color is saturated, no need to check the colorspace
+                SetTextCoreSettingValue(defaultTextCoreSettings, defaultTextCoreSettingsValue, false); // colors are saturated, no need to check the colorspace
             }
-
             m_StorageReallyCreated = true;
         }
 
@@ -418,23 +417,39 @@ namespace UnityEngine.UIElements.UIR
             m_Storage.SetTexel(allocXY.x, allocXY.y, new Color(1, 1, 1, opacity));
         }
 
-        public void SetColorValue(BMPAlloc alloc, Color color)
+        public void SetColorValue(BMPAlloc alloc, Color color, bool isEditorContext)
         {
             Debug.Assert(alloc.IsValid());
             var allocXY = AllocToTexelCoord(ref m_ColorAllocator, alloc);
-            m_Storage.SetTexel(allocXY.x, allocXY.y, color);
+
+            if(QualitySettings.activeColorSpace == ColorSpace.Linear && !isEditorContext)
+                m_Storage.SetTexel(allocXY.x, allocXY.y, color.linear);
+            else
+                m_Storage.SetTexel(allocXY.x, allocXY.y, color);
         }
 
-        public void SetTextCoreSettingValue(BMPAlloc alloc, TextCoreSettings settings)
+        public void SetTextCoreSettingValue(BMPAlloc alloc, TextCoreSettings settings, bool isEditorContext)
         {
             Debug.Assert(alloc.IsValid());
 
             var allocXY = AllocToTexelCoord(ref m_TextSettingsAllocator, alloc);
             var settingValues = new Color(-settings.underlayOffset.x, settings.underlayOffset.y, settings.underlaySoftness, settings.outlineWidth);
-            m_Storage.SetTexel(allocXY.x, allocXY.y + 0, settings.faceColor);
-            m_Storage.SetTexel(allocXY.x, allocXY.y + 1, settings.outlineColor);
-            m_Storage.SetTexel(allocXY.x, allocXY.y + 2, settings.underlayColor);
+
+            if (QualitySettings.activeColorSpace == ColorSpace.Linear && !isEditorContext)
+            {
+                m_Storage.SetTexel(allocXY.x, allocXY.y + 0, settings.faceColor.linear);
+                m_Storage.SetTexel(allocXY.x, allocXY.y + 1, settings.outlineColor.linear);
+                m_Storage.SetTexel(allocXY.x, allocXY.y + 2, settings.underlayColor.linear);
+            }
+            else
+            {
+                m_Storage.SetTexel(allocXY.x, allocXY.y + 0, settings.faceColor);
+                m_Storage.SetTexel(allocXY.x, allocXY.y + 1, settings.outlineColor);
+                m_Storage.SetTexel(allocXY.x, allocXY.y + 2, settings.underlayColor);
+            }
+
             m_Storage.SetTexel(allocXY.x, allocXY.y + 3, settingValues);
+
         }
 
         public void FreeTransform(BMPAlloc alloc)

@@ -11,11 +11,32 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal abstract class BasePackage : IPackage
     {
+        public virtual string productId => string.Empty;
+
         [SerializeField]
         protected string m_Name;
         public string name => m_Name;
 
-        public string displayName => versions.FirstOrDefault()?.displayName ?? string.Empty;
+        [SerializeField]
+        protected string m_ProductDisplayName;
+
+        [SerializeField]
+        protected string m_PublisherName;
+        public string publisherName => m_PublisherName;
+
+        [SerializeField]
+        protected string m_PublisherLink;
+        public string publisherLink => m_PublisherLink;
+
+        [SerializeField]
+        protected string m_ProductDescription;
+        public string productDescription => m_ProductDescription;
+
+        [SerializeField]
+        protected string m_PublishNotes;
+        public string latestReleaseNotes => m_PublishNotes;
+
+        public string displayName => !string.IsNullOrEmpty(m_ProductDisplayName) ? m_ProductDisplayName : versions.FirstOrDefault()?.displayName ?? string.Empty;
         public PackageState state
         {
             get
@@ -81,11 +102,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool hasEntitlements => versions.Any(v => v.availableRegistry == RegistryType.UnityRegistry && v.hasEntitlements);
 
-        public bool hasEntitlementsError => m_Errors.Any(error => error.errorCode == UIErrorCode.Forbidden) || versions.Any(version => version.hasEntitlementsError);
+        public bool hasEntitlementsError => m_Errors.Any(error => error.errorCode == UIErrorCode.UpmError_Forbidden) || versions.Any(version => version.hasEntitlementsError);
 
         public void AddError(UIError error)
         {
-            if (error.errorCode == UIErrorCode.Forbidden)
+            if (error.errorCode == UIErrorCode.UpmError_Forbidden)
             {
                 m_Errors.Add(versions?.primary.isInstalled == true ? UIError.k_EntitlementError : UIError.k_EntitlementWarning);
                 return;
@@ -133,6 +154,23 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string GetDescriptor(bool isFirstLetterCapitalized = false)
         {
             return isFirstLetterCapitalized ? descriptor.First().ToString().ToUpper() + descriptor.Substring(1) : descriptor;
+        }
+
+        public void LinkPackageAndVersions()
+        {
+            foreach (var version in versions)
+                version.packageUniqueId = uniqueId;
+        }
+
+        protected void RefreshPackageTypeFromVersions()
+        {
+            var primaryVersion = versions?.primary;
+            if (primaryVersion == null)
+                return;
+            if (primaryVersion.HasTag(PackageTag.BuiltIn))
+                m_Type |= PackageType.BuiltIn;
+            else if (primaryVersion.HasTag(PackageTag.Feature))
+                m_Type |= PackageType.Feature;
         }
     }
 }

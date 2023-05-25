@@ -34,37 +34,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public UpmPackage(string name, bool isDiscoverable, PackageType type)
+        public UpmPackage(string name, bool isDiscoverable, UpmVersionList versionList)
         {
             m_Progress = PackageProgress.None;
             m_Name = name;
-            m_IsDiscoverable = isDiscoverable;
-            m_VersionList = new UpmVersionList();
-            m_Errors = new List<UIError>();
-            m_Type = type;
-        }
-
-        public UpmPackage(PackageInfo info, bool isInstalled, bool isDiscoverable, RegistryType availableRegistry)
-        {
-            m_Progress = PackageProgress.None;
-            m_Name = info.name;
+            m_Type = PackageType.Upm;
             m_Errors = new List<UIError>();
             m_IsDiscoverable = isDiscoverable;
-            m_VersionList = new UpmVersionList(info, isInstalled, availableRegistry);
-            m_Type = versions.primary.HasTag(PackageTag.BuiltIn) ? PackageType.BuiltIn : PackageType.Installable;
-            _ = info.type == "feature" ? m_Type |= PackageType.Feature : m_Type &= ~PackageType.Feature;
-        }
+            m_VersionList = versionList;
 
-        internal void UpdateVersions(IEnumerable<UpmPackageVersion> updatedVersions, int numUnloadedVersions)
-        {
-            m_VersionList = new UpmVersionList(updatedVersions, m_VersionList.lifecycleVersionString, m_VersionList.lifecycleNextVersion, numUnloadedVersions);
-            ClearErrors();
-        }
-
-        // This function is only used to update the object, not to actually perform the add operation
-        public void AddInstalledVersion(UpmPackageVersion newVersion)
-        {
-            m_VersionList.AddInstalledVersion(newVersion);
+            RefreshPackageTypeFromVersions();
+            LinkPackageAndVersions();
         }
 
         public override IPackage Clone()

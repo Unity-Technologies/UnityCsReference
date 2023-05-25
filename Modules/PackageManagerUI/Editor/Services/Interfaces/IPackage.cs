@@ -21,7 +21,17 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IPackage : UI.IPackage
     {
+        string productId { get; }
+
         string displayName { get; }
+
+        string productDescription { get; }
+
+        string publisherName { get; }
+
+        string publisherLink { get; }
+
+        string latestReleaseNotes { get; }
 
         DateTime? purchasedTime { get; }
 
