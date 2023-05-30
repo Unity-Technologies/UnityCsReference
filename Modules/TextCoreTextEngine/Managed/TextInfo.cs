@@ -52,6 +52,7 @@ namespace UnityEngine.TextCore.Text
         public MeshInfo[] meshInfo;
 
         public bool isDirty;
+        public bool hasMultipleColors = false;
 
         // Default Constructor
         public TextInfo()
@@ -80,6 +81,7 @@ namespace UnityEngine.TextCore.Text
             lineCount = 0;
             pageCount = 0;
             spriteCount = 0;
+            hasMultipleColors = false;
 
             for (int i = 0; i < meshInfo.Length; i++)
             {

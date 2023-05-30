@@ -117,6 +117,7 @@ namespace UnityEditor
                 m_AssetPreviewIgnoreList.Add(typeof(LightingSettings));
 
                 m_AssetExtensionsPreviewIgnoreList.Add(".index");
+                m_AssetExtensionsPreviewIgnoreList.Add(".vfx");
             }
 
             //Use this to add the specific types that needs to ignored for AssetPreview image generation.
