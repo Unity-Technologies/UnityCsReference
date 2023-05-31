@@ -547,6 +547,23 @@ namespace UnityEditor
             RestoreVerticalScrollIfNeeded();
         }
 
+        internal static void ClearAndRebuildAll()
+        {
+            // Needs to be delayCall because it forces redrawing of UI which messes with the current IMGUI context of the Settings window.
+            EditorApplication.delayCall += ClearAndRebuildAllDelayed;
+        }
+
+        static void ClearAndRebuildAllDelayed()
+        {
+            // Cannot use something like EditorUtility.ForceRebuildInspectors() because this only refreshes
+            // the inspector's values and IMGUI state, but otherwise, if the target did not change we
+            // re-use the Editors. We need a special clear function to properly recreate the UI using
+            // the new setting.
+            var propertyEditors = Resources.FindObjectsOfTypeAll<PropertyEditor>();
+            foreach (var propertyEditor in propertyEditors)
+                propertyEditor.ClearEditorsAndRebuild();
+        }
+
         internal void ClearEditorsAndRebuild()
         {
             // Clear the editors Element so that a real rebuild is done

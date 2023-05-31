@@ -186,7 +186,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Always allowed"),
             };
             public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
-            public static readonly GUIContent iOSExternalAudioInputNotSupported = EditorGUIUtility.TrTextContent("Audio input from Bluetooth microphones is not supported when Mute Other Audio Sources is off.");
+            public static readonly GUIContent iOSExternalAudioInputNotSupported = EditorGUIUtility.TrTextContent("Audio input from Bluetooth microphones is not supported when Mute Other Audio Sources and Prepare iOS for Recording are both off.");
             public static readonly GUIContent aotOptions = EditorGUIUtility.TrTextContent("AOT Compilation Options*");
             public static readonly GUIContent require31 = EditorGUIUtility.TrTextContent("Require ES3.1");
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
@@ -2832,12 +2832,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_AccelerometerFrequency, SettingsContent.accelerometerFrequency);
 
                 if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS || platform.namedBuildTarget == NamedBuildTarget.Android)
-                {
                     EditorGUILayout.PropertyField(m_MuteOtherAudioSources, SettingsContent.muteOtherAudioSources);
-
-                    if (m_MuteOtherAudioSources.boolValue == false && platform.namedBuildTarget == NamedBuildTarget.iOS)
-                        EditorGUILayout.HelpBox(SettingsContent.iOSExternalAudioInputNotSupported.text, MessageType.Warning);
-                }
 
                 // TVOS TODO: check what should stay or go
                 if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
@@ -2845,6 +2840,10 @@ namespace UnityEditor
                     if (platform.namedBuildTarget == NamedBuildTarget.iOS)
                     {
                         EditorGUILayout.PropertyField(m_PrepareIOSForRecording, SettingsContent.prepareIOSForRecording);
+
+                        if (m_MuteOtherAudioSources.boolValue == false && m_PrepareIOSForRecording.boolValue == false)
+                            EditorGUILayout.HelpBox(SettingsContent.iOSExternalAudioInputNotSupported.text, MessageType.Warning);
+
                         EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, SettingsContent.forceIOSSpeakersWhenRecording);
                     }
                     EditorGUILayout.PropertyField(m_UIRequiresPersistentWiFi, SettingsContent.UIRequiresPersistentWiFi);

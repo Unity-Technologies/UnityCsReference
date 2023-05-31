@@ -268,7 +268,16 @@ namespace UnityEngine.UIElements
             if (TextUtilities.IsFontAssigned(this))
             {
                 MeshInfo[] meshInfo = uitkTextHandle.Update();
-                mgc.meshGenerator.DrawText(meshInfo, contentRect.min);
+
+                // If multiple colors are required (e.g., color tags are used), then ignore the dynamic-color hint
+                // since we cannot store multiple colors for a given text element.
+                bool hasMultipleColors = uitkTextHandle.textInfo.hasMultipleColors;
+                if (hasMultipleColors)
+                    renderChainData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
+                else
+                    renderChainData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
+
+                mgc.meshGenerator.DrawText(meshInfo, contentRect.min, hasMultipleColors);
             }
         }
 

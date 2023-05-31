@@ -1025,21 +1025,8 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck() && m_IsGlobalSettings)
             {
                 EditorSettings.inspectorUseIMGUIDefaultInspector = m_InspectorUseIMGUIDefaultInspector.boolValue;
-
-                // Needs to be delayCall because it forces redrawing of UI which messes with the current IMGUI context of the Settings window.
-                EditorApplication.delayCall += ClearEditorsAndRebuildInspectors;
+                PropertyEditor.ClearAndRebuildAll();
             }
-        }
-
-        static void ClearEditorsAndRebuildInspectors()
-        {
-            // Cannot use something like EditorUtility.ForceRebuildInspectors() because this only refreshes
-            // the inspector's values and IMGUI state, but otherwise, if the target did not change we
-            // re-use the Editors. We need a special clear function to properly recreate the UI using
-            // the new setting.
-            var propertyEditors = Resources.FindObjectsOfTypeAll<PropertyEditor>();
-            foreach (var propertyEditor in propertyEditors)
-                propertyEditor.ClearEditorsAndRebuild();
         }
 
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)
