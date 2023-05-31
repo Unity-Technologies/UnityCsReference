@@ -15,7 +15,8 @@ namespace UnityEditorInternal
     {
         Hierarchy = 0,
         Timeline = 1,
-        RawHierarchy = 2
+        RawHierarchy = 2,
+        InvertedHierarchy = 3,
     }
 
     internal interface IProfilerWindowController

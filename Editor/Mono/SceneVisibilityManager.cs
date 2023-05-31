@@ -417,44 +417,12 @@ namespace UnityEditor
 
         public bool AreAllDescendantsHidden(Scene scene)
         {
-            if (!scene.IsValid() || !scene.isLoaded)
-                return false;
-
-            if (scene.rootCount == 0)
-                return false;
-
-            scene.GetRootGameObjects(m_RootBuffer);
-            foreach (GameObject root in m_RootBuffer)
-            {
-                if (IsIgnoredBySceneVisibility(root))
-                    continue;
-
-                if (!SceneVisibilityState.IsHierarchyHidden(root))
-                    return false;
-            }
-
-            return true;
+            return SceneVisibilityState.AreAllRootObjectsHiddenHierarchy(scene);
         }
 
         public bool IsPickingDisabledOnAllDescendants(Scene scene)
         {
-            if (!scene.IsValid() || !scene.isLoaded)
-                return false;
-
-            if (scene.rootCount == 0)
-                return false;
-
-            scene.GetRootGameObjects(m_RootBuffer);
-            foreach (GameObject root in m_RootBuffer)
-            {
-                if (IsIgnoredBySceneVisibility(root))
-                    continue;
-
-                if (!SceneVisibilityState.IsHierarchyPickingDisabled(root))
-                    return false;
-            }
-
-            return true;
+            return SceneVisibilityState.IsPickingDisabledOnAllDescendants(scene);
         }
 
         public bool AreAnyDescendantsHidden(Scene scene)

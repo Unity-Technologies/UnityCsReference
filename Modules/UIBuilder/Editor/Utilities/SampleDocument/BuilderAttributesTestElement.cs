@@ -27,6 +27,7 @@ namespace Unity.UI.Builder
         Color colorAttr { get; set; }
         BuilderAttributesTestElement.Existance enumAttr { get; set; }
         Texture2D assetAttr { get; set; }
+        Background imageAttr { get; set; }
         event PropertyChangedEventHandler propertyChanged;
     }
 
@@ -125,6 +126,7 @@ namespace Unity.UI.Builder
             UxmlColorAttributeDescription m_Color = new() { name = "color-attr", defaultValue = Color.red };
             UxmlEnumAttributeDescription<BuilderAttributesTestElement.Existance> m_Enum = new() { name = "enum-attr", defaultValue = BuilderAttributesTestElement.Existance.Bad };
             UxmlAssetAttributeDescription<Texture2D> m_Asset = new() { name = "asset-attr" };
+            UxmlImageAttributeDescription m_Image = new() { name = "image-attr" };
 
             public override void Init(ref BuilderAttributesTestObject obj, IUxmlAttributes bag, CreationContext cc)
             {
@@ -140,6 +142,7 @@ namespace Unity.UI.Builder
                 obj.colorAttr = m_Color.GetValueFromBag(bag, cc);
                 obj.enumAttr = m_Enum.GetValueFromBag(bag, cc);
                 obj.assetAttr = m_Asset.GetValueFromBag(bag, cc);
+                obj.imageAttr = m_Image.GetValueFromBag(bag, cc);
             }
         }
 
@@ -153,6 +156,7 @@ namespace Unity.UI.Builder
         private Color m_ColorAttr;
         private BuilderAttributesTestElement.Existance m_EnumAttr;
         private Texture2D m_AssetAttr;
+        private Background m_ImageAttr;
 
         [CreateProperty]
         public object objAttr
@@ -281,6 +285,19 @@ namespace Unity.UI.Builder
                     return;
                 m_AssetAttr = value;
                 NotifyPropertyChanged(nameof(assetAttr));
+            }
+        }
+
+        [CreateProperty]
+        public Background imageAttr
+        {
+            get => m_ImageAttr;
+            set
+            {
+                if (m_ImageAttr == value)
+                    return;
+                m_ImageAttr = value;
+                NotifyPropertyChanged(nameof(imageAttr));
             }
         }
 
@@ -317,6 +334,7 @@ namespace Unity.UI.Builder
             UxmlAssetAttributeDescription<Texture2D> m_Asset = new() { name = "asset-attr" };
             readonly UxmlObjectListAttributeDescription<BuilderAttributesTestObject> m_Objects = new();
             UxmlBoolAttributeDescription m_Unbindable = new() { name = "unbindable-attr" };
+            UxmlImageAttributeDescription m_Image = new() { name = "image-attr" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -341,6 +359,7 @@ namespace Unity.UI.Builder
                 ate.enumAttr = m_Enum.GetValueFromBag(bag, cc);
                 ate.assetAttr = m_Asset.GetValueFromBag(bag, cc);
                 ate.unbindableAttr = m_Unbindable.GetValueFromBag(bag, cc);
+                ate.imageAttr = m_Image.GetValueFromBag(bag, cc);
 
                 ate.Add(new BuilderAttributesTestFieldsView(ate));
 
@@ -374,6 +393,7 @@ namespace Unity.UI.Builder
         private Color m_ColorAttr;
         private Existance m_EnumAttr;
         private Texture2D m_AssetAttr;
+        private Background m_ImageAttr;
 
         [CreateProperty]
         public object objAttr
@@ -502,6 +522,19 @@ namespace Unity.UI.Builder
                     return;
                 m_AssetAttr = value;
                 NotifyPropertyChanged(nameof(assetAttr));
+            }
+        }
+
+        [CreateProperty]
+        public Background imageAttr
+        {
+            get => m_ImageAttr;
+            set
+            {
+                if (m_ImageAttr == value)
+                    return;
+                m_ImageAttr = value;
+                NotifyPropertyChanged(nameof(imageAttr));
             }
         }
 

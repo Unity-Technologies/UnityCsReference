@@ -4,10 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -48,8 +45,8 @@ namespace UnityEditor.ShaderFoundry
         public IEnumerable<ShaderAttribute> Attributes => HandleListInternal.Enumerate<ShaderAttribute>(container, customizationPoint.m_AttributeListHandle);
         public Namespace ContainingNamespace => new Namespace(container, customizationPoint.m_ContainingNamespaceHandle);
         public IEnumerable<BlockVariable> InterfaceFields => GetVariableEnumerable(customizationPoint.m_InterfaceFieldListHandle);
-        public IEnumerable<BlockVariable> Inputs => InterfaceFields.Where((v) => (v.IsInput));
-        public IEnumerable<BlockVariable> Outputs => InterfaceFields.Where((v) => (v.IsOutput));
+        public IEnumerable<BlockVariable> Inputs => InterfaceFields.Select(BlockVariableInternal.Flags.kInput);
+        public IEnumerable<BlockVariable> Outputs => InterfaceFields.Select(BlockVariableInternal.Flags.kOutput);
         // TODO @ SHADERS: Delete this once we don't rely on it in the prototype
         internal IEnumerable<BlockSequenceElement> DefaultBlockSequenceElements
         {

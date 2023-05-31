@@ -373,6 +373,7 @@ namespace UnityEditor.Collaboration
             AssetDatabase.SaveAssets();
         }
 
+        [RequiredByNativeCode]
         public static void SwitchToDefaultMode()
         {
             bool in2D = EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D;
@@ -444,7 +445,8 @@ namespace UnityEditor.Collaboration
             return null;
         }
 
-        private static void OnStateChanged()
+        [RequiredByNativeCode]
+        private static void OnCollabStateChanged()
         {
             // register only once
             if (s_IsFirstStateChange)
@@ -530,6 +532,7 @@ namespace UnityEditor.Collaboration
                 handler();
         }
 
+        [RequiredByNativeCode]
         private static void OnJobsCompleted()
         {
             var handler = instance.JobsCompleted;
@@ -553,6 +556,7 @@ namespace UnityEditor.Collaboration
                 Collab.instance.Publish(dialog.Options.Comments, true, false);
         }
 
+        [RequiredByNativeCode]
         private static void CannotPublishDialog(string infoMessage)
         {
             CollabCannotPublishDialog.ShowCollabWindow(infoMessage);

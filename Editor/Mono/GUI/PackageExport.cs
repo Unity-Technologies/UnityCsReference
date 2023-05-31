@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -41,6 +42,7 @@ namespace UnityEditor
         }
 
         // Called from from menu
+        [RequiredByNativeCode]
         static internal void ShowExportPackage()
         {
             GetWindow<PackageExport>(true, "Exporting package").RefreshAssetList();

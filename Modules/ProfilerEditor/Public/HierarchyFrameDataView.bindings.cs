@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
-using Unity.Collections.LowLevel.Unsafe;
 using Unity.Profiling.LowLevel;
 using UnityEngine.Bindings;
 
@@ -24,6 +23,7 @@ namespace UnityEditor.Profiling
             Default = 0,
             MergeSamplesWithTheSameName = 1 << 0,
             HideEditorOnlySamples = 1 << 1,
+            InvertHierarchy = 1 << 2
         }
 
         public const int columnDontSort = -1;
@@ -210,8 +210,29 @@ namespace UnityEditor.Profiling
         {
             if (outFullIdPath == null)
                 throw new ArgumentNullException("outFullIdPath");
-            GetItemAncestors(id, outFullIdPath);
+
+            if (viewMode.HasFlag(ViewModes.InvertHierarchy))
+            {
+                // Inverted hierarchy should also report Marker ID path from the top-down perspective.
+                // Since callers are represented by children items we do depth first scan to get the first valid markerid path.
+                outFullIdPath.Clear();
+                List<int> children = null;
+                var childId = id;
+                while (HasItemChildren(childId))
+                {
+                    if (children == null)
+                        children = new List<int>();
+                    GetItemChildren(childId, children);
+                    childId = children[0];
+                    outFullIdPath.Add(childId);
+                }
+            }
+            else
+            {
+                GetItemAncestors(id, outFullIdPath);
+            }
             outFullIdPath.Reverse();
+
             for (int i = 0; i < outFullIdPath.Count; ++i)
                 outFullIdPath[i] = GetItemMarkerID(outFullIdPath[i]);
             outFullIdPath.Add(GetItemMarkerID(id));
@@ -220,7 +241,25 @@ namespace UnityEditor.Profiling
         public string GetItemPath(int id)
         {
             var ancestors = new List<int>();
-            GetItemAncestors(id, ancestors);
+            if (viewMode.HasFlag(ViewModes.InvertHierarchy))
+            {
+                // Inverted hierarchy should also report Marker ID path from the top-down perspective.
+                // Since callers are represented by children items we do depth first scan to get the first valid markerid path.
+                List<int> children = null;
+                var childId = id;
+                while (HasItemChildren(childId))
+                {
+                    if (children == null)
+                        children = new List<int>();
+                    GetItemChildren(childId, children);
+                    childId = children[0];
+                    ancestors.Add(childId);
+                }
+            }
+            else
+            {
+                GetItemAncestors(id, ancestors);
+            }
             var propertyPathBuilder = new StringBuilder();
             for (int i = ancestors.Count - 1; i >= 0; i--)
             {

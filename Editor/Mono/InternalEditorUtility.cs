@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEditor.Experimental;
+using UnityEngine.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.UIElements;
 using UnityEngine.Video;
@@ -85,6 +86,7 @@ namespace UnityEditorInternal
             }
         }
 
+        [RequiredByNativeCode]
         public static Texture2D GetIconForFile(string fileName)
         {
             return FindIconForFile(fileName) ?? EditorGUIUtility.FindTexture(typeof(DefaultAsset));

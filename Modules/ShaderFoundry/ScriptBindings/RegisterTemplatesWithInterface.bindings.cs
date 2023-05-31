@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderFoundry
@@ -113,7 +112,7 @@ namespace UnityEditor.ShaderFoundry
                     {
                         if (!registrationStatement.RegisterWithInterface(blockShaderInterface, container))
                         {
-                            var templateName = registrationStatement.IsTemplateStatement ? registrationStatement.Template.Name : ("generator " + registrationStatement.ProviderName);
+                            var templateName = registrationStatement.IsTemplateStatement ? registrationStatement.Template.Name : ("generator " + registrationStatement.GeneratorName);
                             var message = "Failed to register template " + templateName + " with the block shader interface.";
                             throw new InvalidOperationException(message);
                         }

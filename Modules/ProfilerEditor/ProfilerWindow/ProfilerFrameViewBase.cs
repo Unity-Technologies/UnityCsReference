@@ -106,7 +106,8 @@ namespace UnityEditorInternal.Profiling
         {
             EditorGUIUtility.TrTextContent("Timeline"),
             EditorGUIUtility.TrTextContent("Hierarchy"),
-            EditorGUIUtility.TrTextContent("Raw Hierarchy")
+            EditorGUIUtility.TrTextContent("Inverted Hierarchy"),
+            EditorGUIUtility.TrTextContent("Raw Hierarchy"),
         };
 
         static GUIContent GetCPUProfilerViewTypeName(ProfilerViewType viewType)
@@ -118,6 +119,8 @@ namespace UnityEditorInternal.Profiling
                 case ProfilerViewType.Timeline:
                     return kCPUProfilerViewTypeNames[0];
                 case ProfilerViewType.RawHierarchy:
+                    return kCPUProfilerViewTypeNames[3];
+                case ProfilerViewType.InvertedHierarchy:
                     return kCPUProfilerViewTypeNames[2];
                 default:
                     throw new NotImplementedException($"Lookup Not Implemented for {viewType}");
@@ -128,7 +131,8 @@ namespace UnityEditorInternal.Profiling
         {
             (int)ProfilerViewType.Timeline,
             (int)ProfilerViewType.Hierarchy,
-            (int)ProfilerViewType.RawHierarchy
+            (int)ProfilerViewType.InvertedHierarchy,
+            (int)ProfilerViewType.RawHierarchy,
         };
 
         static readonly GUIContent[] kGPUProfilerViewTypeNames = new GUIContent[]
@@ -171,7 +175,7 @@ namespace UnityEditorInternal.Profiling
             }
             else
             {
-                if (viewType == ProfilerViewType.Timeline)
+                if (viewType == ProfilerViewType.Timeline || viewType == ProfilerViewType.InvertedHierarchy)
                     viewType = ProfilerViewType.Hierarchy;
                 newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kGPUProfilerViewTypeNames, kGPUProfilerViewTypes, BaseStyles.viewTypeToolbarDropDown, GUILayout.Width(BaseStyles.viewTypeToolbarDropDown.fixedWidth));
             }
@@ -328,6 +332,7 @@ namespace UnityEditorInternal.Profiling
                         var menu = new GenericMenu();
                         // The tooltip is already pointing to the what's currently selected, switching the view will Apply that selection in the other view
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.Hierarchy), false, () => { viewTypeChanged(ProfilerViewType.Hierarchy); });
+                        menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.InvertedHierarchy), false, () => { viewTypeChanged(ProfilerViewType.InvertedHierarchy); });
                         menu.AddItem(GetCPUProfilerViewTypeName(ProfilerViewType.RawHierarchy), false, () => { viewTypeChanged(ProfilerViewType.RawHierarchy); });
                         menu.AddSeparator("");
                         if (hasCallstack)

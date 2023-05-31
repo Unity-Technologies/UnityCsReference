@@ -28,48 +28,32 @@ namespace UnityEditor
         }
 
         readonly VisibilityControllerBasedOnRenderPipeline m_VisibilityController = new();
-        ProjectSettingsSection m_SRPSettings;
         TabbedView m_TabbedView;
 
-        VisualElement currentRoot;
-        VisualElement currentSettings;
-        List<RenderPipelineAsset> pipelineAssets = new();
+        VisualElement m_CurrentRoot;
+        VisualElement m_CurrentSettings;
+
+        List<GraphicsSettingsUtils.GlobalSettingsContainer> m_GlobalSettings;
 
         void OnEnable()
         {
             m_VisibilityController.Initialize();
-            RenderPipelineManager.activeRenderPipelineAssetChanged += OnPipelineChanged;
-        }
-
-        void OnPipelineChanged(RenderPipelineAsset prevAsset, RenderPipelineAsset nextAsset)
-        {
-            var currentPipelines = GraphicsSettingsUtils.GetCurrentPipelines(out var srpInUse);
-            if (currentPipelines.Count != pipelineAssets.Count)
-            {
-                AddOrUpdateSettingsUI(currentPipelines, srpInUse);
-                return;
-            }
-
-            for (int i = 0; i < currentPipelines.Count; i++)
-            {
-                if (pipelineAssets.Contains(currentPipelines[i])) continue;
-                AddOrUpdateSettingsUI(currentPipelines, srpInUse);
-                break;
-            }
         }
 
         public void OnDisable()
         {
             m_VisibilityController.Clear();
             m_VisibilityController.Dispose();
-            RenderPipelineManager.activeRenderPipelineAssetChanged -= OnPipelineChanged;
         }
 
-        internal void CreateInspectorUI(VisualElement root, bool srpInUse, List<RenderPipelineAsset> currentPipelines)
+        internal void CreateInspectorUI(VisualElement root, List<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings)
         {
-            currentRoot = root;
-            currentRoot.Add(ObjectUpdater());
-            AddOrUpdateSettingsUI(currentPipelines, srpInUse);
+            m_CurrentRoot = root;
+            m_GlobalSettings = globalSettings;
+
+            m_CurrentRoot.Add(ObjectUpdater());
+            m_CurrentSettings = CreateSettingsUI(globalSettings);
+            m_CurrentRoot.Add(m_CurrentSettings);
         }
 
         // As we use multiple IMGUI container while porting everything to UITK we will call serializedObject.Update in first separate IMGUI container.
@@ -79,47 +63,34 @@ namespace UnityEditor
             return new IMGUIContainer(() => serializedObject.Update());
         }
 
-        void AddOrUpdateSettingsUI(List<RenderPipelineAsset> assets, bool srpInUse)
-        {
-            if (currentSettings != null)
-                currentRoot.Remove(currentSettings);
-            currentSettings = CreateSettingsUI(assets, srpInUse);
-            currentRoot.Add(currentSettings);
-            pipelineAssets = assets;
-        }
-
-        VisualElement CreateSettingsUI(List<RenderPipelineAsset> assets, bool srpInUse)
+        VisualElement CreateSettingsUI(List<GraphicsSettingsUtils.GlobalSettingsContainer> globalSettings)
         {
             m_VisibilityController.Clear();
 
-            var visualTreeAsset = EditorGUIUtility.Load(srpInUse ? ResourcesPaths.bodyTemplateSRP : ResourcesPaths.bodyTemplateBuiltInOnly) as VisualTreeAsset;
+            var globalSettingsExists = globalSettings.Count > 0;
+            var visualTreeAsset = EditorGUIUtility.Load(globalSettingsExists ? ResourcesPaths.bodyTemplateSRP : ResourcesPaths.bodyTemplateBuiltInOnly) as VisualTreeAsset;
             var content = visualTreeAsset.Instantiate();
             content
                 .Query<ProjectSettingsElementWithSO>()
                 .ForEach(d => d.Initialize(serializedObject));
 
-            var lightmapModes = content.MandatoryQ<EnumField>("LightmapModes");
-            var lightmapModesGroup = content.MandatoryQ<FadeGroup>("LightmapModesGroup");
-            var lightmapModesProperty = serializedObject.FindProperty("m_LightmapStripping");
-            var lightmapModesUpdate =
-                GraphicsSettingsUtils.BindSerializedProperty<StrippingModes>(lightmapModes, lightmapModesProperty, mode => { lightmapModesGroup.value = mode == StrippingModes.Custom; });
-            lightmapModesUpdate?.Invoke();
-            lightmapModesGroup.value = lightmapModesProperty.intValue == (int)StrippingModes.Custom;
-            content.MandatoryQ<Button>("ImportLightmapFromCurrentScene").clicked += ShaderUtil.CalculateLightmapStrippingFromCurrentScene;
+            BindStrippingModesEnumWithFadeGroup(content,
+                "LightmapModes",
+                "LightmapModesGroup",
+                "m_LightmapStripping",
+                "ImportLightmapFromCurrentScene",
+                ShaderUtil.CalculateLightmapStrippingFromCurrentScene);
+            BindStrippingModesEnumWithFadeGroup(content,
+                "FogModes",
+                "FogModesGroup",
+                "m_FogStripping",
+                "ImportFogFromCurrentScene",
+                ShaderUtil.CalculateFogStrippingFromCurrentScene);
 
-            var fogModes = content.MandatoryQ<EnumField>("FogModes");
-            var fogModesGroup = content.MandatoryQ<FadeGroup>("FogModesGroup");
-            var fogModesProperty = serializedObject.FindProperty("m_FogStripping");
-            var fogModesUpdate = GraphicsSettingsUtils.BindSerializedProperty<StrippingModes>(fogModes, fogModesProperty, mode => { fogModesGroup.value = mode == StrippingModes.Custom; });
-            fogModesUpdate?.Invoke();
-            fogModesGroup.value = fogModesProperty.intValue == (int)StrippingModes.Custom;
-            content.MandatoryQ<Button>("ImportFogFromCurrentScene").clicked += ShaderUtil.CalculateFogStrippingFromCurrentScene;
-
-            if (srpInUse)
+            if (globalSettingsExists)
             {
-                m_SRPSettings = content.MandatoryQ<ProjectSettingsSection>("SRPSettings");
                 m_TabbedView = content.MandatoryQ<TabbedView>("PipelineSpecificSettings");
-                m_TabbedView.RegisterCallback<AttachToPanelEvent>(evt => GenerateTabs(m_TabbedView, assets));
+                m_TabbedView.RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             }
             else
             {
@@ -129,10 +100,7 @@ namespace UnityEditor
                         if (e.BuiltinOnly)
                             m_VisibilityController.RegisterVisualElement(e, null);
                     });
-                content.Query<BuiltInShaderElement>().ForEach(e =>
-                {
-                    m_VisibilityController.RegisterVisualElement(e, null);
-                });
+                content.Query<BuiltInShaderElement>().ForEach(e => { m_VisibilityController.RegisterVisualElement(e, null); });
             }
 
             GraphicsSettingsUtils.LocalizeVisualTree(content);
@@ -141,17 +109,21 @@ namespace UnityEditor
             return content;
         }
 
-        void GenerateTabs(TabbedView tabView, List<RenderPipelineAsset> allAssets)
+        void OnAttachToPanel(AttachToPanelEvent evt)
         {
-            //Future tab generation after first migration of global settings
+            GenerateTabs();
+            m_TabbedView.UnregisterCallback<AttachToPanelEvent>(OnAttachToPanel);
+        }
 
+        void GenerateTabs()
+        {
             //Add BuiltInTab
             var builtInAsset = EditorGUIUtility.Load(ResourcesPaths.builtInTabContent) as VisualTreeAsset;
             var builtInTemplate = builtInAsset.Instantiate();
             builtInTemplate
                 .Query<ProjectSettingsElementWithSO>()
                 .ForEach(d => d.Initialize(serializedObject));
-            
+
             //By some reason I have to manually bind properties
             builtInTemplate.Query<PropertyField>().Where(p => !string.IsNullOrWhiteSpace(p.bindingPath)).ForEach(p =>
             {
@@ -163,24 +135,35 @@ namespace UnityEditor
             var builtInSettingsContainer = builtInTemplate.MandatoryQ<VisualElement>("Built-InSettingsContainer");
             var builtInWarning = builtInSettingsContainer.Q<HelpBox>("Built-InWarning");
             m_VisibilityController.RegisterVisualElement(builtInWarning, typeof(RenderPipelineAsset));
-            GraphicsSettingsUtils.CreateNewTab(tabView, "Built-In", builtInSettingsContainer, GraphicsSettings.currentRenderPipeline == null);
+            GraphicsSettingsUtils.CreateNewTab(m_TabbedView, "Built-In", builtInSettingsContainer, GraphicsSettings.currentRenderPipeline == null);
 
             //Add SRP tabs
-            foreach (var srpAsset in allAssets)
+            for (var i = 0; i < m_GlobalSettings.Count; i++)
             {
-                if (srpAsset == null) continue;
+                var globalSettingsContainer = m_GlobalSettings[i];
+                var globalSettingsElement = new VisualElement();
+                var srpWarning = GraphicsSettingsUtils.CreateSRPWarning(ResourcesPaths.warningTemplateForSRP, m_GlobalSettings, globalSettingsContainer.renderPipelineAssetType);
+                m_VisibilityController.RegisterVisualElement(srpWarning.warning, srpWarning.activePipelines);
+                globalSettingsElement.Add(srpWarning.warning);
 
-                var srpSettingsContainer = new VisualElement();
-                if (allAssets.Count > 1)
-                {
-                    var srpWarning = GraphicsSettingsUtils.CreateSRPWarning(ResourcesPaths.warningTemplateForSRP, allAssets, srpAsset);
-                    m_VisibilityController.RegisterVisualElement(srpWarning.warning, srpWarning.activePipelines);
-                    srpSettingsContainer.Add(srpWarning.warning);
-                }
+                globalSettingsElement.Bind(globalSettingsContainer.serializedObject);
+                globalSettingsElement.Add(new PropertyField(globalSettingsContainer.property));
 
-                var abbreviation = GraphicsSettingsUtils.GetPipelineAssetAbbreviation(srpAsset);
-                GraphicsSettingsUtils.CreateNewTab(tabView, abbreviation, srpSettingsContainer, GraphicsSettings.currentRenderPipeline == srpAsset);
+                GraphicsSettingsUtils.CreateNewTab(m_TabbedView, globalSettingsContainer.name, globalSettingsElement,
+                    GraphicsSettings.currentRenderPipelineAssetType == globalSettingsContainer.renderPipelineAssetType);
             }
+        }
+
+        void BindStrippingModesEnumWithFadeGroup(VisualElement content, string enumFieldName, string fadeGroupName, string propertyName, string buttonName, Action buttonCallback)
+        {
+            var enumMode = content.MandatoryQ<EnumField>(enumFieldName);
+            var enumModeGroup = content.MandatoryQ<FadeGroup>(fadeGroupName);
+            var enumModeProperty = serializedObject.FindProperty(propertyName);
+            var lightmapModesUpdate = GraphicsSettingsUtils.BindSerializedProperty<StrippingModes>(enumMode, enumModeProperty,
+                mode => enumModeGroup.value = mode == StrippingModes.Custom);
+            lightmapModesUpdate?.Invoke();
+            enumModeGroup.value = enumModeProperty.intValue == (int)StrippingModes.Custom;
+            content.MandatoryQ<Button>(buttonName).clicked += buttonCallback;
         }
     }
 
@@ -324,10 +307,11 @@ namespace UnityEditor
                 m_Inspector = Editor.CreateEditor(settingsObj) as GraphicsSettingsInspector;
                 element.styleSheets.Add(EditorGUIUtility.Load(GraphicsSettingsInspector.ResourcesPaths.graphicsSettings) as StyleSheet);
 
-                var currentPipelines = GraphicsSettingsUtils.GetCurrentPipelines(out var srpInUse);
-                m_Inspector.CreateInspectorUI(element, srpInUse, currentPipelines);
+                var renderPipelineGlobalSettingsMap = m_Inspector.serializedObject.FindProperty("m_RenderPipelineGlobalSettingsMap");
+                var globalSettings = GraphicsSettingsUtils.CollectRenderPipelineAssetsByGlobalSettings(renderPipelineGlobalSettingsMap);
+                m_Inspector.CreateInspectorUI(element, globalSettings);
 
-                var uxmlKeywords = srpInUse
+                var uxmlKeywords = globalSettings.Count > 0
                     ? GraphicsSettingsUtils.GetSearchKeywordsFromUXMLInEditorResources(GraphicsSettingsInspector.ResourcesPaths.bodyTemplateSRP)
                         .Concat(GraphicsSettingsUtils.GetSearchKeywordsFromUXMLInEditorResources(GraphicsSettingsInspector.ResourcesPaths.builtInTabContent))
                     : GraphicsSettingsUtils.GetSearchKeywordsFromUXMLInEditorResources(GraphicsSettingsInspector.ResourcesPaths.bodyTemplateBuiltInOnly);

@@ -95,6 +95,9 @@ namespace UnityEditor.Build.Reporting
         [FreeFunction("BuildReporting::GetLatestReport")]
         public static extern BuildReport GetLatestReport();
 
+        [FreeFunction("BuildReporting::GetReport")]
+        internal static extern BuildReport GetReport(GUID guid);
+
         internal extern void SetBuildGUID(GUID guid);
     }
 }

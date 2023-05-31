@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
@@ -32,24 +33,28 @@ namespace UnityEditor
             return m_PlayModeView != null;
         }
 
+        [RequiredByNativeCode]
         static internal void SetPlaymodeLayout()
         {
             InitPlaymodeLayout();
             FinalizePlaymodeLayout();
         }
 
+        [RequiredByNativeCode]
         static internal void SetStopmodeLayout()
         {
             WindowLayout.ShowAppropriateViewOnEnterExitPlaymode(false);
             Toolbar.RepaintToolbar();
         }
 
+        [RequiredByNativeCode]
         static internal void SetPausemodeLayout()
         {
             // We use the stopmode layout when pausing (maximized windows are unmaximized)
             SetStopmodeLayout();
         }
 
+        [RequiredByNativeCode]
         static internal void InitPlaymodeLayout()
         {
             m_PlayModeView = WindowLayout.ShowAppropriateViewOnEnterExitPlaymode(true) as PlayModeView;
@@ -80,6 +85,7 @@ namespace UnityEditor
             Toolbar.RepaintToolbar();
         }
 
+        [RequiredByNativeCode]
         static internal void FinalizePlaymodeLayout()
         {
             if (m_PlayModeView != null)

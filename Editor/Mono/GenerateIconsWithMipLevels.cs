@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditor;
 using UnityEditor.Experimental;
 using System.IO;
@@ -69,6 +70,7 @@ namespace UnityEditorInternal
         }
 
         // Called from BuildEditorAssetBundles
+        [RequiredByNativeCode]
         public static void GenerateAllIconsWithMipLevels()
         {
             var data = GetInputData();
@@ -106,6 +108,7 @@ namespace UnityEditorInternal
         }
 
         // Refresh just one icon (Used in Editor Resources project, find it in Tools/)
+        [RequiredByNativeCode]
         public static void GenerateSelectedIconsWithMips()
         {
             // If no selection do all

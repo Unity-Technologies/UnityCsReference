@@ -17,6 +17,7 @@ using UnityEngine.Assertions;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
+using Button = UnityEngine.UIElements.Button;
 
 namespace Unity.UI.Builder
 {
@@ -38,8 +39,6 @@ namespace Unity.UI.Builder
         VisualElement currentVisualElement => m_Inspector.currentVisualElement;
         StyleSheet styleSheet => m_Inspector.styleSheet;
         StyleRule currentRule => m_Inspector.currentRule;
-
-        public Action<Enum> updateFlexColumnGlobalState { get; set; }
 
         public Action<Enum> updatePositionAnchorsFoldoutState { get; set; }
 
@@ -116,6 +115,102 @@ namespace Unity.UI.Builder
         {
             m_Inspector.highlightOverlayPainter.ClearOverlay();
         }
+
+        // For mapping icons to the builder's ToggleButtonGroup's buttons
+        // Note: The key represents the style name while the value is the folder name within the
+        //       UIBuilderPackageResources' icons folder.
+        readonly Dictionary<string, string> iconsFolderName = new()
+        {
+            { "display", "Display" },
+            { "visibility", "Display Visibility" },
+            { "overflow", "Display Overflow" },
+            { "flex-direction", "Flex Direction" },
+            { "flex-wrap", "Flex Wrap" },
+            { "align-items", "Align Items" },
+            { "justify-content", "Justify Content" },
+            { "align-self", "Align Self" },
+            { "white-space", "Text White Space" },
+            { "text-overflow", "Text Overflow" },
+            { "-unity-background-scale-mode", "Background" },
+            { FlexDirection.Column.ToString(), "Flex Column" },
+            { FlexDirection.ColumnReverse.ToString(), "Flex Column" },
+            { FlexDirection.Row.ToString(), "Flex Row" },
+            { FlexDirection.RowReverse.ToString(), "Flex Row" },
+        };
+
+        List<ToggleButtonGroup> m_FlexAlignmentToggleButtonGroups = new();
+
+        // A set of dictionaries to help map the correct icons based on the flex direction
+        // Note: As there is a dependency on the flex direction we need to map a set of ToggleButtonGroups to react
+        //       based on a specific flex direction. For the next set of dictionaries, the key represents the style's
+        //       enum value while the value represents the icon's real name in their respective
+        //       UIBuilderPackageResources icons folder.
+        readonly Dictionary<string, string> m_AlignItemsColumnIcons = new()
+        {
+            { "FlexStart", "Left" },
+            { "Center", "Center" },
+            { "FlexEnd", "Right" },
+            { "Stretch", "Stretch" }
+        };
+        readonly Dictionary<string, string> m_AlignItemsColumnReverseIcons = new()
+        {
+            { "FlexStart", "Left Reverse" },
+            { "Center", "Center Reverse" },
+            { "FlexEnd", "Right Reverse" },
+            { "Stretch", "Stretch Reverse" },
+        };
+        readonly Dictionary<string, string> m_AlignItemsRowIcons = new()
+        {
+            { "FlexStart", "Upper" },
+            { "Center", "Center" },
+            { "FlexEnd", "Lower" },
+            { "Stretch", "Stretch" },
+        };
+        readonly Dictionary<string, string> m_AlignItemsRowReverseIcons = new()
+        {
+            { "FlexStart", "Upper Reverse" },
+            { "Center", "Center Reverse" },
+            { "FlexEnd", "Lower Reverse" },
+            { "Stretch", "Stretch Reverse" },
+        };
+        readonly Dictionary<string, string> m_JustifyContentColumnIcons = new()
+        {
+            { "FlexStart", "Upper" },
+            { "Center", "Middle" },
+            { "FlexEnd", "Lower" },
+            { "SpaceBetween", "Space Between" },
+            { "SpaceAround", "Space Around" },
+            { "SpaceEvenly", "Space Evenly" },
+        };
+        readonly Dictionary<string, string> m_JustifyContentColumnReverseIcons = new()
+        {
+            { "FlexStart", "Upper Reverse" },
+            { "Center", "Middle Reverse" },
+            { "FlexEnd", "Lower Reverse" },
+            { "SpaceBetween", "Space Between Reverse" },
+            { "SpaceAround", "Space Around Reverse" },
+            { "SpaceEvenly", "Space Evenly" },
+        };
+        readonly Dictionary<string, string> m_JustifyContentRowIcons = new()
+        {
+            { "FlexStart", "Left" },
+            { "Center", "Center" },
+            { "FlexEnd", "Right" },
+            { "SpaceBetween", "Space Between" },
+            { "SpaceAround", "Space Around" },
+            { "SpaceEvenly", "Space Evenly" },
+        };
+        readonly Dictionary<string, string> m_JustifyContentRowReverseIcons = new()
+        {
+            { "FlexStart", "Left Reverse" },
+            { "Center", "Center Reverse" },
+            { "FlexEnd", "Right Reverse" },
+            { "SpaceBetween", "Space Between Reverse" },
+            { "SpaceAround", "Space Around Reverse" },
+            { "SpaceEvenly", "Space Evenly" },
+        };
+
+        readonly string[] m_FlexDirectionDependentStyleNames = { "align-items", "justify-content", "align-self" };
 
         public void BindStyleField(BuilderStyleRow styleRow, string styleName, VisualElement fieldElement)
         {
@@ -234,12 +329,19 @@ namespace Unity.UI.Builder
                     uiField.Init(enumValue);
                     uiField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
                 }
-                else if (fieldElement is IToggleButtonStrip)
+                else if (fieldElement is FontStyleStrip fontStyleStripField)
                 {
-                    var uiField = fieldElement as IToggleButtonStrip;
-
-                    var choices = new List<string>();
-                    var labels = new List<string>();
+                    fontStyleStripField.userData = enumValue.GetType();
+                    fontStyleStripField.RegisterValueChangedCallback(e => OnFieldToggleButtonGroupChange(e, styleName));
+                }
+                else if (fieldElement is TextAlignStrip textAlignStripField)
+                {
+                    textAlignStripField.userData = enumValue.GetType();
+                    textAlignStripField.RegisterValueChangedCallback(e => OnFieldToggleButtonGroupChange(e, styleName));
+                }
+                else if (fieldElement is ToggleButtonGroup)
+                {
+                    var uiField = fieldElement as ToggleButtonGroup;
                     var enumType = enumValue.GetType();
 
                     foreach (Enum item in Enum.GetValues(enumType))
@@ -252,18 +354,23 @@ namespace Unity.UI.Builder
                         if (typeName == "Scroll")
                             continue;
 
-                        var label = string.Empty;
                         if (typeName == "Auto")
-                            label = "AUTO";
-                        var choice = BuilderNameUtilities.ConvertCamelToDash(typeName);
-                        choices.Add(choice);
-                        labels.Add(label);
+                            uiField.Add(new Button() { name = "auto", text = "AUTO", tooltip = "auto" });
+                        else
+                            uiField.Add(new Button()
+                            {
+                                name = BuilderNameUtilities.ConvertCamelToDash(typeName),
+                                iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/"),
+                                tooltip = BuilderNameUtilities.ConvertCamelToDash(typeName)
+                            });
                     }
 
-                    uiField.enumType = enumType;
-                    uiField.choices = choices;
-                    uiField.labels = labels;
-                    uiField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
+                    uiField.userData = enumType;
+                    uiField.RegisterValueChangedCallback(e => OnFieldToggleButtonGroupChange(e, styleName));
+
+                    // We store the ToggleButtonGroup that needs to be updated when the Flex Direction value changes
+                    if (m_FlexDirectionDependentStyleNames.Contains(styleName))
+                        m_FlexAlignmentToggleButtonGroups.Add(uiField);
                 }
                 else
                 {
@@ -871,7 +978,7 @@ namespace Unity.UI.Builder
 
                 // The state of Flex Direction can affect many other Flex-related fields.
                 if (styleName == "flex-direction")
-                    updateFlexColumnGlobalState?.Invoke(enumValue);
+                    UpdateFlexStyleFieldIcons(enumValue);
 
                 if (styleName == "position")
                     updatePositionAnchorsFoldoutState?.Invoke(enumValue);
@@ -881,11 +988,22 @@ namespace Unity.UI.Builder
                     var uiField = fieldElement as EnumField;
                     uiField.SetValueWithoutNotify(enumValue);
                 }
-                else if (fieldElement is IToggleButtonStrip)
+                else if (fieldElement is FontStyleStrip fontStyleStripField)
                 {
                     var enumStr = BuilderNameUtilities.ConvertCamelToDash(enumValue.ToString());
-                    var uiField = fieldElement as IToggleButtonStrip;
-                    uiField.SetValueWithoutNotify(enumStr);
+                    fontStyleStripField.SetValueWithoutNotify(enumStr);
+                }
+                else if (fieldElement is TextAlignStrip textAlignStripField)
+                {
+                    var enumStr = BuilderNameUtilities.ConvertCamelToDash(enumValue.ToString());
+                    textAlignStripField.SetValueWithoutNotify(enumStr);
+                }
+                else if (fieldElement is ToggleButtonGroup)
+                {
+                    var uiField = fieldElement as ToggleButtonGroup;
+                    var options = new ToggleButtonGroupState(0, 64);
+                    options[Convert.ToInt32(enumValue)] = true;
+                    uiField.SetValueWithoutNotify(options);
                 }
                 else
                 {
@@ -1048,8 +1166,8 @@ namespace Unity.UI.Builder
                     case EnumField enumField:
                         DispatchChangeEvent(enumField);
                         break;
-                    case IToggleButtonStrip toggleButtonStrip:
-                        DispatchChangeEvent((BaseField<string>)toggleButtonStrip);
+                    case ToggleButtonGroup toggleButtonGroup:
+                        DispatchChangeEvent(toggleButtonGroup);
                         break;
                 }
             }
@@ -1650,9 +1768,9 @@ namespace Unity.UI.Builder
             if (isNewValue && updateStyleCategoryFoldoutOverrides != null)
                 updateStyleCategoryFoldoutOverrides();
             m_Inspector.UpdateFieldStatus(target, styleProperty);
-            
+
             var list = m_StyleFields[styleName];
-            
+
             foreach (var item in list.Where(item => item != target))
             {
                 RefreshStyleField(styleName, item);
@@ -1942,14 +2060,14 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
-        void OnFieldValueChange(ChangeEvent<string> e, string styleName)
+        void OnFieldToggleButtonGroupChange<T>(ChangeEvent<T> e, string styleName)
         {
             var field = e.elementTarget;
 
             // HACK: For some reason, when using "Pick Element" feature of Debugger and
             // hovering over the button strips, we get bogus value change events with
             // empty strings.
-            if (field is IToggleButtonStrip && string.IsNullOrEmpty(e.newValue))
+            if ((field is FontStyleStrip || field is TextAlignStrip) && string.IsNullOrEmpty(e.newValue as string))
                 return;
 
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
@@ -1965,31 +2083,85 @@ namespace Unity.UI.Builder
                 isNewValue = true;
             }
 
-            if (field is IToggleButtonStrip)
+            Enum newEnumValue;
+            if (typeof(T) == typeof(string))
             {
-                var newValue = e.newValue;
+                Type enumType;
+
+                if (field is FontStyleStrip fontStyleStripField)
+                    enumType = fontStyleStripField.userData as Type;
+                else
+                    enumType = (field as TextAlignStrip).userData as Type;
+
+                var newValue = e.newValue as string;
                 var newEnumValueStr = BuilderNameUtilities.ConvertDashToHungarian(newValue);
-                var enumType = (field as IToggleButtonStrip).enumType;
-                var newEnumValue = Enum.Parse(enumType, newEnumValueStr) as Enum;
-
-                if (isNewValue)
-                    styleSheet.AddValue(styleProperty, newEnumValue);
-                else // TODO: Assume only one value.
-                    styleSheet.SetValue(styleProperty.values[0], newEnumValue);
-
-                // The state of Flex Direction can affect many other Flex-related fields.
-                if (styleName == "flex-direction")
-                    updateFlexColumnGlobalState?.Invoke(newEnumValue);
+                newEnumValue = Enum.Parse(enumType, newEnumValueStr) as Enum;
             }
             else
             {
-                if (isNewValue)
-                    styleSheet.AddValue(styleProperty, e.newValue);
-                else // TODO: Assume only one value.
-                    styleSheet.SetValue(styleProperty.values[0], e.newValue);
+                Span<int> selected = stackalloc int[0];
+                if (e.newValue is ToggleButtonGroupState toggleButtonGroupState)
+                    selected = toggleButtonGroupState.GetActiveOptions(stackalloc int[toggleButtonGroupState.length]);
+
+                // These properties have only one active state
+                var newValue = selected.IsEmpty == false ? selected[0] : 0;
+                var enumType = (field as ToggleButtonGroup).userData as Type;
+                newEnumValue = Enum.GetValues(enumType).GetValue(newValue) as Enum;
             }
 
+            if (isNewValue)
+                styleSheet.AddValue(styleProperty, newEnumValue);
+            else // TODO: Assume only one value.
+                styleSheet.SetValue(styleProperty.values[0], newEnumValue);
+
+            // The state of Flex Direction can affect many other Flex-related fields.
+            if (styleName == "flex-direction")
+                UpdateFlexStyleFieldIcons(newEnumValue);
+
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
+        }
+
+        void UpdateFlexStyleFieldIcons(Enum value)
+        {
+            (string folderPath, bool isReverse) flexStyleIconConfig = (
+                $"{iconsFolderName[value.ToString()]}/",
+                (FlexDirection)value == FlexDirection.ColumnReverse ||
+                (FlexDirection)value == FlexDirection.RowReverse
+            );
+
+            var index = 0;
+            foreach (var toggleButtonGroup in m_FlexAlignmentToggleButtonGroups)
+            {
+                var buttons = toggleButtonGroup.Query<Button>(className: "unity-button-group__button").ToList();
+                var count = buttons.Count;
+                Dictionary<string, string> dictionary = new();
+                for (var i = 0; i < count; i++)
+                {
+                    if (buttons[i].text == "AUTO") continue;
+
+                    dictionary = m_FlexDirectionDependentStyleNames[index] switch
+                    {
+                        "align-items" when flexStyleIconConfig.folderPath.Contains("Column") => flexStyleIconConfig.isReverse
+                            ? m_AlignItemsColumnReverseIcons
+                            : m_AlignItemsColumnIcons,
+                        "align-items" => flexStyleIconConfig.isReverse ? m_AlignItemsRowReverseIcons : m_AlignItemsRowIcons,
+                        "justify-content" when flexStyleIconConfig.folderPath.Contains("Column") => flexStyleIconConfig.isReverse
+                            ? m_JustifyContentColumnReverseIcons
+                            : m_JustifyContentColumnIcons,
+                        "justify-content" => flexStyleIconConfig.isReverse ? m_JustifyContentRowReverseIcons : m_JustifyContentRowIcons,
+                        _ => dictionary
+                    };
+
+                    var path = $"{iconsFolderName[m_FlexDirectionDependentStyleNames[index]]}/{flexStyleIconConfig.folderPath}";
+                    var enumValue = Enum.GetValues(toggleButtonGroup.userData as Type).GetValue(i).ToString();
+
+                    if (dictionary.TryGetValue(enumValue, out var iconName))
+                        buttons[i].iconImage = BuilderInspectorUtilities.LoadIcon(iconName, path);
+                    else
+                        buttons[i].iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(enumValue), path);
+                }
+                index++;
+            }
         }
 
         void OnFieldValueChange(ChangeEvent<Object> e, string styleName)
@@ -2128,7 +2300,7 @@ namespace Unity.UI.Builder
 
             // The state of Flex Direction can affect many other Flex-related fields.
             if (styleName == "flex-direction")
-                updateFlexColumnGlobalState?.Invoke(e.newValue);
+                UpdateFlexStyleFieldIcons(e.newValue);
 
             if (styleName == "position")
                 updatePositionAnchorsFoldoutState?.Invoke(e.newValue);

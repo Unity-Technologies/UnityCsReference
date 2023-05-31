@@ -4,10 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
-using System.Linq;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -87,7 +84,7 @@ namespace UnityEditor.ShaderFoundry
             {
                 this.container = container;
                 this.name = name;
-                this.ops = ops.ToList();
+                this.ops.AddRange(ops);
             }
 
             public PragmaDescriptor Build()

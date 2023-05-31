@@ -278,15 +278,6 @@ namespace UnityEditor
         [FreeFunction]
         public static extern void PopAssetDependencies();
 
-        private static string[] InvokeCalculateBuildTags(BuildTarget target, BuildTargetGroup group)
-        {
-            // TODO: This is a temporary function until the new Package Manager comes online. (cases 849472)
-            // When that happens, we will walk the list of installed packages, see which ones are active for the current build settings
-            // and if they are unity official packages with metadata for analytics, we will append those tags to the returned vector.
-
-            return new string[0];
-        }
-
         private static void LogBuildExceptionAndExit(string buildFunctionName, System.Exception exception)
         {
             Debug.LogErrorFormat("Internal Error in {0}:", buildFunctionName);

@@ -5,13 +5,14 @@
 using System;
 using UnityEditor;
 using UnityEditor.Modules;
-
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     internal static class IDeviceUtils
     {
         // API for native calls
+        [RequiredByNativeCode]
         internal static RemoteAddress StartRemoteSupport(string deviceId)
         {
             IDevice device = ModuleManager.GetDevice(deviceId);
@@ -19,6 +20,7 @@ namespace UnityEditor
         }
 
         // API for native calls
+        [RequiredByNativeCode]
         internal static void StopRemoteSupport(string deviceId)
         {
             IDevice device = ModuleManager.GetDevice(deviceId);
@@ -26,6 +28,7 @@ namespace UnityEditor
         }
 
         // API for native calls
+        [RequiredByNativeCode]
         internal static RemoteAddress StartPlayerConnectionSupport(string deviceId)
         {
             IDevice device = ModuleManager.GetDevice(deviceId);
@@ -33,6 +36,7 @@ namespace UnityEditor
         }
 
         // API for native calls
+        [RequiredByNativeCode]
         internal static void StopPlayerConnectionSupport(string deviceId)
         {
             IDevice device = ModuleManager.GetDevice(deviceId);

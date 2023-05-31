@@ -443,6 +443,8 @@ namespace UnityEditor
         [NativeMethod(Name = "GetIconsForPlatformFromTargetIcons")]
         extern internal static PlatformIconStruct[] GetPlatformIconsFromTargetIcons(string platform, int kind, BuildTargetIcons[] allIcons);
 
+        extern internal static Texture2D GetPlatformIconForSize(string platform, int width, int height, IconKind kind = IconKind.Application);
+
         // Get the texture that will be used as the display icon at a specified size for the specified platform.
         internal static extern Texture2D GetPlatformIconForSizeForTargetIcons(string platform, int width, int height, IconKind kind, LegacyBuildTargetIcons[] allIcons);
 

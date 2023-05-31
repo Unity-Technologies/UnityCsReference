@@ -697,12 +697,14 @@ namespace UnityEditor
             CallPostProcessMethods("OnPostprocessMeshHierarchy", args);
         }
 
+        [RequiredByNativeCode]
         static void PostprocessMesh(GameObject gameObject)
         {
             object[] args = { gameObject };
             CallPostProcessMethods("OnPostprocessModel", args);
         }
 
+        [RequiredByNativeCode]
         static void PostprocessSpeedTree(GameObject gameObject)
         {
             object[] args = { gameObject };

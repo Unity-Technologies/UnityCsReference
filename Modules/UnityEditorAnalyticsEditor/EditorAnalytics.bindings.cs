@@ -311,5 +311,19 @@ namespace UnityEditor
         }
 
         public abstract void AddExtraBuildAnalyticsFields(UnityEditor.Analytics.EditorAnalyticsEvent eventData);
+
+        public void AddAllowedOrientationsParameter(UnityEditor.Analytics.EditorAnalyticsEvent eventData)
+        {
+            int res = 1;
+            if (PlayerSettings.allowedAutorotateToPortrait)
+                res |= (1 << 1);
+            if (PlayerSettings.allowedAutorotateToPortraitUpsideDown)
+                res |= (1 << 2);
+            if (PlayerSettings.allowedAutorotateToLandscapeRight)
+                res |= (1 << 3);
+            if (PlayerSettings.allowedAutorotateToLandscapeLeft)
+                res |= (1 << 4);
+            eventData.AddParameter("orientations_allowed", res);
+        }
     }
 }

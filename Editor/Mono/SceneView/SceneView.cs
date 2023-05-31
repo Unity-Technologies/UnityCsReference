@@ -1048,7 +1048,7 @@ namespace UnityEditor
         RectSelection m_RectSelection;
 
         [SerializeField]
-        SceneViewViewpoint m_Viewpoint;
+        SceneViewViewpoint m_Viewpoint = new SceneViewViewpoint();
 
         internal SceneViewViewpoint viewpoint => m_Viewpoint;
 
@@ -1280,8 +1280,6 @@ namespace UnityEditor
         public override void OnEnable()
         {
             ChangeUseInteractiveLightBakingData(m_UseInteractiveLightBakingData);
-            m_Viewpoint = new SceneViewViewpoint(this);
-
             baseRootVisualElement.Insert(0, prefabToolbar);
             rootVisualElement.Add(cameraViewVisualElement);
             rootVisualElement.RegisterCallback<MouseEnterEvent>(e => SceneViewMotion.s_ViewportsUnderMouse = true);
@@ -1293,6 +1291,7 @@ namespace UnityEditor
 
             m_RectSelection = new RectSelection(this);
             SceneViewMotion.ResetDragState();
+            m_Viewpoint.AssignSceneView(this);
 
             if (m_Grid == null)
                 m_Grid = new SceneViewGrid();
@@ -4041,11 +4040,13 @@ namespace UnityEditor
             }
         }
 
+        [RequiredByNativeCode]
         static void ShowCompileErrorNotification()
         {
             ShowNotification("All compiler errors have to be fixed before you can enter playmode!");
         }
 
+        [RequiredByNativeCode]
         internal static void ShowSceneViewPlayModeSaveWarning()
         {
             // In this case, we want to explicitly try the GameView before passing it on to whatever notificationView we have

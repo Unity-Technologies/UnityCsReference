@@ -58,7 +58,7 @@ namespace UnityEditor
             {
                 var clampedMinScale = Mathf.Min(kMinScale, ScaleThatFitsTargetInView(targetRenderSize, viewInWindow.size));
                 if (m_LowResolutionForAspectRatios[(int)currentSizeGroupType] && currentGameViewSize.sizeType == GameViewSizeType.AspectRatio)
-                    clampedMinScale = Mathf.Max(clampedMinScale, Mathf.Floor(EditorGUIUtility.pixelsPerPoint));
+                    clampedMinScale = Mathf.Max(clampedMinScale, EditorGUIUtility.pixelsPerPoint);
                 return clampedMinScale;
             }
         }
@@ -156,6 +156,9 @@ namespace UnityEditor
                 {
                     m_LowResolutionForAspectRatios[(int)currentSizeGroupType] = value;
                     UpdateZoomAreaAndParent();
+
+                    if (currentGameViewSize.sizeType == GameViewSizeType.AspectRatio)
+                        SnapZoom(minScale);
                 }
             }
         }

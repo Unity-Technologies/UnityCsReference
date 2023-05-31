@@ -400,6 +400,10 @@ namespace UnityEditor
 
             public static extern AndroidTargetDevices androidTargetDevices { get; set; }
 
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeProperty("androidSplashScreen", TargetType.Field)]
+            internal static extern Texture2D splashScreen { get; }
+
             // Android splash screen scale mode
             public static extern AndroidSplashScreenScale splashScreenScale
             {

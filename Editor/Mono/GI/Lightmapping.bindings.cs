@@ -346,6 +346,7 @@ namespace UnityEditor
             }
         }
 
+        [RequiredByNativeCode]
         private static void Internal_CallBakeStartedFunctions()
         {
             if (bakeStarted != null)
@@ -371,6 +372,7 @@ namespace UnityEditor
 
         public static event Action lightingDataUpdated;
 
+        [RequiredByNativeCode]
         internal static void Internal_CallLightingDataUpdatedFunctions()
         {
             if (lightingDataUpdated != null)
@@ -423,6 +425,7 @@ namespace UnityEditor
 
         public static event Action bakeCompleted;
 
+        [RequiredByNativeCode]
         private static void Internal_CallBakeCompletedFunctions()
         {
             if (bakeCompleted != null)

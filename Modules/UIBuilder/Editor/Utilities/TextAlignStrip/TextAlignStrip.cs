@@ -3,61 +3,27 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEditor;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class TextAlignStrip : BaseField<string>, IToggleButtonStrip
+    internal class TextAlignStrip : BaseField<string>
     {
         static readonly string s_UssPath = BuilderConstants.UtilitiesPath + "/TextAlignStrip/TextAlignStrip.uss";
 
         static readonly string s_UssClassName = "unity-text-align-strip";
         static readonly string s_ButtonStripContainerClassName = s_UssClassName + "__button-strip-container";
 
-        static readonly List<string> s_HorizontalChoices = new List<string>() { "left", "center", "right" };
-        static readonly List<string> s_VerticalChoices = new List<string>() { "upper", "middle", "lower" };
+        static readonly string[] s_HorizontalChoices = { "left", "center", "right" };
+        static readonly string[] s_VerticalChoices = { "upper", "middle", "lower" };
 
         public new class UxmlFactory : UxmlFactory<TextAlignStrip, UxmlTraits> {}
 
         VisualElement m_ButtonStripContainer;
-        ToggleButtonStrip m_HorizontalButtonStrip;
-        ToggleButtonStrip m_VerticalButtonStrip;
-
-        List<string> m_Choices = new List<string>();
-        List<string> m_Labels = new List<string>();
-
-        public IEnumerable<string> choices
-        {
-            get { return m_Choices; }
-            set
-            {
-                m_Choices.Clear();
-
-                if (value == null)
-                    return;
-
-                m_Choices.AddRange(value);
-            }
-        }
-
-        public IEnumerable<string> labels
-        {
-            get { return m_Labels; }
-            set
-            {
-                m_Labels.Clear();
-
-                if (value == null)
-                    return;
-
-                m_Labels.AddRange(value);
-            }
-        }
-
-        public Type enumType { get; set; }
+        ToggleButtonGroup m_HorizontalButtonGroup;
+        ToggleButtonGroup m_VerticalButtonGroup;
+        ToggleButtonGroupState m_HorizontalToggleButtonGrouptState;
+        ToggleButtonGroupState m_VerticalToggleButtonGrouptState;
 
         public TextAlignStrip() : this(null) {}
 
@@ -70,17 +36,24 @@ namespace Unity.UI.Builder
             m_ButtonStripContainer = new VisualElement();
             m_ButtonStripContainer.AddToClassList(s_ButtonStripContainerClassName);
 
-            m_HorizontalButtonStrip = new ToggleButtonStrip();
-            m_HorizontalButtonStrip.name = "horizontal-align-strip";
-            m_HorizontalButtonStrip.RegisterValueChangedCallback(OnHorizontalValueChange);
-            m_HorizontalButtonStrip.choices = s_HorizontalChoices;
-            m_ButtonStripContainer.Add(m_HorizontalButtonStrip);
+            var iconPath = "Text Alignment/";
+            m_HorizontalButtonGroup = new ToggleButtonGroup();
+            m_HorizontalButtonGroup.name = "horizontal-align-strip";
+            m_HorizontalButtonGroup.RegisterValueChangedCallback(OnHorizontalValueChange);
+            m_HorizontalButtonGroup.Add(new Button() { name = "left", iconImage = BuilderInspectorUtilities.LoadIcon("Left", iconPath), tooltip = "left" });
+            m_HorizontalButtonGroup.Add(new Button() { name = "center", iconImage = BuilderInspectorUtilities.LoadIcon("Centered", iconPath), tooltip = "center" });
+            m_HorizontalButtonGroup.Add(new Button() { name = "right", iconImage = BuilderInspectorUtilities.LoadIcon("Right", iconPath), tooltip = "right" });
+            m_ButtonStripContainer.Add(m_HorizontalButtonGroup);
+            m_HorizontalToggleButtonGrouptState = new ToggleButtonGroupState(0, s_HorizontalChoices.Length);
 
-            m_VerticalButtonStrip = new ToggleButtonStrip();
-            m_VerticalButtonStrip.name = "vertical-align-strip";
-            m_VerticalButtonStrip.RegisterValueChangedCallback(OnVerticalValueChange);
-            m_VerticalButtonStrip.choices = s_VerticalChoices;
-            m_ButtonStripContainer.Add(m_VerticalButtonStrip);
+            m_VerticalButtonGroup = new ToggleButtonGroup();
+            m_VerticalButtonGroup.name = "vertical-align-strip";
+            m_VerticalButtonGroup.Add(new Button() { name = "upper", iconImage = BuilderInspectorUtilities.LoadIcon("Upper", iconPath), tooltip = "upper" });
+            m_VerticalButtonGroup.Add(new Button() { name = "middle", iconImage = BuilderInspectorUtilities.LoadIcon("Middle", iconPath), tooltip = "middle" });
+            m_VerticalButtonGroup.Add(new Button() { name = "lower", iconImage = BuilderInspectorUtilities.LoadIcon("Lower", iconPath), tooltip = "lower" });
+            m_VerticalButtonGroup.RegisterValueChangedCallback(OnVerticalValueChange);
+            m_ButtonStripContainer.Add(m_VerticalButtonGroup);
+            m_VerticalToggleButtonGrouptState = new ToggleButtonGroupState(0, s_VerticalChoices.Length);
 
             visualInput = m_ButtonStripContainer;
         }
@@ -90,22 +63,32 @@ namespace Unity.UI.Builder
             base.SetValueWithoutNotify(newValue);
 
             var values = newValue.Split('-');
-            m_VerticalButtonStrip.SetValueWithoutNotify(values[0]);
-            m_HorizontalButtonStrip.SetValueWithoutNotify(values[1]);
+
+            m_VerticalToggleButtonGrouptState.ResetAllOptions();
+            m_VerticalToggleButtonGrouptState[Array.FindIndex(s_VerticalChoices, choice => choice.Contains(values[0]))] = true;
+            m_VerticalButtonGroup.SetValueWithoutNotify(m_VerticalToggleButtonGrouptState);
+
+            m_HorizontalToggleButtonGrouptState.ResetAllOptions();
+            m_HorizontalToggleButtonGrouptState[Array.FindIndex(s_HorizontalChoices, choice => choice.Contains(values[1]))] = true;
+            m_HorizontalButtonGroup.SetValueWithoutNotify(m_HorizontalToggleButtonGrouptState);
         }
 
-        void OnHorizontalValueChange(ChangeEvent<string> evt)
+        void OnHorizontalValueChange(ChangeEvent<ToggleButtonGroupState> evt)
         {
-            var newValue = m_VerticalButtonStrip.value + "-" + evt.newValue;
-            evt.StopPropagation();
-            value = newValue;
+            var verticalSelected = m_VerticalButtonGroup.value.GetActiveOptions(stackalloc int[m_VerticalButtonGroup.value.length]);
+            var horizontalSelected = evt.newValue.GetActiveOptions(stackalloc int[evt.newValue.length]);
+
+            var newValue = s_VerticalChoices[verticalSelected[0]] + "-" + s_HorizontalChoices[horizontalSelected[0]];
+            base.value = newValue;
         }
 
-        void OnVerticalValueChange(ChangeEvent<string> evt)
+        void OnVerticalValueChange(ChangeEvent<ToggleButtonGroupState> evt)
         {
-            var newValue = evt.newValue + "-" + m_HorizontalButtonStrip.value;
-            evt.StopPropagation();
-            value = newValue;
+            var verticalSelected = evt.newValue.GetActiveOptions(stackalloc int[evt.newValue.length]);
+            var horizontalSelected = m_HorizontalButtonGroup.value.GetActiveOptions(stackalloc int[m_HorizontalButtonGroup.value.length]);
+
+            var newValue = s_VerticalChoices[verticalSelected[0]] + "-" + s_HorizontalChoices[horizontalSelected[0]];
+            base.value = newValue;
         }
     }
 }

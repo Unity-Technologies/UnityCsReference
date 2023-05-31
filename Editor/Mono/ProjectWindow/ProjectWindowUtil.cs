@@ -297,12 +297,14 @@ namespace UnityEditor
         }
 
         // Create a standard Object-derived asset.
+        [RequiredByNativeCode]
         public static void CreateAsset(Object asset, string pathName)
         {
             StartNameEditingIfProjectWindowExists(asset.GetInstanceID(), ScriptableObject.CreateInstance<DoCreateNewAsset>(), pathName, AssetPreview.GetMiniThumbnail(asset), null);
         }
 
         // Create a folder
+        [RequiredByNativeCode]
         [ShortcutManagement.ShortcutAttribute("Project Browser/Create/Folder", typeof(ProjectBrowser), KeyCode.N, ShortcutManagement.ShortcutModifiers.Shift | ShortcutManagement.ShortcutModifiers.Action)]
         public static void CreateFolder()
         {
@@ -333,6 +335,7 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, endNameEditAction, defaultName, EditorGUIUtility.IconContent(folderIcon).image as Texture2D, null);
         }
 
+        [RequiredByNativeCode]
         public static void CreateScene()
         {
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture(typeof(SceneAsset)), null);
@@ -480,18 +483,21 @@ namespace UnityEditor
                 FrameObjectInProjectWindow(o.GetInstanceID());
         }
 
+        [RequiredByNativeCode]
         static private void CreateAnimatorController()
         {
             var icon = EditorGUIUtility.IconContent<Animations.AnimatorController>().image as Texture2D;
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAnimatorController>(), "New Animator Controller.controller", icon, null);
         }
 
+        [RequiredByNativeCode]
         static private void CreateAudioMixer()
         {
             var icon = EditorGUIUtility.IconContent<AudioMixerController>().image as Texture2D;
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", icon, null);
         }
 
+        [RequiredByNativeCode]
         static internal void CreateAudioRandomContainer()
         {
             var icon = EditorGUIUtility.IconContent<AudioRandomContainer>().image as Texture2D;

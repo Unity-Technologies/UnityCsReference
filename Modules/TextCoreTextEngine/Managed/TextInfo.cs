@@ -55,6 +55,7 @@ namespace UnityEngine.TextCore.Text
         public double lastTimeInCache;
         public Action removedFromCache;
         public VertexDataLayout vertexDataLayout { get; private set; }
+        public bool hasMultipleColors = false;
 
 
         public void RemoveFromCache()
@@ -89,6 +90,7 @@ namespace UnityEngine.TextCore.Text
             lineCount = 0;
             pageCount = 0;
             spriteCount = 0;
+            hasMultipleColors = false;
 
             for (int i = 0; i < meshInfo.Length; i++)
             {

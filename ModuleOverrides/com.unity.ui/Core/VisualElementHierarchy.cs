@@ -65,6 +65,12 @@ namespace UnityEngine.UIElements
         private VisualElement m_PhysicalParent;
         private VisualElement m_LogicalParent;
 
+        // This will be invoked once a visual element is successfully added into the hierarchy.
+        internal event Action<VisualElement> elementAdded;
+
+        // This will be invoked once a visual element is successfully removed into the hierarchy.
+        internal event Action<VisualElement> elementRemoved;
+
         /// <summary>
         /// The parent of this VisualElement.
         /// </summary>
@@ -99,7 +105,7 @@ namespace UnityEngine.UIElements
         // usually same as this element, but can be overridden by more complex types
         // see ScrollView.contentContainer for an example
         /// <summary>
-        /// Child elements are added to it, usually this is the same as the element itself. 
+        /// Child elements are added to it, usually this is the same as the element itself.
         /// </summary>
         public virtual VisualElement contentContainer
         {
@@ -143,7 +149,6 @@ namespace UnityEngine.UIElements
             {
                 container?.Add(child);
             }
-
             child.m_LogicalParent = this;
         }
 
@@ -499,6 +504,7 @@ namespace UnityEngine.UIElements
                 child.InvokeHierarchyChanged(HierarchyChangeType.Add);
                 child.IncrementVersion(VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
+                m_Owner.elementAdded?.Invoke(child);
             }
 
             /// <summary>
@@ -550,6 +556,7 @@ namespace UnityEngine.UIElements
                 // Child is detached from the panel, notify using the panel directly.
                 m_Owner.elementPanel?.OnVersionChanged(child, VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
+                m_Owner.elementRemoved?.Invoke(child);
             }
 
             /// <summary>
@@ -579,6 +586,7 @@ namespace UnityEngine.UIElements
                         e.hierarchy.SetParent(null);
                         e.m_LogicalParent = null;
                         m_Owner.elementPanel?.OnVersionChanged(e, VersionChangeType.Hierarchy);
+                        m_Owner.elementRemoved?.Invoke(e);
                     }
 
                     if (m_Owner.imguiContainerDescendantCount > 0)

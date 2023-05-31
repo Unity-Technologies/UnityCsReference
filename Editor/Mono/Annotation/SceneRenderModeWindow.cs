@@ -230,14 +230,14 @@ namespace UnityEditor
         //Opens render debugger window located at \newSRP\unity\Packages\com.unity.render-pipelines.core\Editor\Debugging\DebugWindow.cs
         private void DrawRenderingDebuggerShortCut(Rect rect)
         {
-            GUIContent label = new GUIContent("Open Rendering Debugger...");
+            GUIContent label = new GUIContent("Rendering Debugger...");
             var labelRect = rect;
             labelRect.y += (kHeaderVerticalPadding * 2f);
-            labelRect.x += kHeaderHorizontalPadding;
-            labelRect.width = EditorStyles.miniLabel.CalcSize(label).x;
-            labelRect.height = EditorStyles.miniLabel.CalcSize(label).y;
+            labelRect.x += kHeaderHorizontalPadding + 15f;
+            labelRect.width = EditorStyles.foldout.CalcSize(label).x;
+            labelRect.height = EditorStyles.foldout.CalcSize(label).y;
 
-            if (GUI.Button(labelRect, label, EditorStyles.miniLabel))
+            if (GUI.Button(labelRect, label, EditorStyles.label))
             {
                 EditorApplication.ExecuteMenuItem("Window/Analysis/Rendering Debugger");
                 editorWindow.Close();

@@ -30,7 +30,7 @@ namespace UnityEditor.ShortcutManagement
             EditorApplication.globalEventHandler += UpdateContext;
             ContextManager.onTagChange += UpdateContext;
             Selection.selectionChanged += UpdateContext;
-            focusedWindowChanged += UpdateContext;
+            windowFocusChanged += UpdateContext;
 
             EditorApplication.globalEventHandler -= Init;
         }

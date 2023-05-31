@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
 
 namespace UnityEditor.ShaderFoundry
 {

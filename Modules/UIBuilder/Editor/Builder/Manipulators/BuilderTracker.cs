@@ -44,7 +44,7 @@ namespace Unity.UI.Builder
             m_Target.RegisterCallback<DetachFromPanelEvent>(OnTargetDeletion);
 
             m_Canvas = m_Target.GetFirstAncestorOfType<BuilderCanvas>();
-            m_Canvas.RegisterCallback<GeometryChangedEvent>(OnCanvasResize);
+            m_Canvas?.RegisterCallback<GeometryChangedEvent>(OnCanvasResize);
 
             if (float.IsNaN(m_Target.layout.width))
             {

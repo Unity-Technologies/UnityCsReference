@@ -323,19 +323,6 @@ namespace UnityEditorInternal
             StoreSelectedState();
         }
 
-        private bool PropertyPathMatchesSelectedIDs(string legacyPropertyPath, List<int> selectedIDs)
-        {
-            if (m_FrameDataView == null || !m_FrameDataView.valid)
-                return false;
-
-            if (string.IsNullOrEmpty(legacyPropertyPath) || selectedIDs == null || selectedIDs.Count == 0)
-            {
-                return string.IsNullOrEmpty(legacyPropertyPath) && (selectedIDs == null || selectedIDs.Count == 0);
-            }
-
-            return m_FrameDataView.GetItemPath(selectedIDs[0]) == legacyPropertyPath;
-        }
-
         void StoreSelectedState()
         {
             if (m_LocalSelectedItemMarkerIdPath == null)
@@ -486,26 +473,30 @@ namespace UnityEditorInternal
             }
         }
 
-        int GetItemIdFromRawFrameDataIndexPath(HierarchyFrameDataView m_FrameDataView, List<int> deepestRawSampleIndexPathFound, out int foundDepth, out bool selectedItemsPathIsExpanded)
+        int GetItemIdFromRawFrameDataIndexPath(HierarchyFrameDataView frameDataView, List<int> deepestRawSampleIndexPathFound, out int foundDepth, out bool selectedItemsPathIsExpanded)
         {
             selectedItemsPathIsExpanded = true;
-            var newSelectedId = m_FrameDataView.GetRootItemID();
+            var rootItemId = frameDataView.GetRootItemID();
+            var newSelectedId = rootItemId;
             var deepestPath = deepestRawSampleIndexPathFound.Count;
+            var invertedHierarchy = frameDataView.viewMode.HasFlag(HierarchyFrameDataView.ViewModes.InvertHierarchy);
 
             for (int markerDepth = 0; markerDepth < deepestPath; markerDepth++)
             {
                 var oldSelectedId = newSelectedId;
 
-                if (m_FrameDataView.HasItemChildren(newSelectedId))
+                if (frameDataView.HasItemChildren(newSelectedId))
                 {
                     // TODO: maybe HierarchyFrameDataView should just have a method GetChildItemByRawFrameDataViewIndex to avoid this List<int> marshalling need...
-                    m_FrameDataView.GetItemChildren(newSelectedId, m_ReusableChildrenIds);
+                    frameDataView.GetItemChildren(newSelectedId, m_ReusableChildrenIds);
 
                     for (int i = 0; i < m_ReusableChildrenIds.Count; i++)
                     {
                         var childId = m_ReusableChildrenIds[i];
 
-                        if (m_FrameDataView.ItemContainsRawFrameDataViewIndex(childId, deepestRawSampleIndexPathFound[markerDepth]))
+                        // frameDataView in the inverted hierarchy requires reverse walk of the selection path which is stored in top-down order.
+                        var rawSampleIndex = invertedHierarchy ? deepestRawSampleIndexPathFound[deepestPath - markerDepth - 1] : deepestRawSampleIndexPathFound[markerDepth];
+                        if (frameDataView.ItemContainsRawFrameDataViewIndex(childId, rawSampleIndex))
                         {
                             // check if the parent is expanded
                             if (selectedItemsPathIsExpanded && !IsExpanded(newSelectedId))
@@ -516,11 +507,24 @@ namespace UnityEditorInternal
                         }
                     }
                 }
-                if (oldSelectedId == newSelectedId)
+
+                // Pick up the first match in the Inverted hierarchy mode as it is the deepest one already.
+                if (invertedHierarchy)
                 {
-                    // there was no fitting sample in this scope so the path has been cut short here
-                    deepestPath = markerDepth;
-                    break;
+                    if (newSelectedId != rootItemId)
+                    {
+                        deepestPath = deepestRawSampleIndexPathFound.Count - markerDepth;
+                        break;
+                    }
+                }
+                else
+                {
+                    if (oldSelectedId == newSelectedId)
+                    {
+                        // there was no fitting sample in this scope so the path has been cut short here
+                        deepestPath = markerDepth;
+                        break;
+                    }
                 }
             }
             foundDepth = deepestPath;
@@ -681,9 +685,12 @@ namespace UnityEditorInternal
                     result.Add(item);
                 }
 
-                m_FrameDataView.GetItemChildren(current, m_ReusableChildrenIds);
-                foreach (var childId in m_ReusableChildrenIds)
-                    stack.Push(childId);
+                if (!m_FrameDataView.viewMode.HasFlag(HierarchyFrameDataView.ViewModes.InvertHierarchy))
+                {
+                    m_FrameDataView.GetItemChildren(current, m_ReusableChildrenIds);
+                    foreach (var childId in m_ReusableChildrenIds)
+                        stack.Push(childId);
+                }
             }
 
             // Sort filtered results based on HerarchyFrameData sorting settings
@@ -881,23 +888,10 @@ namespace UnityEditorInternal
 
             if (selectedIds.Count > 0 && m_FrameDataView.valid)
             {
-                List<int> rawIds = new List<int>();
-                if (selectedIds.Count > 1)
-                {
-                    List<int> ids = new List<int>();
-                    for (int i = 0; i < selectedIds.Count; i++)
-                    {
-                        m_FrameDataView.GetItemRawFrameDataViewIndices(selectedIds[i], ids);
-                    }
-                }
-                else
-                {
-                    m_FrameDataView.GetItemRawFrameDataViewIndices(selectedIds[0], rawIds);
-                }
-                selection = new ProfilerTimeSampleSelection(m_FrameDataView.frameIndex, m_FrameDataView.threadGroupName, m_FrameDataView.threadName, m_FrameDataView.threadId, rawIds, m_ProfilerSampleNameProvider.GetItemName(m_FrameDataView, selectedIds[0]));
                 var selectedId = selectedIds[0];
                 var rawSampleIndices = new List<int>(m_FrameDataView.GetItemMergedSamplesCount(selectedId));
                 m_FrameDataView.GetItemRawFrameDataViewIndices(selectedId, rawSampleIndices);
+                selection = new ProfilerTimeSampleSelection(m_FrameDataView.frameIndex, m_FrameDataView.threadGroupName, m_FrameDataView.threadName, m_FrameDataView.threadId, rawSampleIndices, m_ProfilerSampleNameProvider.GetItemName(m_FrameDataView, selectedIds[0]));
                 var markerIDs = new List<int>(m_FrameDataView.GetItemDepth(selectedId));
                 using (var iterator = new RawFrameDataView(m_FrameDataView.frameIndex, m_FrameDataView.threadIndex))
                 {
@@ -911,7 +905,6 @@ namespace UnityEditorInternal
                 selection = null;
             }
 
-            var id = selectedIds.Count > 0 ? selectedIds[0] : RawFrameDataView.invalidSampleIndex;
             if (selectionChanged != null)
                 selectionChanged.Invoke(selection);
         }

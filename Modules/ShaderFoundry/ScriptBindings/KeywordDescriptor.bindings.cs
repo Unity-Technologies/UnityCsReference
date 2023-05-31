@@ -4,10 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
-using System.Linq;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -94,7 +91,7 @@ namespace UnityEditor.ShaderFoundry
                 this.definition = definition;
                 this.scope = scope;
                 this.stage = stage;
-                this.ops = ops.ToList();
+                this.ops.AddRange(ops);
             }
 
             public KeywordDescriptor Build()

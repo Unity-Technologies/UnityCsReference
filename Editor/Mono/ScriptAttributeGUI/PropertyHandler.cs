@@ -13,11 +13,12 @@ namespace UnityEditor
 {
     internal class PropertyHandler
     {
-        private List<PropertyDrawer> m_PropertyDrawers = null;
-        private List<DecoratorDrawer> m_DecoratorDrawers = null;
-        public string tooltip = null;
+        List<PropertyDrawer> m_PropertyDrawers;
+        List<DecoratorDrawer> m_DecoratorDrawers;
+        public string tooltip;
 
-        public bool hasPropertyDrawer { get { return propertyDrawer != null; } }
+        public bool hasPropertyDrawer => propertyDrawer != null;
+
         internal PropertyDrawer propertyDrawer
         {
             get
@@ -31,13 +32,13 @@ namespace UnityEditor
         internal List<DecoratorDrawer> decoratorDrawers => m_DecoratorDrawers;
         internal bool skipDecoratorDrawers { get; set; }
 
-        private int m_NestingLevel;
+        int m_NestingLevel;
 
-        private bool isCurrentlyNested { get { return m_NestingLevel > 0; } }
+        bool isCurrentlyNested => m_NestingLevel > 0;
 
         internal static Dictionary<string, ReorderableListWrapper> s_reorderableLists = new Dictionary<string, ReorderableListWrapper>();
-        private static int s_LastInspectionTarget;
-        private static int s_LastInspectorNumComponents;
+        static int s_LastInspectionTarget;
+        static int s_LastInspectorNumComponents;
 
         static PropertyHandler()
         {
@@ -65,18 +66,13 @@ namespace UnityEditor
             }
         }
 
-        public List<ContextMenuItemAttribute> contextMenuItems = null;
+        public List<ContextMenuItemAttribute> contextMenuItems;
 
-        public bool empty
-        {
-            get
-            {
-                return m_DecoratorDrawers == null
-                    && tooltip == null
-                    && m_PropertyDrawers == null
-                    && contextMenuItems == null;
-            }
-        }
+        public bool empty =>
+            m_DecoratorDrawers == null
+            && tooltip == null
+            && m_PropertyDrawers == null
+            && contextMenuItems == null;
 
         public void HandleAttribute(SerializedProperty property, PropertyAttribute attribute, FieldInfo field, Type propertyType)
         {
@@ -92,6 +88,19 @@ namespace UnityEditor
                     contextMenuItems = new List<ContextMenuItemAttribute>();
                 contextMenuItems.Add(attribute as ContextMenuItemAttribute);
                 return;
+            }
+
+            if (attribute is PropertyCollectionAttribute)
+            {
+                // Do not apply this to array elements
+                if (!property.isArray)
+                    return;
+
+                if (!propertyType.IsArrayOrList())
+                {
+                    throw new NotSupportedException($"Cannot apply {nameof(PropertyCollectionAttribute)} on a field of type {propertyType.Name}." +
+                        $"\nPlease use this attribute on a collection.");
+                }
             }
 
             // Look for its drawer type of this attribute
@@ -110,7 +119,7 @@ namespace UnityEditor
                     // Use PropertyDrawer on array elements, not on array itself.
                     // If there's a PropertyAttribute on an array, we want to apply it to the individual array elements instead.
                     // This is the only convenient way we can let the user apply PropertyDrawer attributes to elements inside an array.
-                    if (propertyType != null && propertyType.IsArrayOrList())
+                    if (propertyType != null && propertyType.IsArrayOrList() && attribute is not PropertyCollectionAttribute)
                         return;
 
                     var propertyDrawerForType = (PropertyDrawer)System.Activator.CreateInstance(drawerType);
@@ -530,9 +539,9 @@ namespace UnityEditor
 
         public struct NestingContext : IDisposable
         {
-            private PropertyHandler m_Handler;
-            private int m_NestingLevel;
-            private int m_OldNestingLevel;
+            PropertyHandler m_Handler;
+            int m_NestingLevel;
+            int m_OldNestingLevel;
 
             public static NestingContext Get(PropertyHandler handler, int nestingLevel)
             {
@@ -546,13 +555,13 @@ namespace UnityEditor
                 Close();
             }
 
-            private void Open()
+            void Open()
             {
                 m_OldNestingLevel = m_Handler.m_NestingLevel;
                 m_Handler.m_NestingLevel = m_NestingLevel;
             }
 
-            private void Close()
+            void Close()
             {
                 m_Handler.m_NestingLevel = m_OldNestingLevel;
             }

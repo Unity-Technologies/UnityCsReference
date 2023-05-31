@@ -4478,11 +4478,17 @@
     <Compile Include="..\..\Modules\BuildPipeline\Editor\Ucbp\BuildPipelineContext.bindings.cs">
       <Link>Modules\BuildPipeline\Editor\Ucbp\BuildPipelineContext.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildReportingEditor\BuildReportRestService.bindings.cs">
+      <Link>Modules\BuildReportingEditor\BuildReportRestService.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildFile.cs">
       <Link>Modules\BuildReportingEditor\Managed\BuildFile.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildReport.bindings.cs">
       <Link>Modules\BuildReportingEditor\Managed\BuildReport.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildReportRestService.cs">
+      <Link>Modules\BuildReportingEditor\Managed\BuildReportRestService.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildReportingEditor\Managed\BuildResult.cs">
       <Link>Modules\BuildReportingEditor\Managed\BuildResult.cs</Link>
@@ -6352,6 +6358,156 @@
     </Compile>
     <Compile Include="..\..\Modules\Licensing\Public\LicensingUtility.bindings.cs">
       <Link>Modules\Licensing\Public\LicensingUtility.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\Base\Notification.cs">
+      <Link>Modules\Licensing\UI\Data\Events\Base\Notification.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\Base\NotificationReasons.cs">
+      <Link>Modules\Licensing\UI\Data\Events\Base\NotificationReasons.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\Base\NotificationType.cs">
+      <Link>Modules\Licensing\UI\Data\Events\Base\NotificationType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\Base\NotificationWithDetails.cs">
+      <Link>Modules\Licensing\UI\Data\Events\Base\NotificationWithDetails.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\LicenseExpiredNotification.cs">
+      <Link>Modules\Licensing\UI\Data\Events\LicenseExpiredNotification.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\LicenseOfflineValidityEndingNotification.cs">
+      <Link>Modules\Licensing\UI\Data\Events\LicenseOfflineValidityEndingNotification.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Data\Events\LicenseUpdateNotification.cs">
+      <Link>Modules\Licensing\UI\Data\Events\LicenseUpdateNotification.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\CloseButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\CloseButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\CloseProjectButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\CloseProjectButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\EventsButtonFactory.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\EventsButtonFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\EventsButtonType.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\EventsButtonType.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\IEventsButtonFactory.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\IEventsButtonFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\ManageLicenseButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\ManageLicenseButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\OkButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\OkButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\OpenUnityHubButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\OpenUnityHubButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\SaveAndCloseButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\SaveAndCloseButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\TemplateEventsButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\TemplateEventsButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Buttons\UpdateLicenseButton.cs">
+      <Link>Modules\Licensing\UI\Events\Buttons\UpdateLicenseButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Handlers\INotificationHandler.cs">
+      <Link>Modules\Licensing\UI\Events\Handlers\INotificationHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Handlers\LicenseExpiredHandler.cs">
+      <Link>Modules\Licensing\UI\Events\Handlers\LicenseExpiredHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Handlers\LicenseOfflineValidityEndingHandler.cs">
+      <Link>Modules\Licensing\UI\Events\Handlers\LicenseOfflineValidityEndingHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Handlers\LicenseUpdateHandler.cs">
+      <Link>Modules\Licensing\UI\Events\Handlers\LicenseUpdateHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\ILicenseNotificationHandlerFactory.cs">
+      <Link>Modules\Licensing\UI\Events\ILicenseNotificationHandlerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\IModalWrapper.cs">
+      <Link>Modules\Licensing\UI\Events\IModalWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\INotificationDispatcher.cs">
+      <Link>Modules\Licensing\UI\Events\INotificationDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\LicenseNotificationDispatcher.cs">
+      <Link>Modules\Licensing\UI\Events\LicenseNotificationDispatcher.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\LicenseNotificationHandlerFactory.cs">
+      <Link>Modules\Licensing\UI\Events\LicenseNotificationHandlerFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\ModalWrapper.cs">
+      <Link>Modules\Licensing\UI\Events\ModalWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Text\LicenseTrStrings.cs">
+      <Link>Modules\Licensing\UI\Events\Text\LicenseTrStrings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseExpiredWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseExpiredWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseExpiredWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseExpiredWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndedWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndedWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndedWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndedWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndingWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndingWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndingWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseOfflineValidityEndingWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseRemovedWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseRemovedWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseRemovedWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseRemovedWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseReturnedWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseReturnedWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseReturnedWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseReturnedWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseRevokedWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseRevokedWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\LicenseRevokedWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\LicenseRevokedWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\TemplateLicenseEventWindow.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\TemplateLicenseEventWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Events\Windows\TemplateLicenseEventWindowContents.cs">
+      <Link>Modules\Licensing\UI\Events\Windows\TemplateLicenseEventWindowContents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Helper\Constants.cs">
+      <Link>Modules\Licensing\UI\Helper\Constants.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Helper\ILicenseLogger.cs">
+      <Link>Modules\Licensing\UI\Helper\ILicenseLogger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Helper\LicenseLogger.cs">
+      <Link>Modules\Licensing\UI\Helper\LicenseLogger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\Helper\Utils.cs">
+      <Link>Modules\Licensing\UI\Helper\Utils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\INativeApiWrapper.cs">
+      <Link>Modules\Licensing\UI\INativeApiWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\LicenseManagedWrapper.cs">
+      <Link>Modules\Licensing\UI\LicenseManagedWrapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\Licensing\UI\NativeApiWrapper.cs">
+      <Link>Modules\Licensing\UI\NativeApiWrapper.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\LocalizationEditor\LocalizationAttribute.cs">
       <Link>Modules\LocalizationEditor\LocalizationAttribute.cs</Link>
@@ -8726,18 +8882,6 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\Utils.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\Utils.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\RestService\Handler.cs">
-      <Link>Modules\RestService\Handler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\RestService\HttpStatusCode.cs">
-      <Link>Modules\RestService\HttpStatusCode.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\RestService\PlayerDataFileLocator.cs">
-      <Link>Modules\RestService\PlayerDataFileLocator.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\RestService\ScriptBindings\RestService.bindings.cs">
-      <Link>Modules\RestService\ScriptBindings\RestService.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\SafeMode\SafeModeToolbarWindow.cs">
       <Link>Modules\SafeMode\SafeModeToolbarWindow.cs</Link>
     </Compile>
@@ -8813,8 +8957,14 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\Block.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\Block.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockConstructorGenerator.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\BlockConstructorGenerator.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockLinkOverride.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\BlockLinkOverride.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockLinker.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\BlockLinker.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\BlockSequenceElement.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\BlockSequenceElement.bindings.cs</Link>
@@ -8834,8 +8984,8 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CustomizationPoint.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\CustomizationPoint.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CustomizationPointImplementation.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\CustomizationPointImplementation.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\CustomizationPointImplementation.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\CustomizationPointImplementation.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\DataType.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\DataType.bindings.cs</Link>
@@ -8864,11 +9014,11 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\HandleList.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\HandleList.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ITemplateGenerator.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\ITemplateGenerator.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ITemplateLinker.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ITemplateLinker.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ITemplateProvider.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\ITemplateProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\IncludeDescriptor.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\IncludeDescriptor.bindings.cs</Link>
@@ -8906,6 +9056,9 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderAttribute.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ShaderAttribute.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderAttributeParameter.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\ShaderAttributeParameter.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\ShaderBuilder.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\ShaderBuilder.cs</Link>
     </Compile>
@@ -8936,8 +9089,8 @@
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\Template.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\Template.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\TemplateInstance.cs">
-      <Link>Modules\ShaderFoundry\ScriptBindings\TemplateInstance.cs</Link>
+    <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\TemplateInstance.bindings.cs">
+      <Link>Modules\ShaderFoundry\ScriptBindings\TemplateInstance.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShaderFoundry\ScriptBindings\TemplatePass.bindings.cs">
       <Link>Modules\ShaderFoundry\ScriptBindings\TemplatePass.bindings.cs</Link>
@@ -9674,6 +9827,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlEnumAttributeField.cs">
       <Link>Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlEnumAttributeField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlImageAttributeField.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlImageAttributeField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlIntAttributeField.cs">
       <Link>Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\BuilderUxmlIntAttributeField.cs</Link>
     </Compile>
@@ -9718,9 +9874,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\Background\CheckerboardBackground.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\Background\CheckerboardBackground.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\ButtonStrip\ButtonStrip.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\ButtonStrip\ButtonStrip.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\CategoryDropdownField\CategoryDropdownContent.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\CategoryDropdownField\CategoryDropdownContent.cs</Link>
@@ -9932,9 +10085,6 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\TextAlignStrip\TextAlignStrip.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\TextAlignStrip\TextAlignStrip.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\ToggleButtonStrip\ToggleButtonStrip.cs">
-      <Link>Modules\UIBuilder\Editor\Utilities\ToggleButtonStrip\ToggleButtonStrip.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\Transitions\BuilderTransition.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\Transitions\BuilderTransition.cs</Link>
     </Compile>
@@ -10085,11 +10235,17 @@
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\SliderSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\SliderSnippet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\TabViewSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\TabViewSnippet.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\TagFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\TagFieldSnippet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\TextFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\TextFieldSnippet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\ToggleButtonGroupSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\ToggleButtonGroupSnippet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\ToggleSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\ToggleSnippet.cs</Link>

@@ -3766,6 +3766,7 @@ namespace UnityEngine.TextCore.Text
                         {
                             m_StrikethroughColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength);
                             m_StrikethroughColor.a = m_HtmlColor.a < m_StrikethroughColor.a ? (byte)(m_HtmlColor.a) : (byte)(m_StrikethroughColor.a);
+                            textInfo.hasMultipleColors = true;
                         }
                         else
                             m_StrikethroughColor = m_HtmlColor;
@@ -3790,6 +3791,7 @@ namespace UnityEngine.TextCore.Text
                         {
                             m_UnderlineColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength);
                             m_UnderlineColor.a = m_HtmlColor.a < m_UnderlineColor.a ? (m_HtmlColor.a) : (m_UnderlineColor.a);
+                            textInfo.hasMultipleColors = true;
                         }
                         else
                             m_UnderlineColor = m_HtmlColor;
@@ -3844,6 +3846,7 @@ namespace UnityEngine.TextCore.Text
 
                         m_HighlightState = new HighlightState(highlightColor, highlightPadding);
                         m_HighlightStateStack.Push(m_HighlightState);
+                        textInfo.hasMultipleColors = true;
 
                         return true;
                     case MarkupTag.SLASH_MARK:
@@ -4401,6 +4404,7 @@ namespace UnityEngine.TextCore.Text
                     //    }
                     //    return true;
                     case MarkupTag.COLOR:
+                        textInfo.hasMultipleColors = true;
                         // <color=#FFF> 3 Hex (short hand)
                         if (m_HtmlTag[6] == k_NumberSign && tagCharCount == k_LineFeed)
                         {

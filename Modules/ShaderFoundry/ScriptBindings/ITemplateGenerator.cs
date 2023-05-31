@@ -2,13 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 
 namespace UnityEditor.ShaderFoundry
 {
     [FoundryAPI]
-    internal class TemplateProviderSettings
+    internal class TemplateGeneratorSettings
     {
         const string SharedScopeName = "_Shared";
         Dictionary<string, Dictionary<string, string>> settingScopes = new Dictionary<string, Dictionary<string, string>>();
@@ -49,11 +48,11 @@ namespace UnityEditor.ShaderFoundry
     }
 
     [FoundryAPI]
-    internal interface ITemplateProvider
+    internal interface ITemplateGenerator
     {
         public abstract string Name { get; }
         public abstract IEnumerable<CustomizationPoint> GetCustomizationPoints();
-        public abstract void ConfigureSettings(TemplateProviderSettings settings);
+        public abstract void ConfigureSettings(TemplateGeneratorSettings settings);
         public abstract IEnumerable<Template> GetTemplates(ShaderContainer container);
     }
 }

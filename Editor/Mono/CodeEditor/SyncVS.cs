@@ -5,11 +5,13 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     internal class SyncVS
     {
+        [RequiredByNativeCode]
         public static void SyncSolution()
         {
             // Ensure that the mono islands are up-to-date

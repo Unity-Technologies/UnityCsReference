@@ -1202,6 +1202,7 @@ namespace UnityEditor
         }
 
         // Called from EditorHelper
+        [RequiredByNativeCode]
         static void OpenSelectedFoldersInInternalExplorer()
         {
             if (!IsFolderTreeViewContextClick())
@@ -3082,6 +3083,7 @@ namespace UnityEditor
         }
 
         // Called from AssetsMenu
+        [RequiredByNativeCode]
         static void ShowSelectedObjectsInLastInteractedProjectBrowser()
         {
             // Only one ProjectBrowser can have focus at a time so if we find one just return that one

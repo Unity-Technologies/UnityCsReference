@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -76,6 +77,7 @@ namespace UnityEditor
             return shader.GetInstanceID() + "_" + name;
         }
 
+        [RequiredByNativeCode]
         internal static void InvalidatePropertyCache(Shader shader)
         {
             if (shader == null)

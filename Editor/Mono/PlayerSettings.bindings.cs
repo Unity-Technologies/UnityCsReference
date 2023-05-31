@@ -722,6 +722,9 @@ namespace UnityEditor
         [NativeMethod("GetPlatformIcons")]
         internal static extern Texture2D[] GetIconsForPlatform(string platform, IconKind kind);
 
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern Texture2D[] GetIconsForPlatformByKind(int layerCount, string platform, int kind, string subKind, int width, int height);
+
         internal static Texture2D[] GetAllIconsForPlatform(string platform)
         {
             return GetIconsForPlatform(platform, IconKind.Any);

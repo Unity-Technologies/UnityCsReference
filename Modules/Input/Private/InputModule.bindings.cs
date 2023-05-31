@@ -51,9 +51,9 @@ namespace UnityEngineInternal.Input
 
         /// <summary>
         /// Allows creation of input devices from events.
-        /// Primarily used by input simulation package (on Android and Windows), where we can send the simulated events.
+        /// Used by input simulation package on Windows, where we can send the simulated events.
         /// Input simulation package doesn't create input devices, thus we must ask backend to created those when required.
-        /// By default, such behavior is disabled, since for ex., on Android Gear VR expects Unity to ignore such events.
+        /// By default, such behavior is disabled.
         /// </summary>
         [NativeProperty("AllowInputDeviceCreationFromEvents")]
         internal static extern bool allowInputDeviceCreationFromEvents { get; set; }

@@ -43,14 +43,24 @@ namespace UnityEditor.Profiling
         internal string legacyMarkerPath { get; private set; }
         [SerializeField]
         List<string> m_MarkerNamePath;
+        /// <summary>
+        /// Selected sample hierarchy in the top-down representation based on the Marker name
+        /// </summary>
         public ReadOnlyCollection<string> markerNamePath => m_MarkerNamePath?.AsReadOnly();
         [SerializeField]
         List<int> m_MarkerIdPath;
+        /// <summary>
+        /// Selected sample hierarchy in the top-down representation based on the Marker ID
+        /// </summary>
         internal ReadOnlyCollection<int> markerIdPath => m_MarkerIdPath?.AsReadOnly();
         [field: SerializeField]
         public int markerPathDepth { get; private set; }
         [SerializeField]
         List<int> m_RawSampleIndices;
+        /// <summary>
+        /// Selected samples as RawFrameDataView indices.
+        /// (Selection in the hierarchy views may mean multiple merged samples).
+        /// </summary>
         public ReadOnlyCollection<int> rawSampleIndices => m_RawSampleIndices.AsReadOnly();
         public int rawSampleIndex
         {

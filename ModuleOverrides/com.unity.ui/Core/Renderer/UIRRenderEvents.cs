@@ -551,7 +551,7 @@ namespace UnityEngine.UIElements.UIR
             ve.renderChainData.backgroundColor = newColor;
 
             bool shouldUpdateVisuals = false;
-            if ((ve.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor)
+            if ((ve.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor && !ve.renderChainData.isIgnoringDynamicColorHint)
             {
                 if (InitColorIDs(renderChain, ve))
                     // New colors were allocated, we need to update the visuals

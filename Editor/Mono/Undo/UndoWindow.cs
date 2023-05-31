@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditor;
 using UnityEditorInternal;
 using System.Collections;
@@ -24,7 +25,8 @@ namespace UnityEditor
 
         private Vector2 undosScroll = Vector2.zero;
 
-        internal static void Init()
+        [RequiredByNativeCode]
+        internal static void InitUndoWindow()
         {
             EditorWindow wnd = GetWindow(typeof(UndoWindow));
             wnd.titleContent = EditorGUIUtility.TrTextContent("Undo");

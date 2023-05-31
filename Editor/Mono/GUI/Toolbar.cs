@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditorInternal;
 using UnityEditor.Toolbars;
 using UnityEditor.UIElements;
@@ -140,6 +141,7 @@ namespace UnityEditor
             CreateContents();
         }
 
+        [RequiredByNativeCode]
         internal static void RepaintToolbar()
         {
             if (get != null)
@@ -164,6 +166,7 @@ namespace UnityEditor
 
         // Repaints all views, called from C++ when playmode entering is aborted
         // and when the user clicks on the playmode button.
+        [RequiredByNativeCode]
         static void InternalWillTogglePlaymode()
         {
             InternalEditorUtility.RepaintAllViews();

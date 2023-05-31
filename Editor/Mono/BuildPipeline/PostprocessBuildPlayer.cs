@@ -253,8 +253,17 @@ namespace UnityEditor
                 throw new Exception(installPath + " must not be an empty string");
 
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
-            if (postprocessor != null)
+            if (postprocessor == null)
+                // If postprocessor is not provided, build target is not supported
+                throw new UnityException($"Build target '{target}' not supported");
+
+            try
             {
+                AddIconsArgs iconArgs;
+                iconArgs.stagingArea = stagingArea;
+                if (!postprocessor.AddIconsToBuild(iconArgs))
+                    throw new BuildFailedException("Failed to add player icon");
+
                 BuildPostProcessArgs args;
                 args.target = target;
                 args.subtarget = subtarget;
@@ -271,19 +280,8 @@ namespace UnityEditor
                 args.report = report;
 
                 BuildProperties props;
-                try
-                {
-                    postprocessor.PostProcess(args, out props);
-                }
-                catch (BuildFailedException)
-                {
-                    throw;
-                }
-                catch (Exception e)
-                {
-                    // Rethrow exceptions during build postprocessing as BuildFailedException, so we don't pretend the build was fine.
-                    throw new BuildFailedException(e);
-                }
+                postprocessor.PostProcess(args, out props);
+
                 if (props != null)
                 {
                     report.AddAppendix(props);
@@ -291,9 +289,15 @@ namespace UnityEditor
 
                 return;
             }
-
-            // If postprocessor is not provided, build target is not supported
-            throw new UnityException(string.Format("Build target '{0}' not supported", target));
+            catch (BuildFailedException)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                // Rethrow exceptions during build postprocessing as BuildFailedException, so we don't pretend the build was fine.
+                throw new BuildFailedException(e);
+            }
         }
 
         public static void PostProcessCompletedBuild(BuildPostProcessArgs args)

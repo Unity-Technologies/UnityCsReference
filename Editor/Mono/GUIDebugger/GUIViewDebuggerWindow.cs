@@ -180,8 +180,9 @@ namespace UnityEditor
         //TODO: figure out proper minimum values and make sure the window also has compatible minimum size
         readonly SplitterState m_InstructionListDetailSplitter = SplitterState.FromRelative(new float[] { 30, 70 }, new float[] { 32, 32 }, null);
 
+        [RequiredByNativeCode]
         [MenuItem("Window/Analysis/IMGUI Debugger", false, 20002, false)]
-        static void Init()
+        static void InitDebuggerWindow()
         {
             // Get existing open window or if none, make a new one:
             if (s_ActiveInspector == null)

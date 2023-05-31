@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEngine.Rendering
 {
-    public abstract class RenderPipelineAsset : ScriptableObject
+    public abstract partial class RenderPipelineAsset : ScriptableObject
     {
         internal RenderPipeline InternalCreatePipeline()
         {
@@ -27,9 +27,9 @@ namespace UnityEngine.Rendering
             {
                 Debug.LogException(e);
             }
-            
-            if (renderPipelineType != null && pipeline != null && renderPipelineType != pipeline.GetType())
-                Debug.LogWarning($"{GetType()}.{nameof(CreatePipeline)}. Type error: {renderPipelineType} is different from {pipeline.GetType()}. The property {nameof(renderPipelineType)} must return the same type");
+
+            if (pipelineType != null && pipeline != null && pipelineType != pipeline.GetType())
+                Debug.LogWarning($"{GetType()}.{nameof(CreatePipeline)}. Type error: {pipelineType} is different from {pipeline.GetType()}. The property {nameof(pipelineType)} must return the same type");
             return pipeline;
         }
 
@@ -78,12 +78,11 @@ namespace UnityEngine.Rendering
 
         protected abstract RenderPipeline CreatePipeline();
 
-        protected internal virtual Type renderPipelineType
+        public virtual Type pipelineType
         {
             get
             {
-                Debug.LogWarning(
-                    $"You must either inherit from {nameof(RenderPipelineAsset)}<TRenderPipeline> or override {nameof(renderPipelineType)} property");
+                Debug.LogWarning($"You must either inherit from {nameof(RenderPipelineAsset)}<TRenderPipeline> or override {nameof(pipelineType)} property");
                 return null;
             }
         }
@@ -108,9 +107,9 @@ namespace UnityEngine.Rendering
         }
     }
 
-    public abstract class RenderPipelineAsset<TRenderPipeline> : RenderPipelineAsset
+    public abstract partial class RenderPipelineAsset<TRenderPipeline> : RenderPipelineAsset
         where TRenderPipeline : RenderPipeline
     {
-        protected internal sealed override Type renderPipelineType => typeof(TRenderPipeline);
+        public sealed override Type pipelineType => typeof(TRenderPipeline);
     }
 }

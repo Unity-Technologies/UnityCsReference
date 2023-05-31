@@ -585,18 +585,35 @@ namespace UnityEditor
     {
         const string k_USSFilePath = "StyleSheets/SceneView/CamerasOverlay/CamerasOverlay.uss";
         const string k_CamerasOverlayUSSClass = "unity-cameras-overlay";
-        const string k_OverlayIsAutoSizingUSSClass = "unity-content--autoSizing";
         const string k_DisplayName = "Cameras";
-        const float k_ToolbarHeight = 39.33f;
+
+        static readonly Vector2 k_DefaultOverlaySize = new (246, 177);
+        static readonly Vector2 k_DefaultMaxSize = new (4000, 4000);
 
         internal const string overlayId = "SceneView/CamerasOverlay";
 
+        struct OverlaySavedState
+        {
+            public bool sizeWasOverriden;
+            public float previousHeight;
+
+            public OverlaySavedState()
+            {
+                sizeWasOverriden = false;
+                previousHeight = 0;
+            }
+
+            internal OverlaySavedState(bool sizeIsOverriden, float height)
+            {
+                sizeWasOverriden = sizeIsOverriden;
+                previousHeight = height;
+            }
+        }
+
+        OverlaySavedState m_SavedStateBeforeReduceMode = default;
+
         List<IViewpoint> m_AvailableViewpoints = new List<IViewpoint>();
         IViewpoint m_SelectedViewpoint;
-
-        // Cached value. Height of the overlay before it's being reduced due
-        // to a viewpoint activation.
-        float m_OverlayHeightBeforeReduced;
 
         internal IViewpoint viewpoint
         {
@@ -626,20 +643,8 @@ namespace UnityEditor
 
         public CamerasOverlay()
         {
-            minSize = maxSize = new(246, 177);
-            maxSize = new Vector2(4000, 4000);
-        }
-
-        public override void OnCreated()
-        {
-            EditorApplication.update += Update;
-
-            (containerWindow as SceneView).viewpoint.cameraLookThroughStateChanged += CameraViewStateChanged;
-
-            sizeOverridenChanged += OnSizeOverrideChanged;
-
-            OnSizeOverrideChanged();
-            CameraViewStateChanged((containerWindow as SceneView).viewpoint.hasActiveViewpoint);
+            minSize = defaultSize = k_DefaultOverlaySize;
+            maxSize = k_DefaultMaxSize;
         }
 
         public override VisualElement CreatePanelContent()
@@ -659,79 +664,56 @@ namespace UnityEditor
             return root;
         }
 
+        public override void OnCreated()
+        {
+            EditorApplication.update += Update;
+
+            (containerWindow as SceneView).viewpoint.cameraLookThroughStateChanged += CameraViewStateChanged;
+
+            CameraViewStateChanged((containerWindow as SceneView).viewpoint.hasActiveViewpoint);
+        }
+
         public override void OnWillBeDestroyed()
         {
+            EditorApplication.update -= Update;
+
+            (containerWindow as SceneView).viewpoint.cameraLookThroughStateChanged -= CameraViewStateChanged;
+
             onWillBeDestroyed?.Invoke();
         }
 
-        [Flags]
-        enum ResizeDirection
-        {
-            Top,
-            Bottom
-        }
-
-        void OnSizeOverrideChanged()
-        {
-            contentRoot.EnableInClassList(k_OverlayIsAutoSizingUSSClass, !sizeOverridden);
-        }
-
-        ResizeDirection GetShrinkDirection()
-        {
-            var center = floatingPosition + (size / 2.0f);
-
-            var canvasSize = new Vector2(canvas.containerWindow.position.width,
-                canvas.containerWindow.position.height);
-
-            if (center.y < canvasSize.y / 2f)
-                return ResizeDirection.Top;
-            else
-                return ResizeDirection.Bottom;
-        }
-
+        // When the camera view is enabled in the SceneView, we reduce the overlay to hide the preview
+        // render. User can still manually resize the width of the overlay.
+        // When the user exits camera view, the overlay expands back to its original height.
         void CameraViewStateChanged(bool viewpointIsActive)
         {
-            var currentHeight = contentRoot.parent.resolvedStyle.height;
-
-            // When size is overriden, the width/length is set at the styling level.
-            // In this case, we want to force reduce the overlay on purpose but we don't want to force a specific value
-            // so the auto layout system can do its job. We temporary set the height to auto and cache the value.
-            if (sizeOverridden)
-            {
-                if (viewpointIsActive)
-                {
-                    m_OverlayHeightBeforeReduced = contentRoot.parent.resolvedStyle.height;
-                    contentRoot.parent.style.height = new StyleLength(StyleKeyword.Auto);
-                }
-                else
-                {
-                    contentRoot.parent.style.height = m_OverlayHeightBeforeReduced;
-                }
-            }
-
-            // Handle overlay offset so when it shrink or expant, it is where it should be.
             if (viewpointIsActive)
             {
-                if (floating)
-                {
-                    var shrinkDirection = GetShrinkDirection();
-                    m_OverlayHeightBeforeReduced = currentHeight;
-                    Vector2 oldPosition = floatingPosition;
-                    if (shrinkDirection == ResizeDirection.Bottom)
-                        oldPosition.y = oldPosition.y + (currentHeight - k_ToolbarHeight);
+                m_SavedStateBeforeReduceMode = new OverlaySavedState(sizeOverridden, size.y);
 
-                    floatingPosition = oldPosition;
-                }
+                float delta = 0;
+                var previewWidget = contentRoot.Q<CameraPreview>();
+                if (previewWidget != null)
+                    delta = previewWidget.resolvedStyle.height;
+
+                float fixedHeight = resizeTarget.resolvedStyle.height - delta + 5;
+
+                // Lock the height. User can't resize the Overlay vertically in reduce mode.
+                minSize = new Vector2(minSize.x, fixedHeight);
+                maxSize = new Vector2(maxSize.x, fixedHeight);
             }
             else
             {
-                var shrinkDirection = GetShrinkDirection();
-                Vector2 oldPosition = floatingPosition;
+                minSize = defaultSize;
+                maxSize = k_DefaultMaxSize;
+                ResetSize();
+                // Restore the size used before this overlay got reduced.
+                if (m_SavedStateBeforeReduceMode.sizeWasOverriden || size.x != k_DefaultMaxSize.x)
+                    size = new Vector2(size.x, m_SavedStateBeforeReduceMode.previousHeight);
+                else
+                    ResetSize();
 
-                if (shrinkDirection == ResizeDirection.Bottom)
-                    oldPosition.y = oldPosition.y - (m_OverlayHeightBeforeReduced - k_ToolbarHeight);
-
-                floatingPosition = oldPosition;
+                m_SavedStateBeforeReduceMode = default;
             }
         }
 
@@ -778,6 +760,21 @@ namespace UnityEditor
 
             // Enable the toolbar only when there is at least one camera in the scene.
             contentRoot.SetEnabled(viewpoint != null);
+        }
+
+        // used in tests
+        internal void SelectViewpoint(Component targetObject)
+        {
+            var viewpointToSelect = GetViewpoint(targetObject);
+
+            if (viewpointToSelect != null)
+                viewpoint = viewpointToSelect;
+        }
+
+        // used in tests
+        internal IViewpoint GetViewpoint(Component targetObject)
+        {
+            return m_AvailableViewpoints.Find(vp => vp.TargetObject == targetObject);
         }
     }
 

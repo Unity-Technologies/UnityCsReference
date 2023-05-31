@@ -11,6 +11,7 @@ using Unity.Jobs;
 using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Profiling;
 using UnityEngine.TextCore.Text;
+using static UnityEngine.UIElements.MeshGenerationContext;
 using GCHandlePool = UnityEngine.UIElements.UIR.GCHandlePool;
 
 namespace UnityEngine.UIElements.UIR
@@ -19,7 +20,7 @@ namespace UnityEngine.UIElements.UIR
     interface IMeshGenerator
     {
         VisualElement currentElement { get; set; }
-        public void DrawText(MeshInfo[] meshInfo, Vector2 offset);
+        public void DrawText(MeshInfo[] meshInfo, Vector2 offset, bool hasMultipleColors);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
@@ -592,9 +593,9 @@ namespace UnityEngine.UIElements.UIR
             if (style.borderBottomWidth >= 1.0f && style.borderBottomColor.a >= 1.0f) { rect.height -= 0.5f; }
         }
 
-        public void DrawText(MeshInfo[] meshInfo, Vector2 offset)
+        public void DrawText(MeshInfo[] meshInfo, Vector2 offset, bool hasMultipleColors)
         {
-            DrawTextInfo(meshInfo, offset, true);
+            DrawTextInfo(meshInfo, offset, !hasMultipleColors);
         }
 
         TextInfo m_TextInfo = new TextInfo(VertexDataLayout.VBO);
@@ -750,6 +751,9 @@ namespace UnityEngine.UIElements.UIR
                 rectangleJobParameters.rectParams.spriteTriangles = m_GCHandlePool.GetIntPtr(rectParams.sprite.triangles);
             }
             rectangleJobParameters.rectParams.vectorImage = m_GCHandlePool.GetIntPtr(rectParams.vectorImage);
+
+            bool isUsingGradients = rectParams.vectorImage?.atlas != null;
+            rectangleJobParameters.rectParams.meshFlags |= isUsingGradients ? (int)MeshFlags.IsUsingVectorImageGradients : (int)MeshFlags.None;
 
             m_MeshGenerationContext.InsertUnsafeMeshGenerationNode(out var unsafeNode);
             rectangleJobParameters.node = unsafeNode;
@@ -1529,7 +1533,7 @@ namespace UnityEngine.UIElements.UIR
 
             void DrawVectorImage(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, VectorImage vi)
             {
-                bool isUsingGradients = vi.atlas != null;
+                bool isUsingGradients = (rectParams.meshFlags & (int)MeshGenerationContext.MeshFlags.IsUsingVectorImageGradients) != 0;
 
                 // Convert the VectorImage's serializable vertices to Vertex instances
                 int vertexCount = vi.vertices.Length;

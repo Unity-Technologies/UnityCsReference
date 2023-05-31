@@ -13,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             : base(new PackageDownloadUpdateButton(assetStoreDownloadManager, assetStoreCache, operationDispatcher, unityConnectProxy),
                    new PackageCancelDownloadButton(assetStoreDownloadManager, operationDispatcher))
         {
-            mainFoldout.headerTextTemplate = L10n.Tr("Update {0}");
+            mainFoldout.headerTextTemplate = L10n.Tr("Download update for {0}");
             inProgressFoldout.headerTextTemplate = L10n.Tr("Downloading updates for {0}...");
         }
     }

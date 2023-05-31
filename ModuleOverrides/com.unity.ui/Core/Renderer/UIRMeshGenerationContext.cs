@@ -337,7 +337,8 @@ namespace UnityEngine.UIElements
         internal enum MeshFlags
         {
             None = 0,
-            SkipDynamicAtlas = 1 << 1
+            SkipDynamicAtlas = 1 << 1,
+            IsUsingVectorImageGradients = 1 << 2,
         }
 
         /// <summary>
@@ -483,7 +484,7 @@ namespace UnityEngine.UIElements
         /// <param name="pos">The start position where the text will be displayed.</param>
         /// <param name="fontSize">The font size to use.</param>
         /// <param name="color">The text color.</param>
-        /// <param name="font">The font asset to use.</param>
+        /// <param name="font">The font asset to use. If the value is null, the font asset of the VisualElement style is used instead. For more information, refer to <see cref="IStyle.unityFontDefinition"/>.</param>
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font = null)
         {
             if (font == null)

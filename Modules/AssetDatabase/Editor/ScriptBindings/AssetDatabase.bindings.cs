@@ -833,6 +833,12 @@ namespace UnityEditor
         [FreeFunction("ApplicationAllowAutoRefresh")]
         public static extern void AllowAutoRefresh();
 
+        [FreeFunction("ApplicationDisableUpdating")]
+        internal static extern void DisableUpdating();
+
+        [FreeFunction("ApplicationEnableUpdating")]
+        internal static extern void EnableUpdating(bool forceSceneUpdate);
+
         public extern static UInt32 GlobalArtifactDependencyVersion
         {
             [FreeFunction("AssetDatabase::GetGlobalArtifactDependencyVersion")] get;

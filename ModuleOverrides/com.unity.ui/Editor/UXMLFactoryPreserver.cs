@@ -25,6 +25,7 @@ namespace UnityEditor.UIElements
         static readonly List<Type> s_FactoryTypesUsedInAsset = new List<Type>();
 
         // Called from native code when preparing assets for a build
+        [RequiredByNativeCode]
         public static List<Type> ExtractTypesFromVisualTreeAsset(VisualTreeAsset asset)
         {
             if (s_PrecompiledUnityAssemblies == null)

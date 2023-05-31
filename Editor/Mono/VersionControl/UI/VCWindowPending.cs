@@ -5,6 +5,7 @@
 using System;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditorInternal.VersionControl;
 
 namespace UnityEditor.VersionControl
@@ -185,6 +186,7 @@ namespace UnityEditor.VersionControl
             UpdateWindow();
         }
 
+        [RequiredByNativeCode]
         static void OnVCTaskCompletedEvent(Task task, CompletionAction completionAction)
         {
             // inspector should re-calculate which VCS buttons it needs to show
@@ -237,6 +239,7 @@ namespace UnityEditor.VersionControl
             UpdateAllWindows();
         }
 
+        [RequiredByNativeCode]
         public static void UpdateAllWindows()
         {
             // inspector should re-calculate which VCS buttons it needs to show

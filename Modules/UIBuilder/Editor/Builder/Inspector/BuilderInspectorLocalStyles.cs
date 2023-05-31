@@ -29,7 +29,6 @@ namespace Unity.UI.Builder
             m_Inspector = inspector;
             m_StyleFields = styleFields;
 
-            m_StyleFields.updateFlexColumnGlobalState = UpdateFlexColumnGlobalState;
             m_StyleFields.updatePositionAnchorsFoldoutState = UpdatePositionAnchorsFoldoutState;
             m_StyleFields.updateStyleCategoryFoldoutOverrides = UpdateStyleCategoryFoldoutOverrides;
 
@@ -212,15 +211,6 @@ namespace Unity.UI.Builder
                 var hasOverridenField = styleCategory.Q(className: BuilderConstants.InspectorLocalStyleOverrideClassName) != null;
                 styleCategory.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutOverrideClassName, hasOverridenField);
             }
-        }
-
-        void UpdateFlexColumnGlobalState(Enum newValue)
-        {
-            var newDirection = (FlexDirection)newValue;
-            m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorFlexColumnModeClassName, newDirection == FlexDirection.Column);
-            m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorFlexColumnReverseModeClassName, newDirection == FlexDirection.ColumnReverse);
-            m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorFlexRowModeClassName, newDirection == FlexDirection.Row);
-            m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorFlexRowReverseModeClassName, newDirection == FlexDirection.RowReverse);
         }
 
         void UpdatePositionAnchorsFoldoutState(Enum newValue)

@@ -7,6 +7,7 @@ using System.Linq;
 using Unity.Profiling;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditorInternal;
 using UnityEditor.EditorTools;
 
@@ -289,6 +290,7 @@ namespace UnityEditor
         }
         private PivotMode m_PivotMode;
 
+        [RequiredByNativeCode]
         internal static int GetPivotMode()
         {
             return (int)pivotMode;

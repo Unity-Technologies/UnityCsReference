@@ -90,6 +90,7 @@ namespace UnityEditorInternal.Profiling
             base.LegacyModuleInitialize();
             k_HierarchyViewAnalyticsName = DisplayName + ".Hierarchy";
             k_RawHierarchyViewAnalyticsName = DisplayName + ".RawHierarchy";
+            k_InvertedHierarchyViewAnalyticsName = DisplayName + ".InvertedHierarchy";
             k_TimelineViewAnalyticsName = DisplayName + ".Timeline";
         }
 
@@ -100,6 +101,7 @@ namespace UnityEditorInternal.Profiling
 
         string k_HierarchyViewAnalyticsName { get; set; }
         string k_RawHierarchyViewAnalyticsName { get; set; }
+        string k_InvertedHierarchyViewAnalyticsName { get; set; }
         string k_TimelineViewAnalyticsName { get; set; }
 
         protected const string k_MainThreadName = "Main Thread";
@@ -384,16 +386,26 @@ namespace UnityEditorInternal.Profiling
         HierarchyFrameDataView GetFrameDataView(string threadGroupName, string threadName, ulong threadId)
         {
             var viewMode = HierarchyFrameDataView.ViewModes.Default;
+
             if (m_ViewType == ProfilerViewType.Hierarchy)
                 viewMode |= HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName;
+
+            if (m_ViewType == ProfilerViewType.InvertedHierarchy)
+                viewMode |= HierarchyFrameDataView.ViewModes.InvertHierarchy;
+
             return ProfilerWindow.GetFrameDataView(threadGroupName, threadName, threadId, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
         }
 
         HierarchyFrameDataView GetFrameDataView(int threadIndex)
         {
             var viewMode = HierarchyFrameDataView.ViewModes.Default;
+
             if (m_ViewType == ProfilerViewType.Hierarchy)
                 viewMode |= HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName;
+
+            if (m_ViewType == ProfilerViewType.InvertedHierarchy)
+                viewMode |= HierarchyFrameDataView.ViewModes.InvertHierarchy;
+
             return ProfilerWindow.GetFrameDataView(threadIndex, viewMode | GetFilteringMode(), m_FrameDataHierarchyView.sortedProfilerColumn, m_FrameDataHierarchyView.sortedProfilerColumnAscending);
         }
 
@@ -402,18 +414,25 @@ namespace UnityEditorInternal.Profiling
             return HierarchyFrameDataView.ViewModes.Default;
         }
 
-        protected void CPUOrGPUViewTypeChanged(ProfilerViewType viewtype)
+        protected void CPUOrGPUViewTypeChanged(ProfilerViewType newViewType)
         {
-            if (m_ViewType == viewtype)
+            if (m_ViewType == newViewType)
                 return;
 
-            m_ViewType = viewtype;
-            SendViewTypeAnalytics(viewtype);
+            var previousViewType = m_ViewType;
+            m_ViewType = newViewType;
+            SendViewTypeAnalytics(m_ViewType);
+
+            //Update the module chart when changing the view from/to the inverted hierarchy.
+            if (newViewType == ProfilerViewType.InvertedHierarchy || previousViewType == ProfilerViewType.InvertedHierarchy)
+            {
+                Update();
+            }
 
             // reset the hierarchy overruling if the user leaves the Hierarchy space
             // otherwise, switching back and forth between hierarchy views and Timeline feels inconsistent once you overruled the thread selection
             // basically, the override is in effect as long as the user sees the thread selection drop down, once that's gone, so is the override. (out of sight, out of mind)
-            if (viewtype == ProfilerViewType.Timeline)
+            if (newViewType == ProfilerViewType.Timeline)
             {
                 m_HierarchyOverruledThreadFromSelection = false;
             }
@@ -677,9 +696,9 @@ namespace UnityEditorInternal.Profiling
 
         protected static readonly ProfilerMarker k_ApplyValidSelectionMarker = new ProfilerMarker($"{nameof(CPUOrGPUProfilerModule)}.{nameof(ApplySelection)}");
         protected static readonly ProfilerMarker k_ApplySelectionClearMarker = new ProfilerMarker($"{nameof(CPUOrGPUProfilerModule)}.{nameof(ApplySelection)} Clear");
-        virtual protected void ApplySelection(bool viewChanged, bool frameSelection)
+        protected virtual void ApplySelection(bool viewChanged, bool frameSelection)
         {
-            if (ViewType == ProfilerViewType.Hierarchy || ViewType == ProfilerViewType.RawHierarchy)
+            if (ViewType == ProfilerViewType.RawHierarchy || ViewType == ProfilerViewType.Hierarchy || ViewType == ProfilerViewType.InvertedHierarchy)
             {
                 if (selection != null)
                 {
@@ -760,7 +779,7 @@ namespace UnityEditorInternal.Profiling
             => FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(frameIndex, threadIndex, sampleName, out markerIdPath, markerNamePath);
         protected virtual int FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(int frameIndex, int threadIndex, string sampleName, out List<int> markerIdPath, string markerNamePath = null)
         {
-            if (ViewType == ProfilerViewType.RawHierarchy || ViewType == ProfilerViewType.Hierarchy)
+            if (ViewType == ProfilerViewType.RawHierarchy || ViewType == ProfilerViewType.Hierarchy || ViewType == ProfilerViewType.InvertedHierarchy)
             {
                 markerIdPath = null;
                 return FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(frameIndex, threadIndex, ref sampleName, ref markerIdPath, markerNamePath, FrameDataView.invalidMarkerId);
@@ -774,11 +793,12 @@ namespace UnityEditorInternal.Profiling
             => FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(frameIndex, threadIndex, ref sampleName, ref markerIdPath, sampleMarkerId);
         protected virtual int FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(int frameIndex, int threadIndex, ref string sampleName, ref List<int> markerIdPath, int sampleMarkerId)
         {
-            if (ViewType == ProfilerViewType.RawHierarchy || ViewType == ProfilerViewType.Hierarchy)
+            if (ViewType == ProfilerViewType.RawHierarchy || ViewType == ProfilerViewType.Hierarchy || ViewType == ProfilerViewType.InvertedHierarchy)
             {
                 Debug.Assert(sampleMarkerId != RawFrameDataView.invalidSampleIndex);
                 return FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(frameIndex, threadIndex, ref sampleName, ref markerIdPath, null, sampleMarkerId);
             }
+
             return RawFrameDataView.invalidSampleIndex;
         }
 
@@ -786,7 +806,7 @@ namespace UnityEditorInternal.Profiling
 
         int FindMarkerPathAndRawSampleIndexToFirstMatchingSampleInCurrentView(int frameIndex, int threadIndex, ref string sampleName, ref List<int> markerIdPath, string markerNamePath, int sampleMarkerId)
         {
-            if (ViewType == ProfilerViewType.RawHierarchy || ViewType == ProfilerViewType.Hierarchy)
+            if (ViewType == ProfilerViewType.RawHierarchy || ViewType == ProfilerViewType.Hierarchy || ViewType == ProfilerViewType.InvertedHierarchy)
             {
                 if (frameIndex < 0)
                     // If the last frame was supposed to be looked at, and this happens during a SetSelection call, it should have been adjusted to a valid frame index there.
@@ -795,6 +815,7 @@ namespace UnityEditorInternal.Profiling
 
                 ProfilerWindow.SetActiveVisibleFrameIndex(frameIndex);
                 var frameData = GetFrameDataView(threadIndex);
+                var invertedHierarchy = frameData.viewMode.HasFlag(HierarchyFrameDataView.ViewModes.InvertHierarchy);
 
                 var sampleIdPath = new List<int>();
                 var children = new List<int>();
@@ -809,6 +830,9 @@ namespace UnityEditorInternal.Profiling
 
                 if (markerIdPath != null && markerIdPath.Count > 0)
                 {
+                    if (invertedHierarchy)
+                        markerIdPath.Reverse();
+
                     int enclosingScopeId = FindNextMatchingSampleIdInScope(frameData, null, sampleIdPath, children, yetToVisit, false, markerIdPath[sampleIdPath.Count]);
                     while (enclosingScopeId != RawFrameDataView.invalidSampleIndex && sampleIdPath.Count <= markerIdPath.Count)
                     {
@@ -816,7 +840,8 @@ namespace UnityEditorInternal.Profiling
                         {
                             // lets, for a moment, assume that the searched sample is the last one in the specified path
                             var sampleId = enclosingScopeId;
-                            if ((sampleMarkerId != FrameDataView.invalidMarkerId && sampleMarkerId != markerIdPath[sampleIdPath.Count - 1]) ||  (sampleName != null && frameData.GetMarkerName(markerIdPath[sampleIdPath.Count - 1]) != sampleName))
+                            var expectedMarkerId = invertedHierarchy ? markerIdPath[0] : markerIdPath[sampleIdPath.Count - 1];
+                            if ((sampleMarkerId != FrameDataView.invalidMarkerId && sampleMarkerId != expectedMarkerId) || (sampleName != null && frameData.GetMarkerName(expectedMarkerId) != sampleName))
                             {
                                 // the searched sample is NOT the same as the last one in the path, so search for it
                                 if (sampleMarkerId == FrameDataView.invalidMarkerId)
@@ -842,20 +867,33 @@ namespace UnityEditorInternal.Profiling
                         }
                         enclosingScopeId = FindNextMatchingSampleIdInScope(frameData, null, sampleIdPath, children, yetToVisit, false, markerIdPath[sampleIdPath.Count]);
                     }
+
+                    if (invertedHierarchy)
+                    {
+                        markerIdPath.Reverse();
+                        if (sampleIdPath.Count > 0)
+                            foundSampleIndex = sampleIdPath[0];
+                        sampleIdPath.Reverse();
+                    }
                 }
                 else if (!string.IsNullOrEmpty(markerNamePath))
                 {
-                    var path = markerNamePath.Split('/');
-                    if (path != null && path.Length > 0)
+                    var normalizedPath = new List<string>(markerNamePath.Split('/'));
+                    if (normalizedPath.Count > 0)
                     {
-                        int enclosingScopeId = FindNextMatchingSampleIdInScope(frameData, path[sampleIdPath.Count], sampleIdPath, children, yetToVisit, false);
-                        while (enclosingScopeId != RawFrameDataView.invalidSampleIndex && sampleIdPath.Count <= path.Length)
+                        // FindNextMatchingSampleIdInScope works on the hierarchy data, but markerNamePath is top-down representation
+                        if (invertedHierarchy)
+                            normalizedPath.Reverse();
+
+                        int enclosingScopeId = FindNextMatchingSampleIdInScope(frameData, normalizedPath[sampleIdPath.Count], sampleIdPath, children, yetToVisit, false);
+                        while (enclosingScopeId != RawFrameDataView.invalidSampleIndex && sampleIdPath.Count <= normalizedPath.Count)
                         {
-                            if (sampleIdPath.Count == path.Length)
+                            if (sampleIdPath.Count == normalizedPath.Count)
                             {
                                 // lets, for a moment, assume that the searched sample is the last one in the specified path
                                 var sampleId = enclosingScopeId;
-                                if (path[sampleIdPath.Count - 1] != sampleName)
+                                var expectedMarkerName = invertedHierarchy ? normalizedPath[0] : normalizedPath[sampleIdPath.Count - 1];
+                                if (expectedMarkerName != sampleName)
                                 {
                                     // the searched sample is NOT the same as the last one in the path, so search for it
                                     sampleId = FindNextMatchingSampleIdInScope(frameData, sampleName, sampleIdPath, children, yetToVisit, true);
@@ -866,21 +904,43 @@ namespace UnityEditorInternal.Profiling
                                     break;
                                 }
                                 // searched sample wasn't found, continue search one scope higher than the full path
-                                while (sampleIdPath.Count >= path.Length && sampleIdPath.Count > 0)
+                                while (sampleIdPath.Count >= normalizedPath.Count && sampleIdPath.Count > 0)
                                 {
                                     sampleIdPath.RemoveAt(sampleIdPath.Count - 1);
                                 }
                             }
-                            enclosingScopeId = FindNextMatchingSampleIdInScope(frameData, path[sampleIdPath.Count], sampleIdPath, children, yetToVisit, false);
+                            enclosingScopeId = FindNextMatchingSampleIdInScope(frameData, normalizedPath[sampleIdPath.Count], sampleIdPath, children, yetToVisit, false);
+                        }
+
+                        if (invertedHierarchy)
+                        {
+                            if (sampleIdPath.Count > 0)
+                                foundSampleIndex = sampleIdPath[0];
+                            sampleIdPath.Reverse();
                         }
                     }
                 }
                 else
                 {
+                    // Inverted hierarchy will have sampleName at the first level
+                    // foundSampleIndex is valid as any first sample with sampleName is acceptable
                     if (sampleMarkerId == FrameDataView.invalidMarkerId)
-                        foundSampleIndex = FindNextMatchingSampleIdInScope(frameData, sampleName, sampleIdPath, children, yetToVisit, true);
+                        foundSampleIndex = FindNextMatchingSampleIdInScope(frameData, sampleName, sampleIdPath, children, yetToVisit, !invertedHierarchy);
                     else
-                        foundSampleIndex = FindNextMatchingSampleIdInScope(frameData, null, sampleIdPath, children, yetToVisit, true, sampleMarkerId);
+                        foundSampleIndex = FindNextMatchingSampleIdInScope(frameData, null, sampleIdPath, children, yetToVisit, !invertedHierarchy, sampleMarkerId);
+
+                    // Populate sampleIdPath with the first path to the root sample.
+                    if (invertedHierarchy && foundSampleIndex != RawFrameDataView.invalidSampleIndex)
+                    {
+                        var sampleId = sampleIdPath[0];
+                        while (frameData.HasItemChildren(sampleId))
+                        {
+                            frameData.GetItemChildren(sampleId, children);
+                            sampleId = children[0];
+                            sampleIdPath.Add(sampleId);
+                        }
+                        sampleIdPath.Reverse();
+                    }
                 }
 
                 if (foundSampleIndex != RawFrameDataView.invalidSampleIndex)
@@ -899,6 +959,7 @@ namespace UnityEditorInternal.Profiling
                     return rawIds[0];
                 }
             }
+
             markerIdPath = new List<int>();
             return RawFrameDataView.invalidSampleIndex;
         }
@@ -1048,9 +1109,15 @@ namespace UnityEditorInternal.Profiling
 
         void SendViewTypeAnalytics(ProfilerViewType viewtype)
         {
-            ProfilerWindowAnalytics.SwitchActiveView(viewtype == ProfilerViewType.Timeline
-                ? k_TimelineViewAnalyticsName
-                : viewtype == ProfilerViewType.Hierarchy ? k_HierarchyViewAnalyticsName : k_RawHierarchyViewAnalyticsName);
+            string viewName = viewtype switch
+            {
+                ProfilerViewType.Hierarchy => k_HierarchyViewAnalyticsName,
+                ProfilerViewType.Timeline => k_TimelineViewAnalyticsName,
+                ProfilerViewType.RawHierarchy => k_RawHierarchyViewAnalyticsName,
+                ProfilerViewType.InvertedHierarchy => k_InvertedHierarchyViewAnalyticsName,
+                _ => throw new ArgumentOutOfRangeException(nameof(viewtype), viewtype, null)
+            };
+            ProfilerWindowAnalytics.SwitchActiveView(viewName);
         }
     }
 }

@@ -1234,6 +1234,7 @@ namespace UnityEditor
         }
 
         // Same as PingObject, but renamed to avoid ambiguity when calling externally (i.e. using CallStaticMonoMethod)
+        [RequiredByNativeCode]
         private static void PingObjectFromCPP(int targetInstanceID)
         {
             PingObject(targetInstanceID);

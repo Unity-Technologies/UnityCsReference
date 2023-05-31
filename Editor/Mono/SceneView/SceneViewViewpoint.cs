@@ -91,10 +91,13 @@ namespace UnityEditor
             set => m_CameraOverscanSettings = value;
         }
 
-        internal SceneViewViewpoint(SceneView sceneView)
+        internal void AssignSceneView(SceneView sceneView)
         {
             m_SceneView = sceneView;
+        }
 
+        internal SceneViewViewpoint()
+        {
             m_CameraOverscanSettings = new ViewpointSettings();
         }
 

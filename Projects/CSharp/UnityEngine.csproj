@@ -308,11 +308,26 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\SliderInt.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\SliderInt.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Tab.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\Tab.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TabDragger.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TabDragger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TabView.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\TabView.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TextValueField.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\TextValueField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\Toggle.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\Toggle.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\ToggleButtonGroup\ToggleButtonGroup.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\ToggleButtonGroup\ToggleButtonGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\ToggleButtonGroup\ToggleButtonGroupState.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\Controls\ToggleButtonGroup\ToggleButtonGroupState.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\Controls\TreeView.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\Controls\TreeView.cs</Link>
@@ -1294,6 +1309,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlFactory.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlFactory.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlImageAttributeDescription.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlImageAttributeDescription.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectAsset.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\UXML\UxmlObjectAsset.cs</Link>
@@ -3598,6 +3616,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineAsset.cs">
       <Link>Runtime\Export\RenderPipeline\RenderPipelineAsset.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineAsset.deprecated.cs">
+      <Link>Runtime\Export\RenderPipeline\RenderPipelineAsset.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipelineGlobalSettings.cs">
       <Link>Runtime\Export\RenderPipeline\RenderPipelineGlobalSettings.cs</Link>

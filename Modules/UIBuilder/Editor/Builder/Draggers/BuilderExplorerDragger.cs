@@ -162,7 +162,7 @@ namespace Unity.UI.Builder
             if (newParent == elementToReparent)
                 return index;
 
-            var oldParent = elementToReparent.parent;
+            var oldParent = BuilderHierarchyUtilities.GetToggleButtonGroupContentContainer(elementToReparent.parent) ?? elementToReparent.parent;
             if (oldParent != newParent)
             {
                 if (index < 0 || index > newParent.childCount - 1)

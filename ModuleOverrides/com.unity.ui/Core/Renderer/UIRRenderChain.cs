@@ -848,6 +848,7 @@ namespace UnityEngine.UIElements.UIR
     {
         IsInChain = 1 << 0,
         IsGroupTransform = 1 << 1,
+        IsIgnoringDynamicColorHint = 1 << 2,
     }
 
     struct RenderChainVEData
@@ -897,6 +898,12 @@ namespace UnityEngine.UIElements.UIR
         {
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get => (flags & RenderDataFlags.IsGroupTransform) == RenderDataFlags.IsGroupTransform;
+        }
+
+        public bool isIgnoringDynamicColorHint
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => (flags & RenderDataFlags.IsIgnoringDynamicColorHint) == RenderDataFlags.IsIgnoringDynamicColorHint;
         }
     }
 

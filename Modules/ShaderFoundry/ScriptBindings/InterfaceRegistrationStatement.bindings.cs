@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderFoundry
@@ -18,7 +17,7 @@ namespace UnityEditor.ShaderFoundry
         internal extern static InterfaceRegistrationStatementInternal Invalid();
         internal extern bool IsValid();
 
-        internal extern bool IsProviderStatement(ShaderContainer container);
+        internal extern bool IsGeneratorStatement(ShaderContainer container);
         internal extern bool IsTemplateStatement(ShaderContainer container);
 
         // IInternalType
@@ -51,16 +50,16 @@ namespace UnityEditor.ShaderFoundry
                 return HandleListInternal.Enumerate<ShaderAttribute>(container, listHandle);
             }
         }
-        public bool IsProviderStatement => statementInternal.IsProviderStatement(container);
+        public bool IsGeneratorStatement => statementInternal.IsGeneratorStatement(container);
         public bool IsTemplateStatement => statementInternal.IsTemplateStatement(container);
-        public string ProviderName
+        public string GeneratorName
         {
             get
             {
-                if (container == null || !IsProviderStatement)
+                if (container == null || !IsGeneratorStatement)
                 {
-                    var message = "Invalid call to 'InterfaceRegistrationStatement.ProviderName'. " +
-                        "Statement is not a provider. Check IsProviderStatement before calling.";
+                    var message = "Invalid call to 'InterfaceRegistrationStatement.GeneratorName'. " +
+                        "Statement is not a generator. Check IsGeneratorStatement before calling.";
                     throw new InvalidOperationException(message);
                 }
                 return container.GetString(statementInternal.m_EntryHandle);
@@ -107,14 +106,14 @@ namespace UnityEditor.ShaderFoundry
             ShaderContainer container;
 
             public List<ShaderAttribute> Attributes;
-            public string ProviderName { get; private set; }
+            public string GeneratorName { get; private set; }
             public Template Template { get; private set; }
             public ShaderContainer Container => container;
 
-            public Builder(ShaderContainer container, string providerName)
+            public Builder(ShaderContainer container, string generatorName)
             {
                 this.container = container;
-                this.ProviderName = providerName;
+                this.GeneratorName = generatorName;
             }
 
             public Builder(ShaderContainer container, Template template)
@@ -136,7 +135,7 @@ namespace UnityEditor.ShaderFoundry
                 if (Template.IsValid)
                     statementInternal.m_EntryHandle = Template.handle;
                 else
-                    statementInternal.m_EntryHandle = container.AddString(ProviderName);
+                    statementInternal.m_EntryHandle = container.AddString(GeneratorName);
 
                 var returnTypeHandle = container.Add(statementInternal);
                 return new InterfaceRegistrationStatement(container, returnTypeHandle);

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Scripting;
 using System.Collections;
 using UnityEditor;
 using UnityEditorInternal;
@@ -11,6 +12,7 @@ namespace UnityEditor
 {
     internal class EditorUpdateWindow : EditorWindow
     {
+        [RequiredByNativeCode]
         static void ShowEditorErrorWindow(string errorString)
         {
             LoadResources();
@@ -22,6 +24,7 @@ namespace UnityEditor
             w.s_HasUpdate = false;
         }
 
+        [RequiredByNativeCode]
         static void ShowEditorUpdateWindow(string latestVersionString, string latestVersionMessage, string updateURL)
         {
             LoadResources();

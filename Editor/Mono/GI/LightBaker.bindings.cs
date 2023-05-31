@@ -621,5 +621,6 @@ namespace UnityEditor.LightBaking
 		extern static public bool Serialize(String path, BakeInput input);
 		extern static public bool Deserialize(String path, BakeInput input);
         extern static public Result Bake(BakeInput input, DeviceSettings deviceSettings);
+        extern static public Result BakeOutOfProcess(BakeInput input, DeviceSettings deviceSettings);
     }
 }

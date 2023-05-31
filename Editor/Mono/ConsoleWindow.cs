@@ -472,7 +472,7 @@ namespace UnityEditor
             }
         }
 
-        [UsedImplicitly] // Used implicitly with CallStaticMonoMethod("ConsoleWindow", "ShowConsoleRow", param);
+        [UsedImplicitly, RequiredByNativeCode]
         internal static void ShowConsoleRow(int row)
         {
             ShowConsoleWindow(false);

@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Scripting;
 using UnityEditor.SceneManagement;
 using System.Collections.Generic;
 using System.Linq;
@@ -1808,6 +1809,7 @@ namespace UnityEditor
             SessionState.SetInt(GetDefaultParentKeyForScene(sceneGUID), instanceID);
         }
 
+        [RequiredByNativeCode]
         internal static void UpdateSessionStateInfoAndActiveParentObjectValuesForScene(string sceneGUID, int id)
         {
             SetDefaultParentForSession(sceneGUID, id);

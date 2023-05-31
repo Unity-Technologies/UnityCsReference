@@ -300,6 +300,7 @@ namespace UnityEditor
         public static PostprocessModifications postprocessModifications;
         private static DelegateWithPerformanceTracker<PostprocessModifications> m_PostprocessModificationsEvent = new DelegateWithPerformanceTracker<PostprocessModifications>($"{nameof(Undo)}.{nameof(postprocessModifications)}");
 
+        [RequiredByNativeCode]
         internal static UndoPropertyModification[] InvokePostprocessModifications(UndoPropertyModification[] modifications)
         {
             if (postprocessModifications == null)
@@ -315,12 +316,14 @@ namespace UnityEditor
             return remainingModifications;
         }
 
+        [RequiredByNativeCode]
         private static void Internal_CallWillFlushUndoRecord()
         {
             foreach (var evt in m_WillFlushUndoRecordEvent.UpdateAndInvoke(willFlushUndoRecord))
                 evt();
         }
 
+        [RequiredByNativeCode]
         [Obsolete("Use Undo.Internal_CallUndoRedoEvent instead")]
         private static void Internal_CallUndoRedoPerformed()
         {

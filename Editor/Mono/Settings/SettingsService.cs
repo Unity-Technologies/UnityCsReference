@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -103,6 +104,7 @@ namespace UnityEditor
             return false;
         }
 
+        [RequiredByNativeCode]
         internal static EditorWindow OpenUserPreferenceWindow()
         {
             return SettingsWindow.Show(SettingsScope.User);

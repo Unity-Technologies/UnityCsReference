@@ -27,16 +27,12 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_IncludeListHandle;
         internal FoundryHandle m_KeywordListHandle;
         internal FoundryHandle m_PragmaDescriptorListHandle;
-        internal FoundryHandle m_PassParentHandle;
-        internal FoundryHandle m_TemplateParentHandle;
         internal FoundryHandle m_GeneratedIncludePathHandle;
         internal FoundryHandle m_ConstructorFunctionHandle;
         internal FoundryHandle m_PackageRequirementListHandle;
 
         internal extern static BlockInternal Invalid();
         internal extern bool IsValid { [NativeMethod("IsValid")] get; }
-
-        internal extern bool HasParent();
 
         // IInternalType
         BlockInternal IInternalType<BlockInternal>.ConstructInvalid() => Invalid();
@@ -108,7 +104,7 @@ namespace UnityEditor.ShaderFoundry
         }
 
         public ShaderFunction EntryPointFunction => new ShaderFunction(container, block.m_EntryPointFunctionHandle);
-
+        public ShaderType InterfaceType => new ShaderType(container, block.m_InterfaceTypeHandle);
         public ShaderFunction ConstructorFunction => new ShaderFunction(container, block.m_ConstructorFunctionHandle);
 
         public IEnumerable<StructField> InterfaceFields => GetInterfaceFields();
@@ -237,9 +233,6 @@ namespace UnityEditor.ShaderFoundry
             }
         }
 
-        public TemplatePass ParentPass => new TemplatePass(container, block.m_PassParentHandle);
-        public Template ParentTemplate => new Template(container, block.m_TemplateParentHandle);
-
         // private
         internal Block(ShaderContainer container, FoundryHandle handle)
         {
@@ -261,8 +254,6 @@ namespace UnityEditor.ShaderFoundry
         {
             ShaderContainer container;
             internal readonly FoundryHandle blockHandle;
-            internal FoundryHandle passParentHandle;
-            internal FoundryHandle templateParentHandle;
             internal string name;
             List<ShaderAttribute> attributes;
             public Namespace containingNamespace;
@@ -277,23 +268,17 @@ namespace UnityEditor.ShaderFoundry
             List<KeywordDescriptor> m_Keywords = new List<KeywordDescriptor>();
             List<PragmaDescriptor> m_Pragmas = new List<PragmaDescriptor>();
             List<PackageRequirement> m_PackageRequirements = new List<PackageRequirement>();
+            ShaderFunction Constructor;
             public List<StructField> interfaceFields;
             public ShaderType InterfaceType { get; private set; }
             bool finalized = false;
 
             public ShaderContainer Container => container;
 
-            public Builder(ShaderContainer container, string name)
-                : this(container, name, FoundryHandle.Invalid(), FoundryHandle.Invalid())
-            {
-            }
-
-            internal Builder(ShaderContainer container, string name, FoundryHandle passParentHandle, FoundryHandle templateParentHandle)
+            internal Builder(ShaderContainer container, string name)
             {
                 this.container = container;
                 this.name = name;
-                this.passParentHandle = passParentHandle;
-                this.templateParentHandle = templateParentHandle;
                 this.containingNamespace = Utilities.BuildDefaultObjectNamespace(container, name);
                 blockHandle = container.Create<BlockInternal>();
             }
@@ -302,7 +287,16 @@ namespace UnityEditor.ShaderFoundry
             internal void AddType(ShaderType type) { types.Add(type); }
 
             public void AddReferencedType(ShaderType type) { referencedTypes.Add(type); }
-            public void AddFunction(ShaderFunction function) { functions.Add(function); }
+            public void AddFunction(ShaderFunction function)
+            {
+                foreach (var f in functions)
+                {
+                    if (f.Equals(function))
+                        return;
+                }
+
+                functions.Add(function);
+            }
             public void AddReferencedFunction(ShaderFunction function) { referencedFunctions.Add(function); }
 
             // TODO @ SHADERS: Remove once the legacy linker is removed
@@ -441,17 +435,23 @@ namespace UnityEditor.ShaderFoundry
                 return builder;
             }
 
-            private FoundryHandle BuildConstructorFunction()
+            private void BuildConstructorFunction()
             {
                 if (!InterfaceType.IsValid)
-                    return ShaderFunction.Invalid.handle;
+                    return;
 
-                var builder = new ShaderFunction.Builder(this, "Constructor", InterfaceType);
-                builder.containingNamespace = containingNamespace;
+                var generator = new BlockConstructorGenerator(container);
+                var fnHandle = generator.BuildFunction(InterfaceType.handle, containingNamespace.handle);
+                // TODO @ SHADERS: This should be improved to have the actual error message.
+                // In the short term this at least lets us know if something failed vs. being completely silent.
+                if (generator.hasErrors)
+                    throw new Exception("Block constructor failed to build. Some interface field has errors");
 
-                var fn = builder.Build();
-                AddFunction(fn);
-                return fn.handle;
+                if (fnHandle.IsValid)
+                {
+                    Constructor = new ShaderFunction(container, fnHandle);
+                    AddFunction(Constructor);
+                }
             }
 
             public Block Build()
@@ -459,6 +459,8 @@ namespace UnityEditor.ShaderFoundry
                 if (finalized)
                     return new Block(Container, blockHandle);
                 finalized = true;
+
+                BuildConstructorFunction();
 
                 var blockInternal = new BlockInternal();
                 blockInternal.m_NameHandle = container.AddString(name);
@@ -471,16 +473,13 @@ namespace UnityEditor.ShaderFoundry
                 blockInternal.m_ReferencedFunctionListHandle = HandleListInternal.Build(container, referencedFunctions, (f) => (f.handle));
                 blockInternal.m_EntryPointFunctionHandle = entryPointFunction.handle;
                 blockInternal.m_InterfaceTypeHandle = InterfaceType.handle;
-                blockInternal.m_ConstructorFunctionHandle = BuildConstructorFunction();
+                blockInternal.m_ConstructorFunctionHandle = Constructor.handle;
                 blockInternal.m_RenderStateDescriptorListHandle = HandleListInternal.Build(container, m_RenderStates, (c) => (c.handle));
                 blockInternal.m_DefineListHandle = HandleListInternal.Build(container, m_Defines, (d) => (d.handle));
                 blockInternal.m_IncludeListHandle = HandleListInternal.Build(container, m_Includes, (i) => (i.handle));
                 blockInternal.m_KeywordListHandle = HandleListInternal.Build(container, m_Keywords, (k) => (k.handle));
                 blockInternal.m_PragmaDescriptorListHandle = HandleListInternal.Build(container, m_Pragmas, (p) => (p.handle));
                 blockInternal.m_PackageRequirementListHandle = HandleListInternal.Build(container, m_PackageRequirements, (p) => (p.handle));
-
-                blockInternal.m_PassParentHandle = passParentHandle;
-                blockInternal.m_TemplateParentHandle = templateParentHandle;
 
                 container.Set(blockHandle, blockInternal);
                 return new Block(container, blockHandle);

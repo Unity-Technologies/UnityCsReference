@@ -96,6 +96,7 @@ namespace UnityEngine.UIElements
 
                 // Real object instantiating factories.
                 new Button.UxmlFactory(),
+                new ToggleButtonGroup.UxmlFactory(),
                 new VisualElement.UxmlFactory(),
                 new IMGUIContainer.UxmlFactory(),
                 new Image.UxmlFactory(),
@@ -143,6 +144,8 @@ namespace UnityEngine.UIElements
                 new Vector3IntField.UxmlFactory(),
                 new BoundsField.UxmlFactory(),
                 new BoundsIntField.UxmlFactory(),
+                new Tab.UxmlFactory(),
+                new TabView.UxmlFactory(),
             };
 
             foreach (var factory in factories)

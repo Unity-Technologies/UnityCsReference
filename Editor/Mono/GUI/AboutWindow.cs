@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Scripting;
 using System;
 using System.Diagnostics;
 using UnityEditorInternal;
@@ -12,6 +13,8 @@ namespace UnityEditor
     internal class AboutWindow : EditorWindow
     {
         static readonly Vector2 WindowSize = new Vector2(640, 265);
+
+        [RequiredByNativeCode]
         internal static void ShowAboutWindow()
         {
             var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();

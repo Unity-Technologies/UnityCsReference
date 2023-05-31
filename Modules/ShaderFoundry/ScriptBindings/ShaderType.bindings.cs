@@ -4,10 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
-using System.Linq;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -23,7 +20,6 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_v0;
         internal UInt32 m_v1;
         internal UInt32 m_v2;
-        internal FoundryHandle m_ParentBlockHandle;
 
         internal struct StructInitializationData
         {
@@ -32,7 +28,6 @@ namespace UnityEditor.ShaderFoundry
             internal FoundryHandle attributeListHandle;
             internal FoundryHandle fieldListHandle;
             internal FoundryHandle includeListHandle;
-            internal FoundryHandle parentBlockHandle;
             internal bool declaredExternally;
         }
         internal static extern ShaderTypeInternal Invalid();
@@ -64,7 +59,7 @@ namespace UnityEditor.ShaderFoundry
                 var list = new HandleListInternal(m_v0);
                 return list.Select<StructField>(container, (handle) => (new StructField(container, handle)));
             }
-            return Enumerable.Empty<StructField>();
+            return System.Array.Empty<StructField>();
         }
 
         internal IEnumerable<ShaderAttribute> Attributes(ShaderContainer container)
@@ -142,8 +137,6 @@ namespace UnityEditor.ShaderFoundry
         public IEnumerable<ShaderAttribute> Attributes => type.Attributes(container);
         public IEnumerable<IncludeDescriptor> Includes => type.Includes(container);
         public Namespace ContainingNamespace => new Namespace(container, type.m_ContainingNamespaceHandle);
-        // Not valid until the parent block is finished being built.
-        public Block ParentBlock => new Block(container, type.m_ParentBlockHandle);
 
         public override int GetHashCode() => (container, handle).GetHashCode();
 
@@ -317,7 +310,6 @@ namespace UnityEditor.ShaderFoundry
                     return new ShaderType(container, typeHandle);
                 finalized = true;
 
-                FoundryHandle parentBlockHandle = parentBlock?.blockHandle ?? FoundryHandle.Invalid();
                 var initData = new ShaderTypeInternal.StructInitializationData
                 {
                     nameHandle = container.AddString(name),
@@ -325,7 +317,6 @@ namespace UnityEditor.ShaderFoundry
                     attributeListHandle = HandleListInternal.Build(container, attributes),
                     fieldListHandle = HandleListInternal.Build(container, fields),
                     includeListHandle = HandleListInternal.Build(container, includes),
-                    parentBlockHandle = parentBlockHandle,
                     declaredExternally = declaredExternally,
                 };
 

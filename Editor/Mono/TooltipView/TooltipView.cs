@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
@@ -241,6 +242,7 @@ namespace UnityEditor
             s_AutoCloseAfterTime = double.PositiveInfinity;
         }
 
+        [RequiredByNativeCode]
         public static void Close()
         {
             s_CloseState = CloseState.CloseRequested;
@@ -251,6 +253,7 @@ namespace UnityEditor
             s_guiView?.window?.Close();
         }
 
+        [RequiredByNativeCode]
         public static void SetAlpha(float percent)
         {
             s_guiView?.window?.SetAlpha(percent);

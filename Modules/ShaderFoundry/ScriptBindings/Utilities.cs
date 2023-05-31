@@ -21,4 +21,31 @@ namespace UnityEditor.ShaderFoundry
             return builder.Build();
         }
     }
+    static class SelectExtensions
+    {
+        static internal IEnumerable<BlockVariable> Select(this IEnumerable<BlockVariable> items, BlockVariableInternal.Flags flags)
+        {
+            foreach (var item in items)
+            {
+                if (item.HasFlag(flags))
+                    yield return item;
+            }
+        }
+        static internal IEnumerable<StructField> Select(this IEnumerable<StructField> items, StructFieldInternal.Flags flags)
+        {
+            foreach (var item in items)
+            {
+                if (item.HasFlag(flags))
+                    yield return item;
+            }
+        }
+        static internal IEnumerable<FunctionParameter> Select(this IEnumerable<FunctionParameter> items, FunctionParameterInternal.Flags flags)
+        {
+            foreach (var item in items)
+            {
+                if (item.HasFlag(flags))
+                    yield return item;
+            }
+        }
+    }
 }

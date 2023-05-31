@@ -195,7 +195,7 @@ namespace UnityEngine
     public sealed partial class Texture2D : Texture
     {
         extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
-        
+
         extern private bool IgnoreMipmapLimit();
         extern private void SetIgnoreMipmapLimitAndReload(bool value);
 
@@ -794,7 +794,7 @@ namespace UnityEngine
         public bool isPowerOfTwo { get { return GetIsPowerOfTwo(); } set {} }
 
 
-        [FreeFunction("RenderTexture::GetActive")] extern private static RenderTexture GetActive();
+        [FreeFunction("RenderTexture::GetActiveAsRenderTexture")] extern private static RenderTexture GetActive();
         [FreeFunction("RenderTextureScripting::SetActive")] extern private static void SetActive(RenderTexture rt);
         public static RenderTexture active { get { return GetActive(); } set { SetActive(value); } }
 

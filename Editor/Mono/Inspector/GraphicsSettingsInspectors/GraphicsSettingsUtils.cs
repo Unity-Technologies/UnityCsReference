@@ -4,6 +4,9 @@
 
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Reflection;
+using System.Text;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -55,68 +58,121 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
 
         #region Render Pipeline Assets extraction
 
-        internal static List<RenderPipelineAsset> CollectRenderPipelineAssetsFromSettings()
+        internal class GlobalSettingsContainer
         {
-            var usedRenderPipelineAssets = new List<RenderPipelineAsset>
-            {
-                GraphicsSettings.defaultRenderPipeline
-            };
-            for (var i = 0; i < QualitySettings.count; i++)
-            {
-                var qualityRPAsset = QualitySettings.GetRenderPipelineAssetAt(i);
+            public readonly string name;
+            public readonly Type renderPipelineAssetType;
+            public readonly SerializedProperty property;
+            public readonly SerializedObject serializedObject;
 
-                var willAdd = true;
-                for (int j = 0; j < usedRenderPipelineAssets.Count; j++)
-                {
-                    var added = usedRenderPipelineAssets[j];
-                    if (qualityRPAsset == null)
-                    {
-                        if (added == null)
-                            willAdd = false;
-                    }
-                    else
-                    {
-                        if (added != null && added.GetType() == qualityRPAsset.GetType())
-                            willAdd = false;
-                    }
-                }
-
-                if (willAdd)
-                    usedRenderPipelineAssets.Add(qualityRPAsset);
+            public GlobalSettingsContainer(string name, Type renderPipelineAssetType, SerializedProperty property, SerializedObject serializedObject)
+            {
+                this.name = name;
+                this.renderPipelineAssetType = renderPipelineAssetType;
+                this.property = property;
+                this.serializedObject = serializedObject;
             }
-
-            return usedRenderPipelineAssets;
         }
 
-        internal static List<RenderPipelineAsset> GetCurrentPipelines(out bool srpInUse)
+        internal static List<GlobalSettingsContainer> CollectRenderPipelineAssetsByGlobalSettings(SerializedProperty renderPipelineGlobalSettingsMap)
         {
-            var usedRenderPipelineAssets = CollectRenderPipelineAssetsFromSettings();
-            for (var i = 0; i < usedRenderPipelineAssets.Count; i++)
+            var existedGlobalSettings = new List<GlobalSettingsContainer>();
+            for (int i = 0; i < renderPipelineGlobalSettingsMap.arraySize; ++i)
             {
-                if (usedRenderPipelineAssets[i] == null || IsThereAnyPipelineSettings(usedRenderPipelineAssets[i]))
+                var globalSettings = GetRenderPipelineGlobalSettingsByIndex(renderPipelineGlobalSettingsMap, i);
+                if (!TryCreateNewGlobalSettingsContainer(globalSettings, out var globalSettingsContainer))
                     continue;
-                usedRenderPipelineAssets.RemoveAt(i);
-                --i;
+                existedGlobalSettings.Add(globalSettingsContainer);
             }
-
-            srpInUse = IsSRPUsedSettings(usedRenderPipelineAssets);
-            return usedRenderPipelineAssets;
+            return existedGlobalSettings;
         }
 
-        static bool IsThereAnyPipelineSettings(RenderPipelineAsset pipelineAsset)
+        internal static bool TryCreateNewGlobalSettingsContainer(RenderPipelineGlobalSettings globalSettings, out GlobalSettingsContainer globalSettingsContainer)
         {
-            return false;
-        }
-
-        internal static bool IsSRPUsedSettings(List<RenderPipelineAsset> pipelineAssets)
-        {
-            if (pipelineAssets.Count == 0)
+            globalSettingsContainer = null;
+            var settingsListInContainer = GetSettingsListFromRenderPipelineGlobalSettings(globalSettings, out var globalSettingsSO, out var settingsContainer);
+            if (settingsListInContainer.arraySize == 0)
                 return false;
 
-            if (pipelineAssets.Count > 1)
-                return true;
+            var globalSettingsType = globalSettings.GetType();
+            if (!ExtractSupportedOnRenderPipelineAttribute(globalSettingsType, out var supportedOnRenderPipelineAttribute))
+                return false;
 
-            return pipelineAssets[0] != null;
+            var tabName = CreateNewTabName(globalSettingsType, supportedOnRenderPipelineAttribute);
+            globalSettingsContainer = new GlobalSettingsContainer(tabName, supportedOnRenderPipelineAttribute.renderPipelineTypes[0], settingsContainer, globalSettingsSO);
+            return true;
+        }
+
+        internal static SerializedProperty GetSettingsListFromRenderPipelineGlobalSettings(RenderPipelineGlobalSettings globalSettings, out SerializedObject globalSettingsSO, out SerializedProperty settingsContainer)
+        {
+            globalSettingsSO = new SerializedObject(globalSettings);
+            settingsContainer = globalSettingsSO.FindProperty("m_Settings");
+            var settingsListInContainer = settingsContainer.FindPropertyRelative("m_SettingsList");
+            return settingsListInContainer;
+        }
+
+        internal static RenderPipelineGlobalSettings GetRenderPipelineGlobalSettingsByIndex(SerializedProperty srpDefaultSettings, int i)
+        {
+            var property = srpDefaultSettings.GetArrayElementAtIndex(i);
+            var second = property.FindPropertyRelative("second");
+            var globalSettings = second.objectReferenceValue as RenderPipelineGlobalSettings;
+            return globalSettings;
+        }
+
+        internal static string CreateNewTabName(Type globalSettingsType, SupportedOnRenderPipelineAttribute supportedOnRenderPipelineAttribute)
+        {
+            string tabName;
+            var inspectorName = globalSettingsType.GetCustomAttribute<DisplayNameAttribute>();
+            if (inspectorName != null)
+                tabName = inspectorName.DisplayName;
+            else
+            {
+                var pipelineAssetName = supportedOnRenderPipelineAttribute.renderPipelineTypes[0].Name;
+                if (pipelineAssetName.EndsWith("Asset", StringComparison.Ordinal))
+                    pipelineAssetName = pipelineAssetName[..^"Asset".Length];
+
+                tabName = GetAbbreviation(pipelineAssetName);
+            }
+
+            return tabName;
+        }
+
+        internal static bool ExtractSupportedOnRenderPipelineAttribute(Type globalSettingsType, out SupportedOnRenderPipelineAttribute supportedOnRenderPipelineAttribute)
+        {
+            supportedOnRenderPipelineAttribute = globalSettingsType.GetCustomAttribute<SupportedOnRenderPipelineAttribute>();
+            if (supportedOnRenderPipelineAttribute == null)
+            {
+                Debug.LogWarning($"Cannot associate {globalSettingsType.FullName} settings with appropriate {nameof(RenderPipelineAsset)} without {nameof(SupportedOnRenderPipelineAttribute)}. Settings will be skipped and not displayed.");
+                return false;
+            }
+
+            if (supportedOnRenderPipelineAttribute.renderPipelineTypes.Length != 1)
+            {
+                Debug.LogWarning($"{nameof(SupportedOnRenderPipelineAttribute)} for {globalSettingsType.FullName} settings must have exactly one parameter. Settings will be skipped and not displayed.");
+                return false;
+            }
+
+            if (supportedOnRenderPipelineAttribute.renderPipelineTypes.Length == 1 && supportedOnRenderPipelineAttribute.renderPipelineTypes[0] == typeof(RenderPipelineAsset) )
+            {
+                Debug.LogWarning($"{nameof(SupportedOnRenderPipelineAttribute)} for {globalSettingsType.FullName} settings must have specific non-absract {nameof(RenderPipelineAsset)} type");
+                return false;
+            }
+
+            return true;
+        }
+
+        internal static string GetAbbreviation(string text)
+        {
+            var nameArray = text.ToCharArray();
+            var builder = new StringBuilder();
+            for (int i = 0; i < nameArray.Length; i++)
+            {
+                if (char.IsUpper(nameArray[i]))
+                    builder.Append(nameArray[i]);
+            }
+
+            var abbreviation = builder.ToString();
+            return abbreviation.Length == 0 ? text : abbreviation;
         }
 
         #endregion
@@ -124,22 +180,6 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         #region UI-relative methods
 
         //Temp solution until we introduce custom editor support and title support for pipeline assets
-        internal static string GetPipelineAssetAbbreviation(RenderPipelineAsset asset)
-        {
-            var name = asset.GetType().Name;
-            if (name.Contains("Asset"))
-                name = name.Replace("Asset", "", StringComparison.Ordinal);
-
-            var nameArray = name.ToCharArray();
-            var resultedName = "";
-            for (int i = 0; i < nameArray.Length; i++)
-            {
-                if (char.IsUpper(nameArray[i]))
-                    resultedName += nameArray[i];
-            }
-            return string.Concat(resultedName);
-        }
-
         internal static void CreateNewTab(TabbedView tabView, string tabName, VisualElement tabTarget, bool active = false)
         {
             tabTarget.name = $"{tabName}SettingsContainer";
@@ -153,18 +193,21 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             tabView.AddTab(tab, active);
         }
 
-        internal static (VisualElement warning, Type[] activePipelines) CreateSRPWarning(string warningTemplatePath, List<RenderPipelineAsset> assets, RenderPipelineAsset srpAsset)
+        internal static (VisualElement warning, Type[] activePipelines) CreateSRPWarning(string warningTemplatePath, List<GlobalSettingsContainer> allAssetTypes, Type currentAssetType)
         {
             var warningAsset = EditorGUIUtility.Load(warningTemplatePath) as VisualTreeAsset;
             var warning = warningAsset.Instantiate();
             LocalizeVisualTree(warning);
-            var allAssetsExceptCurrent = new Type[assets.Count - 1];
-            for (int j = 0, index = 0; j < allAssetsExceptCurrent.Length; j++, index++)
+            var allAssetsExceptCurrent = new Type[allAssetTypes.Count];
+            for (int j = 0, index = 0; j < allAssetTypes.Count; j++, index++)
             {
-                if (assets[j] == srpAsset)
-                    index++;
+                if (allAssetTypes[j].renderPipelineAssetType == currentAssetType)
+                {
+                    index--;
+                    continue;
+                }
 
-                allAssetsExceptCurrent[j] = assets[index] == null ? null : assets[index].GetType();
+                allAssetsExceptCurrent[index] = allAssetTypes[j].renderPipelineAssetType == null ? null : allAssetTypes[j].renderPipelineAssetType;
             }
 
             return (warning, allAssetsExceptCurrent);
@@ -177,18 +220,11 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                 return Array.Empty<string>();
 
             var elements = uxmlTree.Instantiate();
-            var labels = elements
+            var labelTexts = new List<string>();
+            elements
                 .Query<Label>()
                 .Where(l => !string.IsNullOrWhiteSpace(l.text))
-                .Build()
-                .ToList();
-
-            var labelTexts = new List<string>();
-            foreach (var label in labels)
-            {
-                labelTexts.Add(label.text);
-            }
-
+                .ForEach(l => labelTexts.Add(l.text));
             return labelTexts;
         }
 

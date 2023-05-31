@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -60,7 +58,8 @@ namespace UnityEditor.ShaderFoundry
         public IEnumerable<ShaderAttribute> Attributes => param.m_AttributeListHandle.AsListEnumerable<ShaderAttribute>(container, (container, handle) => (new ShaderAttribute(container, handle)));
         public bool IsInput => ((param.m_Flags & (UInt32)FunctionParameterInternal.Flags.kFlagsInput) != 0);
         public bool IsOutput => ((param.m_Flags & (UInt32)FunctionParameterInternal.Flags.kFlagsOutput) != 0);
-        internal UInt32 Flags => param.m_Flags;
+        internal FunctionParameterInternal.Flags Flags => (FunctionParameterInternal.Flags)param.m_Flags;
+        internal bool HasFlag(FunctionParameterInternal.Flags flags) => Flags.HasFlag(flags);
 
         // private
         internal FunctionParameter(ShaderContainer container, FoundryHandle handle)

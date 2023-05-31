@@ -952,6 +952,9 @@ namespace UnityEditor
                     EditorGUILayout.BeginVertical(UseDefaultMargins() ? EditorStyles.inspectorDefaultMargins : GUIStyle.none);
                 }
             }
+
+            // Restore previous hierarchy mode
+            EditorGUIUtility.hierarchyMode = hierarchyMode;
         }
 
         // This is the method to override to create custom header GUI.

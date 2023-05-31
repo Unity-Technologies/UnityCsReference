@@ -14,6 +14,10 @@ namespace UnityEngine
         public int order { get; set; }
     }
 
+    // Base class to derive custom property collection attributes from. Use this to create custom attributes for script collections.
+    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public abstract class PropertyCollectionAttribute : PropertyAttribute { }
+
     [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = true)]
     public class ContextMenuItemAttribute : PropertyAttribute
     {

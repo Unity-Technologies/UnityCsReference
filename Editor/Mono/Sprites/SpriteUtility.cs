@@ -13,6 +13,7 @@ using UnityEngine.U2D.Interface;
 using Object = UnityEngine.Object;
 using UnityTexture2D = UnityEngine.Texture2D;
 using UnityEditor.SceneManagement;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -252,6 +253,7 @@ namespace UnityEditor
             s_DragType = DragType.NotInitialized;
         }
 
+        [RequiredByNativeCode]
         static bool CreateAnimation(GameObject gameObject, Object[] frames, ShowFileDialogDelegate saveFileDialog)
         {
             saveFileDialog = saveFileDialog ?? EditorUtility.SaveFilePanelInProject;
@@ -295,6 +297,7 @@ namespace UnityEditor
             return createSuccess;
         }
 
+        [RequiredByNativeCode]
         static void AddSpriteAnimationToClip(AnimationClip newClip, Object[] frames)
         {
             // TODO Default framerate be exposed to user?

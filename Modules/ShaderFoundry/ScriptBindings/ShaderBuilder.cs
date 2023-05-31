@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -86,7 +85,7 @@ namespace UnityEditor.ShaderFoundry
 
         static readonly string _newline = "\n";
         static readonly string _space = " ";
-        static readonly string _blockNamespaceSuffix = "Block::";
+        static readonly string _scope = "::";
         static readonly string _comma = ", "; // Space always follows a comma in current usage
         static readonly string _semicolon = ";";
         static readonly string _equal = " = ";
@@ -107,6 +106,15 @@ namespace UnityEditor.ShaderFoundry
 
         internal enum DeclarationMode { NoSemicolon, Semicolon }
 
+        internal void EmitNamespace(Namespace namespaceSymbol)
+        {
+            if (!namespaceSymbol.IsValid)
+                return;
+
+            EmitNamespace(namespaceSymbol.ContainingNamespace);
+            Add(namespaceSymbol.Name, _scope);
+        }
+
         internal void AddFunctionNameInternal(ShaderFunction function)
         {
             if (!function.Exists)
@@ -115,19 +123,14 @@ namespace UnityEditor.ShaderFoundry
                 return;
             }
 
-            bool useDeferredDeclaration =
-                (function.ParentBlock.Exists && !function.ParentBlock.IsValid) ||
-                (!function.IsValid);
-
+            bool useDeferredDeclaration = !function.IsValid;
             if (useDeferredDeclaration)
             {
                 Add(_tokenFunctionName, function.handle.ToString(), _tokenEnd);
             }
             else
             {
-                // if there's a parent block, the type is in the block namespace
-                if (function.ParentBlock.IsValid)
-                    Add(function.ParentBlock.Name, _blockNamespaceSuffix);
+                EmitNamespace(function.ContainingNamespace);
                 Add(function.Name);
             }
         }
@@ -140,10 +143,7 @@ namespace UnityEditor.ShaderFoundry
                 return;
             }
 
-            bool useDeferredDeclaration =
-                (type.ParentBlock.Exists && !type.ParentBlock.IsValid) ||
-                (!type.IsValid);
-
+            bool useDeferredDeclaration = !type.IsValid;
             if (useDeferredDeclaration)
             {
                 Add(_tokenTypeName, type.handle.ToString(), _tokenEnd);
@@ -157,8 +157,7 @@ namespace UnityEditor.ShaderFoundry
                 }
 
                 // if there's a parent block, the type is in the block namespace
-                if (type.ParentBlock.IsValid)
-                    Add(type.ParentBlock.Name, _blockNamespaceSuffix);
+                EmitNamespace(type.ContainingNamespace);
                 Add(type.Name);
             }
         }
@@ -171,13 +170,9 @@ namespace UnityEditor.ShaderFoundry
                 return;
             }
 
-            bool useDeferredDeclaration =
-                (type.ParentBlock.Exists && !type.ParentBlock.IsValid) ||
-                (!type.IsValid) ||
-                (type.IsArray && !type.ArrayElementType.IsValid);
+            bool useDeferredDeclaration = !type.IsValid || (type.IsArray && !type.ArrayElementType.IsValid);
             // we must catch unfinished array element types in the var decl to correctly handle arrays of arrays of unfinished types
             // this is because the array count must be appended in reverse order, so we must use the $V: token
-
             if (useDeferredDeclaration)
             {
                 Add(_tokenDeclareVariable, type.handle.ToString(), ",", name, _tokenEnd);

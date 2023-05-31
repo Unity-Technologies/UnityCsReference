@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -288,6 +289,12 @@ namespace UnityEditor.UIElements
                     if (prefabOverrideBar != null)
                         prefabOverrideBar.RemoveFromHierarchy();
                 }
+            }
+
+            if (PrefabUtility.IsPropertyBeingDrivenByPrefabStage(prop))
+            {
+                element.SetEnabled(false);
+                element.tooltip = PrefabStage.s_PrefabInContextPreviewValuesTooltip;
             }
         }
 

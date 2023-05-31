@@ -139,6 +139,9 @@ namespace Unity.UI.Builder
                         if (veValueAbstract is Type type)
                             veValueStr = $"{type.FullName}, {type.Assembly.GetName().Name}";
 
+                        if (veValueAbstract is IEnumerable<string> enumerable)
+                            veValueStr = string.Join(",", enumerable);
+
                         var attributeValueStr = attribute.defaultValueAsString;
                         if (veValueStr == attributeValueStr)
                             continue;
@@ -294,7 +297,7 @@ namespace Unity.UI.Builder
             {
                 return false;
             }
-            
+
             var templateAsset = templateContainer.GetVisualElementAsset() as TemplateAsset;
             var activeOpenUxmlFile = builderDocument.activeOpenUXMLFile;
             var templateAssetIndex =

@@ -53,11 +53,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         private DownloadUpdateFoldoutGroup m_DownloadUpdateFoldoutGroup;
         private RemoveImportedFoldoutGroup m_RemoveImportedFoldoutGroup;
 
-        private MultiSelectFoldoutGroup[] m_UpmFoldoutGroups;
-        private MultiSelectFoldoutGroup[] m_AssetStoreFoldoutGroups;
+        private MultiSelectFoldoutGroup[] m_FoldoutGroups;
 
-        private IEnumerable<MultiSelectFoldoutGroup> allFoldoutGroups => m_UpmFoldoutGroups.Concat(m_AssetStoreFoldoutGroups);
-        private IEnumerable<IMultiSelectFoldoutElement> allFoldoutElements => m_StandaloneFoldouts.Cast<IMultiSelectFoldoutElement>().Concat(allFoldoutGroups);
+        private IEnumerable<IMultiSelectFoldoutElement> allFoldoutElements => m_StandaloneFoldouts.Cast<IMultiSelectFoldoutElement>().Concat(m_FoldoutGroups);
 
         public MultiSelectDetails()
         {
@@ -122,18 +120,21 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_RemoveImportedFoldoutGroup = new RemoveImportedFoldoutGroup(m_Application, m_OperationDispatcher);
             m_RemoveImportedFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling);
 
-            m_UpmFoldoutGroups = new MultiSelectFoldoutGroup[] { m_InstallFoldoutGroup, m_RemoveFoldoutGroup, m_UpdateFoldoutGroup };
-
-            // Now that Upm packages can live on Asset Store, we want to show Upm foldout groups on asset store too
-            m_AssetStoreFoldoutGroups = new MultiSelectFoldoutGroup[] { m_DownloadFoldoutGroup, m_DownloadUpdateFoldoutGroup, m_RemoveImportedFoldoutGroup, m_InstallFoldoutGroup, m_RemoveFoldoutGroup, m_UpdateFoldoutGroup };
+            m_FoldoutGroups = new MultiSelectFoldoutGroup[]
+            {
+                m_DownloadFoldoutGroup,
+                m_DownloadUpdateFoldoutGroup,
+                m_RemoveImportedFoldoutGroup,
+                m_InstallFoldoutGroup,
+                m_RemoveFoldoutGroup,
+                m_UpdateFoldoutGroup
+            };
 
             // Add foldouts to the UI in the correct order. Note that the order here is not the same as the initialization order from above.
             foldoutsContainer.Add(m_UnlockFoldout);
 
             foldoutsContainer.Add(m_InstallFoldoutGroup.mainFoldout);
             foldoutsContainer.Add(m_InstallFoldoutGroup.inProgressFoldout);
-            foldoutsContainer.Add(m_RemoveFoldoutGroup.mainFoldout);
-            foldoutsContainer.Add(m_RemoveFoldoutGroup.inProgressFoldout);
             foldoutsContainer.Add(m_UpdateFoldoutGroup.mainFoldout);
             foldoutsContainer.Add(m_UpdateFoldoutGroup.inProgressFoldout);
 
@@ -142,6 +143,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             foldoutsContainer.Add(m_DownloadUpdateFoldoutGroup.mainFoldout);
             foldoutsContainer.Add(m_DownloadUpdateFoldoutGroup.inProgressFoldout);
 
+            foldoutsContainer.Add(m_RemoveFoldoutGroup.mainFoldout);
+            foldoutsContainer.Add(m_RemoveFoldoutGroup.inProgressFoldout);
             foldoutsContainer.Add(m_RemoveImportedFoldoutGroup.mainFoldout);
             foldoutsContainer.Add(m_RemoveImportedFoldoutGroup.inProgressFoldout);
 
@@ -166,19 +169,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             // We get the versions from the visual states instead of directly from the selection to keep the ordering of packages
             var versions = m_PageManager.activePage.visualStates.Select(visualState =>
             {
-                if (selections.TryGetValue(visualState.packageUniqueId, out var pair))
-                {
-                    m_PackageDatabase.GetPackageAndVersion(pair, out var package, out var version);
-                    return version ?? package?.versions.primary;
-                }
-                return null;
+                if (!selections.TryGetValue(visualState.packageUniqueId, out var pair))
+                    return null;
+                m_PackageDatabase.GetPackageAndVersion(pair, out var package, out var version);
+                return version ?? package?.versions.primary;
             }).Where(version => version != null);
 
             foreach (var foldoutElement in allFoldoutElements)
                 foldoutElement.ClearVersions();
-
-            // We want to populate only a subset of all foldouts based on the current page.
-            var foldoutGroups = m_PageManager.activePage.id == MyAssetsPage.k_Id ? m_AssetStoreFoldoutGroups : m_UpmFoldoutGroups;
 
             foreach (var version in versions)
             {
@@ -189,7 +187,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     continue;
 
                 var isActionable = false;
-                foreach (var foldoutGroup in foldoutGroups)
+                foreach (var foldoutGroup in m_FoldoutGroups)
                     isActionable |= foldoutGroup.AddPackageVersion(version);
 
                 if (!isActionable)
@@ -214,7 +212,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             PackageManagerWindowAnalytics.SendEvent("deselectLocked", packageIds: m_UnlockFoldout.versions.Select(v => v.package.uniqueId));
         }
 
-        private VisualElementCache cache { get; set; }
+        private VisualElementCache cache { get; }
         private Label title => cache.Get<Label>("multiSelectTitle");
         private VisualElement infoBoxContainer => cache.Get<VisualElement>("multiSelectInfoBoxContainer");
         private HelpBox lockedPackagesInfoBox => cache.Get<HelpBox>("lockedPackagesInfoBox");

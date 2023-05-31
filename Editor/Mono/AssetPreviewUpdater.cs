@@ -3,12 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
     internal static class AssetPreviewUpdater
     {
+        [RequiredByNativeCode]
         public static Texture2D CreatePreviewForAsset(Object obj, Object[] subAssets, string assetPath)
         {
             return CreatePreview(obj, subAssets, assetPath, 128, 128);

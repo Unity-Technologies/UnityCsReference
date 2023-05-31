@@ -163,6 +163,8 @@ namespace UnityEditor.Modules
 
         // Return string.Empty if targeting a folder.
         string GetExtension(BuildTarget target, int subtarget, BuildOptions options);
+
+        bool AddIconsToBuild(AddIconsArgs args);
     }
 
     internal interface IScriptingImplementations
@@ -412,6 +414,11 @@ namespace UnityEditor.Modules
         public BuildOptions options;
         public Build.Reporting.BuildReport report;
         internal RuntimeClassRegistry usedClassRegistry;
+    }
+
+    internal struct AddIconsArgs
+    {
+        public string stagingArea;
     }
 
     internal interface ICompilationExtension

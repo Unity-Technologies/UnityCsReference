@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
@@ -48,6 +49,7 @@ namespace UnityEditor
             return s_PopupWindowWithoutFocus != null;
         }
 
+        [RequiredByNativeCode]
         public static void Hide()
         {
             if (s_PopupWindowWithoutFocus != null)
@@ -68,8 +70,9 @@ namespace UnityEditor
         }
 
         // Invoked from C++
-        // If we want to use this paradigm long term, we should consider reducing the overhead of a manged call.
+        // If we want to use this paradigm long term, we should consider reducing the overhead of a managed call.
         // Returns true if we suppress event propagation.
+        [RequiredByNativeCode]
         static bool OnGlobalMouseOrKeyEvent(EventType type, KeyCode keyCode, Vector2 mousePosition)
         {
             bool suppress = false;
@@ -88,7 +91,7 @@ namespace UnityEditor
             }
             else if (type == EventType.MouseDown && !s_PopupWindowWithoutFocus.hasBeenFocused)
             {
-                // If the window has been clicked, it becomes a normal popup window that can spawn other windows and be trated as another AuxWindow.
+                // If the window has been clicked, it becomes a normal popup window that can spawn other windows and be treated as another AuxWindow.
                 // If the click was somewhere else, we assume that the user did not want to see this window anymore, so it should be closed.
                 if (s_PopupWindowWithoutFocus.position.Contains(mousePosition))
                     s_PopupWindowWithoutFocus.hasBeenFocused = true;

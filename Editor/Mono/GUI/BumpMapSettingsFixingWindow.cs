@@ -4,12 +4,14 @@
 
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     internal class BumpMapSettingsFixingWindow : EditorWindow
     {
-        public static void ShowWindow(string[] paths)
+        [RequiredByNativeCode]
+        public static void ShowSettingsWindow(string[] paths)
         {
             BumpMapSettingsFixingWindow win = EditorWindow.GetWindow<BumpMapSettingsFixingWindow>(true);
             win.SetPaths(paths);

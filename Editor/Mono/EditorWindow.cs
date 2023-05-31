@@ -417,14 +417,14 @@ namespace UnityEditor
             }
         }
 
-        [Obsolete($"Use {nameof(onFocusedWindowChanged)} instead.", true)]
+        [Obsolete($"Use {nameof(windowFocusChanged)} instead.", false)]
         static public Action focusedWindowChanged;
 
-        static public event Action onFocusedWindowChanged;
+        static public event Action windowFocusChanged;
 
-        static internal void OnFocusWindowChanged()
+        static internal void OnWindowFocusChanged()
         {
-            onFocusedWindowChanged?.Invoke();
+            windowFocusChanged?.Invoke();
         }
 
         // The EditorWindow currently under the mouse cursor (RO)
@@ -712,6 +712,8 @@ namespace UnityEditor
             else
             {
                 ShowWithMode(ShowMode.AuxWindow);
+                // Make sure consumed events will not make window wait to get rendered
+                RepaintImmediately();
                 MakeModal();
             }
         }

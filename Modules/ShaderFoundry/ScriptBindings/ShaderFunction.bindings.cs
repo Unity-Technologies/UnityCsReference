@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -17,7 +15,6 @@ namespace UnityEditor.ShaderFoundry
         internal FoundryHandle m_BodyHandle;
         internal FoundryHandle m_ReturnTypeHandle;
         internal FoundryHandle m_ParameterListHandle;
-        internal FoundryHandle m_ParentBlockHandle;
         internal FoundryHandle m_IncludeListHandle;
         internal FoundryHandle m_AttributeListHandle;
         internal FoundryHandle m_ContainingNamespaceHandle;
@@ -66,9 +63,6 @@ namespace UnityEditor.ShaderFoundry
                 return blockHandles.Select(localContainer, (handle) => (new FunctionParameter(localContainer, handle)));
             }
         }
-
-        // Not valid until the parent block is finished being built.
-        public Block ParentBlock => new Block(Container, function.m_ParentBlockHandle);
 
         public IEnumerable<IncludeDescriptor> Includes
         {
@@ -190,7 +184,6 @@ namespace UnityEditor.ShaderFoundry
                     return new ShaderFunction(Container, functionHandle);
                 finalized = true;
 
-                FoundryHandle parentBlockHandle = parentBlockBuilder?.blockHandle ?? FoundryHandle.Invalid();
                 var body = ConvertToString();
 
                 var shaderFunctionInternal = new ShaderFunctionInternal();
@@ -198,7 +191,6 @@ namespace UnityEditor.ShaderFoundry
                 shaderFunctionInternal.m_BodyHandle = container.AddString(body);
                 shaderFunctionInternal.m_ReturnTypeHandle = container.AddShaderType(returnType, true);
                 shaderFunctionInternal.m_ParameterListHandle = HandleListInternal.Build(container, parameters, (p) => (p.handle));
-                shaderFunctionInternal.m_ParentBlockHandle = parentBlockHandle;
                 shaderFunctionInternal.m_IncludeListHandle = HandleListInternal.Build(container, includes, (i) => (i.handle));
                 shaderFunctionInternal.m_AttributeListHandle = HandleListInternal.Build(container, attributes, (a) => (a.handle));
                 shaderFunctionInternal.m_ContainingNamespaceHandle = containingNamespace.handle;

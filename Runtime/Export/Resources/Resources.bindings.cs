@@ -192,6 +192,9 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::InstanceIDToObject")]
         public extern static Object InstanceIDToObject(int instanceID);
 
+        [FreeFunction("Resources_Bindings::IsInstanceLoaded")]
+        internal extern static bool IsInstanceLoaded(int instanceID);
+
         [FreeFunction("Resources_Bindings::InstanceIDToObjectList")]
         extern private static void InstanceIDToObjectList(IntPtr instanceIDs, int instanceCount, List<Object> objects);
 

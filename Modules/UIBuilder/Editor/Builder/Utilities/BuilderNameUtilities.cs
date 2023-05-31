@@ -64,6 +64,11 @@ namespace Unity.UI.Builder
             return lowerCase;
         }
 
+        public static string ConvertCamelToHuman(string camel)
+        {
+            return Regex.Replace(camel, "(\\B[A-Z])", " $1");
+        }
+
         public static string ConvertStyleCSharpNameToUssName(string csharpName)
         {
             var dash = ConvertCamelToDash(csharpName);

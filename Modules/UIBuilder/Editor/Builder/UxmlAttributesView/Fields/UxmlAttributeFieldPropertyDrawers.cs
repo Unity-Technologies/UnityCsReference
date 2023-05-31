@@ -135,6 +135,7 @@ namespace UnityEditor.UIElements
         {
             var imageField = new ImageStyleField("Icon Image");
             imageField.BindProperty(property);
+            imageField.AddToClassList(ImageStyleField.alignedFieldUssClassName);
             return imageField;
         }
     }

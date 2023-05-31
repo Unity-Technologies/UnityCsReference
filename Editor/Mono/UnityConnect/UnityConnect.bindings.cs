@@ -228,12 +228,14 @@ namespace UnityEditor.Connect
             client.Begin();
         }
 
+        [RequiredByNativeCode]
         private static void OnUserLoggedIn()
         {
             if (UserLoggedIn != null)
                 UserLoggedIn();
         }
 
+        [RequiredByNativeCode]
         private static void OnUserLoggedOut()
         {
             if (UserLoggedOut != null)
@@ -397,6 +399,7 @@ namespace UnityEditor.Connect
             s_Instance = new UnityConnect();
         }
 
+        [RequiredByNativeCode]
         private static void OnStateChanged()
         {
             var handler = instance.StateChanged;
@@ -404,6 +407,7 @@ namespace UnityEditor.Connect
                 handler(instance.connectInfo);
         }
 
+        [RequiredByNativeCode]
         private static void OnProjectStateChanged()
         {
             var handler = instance.ProjectStateChanged;
@@ -411,6 +415,7 @@ namespace UnityEditor.Connect
                 handler(instance.projectInfo);
         }
 
+        [RequiredByNativeCode]
         private static void OnProjectRefreshed()
         {
             var handler = instance.ProjectRefreshed;
@@ -418,6 +423,7 @@ namespace UnityEditor.Connect
                 handler(instance.projectInfo);
         }
 
+        [RequiredByNativeCode]
         private static void OnUserStateChanged()
         {
             var handler = instance.UserStateChanged;

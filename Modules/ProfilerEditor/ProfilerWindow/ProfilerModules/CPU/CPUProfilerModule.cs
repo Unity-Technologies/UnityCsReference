@@ -479,9 +479,15 @@ namespace UnityEditorInternal.Profiling
         {
             base.UpdateChartOverlay(firstEmptyFrame, firstFrame, frameCount);
 
-            string selectedName = ProfilerDriver.selectedPropertyPath;
-            var selectedModule = ProfilerWindow.selectedModule;
-            bool hasCPUOverlay = (selectedName != string.Empty) && this.Equals(selectedModule);
+            //Temporarily disable chart overlay for inverted mode until theres support for it
+            var hasCPUOverlay = false;
+            if (m_ViewType != ProfilerViewType.InvertedHierarchy)
+            {
+                var selectedName = ProfilerDriver.selectedPropertyPath;
+                var selectedModule = ProfilerWindow.selectedModule;
+                hasCPUOverlay = selectedName != string.Empty && Equals(selectedModule);
+            }
+
             if (hasCPUOverlay)
             {
                 m_Chart.UpdateOverlayData(firstEmptyFrame);

@@ -50,28 +50,38 @@ namespace UnityEditorInternal.Profiling
         {
             totalSelectedPropertyTime = 0;
 
+            var topDownHierarchyData = frameDataView;
+            var targetInvertedHierarchy = frameDataView;
+            if (frameDataView.viewMode.HasFlag(HierarchyFrameDataView.ViewModes.InvertHierarchy))
+            {
+                topDownHierarchyData = ProfilerDriver.GetHierarchyFrameDataView(frameDataView.frameIndex, frameDataView.threadIndex,
+                    frameDataView.viewMode ^ HierarchyFrameDataView.ViewModes.InvertHierarchy,
+                    HierarchyFrameDataView.columnDontSort, false);
+            }
+
             m_Callers.Clear();
             m_Callees.Clear();
 
             m_ChildrenIds.Clear();
             m_Stack.Clear();
-            m_Stack.Push(frameDataView.GetRootItemID());
+            m_Stack.Push(topDownHierarchyData.GetRootItemID());
 
             while (m_Stack.Count > 0)
             {
                 var current = m_Stack.Pop();
 
-                if (!frameDataView.HasItemChildren(current))
+                if (!topDownHierarchyData.HasItemChildren(current))
                     continue;
 
-                var markerId = frameDataView.GetItemMarkerID(current);
-                frameDataView.GetItemChildren(current, m_ChildrenIds);
+                var markerId = topDownHierarchyData.GetItemMarkerID(current);
+                topDownHierarchyData.GetItemChildren(current, m_ChildrenIds);
                 foreach (var childId in m_ChildrenIds)
                 {
-                    var childMarkerId = frameDataView.GetItemMarkerID(childId);
+                    var childMarkerId = topDownHierarchyData.GetItemMarkerID(childId);
+                    // Add markerId to callers (except root)
                     if (childMarkerId == selectedMarkerId)
                     {
-                        var totalSelfTime = frameDataView.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnTotalTime);
+                        var totalSelfTime = topDownHierarchyData.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnTotalTime);
                         totalSelectedPropertyTime += totalSelfTime;
 
                         // Skip root sample
@@ -79,16 +89,16 @@ namespace UnityEditorInternal.Profiling
                         {
                             // Add markerId to callers (except root)
                             CallInformation callInfo;
-                            var totalTime = frameDataView.GetItemColumnDataAsSingle(current, HierarchyFrameDataView.columnTotalTime);
+                            var totalTime = topDownHierarchyData.GetItemColumnDataAsSingle(current, HierarchyFrameDataView.columnTotalTime);
                             // Display sample details in the scope of caller.
-                            var calls = (int)frameDataView.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnCalls);
-                            var gcAlloc = (int)frameDataView.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnGcMemory);
+                            var calls = (int)topDownHierarchyData.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnCalls);
+                            var gcAlloc = (int)topDownHierarchyData.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnGcMemory);
                             if (!m_Callers.TryGetValue(markerId, out callInfo))
                             {
                                 m_Callers.Add(markerId, new CallInformation()
                                 {
                                     id = current,
-                                    name = profilerSampleNameProvider.GetItemName(frameDataView, current),
+                                    name = profilerSampleNameProvider.GetItemName(topDownHierarchyData, current),
                                     callsCount = calls,
                                     gcAllocBytes = gcAlloc,
                                     totalCallTimeMs = totalTime,
@@ -113,15 +123,15 @@ namespace UnityEditorInternal.Profiling
                     {
                         // Add childMarkerId to callees
                         CallInformation callInfo;
-                        var totalTime = frameDataView.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnTotalTime);
-                        var calls = (int)frameDataView.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnCalls);
-                        var gcAlloc = (int)frameDataView.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnGcMemory);
+                        var totalTime = topDownHierarchyData.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnTotalTime);
+                        var calls = (int)topDownHierarchyData.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnCalls);
+                        var gcAlloc = (int)topDownHierarchyData.GetItemColumnDataAsSingle(childId, HierarchyFrameDataView.columnGcMemory);
                         if (!m_Callees.TryGetValue(childMarkerId, out callInfo))
                         {
                             m_Callees.Add(childMarkerId, new CallInformation()
                             {
                                 id = childId,
-                                name = profilerSampleNameProvider.GetItemName(frameDataView, childId),
+                                name = profilerSampleNameProvider.GetItemName(topDownHierarchyData, childId),
                                 callsCount = calls,
                                 gcAllocBytes = gcAlloc,
                                 totalCallTimeMs = totalTime,
@@ -143,11 +153,43 @@ namespace UnityEditorInternal.Profiling
                     m_Stack.Push(childId);
                 }
             }
+
+            // Remap ids to the target inverted hierarchy
+            if (!topDownHierarchyData.Equals(targetInvertedHierarchy))
+            {
+                var invertedHierarchyChildren = new List<int>();
+                targetInvertedHierarchy.GetItemChildren(targetInvertedHierarchy.GetRootItemID(), invertedHierarchyChildren);
+
+                var rawIndices = new List<int>();
+                MigrateItemIds(m_Callees, topDownHierarchyData, targetInvertedHierarchy, invertedHierarchyChildren, rawIndices);
+                MigrateItemIds(m_Callers, topDownHierarchyData, targetInvertedHierarchy, invertedHierarchyChildren, rawIndices);
+
+                topDownHierarchyData.Dispose();
+            }
+
             UpdateCallsData(ref m_CallersData, m_Callers, totalSelectedPropertyTime);
             UpdateCallsData(ref m_CalleesData, m_Callees, totalSelectedPropertyTime);
         }
 
-        private void UpdateCallsData(ref CallsData callsData, Dictionary<int, CallInformation> data,  float totalSelectedPropertyTime)
+        static void MigrateItemIds(Dictionary<int, CallInformation> calls, HierarchyFrameDataView topDownHierarchyData, HierarchyFrameDataView targetInvertedHierarchy, List<int> invertedHierarchyChildren, List<int> cachedRawIndices)
+        {
+            foreach (var c in calls)
+            {
+                var fromId = c.Value.id;
+                topDownHierarchyData.GetItemRawFrameDataViewIndices(fromId, cachedRawIndices);
+                var rawIndex = cachedRawIndices[0];
+                for (var i = 0; i < invertedHierarchyChildren.Count; ++i)
+                {
+                    if (targetInvertedHierarchy.ItemContainsRawFrameDataViewIndex(invertedHierarchyChildren[i], rawIndex))
+                    {
+                        c.Value.id = invertedHierarchyChildren[i];
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void UpdateCallsData(ref CallsData callsData, Dictionary<int, CallInformation> data, float totalSelectedPropertyTime)
         {
             callsData.calls.Clear();
             callsData.calls.AddRange(data.Values);

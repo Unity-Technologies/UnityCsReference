@@ -18,17 +18,17 @@ namespace Unity.UI.Builder
         public static string assetsPath { get; } = Application.dataPath;
         public static string projectPath { get; } = assetsPath.Substring(0, Application.dataPath.Length - "/Assets".Length);
         public static string packagesPath { get; } = projectPath + "/Packages";
-        
-        
+
+
         static string GetFullPath(string path)
         {
             return Path.GetFullPath(path).Replace("\\", "/");
         }
-        
+
         public static bool IsPathInProject(string path)
         {
             var fullPath = GetFullPath(path);
-            
+
             return fullPath.StartsWith(assetsPath, StringComparison.InvariantCultureIgnoreCase) ||
                    fullPath.StartsWith(packagesPath, StringComparison.InvariantCultureIgnoreCase);
         }
@@ -40,7 +40,7 @@ namespace Unity.UI.Builder
             var fullPath = GetFullPath(path);
             return fullPath.Substring(projectPath.Length + 1); // "/"
         }
-        
+
         public static string GetResourcesPathForAsset(Object asset)
         {
             var assetPath = AssetDatabase.GetAssetPath(asset);
@@ -52,7 +52,7 @@ namespace Unity.UI.Builder
             if (string.IsNullOrWhiteSpace(assetPath))
                 return null;
 
-            // Start by trying to find a "Resources" folder in the middle of the path. 
+            // Start by trying to find a "Resources" folder in the middle of the path.
             var resourcesFolder = "/Resources/";
             var lastResourcesFolderIndex = assetPath.LastIndexOf(resourcesFolder, StringComparison.Ordinal);
             // Otherwise check if the "Resources" path is at the start.
@@ -65,7 +65,7 @@ namespace Unity.UI.Builder
                 }
                 else return null;
             }
-            
+
             var lastResourcesSubstring = lastResourcesFolderIndex + resourcesFolder.Length;
             assetPath = assetPath.Substring(lastResourcesSubstring);
             var lastExtDot = assetPath.LastIndexOf(".", StringComparison.Ordinal);
@@ -214,7 +214,15 @@ namespace Unity.UI.Builder
              So instead, we just use no parent, indicating that we are adding this new element
              to the root of our document.*/
             if (veParent != null && veParent.GetVisualTreeAsset() != document.visualTreeAsset)
+            {
+                // We must revisit this once we finalize how we want our container controls to work with accepting
+                // specific types of controls. For now we're only applying this for ToggleButtonGroup but other controls
+                // like RadioButtonGroup would also be applicable.
+                if (veParent.parent is ToggleButtonGroup control)
+                    veParent = control;
+
                 veaParent = veParent.GetVisualElementAsset();
+            }
 
             if (veaParent == null)
                 veaParent = document.visualTreeAsset.GetRootUXMLElement(); // UXML Root Element

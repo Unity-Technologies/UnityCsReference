@@ -88,6 +88,7 @@ namespace UnityEditor.UIElements.Samples
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Button", ButtonSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Scroller", ScrollerSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Toggle", ToggleSnippet.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("ToggleButtonGroup", ToggleButtonGroupSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("RadioButton", RadioButtonSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Label", LabelSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Text Field", TextFieldSnippet.Create)),
@@ -95,6 +96,7 @@ namespace UnityEditor.UIElements.Samples
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Object Field", ObjectFieldSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("List View", ListViewSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Tree View", TreeViewSnippet.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Tab View", TabViewSnippet.Create)),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Numeric Fields", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
                 {
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Integer", IntegerFieldSnippet.Create)),

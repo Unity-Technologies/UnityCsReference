@@ -132,8 +132,7 @@ namespace UnityEditor
             }
 
             var errors = ValidateAssemblyDefinitions(assemblyPaths,
-                assemblyDefinitions,
-                PluginCompatibleWithEditor);
+                assemblyDefinitions);
 
             return errors;
         }
@@ -212,19 +211,6 @@ namespace UnityEditor
             return errors.ToArray();
         }
 
-        public static bool PluginCompatibleWithEditor(string path)
-        {
-            var pluginImporter = AssetImporter.GetAtPath(path) as PluginImporter;
-
-            if (pluginImporter == null)
-                return true;
-
-            if (pluginImporter.GetCompatibleWithAnyPlatform())
-                return true;
-
-            return pluginImporter.GetCompatibleWithEditor();
-        }
-
         public static bool ShouldValidateReferences(string path,
             Dictionary<string, PrecompiledAssembly> allPrecompiledAssemblies)
         {
@@ -251,23 +237,20 @@ namespace UnityEditor
         }
 
         public static Error[] ValidateAssembliesInternal(string[] assemblyPaths,
-            string[] searchPaths,
-            Func<string, bool> compatibleWithEditor)
+            string[] searchPaths)
         {
             var assemblyDefinitions = LoadAssemblyDefinitions(assemblyPaths, searchPaths);
-            return ValidateAssemblyDefinitions(assemblyPaths, assemblyDefinitions, compatibleWithEditor);
+            return ValidateAssemblyDefinitions(assemblyPaths, assemblyDefinitions);
         }
 
         public static Error[] ValidateAssemblyDefinitions(string[] assemblyPaths,
-            AssemblyDefinition[] assemblyDefinitions,
-            Func<string, bool> compatibleWithEditor)
+            AssemblyDefinition[] assemblyDefinitions)
         {
             var errors = new Error[assemblyPaths.Length];
 
             CheckAssemblyReferences(assemblyPaths,
                 errors,
-                assemblyDefinitions,
-                compatibleWithEditor);
+                assemblyDefinitions);
 
             return errors;
         }
@@ -301,11 +284,8 @@ namespace UnityEditor
 
         public static void CheckAssemblyReferences(string[] assemblyPaths,
             Error[] errors,
-            AssemblyDefinition[] assemblyDefinitions,
-            Func<string, bool> compatibleWithEditor)
+            AssemblyDefinition[] assemblyDefinitions)
         {
-            SetupEditorCompatibility(assemblyPaths, errors, compatibleWithEditor);
-
             var assemblyDefinitionNameToIndex = new Dictionary<string, int>();
             var assembliesAndReferencesArray = new AssemblyAndReferences[assemblyPaths.Length];
 
@@ -380,22 +360,6 @@ namespace UnityEditor
                 }
             }
             while (referenceErrorCount > 0);
-        }
-
-        public static void SetupEditorCompatibility(string[] assemblyPaths,
-            Error[] errors,
-            Func<string, bool> compatibleWithEditor)
-        {
-            for (int i = 0; i < assemblyPaths.Length; ++i)
-            {
-                var assemblyPath = assemblyPaths[i];
-
-                if (!compatibleWithEditor(assemblyPath))
-                {
-                    errors[i].Add(ErrorFlags.IncompatibleWithEditor,
-                        "Assembly is incompatible with the editor");
-                }
-            }
         }
 
         public static void ResolveAndSetupReferences(int index,

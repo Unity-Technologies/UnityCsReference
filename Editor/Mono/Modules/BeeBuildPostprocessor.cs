@@ -770,6 +770,8 @@ namespace UnityEditor.Modules
             }
         }
 
+        public virtual bool AddIconsToBuild(AddIconsArgs args) => true;
+
         protected virtual bool GetCreateSolution(BuildPostProcessArgs args) => false;
 
         protected virtual NPath EditorBuildOutputPathFor(BuildPostProcessArgs buildPostProcessArgs) => null;

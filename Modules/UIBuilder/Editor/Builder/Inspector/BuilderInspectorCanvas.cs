@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -38,10 +39,10 @@ namespace Unity.UI.Builder
         PercentSlider m_ColorOpacityField;
         PercentSlider m_ImageOpacityField;
         PercentSlider m_CameraOpacityField;
-        ToggleButtonStrip m_BackgroundMode;
+        ToggleButtonGroup m_BackgroundMode;
         ColorField m_ColorField;
         ObjectField m_ImageField;
-        ToggleButtonStrip m_ImageScaleModeField;
+        ToggleButtonGroup m_ImageScaleModeField;
         Button m_FitCanvasToImageButton;
         ObjectField m_CameraField;
 
@@ -135,11 +136,11 @@ namespace Unity.UI.Builder
 
             // Setup Background Mode
             var backgroundModeType = typeof(BuilderCanvasBackgroundMode);
-            var backgroundModeValues = Enum.GetValues(backgroundModeType)
-                .OfType<BuilderCanvasBackgroundMode>().Select((v) => v.ToString()).ToList();
-            m_BackgroundMode = root.Q<ToggleButtonStrip>("background-mode-field");
-            m_BackgroundMode.enumType = backgroundModeType;
-            m_BackgroundMode.choices = backgroundModeValues;
+            m_BackgroundMode = root.Q<ToggleButtonGroup>("background-mode-field");
+            m_BackgroundMode.userData = backgroundModeType;
+            m_BackgroundMode.Add(new Button() { name="Color", iconImage = BuilderInspectorUtilities.LoadIcon("color_picker", "Canvas/"), tooltip = "color" });
+            m_BackgroundMode.Add(new Button() { name="Image", iconImage = BuilderInspectorUtilities.LoadIcon("RawImage", "Canvas/"), tooltip = "image" });
+            m_BackgroundMode.Add(new Button() { name="Camera", iconImage = EditorGUIUtility.FindTexture("d_SceneViewCamera"), tooltip = "camera" });
             m_BackgroundMode.RegisterValueChangedCallback(OnBackgroundModeChange);
 
             // Color field.
@@ -150,11 +151,14 @@ namespace Unity.UI.Builder
             m_ImageField = root.Q<ObjectField>("background-image-field");
             m_ImageField.objectType = typeof(Texture2D);
             m_ImageField.RegisterValueChangedCallback(OnBackgroundImageChange);
-            m_ImageScaleModeField = root.Q<ToggleButtonStrip>("background-image-scale-mode-field");
-            m_ImageScaleModeField.enumType = typeof(ScaleMode);
+            m_ImageScaleModeField = root.Q<ToggleButtonGroup>("background-image-scale-mode-field");
+            m_ImageScaleModeField.userData = typeof(ScaleMode);
             var backgroundScaleModeValues = Enum.GetValues(typeof(ScaleMode))
                 .OfType<ScaleMode>().Select((v) => BuilderNameUtilities.ConvertCamelToDash(v.ToString())).ToList();
-            m_ImageScaleModeField.choices = backgroundScaleModeValues;
+            foreach (var value in backgroundScaleModeValues)
+            {
+                m_ImageScaleModeField.Add(new Button() { iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertDashToHuman(value), "Background/"), tooltip = value });
+            }
             m_ImageScaleModeField.RegisterValueChangedCallback(OnBackgroundImageScaleModeChange);
             m_FitCanvasToImageButton = root.Q<Button>("background-image-fit-canvas-button");
             m_FitCanvasToImageButton.clickable.clicked += FitCanvasToImage;
@@ -254,13 +258,15 @@ namespace Unity.UI.Builder
             m_ImageOpacityField.SetValueWithoutNotify(settings.ImageModeCanvasBackgroundOpacity);
             m_CameraOpacityField.SetValueWithoutNotify(settings.CameraModeCanvasBackgroundOpacity);
 
-            m_BackgroundMode.SetValueWithoutNotify(settings.CanvasBackgroundMode.ToString());
+            var backgroundModeOptions = new ToggleButtonGroupState(0, Enum.GetNames(typeof(BuilderCanvasBackgroundMode)).Length);
+            backgroundModeOptions[(int)settings.CanvasBackgroundMode] = true;
+            m_BackgroundMode.SetValueWithoutNotify(backgroundModeOptions);
             m_ColorField.SetValueWithoutNotify(settings.CanvasBackgroundColor);
 
-            var scaleModeStr = settings.CanvasBackgroundImageScaleMode.ToString();
-            scaleModeStr = BuilderNameUtilities.ConvertCamelToDash(scaleModeStr);
+            var imageFieldOptions = new ToggleButtonGroupState(0, Enum.GetNames(typeof(ScaleMode)).Length);
+            imageFieldOptions[(int)settings.CanvasBackgroundImageScaleMode] = true;
+            m_ImageScaleModeField.SetValueWithoutNotify(imageFieldOptions);
             m_ImageField.SetValueWithoutNotify(settings.CanvasBackgroundImage);
-            m_ImageScaleModeField.SetValueWithoutNotify(scaleModeStr);
 
             m_CameraField.SetValueWithoutNotify(FindCameraByName());
             m_EditorExtensionsModeToggle?.SetValueWithoutNotify(m_Document.fileSettings.editorExtensionMode);
@@ -496,10 +502,10 @@ namespace Unity.UI.Builder
             PostSettingsChange();
         }
 
-        void OnBackgroundModeChange(ChangeEvent<string> evt)
+        void OnBackgroundModeChange(ChangeEvent<ToggleButtonGroupState> evt)
         {
-            var enumValue = (BuilderCanvasBackgroundMode)Enum.Parse(typeof(BuilderCanvasBackgroundMode), evt.newValue);
-            settings.CanvasBackgroundMode = enumValue;
+            var selected = evt.newValue.GetActiveOptions(stackalloc int[evt.newValue.length]);
+            settings.CanvasBackgroundMode = (BuilderCanvasBackgroundMode)selected[0];
             PostSettingsChange();
             ApplyBackgroundOptions();
         }
@@ -518,11 +524,10 @@ namespace Unity.UI.Builder
             ApplyBackgroundOptions();
         }
 
-        void OnBackgroundImageScaleModeChange(ChangeEvent<string> evt)
+        void OnBackgroundImageScaleModeChange(ChangeEvent<ToggleButtonGroupState> evt)
         {
-            var newValue = BuilderNameUtilities.ConvertDashToHungarian(evt.newValue);
-            var enumValue = (ScaleMode)Enum.Parse(typeof(ScaleMode), newValue);
-            settings.CanvasBackgroundImageScaleMode = enumValue;
+            var selected = evt.newValue.GetActiveOptions(stackalloc int[evt.newValue.length]);
+            settings.CanvasBackgroundImageScaleMode = (ScaleMode)selected[0];
             PostSettingsChange();
             ApplyBackgroundOptions();
         }

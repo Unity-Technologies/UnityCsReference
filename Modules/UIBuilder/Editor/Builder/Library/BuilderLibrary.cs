@@ -33,7 +33,7 @@ namespace Unity.UI.Builder
         readonly BuilderLibraryDragger m_Dragger;
         readonly BuilderTooltipPreview m_TooltipPreview;
 
-        readonly ToggleButtonStrip m_HeaderButtonStrip;
+        readonly ToggleButtonGroup m_HeaderButtonStrip;
         readonly VisualElement m_LibraryContentContainer;
 
         BuilderLibraryTreeView m_ProjectTreeView;
@@ -72,12 +72,17 @@ namespace Unity.UI.Builder
             m_EditorExtensionMode = paneWindow.document.fileSettings.editorExtensionMode;
             m_LibraryContentContainer = this.Q<VisualElement>(k_ContentContainerName);
 
-            m_HeaderButtonStrip = this.Q<ToggleButtonStrip>();
-            m_HeaderButtonStrip.choices = Enum.GetNames(typeof(BuilderLibraryTab));
-            m_HeaderButtonStrip.labels = new List<string> { BuilderConstants.LibraryStandardControlsTabName, BuilderConstants.LibraryProjectTabName };
+            m_HeaderButtonStrip = this.Q<ToggleButtonGroup>();
+
+            var libraryItems = new[] { BuilderConstants.LibraryStandardControlsTabName, BuilderConstants.LibraryProjectTabName };
+            foreach (var item in libraryItems)
+            {
+                m_HeaderButtonStrip.Add(new Button() { name = item, text = item, tooltip = item.ToLower() });
+            }
             m_HeaderButtonStrip.RegisterValueChangedCallback(e =>
             {
-                SwitchLibraryTab((BuilderLibraryTab)Enum.Parse(typeof(BuilderLibraryTab), e.newValue));
+                var selected = e.newValue.GetActiveOptions(stackalloc int[m_HeaderButtonStrip.value.length]);
+                SwitchLibraryTab((BuilderLibraryTab)selected[0]);
             });
 
             AddFocusable(m_HeaderButtonStrip);
@@ -254,7 +259,10 @@ namespace Unity.UI.Builder
         void RefreshView()
         {
             m_LibraryContentContainer.Clear();
-            m_HeaderButtonStrip.SetValueWithoutNotify(m_ActiveTab.ToString());
+
+            var builderLibraryOptions = new ToggleButtonGroupState(0, Enum.GetNames(typeof(BuilderLibraryTab)).Length);
+            builderLibraryOptions[(int)m_ActiveTab] = true;
+            m_HeaderButtonStrip.SetValueWithoutNotify(builderLibraryOptions);
             switch (m_ActiveTab)
             {
                 case BuilderLibraryTab.Standard:

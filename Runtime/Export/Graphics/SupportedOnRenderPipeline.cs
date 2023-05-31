@@ -3,8 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
+using System.Reflection;
 using Unity.Collections;
 
 namespace UnityEngine.Rendering
@@ -33,8 +32,10 @@ namespace UnityEngine.Rendering
                 return;
             }
 
-            if (renderPipeline.Any(r => r == null || !typeof(RenderPipelineAsset).IsAssignableFrom(r)))
+            for (var i = 0; i < renderPipeline.Length; i++)
             {
+                var r = renderPipeline[i];
+                if (r != null && typeof(RenderPipelineAsset).IsAssignableFrom(r)) continue;
                 Debug.LogError(
                     $"The {nameof(SupportedOnRenderPipelineAttribute)} Attribute targets an invalid {nameof(RenderPipelineAsset)}. One of the types cannot be assigned from {nameof(RenderPipelineAsset)}: [{renderPipeline.SerializedView(t => t.Name)}].");
                 return;
@@ -55,13 +56,25 @@ namespace UnityEngine.Rendering
             if (renderPipelineAssetType == null)
                 return SupportedMode.Unsupported;
 
-            if (renderPipelineTypes.Contains(renderPipelineAssetType))
-                return SupportedMode.Supported;
+            for (int i = 0; i < renderPipelineTypes.Length; i++)
+            {
+                if (renderPipelineTypes[i] == renderPipelineAssetType)
+                    return SupportedMode.Supported;
+            }
 
-            if (renderPipelineTypes.Any(t => t.IsAssignableFrom(renderPipelineAssetType)))
-                return SupportedMode.SupportedByBaseClass;
+            for (var i = 0; i < renderPipelineTypes.Length; i++)
+            {
+                if (renderPipelineTypes[i].IsAssignableFrom(renderPipelineAssetType))
+                    return SupportedMode.SupportedByBaseClass;
+            }
 
             return SupportedMode.Unsupported;
+        }
+
+        public static bool IsTypeSupportedOnRenderPipeline(Type type, Type renderPipelineAssetType)
+        {
+            var supportedOnAttribute = type.GetCustomAttribute<SupportedOnRenderPipelineAttribute>();
+            return supportedOnAttribute == null || supportedOnAttribute.GetSupportedMode(renderPipelineAssetType) != SupportedMode.Unsupported;
         }
     }
 }

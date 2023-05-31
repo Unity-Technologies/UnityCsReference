@@ -148,7 +148,7 @@ namespace UnityEditor
 
         static bool isEditorinstalledWithHub = IsEditorInstalledWithHub();
 
-        [UsedImplicitly]
+        [UsedImplicitly, RequiredByNativeCode]
         public static void ShowBuildPlayerWindow()
         {
             EditorUserBuildSettings.selectedBuildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup;
@@ -175,7 +175,7 @@ namespace UnityEditor
 
         // This overload is used by the Build & Run menu item & hot key - prompt for location only if the configured
         // output location is not valid.
-        [UsedImplicitly]
+        [UsedImplicitly, RequiredByNativeCode]
         static void BuildPlayerAndRun()
         {
             var buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
@@ -189,11 +189,11 @@ namespace UnityEditor
                 EditorUserBuildSettings.SetBuildLocation(buildTarget, newBuildLocation);
             }
 
-            BuildPlayerAndRun(!buildLocationIsValid);
+            BuildPlayerAndRunInternal(!buildLocationIsValid);
         }
 
         // This overload is used by the default player window, to always prompt for build location
-        static void BuildPlayerAndRun(bool askForBuildLocation)
+        static void BuildPlayerAndRunInternal(bool askForBuildLocation)
         {
             CallBuildMethods(askForBuildLocation, BuildOptions.AutoRunPlayer | BuildOptions.StrictMode);
         }
@@ -1110,7 +1110,7 @@ namespace UnityEditor
             GUI.enabled = enableBuildAndRunButton && selectedTargetIsActive;
             if (GUILayout.Button(buildAndRunButton, GUILayout.Width(Styles.kButtonWidth)))
             {
-                BuildPlayerAndRun(askForBuildLocation);
+                BuildPlayerAndRunInternal(askForBuildLocation);
                 GUIUtility.ExitGUI();
             }
 

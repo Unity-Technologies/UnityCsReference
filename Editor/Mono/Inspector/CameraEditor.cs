@@ -892,6 +892,7 @@ namespace UnityEditor
         }
 
         // Called from C++ when we need to render a Camera's gizmo
+        [RequiredByNativeCode]
         internal static void RenderGizmo(Camera camera) => CameraEditorUtils.DrawFrustumGizmo(camera);
 
         static Vector2 s_PreviousMainPlayModeViewTargetSize;

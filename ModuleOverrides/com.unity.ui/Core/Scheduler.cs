@@ -265,6 +265,7 @@ namespace UnityEngine.UIElements
         {
             if (index >= 0)
             {
+                if (index <= m_LastUpdatedIndex) --m_LastUpdatedIndex;
                 m_ScheduledItems.RemoveAt(index);
 
                 return true;

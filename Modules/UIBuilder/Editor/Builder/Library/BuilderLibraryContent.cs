@@ -273,6 +273,7 @@ namespace Unity.UI.Builder
                 CreateItem("Label", nameof(Label), typeof(Label), () => new Label("Label")),
                 CreateItem("Button", nameof(Button), typeof(Button), () => new Button { text = "Button" }),
                 CreateItem("Toggle", nameof(Toggle), typeof(Toggle), () => new Toggle("Toggle")),
+                CreateItem("Toggle Button Group", nameof(ToggleButtonGroup), typeof(ToggleButtonGroup), () => new ToggleButtonGroup("Toggle Button Group")),
                 CreateItem("Scroller", nameof(Scroller), typeof(Scroller), () => new Scroller(0, 100, (v) => {}, SliderDirection.Horizontal) { value = 42 }),
                 CreateItem("Text Field", nameof(TextField), typeof(TextField), () => new TextField("Text Field") { value = "filler text", maskChar = TextInputBaseField<string>.kMaskCharDefault }),
                 CreateItem("Foldout", nameof(Foldout), typeof(Foldout), () => new Foldout { text = "Foldout" }),
@@ -284,6 +285,8 @@ namespace Unity.UI.Builder
                 CreateItem("Enum", nameof(EnumField), typeof(EnumField), () => new EnumField("Enum", TextAlignment.Center)),
                 CreateItem("Radio Button", nameof(RadioButton), typeof(RadioButton), () => new RadioButton("Radio Button")),
                 CreateItem("Radio Button Group", nameof(RadioButtonGroup), typeof(RadioButtonGroup), () => new RadioButtonGroup("Radio Button Group")),
+                CreateItem("Tab", nameof(Tab), typeof(Tab), () => new Tab("Tab")),
+                CreateItem("Tab View", nameof(TabView), typeof(TabView), () => new TabView()),
             }, isHeader: true);
 
             var numericFields = CreateItem("Numeric Fields", null, null, null, null, new List<TreeViewItemData<BuilderLibraryTreeItem>>

@@ -113,6 +113,7 @@ namespace UnityEditor
             return true;
         }
 
+        [RequiredByNativeCode]
         static void Internal_EditorApplicationQuit()
         {
             // VersionControlObject might depend on packages that cleanup themselves using quitting event.
@@ -381,6 +382,7 @@ namespace UnityEditor
                 evt();
         }
 
+        [RequiredByNativeCode]
         internal static void Internal_SwitchSkin()
         {
             EditorGUIUtility.Internal_SwitchSkin();
@@ -401,6 +403,7 @@ namespace UnityEditor
             }
         }
 
+        [RequiredByNativeCode]
         static void Internal_CallHierarchyHasChanged()
         {
             #pragma warning disable 618
@@ -437,6 +440,7 @@ namespace UnityEditor
             assetBundleNameChanged?.Invoke();
         }
 
+        [RequiredByNativeCode]
         static void Internal_PauseStateChanged(PauseState state)
         {
             #pragma warning disable 618
@@ -447,6 +451,7 @@ namespace UnityEditor
                 evt(state);
         }
 
+        [RequiredByNativeCode]
         static void Internal_PlayModeStateChanged(PlayModeStateChange state)
         {
             #pragma warning disable 618
@@ -463,11 +468,13 @@ namespace UnityEditor
             fileMenuSaved?.Invoke();
         }
 
+        [RequiredByNativeCode]
         static void Internal_CallKeyboardModifiersChanged()
         {
             modifierKeysChanged?.Invoke();
         }
 
+        [RequiredByNativeCode]
         static void Internal_CallWindowsReordered()
         {
             windowsReordered?.Invoke();
@@ -512,6 +519,7 @@ namespace UnityEditor
             }
         }
 
+        [RequiredByNativeCode]
         internal static void TogglePlaying()
         {
             isPlaying = !isPlaying;

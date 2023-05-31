@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderFoundry
@@ -13,8 +12,7 @@ namespace UnityEditor.ShaderFoundry
     internal struct TemplatePassInternal : IInternalType<TemplatePassInternal>
     {
         internal FoundryHandle m_UsePassNameHandle;
-        internal FoundryHandle m_DisplayNameHandle;
-        internal FoundryHandle m_ReferenceNameHandle;
+        internal FoundryHandle m_PassNameHandle;
         internal FoundryHandle m_StageDescriptionListHandle;
         internal FoundryHandle m_RenderStateDescriptorListHandle;
         internal FoundryHandle m_PragmaDescriptorListHandle;
@@ -50,17 +48,31 @@ namespace UnityEditor.ShaderFoundry
         public bool IsUsePass => (IsValid && templatePass.IsUsePass());
         public bool IsNormalPass => (IsValid && !templatePass.IsUsePass());
         public string UsePassName => container?.GetString(templatePass.m_UsePassNameHandle) ?? string.Empty;
-        public string DisplayName => container?.GetString(templatePass.m_DisplayNameHandle) ?? string.Empty;
-        public string ReferenceName => container?.GetString(templatePass.m_ReferenceNameHandle) ?? string.Empty;
+        public string PassName => container?.GetString(templatePass.m_PassNameHandle) ?? string.Empty;
 
         public StageDescription GetStageDescription(PassStageType stageType)
         {
-            var list = new HandleListInternal(templatePass.m_StageDescriptionListHandle);
-            var handle = list.GetElement(container, (uint)stageType);
-            return new StageDescription(container, handle);
+            var stages = HandleListInternal.Enumerate<StageDescription>(container, templatePass.m_StageDescriptionListHandle);
+            foreach(var stage in stages)
+            {
+                if (stage.StageType == stageType)
+                    return stage;
+            }
+            return StageDescription.Invalid;
         }
 
-        public IEnumerable<StageDescription> StageDescriptions => templatePass.m_StageDescriptionListHandle.AsListEnumerable<StageDescription>(container, (container, handle) => (new StageDescription(container, handle))).Where((s) => (s.IsValid));
+        public IEnumerable<StageDescription> StageDescriptions
+        {
+            get
+            {
+                var items = HandleListInternal.Enumerate<StageDescription>(container, templatePass.m_StageDescriptionListHandle);
+                foreach (var item in items)
+                {
+                    if (item.IsValid)
+                        yield return item;
+                }
+            }
+        }
 
         public IEnumerable<RenderStateDescriptor> RenderStateDescriptors
         {
@@ -131,8 +143,7 @@ namespace UnityEditor.ShaderFoundry
                 var templatePassInternal = new TemplatePassInternal()
                 {
                     m_UsePassNameHandle = container.AddString(usePassName),
-                    m_DisplayNameHandle = invalid,
-                    m_ReferenceNameHandle = invalid,
+                    m_PassNameHandle = invalid,
                     m_TagDescriptorListHandle = invalid,
                     m_PackageRequirementListHandle = invalid,
                     m_EnableDebugging = false
@@ -152,8 +163,7 @@ namespace UnityEditor.ShaderFoundry
             List<TagDescriptor> tagDescriptors = new List<TagDescriptor>();
             List<PackageRequirement> packageRequirements;
 
-            public string DisplayName { get; set; }
-            public string ReferenceName { get; set; }
+            public string PassName { get; set; }
             public bool EnableDebugging { get; set; }
             public ShaderContainer Container => container;
 
@@ -202,17 +212,29 @@ namespace UnityEditor.ShaderFoundry
                 stageDescriptions[stageTypeIndex] = stageDescription;
             }
 
+            List<StageDescription> BuildValidStages()
+            {
+                // For a cleaner API, the stages are pre-allocated. Filter the list to only valid stages
+                var validStages = new List<StageDescription>();
+                foreach (var stage in stageDescriptions)
+                {
+                    if (stage.IsValid)
+                        validStages.Add(stage);
+                }
+                return validStages;
+            }
+
             public TemplatePass Build()
             {
                 var templatePassInternal = new TemplatePassInternal()
                 {
                     m_UsePassNameHandle = FoundryHandle.Invalid(),
-                    m_DisplayNameHandle = container.AddString(DisplayName),
-                    m_ReferenceNameHandle = container.AddString(ReferenceName),
+                    m_PassNameHandle = container.AddString(PassName),
                     m_EnableDebugging = EnableDebugging,
                 };
 
-                templatePassInternal.m_StageDescriptionListHandle = HandleListInternal.Build(container, stageDescriptions, (s) => (s.handle));
+
+                templatePassInternal.m_StageDescriptionListHandle = HandleListInternal.Build(container, BuildValidStages());
                 templatePassInternal.m_RenderStateDescriptorListHandle = HandleListInternal.Build(container, renderStateDescriptors, (o) => (o.handle));
                 templatePassInternal.m_PragmaDescriptorListHandle = HandleListInternal.Build(container, pragmaDescriptors, (o) => (o.handle));
                 templatePassInternal.m_TagDescriptorListHandle = HandleListInternal.Build(container, tagDescriptors, (o) => (o.handle));

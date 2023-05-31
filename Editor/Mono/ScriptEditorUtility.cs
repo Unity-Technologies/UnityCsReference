@@ -3,15 +3,17 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditor;
+using UnityEditor.Utils;
 
 using System;
 using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+
 using Unity.CodeEditor;
-using UnityEditor.Utils;
 
 namespace UnityEditorInternal
 {
@@ -56,6 +58,7 @@ namespace UnityEditorInternal
             return ScriptEditor.Other;
         }
 
+        [RequiredByNativeCode]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static string GetExternalScriptEditor()
         {

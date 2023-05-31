@@ -17,6 +17,5 @@ namespace UnityEditor.Web
 
         extern private static void Internal_Create([Writable] EditorProjectAccess self);
         extern public string GetProjectEditorVersion();
-        extern public string GetRESTServiceURI();
     }
 }

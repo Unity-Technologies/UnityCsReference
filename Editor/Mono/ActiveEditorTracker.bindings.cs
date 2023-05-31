@@ -207,6 +207,7 @@ namespace UnityEditor
         [FreeFunction("Internal_SetupSharedTracker")]
         static extern void SetupSharedTracker(ActiveEditorTracker sharedTracker);
 
+        [RequiredByNativeCode]
         static void Internal_OnTrackerRebuild()
         {
             if (editorTrackerRebuilt != null)

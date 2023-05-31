@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine.Bindings;
 
 namespace UnityEditor.ShaderFoundry
@@ -44,8 +43,8 @@ namespace UnityEditor.ShaderFoundry
         public PassStageType StageType => stageDescription.m_StageType;
 
         public IEnumerable<FunctionParameter> SetupVariables => stageDescription.m_SetupVariablesListHandle.AsListEnumerable<FunctionParameter>(Container, (container, handle) => (new FunctionParameter(container, handle)));
-        public IEnumerable<FunctionParameter> InputSetupVariables => SetupVariables.Where((v) => (v.IsInput));
-        public IEnumerable<FunctionParameter> OutputSetupVariables => SetupVariables.Where((v) => (v.IsOutput));
+        public IEnumerable<FunctionParameter> InputSetupVariables => SetupVariables.Select(FunctionParameterInternal.Flags.kFlagsInput);
+        public IEnumerable<FunctionParameter> OutputSetupVariables => SetupVariables.Select(FunctionParameterInternal.Flags.kFlagsOutput);
 
         public IEnumerable<BlockSequenceElement> Elements
         {

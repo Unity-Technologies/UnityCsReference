@@ -4,9 +4,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using UnityEngine.Bindings;
-using System.Runtime.InteropServices;
 
 namespace UnityEditor.ShaderFoundry
 {
@@ -67,6 +65,7 @@ namespace UnityEditor.ShaderFoundry
         }
         public bool IsInput => variable.m_Flags.HasFlag(BlockVariableInternal.Flags.kInput);
         public bool IsOutput => variable.m_Flags.HasFlag(BlockVariableInternal.Flags.kOutput);
+        internal bool HasFlag(BlockVariableInternal.Flags flags) => variable.m_Flags.HasFlag(flags);
 
         // private
         internal BlockVariable(ShaderContainer container, FoundryHandle handle)

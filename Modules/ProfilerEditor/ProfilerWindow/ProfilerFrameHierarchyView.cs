@@ -19,6 +19,7 @@ namespace UnityEditorInternal.Profiling
     {
         public const int invalidTreeViewId = -1;
         public const int invalidTreeViewDepth = -1;
+
         enum DetailedViewType
         {
             None,
@@ -32,11 +33,32 @@ namespace UnityEditorInternal.Profiling
             EditorGUIUtility.TrTextContent("Related Data"),
             EditorGUIUtility.TrTextContent("Calls")
         };
-        static readonly int[] kDetailedViewTypes = new[]
+
+        static readonly int[] kDetailedViewTypes =
         {
             (int)DetailedViewType.None,
             (int)DetailedViewType.Objects,
             (int)DetailedViewType.CallersAndCallees,
+        };
+
+        static readonly int[] cpuHierarchyColumns =
+        {
+            HierarchyFrameDataView.columnName,
+            HierarchyFrameDataView.columnTotalPercent,
+            HierarchyFrameDataView.columnSelfPercent,
+            HierarchyFrameDataView.columnCalls,
+            HierarchyFrameDataView.columnGcMemory,
+            HierarchyFrameDataView.columnTotalTime,
+            HierarchyFrameDataView.columnSelfTime,
+            HierarchyFrameDataView.columnWarningCount
+        };
+
+        static readonly int[] gpuHierarchyColumns =
+        {
+            HierarchyFrameDataView.columnName,
+            HierarchyFrameDataView.columnTotalGpuPercent,
+            HierarchyFrameDataView.columnDrawCalls,
+            HierarchyFrameDataView.columnTotalGpuTime
         };
 
         [NonSerialized]
@@ -207,7 +229,6 @@ namespace UnityEditorInternal.Profiling
         string splitter0StatePrefKey => k_SerializationPrefKeyPrefix + "Splitter.Relative[0]";
         string splitter1StatePrefKey => k_SerializationPrefKeyPrefix + "Splitter.Relative[1]";
         string detailedViewTypeStatePrefKey => k_SerializationPrefKeyPrefix + "DetailedViewTypeState";
-
         string detailedObjectsViewPrefKeyPrefix => k_SerializationPrefKeyPrefix + "DetailedObjectsView.";
         string detailedCallsViewPrefKeyPrefix => k_SerializationPrefKeyPrefix + "DetailedCallsView.";
 
@@ -227,27 +248,8 @@ namespace UnityEditorInternal.Profiling
             if (m_Initialized)
                 return;
 
-            var cpuHierarchyColumns = new[]
-            {
-                HierarchyFrameDataView.columnName,
-                HierarchyFrameDataView.columnTotalPercent,
-                HierarchyFrameDataView.columnSelfPercent,
-                HierarchyFrameDataView.columnCalls,
-                HierarchyFrameDataView.columnGcMemory,
-                HierarchyFrameDataView.columnTotalTime,
-                HierarchyFrameDataView.columnSelfTime,
-                HierarchyFrameDataView.columnWarningCount
-            };
-            var gpuHierarchyColumns = new[]
-            {
-                HierarchyFrameDataView.columnName,
-                HierarchyFrameDataView.columnTotalGpuPercent,
-                HierarchyFrameDataView.columnDrawCalls,
-                HierarchyFrameDataView.columnTotalGpuTime
-            };
             var profilerColumns = gpuView ? gpuHierarchyColumns : cpuHierarchyColumns;
             var defaultSortColumn = gpuView ? HierarchyFrameDataView.columnTotalGpuTime : HierarchyFrameDataView.columnTotalTime;
-
             var columns = CreateColumns(profilerColumns);
 
             var multiColumnHeaderStateData = SessionState.GetString(multiColumnHeaderStatePrefKey, "");
@@ -289,13 +291,14 @@ namespace UnityEditorInternal.Profiling
             if (m_DetailedObjectsView == null)
                 m_DetailedObjectsView = new ProfilerDetailedObjectsView(detailedObjectsViewPrefKeyPrefix);
             m_DetailedObjectsView.gpuView = gpuView;
+            m_DetailedObjectsView.frameItemEvent -= FrameItem;
             m_DetailedObjectsView.frameItemEvent += FrameItem;
             m_DetailedObjectsView.OnEnable(cpuModule, this);
+
             if (m_DetailedCallsView == null)
-            {
                 m_DetailedCallsView = new ProfilerDetailedCallsView(detailedCallsViewPrefKeyPrefix);
-            }
             m_DetailedCallsView.OnEnable(cpuModule, this);
+            m_DetailedCallsView.frameItemEvent -= FrameItem;
             m_DetailedCallsView.frameItemEvent += FrameItem;
             if (m_DetailedViewSpliterState == null || !m_DetailedViewSpliterState.IsValid())
                 m_DetailedViewSpliterState = SplitterState.FromRelative(new[] { SessionState.GetFloat(splitter0StatePrefKey, 70f), SessionState.GetFloat(splitter1StatePrefKey, 30f) }, new[] { 450f, 50f }, null);

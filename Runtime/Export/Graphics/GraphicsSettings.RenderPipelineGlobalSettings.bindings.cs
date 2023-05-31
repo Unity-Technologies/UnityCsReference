@@ -86,7 +86,7 @@ namespace UnityEngine.Rendering
                 return false;
 
             currentRenderPipelineGlobalSettings = Internal_GetSettingsForRenderPipeline(
-                    currentRenderPipeline.renderPipelineType?.FullName ?? string.Empty) as RenderPipelineGlobalSettings;
+                    currentRenderPipeline.pipelineType?.FullName ?? string.Empty) as RenderPipelineGlobalSettings;
 
             return currentRenderPipelineGlobalSettings != null;
         }

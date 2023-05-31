@@ -116,6 +116,7 @@ namespace UnityEditor
         }
 
         // ReSharper disable once UnusedMember.Local - invoked from native code
+        [RequiredByNativeCode]
         static void FileModeChanged(string[] assets, FileMode mode)
         {
             AssetModificationHook.FileModeChanged(assets, mode);
@@ -196,6 +197,7 @@ namespace UnityEditor
             }
         }
 
+        [RequiredByNativeCode]
         static AssetMoveResult OnWillMoveAsset(string fromPath, string toPath, string[] newPaths, string[] NewMetaPaths)
         {
             AssetMoveResult finalResult = AssetMoveResult.DidNotMove;
@@ -219,6 +221,7 @@ namespace UnityEditor
             return finalResult;
         }
 
+        [RequiredByNativeCode]
         static AssetDeleteResult OnWillDeleteAsset(string assetPath, RemoveAssetOptions options)
         {
             AssetDeleteResult finalResult = AssetDeleteResult.DidNotDelete;
@@ -246,6 +249,7 @@ namespace UnityEditor
             return finalResult;
         }
 
+        [RequiredByNativeCode]
         static void OnWillDeleteAssets(string[] assetPaths, AssetDeleteResult[] outPathDeletionResults, RemoveAssetOptions options)
         {
             for (int i = 0; i < outPathDeletionResults.Length; i++)
@@ -542,6 +546,7 @@ namespace UnityEditor
             return result;
         }
 
+        [RequiredByNativeCode]
         internal static void OnStatusUpdated()
         {
             WindowPending.OnStatusUpdated();

@@ -944,7 +944,7 @@ namespace UnityEngine.InputForUI
             public bool GetKey(KeyCode key) => UnityEngine.Input.GetKey(key);
             public bool GetKeyDown(KeyCode key) => UnityEngine.Input.GetKeyDown(key);
             public bool GetButtonDown(string button) => UnityEngine.Input.GetButtonDown(button);
-            public float GetAxisRaw(string axis) => UnityEngine.Input.GetAxis(axis);
+            public float GetAxisRaw(string axis) => UnityEngine.Input.GetAxisRaw(axis);
             public PenData GetPenEvent(int index) => UnityEngine.Input.GetPenEvent(index);
             public PenData GetLastPenContactEvent() => UnityEngine.Input.GetLastPenContactEvent();
             public bool touchSupported => UnityEngine.Input.touchSupported;

@@ -157,7 +157,11 @@ namespace Unity.UI.Builder
 
             style.display = DisplayStyle.Flex;
             parentElement = mouseOverElement.parent;
-            indexWithinParent = parentElement.IndexOf(mouseOverElement) + indexOffset;
+
+            // We don't want to store the old parent into parentElement, otherwise there will be some consequences when
+            // overriding contentContainer. We instead store it in a local copy and fetch it around when needed.
+            var correctedParentElement = BuilderHierarchyUtilities.GetToggleButtonGroupContentContainer(parentElement) ?? parentElement;
+            indexWithinParent = correctedParentElement.IndexOf(mouseOverElement) + indexOffset;
         }
 
         public void Deactivate()

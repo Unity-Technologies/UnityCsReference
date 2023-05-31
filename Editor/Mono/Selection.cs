@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Scripting;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,20 +22,20 @@ namespace UnityEditor
         [PublicAPI] // Used by packages with internal access. Not actually intended for users.
         internal static event System.Action postProcessSelectionMetadata;
 
-        [UsedImplicitly]
+        [UsedImplicitly, RequiredByNativeCode]
         private static void Internal_SelectedObjectWasDestroyed(int instanceID)
         {
             if (selectedObjectWasDestroyed != null)
                 selectedObjectWasDestroyed(instanceID);
         }
 
-        [UsedImplicitly]
+        [UsedImplicitly, RequiredByNativeCode]
         private static void Internal_PostProcessSelectionMetadata()
         {
             postProcessSelectionMetadata?.Invoke();
         }
 
-        [UsedImplicitly]
+        [UsedImplicitly, RequiredByNativeCode]
         private static void Internal_CallSelectionChanged()
         {
             foreach (var evt in m_SelectionChangedEvent.UpdateAndInvoke(selectionChanged))

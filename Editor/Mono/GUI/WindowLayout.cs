@@ -1796,6 +1796,7 @@ namespace UnityEditor
 
         // Version Control is registered from native code (EditorWindowController.cpp), for license check
         // [MenuItem ("Window/Version Control", false, 2010)]
+        [RequiredByNativeCode]
         static void ShowVersionControl()
         {
             EditorWindow.GetWindow<WindowPending>();
