@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements.UIR
     interface IMeshGenerator
     {
         VisualElement currentElement { get; set; }
-        public void DrawText(MeshInfo[] meshInfo, Vector2 offset);
+        public void DrawText(MeshInfo[] meshInfo, Vector2 offset, bool hasMultipleColors);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
@@ -624,9 +624,9 @@ namespace UnityEngine.UIElements.UIR
             m_MeshGenerationContext.entryRecorder.DrawGradients(vertices, indices, gradientsOwner);
         }
 
-        public void DrawText(MeshInfo[] meshInfo, Vector2 offset)
+        public void DrawText(MeshInfo[] meshInfo, Vector2 offset, bool hasMultipleColors)
         {
-            DrawTextInfo(meshInfo, offset, true);
+            DrawTextInfo(meshInfo, offset, !hasMultipleColors);
         }
 
         TextInfo m_TextInfo = new TextInfo(VertexDataLayout.VBO);

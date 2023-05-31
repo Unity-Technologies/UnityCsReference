@@ -4,6 +4,7 @@
 
 //#define UIR_DEBUG_CHAIN_BUILDER
 using System;
+using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Profiling;
@@ -982,11 +983,18 @@ namespace UnityEngine.UIElements.UIR
         Count
     }
 
+    [Flags]
+    enum RenderDataFlags
+    {
+        IsIgnoringDynamicColorHint = 1 << 0,
+    }
+
     internal struct RenderChainVEData
     {
         internal VisualElement prev, next; // This is a flattened view of the visual element hierarchy
         internal VisualElement groupTransformAncestor, boneTransformAncestor;
         internal VisualElement prevDirty, nextDirty; // Embedded doubly-linked list for dirty updates
+        internal RenderDataFlags flags;
         internal int hierarchyDepth; // 0 is for the root
         internal RenderDataDirtyTypes dirtiedValues;
         internal uint dirtyID;
@@ -1018,6 +1026,12 @@ namespace UnityEngine.UIElements.UIR
         internal bool pendingRepaint;
         // This is set whenever a hierarchical repaint was needed when HierarchyDisplayed == false.
         internal bool pendingHierarchicalRepaint;
+
+        public bool isIgnoringDynamicColorHint
+        {
+            [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+            get => (flags & RenderDataFlags.IsIgnoringDynamicColorHint) == RenderDataFlags.IsIgnoringDynamicColorHint;
+        }
     }
 
     struct TextureEntry

@@ -1008,6 +1008,29 @@ namespace UnityEditor
                 RaiseRevertedEvents(instanceProperty.serializedObject);
         }
 
+        internal static bool IsPropertyBeingDrivenByPrefabStage(SerializedProperty property)
+        {
+            Object target = property.serializedObject.targetObject;
+            GameObject go = GetGameObject(target);
+            if (go != null && go.scene.IsValid() && EditorSceneManager.IsPreviewScene(go.scene))
+            {
+                var prefabStage = SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
+                if (prefabStage != null && prefabStage.mode == SceneManagement.PrefabStage.Mode.InContext)
+                {
+                    var propertyPath = property.propertyPath;
+                    ScriptableObject driver = prefabStage;
+                    if (
+                        (DrivenPropertyManagerInternal.IsDriving(driver, target, propertyPath))
+                        ||
+                        ((target is Transform || target is ParticleSystem || property.propertyType == SerializedPropertyType.Color) && DrivenPropertyManagerInternal.IsDrivingPartial(driver, target, propertyPath)))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         internal static void RaiseRevertingEvents(SerializedObject serializedObject)
         {
             foreach (Object targetObject in serializedObject.targetObjects)
