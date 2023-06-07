@@ -388,6 +388,19 @@ namespace UnityEditor.Search
         /// </summary>
         public Func<string, string> resolveDocumentHandler { get; set; }
 
+        Func<IEnumerable<string>> m_FetchDefaultFilter;
+        internal Func<IEnumerable<string>> fetchDefaultFilter {
+            get => m_FetchDefaultFilter;
+            set
+            {
+                if (m_FetchDefaultFilter != value)
+                {
+                    m_RebuildFilters = true;
+                    m_FetchDefaultFilter = value;
+                }
+            }
+        }
+
         /// <summary>
         /// Minimal indexed word size.
         /// </summary>
@@ -1267,6 +1280,14 @@ namespace UnityEditor.Search
 
         void AddFilters()
         {
+            if (fetchDefaultFilter != null)
+            {
+                var defaultFilters = fetchDefaultFilter();
+                foreach (var f in defaultFilters)
+                    if (!m_QueryEngine.HasFilter(f))
+                        m_QueryEngine.AddFilter(f);
+            }
+
             foreach (var kw in m_Keywords)
             {
                 var filter = kw;

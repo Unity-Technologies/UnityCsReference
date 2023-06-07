@@ -216,7 +216,8 @@ namespace UnityEditor.Search
 
         internal void Assign(SearchViewState state)
         {
-            Assign(state, state.context);
+            // Be sure to create a copy of the context
+            Assign(state, state.context != null ? new SearchContext(state.context) : null);
         }
 
         internal void Assign(SearchViewState state, SearchContext searchContext)

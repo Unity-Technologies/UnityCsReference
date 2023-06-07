@@ -47,6 +47,8 @@ namespace UnityEditor.SceneManagement
             }
         }
 
+        internal static string s_PrefabInContextPreviewValuesTooltip = L10n.Tr("This property is previewing the overridden value on the Prefab instance.\n\nTo edit this property, open this Prefab Asset in isolation by pressing the modifier key [Alt] while you open it.");
+
         public enum Mode
         {
             InIsolation,
@@ -1942,7 +1944,8 @@ namespace UnityEditor.SceneManagement
                     if (prefabStage != null)
                         prefabStage.RefreshPatchedProperties();
                 }
-                EditorApplication.RequestRepaintAllViews();
+
+                PropertyEditor.ClearAndRebuildAll();
             }
         }
 

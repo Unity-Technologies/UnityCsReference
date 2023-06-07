@@ -43,6 +43,7 @@ namespace UnityEditor.Search
 
         public static readonly string highlightedTextColorFormat = isDarkTheme ? "<color=#F6B93F>{0}</color>" : "<b>{0}</b>";
         public static readonly string tabCountTextColorFormat = isDarkTheme ? "<color=#7B7B7B>{0}</color>" : "<color=#6A6A6A>{0}</color>";
+        public static readonly string tabCountTextColorFormatSelected = isDarkTheme ? "<color=#C9C9C9>{0}</color>" : "<color=#FFFFFF>{0}</color>";
 
         public static readonly GUIStyle panelBorder = new GUIStyle("grey_border")
         {

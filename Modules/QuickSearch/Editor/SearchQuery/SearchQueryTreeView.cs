@@ -303,7 +303,7 @@ namespace UnityEditor.Search
             if (itemCount != -1)
             {
                 string formattedCount = Utils.FormatCount(Convert.ToUInt64(itemCount));
-                itemCountContent = Utils.GUIContentTemp(string.Format(Search.Styles.tabCountTextColorFormat, formattedCount));
+                itemCountContent = Utils.GUIContentTemp(string.Format(selected ? Search.Styles.tabCountTextColorFormatSelected : Search.Styles.tabCountTextColorFormat, formattedCount));
             }
 
             var itemCountRect = new Rect(Mathf.Floor(rowRect.xMax - 27f), rowRect.y, 28f, 22f);

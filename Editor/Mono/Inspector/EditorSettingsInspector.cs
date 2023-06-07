@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Hardware;
-using UnityEditor.Collaboration;
 using UnityEngine.Assertions;
 
 namespace UnityEditor
@@ -427,21 +426,14 @@ namespace UnityEditor
             if (m_IsGlobalSettings)
                 ShowUnityRemoteGUI(editorEnabled);
 
-            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
             GUILayout.Space(10);
 
+            GUI.enabled = true;
+            GUILayout.Label(Content.assetSerialization, EditorStyles.boldLabel);
+            GUI.enabled = editorEnabled;
+
             int index = m_SerializationMode.intValue;
-            using (new EditorGUI.DisabledScope(!collabEnabled))
-            {
-                GUI.enabled = !collabEnabled;
-                GUILayout.Label(Content.assetSerialization, EditorStyles.boldLabel);
-                GUI.enabled = editorEnabled && !collabEnabled;
-                CreatePopupMenu("Mode", serializationPopupList, index, SetAssetSerializationMode);
-            }
-            if (collabEnabled)
-            {
-                EditorGUILayout.HelpBox("Asset Serialization is forced to Text when using Collaboration feature.", MessageType.Warning);
-            }
+            CreatePopupMenu("Mode", serializationPopupList, index, SetAssetSerializationMode);
 
             if (m_SerializationMode.intValue != (int)SerializationMode.ForceBinary)
             {
@@ -1017,21 +1009,8 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck() && m_IsGlobalSettings)
             {
                 EditorSettings.inspectorUseIMGUIDefaultInspector = m_InspectorUseIMGUIDefaultInspector.boolValue;
-
-                // Needs to be delayCall because it forces redrawing of UI which messes with the current IMGUI context of the Settings window.
-                EditorApplication.delayCall += ClearEditorsAndRebuildInspectors;
+                PropertyEditor.ClearAndRebuildAll();
             }
-        }
-
-        static void ClearEditorsAndRebuildInspectors()
-        {
-            // Cannot use something like EditorUtility.ForceRebuildInspectors() because this only refreshes
-            // the inspector's values and IMGUI state, but otherwise, if the target did not change we
-            // re-use the Editors. We need a special clear function to properly recreate the UI using
-            // the new setting.
-            var propertyEditors = Resources.FindObjectsOfTypeAll<PropertyEditor>();
-            foreach (var propertyEditor in propertyEditors)
-                propertyEditor.ClearEditorsAndRebuild();
         }
 
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)

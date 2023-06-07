@@ -64,8 +64,6 @@ namespace UnityEditor.Collaboration
             if (_enumerator == null)
                 return;
 
-            if (Collab.instance.AnyJobRunning())
-                return;
 
             try
             {

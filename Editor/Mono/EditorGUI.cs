@@ -154,7 +154,6 @@ namespace UnityEditor
         private static readonly GUIContent s_PositionLabel = EditorGUIUtility.TrTextContent("Position");
         private static readonly GUIContent s_SizeLabel = EditorGUIUtility.TrTextContent("Size");
         internal static GUIContent s_PleasePressAKey = EditorGUIUtility.TrTextContent("[Please press a key]");
-        private static string s_PrefabInContextPreviewValuesTooltip = L10n.Tr("This property is previewing the overridden value on the Prefab instance.\n\nTo edit this property, open this Prefab Asset in isolation by pressing the modifier key [Alt] while you open it.");
 
         internal static readonly GUIContent s_ClipingPlanesLabel = EditorGUIUtility.TrTextContent("Clipping Planes", "The distances from the Camera where rendering starts and stops.");
         internal static readonly GUIContent[] s_NearAndFarLabels = { EditorGUIUtility.TrTextContent("Near", "The closest point to the Camera where drawing occurs."), EditorGUIUtility.TrTextContent("Far", "The furthest point from the Camera that drawing occurs.") };
@@ -6760,28 +6759,11 @@ namespace UnityEditor
                 animatedColor.a *= GUI.backgroundColor.a;
                 GUI.backgroundColor = animatedColor;
             }
-            else
+            else if (PrefabUtility.IsPropertyBeingDrivenByPrefabStage(property))
             {
-                Object target = property.serializedObject.targetObject;
-                GameObject go = PrefabUtility.GetGameObject(target);
-                if (go != null && go.scene.IsValid() && EditorSceneManager.IsPreviewScene(go.scene))
-                {
-                    var prefabStage = SceneManagement.PrefabStageUtility.GetCurrentPrefabStage();
-                    if (prefabStage != null && prefabStage.mode == SceneManagement.PrefabStage.Mode.InContext)
-                    {
-                        var propertyPath = property.propertyPath;
-                        ScriptableObject driver = prefabStage;
-                        if (
-                            (DrivenPropertyManagerInternal.IsDriving(driver, target, propertyPath))
-                            ||
-                            ((target is Transform || target is ParticleSystem || property.propertyType == SerializedPropertyType.Color) && DrivenPropertyManagerInternal.IsDrivingPartial(driver, target, propertyPath)))
-                        {
-                            GUI.enabled = false;
-                            if (isCollectingTooltips)
-                                s_PropertyFieldTempContent.tooltip = s_PrefabInContextPreviewValuesTooltip;
-                        }
-                    }
-                }
+                GUI.enabled = false;
+                if (isCollectingTooltips)
+                    s_PropertyFieldTempContent.tooltip = PrefabStage.s_PrefabInContextPreviewValuesTooltip;
             }
 
             GUI.enabled &= property.editable;
