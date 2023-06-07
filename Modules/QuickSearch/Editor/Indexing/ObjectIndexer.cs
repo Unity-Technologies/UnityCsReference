@@ -607,7 +607,14 @@ namespace UnityEditor.Search
 
             foreach (var customIndexer in customIndexers)
             {
-                customIndexer(indexerTarget, this);
+                try
+                {
+                    customIndexer(indexerTarget, this);
+                }
+                catch(System.Exception e)
+                {
+                    Debug.LogError($"Error while using custom asset indexer: {e}");
+                }
             }
         }
 

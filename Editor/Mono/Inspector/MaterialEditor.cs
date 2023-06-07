@@ -2555,12 +2555,12 @@ namespace UnityEditor
 
         public void DefaultPreviewSettingsGUI()
         {
-            if (!ShaderUtil.hardwareSupportsRectRenderTexture)
+            var mat = target as Material;
+            if (!SupportRenderingPreview(mat))
                 return;
 
             Init();
 
-            var mat = target as Material;
             var viewType = GetPreviewType(mat);
             if (targets.Length > 1 || viewType == PreviewType.Mesh)
             {
@@ -2581,11 +2581,11 @@ namespace UnityEditor
 
         public sealed override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)
         {
-            if (!ShaderUtil.hardwareSupportsRectRenderTexture)
+            var mat = target as Material;
+            if (!SupportRenderingPreview(mat))
                 return null;
 
             Init();
-
 
             var previewRenderUtility = GetPreviewRendererUtility();
             EditorUtility.SetCameraAnimateMaterials(previewRenderUtility.camera, true);
@@ -2763,9 +2763,25 @@ namespace UnityEditor
                 DefaultPreviewGUI(r, background);
         }
 
-        public void DefaultPreviewGUI(Rect r, GUIStyle background)
+        private static bool SupportRenderingPreview(Material material)
         {
             if (!ShaderUtil.hardwareSupportsRectRenderTexture)
+                return false;
+
+            if (material == null)
+                return false;
+
+            var assetPath = AssetDatabase.GetAssetPath(material);
+            if (assetPath.EndsWith(".vfx", StringComparison.InvariantCultureIgnoreCase))
+                return false;
+
+            return true;
+        }
+
+        public void DefaultPreviewGUI(Rect r, GUIStyle background)
+        {
+            var mat = target as Material;
+            if (!SupportRenderingPreview(mat))
             {
                 if (Event.current.type == EventType.Repaint)
                     EditorGUI.DropShadowLabel(new Rect(r.x, r.y, r.width, 40), "Material preview \nnot available");
@@ -2774,7 +2790,6 @@ namespace UnityEditor
 
             Init();
 
-            var mat = target as Material;
             var viewType = GetPreviewType(mat);
 
             if (DoesPreviewAllowRotation(viewType))

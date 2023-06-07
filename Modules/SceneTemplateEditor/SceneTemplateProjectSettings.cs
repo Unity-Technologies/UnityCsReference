@@ -261,8 +261,8 @@ namespace UnityEditor.SceneTemplate
             });
             defaultDependencyTypeInfos.Add(new DependencyTypeInfo(typeof(SceneAsset))
             {
-                defaultInstantiationMode = TemplateInstantiationMode.Clone,
-                supportsModification = false
+                defaultInstantiationMode = TemplateInstantiationMode.Reference,
+                supportsModification = true
             });
             defaultDependencyTypeInfos.Add(new DependencyTypeInfo(typeof(GameObject))
             {

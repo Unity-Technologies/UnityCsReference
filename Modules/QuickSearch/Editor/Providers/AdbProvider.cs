@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.IO;
 
 namespace UnityEditor.Search.Providers
 {
@@ -14,7 +15,7 @@ namespace UnityEditor.Search.Providers
 
         static ObjectQueryEngine<UnityEngine.Object> m_ResourcesQueryEngine;
 
-        public static IEnumerable<string> EnumeratePaths(in string searchQuery, in Type filterType, in SearchFlags flags)
+        public static IEnumerable<int> EnumerateInstanceIDs(in string searchQuery, in Type filterType, in SearchFlags flags)
         {
             var searchFilter = new SearchFilter
             {
@@ -27,7 +28,7 @@ namespace UnityEditor.Search.Providers
             if (filterType != null && searchFilter.classNames.Length == 0)
                 searchFilter.classNames = new[] { filterType.Name };
             searchFilter.filterByTypeIntersection = true;
-            return EnumeratePaths(searchFilter);
+            return EnumerateInstanceIDs(searchFilter);
         }
 
 
@@ -38,27 +39,33 @@ namespace UnityEditor.Search.Providers
             return SearchFilter.SearchArea.InAssetsOnly;
         }
 
-        static IEnumerable<string> EnumeratePaths(SearchFilter searchFilter)
+        static IEnumerable<int> EnumerateInstanceIDs(SearchFilter searchFilter)
         {
             var rIt = AssetDatabase.EnumerateAllAssets(searchFilter);
             while (rIt.MoveNext())
             {
                 if (rIt.Current.pptrValue)
-                    yield return AssetDatabase.GetAssetPath(rIt.Current.instanceID);
+                    yield return rIt.Current.instanceID;
             }
         }
 
 
-        public static IEnumerable<string> EnumeratePaths(SearchContext context)
+        public static IEnumerable<int> EnumerateInstanceIDs(SearchContext context)
         {
             if (context.filterType == null && context.empty)
-                return Enumerable.Empty<string>();
+                return Enumerable.Empty<int>();
             if (context.userData is SearchFilter legacySearchFilter)
             {
                 legacySearchFilter.filterByTypeIntersection = true;
-                return EnumeratePaths(legacySearchFilter);
+                return EnumerateInstanceIDs(legacySearchFilter);
             }
-            return EnumeratePaths(context.searchQuery, context.filterType, context.options);
+            return EnumerateInstanceIDs(context.searchQuery, context.filterType, context.options);
+        }
+
+        public static IEnumerable<string> EnumeratePaths(SearchContext context)
+        {
+            foreach (var id in EnumerateInstanceIDs(context))
+                yield return AssetDatabase.GetAssetPath(id);
         }
 
         static Dictionary<string, UnityEngine.Object[]> s_BundleResourceObjects = new Dictionary<string, UnityEngine.Object[]>();
@@ -73,15 +80,34 @@ namespace UnityEditor.Search.Providers
         
         static IEnumerable<SearchItem> FetchItems(SearchContext context, SearchProvider provider)
         {
-            if (context.empty && context.filterType == null)
+            if (string.IsNullOrEmpty(context.searchQuery) && context.filterType == null)
                 yield break;
 
             if (m_ResourcesQueryEngine == null)
                 m_ResourcesQueryEngine = new ObjectQueryEngine();
 
             // Search asset database
-            foreach (var path in EnumeratePaths(context))
-                yield return AssetProvider.CreateItem("ADB", context, provider, context.filterType, null, path, 998, SearchDocumentFlags.Asset);
+            foreach (var id in EnumerateInstanceIDs(context))
+            {
+                var path = AssetDatabase.GetAssetPath(id);
+                var gid = GlobalObjectId.GetGlobalObjectIdSlow(id).ToString();
+                string label = null;
+                var flags = SearchDocumentFlags.Asset;
+                if (AssetDatabase.IsSubAsset(id))
+                {
+                    var obj = UnityEngine.Object.FindObjectFromInstanceID(id);
+                    var filename = Path.GetFileNameWithoutExtension(path);
+                    label = obj?.name ?? filename;
+                    path = Utils.RemoveInvalidCharsFromPath($"{filename}/{label}", ' ');
+                    flags |= SearchDocumentFlags.Nested;
+                }
+                var item = AssetProvider.CreateItem("ADB", context, provider, context.filterType, gid, path, 998, flags);
+                if (label != null)
+                {
+                    item.label = label;
+                }
+                yield return item;
+            }
 
             // Search builtin resources
             var resources = GetAllResourcesAtPath("library/unity default resources")

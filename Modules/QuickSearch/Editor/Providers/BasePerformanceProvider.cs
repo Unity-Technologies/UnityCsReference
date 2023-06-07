@@ -30,6 +30,130 @@ namespace UnityEditor.Search.Providers
             }
         }
 
+        internal readonly struct UnitTypeHandle : IEquatable<UnitTypeHandle>, IComparable<UnitTypeHandle>
+        {
+            public readonly int value;
+
+            public UnitTypeHandle(int value)
+            {
+                this.value = value;
+            }
+
+            public bool Equals(UnitTypeHandle other)
+            {
+                return value == other.value;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is UnitTypeHandle other && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                return value;
+            }
+
+            public int CompareTo(UnitTypeHandle other)
+            {
+                return value.CompareTo(other.value);
+            }
+        }
+
+        internal readonly struct ValueWithUnit : IComparable<ValueWithUnit>, IComparable
+        {
+            public readonly double value;
+            public readonly UnitTypeHandle unityTypeHandle;
+            public readonly UnitPowerType powerType;
+
+            public ValueWithUnit(double value, UnitTypeHandle unityTypeHandle, UnitPowerType unitPowerType)
+            {
+                this.value = value;
+                this.unityTypeHandle = unityTypeHandle;
+                this.powerType = unitPowerType;
+            }
+
+            public int CompareTo(ValueWithUnit other)
+            {
+                var compare = unityTypeHandle.CompareTo(other.unityTypeHandle);
+                if (compare != 0)
+                    return compare;
+                var convertedValue = ConvertToPower(value, powerType);
+                var otherConvertedValue = ConvertToPower(other.value, other.powerType);
+                var tolerance = ConvertToPower(0.0001, GetSmallestPower(powerType, other.powerType));
+                if (Math.Abs(convertedValue - otherConvertedValue) < tolerance)
+                    return 0;
+                if (convertedValue < otherConvertedValue)
+                    return -1;
+                return 1;
+            }
+
+            public int CompareTo(object obj)
+            {
+                if (obj is ValueWithUnit vwu)
+                    return CompareTo(vwu);
+                return -1;
+            }
+        }
+
+        // Keep them ordered from smallest to largest
+        internal enum UnitPowerType
+        {
+            Nano,
+            Micro,
+            Milli,
+            Centi,
+            Deci,
+            One,
+            Deca,
+            Hecto,
+            Kilo,
+            Mega,
+            Giga,
+            Tera,
+            Peta,
+        }
+
+        internal readonly struct UnitPower
+        {
+            public readonly string[] symbols;
+            public readonly UnitPowerType type;
+
+            public UnitPower(UnitPowerType powerType, params string[] symbols)
+            {
+                this.type = powerType;
+                this.symbols = symbols;
+            }
+        }
+
+        internal readonly struct UnitType
+        {
+            public readonly string suffix;
+            public readonly UnitPowerType[] supportedPowers;
+
+            public readonly UnitTypeHandle handle;
+
+            public bool unitless => string.IsNullOrEmpty(suffix);
+
+            public static UnitType unsupported = new("unsupported");
+
+            public UnitType(string suffix, params UnitPowerType[] supportedPowers)
+                : this(suffix, GetHandle(suffix), supportedPowers)
+            {}
+
+            public UnitType(string suffix, UnitTypeHandle unitTypeHandle, params UnitPowerType[] supportedPowers)
+            {
+                this.suffix = suffix ?? string.Empty;
+                this.supportedPowers = supportedPowers;
+                this.handle = unitTypeHandle;
+            }
+
+            public static UnitTypeHandle GetHandle(string typeSuffix)
+            {
+                return new UnitTypeHandle(string.IsNullOrEmpty(typeSuffix) ? 0 : typeSuffix.GetHashCode());
+            }
+        }
+
         static class Styles
         {
             public static readonly bool isDarkTheme = EditorGUIUtility.isProSkin;
@@ -45,11 +169,37 @@ namespace UnityEditor.Search.Providers
 
         protected Dictionary<int, PerformanceLimit> m_PerformanceLimits = new();
 
+        protected static readonly UnitTypeHandle k_UnitlessTypeHandle = UnitType.GetHandle(null);
+        protected Dictionary<UnitTypeHandle, UnitType> m_UnitTypes;
+        protected Dictionary<UnitPowerType, UnitPower> m_UnitPowers;
+
+        protected List<UnitType> m_SortedUnitTypes = null;
+
         protected BasePerformanceProvider(string id, string displayName)
             : base(id, displayName)
         {
             AddDefaultPerformanceLimit(samplePeakSelector, 0.5, 2);
             AddDefaultPerformanceLimit(sampleAvgSelector, 0.5, 2);
+
+            m_UnitTypes = new Dictionary<UnitTypeHandle, UnitType>();
+            m_UnitPowers = new Dictionary<UnitPowerType, UnitPower>();
+
+            AddUnitPower(UnitPowerType.Nano, "n");
+            AddUnitPower(UnitPowerType.Micro, "u", "µ");
+            AddUnitPower(UnitPowerType.Milli, "m");
+            AddUnitPower(UnitPowerType.Centi, "c");
+            AddUnitPower(UnitPowerType.Deci, "d");
+            AddUnitPower(UnitPowerType.One);
+            AddUnitPower(UnitPowerType.Deca, "da", "d");
+            AddUnitPower(UnitPowerType.Hecto, "h");
+            AddUnitPower(UnitPowerType.Kilo, "k");
+            AddUnitPower(UnitPowerType.Mega, "m");
+            AddUnitPower(UnitPowerType.Giga, "g");
+            AddUnitPower(UnitPowerType.Tera, "t");
+            AddUnitPower(UnitPowerType.Peta, "p");
+
+            // Add unitless types
+            AddUnitType(null, k_UnitlessTypeHandle, UnitPowerType.One, UnitPowerType.Kilo, UnitPowerType.Mega, UnitPowerType.Giga, UnitPowerType.Tera, UnitPowerType.Peta);
         }
 
         public abstract void Initialize();
@@ -301,102 +451,115 @@ namespace UnityEditor.Search.Providers
         {
             return GetPerformanceLimit(GetDefaultPerformanceLimitKey(selector));
         }
+
+        protected void AddUnitPower(UnitPowerType powerType, params string[] symbols)
+        {
+            var sortedSymbols = symbols.Length == 0 ? symbols : symbols.OrderByDescending(s => s.Length).ToArray();
+            var unitPower = new UnitPower(powerType, sortedSymbols);
+            m_UnitPowers.TryAdd(powerType, unitPower);
+        }
+
+        protected UnitTypeHandle AddUnitType(string suffix, UnitTypeHandle unitTypeHandle, params UnitPowerType[] supportedPowers)
+        {
+            var sortedPowerTypes = supportedPowers.OrderByDescending(p =>
+            {
+                var symbols = m_UnitPowers[p].symbols;
+                if (symbols == null || symbols.Length == 0) return 0;
+                return symbols[0].Length; // Already sorter in UnitPower.
+            });
+            var unitType = new UnitType(suffix?.ToLowerInvariant(), unitTypeHandle, sortedPowerTypes.ToArray());
+            m_UnitTypes.TryAdd(unitType.handle, unitType);
+            m_SortedUnitTypes = null;
+            return unitType.handle;
+        }
+
+        protected UnitTypeHandle AddUnitType(string suffix, params UnitPowerType[] supportedPowers)
+        {
+            var lower = suffix?.ToLowerInvariant();
+            return AddUnitType(lower, UnitType.GetHandle(lower), supportedPowers);
+        }
+
+        protected UnitTypeHandle AddUnitType(params UnitPowerType[] supportedPowers)
+        {
+            return AddUnitType(null, supportedPowers);
+        }
+
+        protected bool IsSupportedUnit(UnitTypeHandle unitTypeHandle)
+        {
+            return m_UnitTypes.ContainsKey(unitTypeHandle);
+        }
+
+        protected static bool AreUnitSameType(ValueWithUnit valueA, ValueWithUnit valueB)
+        {
+            return valueA.unityTypeHandle.Equals(valueB.unityTypeHandle);
+        }
+
+        protected UnitType GetUnitType(UnitTypeHandle unitTypeHandle)
+        {
+            return m_UnitTypes[unitTypeHandle];
+        }
+
+        protected UnitType GetUnitType(ValueWithUnit value)
+        {
+            return GetUnitType(value.unityTypeHandle);
+        }
+
+        protected static UnitPowerType GetSmallestPower(UnitPowerType powerTypeA, UnitPowerType powerTypeB)
+        {
+            if ((int)powerTypeA <= (int)powerTypeB)
+                return powerTypeA;
+            return powerTypeB;
+        }
+
+        protected void BuildSortedUnityTypesCache()
+        {
+            m_SortedUnitTypes = m_UnitTypes.Values.OrderByDescending(converter => converter.suffix.Length).ToList();
+        }
+
+        protected static double ConvertToPower(double baseValue, UnitPowerType power)
+        {
+            switch (power)
+            {
+                case UnitPowerType.Nano:
+                    return baseValue / 1e9;
+                case UnitPowerType.Micro:
+                    return baseValue / 1e6;
+                case UnitPowerType.Milli:
+                    return baseValue / 1e3;
+                case UnitPowerType.Centi:
+                    return baseValue / 100;
+                case UnitPowerType.Deci:
+                    return baseValue / 10;
+                case UnitPowerType.One:
+                    return baseValue;
+                case UnitPowerType.Deca:
+                    return baseValue * 10;
+                case UnitPowerType.Hecto:
+                    return baseValue * 100;
+                case UnitPowerType.Kilo:
+                    return baseValue * 1e3;
+                case UnitPowerType.Mega:
+                    return baseValue * 1e6;
+                case UnitPowerType.Giga:
+                    return baseValue * 1e9;
+                case UnitPowerType.Tera:
+                    return baseValue * 1e12;
+                case UnitPowerType.Peta:
+                    return baseValue * 1e15;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(power), power, null);
+            }
+        }
     }
 
     abstract class BasePerformanceProvider<TPerformanceData> : BasePerformanceProvider
     {
-        internal readonly struct ValueWithUnit
-        {
-            public readonly double value;
-            public readonly int unityTypeHandle;
-            public readonly UnitPowerType powerType;
 
-            public ValueWithUnit(double value, int unityTypeHandle, UnitPowerType unitPowerType)
-            {
-                this.value = value;
-                this.unityTypeHandle = unityTypeHandle;
-                this.powerType = unitPowerType;
-            }
-        }
-
-        // Keep them ordered from smallest to largest
-        internal enum UnitPowerType
-        {
-            Nano,
-            Micro,
-            Milli,
-            Centi,
-            Deci,
-            One,
-            Deca,
-            Hecto,
-            Kilo,
-            Mega,
-            Giga,
-            Tera,
-            Peta,
-        }
-
-        internal readonly struct UnitPower
-        {
-            public readonly string[] symbols;
-            public readonly UnitPowerType type;
-
-            public UnitPower(UnitPowerType powerType, params string[] symbols)
-            {
-                this.type = powerType;
-                this.symbols = symbols;
-            }
-        }
-
-        internal readonly struct UnitType
-        {
-            public readonly string suffix;
-            public readonly UnitPowerType[] supportedPowers;
-
-            public int handle => string.IsNullOrEmpty(suffix) ? 0 : suffix.GetHashCode();
-
-            public bool unitless => string.IsNullOrEmpty(suffix);
-
-            public static UnitType unsupported = new("unsupported");
-
-            public UnitType(string suffix, params UnitPowerType[] supportedPowers)
-            {
-                this.suffix = suffix ?? string.Empty;
-                this.supportedPowers = supportedPowers;
-            }
-        }
-
-        protected int m_UnitlessTypeHandle;
         protected QueryEngine<TPerformanceData> m_QueryEngine;
-        Dictionary<int, UnitType> m_UnitTypes;
-        Dictionary<UnitPowerType, UnitPower> m_UnitPowers;
-
-        List<UnitType> m_SortedUnitTypes = null;
 
         protected BasePerformanceProvider(string id, string displayName)
             : base(id, displayName)
-        {
-            m_UnitTypes = new Dictionary<int, UnitType>();
-            m_UnitPowers = new Dictionary<UnitPowerType, UnitPower>();
-
-            AddUnitPower(UnitPowerType.Nano, "n");
-            AddUnitPower(UnitPowerType.Micro, "u", "µ");
-            AddUnitPower(UnitPowerType.Milli, "m");
-            AddUnitPower(UnitPowerType.Centi, "c");
-            AddUnitPower(UnitPowerType.Deci, "d");
-            AddUnitPower(UnitPowerType.One);
-            AddUnitPower(UnitPowerType.Deca, "da", "d");
-            AddUnitPower(UnitPowerType.Hecto, "h");
-            AddUnitPower(UnitPowerType.Kilo, "k");
-            AddUnitPower(UnitPowerType.Mega, "m");
-            AddUnitPower(UnitPowerType.Giga, "g");
-            AddUnitPower(UnitPowerType.Tera, "t");
-            AddUnitPower(UnitPowerType.Peta, "p");
-
-            // Add unitless types
-            m_UnitlessTypeHandle = AddUnitType(UnitPowerType.One, UnitPowerType.Kilo, UnitPowerType.Mega, UnitPowerType.Giga, UnitPowerType.Tera, UnitPowerType.Peta);
-        }
+        {}
 
         public override void Initialize()
         {
@@ -467,107 +630,39 @@ namespace UnityEditor.Search.Providers
 
         protected bool CompareValuesWithUnit(ValueWithUnit perfDataValue, ValueWithUnit filterValue, FilterOperatorType op)
         {
-            if (!IsSupportedUnit(filterValue.unityTypeHandle))
+            // If both values are not the same type, bail out.
+            if (!AreUnitSameType(perfDataValue, filterValue))
                 return false;
-
-            var perfDataUnit = GetUnitType(perfDataValue);
-            var filterValueUnit = GetUnitType(filterValue);
-
-            // If we expect unitless value but don't receive one, bail out.
-            if (perfDataUnit.unitless && !filterValueUnit.unitless)
-                return false;
-            // If both values are not unitless but not the same one, bail out.
-            if (!perfDataUnit.unitless && !filterValueUnit.unitless && !AreUnitSameType(perfDataValue, filterValue))
-                return false;
-
-            // In all other cases, we only need to check the values. Convert them to their respective powers
-            // and compare them.
-            var convertedPerfValue = ConvertToPower(perfDataValue.value, perfDataValue.powerType);
-            var convertedFilterValue = ConvertToPower(filterValue.value, filterValue.powerType);
-            var tolerance = ConvertToPower(0.0001, GetSmallestPower(perfDataValue.powerType, filterValue.powerType));
 
             switch (op)
             {
                 case FilterOperatorType.Equal:
-                    return Math.Abs(convertedPerfValue - convertedFilterValue) < tolerance;
+                    return perfDataValue.CompareTo(filterValue) == 0;
                 case FilterOperatorType.NotEqual:
-                    return Math.Abs(convertedPerfValue - convertedFilterValue) > tolerance;
+                    return perfDataValue.CompareTo(filterValue) != 0;
                 case FilterOperatorType.Greater:
-                    return convertedPerfValue > convertedFilterValue;
+                    return perfDataValue.CompareTo(filterValue) > 0;
                 case FilterOperatorType.GreaterOrEqual:
-                    return convertedPerfValue >= convertedFilterValue;
+                    return perfDataValue.CompareTo(filterValue) >= 0;
                 case FilterOperatorType.Lesser:
-                    return convertedPerfValue < convertedFilterValue;
+                    return perfDataValue.CompareTo(filterValue) < 0;
                 case FilterOperatorType.LesserOrEqual:
-                    return convertedPerfValue <= convertedFilterValue;
+                    return perfDataValue.CompareTo(filterValue) <= 0;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op), op, null);
             }
         }
 
-        protected void AddUnitPower(UnitPowerType powerType, params string[] symbols)
-        {
-            var sortedSymbols = symbols.Length == 0 ? symbols : symbols.OrderByDescending(s => s.Length).ToArray();
-            var unitPower = new UnitPower(powerType, sortedSymbols);
-            m_UnitPowers.TryAdd(powerType, unitPower);
-        }
-
-        protected int AddUnitType(string suffix, params UnitPowerType[] supportedPowers)
-        {
-            var sortedPowerTypes = supportedPowers.OrderByDescending(p =>
-            {
-                var symbols = m_UnitPowers[p].symbols;
-                if (symbols == null || symbols.Length == 0) return 0;
-                return symbols[0].Length; // Already sorter in UnitPower.
-            });
-            var unitType = new UnitType(suffix?.ToLowerInvariant(), sortedPowerTypes.ToArray());
-            m_UnitTypes.TryAdd(unitType.handle, unitType);
-            m_SortedUnitTypes = null;
-            return unitType.handle;
-        }
-
-        protected int AddUnitType(params UnitPowerType[] supportedPowers)
-        {
-            return AddUnitType(null, supportedPowers);
-        }
-
-        protected bool IsSupportedUnit(int unitTypeHandle)
-        {
-            return m_UnitTypes.ContainsKey(unitTypeHandle);
-        }
-
-        protected bool AreUnitSameType(ValueWithUnit valueA, ValueWithUnit valueB)
-        {
-            return valueA.unityTypeHandle == valueB.unityTypeHandle;
-        }
-
-        protected UnitType GetUnitType(int unitTypeHandle)
-        {
-            return m_UnitTypes[unitTypeHandle];
-        }
-
-        protected UnitType GetUnitType(ValueWithUnit value)
-        {
-            return GetUnitType(value.unityTypeHandle);
-        }
-
-        protected UnitPowerType GetSmallestPower(UnitPowerType powerTypeA, UnitPowerType powerTypeB)
-        {
-            if ((int)powerTypeA <= (int)powerTypeB)
-                return powerTypeA;
-            return powerTypeB;
-        }
-
         ParseResult<ValueWithUnit> ParseFilterValue(string filterValue)
         {
             if (m_SortedUnitTypes == null)
-                BuildSortedConvertersCache();
+                BuildSortedUnityTypesCache();
 
             filterValue = filterValue.Replace(',', '.');
             filterValue = filterValue.ToLowerInvariant();
 
             var sv = filterValue.GetStringView();
-            foreach (var unitType in m_SortedUnitTypes)
+            foreach (var unitType in m_SortedUnitTypes!)
             {
                 if (!sv.EndsWith(unitType.suffix))
                     continue;
@@ -606,46 +701,6 @@ namespace UnityEditor.Search.Providers
             // Always return a success so that it doesn't generate an error but can still be filtered out.
             return new ParseResult<ValueWithUnit>(true, new ValueWithUnit(0, UnitType.unsupported.handle, UnitPowerType.One));
         }
-
-        void BuildSortedConvertersCache()
-        {
-            m_SortedUnitTypes = m_UnitTypes.Values.OrderByDescending(converter => converter.suffix.Length).ToList();
-        }
-
-        protected static double ConvertToPower(double baseValue, UnitPowerType power)
-        {
-            switch (power)
-            {
-                case UnitPowerType.Nano:
-                    return baseValue / 1e9;
-                case UnitPowerType.Micro:
-                    return baseValue / 1e6;
-                case UnitPowerType.Milli:
-                    return baseValue / 1e3;
-                case UnitPowerType.Centi:
-                    return baseValue / 100;
-                case UnitPowerType.Deci:
-                    return baseValue / 10;
-                case UnitPowerType.One:
-                    return baseValue;
-                case UnitPowerType.Deca:
-                    return baseValue * 10;
-                case UnitPowerType.Hecto:
-                    return baseValue * 100;
-                case UnitPowerType.Kilo:
-                    return baseValue * 1e3;
-                case UnitPowerType.Mega:
-                    return baseValue * 1e6;
-                case UnitPowerType.Giga:
-                    return baseValue * 1e9;
-                case UnitPowerType.Tera:
-                    return baseValue * 1e12;
-                case UnitPowerType.Peta:
-                    return baseValue * 1e15;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(power), power, null);
-            }
-        }
     }
 
     static class PerformanceWindowHelper
@@ -653,12 +708,15 @@ namespace UnityEditor.Search.Providers
         [MenuItem("Window/Analysis/Performance Markers", priority = 1272)]
         public static void OpenProvider()
         {
-            // In the future, we might want a more generic way of doing this.
-            SearchUtils.OpenWithContextualProvider(
-                null,
-                new[] { PerformanceProvider.providerId, ProfilerMarkersProvider.providerId },
-                SearchFlags.OpenContextual,
-                useExplicitProvidersAsNormalProviders: true);
+            var providerIds = new[] { PerformanceProvider.providerId, ProfilerMarkersProvider.providerId };
+            var providers = SearchService.GetProviders(providerIds).ToArray();
+            var context = SearchService.CreateContext(providers, "", SearchFlags.OpenContextual);
+            context.useExplicitProvidersAsNormalProviders = true;
+            var columns = new[] { new SearchColumn("Name", "label") }.Concat(providers[1].fetchColumns(context, null));
+            var tableConfig = new SearchTable("perf", columns);
+            var viewState = new SearchViewState(context, tableConfig);
+            viewState.itemSize = (float)DisplayMode.Table;
+            SearchService.ShowWindow(viewState);
         }
     }
 }

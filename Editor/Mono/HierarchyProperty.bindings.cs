@@ -202,7 +202,7 @@ namespace UnityEditor
         // 4.0 interface (made internal for now)
         internal void SetSearchFilter(SearchFilter filter)
         {
-            SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, filter.versionControlStates, filter.softLockControlStates, filter.referencingInstanceIDs, filter.sceneHandles, filter.GlobToRegex().ToArray(), filter.showAllHits, filter.importLogFlags, filter.filterByTypeIntersection);
+            SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, new string[0], new string[0], filter.referencingInstanceIDs, filter.sceneHandles, filter.GlobToRegex().ToArray(), filter.showAllHits, filter.importLogFlags, filter.filterByTypeIntersection);
         }
 
         internal void CopySearchFilterFrom(HierarchyProperty other)

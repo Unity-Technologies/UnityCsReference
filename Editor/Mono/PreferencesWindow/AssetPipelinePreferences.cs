@@ -299,22 +299,7 @@ namespace UnityEditor
 
         void DoAutoRefreshMode()
         {
-            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
-            using (new EditorGUI.DisabledScope(collabEnabled))
-            {
-                if (collabEnabled)
-                {
-                    // Don't keep toggle value in m_AutoRefresh since we don't want to save the overwritten value
-                    EditorGUILayout.EnumPopup(Properties.autoRefresh, AssetPipelineAutoRefreshMode.Enabled);
-
-                    EditorGUILayout.Toggle(Properties.autoRefresh, true);
-                    EditorGUILayout.HelpBox(Properties.autoRefreshHelpBox);
-                }
-                else
-                {
-                    m_AutoRefresh = (AssetPipelineAutoRefreshMode)EditorGUILayout.EnumPopup(Properties.autoRefresh, m_AutoRefresh);
-                }
-            }
+            m_AutoRefresh = (AssetPipelineAutoRefreshMode)EditorGUILayout.EnumPopup(Properties.autoRefresh, m_AutoRefresh);
         }
 
         void DoImportWorkerCount()

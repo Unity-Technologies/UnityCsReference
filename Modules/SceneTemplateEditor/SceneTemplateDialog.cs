@@ -550,11 +550,13 @@ namespace UnityEditor.SceneTemplate
             }
             else
             {
-                var infoObj = new SerializedObject(info.sceneTemplate);
-                var prop = infoObj.FindProperty("addToDefaults");
-                prop.boolValue = isPinned;
-                infoObj.ApplyModifiedProperties();
-                OnSceneTemplateAssetModified(info.sceneTemplate);
+                using (var infoObj = new SerializedObject(info.sceneTemplate))
+                {
+                    var prop = infoObj.FindProperty("addToDefaults");
+                    prop.boolValue = isPinned;
+                    infoObj.ApplyModifiedProperties();
+                    OnSceneTemplateAssetModified(info.sceneTemplate);
+                }
             }
         }
 

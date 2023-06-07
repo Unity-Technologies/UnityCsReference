@@ -378,24 +378,26 @@ namespace UnityEditor.Search.Providers
                 .Select(kw => new SearchProposition(category: null, label: kw));
         }
 
+        static string[] s_DefaultFilters = new[] { "t", "a", "l", "prefab", "b", "is", "tag", "dir", "size", "ext", "age", "name", "ref" };
+        private static IEnumerable<string> PopulateDefaultFilters()
+        {
+            return s_DefaultFilters;
+        }
+
         private static IEnumerable<SearchProposition> FetchQueryBuilderPropositions()
         {
+            foreach (var p in QueryAndOrBlock.BuiltInQueryBuilderPropositions())
+                yield return p;
             foreach (var p in SearchUtils.FetchTypePropositions<Object>())
                 yield return p;
 
             foreach (var p in FetchIndexPropositions())
                 yield return p;
 
-            foreach (var p in QueryAndOrBlock.BuiltInQueryBuilderPropositions())
-                yield return p;
-
-
             foreach (var l in QueryListBlockAttribute.GetPropositions(typeof(QueryLabelBlock)))
                 yield return l;
-
             foreach (var l in QueryListBlockAttribute.GetPropositions(typeof(QueryPrefabFilterBlock)))
                 yield return l;
-
             foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryBundleFilterBlock)))
                 yield return f;
 
@@ -546,6 +548,7 @@ namespace UnityEditor.Search.Providers
             }
 
             var index = db.index;
+            index.fetchDefaultFilter = PopulateDefaultFilters;
             var results = new System.Collections.Concurrent.ConcurrentBag<SearchResult>();
             var searchTask = System.Threading.Tasks.Task.Run(() =>
             {
