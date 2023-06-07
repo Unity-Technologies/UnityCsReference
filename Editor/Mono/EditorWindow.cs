@@ -249,7 +249,7 @@ namespace UnityEditor
                 else if (attr.useTypeNameAsIconName)
                     iconName = t.ToString();
 
-                if (!string.IsNullOrEmpty(iconName))
+                if (!string.IsNullOrEmpty(iconName) && EditorGUIUtility.LoadIcon(iconName))
                 {
                     // This should error msg if icon is not found since icon has been explicitly requested by the user
                     return EditorGUIUtility.TrTextContentWithIcon(attr.title, iconName);
@@ -695,6 +695,26 @@ namespace UnityEditor
             }
         }
 
+        static void AssignTitle(EditorWindow win, string title)
+        {
+            if (title != null)
+            {
+                win.titleContent = new GUIContent(title);
+                return;
+            }
+
+            // Do not assign anything new if the user has defined its own title.
+            var titleContent = GetLocalizedTitleContentFromType(win.GetType());
+            if (win.titleContent.text == win.GetType().ToString())
+            {
+                win.titleContent.text = titleContent.text;
+            }
+            if (win.titleContent.image == null)
+            {
+                win.titleContent.image = titleContent.image;
+            }
+        }
+
         // Returns the first EditorWindow of type /t/ which is currently on the screen.
         static EditorWindow GetWindowPrivate(System.Type t, bool utility, string title, bool focus)
         {
@@ -704,8 +724,7 @@ namespace UnityEditor
             if (!win)
             {
                 win = ScriptableObject.CreateInstance(t) as EditorWindow;
-                if (title != null)
-                    win.titleContent = new GUIContent(title);
+                AssignTitle(win, title);
                 if (utility)
                     win.ShowUtility();
                 else
@@ -828,8 +847,7 @@ namespace UnityEditor
         {
             T win = CreateInstance<T>();
 
-            if (title != null)
-                win.titleContent =  new GUIContent(title);
+            AssignTitle(win, title);
 
             //Iterate the desired dock next to types...
             foreach (var desired in desiredDockNextTo)
@@ -896,8 +914,7 @@ namespace UnityEditor
                 win.minSize = new Vector2(rect.width, rect.height);
                 win.maxSize = new Vector2(rect.width, rect.height);
                 win.position = rect;
-                if (title != null)
-                    win.titleContent = new GUIContent(title);
+                AssignTitle(win, title);
                 if (utility)
                     win.ShowUtility();
                 else
@@ -942,8 +959,7 @@ namespace UnityEditor
                 window.minSize = new Vector2(rect.width, rect.height);
                 window.maxSize = new Vector2(rect.width, rect.height);
                 window.position = rect;
-                if (title != null)
-                    window.titleContent = new GUIContent(title);
+                AssignTitle(window, title);
                 if (utility)
                     window.ShowUtility();
                 else

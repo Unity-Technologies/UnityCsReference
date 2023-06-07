@@ -498,12 +498,15 @@ namespace UnityEditor.UIElements.Bindings
         internal void UpdateRevision()
         {
             var previousRevision = lastRevision;
-            lastRevision = serializedObject.objectVersion;
-
-            if (previousRevision != lastRevision)
+            if (IsValid())
             {
-                UpdateValidProperties();
-                UpdateTrackedValues();
+                lastRevision = serializedObject.objectVersion;
+
+                if (previousRevision != lastRevision)
+                {
+                    UpdateValidProperties();
+                    UpdateTrackedValues();
+                }
             }
         }
 

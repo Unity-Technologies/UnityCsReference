@@ -11,6 +11,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using UnityEngine;
+using UnityEditorInternal;
 
 namespace UnityEditor.Search.Providers
 {
@@ -23,6 +24,8 @@ namespace UnityEditor.Search.Providers
         Glob = 1 << 2,
         Fuzzy = 1 << 3,
         Exact = 1 << 15,
+        FileName = 1 << 16,
+        NoExtension = 1 << 17,
         Packages = 1 << 28,
         All = Words | Regex | Glob | Fuzzy | Packages,
 
@@ -128,7 +131,8 @@ namespace UnityEditor.Search.Providers
             {
                 options |= FindOptions.Packages;
             }
-            roots = roots ?? GetRoots(options);
+            if (roots == null || roots.Count() == 0)
+                roots = GetRoots(options);
 
             var results = new ConcurrentBag<SearchDocument>();
             var searchTask = Task.Run(() =>
@@ -162,29 +166,18 @@ namespace UnityEditor.Search.Providers
                 }
                 else
                 {
-                    var docsBag = new ConcurrentBag<SearchDocument>();
                     var foundFiles = new ConcurrentDictionary<SearchDocument, byte>();
                     var baseScore = isPackage ? 1 : 0;
-                    var scanFileTask = Task.Run(() =>
-                    {
-                        var files = Directory.EnumerateFiles(root, "*.meta", SearchOption.AllDirectories);
-                        foreach (var f in files)
-                        {
-                            var p = f.Substring(0, f.Length - 5).Replace("\\", "/");
-                            var doc = new SearchDocument(p, null, null, baseScore, SearchDocumentFlags.Asset);
-                            if (foundFiles.TryAdd(doc, 0))
-                                docsBag.Add(doc);
-                        }
-                    });
 
-                    while (docsBag.Count > 0 || !scanFileTask.Wait(1) || docsBag.Count > 0)
+                    var files = Directory.EnumerateFiles(root, "*.meta", SearchOption.AllDirectories);
+                    foreach (var f in files)
                     {
-                        while (docsBag.TryTake(out var e))
-                            yield return e;
-
-                        if (scanFileTask.IsFaulted || scanFileTask.IsCanceled)
-                            yield break;
+                        var p = f.Substring(0, f.Length - 5).Replace("\\", "/");
+                        var doc = new SearchDocument(p, null, null, baseScore, SearchDocumentFlags.Asset);
+                        if (foundFiles.TryAdd(doc, 0))
+                            yield return doc;
                     }
+
                     s_RootFilePaths.TryAdd(root, foundFiles);
                 }
             }
@@ -205,7 +198,7 @@ namespace UnityEditor.Search.Providers
                 try
                 {
                     var match = SearchFile(doc.name, word, options, rxm, globRx, out var score) ||
-                        (!string.IsNullOrEmpty(doc.m_Source) && SearchFile(doc.m_Source, word, options, rxm, globRx, out score));
+                        (!string.IsNullOrEmpty(doc.m_Source) && doc.m_Source != doc.name && SearchFile(doc.m_Source, word, options, rxm, globRx, out score));
                     if (!exclude && match)
                         results.Add(new SearchDocument(doc, ComputeResultScore(score, doc.name)));
                     else if (exclude && !match)
@@ -229,9 +222,29 @@ namespace UnityEditor.Search.Providers
             return score;
         }
 
+        internal static string ProcessFilePath(string path, FindOptions options)
+        {
+            if (options.HasAll(FindOptions.FileName | FindOptions.NoExtension))
+            {
+                return Path.GetFileNameWithoutExtension(path);
+            }
+            else if (options.HasFlag(FindOptions.FileName))
+            {
+                return Path.GetFileName(path);
+            }
+            else if(options.HasFlag(FindOptions.NoExtension))
+            {
+                var ext = Path.GetExtension(path);
+                return string.IsNullOrEmpty(ext) ? path : path.Substring(0, path.Length - ext.Length);
+            }
+
+            return path;
+        }
+
         private static bool SearchFile(string f, string word, FindOptions options, in Regex rxm, in Regex globRx, out int score)
         {
             score = 0;
+            f = ProcessFilePath(f, options);
 
             if (options.HasAny(FindOptions.Words))
             {
@@ -288,15 +301,23 @@ namespace UnityEditor.Search.Providers
         {
             {
                 var results = new ConcurrentBag<SearchDocument>();
-                var searchTask = Task.Run(() => SearchWord(exclude, word, options, documents, results));
-
-                while (results.Count > 0 || !searchTask.Wait(1) || results.Count > 0)
+                if (InternalEditorUtility.CurrentThreadIsMainThread())
                 {
+                    var searchTask = Task.Run(() => SearchWord(exclude, word, options, documents, results));
+                    while (results.Count > 0 || !searchTask.Wait(1) || results.Count > 0)
+                    {
+                        while (results.TryTake(out var e))
+                            yield return e;
+
+                        if (searchTask.IsFaulted || searchTask.IsCanceled)
+                            break;
+                    }
+                }
+                else
+                {
+                    SearchWord(exclude, word, options, documents, results);
                     while (results.TryTake(out var e))
                         yield return e;
-
-                    if (searchTask.IsFaulted || searchTask.IsCanceled)
-                        break;
                 }
             }
         }

@@ -125,5 +125,7 @@ namespace UnityEngine.Rendering
                 currentPipeline = s_CurrentPipelineAsset.InternalCreatePipeline();
             }
         }
+
+        public static bool pipelineSwitchCompleted => ReferenceEquals(s_CurrentPipelineAsset, GraphicsSettings.currentRenderPipeline);
     }
 }

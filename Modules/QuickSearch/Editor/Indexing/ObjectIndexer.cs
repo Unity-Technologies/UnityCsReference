@@ -83,10 +83,8 @@ namespace UnityEditor.Search
                     yield return r;
 
                 var baseScore = settings.baseScore;
-                var options = FindOptions.Words | FindOptions.Regex | FindOptions.Glob;
-                if (op == SearchIndexOperator.Equal)
-                    options = FindOptions.Exact;
-                else if (m_DoFuzzyMatch)
+                var options = FindOptions.Words | FindOptions.Glob | FindOptions.Regex | FindOptions.FileName;
+                if (m_DoFuzzyMatch)
                     options |= FindOptions.Fuzzy;
 
                 var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
@@ -231,9 +229,14 @@ namespace UnityEditor.Search
         /// <param name="scoreModifier">Modified to apply to the base score for a specific word.</param>
         public void IndexWord(int documentIndex, in string word, int maxVariations, bool exact, int scoreModifier = 0)
         {
+            IndexWord(documentIndex, word, minWordIndexationLength, maxVariations, exact, scoreModifier);
+        }
+
+        internal void IndexWord(int documentIndex, in string word, int minVariations, int maxVariations, bool exact, int scoreModifier = 0)
+        {
             var lword = word.ToLowerInvariant();
             var modifiedScore = settings.baseScore + scoreModifier;
-            AddWord(lword, minWordIndexationLength, maxVariations, modifiedScore, documentIndex);
+            AddWord(lword, minVariations, maxVariations, modifiedScore, documentIndex);
             if (exact)
                 AddExactWord(lword, modifiedScore, documentIndex);
         }
@@ -269,6 +272,12 @@ namespace UnityEditor.Search
             }
             else
                 AddProperty(name, valueLower, settings.baseScore, documentIndex, saveKeyword: saveKeyword);
+        }
+
+        internal void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, bool exact)
+        {
+            IndexProperty(documentIndex, name, value, saveKeyword, exact);
+            MapProperty(name, name, name, typeof(TProperty).Name, typeof(TPropertyOwner).AssemblyQualifiedName, removeNestedKeys: true);
         }
 
         /// <summary>
@@ -328,18 +337,8 @@ namespace UnityEditor.Search
             using (var so = new SerializedObject(obj))
             {
                 var p = so.GetIterator();
-                var next = p.NextVisible(true);
-                while (next)
-                {
-                    if (p.isValid)
-                    {
-                        var fieldName = p.displayName.Replace("m_", "").Replace(" ", "").ToLowerInvariant();
-                        if (p.propertyPath[p.propertyPath.Length - 1] != ']')
-                            IndexProperty(documentIndex, fieldName, p);
-                    }
-
-                    next = p.NextVisible(ShouldIndexChildren(p, recursive));
-                }
+                const int maxDepth = 1;
+                IndexProperties(documentIndex, p, recursive, maxDepth);
             }
         }
 
@@ -371,7 +370,35 @@ namespace UnityEditor.Search
             return p.hasVisibleChildren;
         }
 
-        private void IndexProperty(in int documentIndex, in string fieldName, in SerializedProperty p)
+        static string GetFieldName(string propertyName)
+        {
+            return propertyName.Replace("m_", "").Replace(" ", "").ToLowerInvariant();
+        }
+
+        static Func<SerializedProperty, bool> s_IndexAllPropertiesFunc = p => true;
+
+        internal void IndexProperties(int documentIndex, in SerializedProperty p, bool recursive, int maxDepth)
+        {
+            IndexProperties(documentIndex, p, recursive, maxDepth, s_IndexAllPropertiesFunc);
+        }
+
+        internal void IndexProperties(int documentIndex, in SerializedProperty p, bool recursive, int maxDepth, Func<SerializedProperty, bool> shouldContinueIterating)
+        {
+            var next = p.NextVisible(true);
+            while (next)
+            {
+                if (p.isValid)
+                {
+                    var fieldName = GetFieldName(p.displayName);
+                    if (p.propertyPath[p.propertyPath.Length - 1] != ']')
+                        IndexProperty(documentIndex, fieldName, p, maxDepth);
+                }
+
+                next = shouldContinueIterating(p) && p.NextVisible(ShouldIndexChildren(p, recursive));
+            }
+        }
+
+        internal void IndexProperty(in int documentIndex, in string fieldName, in SerializedProperty p, int maxDepth)
         {
             if (ignoredProperties.Contains(fieldName))
                 return;
@@ -385,7 +412,7 @@ namespace UnityEditor.Search
                 LogProperty(fieldName, p, p.arraySize);
             }
 
-            if (p.depth > 1)
+            if (p.depth > maxDepth)
                 return;
 
             switch (p.propertyType)
@@ -522,7 +549,7 @@ namespace UnityEditor.Search
                 IndexProperty(documentIndex, "ref", assetPath, saveKeyword: false, exact: true);
             if (settings.options.properties)
             {
-                IndexPropertyStringComponents(documentIndex, propertyName, Path.GetFileNameWithoutExtension(objRef.name ?? assetPath));
+                IndexPropertyStringComponents(documentIndex, propertyName, Path.GetFileNameWithoutExtension(Utils.RemoveInvalidCharsFromPath(objRef.name ?? assetPath, '_')));
                 if (label != null && ownerPropertyType != null)
                     MapProperty(propertyName, label, null, objRef.GetType().AssemblyQualifiedName, ownerPropertyType.AssemblyQualifiedName, false);
             }
@@ -580,7 +607,14 @@ namespace UnityEditor.Search
 
             foreach (var customIndexer in customIndexers)
             {
-                customIndexer(indexerTarget, this);
+                try
+                {
+                    customIndexer(indexerTarget, this);
+                }
+                catch(System.Exception e)
+                {
+                    Debug.LogError($"Error while using custom asset indexer: {e}");
+                }
             }
         }
 

@@ -25,6 +25,7 @@ namespace UnityEditor.Search
         private bool m_Disposed = false;
         private readonly List<SearchProvider> m_Providers;
         private readonly List<SearchQueryError> m_QueryErrors = new List<SearchQueryError>();
+        private bool m_UseExplicitProvidersAsNormalProviders;
 
         /// <summary>
         /// This special constructor is used to create dummy context for default providers.
@@ -298,7 +299,7 @@ namespace UnityEditor.Search
                 if (m_Providers.Count == 1)
                     return m_Providers;
 
-                return m_Providers.Where(p => !p.isExplicitProvider);
+                return m_Providers.Where(p => !p.isExplicitProvider || useExplicitProvidersAsNormalProviders);
             }
         }
 
@@ -317,13 +318,13 @@ namespace UnityEditor.Search
             UpdateProviders(() => m_Providers.Remove(provider));
         }
 
-        internal void SetProviders(IEnumerable<SearchProvider> providers = null)
+        internal void SetProviders(IEnumerable<SearchProvider> newProviders = null)
         {
             UpdateProviders(() =>
             {
                 m_Providers.Clear();
-                if (providers != null)
-                    m_Providers.AddRange(FilterProviders(providers));
+                if (newProviders != null)
+                    m_Providers.AddRange(FilterProviders(newProviders));
             });
         }
 
@@ -364,6 +365,12 @@ namespace UnityEditor.Search
         /// Can be null
         /// </summary>
         public string filterId { get; private set; }
+        
+        internal bool useExplicitProvidersAsNormalProviders
+        {
+            get => m_UseExplicitProvidersAsNormalProviders;
+            set => m_UseExplicitProvidersAsNormalProviders = value;
+        }
 
         /// <summary>
         /// This event is used to receive any async search result.
