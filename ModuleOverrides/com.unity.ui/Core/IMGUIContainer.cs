@@ -15,8 +15,8 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class IMGUIContainer : VisualElement, IDisposable
     {
-        internal static readonly DataBindingProperty cullingEnabledProperty = nameof(cullingEnabled);
-        internal static readonly DataBindingProperty contextTypeProperty = nameof(contextType);
+        internal static readonly BindingId cullingEnabledProperty = nameof(cullingEnabled);
+        internal static readonly BindingId contextTypeProperty = nameof(contextType);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData

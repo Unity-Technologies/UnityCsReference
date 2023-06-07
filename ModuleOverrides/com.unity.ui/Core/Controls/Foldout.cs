@@ -18,8 +18,8 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class Foldout : BindableElement, INotifyValueChanged<bool>
     {
-        internal static readonly DataBindingProperty textProperty = nameof(text);
-        internal static readonly DataBindingProperty valueProperty = nameof(value);
+        internal static readonly BindingId textProperty = nameof(text);
+        internal static readonly BindingId valueProperty = nameof(value);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData

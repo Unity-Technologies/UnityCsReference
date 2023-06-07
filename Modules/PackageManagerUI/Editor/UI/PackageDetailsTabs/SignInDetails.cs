@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(container);
 
             container.Add(new Label(k_Message));
-            container.Add(new Button(OnSignInButtonClicked) { text = k_ButtonText });
+            container.Add(new DropdownButton(OnSignInButtonClicked) { text = k_ButtonText });
         }
 
         private void OnSignInButtonClicked()

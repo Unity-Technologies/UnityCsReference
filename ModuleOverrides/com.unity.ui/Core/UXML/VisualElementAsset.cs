@@ -60,7 +60,7 @@ namespace UnityEngine.UIElements
         public bool hasStylesheets => m_Stylesheets != null;
 
         [SerializeReference]
-        private UxmlSerializedData m_SerializedData;
+        internal UxmlSerializedData m_SerializedData;
 
         public UxmlSerializedData serializedData
         {
@@ -130,6 +130,6 @@ namespace UnityEngine.UIElements
             return ve;
         }
 
-        public override string ToString() => $"{m_Name}({fullTypeName})";
+        public override string ToString() => $"{m_Name}({fullTypeName})({id})";
     }
 }

@@ -34,7 +34,9 @@ namespace UnityEngine.UIElements
         {
             if (treeView.bindItem == null)
             {
-                if (treeView.makeItem != null)
+                var isMakeItemSet = treeView.makeItem != null;
+
+                if (isMakeItemSet)
                     throw new NotImplementedException("You must specify bindItem if makeItem is specified.");
 
                 var label = (Label)element;

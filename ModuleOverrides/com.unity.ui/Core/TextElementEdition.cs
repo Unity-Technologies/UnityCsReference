@@ -129,13 +129,13 @@ namespace UnityEngine.UIElements
     // Text editing and selection management implementation
     public partial class TextElement : ITextEdition
     {
-        internal static readonly DataBindingProperty autoCorrectionProperty = nameof(autoCorrection);
-        internal static readonly DataBindingProperty hideMobileInputProperty = nameof(hideMobileInput);
-        internal static readonly DataBindingProperty keyboardTypeProperty = nameof(keyboardType);
-        internal static readonly DataBindingProperty isReadOnlyProperty = nameof(isReadOnly);
-        internal static readonly DataBindingProperty isPasswordProperty = nameof(isPassword);
-        internal static readonly DataBindingProperty maxLengthProperty = nameof(maxLength);
-        internal static readonly DataBindingProperty maskCharProperty = nameof(maskChar);
+        internal static readonly BindingId autoCorrectionProperty = nameof(autoCorrection);
+        internal static readonly BindingId hideMobileInputProperty = nameof(hideMobileInput);
+        internal static readonly BindingId keyboardTypeProperty = nameof(keyboardType);
+        internal static readonly BindingId isReadOnlyProperty = nameof(isReadOnly);
+        internal static readonly BindingId isPasswordProperty = nameof(isPassword);
+        internal static readonly BindingId maxLengthProperty = nameof(maxLength);
+        internal static readonly BindingId maskCharProperty = nameof(maskChar);
 
         /// <summary>
         /// Retrieves this TextElement's ITextEdition

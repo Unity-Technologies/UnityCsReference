@@ -758,7 +758,7 @@ namespace Unity.UI.Builder
 
         void OnLeakedMouseClick(MouseDownEvent evt)
         {
-            if (!(evt.target is ScrollView))
+            if (!(evt.elementTarget is ScrollView))
                 return;
 
             m_TreeView.ClearSelection();

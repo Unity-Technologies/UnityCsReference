@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Unity.CommandStateObserver
 {
@@ -13,36 +12,42 @@ namespace Unity.CommandStateObserver
     /// </summary>
     abstract class StateObserver : IInternalStateObserver_Internal, IStateObserver
     {
-        List<(IStateComponent, StateComponentVersion)> m_ObservedComponentVersions;
+        List<IStateComponent> m_ObservedStateComponents;
+        List<StateComponentVersion> m_ObservedComponentVersions;
         List<IStateComponent> m_ModifiedStateComponents;
 
         /// <summary>
         /// The state components observed by the observer.
         /// </summary>
-        public IEnumerable<IStateComponent> ObservedStateComponents => m_ObservedComponentVersions.Select(t => t.Item1);
+        public IReadOnlyList<IStateComponent> ObservedStateComponents => m_ObservedStateComponents;
 
         /// <summary>
         /// The state components that can be modified by the observer.
         /// </summary>
-        public IEnumerable<IStateComponent> ModifiedStateComponents => m_ModifiedStateComponents;
+        public IReadOnlyList<IStateComponent> ModifiedStateComponents => m_ModifiedStateComponents;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StateObserver" /> class.
         /// </summary>
         /// <param name="observedStateComponents">The names of the observed state components.</param>
         protected StateObserver(params IStateComponent[] observedStateComponents)
-            : this(observedStateComponents, Enumerable.Empty<IStateComponent>()) {}
+            : this(observedStateComponents, Array.Empty<IStateComponent>()) {}
 
         /// <summary>
         /// Initializes a new instance of the <see cref="StateObserver" /> class.
         /// </summary>
         /// <param name="observedStateComponents">The names of the observed state components.</param>
         /// <param name="modifiedStateComponents">The names of the modified state components.</param>
-        protected StateObserver(IEnumerable<IStateComponent> observedStateComponents, IEnumerable<IStateComponent> modifiedStateComponents)
+        protected StateObserver(IStateComponent[] observedStateComponents, IStateComponent[] modifiedStateComponents)
         {
-            m_ObservedComponentVersions = new List<(IStateComponent, StateComponentVersion)>(
-                observedStateComponents.Distinct().Select<IStateComponent, (IStateComponent, StateComponentVersion)>(s => (s, default)));
-            m_ModifiedStateComponents = modifiedStateComponents.Distinct().ToList();
+            m_ObservedStateComponents = new List<IStateComponent>();
+            m_ObservedStateComponents.AddFewDistinct_Internal(observedStateComponents);
+
+            m_ObservedComponentVersions = new List<StateComponentVersion>(m_ObservedStateComponents.Count);
+            m_ObservedComponentVersions.Fill(default, m_ObservedStateComponents.Count);
+
+            m_ModifiedStateComponents = new List<IStateComponent>();
+            m_ModifiedStateComponents.AddFewDistinct_Internal(modifiedStateComponents);
         }
 
         /// <summary>
@@ -52,8 +57,8 @@ namespace Unity.CommandStateObserver
         /// <returns>Returns the last observed component version of <paramref name="stateComponent"/>.</returns>
         StateComponentVersion IInternalStateObserver_Internal.GetLastObservedComponentVersion_Internal(IStateComponent stateComponent)
         {
-            var index = m_ObservedComponentVersions.FindIndex(v => v.Item1 == stateComponent);
-            return index >= 0 ? m_ObservedComponentVersions[index].Item2 : default;
+            var index = m_ObservedStateComponents.IndexOf(stateComponent);
+            return index >= 0 ? m_ObservedComponentVersions[index] : default;
         }
 
         /// <summary>
@@ -63,9 +68,9 @@ namespace Unity.CommandStateObserver
         /// <param name="newVersion">The new version.</param>
         void IInternalStateObserver_Internal.UpdateObservedVersion_Internal(IStateComponent stateComponent, StateComponentVersion newVersion)
         {
-            var index = m_ObservedComponentVersions.FindIndex(v => v.Item1 == stateComponent);
+            var index = m_ObservedStateComponents.IndexOf(stateComponent);
             if (index >= 0)
-                m_ObservedComponentVersions[index] = (stateComponent, newVersion);
+                m_ObservedComponentVersions[index] = newVersion;
         }
 
         /// <summary>

@@ -5,7 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Profiling;
+using UnityEngine.Bindings;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore.LowLevel;
 
@@ -262,6 +264,7 @@ namespace UnityEngine.TextCore.Text
                 return m_CharacterLookupDictionary;
             }
         }
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal Dictionary<uint, Character> m_CharacterLookupDictionary;
 
 
@@ -1561,11 +1564,18 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         /// <param name="unicode"></param>
         /// <returns></returns>
-        internal uint GetGlyphIndex(uint unicode)
+        internal uint GetGlyphIndex(uint unicode, out bool success)
         {
+            success = true;
             // Check if glyph already exists in font asset.
             if (m_CharacterLookupDictionary.ContainsKey(unicode))
                 return m_CharacterLookupDictionary[unicode].glyphIndex;
+
+            if (JobsUtility.IsExecutingJob)
+            {
+                success = false;
+                return 0;
+            }
 
             // Load font face.
             return LoadFontFace() == FontEngineError.Success ? FontEngine.GetGlyphIndex(unicode) : 0;
@@ -1656,9 +1666,7 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        /// <summary>
-        ///
-        /// </summary>
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal static void UpdateFontAssetsInUpdateQueue()
         {
             UpdateAtlasTexturesInQueue();

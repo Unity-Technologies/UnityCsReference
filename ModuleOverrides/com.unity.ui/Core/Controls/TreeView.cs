@@ -33,15 +33,28 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class TreeView : BaseTreeView
     {
-        internal static readonly DataBindingProperty makeItemProperty = nameof(makeItem);
-        internal static readonly DataBindingProperty bindItemProperty = nameof(bindItem);
-        internal static readonly DataBindingProperty unbindItemProperty = nameof(unbindItem);
-        internal static readonly DataBindingProperty destroyItemProperty = nameof(destroyItem);
+        internal static readonly BindingId itemTemplateProperty = nameof(itemTemplate);
+        internal static readonly BindingId makeItemProperty = nameof(makeItem);
+        internal static readonly BindingId bindItemProperty = nameof(bindItem);
+        internal static readonly BindingId unbindItemProperty = nameof(unbindItem);
+        internal static readonly BindingId destroyItemProperty = nameof(destroyItem);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseTreeView.UxmlSerializedData
         {
+            #pragma warning disable 649
+            [SerializeField] private VisualTreeAsset itemTemplate;
+            #pragma warning restore 649
+
             public override object CreateInstance() => new TreeView();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (TreeView) obj;
+                e.itemTemplate = itemTemplate;
+            }
         }
 
         /// <summary>
@@ -58,7 +71,21 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This class defines the TreeView element properties that you can use in a UI document asset (UXML file).
         /// </remarks>
-        public new class UxmlTraits : BaseTreeView.UxmlTraits {}
+        public new class UxmlTraits : BaseTreeView.UxmlTraits
+        {
+            UxmlAssetAttributeDescription<VisualTreeAsset> m_ItemTemplate = new UxmlAssetAttributeDescription<VisualTreeAsset> { name = "item-template" };
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+                var view = ve as TreeView;
+
+                if (m_ItemTemplate.TryGetValueFromBag(bag, cc, out var itemTemplate))
+                {
+                    view.itemTemplate = itemTemplate;
+                }
+            }
+        }
 
         Func<VisualElement> m_MakeItem;
 
@@ -88,6 +115,42 @@ namespace UnityEngine.UIElements
                     NotifyPropertyChanged(makeItemProperty);
                 }
             }
+        }
+
+        Func<VisualElement> m_TemplateMakeItem;
+        VisualTreeAsset m_ItemTemplate;
+
+        /// <summary>
+        /// A UXML template that constructs each recycled and rebound element within the tree.
+        /// This template is designed to replace the <see cref="makeItem"/> definition.
+        /// </summary>
+        [CreateProperty]
+        public VisualTreeAsset itemTemplate
+        {
+            get => m_ItemTemplate;
+            set
+            {
+                if (m_ItemTemplate == value)
+                    return;
+
+                m_ItemTemplate = value;
+
+                if (makeItem != m_TemplateMakeItem)
+                    makeItem = m_TemplateMakeItem;
+                else
+                    Rebuild();
+                NotifyPropertyChanged(itemTemplateProperty);
+            }
+        }
+
+        VisualElement TemplateMakeItem()
+        {
+            if (m_ItemTemplate != null)
+            {
+                return m_ItemTemplate.Instantiate();
+            }
+
+            return new Label(k_InvalidTemplateError);
         }
 
         private Action<VisualElement, int> m_BindItem;
@@ -211,6 +274,7 @@ namespace UnityEngine.UIElements
         {
             this.makeItem = makeItem;
             this.bindItem = bindItem;
+            m_TemplateMakeItem = TemplateMakeItem;
         }
 
         /// <summary>

@@ -41,20 +41,6 @@ namespace UnityEngine
         [RequiredByNativeCode(Optional = true)]
         static void InitAssemblyRedirections()
         {
-            AppDomain.CurrentDomain.AssemblyResolve += (object _, ResolveEventArgs args) =>
-            {
-                var sourceAsmName = new AssemblyName(args.Name);
-                try
-                {
-                    var loadedAssembly = AppDomain.CurrentDomain.Load(sourceAsmName.Name);
-                    return loadedAssembly;
-                }
-                catch
-                {
-                    // Default if we fail to load for any reason
-                    return null;
-                }
-            };
         }
     }
 

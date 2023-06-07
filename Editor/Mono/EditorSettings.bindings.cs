@@ -254,9 +254,6 @@ namespace UnityEditor
 #pragma warning restore 618
         }
 
-        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-        internal static extern bool recalculateEnvironmentLighting { get; set; }
-
         [Obsolete("Bake with the Progressive Lightmapper.The backend that uses Enlighten to bake is obsolete.", true)]
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool enableEnlightenBakedGI { get; set; }

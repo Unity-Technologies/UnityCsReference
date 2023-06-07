@@ -138,11 +138,11 @@ namespace UnityEditor
                 EditorGUILayout.IntPopup(m_AntiAliasing, styles.renderTextureAntiAliasing, styles.renderTextureAntiAliasingValues, styles.antiAliasing);
 
             GraphicsFormat colorFormat = (GraphicsFormat)m_ColorFormat.intValue;
-            GraphicsFormat compatibleColorFormat = SystemInfo.GetCompatibleFormat(colorFormat, FormatUsage.Render);
+            GraphicsFormat compatibleColorFormat = SystemInfo.GetCompatibleFormat(colorFormat, GraphicsFormatUsage.Render);
 
             GraphicsFormat depthStencilFormat = (GraphicsFormat)m_DepthStencilFormat.intValue;
             bool isDepthStencilUnused = depthStencilFormat == GraphicsFormat.None;
-            bool isDepthStencilFormatIncompatible = !isDepthStencilUnused && SystemInfo.GetCompatibleFormat(depthStencilFormat, FormatUsage.Render) == GraphicsFormat.None;
+            bool isDepthStencilFormatIncompatible = !isDepthStencilUnused && SystemInfo.GetCompatibleFormat(depthStencilFormat, GraphicsFormatUsage.Render) == GraphicsFormat.None;
             GraphicsFormat compatibleDepthStencilFormat = (isDepthStencilUnused) ? GraphicsFormat.None :
                 GraphicsFormatUtility.GetDepthStencilFormat(GraphicsFormatUtility.GetDepthBits(depthStencilFormat), (GraphicsFormatUtility.IsStencilFormat(depthStencilFormat)) ? 8 : 0);
 

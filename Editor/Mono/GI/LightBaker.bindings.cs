@@ -6,12 +6,16 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.LightBaking;
+using UnityEngine.LightTransport;
+using static UnityEditor.LightBaking.LightBaker;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEditor.LightBaking
 {
     [NativeHeader("Editor/Src/GI/LightBaker/LightBaker.Bindings.h")]
     [StaticAccessor("LightBakerBindings", StaticAccessorType.DoubleColon)]
-    internal static class LightBaker
+    internal static partial class LightBaker
     {
         public enum ResultType : UInt32
         {
@@ -35,10 +39,8 @@ namespace UnityEditor.LightBaking
                     return $"Result type: '{type}'";
                 else
                     return $"Result type: '{type}', message: '{message}'";
-
             }
         }
-
 
         public enum Backend
         {
@@ -165,7 +167,7 @@ namespace UnityEditor.LightBaking
                 pixelStride = pixelStrideIn;
                 slices = slicesIn;
                 repeat = repeatIn;
-                data = new byte[resolution.width * resolution.height * slices* pixelStride];
+                data = new byte[resolution.width * resolution.height * slices * pixelStride];
             }
             public Resolution resolution;
             public UInt32 pixelStride;
@@ -616,10 +618,32 @@ namespace UnityEditor.LightBaking
             {
                 public static IntPtr ConvertToNative(DeviceSettings obj) => obj.m_Ptr;
             }
-
         }
-		extern static public bool Serialize(String path, BakeInput input);
-		extern static public bool Deserialize(String path, BakeInput input);
+        
+        public static Result PopulateWorld(BakeInput bakeInput, BakeProgressState progress,
+            UnityEngine.LightTransport.IDeviceContext context, UnityEngine.LightTransport.IWorld world)
+        {
+            IntegrationContext integrationContext = new IntegrationContext();
+            Result result = new Result();
+            if (context is RadeonRaysContext)
+            {
+                result = PopulateWorldRadeonRays(bakeInput, progress, context as RadeonRaysContext, integrationContext);
+                Debug.Assert(world is RadeonRaysWorld);
+                var rrWorld = world as RadeonRaysWorld;
+                rrWorld.SetIntegrationContext(integrationContext);
+            }
+            else if (context is WintermuteContext)
+            {
+                result = PopulateWorldWintermute(bakeInput, progress, context as WintermuteContext, integrationContext);
+                Debug.Assert(world is WintermuteWorld);
+                var wmWorld = world as WintermuteWorld;
+                wmWorld.SetIntegrationContext(integrationContext);
+            }
+            return result;
+        }
+
+        extern static public bool Serialize(String path, BakeInput input);
+        extern static public bool Deserialize(String path, BakeInput input);
         extern static public Result Bake(BakeInput input, DeviceSettings deviceSettings);
         extern static public Result BakeOutOfProcess(BakeInput input, DeviceSettings deviceSettings);
     }

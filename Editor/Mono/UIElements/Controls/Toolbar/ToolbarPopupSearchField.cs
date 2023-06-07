@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ToolbarPopupSearchField : ToolbarSearchField, IToolbarMenuElement
     {
-        internal static readonly DataBindingProperty menuProperty = nameof(menu);
+        internal static readonly BindingId menuProperty = nameof(menu);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : ToolbarSearchField.UxmlSerializedData

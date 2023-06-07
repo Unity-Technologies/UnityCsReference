@@ -168,9 +168,16 @@ namespace Unity.GraphToolsFoundation.Editor
                     tooltip = tooltipAttribute.tooltip;
                 }
 
+                string displayName = null;
+                var nodeOption = fieldInfo1.GetCustomAttribute<NodeOptionAttribute>();
+                if (nodeOption != null)
+                {
+                    displayName = nodeOption.DisplayName;
+                }
+
                 var modelFieldFieldType = typeof(ModelSerializedFieldField_Internal<>).MakeGenericType(fieldInfo1.FieldType);
                 var baseModelPropertyField = Activator.CreateInstance(
-                        modelFieldFieldType, OwnerRootView, m_Models, targets, fieldInfo1, tooltip)
+                        modelFieldFieldType, OwnerRootView, m_Models, targets, fieldInfo1, tooltip, displayName)
                     as BaseModelPropertyField;
                 return baseModelPropertyField;
             }

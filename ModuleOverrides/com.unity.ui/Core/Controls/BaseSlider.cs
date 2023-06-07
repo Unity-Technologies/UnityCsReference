@@ -30,13 +30,13 @@ namespace UnityEngine.UIElements
     public abstract class BaseSlider<TValueType> : BaseField<TValueType>, IValueField<TValueType>
         where TValueType : System.IComparable<TValueType>
     {
-        internal static readonly DataBindingProperty lowValueProperty = nameof(lowValue);
-        internal static readonly DataBindingProperty highValueProperty = nameof(highValue);
-        internal static readonly DataBindingProperty rangeProperty = nameof(range);
-        internal static readonly DataBindingProperty pageSizeProperty = nameof(pageSize);
-        internal static readonly DataBindingProperty showInputFieldProperty = nameof(showInputField);
-        internal static readonly DataBindingProperty directionProperty = nameof(direction);
-        internal static readonly DataBindingProperty invertedProperty = nameof(inverted);
+        internal static readonly BindingId lowValueProperty = nameof(lowValue);
+        internal static readonly BindingId highValueProperty = nameof(highValue);
+        internal static readonly BindingId rangeProperty = nameof(range);
+        internal static readonly BindingId pageSizeProperty = nameof(pageSize);
+        internal static readonly BindingId showInputFieldProperty = nameof(showInputField);
+        internal static readonly BindingId directionProperty = nameof(direction);
+        internal static readonly BindingId invertedProperty = nameof(inverted);
 
         internal VisualElement dragContainer { get; private set; }
         internal VisualElement dragElement { get; private set; }

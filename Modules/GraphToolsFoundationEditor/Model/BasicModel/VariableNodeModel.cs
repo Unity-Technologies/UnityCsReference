@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -101,23 +100,22 @@ namespace Unity.GraphToolsFoundation.Editor
         /// </summary>
         public virtual void UpdateTypeFromDeclaration()
         {
-            if (DeclarationModel != null && m_MainPortModel != null)
+            if (m_MainPortModel?.DataTypeHandle != VariableDeclarationModel.DataType)
             {
-                m_MainPortModel.DataTypeHandle = VariableDeclarationModel.DataType;
+                DefineNode();
                 GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
-            }
 
-            // update connected nodes' ports colors/types
-            if (m_MainPortModel != null)
-                foreach (var connectedPortModel in m_MainPortModel.GetConnectedPorts().ToList())
-                    connectedPortModel.NodeModel.OnConnection(connectedPortModel, m_MainPortModel);
+                // update connected nodes' ports colors/types
+                if (m_MainPortModel != null)
+                    foreach (var connectedPortModel in m_MainPortModel.GetConnectedPorts())
+                        connectedPortModel.NodeModel.OnConnection(connectedPortModel, m_MainPortModel);
+            }
         }
 
         /// <inheritdoc />
         protected override void OnDefineNode()
         {
-            // used by macro outputs
-            if (m_DeclarationModel != null /* this node */ && m_DeclarationModel.Modifiers.HasFlag(ModifierFlags.Write))
+            if (m_DeclarationModel != null && m_DeclarationModel.Modifiers.HasFlag(ModifierFlags.Write))
             {
                 if (GetDataType() == TypeHandle.ExecutionFlow)
                     m_MainPortModel = this.AddExecutionInputPort(null);

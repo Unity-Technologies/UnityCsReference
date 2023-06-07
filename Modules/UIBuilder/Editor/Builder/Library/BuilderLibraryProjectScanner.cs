@@ -92,77 +92,85 @@ namespace Unity.UI.Builder
             }
 
             var shownTypes = new HashSet<Type>();
+            UxmlSerializedDataRegistry.Register();
             foreach (var kvp in UxmlSerializedDataRegistry.SerializedDataTypes)
             {
-                var fullname = kvp.Key;
-                var type = kvp.Value;
-                var elementType = type.DeclaringType;
-                var hasNamespace = !string.IsNullOrEmpty(elementType.Namespace);
-
-                // Avoid adding our own internal factories (like Package Manager templates).
-                if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Any(n => elementType.Namespace.StartsWith(n)))
-                    continue;
-
-                // Avoid adding UI Builder's own types, even in internal mode.
-                if (hasNamespace && type.Namespace.StartsWith("Unity.UI.Builder"))
-                    continue;
-
-                // Ignore UxmlObjects
-                if (!typeof(VisualElement).IsAssignableFrom(elementType))
-                    continue;
-
-                // Ignore elements with HideInInspector
-                if (elementType.GetCustomAttribute<HideInInspector>() != null)
-                    continue;
-
-                // UxmlElements with a custom name appear in SerializedDataTypes twice, we only need 1 item with the custom name.
-                if (shownTypes.Contains(type))
-                    continue;
-
-                var description = UxmlSerializedDataRegistry.GetDescription(fullname);
-                Debug.AssertFormat(description != null, "Expected to find a description for {0}", elementType.FullName);
-
-                shownTypes.Add(type);
-
-                string name;
-                var elementAttribute = elementType.GetCustomAttribute<UxmlElementAttribute>();
-                if (elementAttribute != null && !string.IsNullOrEmpty(elementAttribute.name))
-                    name =  elementAttribute.name;
-                else
-                    name = elementType.Name;
-
-                // Generate a unique id.
-                // We prepend the name as its possible the same Type may be displayed for both UxmlSerializedData and UxmlTraits so we need to ensure the ids do not conflict.
-                var idCode = ("uxml-serialized-data" + kvp.Key + elementType.FullName).GetHashCode();
-
-                var newItem = BuilderLibraryContent.CreateItem(name, "CustomCSharpElement", elementType, () =>
+                try
                 {
-                    var data = description.CreateDefaultSerializedData();
-                    var instance = data.CreateInstance();
+                    var fullname = kvp.Key;
+                    var type = kvp.Value;
+                    var elementType = type.DeclaringType;
+                    var hasNamespace = !string.IsNullOrEmpty(elementType.Namespace);
 
-                    // Special case for the TwoPaneSplitView as we need to add two children to not get an error log.
-                    if (instance is TwoPaneSplitView splitView)
-                    {
-                        splitView.Add(new VisualElement());
-                        splitView.Add(new VisualElement());
-                    }
+                    // Avoid adding our own internal factories (like Package Manager templates).
+                    if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Any(n => elementType.Namespace.StartsWith(n)))
+                        continue;
 
-                    data.Deserialize(instance);
-                    return instance as VisualElement;
-                }, id:idCode);
-                newItem.data.hasPreview = true;
+                    // Avoid adding UI Builder's own types, even in internal mode.
+                    if (hasNamespace && type.Namespace.StartsWith("Unity.UI.Builder"))
+                        continue;
 
-                if (!hasNamespace)
-                {
-                    emptyNamespaceControls.Add(newItem);
-                }
-                else
-                {
-                    AddCategoriesToStack(sourceCategory, categoryStack, elementType.Namespace.Split('.'), "csharp-uxml-serialized-data-");
-                    if (categoryStack.Count == 0)
-                        sourceCategory.AddChild(newItem);
+                    // Ignore UxmlObjects
+                    if (!typeof(VisualElement).IsAssignableFrom(elementType))
+                        continue;
+
+                    // Ignore elements with HideInInspector
+                    if (elementType.GetCustomAttribute<HideInInspector>() != null)
+                        continue;
+
+                    // UxmlElements with a custom name appear in SerializedDataTypes twice, we only need 1 item with the custom name.
+                    if (shownTypes.Contains(type))
+                        continue;
+
+                    var description = UxmlSerializedDataRegistry.GetDescription(fullname);
+                    Debug.AssertFormat(description != null, "Expected to find a description for {0}", elementType.FullName);
+
+                    shownTypes.Add(type);
+
+                    string name;
+                    var elementAttribute = elementType.GetCustomAttribute<UxmlElementAttribute>();
+                    if (elementAttribute != null && !string.IsNullOrEmpty(elementAttribute.name))
+                        name = elementAttribute.name;
                     else
-                        categoryStack.Last().AddChild(newItem);
+                        name = elementType.Name;
+
+                    // Generate a unique id.
+                    // We prepend the name as its possible the same Type may be displayed for both UxmlSerializedData and UxmlTraits so we need to ensure the ids do not conflict.
+                    var idCode = ("uxml-serialized-data" + kvp.Key + elementType.FullName).GetHashCode();
+
+                    var newItem = BuilderLibraryContent.CreateItem(name, "CustomCSharpElement", elementType, () =>
+                    {
+                        var data = description.CreateDefaultSerializedData();
+                        var instance = data.CreateInstance();
+
+                        // Special case for the TwoPaneSplitView as we need to add two children to not get an error log.
+                        if (instance is TwoPaneSplitView splitView)
+                        {
+                            splitView.Add(new VisualElement());
+                            splitView.Add(new VisualElement());
+                        }
+
+                        data.Deserialize(instance);
+                        return instance as VisualElement;
+                    }, id: idCode);
+                    newItem.data.hasPreview = true;
+
+                    if (!hasNamespace)
+                    {
+                        emptyNamespaceControls.Add(newItem);
+                    }
+                    else
+                    {
+                        AddCategoriesToStack(sourceCategory, categoryStack, elementType.Namespace.Split('.'), "csharp-uxml-serialized-data-");
+                        if (categoryStack.Count == 0)
+                            sourceCategory.AddChild(newItem);
+                        else
+                            categoryStack.Last().AddChild(newItem);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
                 }
             }
             sourceCategory.AddChildren(emptyNamespaceControls);

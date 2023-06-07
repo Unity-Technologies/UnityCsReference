@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.DeploymentTargets;
 using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 namespace UnityEditor.Modules
@@ -155,7 +156,8 @@ namespace UnityEditor.Modules
         // This is the place to make sure platform has everything it needs for the build.
         // Use EditorUtility.Display(Cancelable)ProgressBar when running long tasks (e.g. downloading SDK from internet).
         // Return non-empty string indicating error message to stop the build.
-        string PrepareForBuild(BuildOptions options, BuildTarget target);
+        /// <param name="buildOptions">Build details. Useful to get the location of the player to build, for instance.</param>
+        string PrepareForBuild(BuildPlayerOptions buildOptions);
 
         void PostProcessCompletedBuild(BuildPostProcessArgs args);
 

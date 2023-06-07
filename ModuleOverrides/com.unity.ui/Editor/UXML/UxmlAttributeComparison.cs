@@ -2,7 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections;
+using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements
 {
@@ -10,9 +13,23 @@ namespace UnityEditor.UIElements
     {
         public static bool ObjectEquals(object a, object b)
         {
-            if (a == null && b == null)
+            // Comparison between (Object)null and null is considered as "equal".
+            var aIsObjectNull = a != null && typeof(Object).IsAssignableFrom(a.GetType()) && !(a as Object);
+            var bIsObjectNull = b != null && typeof(Object).IsAssignableFrom(b.GetType()) && !(b as Object);
+            if ((aIsObjectNull && b is null) || (bIsObjectNull && a is null) || (aIsObjectNull && bIsObjectNull))
                 return true;
-            if (a == null || b == null)
+            if (a is null && b is null)
+                return true;
+            if ((a is string && b == null) || (a == null && b is string))
+            {
+                // Null and empty are considered the same
+                var aStr = a as string;
+                var bStr = b as string;
+                if (string.IsNullOrEmpty(aStr) && string.IsNullOrEmpty(bStr))
+                    return true;
+                return aStr == bStr;
+            }
+            if (a is null || b is null)
                 return false;
             if (a is IList aList && b is IList bList)
                 return ListEquals(aList, bList);

@@ -33,7 +33,13 @@ namespace UnityEngine.UIElements
         {
             if (listView.bindItem == null)
             {
-                if (listView.makeItem != null)
+                var isMakeItemSet = listView.makeItem != null;
+
+                // bindItem doesn't need to be specified if we are using data binding on the element.
+                if (listView.autoAssignSource && isMakeItemSet)
+                    return;
+
+                if (isMakeItemSet)
                     throw new NotImplementedException("You must specify bindItem if makeItem is specified.");
 
                 var label = (Label)element;

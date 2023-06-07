@@ -36,6 +36,9 @@ namespace UnityEngine
 
         extern public Shader shader { get; set; }
 
+        static readonly int k_ColorId = Shader.PropertyToID("_Color");
+        static readonly int k_MainTexId = Shader.PropertyToID("_MainTex");
+
         public Color color
         {
             get
@@ -45,7 +48,7 @@ namespace UnityEngine
                 if (nameId >= 0)
                     return GetColor(nameId);
                 else
-                    return GetColor("_Color");
+                    return GetColor(k_ColorId);
             }
             set
             {
@@ -53,7 +56,7 @@ namespace UnityEngine
                 if (nameId >= 0)
                     SetColor(nameId, value);
                 else
-                    SetColor("_Color", value);
+                    SetColor(k_ColorId, value);
             }
         }
         public Texture mainTexture
@@ -65,7 +68,7 @@ namespace UnityEngine
                 if (nameId >= 0)
                     return GetTexture(nameId);
                 else
-                    return GetTexture("_MainTex");
+                    return GetTexture(k_MainTexId);
             }
             set
             {
@@ -73,7 +76,7 @@ namespace UnityEngine
                 if (nameId >= 0)
                     SetTexture(nameId, value);
                 else
-                    SetTexture("_MainTex", value);
+                    SetTexture(k_MainTexId, value);
             }
         }
         public Vector2 mainTextureOffset
@@ -84,7 +87,7 @@ namespace UnityEngine
                 if (nameId >= 0)
                     return GetTextureOffset(nameId);
                 else
-                    return GetTextureOffset("_MainTex");
+                    return GetTextureOffset(k_MainTexId);
             }
             set
             {
@@ -92,7 +95,7 @@ namespace UnityEngine
                 if (nameId >= 0)
                     SetTextureOffset(nameId, value);
                 else
-                    SetTextureOffset("_MainTex", value);
+                    SetTextureOffset(k_MainTexId, value);
             }
         }
         public Vector2 mainTextureScale
@@ -103,7 +106,7 @@ namespace UnityEngine
                 if (nameId >= 0)
                     return GetTextureScale(nameId);
                 else
-                    return GetTextureScale("_MainTex");
+                    return GetTextureScale(k_MainTexId);
             }
             set
             {
@@ -111,7 +114,7 @@ namespace UnityEngine
                 if (nameId >= 0)
                     SetTextureScale(nameId, value);
                 else
-                    SetTextureScale("_MainTex", value);
+                    SetTextureScale(k_MainTexId, value);
             }
         }
         [NativeName("GetFirstPropertyNameIdByAttributeFromScript")] extern private int GetFirstPropertyNameIdByAttribute(ShaderPropertyFlags attributeFlag);

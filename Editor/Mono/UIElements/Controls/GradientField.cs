@@ -16,8 +16,8 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class GradientField : BaseField<Gradient>
     {
-        internal static readonly DataBindingProperty colorSpaceProperty = nameof(colorSpace);
-        internal static readonly DataBindingProperty hdrProperty = nameof(hdr);
+        internal static readonly BindingId colorSpaceProperty = nameof(colorSpace);
+        internal static readonly BindingId hdrProperty = nameof(hdr);
 
         static readonly GradientColorKey k_WhiteKeyBegin = new GradientColorKey(Color.white, 0);
         static readonly GradientColorKey k_WhiteKeyEnd = new GradientColorKey(Color.white, 1);

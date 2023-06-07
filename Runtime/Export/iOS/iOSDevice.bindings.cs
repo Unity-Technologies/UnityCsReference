@@ -108,6 +108,7 @@ namespace UnityEngine.iOS
     {
         extern public static string systemVersion
         {
+            [NativeConditional("PLATFORM_IOS")]
             [FreeFunction("systeminfo::GetDeviceSystemVersion")]
             get;
         }

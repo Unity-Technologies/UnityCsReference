@@ -513,7 +513,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             /// <inheritdoc/>
-            public void AggregateFrom(IEnumerable<IChangeset> changesets)
+            public void AggregateFrom(IReadOnlyList<IChangeset> changesets)
             {
                 Clear();
 
@@ -534,8 +534,11 @@ namespace Unity.GraphToolsFoundation.Editor
                 // of 0 if D + N had equal 0. Furthermore, we are applying the pairwise comparison in reverse to handle some special cases, like D + N + D = D.
                 // When doing a forward comparison, (D + N) + D => N + D => 0, but in reverse it becomes D + (N + D) => D + 0 => D.
 
-                foreach (var changeset in changesets.OfType<Changeset>().Reverse())
+                for (var index = changesets.Count - 1; index >= 0; index--)
                 {
+                    if (changesets[index] is not Changeset changeset)
+                        continue;
+
                     foreach (var newModel in changeset.m_NewModels)
                     {
                         // N + D = 0
@@ -570,9 +573,9 @@ namespace Unity.GraphToolsFoundation.Editor
                     }
                 }
 
-                foreach (var changeset in changesets.OfType<Changeset>())
+                foreach (var cs in changesets)
                 {
-                    if (changeset.RenamedModel != null && !m_DeletedModels.Contains(changeset.RenamedModel.Guid))
+                    if (cs is Changeset { RenamedModel: not null } changeset && !m_DeletedModels.Contains(changeset.RenamedModel.Guid))
                     {
                         RenamedModel = changeset.RenamedModel;
                         break;
@@ -670,7 +673,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 }
                 else
                 {
-                    CurrentChangeset.AggregateFrom(new[] { changeset });
+                    (CurrentChangeset as IChangeset).Copy(changeset);
                     SetUpdateType(UpdateType.Partial);
                 }
 

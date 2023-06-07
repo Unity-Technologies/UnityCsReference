@@ -16,8 +16,10 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ObjectField : BaseField<Object>
     {
-        internal static readonly DataBindingProperty objectTypeProperty = nameof(objectType);
-        internal static readonly DataBindingProperty allowSceneObjectsProperty = nameof(allowSceneObjects);
+        internal static readonly BindingId objectTypeProperty = nameof(objectType);
+        internal static readonly BindingId allowSceneObjectsProperty = nameof(allowSceneObjects);
+
+        internal event Action onObjectSelectorShow;
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
@@ -430,6 +432,7 @@ namespace UnityEditor.UIElements
             // Since we have nothing useful to do on the object selector closing action, we just do not assign any callback
             // All the object changes will be notified through the OnObjectChanged and a "cancellation" (Escape key) on the ObjectSelector is calling the closing callback without any good object
             ObjectSelector.get.Show(value, objectType, null, allowSceneObjects, null, null, OnObjectChanged);
+            onObjectSelectorShow?.Invoke();
         }
 
         private Object TryReadComponentFromGameObject(Object obj, Type type)

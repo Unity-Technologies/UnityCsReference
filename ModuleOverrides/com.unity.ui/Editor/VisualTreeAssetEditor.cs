@@ -47,6 +47,13 @@ namespace UnityEditor.UIElements
             }
         }
 
+        public override void OnInspectorGUI()
+        {
+            EditorGUI.BeginDisabled(true);
+            base.OnInspectorGUI();
+            EditorGUI.EndDisabled();
+        }
+
         void Update()
         {
             UpdatePreviewTexture(m_TextureSize.x, m_TextureSize.y);
@@ -174,6 +181,7 @@ namespace UnityEditor.UIElements
             if (m_Panel == null)
             {
                 m_Panel = EditorPanel.FindOrCreate(m_LastTree);
+                Binding.SetPanelLogLevel(m_Panel, BindingLogLevel.None); // We don't want preview to log errors.
                 var visualTree = m_Panel.visualTree;
                 UIElementsEditorUtility.AddDefaultEditorStyleSheets(visualTree);
                 dirty = true;

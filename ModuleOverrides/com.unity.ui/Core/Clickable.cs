@@ -76,6 +76,7 @@ namespace UnityEngine.UIElements
             acceptClicksIfDisabled ? InvokePolicy.IncludeDisabled : InvokePolicy.Default;
 
         private IVisualElementScheduledItem m_Repeater;
+        private IVisualElementScheduledItem m_PendingActivePseudoStateReset;
 
         /// <summary>
         /// Constructor.
@@ -154,6 +155,8 @@ namespace UnityEngine.UIElements
             target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             target.UnregisterCallback<PointerCancelEvent>(OnPointerCancel);
             target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCaptureOut);
+
+            ResetActivePseudoState();
         }
 
         [Obsolete("OnMouseDown has been removed and replaced by its pointer-based equivalent. Please use OnPointerDown.", false)]
@@ -250,8 +253,17 @@ namespace UnityEngine.UIElements
         internal void SimulateSingleClick(EventBase evt, int delayMs = 100)
         {
             target.pseudoStates |= PseudoStates.Active;
-            target.schedule.Execute(() => target.pseudoStates &= ~PseudoStates.Active).ExecuteLater(delayMs);
+            m_PendingActivePseudoStateReset = target.schedule.Execute(ResetActivePseudoState);
+            m_PendingActivePseudoStateReset.ExecuteLater(delayMs);
             Invoke(evt);
+        }
+
+        private void ResetActivePseudoState()
+        {
+            if (m_PendingActivePseudoStateReset == null)
+                return;
+            target.pseudoStates &= ~PseudoStates.Active;
+            m_PendingActivePseudoStateReset = null;
         }
 
         /// <summary>

@@ -13,7 +13,6 @@ namespace UnityEngine.TextCore.Text
         public FontAsset fontAsset;
         public SpriteAsset spriteAsset;
         public Material material;
-        public bool isDefaultMaterial;
         public bool isFallbackMaterial;
         public Material fallbackMaterial;
         public float padding;
@@ -33,7 +32,6 @@ namespace UnityEngine.TextCore.Text
             this.fontAsset = fontAsset;
             this.spriteAsset = spriteAsset;
             this.material = material;
-            isDefaultMaterial = material.GetInstanceID() == fontAsset.material.GetInstanceID();
             isFallbackMaterial = false;
             fallbackMaterial = null;
             this.padding = padding;
@@ -48,11 +46,11 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public static bool Contains(MaterialReference[] materialReferences, FontAsset fontAsset)
         {
-            int id = fontAsset.GetInstanceID();
+            int id = fontAsset.GetHashCode();
 
             for (int i = 0; i < materialReferences.Length && materialReferences[i].fontAsset != null; i++)
             {
-                if (materialReferences[i].fontAsset.GetInstanceID() == id)
+                if (materialReferences[i].fontAsset.GetHashCode() == id)
                     return true;
             }
 
@@ -69,7 +67,7 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public static int AddMaterialReference(Material material, FontAsset fontAsset, ref MaterialReference[] materialReferences, Dictionary<int, int> materialReferenceIndexLookup)
         {
-            int materialId = material.GetInstanceID();
+            int materialId = material.GetHashCode();
             int index;
 
             if (materialReferenceIndexLookup.TryGetValue(materialId, out index))
@@ -89,7 +87,6 @@ namespace UnityEngine.TextCore.Text
             materialReferences[index].fontAsset = fontAsset;
             materialReferences[index].spriteAsset = null;
             materialReferences[index].material = material;
-            materialReferences[index].isDefaultMaterial = materialId == fontAsset.material.GetInstanceID();
             materialReferences[index].referenceCount = 0;
 
             return index;
@@ -105,7 +102,7 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public static int AddMaterialReference(Material material, SpriteAsset spriteAsset, ref MaterialReference[] materialReferences, Dictionary<int, int> materialReferenceIndexLookup)
         {
-            int materialId = material.GetInstanceID();
+            int materialId = material.GetHashCode();
             int index;
 
             if (materialReferenceIndexLookup.TryGetValue(materialId, out index))
@@ -123,7 +120,6 @@ namespace UnityEngine.TextCore.Text
             materialReferences[index].fontAsset = materialReferences[0].fontAsset;
             materialReferences[index].spriteAsset = spriteAsset;
             materialReferences[index].material = material;
-            materialReferences[index].isDefaultMaterial = true;
             materialReferences[index].referenceCount = 0;
 
             return index;

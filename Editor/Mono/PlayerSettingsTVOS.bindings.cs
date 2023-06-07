@@ -194,6 +194,14 @@ namespace UnityEditor
             internal static Texture2D[] GetTopShelfImageWideLayers2x() { return topShelfImageWideLayers2x; }
             internal static void SetTopShelfImageWideLayers2x(Texture2D[] layers) { topShelfImageWideLayers2x = layers; }
 
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeProperty("appleTVSplashScreen")]
+            internal static Texture2D splashScreen { get; }
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeProperty("appleTVSplashScreen2x")]
+            internal static Texture2D splashScreen2x { get; }
+
             // AppleTV Enable extended game controller
             public static extern bool requireExtendedGameController
             {

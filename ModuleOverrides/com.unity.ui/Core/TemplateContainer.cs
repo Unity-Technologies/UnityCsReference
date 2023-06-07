@@ -18,11 +18,11 @@ namespace UnityEngine.UIElements
     /// When using <see cref="VisualTreeAsset.Instantiate()"/>, a TemplateContainer instance is returned to you to represent the root of the hierarchy.
     /// When using UXML templates, a TemplateContainer is generated for the template instance and inserted into the hierarchy of the parent UXML file.
     /// </remarks>
-    [UxmlElement(UxmlFactory.k_ElementName)]
+    [UxmlElement(UxmlFactory.k_ElementName), HideInInspector]
     public class TemplateContainer : BindableElement
     {
-        internal static readonly DataBindingProperty templateIdProperty = nameof(templateId);
-        internal static readonly DataBindingProperty templateSourceProperty = nameof(templateSource);
+        internal static readonly BindingId templateIdProperty = nameof(templateId);
+        internal static readonly BindingId templateSourceProperty = nameof(templateSource);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData

@@ -74,7 +74,7 @@ namespace UnityEngine
                 // Update 'graphicsFormat' last because it also updates 'depthBufferBits', which relies on the 'colorFormat',
                 // which itself relies on the 'shadowSamplingMode' to make the distinction between RTF.Depth/RTF.Shadowmap.
                 GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB);
-                graphicsFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
+                graphicsFormat = SystemInfo.GetCompatibleFormat(requestedFormat, GraphicsFormatUsage.Render);
             }
         }
 
@@ -276,7 +276,7 @@ namespace UnityEngine
         {
             // Note: the code duplication here is because you can't set a descriptor with
             // zero width/height, which our own code (and possibly existing user code) relies on.
-            if (format != GraphicsFormat.None && !ValidateFormat(format, FormatUsage.Render))
+            if (format != GraphicsFormat.None && !ValidateFormat(format, GraphicsFormatUsage.Render))
                 return;
 
             Internal_Create(this);
@@ -292,7 +292,7 @@ namespace UnityEngine
             // Note: the code duplication here is because you can't set a descriptor with
             // zero width/height, which our own code (and possibly existing user code) relies on.
             // None is valid here as it indicates a depth only rendertexture.
-            if (colorFormat != GraphicsFormat.None && !ValidateFormat(colorFormat, FormatUsage.Render))
+            if (colorFormat != GraphicsFormat.None && !ValidateFormat(colorFormat, GraphicsFormatUsage.Render))
                 return;
 
             Internal_Create(this);
@@ -339,7 +339,7 @@ namespace UnityEngine
             // zero width/height, which our own code (and possibly existing user code) relies on.
             if (colorFormat != GraphicsFormat.None)
             {
-                if (!ValidateFormat(colorFormat, FormatUsage.Render))
+                if (!ValidateFormat(colorFormat, GraphicsFormatUsage.Render))
                     return;
             }
 
@@ -392,7 +392,7 @@ namespace UnityEngine
         {
             if (desc.graphicsFormat == GraphicsFormat.None && desc.depthStencilFormat == GraphicsFormat.None)
                 throw new ArgumentException("RenderTextureDesc graphicsFormat and depthStencilFormat cannot both be None.");
-            if (desc.graphicsFormat != GraphicsFormat.None && !SystemInfo.IsFormatSupported(desc.graphicsFormat, FormatUsage.Render))
+            if (desc.graphicsFormat != GraphicsFormat.None && !SystemInfo.IsFormatSupported(desc.graphicsFormat, GraphicsFormatUsage.Render))
                 throw new ArgumentException("RenderTextureDesc graphicsFormat must be a supported GraphicsFormat. " + desc.graphicsFormat + " is not supported on this platform.", "desc.graphicsFormat");
             if (desc.depthStencilFormat != GraphicsFormat.None && !GraphicsFormatUtility.IsDepthStencilFormat(desc.depthStencilFormat))
                 throw new ArgumentException("RenderTextureDesc depthStencilFormat must be a supported depth/stencil GraphicsFormat. " + desc.depthStencilFormat + " is not supported on this platform.", "desc.depthStencilFormat");
@@ -456,7 +456,7 @@ namespace UnityEngine
         internal static GraphicsFormat GetCompatibleFormat(RenderTextureFormat renderTextureFormat, RenderTextureReadWrite readWrite)
         {
             GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(renderTextureFormat, readWrite);
-            GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, FormatUsage.Render);
+            GraphicsFormat compatibleFormat = SystemInfo.GetCompatibleFormat(requestedFormat, GraphicsFormatUsage.Render);
 
             if (requestedFormat == compatibleFormat)
             {
@@ -630,7 +630,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public CustomRenderTexture(int width, int height, GraphicsFormat format)
         {
-            if (format != GraphicsFormat.None && !ValidateFormat(format, FormatUsage.Render))
+            if (format != GraphicsFormat.None && !ValidateFormat(format, GraphicsFormatUsage.Render))
                 return;
 
             Internal_CreateCustomRenderTexture(this);
@@ -692,8 +692,8 @@ namespace UnityEngine
                 return false;
             }
         }
-
-        internal bool ValidateFormat(GraphicsFormat format, FormatUsage usage)
+        
+        internal bool ValidateFormat(GraphicsFormat format, GraphicsFormatUsage usage)
         {
             // *ONLY* GPU support is checked here. If it is not available, fail validation.
             // GraphicsFormat does not use fallbacks by design.
@@ -745,7 +745,7 @@ namespace UnityEngine
 
         internal bool ValidateFormat(GraphicsFormat format, int width, int height)
         {
-            bool isValid = ValidateFormat(format, FormatUsage.Sample);
+            bool isValid = ValidateFormat(format, GraphicsFormatUsage.Sample);
             if (isValid)
             {
                 bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
@@ -1078,7 +1078,7 @@ namespace UnityEngine
 
         public void ReadPixels(Rect source, int destX, int destY, [uei.DefaultValue("true")] bool recalculateMipMaps)
         {
-            //if (ValidateFormat(GraphicsFormatUtility.GetGraphicsFormat(format, ), FormatUsage.ReadPixels))
+            //if (ValidateFormat(GraphicsFormatUtility.GetGraphicsFormat(format, ), GraphicsFormatUsage.ReadPixels))
             //    Debug.LogError("No texture data provided to LoadRawTextureData", this);
             if (!isReadable) throw CreateNonReadableException(this);
             ReadPixelsImpl(source, destX, destY, recalculateMipMaps);
@@ -1179,7 +1179,7 @@ namespace UnityEngine
 
         internal bool ValidateFormat(GraphicsFormat format, int width)
         {
-            bool isValid = ValidateFormat(format, FormatUsage.Sample);
+            bool isValid = ValidateFormat(format, GraphicsFormatUsage.Sample);
             if (isValid)
             {
                 bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
@@ -1366,7 +1366,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public Texture3D(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags, [uei.DefaultValue("Texture.GenerateAllMips")] int mipCount)
         {
-            if (!ValidateFormat(format, FormatUsage.Sample))
+            if (!ValidateFormat(format, GraphicsFormatUsage.Sample))
                 return;
 
             ValidateIsNotCrunched(flags);
@@ -1534,7 +1534,7 @@ namespace UnityEngine
 
         internal bool ValidateFormat(GraphicsFormat format, int width, int height)
         {
-            bool isValid = ValidateFormat(format, FormatUsage.Sample);
+            bool isValid = ValidateFormat(format, GraphicsFormatUsage.Sample);
             if (isValid)
             {
                 bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
@@ -1715,7 +1715,7 @@ namespace UnityEngine
         [uei.ExcludeFromDocs]
         public CubemapArray(int width, int cubemapCount, GraphicsFormat format, TextureCreationFlags flags, [uei.DefaultValue("Texture.GenerateAllMips")] int mipCount)
         {
-            if (!ValidateFormat(format, FormatUsage.Sample))
+            if (!ValidateFormat(format, GraphicsFormatUsage.Sample))
                 return;
 
             ValidateIsNotCrunched(flags);
@@ -1833,7 +1833,7 @@ namespace UnityEngine
 
         internal bool ValidateFormat(GraphicsFormat format, int width, int height)
         {
-            bool isValid = ValidateFormat(format, FormatUsage.Sparse);
+            bool isValid = ValidateFormat(format, GraphicsFormatUsage.Sparse);
             if (isValid)
             {
                 bool requireSquarePOT = GraphicsFormatUtility.IsPVRTCFormat(format);
@@ -1891,12 +1891,12 @@ namespace UnityEngine
             ValidateIsNotCrunched(textureFormat);
 
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
-            if (!SystemInfo.IsFormatSupported(format, FormatUsage.Sparse))
+            if (!SystemInfo.IsFormatSupported(format, GraphicsFormatUsage.Sparse))
             {
                 // Special case: SystemInfo.SupportsTextureFormat(textureFormat) tells us whether we
                 // can use the format for a more "regular" texture type, but not necessarily whether
                 // we can use that same format for a SparseTexture. This is because the function
-                // checks the Sample FormatUsage, hence the extra FormatUsage.Sparse check here
+                // checks the Sample FormatUsage, hence the extra GraphicsFormatUsage.Sparse check here
                 // to prevent various crashes, errors, ...
                 Debug.LogError($"Creation of a SparseTexture with '{textureFormat}' is not supported on this platform.");
                 // Note about the usage of LogError above (versus an exception): according to

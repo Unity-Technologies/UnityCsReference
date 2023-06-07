@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class RadioButtonGroup : BaseField<int>, IGroupBox
     {
-        internal static readonly DataBindingProperty choicesProperty = nameof(choices);
+        internal static readonly BindingId choicesProperty = nameof(choices);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<int>.UxmlSerializedData

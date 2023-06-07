@@ -554,6 +554,18 @@ namespace UnityEditor
             }
 
             [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            [NativeProperty("iOSLaunchScreenPortrait")]
+            internal static Texture2D launchScreenPortrait { get; }
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            [NativeProperty("iOSLaunchScreenLandscape")]
+            internal static Texture2D launchScreenLandscape { get; }
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            [NativeProperty("iOSLaunchScreeniPadImage")]
+            internal static Texture2D launchScreeniPadImage { get; }
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
             [NativeMethod(Name = "SetiOSLaunchScreenImage")]
             private extern static void SetLaunchScreenImageInternal(Texture2D image, int type);
 

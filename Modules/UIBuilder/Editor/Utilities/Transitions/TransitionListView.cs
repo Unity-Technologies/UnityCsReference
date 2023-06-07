@@ -161,7 +161,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        public void Refresh(TransitionChangeType overrides, TransitionChangeType keywords)
+        public void Refresh(TransitionChangeType overrides, TransitionChangeType keywords, TransitionChangeType bindings)
         {
             var durationAllZeroes = true;
             using (ListPool<FoldoutTransitionField>.Get(out var list))
@@ -169,7 +169,7 @@ namespace Unity.UI.Builder
                 this.Query<FoldoutTransitionField>().ToList(list);
 
                 if (list.Count == 1)
-                    list[0].RemoveTransitionButton.SetEnabled(overrides.Any());
+                    list[0].RemoveTransitionButton.SetEnabled(overrides.HasAnyFlag());
                 else if (list.Count > 0)
                     list[0].RemoveTransitionButton.SetEnabled(true);
 
@@ -177,7 +177,9 @@ namespace Unity.UI.Builder
                 {
                     var foldout = list[i];
 
-                    if (keywords.IsSet(TransitionChangeType.Property))
+                    if (bindings.IsSet(TransitionChangeType.Property) && !BuilderBindingUtility.IsInlineEditingEnabled(foldout.propertyField))
+                        foldout.propertyField.SetEnabled(false);
+                    else if (keywords.IsSet(TransitionChangeType.Property))
                         foldout.propertyField.SetEnabled(i == 0);
                     else
                         foldout.propertyField.SetEnabled(true);
@@ -185,17 +187,23 @@ namespace Unity.UI.Builder
                     if (!foldout.durationField.isKeyword && foldout.durationField.length != 0)
                         durationAllZeroes = false;
 
-                    if (keywords.IsSet(TransitionChangeType.Duration))
+                    if (bindings.IsSet(TransitionChangeType.Duration) && !BuilderBindingUtility.IsInlineEditingEnabled(foldout.durationField))
+                        foldout.durationField.SetEnabled(false);
+                    else if (keywords.IsSet(TransitionChangeType.Duration))
                         foldout.durationField.SetEnabled(i == 0);
                     else
                         foldout.durationField.SetEnabled(true);
 
-                    if (keywords.IsSet(TransitionChangeType.TimingFunction))
+                    if (bindings.IsSet(TransitionChangeType.TimingFunction) && !BuilderBindingUtility.IsInlineEditingEnabled(foldout.timingFunctionField))
+                        foldout.timingFunctionField.SetEnabled(false);
+                    else if (keywords.IsSet(TransitionChangeType.TimingFunction))
                         foldout.timingFunctionField.SetEnabled(i == 0);
                     else
                         foldout.timingFunctionField.SetEnabled(true);
 
-                    if (keywords.IsSet(TransitionChangeType.Delay))
+                    if (bindings.IsSet(TransitionChangeType.Delay)&& !BuilderBindingUtility.IsInlineEditingEnabled(foldout.delayField))
+                        foldout.delayField.SetEnabled(false);
+                    else if (keywords.IsSet(TransitionChangeType.Delay))
                         foldout.delayField.SetEnabled(i == 0);
                     else
                         foldout.delayField.SetEnabled(true);
@@ -208,8 +216,10 @@ namespace Unity.UI.Builder
                 }
             }
 
-            var mustEditToAddTransition = overrides == keywords && overrides.Any();
-            m_AddTransitionButton.SetEnabled(!mustEditToAddTransition);
+            var hasBindings = bindings.HasAnyFlag();
+            var mustEditToAddTransition = (overrides == keywords && overrides.HasAnyFlag());
+
+            m_AddTransitionButton.SetEnabled(!mustEditToAddTransition && !hasBindings);
             m_EditPropertyToAddNewTransitionWarning.EnableInClassList(k_DisplayWarningClass, mustEditToAddTransition);
 
             var transitionWillBeInstant = durationAllZeroes && overrides.IsSet(TransitionChangeType.Duration);

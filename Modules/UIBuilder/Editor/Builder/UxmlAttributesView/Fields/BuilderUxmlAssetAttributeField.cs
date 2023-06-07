@@ -126,11 +126,7 @@ namespace Unity.UI.Builder
             {
                 if (value == null)
                 {
-                    if (attributeUxmlOwner != null && attribute.TryGetValueFromBagAsString(attributeUxmlOwner, CreationContext.Default, out var attrValue))
-                    {
-                        // Asset wasn't loaded correctly, most likely due to an invalid path. Show the missing reference.
-                        value = uxmlDocument.GetAsset(attrValue, objField.objectType);
-                    }
+                    value = GetValueFromBag(field, attributeOwner, uxmlDocument, attributeUxmlOwner, attribute);
                 }
                 objField.SetValueWithoutNotify(value as Object);
             }
@@ -139,6 +135,26 @@ namespace Unity.UI.Builder
         public void ResetFieldValue(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
         {
             (field as ObjectField).SetValueWithoutNotify(null);
+        }
+
+        private object GetValueFromBag(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
+        {
+            object value = null;
+
+            if (attributeUxmlOwner != null && attribute.TryGetValueFromBagAsString(attributeUxmlOwner, CreationContext.Default, out var attrValue))
+            {
+                var objField = field as BuilderObjectField;
+                // Asset wasn't loaded correctly, most likely due to an invalid path. Show the missing reference.
+                value = uxmlDocument.GetAsset(attrValue, objField.objectType);
+            }
+
+            return value;
+        }
+
+        public void ResetFieldValueToInline(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
+        {
+            var value = GetValueFromBag(field, attributeOwner, uxmlDocument, attributeUxmlOwner, attribute);
+            SetFieldValue(field, attributeOwner, uxmlDocument, attributeUxmlOwner, attribute, value);
         }
 
         protected void NotifyValueChanged(ChangeEvent<UnityEngine.Object> evt

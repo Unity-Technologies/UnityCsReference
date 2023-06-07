@@ -7,6 +7,8 @@ using System.Collections.Generic;
 
 namespace UnityEngine.SocialPlatforms.Impl
 {
+
+    [Obsolete("LocalUser is deprecated and will be removed in a future release.", false)]
     public class LocalUser : UserProfile, ILocalUser
     {
         private IUserProfile[] m_Friends;
@@ -56,6 +58,8 @@ namespace UnityEngine.SocialPlatforms.Impl
         public bool underage { get { return m_Underage; } }
     }
 
+
+    [Obsolete("UserProfile is deprecated and will be removed in a future release.", false)]
     public class UserProfile : IUserProfile
     {
         protected string m_UserName;
@@ -152,6 +156,7 @@ namespace UnityEngine.SocialPlatforms.Impl
         public Texture2D image { get { return m_Image; } }
     }
 
+    [Obsolete("Achievement is deprecated and will be removed in a future release.", false)]
     public class Achievement : IAchievement
     {
         private bool m_Completed;
@@ -222,6 +227,8 @@ namespace UnityEngine.SocialPlatforms.Impl
         //public abstract void ResetAllAchievements();
     }
 
+
+    [Obsolete("AchievementDescription is deprecated and will be removed in a future release.", false)]
     public class AchievementDescription : IAchievementDescription
     {
         private string m_Title;
@@ -272,6 +279,8 @@ namespace UnityEngine.SocialPlatforms.Impl
         public int points { get { return m_Points; } }
     }
 
+
+    [Obsolete("Score is deprecated and will be removed in a future release.", false)]
     public class Score : IScore
     {
         private DateTime m_Date;
@@ -335,6 +344,8 @@ namespace UnityEngine.SocialPlatforms.Impl
         public int rank { get { return m_Rank; } }
     }
 
+
+    [Obsolete("Leaderboard is deprecated and will be removed in a future release.", false)]
     public class Leaderboard : ILeaderboard
     {
         private bool m_Loading;
@@ -428,6 +439,7 @@ namespace UnityEngine.SocialPlatforms
 {
     using UnityEngine.SocialPlatforms.Impl;
 
+    [Obsolete("Local is deprecated and will be removed in a future release.", false)]
     public class Local : ISocialPlatform
     {
         static LocalUser m_LocalUser = null;

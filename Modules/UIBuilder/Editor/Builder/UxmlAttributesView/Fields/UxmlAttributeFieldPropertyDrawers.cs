@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Reflection;
 using Unity.UI.Builder;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -25,6 +23,7 @@ namespace UnityEditor.UIElements
             var uxmlAttribute = fieldInfo.GetCustomAttribute<UxmlAttributeAttribute>();
             var label = uxmlAttribute != null ? BuilderNameUtilities.ConvertDashToHuman(uxmlAttribute.name) : property.localizedDisplayName;
             var field = fieldFactory.CreateField(desiredType, label, null, null, null, null) as BindableElement;
+            field.AddToClassList(TextField.alignedFieldUssClassName);
 
             // Move the completer so that it remains accessible after BindProperty has replaced userData.
             field.SetProperty(typeCompleterPropertyKey, field.userData);
@@ -34,32 +33,193 @@ namespace UnityEditor.UIElements
         }
     }
 
-    [CustomPropertyDrawer(typeof(EnumFieldValueDecoratorAttribute))]
-    class EnumFieldValueDecoratorPropertyDrawer : PropertyDrawer
+    [CustomPropertyDrawer(typeof(LayerDecoratorAttribute))]
+    class LayerDecoratorPropertyDrawer : PropertyDrawer
     {
-        protected static readonly string k_TypePropertyName = BuilderUxmlAttributesView.UxmlSerializedDataPathPrefix + nameof(EnumField.typeAsString);
-        protected static readonly string k_ValuePropertyName = BuilderUxmlAttributesView.UxmlSerializedDataPathPrefix + nameof(EnumField.valueAsString);
-        protected static readonly string k_IncludeObsoleteValuesPropertyName = BuilderUxmlAttributesView.UxmlSerializedDataPathPrefix + nameof(EnumField.includeObsoleteValues);
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            var field = new LayerField("Value");
+            field.AddToClassList(LayerField.alignedFieldUssClassName);
+            field.BindProperty(property);
+            return field;
+        }
+    }
 
-        EnumField m_EnumValue;
+    [CustomPropertyDrawer(typeof(MultilineDecoratorAttribute))]
+    class MultilineDecoratorPropertyDrawer : PropertyDrawer
+    {
+        private SerializedProperty m_Property;
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            m_Property = property;
+
+            var field = new Toggle(property.displayName);
+
+            field.AddToClassList(Toggle.alignedFieldUssClassName);
+            field.BindProperty(property);
+            field.RegisterCallback<ChangeEvent<bool>>(OnMultilineToggleValueChange);
+
+            return field;
+        }
+
+        void OnMultilineToggleValueChange(ChangeEvent<bool> evt)
+        {
+            var ve = evt.target as VisualElement;
+            var inspector = ve.GetFirstAncestorOfType<BuilderInspector>();
+            var valueFieldInInspector = inspector.Query<TextField>().Where(x => x.label is "Value").First();
+            if (valueFieldInInspector == null)
+                return;
+
+            valueFieldInInspector.multiline = evt.newValue;
+            valueFieldInInspector.EnableInClassList(BuilderConstants.InspectorMultiLineTextFieldClassName, evt.newValue);
+            if (!evt.newValue)
+                return;
+
+            // when multiline set, inspector field does not have \n, but its value attribute does
+            // set inspector field value to the value attribute
+            var rootPath = BuilderUxmlAttributesView.GetSerializedDataRoot(m_Property.propertyPath);
+            var rootProperty = m_Property.serializedObject.FindProperty(rootPath);
+            var valueProperty = rootProperty.FindPropertyRelative("value");
+
+            var valueAttributeString = valueProperty.stringValue;
+            valueFieldInInspector.SetValueWithoutNotify(valueAttributeString);
+        }
+    }
+
+    [CustomPropertyDrawer(typeof(FixedItemHeightDecoratorAttribute))]
+    class FixedItemHeightDecoratorPropertyDrawer : PropertyDrawer
+    {
         protected SerializedProperty m_ValueProperty;
 
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             m_ValueProperty = property;
 
-            m_EnumValue = new EnumField("Value");
-            ConfigureField(m_EnumValue, property);
-            UpdateField(property.serializedObject);
-            return m_EnumValue;
+            var uiField = new IntegerField(property.displayName)
+            {
+                isDelayed = true
+            };
+
+            uiField.AddToClassList(BaseField<int>.alignedFieldUssClassName);
+            ConfigureField(uiField, property);
+            UpdateField(property, uiField);
+            return uiField;
+        }
+
+        private void ConfigureField(IntegerField field, SerializedProperty property)
+        {
+            field.RegisterCallback<InputEvent>(OnFixedHeightValueChangedImmediately);
+            field.labelElement.RegisterCallback<PointerMoveEvent>(OnFixedHeightValueChangedImmediately);
+            field.TrackPropertyValue(property, a => UpdateField(a, field));
+            field.RegisterCallback<ChangeEvent<int>>(OnFixedItemHeightValueChanged);
+        }
+
+        private void UpdateField(SerializedProperty property, IntegerField field)
+        {
+            field.value = (int)property.floatValue;
+        }
+
+        void OnFixedItemHeightValueChanged(ChangeEvent<int> evt)
+        {
+            var field = evt.currentTarget as IntegerField;
+            if (evt.newValue < 1)
+            {
+                SetNegativeFixedItemHeightHelpBoxEnabled(true, field);
+                field.SetValueWithoutNotify(1);
+                m_ValueProperty.floatValue = 1f;
+                m_ValueProperty.serializedObject.ApplyModifiedProperties();
+                return;
+            }
+
+            m_ValueProperty.floatValue = evt.newValue;
+            m_ValueProperty.serializedObject.ApplyModifiedProperties();
+        }
+
+        void OnFixedHeightValueChangedImmediately(InputEvent evt)
+        {
+            var field = evt.currentTarget as BaseField<int>;
+            if (field == null)
+                return;
+
+            var newValue = evt.newData;
+            var valueResolved = UINumericFieldsUtils.TryConvertStringToLong(newValue, out var v);
+            var resolvedValue = valueResolved ? Mathf.ClampToInt(v) : field.value;
+
+            SetNegativeFixedItemHeightHelpBoxEnabled((newValue.Length != 0 && (resolvedValue < 1 || newValue.Equals("-"))), field);
+        }
+
+        void OnFixedHeightValueChangedImmediately(PointerMoveEvent evt)
+        {
+            if (evt.target is not Label labelElement)
+                return;
+
+            var field = labelElement.parent as TextInputBaseField<int>;
+            if (field == null)
+                return;
+            var valueResolved = UINumericFieldsUtils.TryConvertStringToLong(field.text, out var v);
+            var resolvedValue = valueResolved ? Mathf.ClampToInt(v) : field.value;
+
+            SetNegativeFixedItemHeightHelpBoxEnabled((resolvedValue < 1 || field.text.ToCharArray()[0].Equals('-')), field);
+        }
+
+        void SetNegativeFixedItemHeightHelpBoxEnabled(bool enabled, BaseField<int> field)
+        {
+            var negativeWarningHelpBox = field.parent.Q<UnityEngine.UIElements.HelpBox>();
+            if (enabled)
+            {
+                if (negativeWarningHelpBox == null)
+                {
+                    negativeWarningHelpBox = new UnityEngine.UIElements.HelpBox(
+                        L10n.Tr(BuilderConstants.HeightIntFieldValueCannotBeNegativeMessage), HelpBoxMessageType.Warning);
+                    field.parent.Add(negativeWarningHelpBox);
+                    negativeWarningHelpBox.EnableInClassList(BuilderConstants.InspectorShownNegativeWarningMessageClassName, true);
+                }
+                else
+                {
+                    negativeWarningHelpBox.EnableInClassList(BuilderConstants.InspectorShownNegativeWarningMessageClassName, true);
+                    negativeWarningHelpBox.EnableInClassList(BuilderConstants.InspectorHiddenNegativeWarningMessageClassName, false);
+                }
+                return;
+            }
+
+            if (negativeWarningHelpBox == null)
+                return;
+            negativeWarningHelpBox.EnableInClassList(BuilderConstants.InspectorHiddenNegativeWarningMessageClassName, true);
+            negativeWarningHelpBox.EnableInClassList(BuilderConstants.InspectorShownNegativeWarningMessageClassName, false);
+        }
+    }
+
+    [CustomPropertyDrawer(typeof(EnumFieldValueDecoratorAttribute))]
+    class EnumFieldValueDecoratorPropertyDrawer : PropertyDrawer
+    {
+        protected static readonly string k_TypePropertyName = nameof(EnumField.typeAsString);
+        protected static readonly string k_ValuePropertyName = nameof(EnumField.valueAsString);
+        protected static readonly string k_IncludeObsoleteValuesPropertyName = nameof(EnumField.includeObsoleteValues);
+
+        protected SerializedProperty m_ValueProperty;
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            m_ValueProperty = property;
+
+            var enumValue = new EnumField("Value");
+            enumValue.AddToClassList(TextField.alignedFieldUssClassName);
+            ConfigureField(enumValue, property);
+            UpdateField(property, enumValue);
+
+            return enumValue;
         }
 
         protected void ConfigureField(VisualElement element, SerializedProperty property)
         {
-            var typeProperty = property.serializedObject.FindProperty(k_TypePropertyName);
-            var obsoleteValuesProperty = property.serializedObject.FindProperty(k_IncludeObsoleteValuesPropertyName);
-            element.TrackPropertyValue(obsoleteValuesProperty, OnTrackedValueChanged);
-            element.TrackPropertyValue(typeProperty, OnTrackedValueChanged);
+            var rootPath = BuilderUxmlAttributesView.GetSerializedDataRoot(property.propertyPath);
+            var rootProperty = property.serializedObject.FindProperty(rootPath);
+
+            var typeProperty = rootProperty.FindPropertyRelative(k_TypePropertyName);
+            var obsoleteValuesProperty = rootProperty.FindPropertyRelative(k_IncludeObsoleteValuesPropertyName);
+            element.TrackPropertyValue(obsoleteValuesProperty, a => UpdateField(a, element));
+            element.TrackPropertyValue(typeProperty, a => UpdateField(a, element));
             element.RegisterCallback<ChangeEvent<Enum>>(EnumValueChanged);
         }
 
@@ -71,49 +231,54 @@ namespace UnityEditor.UIElements
             m_ValueProperty.serializedObject.ApplyModifiedProperties();
         }
 
-        protected void OnTrackedValueChanged(SerializedProperty property) => UpdateField(property.serializedObject);
-
-        protected virtual void UpdateField(SerializedObject serializedObject)
+        protected virtual void UpdateField(SerializedProperty property, VisualElement element)
         {
-            var typeProperty = serializedObject.FindProperty(k_TypePropertyName);
-            var obsoleteValuesProperty = serializedObject.FindProperty(k_IncludeObsoleteValuesPropertyName);
-            var valueProperty = serializedObject.FindProperty(k_ValuePropertyName);
+            var rootPath = BuilderUxmlAttributesView.GetSerializedDataRoot(property.propertyPath);
+            var rootProperty = property.serializedObject.FindProperty(rootPath);
 
-            m_EnumValue.includeObsoleteValues = obsoleteValuesProperty.boolValue;
-            m_EnumValue.typeAsString = typeProperty.stringValue;
-            m_EnumValue.valueAsString = valueProperty.stringValue;
+            var typeProperty = rootProperty.FindPropertyRelative(k_TypePropertyName);
+            var obsoleteValuesProperty = rootProperty.FindPropertyRelative(k_IncludeObsoleteValuesPropertyName);
+            var valueProperty = rootProperty.FindPropertyRelative(k_ValuePropertyName);
 
-            m_EnumValue.SetEnabled(m_EnumValue.type != null);
+            var enumField = element as EnumField;
+            enumField.includeObsoleteValues = obsoleteValuesProperty.boolValue;
+            enumField.typeAsString = typeProperty.stringValue;
+            enumField.valueAsString = valueProperty.stringValue;
+
+            enumField.SetEnabled(enumField.type != null);
         }
     }
 
     [CustomPropertyDrawer(typeof(EnumFlagsFieldValueDecoratorAttribute))]
     class EnumFlagsFieldValueDecoratorPropertyDrawer : EnumFieldValueDecoratorPropertyDrawer
     {
-        EnumFlagsField m_EnumFlagsValue;
-
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             m_ValueProperty = property;
 
-            m_EnumFlagsValue = new EnumFlagsField("Value");
+            var enumFlagsValue = new EnumFlagsField("Value");
+            enumFlagsValue.AddToClassList(TextField.alignedFieldUssClassName);
 
-            ConfigureField(m_EnumFlagsValue, property);
-            UpdateField(property.serializedObject);
-            return m_EnumFlagsValue;
+            ConfigureField(enumFlagsValue, property);
+            UpdateField(property, enumFlagsValue);
+            return enumFlagsValue;
         }
 
-        protected override void UpdateField(SerializedObject serializedObject)
+        protected override void UpdateField(SerializedProperty property, VisualElement element)
         {
-            var typeProperty = serializedObject.FindProperty(k_TypePropertyName);
-            var obsoleteValuesProperty = serializedObject.FindProperty(k_IncludeObsoleteValuesPropertyName);
-            var valueProperty = serializedObject.FindProperty(k_ValuePropertyName);
+            var rootPath = BuilderUxmlAttributesView.GetSerializedDataRoot(property.propertyPath);
+            var rootProperty = property.serializedObject.FindProperty(rootPath);
 
-            m_EnumFlagsValue.includeObsoleteValues = obsoleteValuesProperty.boolValue;
-            m_EnumFlagsValue.typeAsString = typeProperty.stringValue;
-            m_EnumFlagsValue.valueAsString = valueProperty.stringValue;
+            var typeProperty = rootProperty.FindPropertyRelative(k_TypePropertyName);
+            var obsoleteValuesProperty = rootProperty.FindPropertyRelative(k_IncludeObsoleteValuesPropertyName);
+            var valueProperty = rootProperty.FindPropertyRelative(k_ValuePropertyName);
 
-            m_EnumFlagsValue.SetEnabled(m_EnumFlagsValue.type != null);
+            var enumFlagsValue = element as EnumFlagsField;
+            enumFlagsValue.includeObsoleteValues = obsoleteValuesProperty.boolValue;
+            enumFlagsValue.typeAsString = typeProperty.stringValue;
+            enumFlagsValue.valueAsString = valueProperty.stringValue;
+
+            enumFlagsValue.SetEnabled(enumFlagsValue.type != null);
         }
     }
 
@@ -123,6 +288,7 @@ namespace UnityEditor.UIElements
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var tagField = new TagField("Value");
+            tagField.AddToClassList(TextField.alignedFieldUssClassName);
             tagField.BindProperty(property);
             return tagField;
         }

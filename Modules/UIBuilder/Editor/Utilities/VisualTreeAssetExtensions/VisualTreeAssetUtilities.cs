@@ -18,14 +18,14 @@ namespace Unity.UI.Builder
             public int customElements { get; set; }
             public int hierarchyDepth { get; set; }
         }
-        
+
         public static VisualTreeAsset CreateInstance()
         {
             var vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
             vta.visualElementAssets = new List<VisualElementAsset>();
             vta.templateAssets = new List<TemplateAsset>();
 
-            vta.hideFlags = HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
+            vta.hideFlags = HideFlags.DontUnloadUnusedAsset;
 
             var uxmlTagElement = new VisualElementAsset(BuilderConstants.UxmlTagTypeName);
             InitializeElement(uxmlTagElement);
@@ -56,6 +56,11 @@ namespace Unity.UI.Builder
             }
 
             return idToChildren;
+        }
+
+        public static void InitializeObject(UxmlObjectAsset oba)
+        {
+            oba.orderInDocument = -1;
         }
 
         public static void InitializeElement(VisualElementAsset vea)
@@ -214,7 +219,7 @@ namespace Unity.UI.Builder
 
             return vea;
         }
-        
+
         static void GetElementsInfoRecursively(List<VisualElementAsset> rootAssets,
             Dictionary<int, List<VisualElementAsset>> idToChildren, ref ElementsInfo elementsInfo)
         {
@@ -222,7 +227,7 @@ namespace Unity.UI.Builder
             {
                 return;
             }
-            
+
             elementsInfo.hierarchyDepth++;
 
             rootAssets.Sort(CompareForOrder);
@@ -231,14 +236,14 @@ namespace Unity.UI.Builder
                 Assert.IsNotNull(rootElement);
 
                 // Editor elements
-                if (rootElement.fullTypeName.Contains("UnityEditor") 
+                if (rootElement.fullTypeName.Contains("UnityEditor")
                     || BuilderLibraryContent.IsEditorOnlyControl(rootElement.fullTypeName))
                 {
                     elementsInfo.editorElements++;
                 }
                 // Custom controls
                 // i.e. everything that is not a template and is not in the Standard library tab
-                else if (rootElement.fullTypeName != BuilderConstants.UxmlInstanceTypeName 
+                else if (rootElement.fullTypeName != BuilderConstants.UxmlInstanceTypeName
                          && !BuilderLibraryContent.IsStandardControl(rootElement.fullTypeName))
                 {
                     elementsInfo.customElements++;
@@ -246,7 +251,7 @@ namespace Unity.UI.Builder
 
                 // All elements
                 elementsInfo.elements++;
-                
+
                 idToChildren.TryGetValue(rootElement.id, out var rootChildAssets);
                 rootChildAssets?.Sort(CompareForOrder);
                 GetElementsInfoRecursively(rootChildAssets, idToChildren, ref elementsInfo);
@@ -262,9 +267,9 @@ namespace Unity.UI.Builder
 
             // Tree root have a parentId == 0
             idToChildren.TryGetValue(0, out var rootAssets);
-            if (rootAssets == null || rootAssets.Count == 0) 
+            if (rootAssets == null || rootAssets.Count == 0)
                 return elementsInfo;
-            
+
             var root = rootAssets[0];
             rootAssets.Clear();
             idToChildren.TryGetValue(root.id, out rootAssets);

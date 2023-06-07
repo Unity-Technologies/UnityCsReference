@@ -30,7 +30,7 @@ class LicenseExpiredWindowContents : TemplateLicenseEventWindowContents
     {
         m_Description = LicenseExpiredHandler.BuildLicenseExpiredText(m_HasUiEntitlement, m_Notification);
 
-        m_Buttons.Add(m_HasUiEntitlement ? EventsButtonType.OpenUnityHub : EventsButtonType.SaveAndClose);
+        m_Buttons.Add(m_HasUiEntitlement ? EventsButtonType.OpenUnityHub : EventsButtonType.SaveAndQuit);
 
         m_LogTag = LicenseTrStrings.ExpiredWindowTitle;
         m_LogType = LogType.Error;

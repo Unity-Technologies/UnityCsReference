@@ -82,12 +82,12 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static public string PrepareForBuild(BuildOptions options, BuildTargetGroup targetGroup, BuildTarget target)
+        static public string PrepareForBuild(BuildPlayerOptions buildOptions)
         {
-            var postprocessor = ModuleManager.GetBuildPostProcessor(targetGroup, target);
+            var postprocessor = ModuleManager.GetBuildPostProcessor(buildOptions.targetGroup, buildOptions.target);
             if (postprocessor == null)
                 return null;
-            return postprocessor.PrepareForBuild(options, target);
+            return postprocessor.PrepareForBuild(buildOptions);
         }
 
         static public string GetExtensionForBuildTarget(BuildTargetGroup targetGroup, BuildTarget target, int subtarget, BuildOptions options)

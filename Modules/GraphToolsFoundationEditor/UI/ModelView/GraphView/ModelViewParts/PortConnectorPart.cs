@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -15,6 +16,7 @@ namespace Unity.GraphToolsFoundation.Editor
     {
         public static readonly string ussClassName = "ge-port-connector-part";
         public static readonly string connectorUssName = "connector";
+        public static readonly string createFromPortHitBoxUssName = "create-from-port-hit-box";
         public static readonly string labelName = "label";
 
         /// <summary>
@@ -40,6 +42,8 @@ namespace Unity.GraphToolsFoundation.Editor
         protected VisualElement m_ConnectorBox;
 
         protected VisualElement m_Root;
+
+        protected VisualElement m_CreateFromPortHitBox;
 
         /// <inheritdoc />
         public override VisualElement Root => m_Root;
@@ -78,27 +82,51 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_Root.Add(m_ConnectorLabel);
             }
 
+            m_CreateFromPortHitBox = new VisualElement { name = createFromPortHitBoxUssName };
+            m_CreateFromPortHitBox.RegisterCallback<MouseOverEvent>(OnMouseOverCreateFromPortHitBox);
+            m_CreateFromPortHitBox.RegisterCallback<MouseOutEvent>(OnMouseOutCreateFromPortHitBox);
+
+            m_Root.Add(m_CreateFromPortHitBox);
+            m_Root.RegisterCallback<GeometryChangedEvent>(OnGeometryChange);
+
             container.Add(m_Root);
-            container.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
-            container.RegisterCallback<MouseMoveEvent>(OnMouseMove);
         }
 
-        void OnMouseMove(MouseMoveEvent evt)
+        void OnMouseOutCreateFromPortHitBox(MouseOutEvent evt)
         {
             if (m_OwnerElement is not Port port)
                 return;
 
-            var mouseIsOnHitBox = Port.GetPortHitBoxBounds(port, true).Contains(evt.mousePosition);
-            if (mouseIsOnHitBox != port.Hovering)
-                port.Hovering = mouseIsOnHitBox;
-        }
-
-        void OnMouseLeave(MouseLeaveEvent evt)
-        {
-            if (m_OwnerElement is not Port port)
-                return;
-
+            ContentDragger.ChangeMouseCursorTo_Internal(port.GraphView.elementPanel, (int)MouseCursor.Arrow);
             port.Hovering = false;
+        }
+
+        void OnMouseOverCreateFromPortHitBox(MouseOverEvent evt)
+        {
+            if (m_OwnerElement is not Port port || port.PortModel.Capacity == PortCapacity.None || !port.enabledSelf)
+                return;
+
+            // A wire is already being dragged. It is not possible to create a wire from the hovered port hit box.
+            if (port.GraphView.IsWireDragging)
+                return;
+
+            ContentDragger.ChangeMouseCursorTo_Internal(port.GraphView.elementPanel, (int)MouseCursor.Link);
+            port.Hovering = true;
+        }
+
+        void OnGeometryChange(GeometryChangedEvent evt)
+        {
+            if (m_OwnerElement is not Port port)
+                return;
+
+            var createFromPortHitBoxRect = Root.WorldToLocal(Port.GetPortHitBoxBounds(port, true));
+            m_CreateFromPortHitBox.style.left = createFromPortHitBoxRect.xMin;
+            m_CreateFromPortHitBox.style.width = createFromPortHitBoxRect.width;
+            m_CreateFromPortHitBox.style.top = createFromPortHitBoxRect.yMin;
+            m_CreateFromPortHitBox.style.height = createFromPortHitBoxRect.height;
+            m_CreateFromPortHitBox.style.position = new StyleEnum<Position>(Position.Absolute);
+
+            m_Root.UnregisterCallback<GeometryChangedEvent>(OnGeometryChange);
         }
 
         /// <inheritdoc />

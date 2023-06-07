@@ -207,7 +207,6 @@ namespace Unity.Properties
         readonly PropertyPathPart m_Part1;
         readonly PropertyPathPart m_Part2;
         readonly PropertyPathPart m_Part3;
-        readonly int m_InlinePartsCount;
         readonly PropertyPathPart[] m_AdditionalParts;
 
         /// <summary>
@@ -270,8 +269,7 @@ namespace Unity.Properties
             m_Part2 = p.m_Part2;
             m_Part3 = p.m_Part3;
             m_AdditionalParts = p.m_AdditionalParts;
-            m_InlinePartsCount = p.m_InlinePartsCount;
-            Length = m_InlinePartsCount + (m_AdditionalParts?.Length ?? 0);
+            Length = p.Length;
         }
 
         PropertyPath(in PropertyPathPart part)
@@ -281,7 +279,6 @@ namespace Unity.Properties
             m_Part2 = default;
             m_Part3 = default;
             m_AdditionalParts = default;
-            m_InlinePartsCount = 1;
             Length = 1;
         }
 
@@ -292,7 +289,6 @@ namespace Unity.Properties
             m_Part2 = default;
             m_Part3 = default;
             m_AdditionalParts = default;
-            m_InlinePartsCount = 2;
             Length = 2;
         }
 
@@ -303,7 +299,6 @@ namespace Unity.Properties
             m_Part2 = part2;
             m_Part3 = default;
             m_AdditionalParts = default;
-            m_InlinePartsCount = 3;
             Length = 3;
         }
 
@@ -314,7 +309,6 @@ namespace Unity.Properties
             m_Part2 = part2;
             m_Part3 = part3;
             m_AdditionalParts = default;
-            m_InlinePartsCount = 4;
             Length = 4;
         }
 
@@ -324,7 +318,6 @@ namespace Unity.Properties
             m_Part1 = default;
             m_Part2 = default;
             m_Part3 = default;
-            m_InlinePartsCount = 0;
             m_AdditionalParts = parts.Count > k_InlineCount
                 ? new PropertyPathPart[parts.Count - k_InlineCount]
                 : default;
@@ -335,19 +328,15 @@ namespace Unity.Properties
                 {
                     case 0:
                         m_Part0 = parts[i];
-                        ++m_InlinePartsCount;
                         break;
                     case 1:
                         m_Part1 = parts[i];
-                        ++m_InlinePartsCount;
                         break;
                     case 2:
                         m_Part2 = parts[i];
-                        ++m_InlinePartsCount;
                         break;
                     case 3:
                         m_Part3 = parts[i];
-                        ++m_InlinePartsCount;
                         break;
                     default:
                         // ReSharper disable once PossibleNullReferenceException
@@ -414,10 +403,10 @@ namespace Unity.Properties
             if (totalCount <= k_InlineCount)
             {
                 var secondIndex = 0;
-                var part0 = path[0];
-                var part1 = firstPathLength > 1 ? path[1] : pathToAppend[secondIndex++];
-                var part2 = totalCount > 2 ? (firstPathLength > 2 ? path[2] : pathToAppend[secondIndex++]) : default;
-                var part3 = totalCount > 3 ? (firstPathLength > 3 ? path[3] : pathToAppend[secondIndex]) : default;
+                var part0 = path.m_Part0;
+                var part1 = firstPathLength > 1 ? path.m_Part1 : pathToAppend[secondIndex++];
+                var part2 = totalCount > 2 ? (firstPathLength > 2 ? path.m_Part2 : pathToAppend[secondIndex++]) : default;
+                var part3 = totalCount > 3 ? (firstPathLength > 3 ? path.m_Part3 : pathToAppend[secondIndex]) : default;
 
                 switch (totalCount)
                 {
@@ -469,11 +458,11 @@ namespace Unity.Properties
             switch (path.Length + 1)
             {
                 case 2:
-                    return new PropertyPath(path[0], part);
+                    return new PropertyPath(path.m_Part0, part);
                 case 3:
-                    return new PropertyPath(path[0], path[1], part);
+                    return new PropertyPath(path.m_Part0, path.m_Part1, part);
                 case 4:
-                    return new PropertyPath(path[0], path[1], path[2], part);
+                    return new PropertyPath(path.m_Part0, path.m_Part1, path.m_Part2, part);
                 default:
                     var parts = UnityEngine.Pool.ListPool<PropertyPathPart>.Get();
                     try

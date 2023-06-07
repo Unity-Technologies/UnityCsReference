@@ -179,6 +179,15 @@ namespace UnityEngine.UIElements
             [UxmlAttribute("tabindex")]
             [SerializeField] private int tabIndex;
             [SerializeField] private bool focusable;
+            [SerializeField, HideInInspector, DataSourceDrawer] private Object dataSource;
+
+            // We use a string here because the PropertyPath struct is not serializable
+            [UxmlAttribute("data-source-path")]
+            [SerializeField, HideInInspector] private string dataSourcePathString;
+
+            [UxmlAttribute("data-source-type")]
+            [SerializeField, HideInInspector, DataSourceTypeDrawer(typeof(object))] private string dataSourceTypeString;
+            [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
             #pragma warning restore 649
 
             [ExcludeFromDocs]
@@ -195,6 +204,22 @@ namespace UnityEngine.UIElements
                 e.usageHints = usageHints;
                 e.tabIndex = tabIndex;
                 e.focusable = focusable;
+                e.dataSource = dataSource ? dataSource : null;
+
+                e.dataSourcePathString = dataSourcePathString;
+                e.dataSourceTypeString = dataSourceTypeString;
+
+                e.bindings.Clear();
+                if (bindings != null)
+                {
+                    foreach (var bindingData in bindings)
+                    {
+                        var binding = (Binding)bindingData.CreateInstance();
+                        bindingData.Deserialize(binding);
+                        e.SetBinding(binding.property, binding);
+                        e.bindings.Add(binding);
+                    }
+                }
             }
         }
 
@@ -231,6 +256,10 @@ namespace UnityEngine.UIElements
             UxmlStringAttributeDescription m_ContentContainer = new UxmlStringAttributeDescription { name = "content-container", obsoleteNames = new[] { "contentContainer" } };
             UxmlStringAttributeDescription m_Style = new UxmlStringAttributeDescription { name = "style" };
 #pragma warning restore
+
+            UxmlAssetAttributeDescription<Object> m_DataSource = new UxmlAssetAttributeDescription<Object>() { name = "data-source" };
+            UxmlStringAttributeDescription m_DataSourcePath = new UxmlStringAttributeDescription() { name = "data-source-path" };
+            UxmlTypeAttributeDescription<object> m_DataSourceType = new UxmlTypeAttributeDescription<object> { name = "data-source-type" };
 
             /// <summary>
             /// Returns an enumerable containing <c>UxmlChildElementDescription(typeof(VisualElement))</c>, since VisualElements can contain other VisualElements.
@@ -271,6 +300,10 @@ namespace UnityEngine.UIElements
                 // tabIndex and focusable overrides obsolete focusIndex.
                 ve.tabIndex = m_TabIndex.GetValueFromBag(bag, cc);
                 ve.focusable = focusable.GetValueFromBag(bag, cc);
+
+                ve.dataSource = m_DataSource.GetValueFromBag(bag, cc);
+                ve.dataSourcePath = new PropertyPath(m_DataSourcePath.GetValueFromBag(bag, cc));
+                ve.dataSourceType = m_DataSourceType.GetValueFromBag(bag, cc);
 
                 // We ignore m_Class, it was processed in UIElementsViewImporter.
                 // We ignore m_ContentContainer, it was processed in UIElementsViewImporter.
@@ -1290,8 +1323,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         public VisualElement()
         {
-            UIElementsRuntimeUtilityNative.VisualElementCreation();
-
             m_Children = s_EmptyList;
             controlid = ++s_NextId;
 
@@ -1440,6 +1471,8 @@ namespace UnityEngine.UIElements
                 }
 
                 UnregisterRunningAnimations();
+                CreateBindingRequests();
+                TrackSource(dataSource, null);
             }
         }
 
@@ -1449,6 +1482,8 @@ namespace UnityEngine.UIElements
             {
                 layoutNode.Config = elementPanel.layoutConfig;
                 RegisterRunningAnimations();
+                ProcessBindingRequests();
+                TrackSource(null, dataSource);
 
                 //We need to reset any visual pseudo state
                 pseudoStates &= ~(PseudoStates.Focus | PseudoStates.Active | PseudoStates.Hover);

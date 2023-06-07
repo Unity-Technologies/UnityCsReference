@@ -119,6 +119,12 @@ namespace UnityEngine.Rendering
             return SubmitForRenderPassValidation_Internal();
         }
 
+        public bool HasInvokeOnRenderObjectCallbacks()
+        {
+            Validate();
+            return HasInvokeOnRenderObjectCallbacks_Internal();
+        }
+
         internal void GetCameras(List<Camera> results)
         {
             Validate();

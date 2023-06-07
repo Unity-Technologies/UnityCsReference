@@ -493,7 +493,7 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
 
     void SetupRenderTexture()
     {
-        GraphicsFormat format = SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, FormatUsage.Render)
+        GraphicsFormat format = SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, GraphicsFormatUsage.Render)
             ? GraphicsFormat.R16G16B16A16_SFloat
             : SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
 

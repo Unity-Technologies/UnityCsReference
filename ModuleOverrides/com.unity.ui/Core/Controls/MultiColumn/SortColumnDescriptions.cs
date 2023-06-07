@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField, UxmlObject] private List<SortColumnDescription.UxmlSerializedData> sortColumnDescriptions;
+            [SerializeReference, UxmlObjectReference] private List<SortColumnDescription.UxmlSerializedData> sortColumnDescriptions;
             #pragma warning restore 649
 
             public override object CreateInstance() => new SortColumnDescriptions();

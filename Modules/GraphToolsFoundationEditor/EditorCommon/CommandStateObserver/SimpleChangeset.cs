@@ -34,7 +34,7 @@ namespace Unity.GraphToolsFoundation.Editor
         }
 
         /// <inheritdoc/>
-        public void AggregateFrom(IEnumerable<IChangeset> changesets)
+        public void AggregateFrom(IReadOnlyList<IChangeset> changesets)
         {
             Clear();
             foreach (var cs in changesets)

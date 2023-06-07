@@ -15,7 +15,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     [Serializable]
     [MovedFrom(false, "Unity.GraphToolsFoundation.Editor", "Unity.GraphTools.Foundation.Model")]
-    abstract class GraphElementModel : Model, ISerializationCallbackReceiver
+    abstract class GraphElementModel : Model
     {
         [SerializeField, HideInInspector]
         Color m_Color;

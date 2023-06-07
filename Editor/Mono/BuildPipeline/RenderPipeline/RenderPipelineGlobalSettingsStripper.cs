@@ -24,7 +24,10 @@ namespace UnityEditor.Build.Rendering
             if (renderPipelineAssets.Count > 0 && renderPipelineAssets[0] != null)
             {
                 // Top level stripping, even if there are multiple pipelines registered into the project, as we are building we are making sure the only one that is being transferred into the player is the current one.
-                GraphicsSettings.currentRenderPipelineGlobalSettings = EditorGraphicsSettings.GetSettingsForRenderPipeline(renderPipelineAssets[0].pipelineType);
+                if(renderPipelineAssets[0].pipelineType != null)
+                    GraphicsSettings.currentRenderPipelineGlobalSettings = EditorGraphicsSettings.GetRenderPipelineGlobalSettingsAsset(renderPipelineAssets[0].pipelineType);
+                else
+                    Debug.LogWarning($"{renderPipelineAssets[0].GetType().Name} must inherit from {nameof(RenderPipelineAsset)}<T> instead of {nameof(RenderPipelineAsset)} to benefit from {nameof(RenderPipelineGlobalSettingsStripper)}.");
             }
 
             ListPool<RenderPipelineAsset>.Release(renderPipelineAssets);

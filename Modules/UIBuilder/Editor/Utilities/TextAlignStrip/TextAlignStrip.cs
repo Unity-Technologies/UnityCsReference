@@ -33,7 +33,10 @@ namespace Unity.UI.Builder
 
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(s_UssPath));
 
-            m_ButtonStripContainer = new VisualElement();
+            m_ButtonStripContainer = new VisualElement()
+            {
+                tabIndex = -1
+            };
             m_ButtonStripContainer.AddToClassList(s_ButtonStripContainerClassName);
 
             var iconPath = "Text Alignment/";

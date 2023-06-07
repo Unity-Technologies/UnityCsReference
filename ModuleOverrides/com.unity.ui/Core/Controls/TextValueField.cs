@@ -63,7 +63,7 @@ namespace UnityEngine.UIElements
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public abstract class TextValueField<TValueType> : TextInputBaseField<TValueType>, IValueField<TValueType>
     {
-        internal static readonly DataBindingProperty formatStringProperty = nameof(formatString);
+        internal static readonly BindingId formatStringProperty = nameof(formatString);
 
         // This property to alleviate the fact we have to cast all the time
         TextValueInput textValueInput => (TextValueInput)textInputBase;

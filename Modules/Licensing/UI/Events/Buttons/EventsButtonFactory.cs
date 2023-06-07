@@ -25,8 +25,7 @@ class EventsButtonFactory : IEventsButtonFactory
         {
             EventsButtonType.Ok => new OkButton(m_CloseModalAction, additionalCustomClickAction, m_NativeApiWrapper),
             EventsButtonType.ManageLicense => new ManageLicenseButton(m_CloseModalAction, additionalCustomClickAction, m_NativeApiWrapper),
-            EventsButtonType.SaveAndClose => BuildSaveAndCloseBundle(additionalCustomClickAction),
-            EventsButtonType.Close => new CloseButton(m_CloseModalAction, additionalCustomClickAction),
+            EventsButtonType.SaveAndQuit => BuildSaveAndCloseBundle(additionalCustomClickAction),
             EventsButtonType.UpdateLicense => new UpdateLicenseButton(m_CloseModalAction, additionalCustomClickAction, m_NativeApiWrapper),
             EventsButtonType.OpenUnityHub => new OpenUnityHubButton(m_CloseModalAction, additionalCustomClickAction, m_NativeApiWrapper),
             _ => throw new ArgumentException($"Unknown button type: {buttonType}")
@@ -39,9 +38,9 @@ class EventsButtonFactory : IEventsButtonFactory
     {
         VisualElement visualElement = new VisualElement();
         visualElement.Add(new CloseProjectButton(additionalCustomAction, m_CloseModalAction, m_NativeApiWrapper));
-        if (m_NativeApiWrapper.GetUnsavedScenes().Count > 0)
+        if (m_NativeApiWrapper.HasUnsavedScenes())
         {
-            visualElement.Add(new SaveAndCloseButton(m_CloseModalAction, additionalCustomAction, m_NativeApiWrapper));
+            visualElement.Add(new SaveAndQuitButton(m_CloseModalAction, additionalCustomAction, m_NativeApiWrapper));
         }
 
         return visualElement;

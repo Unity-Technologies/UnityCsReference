@@ -7,8 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Unity.CommandStateObserver;
+using Unity.Profiling;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
@@ -95,6 +97,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         ContextualMenuManipulator m_ContextualMenuManipulator;
         ContentZoomer m_Zoomer;
+        bool m_IsWireDragging;
 
         AutoAlignmentHelper_Internal m_AutoAlignmentHelper;
         AutoDistributingHelper_Internal m_AutoDistributingHelper;
@@ -114,6 +117,9 @@ namespace Unity.GraphToolsFoundation.Editor
         RectangleSelector m_RectangleSelector;
         FreehandSelector m_FreehandSelector;
 
+        Dictionary<VisualElement, BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>> m_SpacePartitioningByContainer;
+        static readonly ProfilerMarker k_SpacePartitioningUpdateMarker = new ProfilerMarker($"{nameof(GraphView)}.{nameof(UpdateSpacePartitioning)}");
+
         protected IDragAndDropHandler m_CurrentDragAndDropHandler;
         protected IDragAndDropHandler m_BlackboardDragAndDropHandler;
 
@@ -130,6 +136,7 @@ namespace Unity.GraphToolsFoundation.Editor
         AutoPlacementObserver m_AutoPlacementObserver;
         AutomaticGraphProcessingObserver m_AutomaticGraphProcessingObserver;
         GraphProcessingErrorObserver m_GraphProcessingErrorObserver;
+        SpacePartitioningObserver m_SpacePartitioningObserver;
 
         ViewSelection m_ViewSelection;
 
@@ -137,6 +144,24 @@ namespace Unity.GraphToolsFoundation.Editor
         /// The display mode.
         /// </summary>
         public GraphViewDisplayMode DisplayMode { get; }
+
+        /// <summary>
+        /// Whether a wire is currently being dragged in the graph.
+        /// </summary>
+        public bool IsWireDragging
+        {
+            get => m_IsWireDragging;
+            set
+            {
+                if (m_IsWireDragging != value)
+                {
+                    m_IsWireDragging = value;
+                    // Clear any selection when a wire is being dragged.
+                    if (m_IsWireDragging)
+                        ClearSelection();
+                }
+            }
+        }
 
         /// <summary>
         /// The VisualElement that contains all the views.
@@ -328,6 +353,8 @@ namespace Unity.GraphToolsFoundation.Editor
             PositionDependenciesManager_Internal = new PositionDependenciesManager_Internal(this, GraphTool?.Preferences);
             m_AutoAlignmentHelper = new AutoAlignmentHelper_Internal(this);
             m_AutoDistributingHelper = new AutoDistributingHelper_Internal(this);
+
+            m_SpacePartitioningByContainer = new Dictionary<VisualElement, BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>>();
 
             if (DisplayMode == GraphViewDisplayMode.Interactive)
             {
@@ -620,7 +647,16 @@ namespace Unity.GraphToolsFoundation.Editor
             if (!m_ContainerLayers.ContainsKey(element.Layer))
                 AddLayer(element.Layer);
 
+            var oldContainer = element.parent;
             GetLayer(element.Layer).Add(element);
+
+            if (element.parent == oldContainer)
+                return;
+
+            using (var updater = GraphViewModel.SpacePartitioningState.UpdateScope)
+            {
+                updater.MarkGraphElementForChangingContainer(element, oldContainer, element.parent);
+            }
         }
 
         public void SetupZoom(float minScaleSetup, float maxScaleSetup, float maxScaleOnFrame)
@@ -683,34 +719,17 @@ namespace Unity.GraphToolsFoundation.Editor
                     Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
                     ShowItemLibrary(mousePosition);
                 });
-                var nodesAndNotes = selection.
-                    Where(e => e is AbstractNodeModel || e is StickyNoteModel).
+                var selectedGraphElements = selection.
+                    Where(t => !(t is WireModel)).
                     Select(m => m.GetView<GraphElement>(this)).
-                    Where(v => v != null).ToList();
-
-                bool hasNodeOnGraph = nodesAndNotes.Any(t => !t.GraphElementModel.NeedsContainer());
+                    Where(v => v != null && v.visible).ToList();
 
                 evt.menu.AppendAction("Create Placemat", menuAction =>
                 {
                     Vector2 mousePosition = menuAction?.eventInfo?.mousePosition ?? Event.current.mousePosition;
                     Vector2 graphPosition = ContentViewContainer.WorldToLocal(mousePosition);
 
-                    if (hasNodeOnGraph)
-                    {
-                        Rect bounds = new Rect();
-                        if (Placemat.ComputeElementBounds_Internal(ref bounds, nodesAndNotes.Where(t => !t.GraphElementModel.NeedsContainer())))
-                        {
-                            Dispatch(new CreatePlacematCommand(bounds));
-                        }
-                        else
-                        {
-                            Dispatch(new CreatePlacematCommand(graphPosition));
-                        }
-                    }
-                    else
-                    {
-                        Dispatch(new CreatePlacematCommand(graphPosition));
-                    }
+                    CreatePlacematFromSelection(selectedGraphElements, graphPosition);
                 });
                 evt.menu.AppendAction("Create Sticky Note", menuAction =>
                 {
@@ -720,14 +739,15 @@ namespace Unity.GraphToolsFoundation.Editor
                     Dispatch(new CreateStickyNoteCommand(graphPosition));
                 });
 
-                if (selection.Any())
+                if (selection.Count != 0)
                 {
-
                     /* Actions on selection */
 
                     evt.menu.AppendSeparator();
 
-                    if (hasNodeOnGraph)
+                    bool hasElementsOnGraph = selectedGraphElements.Count(t => !t.GraphElementModel.NeedsContainer()) > 1;
+
+                    if (hasElementsOnGraph)
                     {
                         // TODO OYT (GTF-804): For V1, access to the Align Items and Align Hierarchy features was removed as they are confusing to users. To be improved before making them accessible again.
                         // var itemName = ShortcutHelper.CreateShortcutMenuItemEntry("Align Elements/Align Items", GraphTool.Name, ShortcutAlignNodesEvent.id);
@@ -742,35 +762,31 @@ namespace Unity.GraphToolsFoundation.Editor
                         //     Dispatch(new AlignNodesCommand(this, true, GetSelection()));
                         // });
 
-                        var selectionUI = selection.Select(m => m.GetView<GraphElement>(this));
-                        if (selectionUI.Count(elem => elem != null && !(elem.Model is WireModel) && elem.visible) > 1)
-                        {
-                            evt.menu.AppendAction("Align Elements/Top",
-                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Top));
+                        evt.menu.AppendAction("Align Elements/Top",
+                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Top));
 
-                            evt.menu.AppendAction("Align Elements/Bottom",
-                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Bottom));
+                        evt.menu.AppendAction("Align Elements/Bottom",
+                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Bottom));
 
-                            evt.menu.AppendAction("Align Elements/Left",
-                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Left));
+                        evt.menu.AppendAction("Align Elements/Left",
+                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Left));
 
-                            evt.menu.AppendAction("Align Elements/Right",
-                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Right));
+                        evt.menu.AppendAction("Align Elements/Right",
+                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference.Right));
 
-                            evt.menu.AppendAction("Align Elements/Horizontal Center",
-                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference
-                                    .HorizontalCenter));
+                        evt.menu.AppendAction("Align Elements/Horizontal Center",
+                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference
+                                .HorizontalCenter));
 
-                            evt.menu.AppendAction("Align Elements/Vertical Center",
-                                _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference
-                                    .VerticalCenter));
+                        evt.menu.AppendAction("Align Elements/Vertical Center",
+                            _ => m_AutoAlignmentHelper.SendAlignCommand(AutoAlignmentHelper_Internal.AlignmentReference
+                                .VerticalCenter));
 
-                            evt.menu.AppendAction("Distribute Elements/Horizontal",
-                                _ => m_AutoDistributingHelper.SendDistributeCommand(PortOrientation.Horizontal));
+                        evt.menu.AppendAction("Distribute Elements/Horizontal",
+                            _ => m_AutoDistributingHelper.SendDistributeCommand(PortOrientation.Horizontal));
 
-                            evt.menu.AppendAction("Distribute Elements/Vertical",
-                                _ => m_AutoDistributingHelper.SendDistributeCommand(PortOrientation.Vertical));
-                        }
+                        evt.menu.AppendAction("Distribute Elements/Vertical",
+                            _ => m_AutoDistributingHelper.SendDistributeCommand(PortOrientation.Vertical));
                     }
 
                     var nodes = selection.OfType<AbstractNodeModel>().ToList();
@@ -790,10 +806,13 @@ namespace Unity.GraphToolsFoundation.Editor
                             .Where(x => x.InputsByDisplayOrder.Any(y => y.IsConnected()) &&
                                 x.OutputsByDisplayOrder.Any(y => y.IsConnected())).ToList();
 
-                        evt.menu.AppendAction("Bypass Nodes", _ =>
+                        if (GraphModel.Stencil.AllowNodeBypass)
                         {
-                            Dispatch(new BypassNodesCommand(ioConnectedNodes, nodes));
-                        }, ioConnectedNodes.Count == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+                            evt.menu.AppendAction("Bypass Nodes", _ =>
+                            {
+                                Dispatch(new BypassNodesCommand(ioConnectedNodes, nodes));
+                            }, ioConnectedNodes.Count == 0 ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+                        }
 
                         var willDisable = nodes.Any(n => n.State == ModelState.Enabled);
                         evt.menu.AppendAction(willDisable ? "Disable Nodes" : "Enable Nodes", _ =>
@@ -983,6 +1002,26 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
+        void CreatePlacematFromSelection(List<GraphElement> nodesAndNotes, Vector2 graphPosition)
+        {
+            Rect bounds = new Rect();
+
+            using (ListPool<GraphElement>.Get(out List<GraphElement> elementsInPlacemat))
+            {
+                foreach (var element in nodesAndNotes)
+                    elementsInPlacemat.Add(element.GraphElementModel.NeedsContainer() ? element.GetFirstAncestorOfType<GraphElement>() : element);
+
+                if (Placemat.ComputeElementBounds_Internal(ContentViewContainer, ref bounds, elementsInPlacemat))
+                {
+                    Dispatch(new CreatePlacematCommand(bounds));
+                }
+                else
+                {
+                    Dispatch(new CreatePlacematCommand(graphPosition));
+                }
+            }
+        }
+
         /// <summary>
         /// Shows the Item Library to add graph elements at the mouse position.
         /// </summary>
@@ -993,7 +1032,7 @@ namespace Unity.GraphToolsFoundation.Editor
             var element = panel.Pick(position).GetFirstOfType<ModelView>();
             var stencil = (Stencil)GraphModel.Stencil;
 
-            var current = element as VisualElement;
+            VisualElement current = element;
             while (current != null && current != this)
             {
                 if (current is IShowItemLibraryUI_Internal dssUI)
@@ -1058,12 +1097,18 @@ namespace Unity.GraphToolsFoundation.Editor
             if (m_UpdateObserver == null)
             {
                 m_UpdateObserver = new ModelViewUpdater(this,
-                    GraphViewModel.GraphViewState,
-                    GraphViewModel.GraphModelState,
-                    GraphViewModel.SelectionState,
-                    GraphViewModel.AutoPlacementState,
-                    GraphViewModel.ProcessingErrorsState,
-                    GraphTool.HighlighterState);
+                    new IStateComponent[]
+                    {
+                        GraphViewModel.GraphViewState,
+                        GraphViewModel.GraphModelState,
+                        GraphViewModel.SelectionState,
+                        GraphViewModel.AutoPlacementState,
+                        GraphViewModel.ProcessingErrorsState,
+                        GraphTool.HighlighterState
+                    }, new IStateComponent[]
+                    {
+                        GraphViewModel.SpacePartitioningState
+                    });
                 GraphTool.ObserverManager.RegisterObserver(m_UpdateObserver);
             }
 
@@ -1091,16 +1136,22 @@ namespace Unity.GraphToolsFoundation.Editor
                 m_AutomaticGraphProcessingObserver = new AutomaticGraphProcessingObserver(
                     GraphViewModel.GraphModelState, ProcessOnIdleAgent.StateComponent,
                     GraphViewModel.GraphProcessingState, GraphTool.Preferences);
-                GraphTool?.ObserverManager.RegisterObserver(m_AutomaticGraphProcessingObserver);
+                GraphTool.ObserverManager.RegisterObserver(m_AutomaticGraphProcessingObserver);
             }
 
             if (m_GraphProcessingErrorObserver == null)
             {
                 m_GraphProcessingErrorObserver = new GraphProcessingErrorObserver(GraphViewModel.GraphModelState, GraphViewModel.GraphProcessingState, GraphViewModel.ProcessingErrorsState);
-                GraphTool.ObserverManager.RegisterObserver(m_GraphProcessingErrorObserver);
+                GraphTool?.ObserverManager.RegisterObserver(m_GraphProcessingErrorObserver);
             }
 
-            SelectionDragger?.RegisterObservers(GraphTool.ObserverManager);
+            if (m_SpacePartitioningObserver == null)
+            {
+                m_SpacePartitioningObserver = new SpacePartitioningObserver(this, GraphViewModel.SpacePartitioningState);
+                GraphTool.ObserverManager.RegisterObserver(m_SpacePartitioningObserver);
+            }
+
+            SelectionDragger?.RegisterObservers(GraphTool?.ObserverManager);
         }
 
         /// <inheritdoc />
@@ -1182,6 +1233,12 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 GraphTool?.ObserverManager?.UnregisterObserver(m_AutoPlacementObserver);
                 m_AutoPlacementObserver = null;
+            }
+
+            if (m_SpacePartitioningObserver != null)
+            {
+                GraphTool?.ObserverManager?.UnregisterObserver(m_SpacePartitioningObserver);
+                m_SpacePartitioningObserver = null;
             }
         }
 
@@ -1285,6 +1342,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if (graphElement is Node || graphElement is Wire)
                 graphElement.UnregisterCallback<MouseOverEvent>(OnMouseOver);
+
+            // This must be done before removing from the hierarchy so the parent it still valid.
+            using (var updater = GraphViewModel.SpacePartitioningState.UpdateScope)
+            {
+                updater.MarkGraphElementForRemoval(graphElement);
+            }
 
             graphElement.RemoveFromHierarchy();
             graphElement.RemoveFromRootView();
@@ -1451,19 +1514,53 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="e">The event.</param>
         protected void OnShortcutDeleteEvent(ShortcutDeleteEvent e)
         {
-            var selectedNodes = GetSelection().OfType<AbstractNodeModel>().ToList();
+            var selectedNodes = new List<AbstractNodeModel>();
+            var selection = GetSelection();
+            for (var i = 0; i < selection.Count; i++)
+            {
+                var model = selection[i];
+                if (model is AbstractNodeModel abstractNodeModel)
+                {
+                    selectedNodes.Add(abstractNodeModel);
+                }
+            }
 
             if (selectedNodes.Count == 0)
                 return;
 
-            var connectedNodes = selectedNodes
-                .OfType<InputOutputPortsNodeModel>()
-                .Where(x => x.InputsById.Values
-                    .Any(y => y.IsConnected()) && x.OutputsById.Values.Any(y => y.IsConnected()))
-                .ToList();
+            var connectedNodes = new List<InputOutputPortsNodeModel>();
+            foreach (var selectedNode in selectedNodes)
+            {
+                if (selectedNode is InputOutputPortsNodeModel inputOutputPortsNodeModel)
+                {
+                    var inputConnected = false;
+                    var outputConnected = false;
+                    foreach (var portModel in inputOutputPortsNodeModel.InputsById.Values)
+                    {
+                        if (portModel.IsConnected())
+                        {
+                            inputConnected = true;
+                            break;
+                        }
+                    }
+                    foreach (var portModel in inputOutputPortsNodeModel.OutputsById.Values)
+                    {
+                        if (portModel.IsConnected())
+                        {
+                            outputConnected = true;
+                            break;
+                        }
+                    }
 
-            var canSelectionBeBypassed = connectedNodes.Any();
-            if (canSelectionBeBypassed)
+                    if (inputConnected && outputConnected)
+                    {
+                        connectedNodes.Add(inputOutputPortsNodeModel);
+                    }
+                }
+            }
+
+            var canSelectionBeBypassed = connectedNodes.Count > 0;
+            if (canSelectionBeBypassed && GraphModel.Stencil.AllowNodeBypass)
                 Dispatch(new BypassNodesCommand(connectedNodes, selectedNodes));
             else
                 Dispatch(new DeleteElementsCommand(selectedNodes));
@@ -1808,13 +1905,18 @@ namespace Unity.GraphToolsFoundation.Editor
             using (var autoPlacementObservation = m_UpdateObserver.ObserveState(GraphViewModel.AutoPlacementState))
             {
                 var autoPlacementChangeset = GraphViewModel.AutoPlacementState.GetAggregatedChangeset(autoPlacementObservation.LastObservedVersion);
-                if (autoPlacementChangeset?.ModelsToRepositionAtCreation.Any() ?? false)
+                if (autoPlacementChangeset != null && autoPlacementChangeset.ModelsToRepositionAtCreation.Count != 0)
                 {
-                    foreach (var elementToHide in autoPlacementChangeset.ModelsToHideDuringAutoPlacement)
+                    foreach (var elementToReposition in autoPlacementChangeset.ModelsToRepositionAtCreation)
                     {
-                        var modelUI = elementToHide.GetView_Internal(this);
-                        if (modelUI != null)
-                            modelUI.visible = false;
+                        // Since they are going to be repositioned, the node and wire's visibility are set to hidden at the first layout pass.
+                        var childView = elementToReposition.Model.GetView_Internal(this);
+                        if (childView != null && childView is ModelView modelView && modelView.Model is AbstractNodeModel)
+                            childView.visible = false;
+
+                        var wireUI = elementToReposition.WireModel.GetView_Internal(this);
+                        if (wireUI != null)
+                            wireUI.visible = false;
                     }
                 }
             }
@@ -2223,7 +2325,7 @@ namespace Unity.GraphToolsFoundation.Editor
             }
         }
 
-        List<ChildView> k_OnFocus_GraphElementList = new();
+        static readonly List<ChildView> k_OnFocusGraphElementList = new List<ChildView>();
 
         /// <inheritdoc />
         protected override void OnFocus(FocusInEvent e)
@@ -2244,14 +2346,333 @@ namespace Unity.GraphToolsFoundation.Editor
             if (GraphModel == null)
                 return;
 
-            k_OnFocus_GraphElementList.Clear();
+            k_OnFocusGraphElementList.Clear();
 
-            var views = GraphModel.GraphElementModels
-                .GetAllViewsInList_Internal(this, e => e is GraphElement ge && ge.Border != null, k_OnFocus_GraphElementList);
+            GraphModel.GraphElementModels
+                .GetAllViewsInList_Internal(this, e => e is GraphElement ge && ge.Border != null, k_OnFocusGraphElementList);
 
-            foreach (var element in k_OnFocus_GraphElementList.OfType<GraphElement>())
+            foreach (var element in k_OnFocusGraphElementList.OfType<GraphElement>())
             {
                 element.RefreshBorder();
+            }
+        }
+
+        void ClearSelection()
+        {
+            var selectionHelper = new GlobalSelectionCommandHelper(GraphViewModel.SelectionState);
+            using (var selectionUpdaters = selectionHelper.UpdateScopes)
+            {
+                foreach (var updater in selectionUpdaters)
+                    updater.ClearSelection();
+            }
+        }
+
+        /// <summary>
+        /// Updates the GraphView's space partitioning from the changes in the <see cref="SpacePartitioningStateComponent"/>.
+        /// </summary>
+        public virtual void UpdateSpacePartitioning()
+        {
+            if (m_SpacePartitioningObserver == null)
+                return;
+
+            using var markerScope = k_SpacePartitioningUpdateMarker.Auto();
+            using var observation = m_SpacePartitioningObserver.ObserveState(GraphViewModel.SpacePartitioningState);
+
+            if (observation.UpdateType == UpdateType.None)
+                return;
+
+            var changeset = GraphViewModel.SpacePartitioningState.GetAggregatedChangeset(observation.LastObservedVersion);
+
+            if (observation.UpdateType == UpdateType.Complete || changeset == null)
+            {
+                RebuildSpacePartitioning();
+                return;
+            }
+
+            if (changeset.ElementsToPartition.Count == 0 && changeset.ElementsToRemoveFromPartitioning.Count == 0 && changeset.ElementsToChangeContainer.Count == 0)
+                return;
+
+            // Elements to repartition
+            using var pooledToRepartition = DictionaryPool<VisualElement, List<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var elementsToRepartitionByContainer);
+            foreach (var graphElementSpacePartitioningKey in changeset.ElementsToPartition)
+            {
+                var changedModel = graphElementSpacePartitioningKey.ModelGuid;
+                var context = graphElementSpacePartitioningKey.ViewContext;
+                var view = changedModel.GetView<GraphElement>(this, context);
+                if (view == null)
+                    continue;
+
+                AddViewToSpacePartitioningByContainer(view, view.parent, elementsToRepartitionByContainer);
+            }
+
+            // Elements to remove from partitioning
+            using var pooledToRemove = DictionaryPool<VisualElement, List<GraphElementSpacePartitioningKey>>.Get(out var elementsToRemoveByContainer);
+            List<GraphElementSpacePartitioningKey> elementsToRemoveFromAllContainer = null;
+            foreach (var (container, graphElementSpacePartitioningKey) in changeset.ElementsToRemoveFromPartitioning)
+            {
+                // During an undo/redo, we can't get the old container so remove them from all containers
+                if (container == null)
+                {
+                    elementsToRemoveFromAllContainer ??= ListPool<GraphElementSpacePartitioningKey>.Get();
+                    elementsToRemoveFromAllContainer.Add(graphElementSpacePartitioningKey);
+                    continue;
+                }
+
+                RemoveElementFromSpacePartitioningByContainer(graphElementSpacePartitioningKey, container, elementsToRemoveByContainer);
+            }
+
+            // Elements to move from containers
+            foreach (var (oldContainer, newContainer, graphElementSpacePartitioningKey) in changeset.ElementsToChangeContainer)
+            {
+                RemoveElementFromSpacePartitioningByContainer(graphElementSpacePartitioningKey, oldContainer, elementsToRemoveByContainer);
+
+                var changedModel = graphElementSpacePartitioningKey.ModelGuid;
+                var context = graphElementSpacePartitioningKey.ViewContext;
+                var view = changedModel.GetView<GraphElement>(this, context);
+                if (view == null)
+                    continue;
+                AddViewToSpacePartitioningByContainer(view, newContainer, elementsToRepartitionByContainer);
+            }
+
+            foreach (var kvp in elementsToRepartitionByContainer)
+            {
+                var container = kvp.Key;
+                var elementsToRepartition = kvp.Value;
+
+                var spacePartitioning = GetSpacePartitioningByContainer(container);
+                spacePartitioning?.AddOrUpdateElements(elementsToRepartition);
+            }
+
+            foreach (var kvp in elementsToRemoveByContainer)
+            {
+                var container = kvp.Key;
+                var elementsToRemove = kvp.Value;
+                var spacePartitioning = GetSpacePartitioningByContainer(container);
+                spacePartitioning.RemoveElements(elementsToRemove);
+            }
+
+            // Remove elements flagged to be removed from all containers.
+            if (elementsToRemoveFromAllContainer != null)
+                foreach (var kvp in m_SpacePartitioningByContainer)
+                    kvp.Value.RemoveElements(elementsToRemoveFromAllContainer);
+
+            // Release inner pooled collections.
+            foreach (var elementList in elementsToRepartitionByContainer.Values)
+            {
+                ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
+            }
+
+            foreach (var keyList in elementsToRemoveByContainer.Values)
+            {
+                ListPool<GraphElementSpacePartitioningKey>.Release(keyList);
+            }
+
+            if (elementsToRemoveFromAllContainer != null)
+                ListPool<GraphElementSpacePartitioningKey>.Release(elementsToRemoveFromAllContainer);
+        }
+
+        /// <summary>
+        /// Rebuilds the space partitioning of the entire <see cref="GraphView"/>.
+        /// </summary>
+        protected virtual void RebuildSpacePartitioning()
+        {
+            // Clear all space partitioning.
+            foreach (var kvp in m_SpacePartitioningByContainer)
+            {
+                kvp.Value.Clear();
+            }
+
+            if (GraphModel?.GraphElementModels == null)
+                return;
+
+            using var pooledList = ListPool<ChildView>.Get(out var allViews);
+            GraphModel.GraphElementModels
+                .GetAllViewsInList_Internal(this, e => e is GraphElement ge, allViews);
+
+            if (allViews.Count == 0)
+                return;
+
+            using var pooledToRepartition = DictionaryPool<VisualElement, List<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>>.Get(out var elementsToRepartitionByContainer);
+            foreach (var childView in allViews)
+            {
+                if (childView is not GraphElement ge)
+                    continue;
+
+                AddViewToSpacePartitioningByContainer(ge, ge.parent, elementsToRepartitionByContainer);
+            }
+
+            foreach (var kvp in elementsToRepartitionByContainer)
+            {
+                var container = kvp.Key;
+                var elementsToRepartition = kvp.Value;
+
+                var spacePartitioning = GetSpacePartitioningByContainer(container);
+                spacePartitioning?.AddOrUpdateElements(elementsToRepartition);
+            }
+
+            // Release inner pooled collections.
+            foreach (var elementList in elementsToRepartitionByContainer.Values)
+            {
+                ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Release(elementList);
+            }
+        }
+
+        static void AddViewToSpacePartitioningByContainer(GraphElement view, VisualElement container, Dictionary<VisualElement, List<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>> elementsToRepartitionByContainer)
+        {
+            if (view == null || !view.CanBePartitioned())
+                return;
+
+            var graphElementBoundingBox = view.GetBoundingBox();
+            if (!float.IsNaN(graphElementBoundingBox.width) && !float.IsNaN(graphElementBoundingBox.height))
+            {
+                var elementToRepartition = CreateSpacePartitioningElement(view, graphElementBoundingBox);
+
+                if (!elementsToRepartitionByContainer.TryGetValue(container, out var elementsToRepartition))
+                {
+                    elementsToRepartition = ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Get();
+                    elementsToRepartitionByContainer[container] = elementsToRepartition;
+                }
+                elementsToRepartition.Add(elementToRepartition);
+            }
+        }
+
+        static void RemoveElementFromSpacePartitioningByContainer(GraphElementSpacePartitioningKey elementKey, VisualElement container, Dictionary<VisualElement, List<GraphElementSpacePartitioningKey>> elementsToRemoveByContainer)
+        {
+            if (container == null)
+                return;
+
+            if (!elementsToRemoveByContainer.TryGetValue(container, out var elementsToRemove))
+            {
+                elementsToRemove = ListPool<GraphElementSpacePartitioningKey>.Get();
+                elementsToRemoveByContainer[container] = elementsToRemove;
+            }
+            elementsToRemove.Add(elementKey);
+        }
+
+        /// <summary>
+        /// Gets or create the <see cref="BaseBoundingBoxSpacePartitioning{TElementKey}"/> for a specific container. Each <see cref="GraphElement"/>'s container has its own
+        /// space partitioning, since they are independent from each other and could move independently from each other.
+        /// </summary>
+        /// <param name="container">A <see cref="GraphElement"/> container.</param>
+        /// <returns>The space partitioning for the container.</returns>
+        protected BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey> GetSpacePartitioningByContainer(VisualElement container)
+        {
+            if (!m_SpacePartitioningByContainer.TryGetValue(container, out var spacePartitioning))
+            {
+                spacePartitioning = CreateSpacePartitioningForContainer(container);
+                m_SpacePartitioningByContainer[container] = spacePartitioning;
+            }
+            return spacePartitioning;
+        }
+
+        /// <summary>
+        /// Creates a <see cref="BaseBoundingBoxSpacePartitioning{TElementKey}"/> for a specific container. Each <see cref="GraphElement"/>'s container has its own
+        /// space partitioning, since they are independent from each other and could move independently from each other.
+        /// </summary>
+        /// <param name="container">A <see cref="GraphElement"/> container.</param>
+        /// <returns>The space partitioning for the container.</returns>
+        protected virtual BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey> CreateSpacePartitioningForContainer(VisualElement container)
+        {
+            return new BoundingBoxKdTreePartitioning<GraphElementSpacePartitioningKey>();
+        }
+
+        /// <summary>
+        /// Sets and replaces the <see cref="BaseBoundingBoxSpacePartitioning{TElementKey}"/> for a specific container. <see cref="GraphElement"/>s belonging
+        /// in that container are repartitioned in the new <see cref="BaseBoundingBoxSpacePartitioning{TElementKey}"/>.
+        /// </summary>
+        /// <param name="container">The <see cref="GraphElement"/> container.</param>
+        /// <param name="spacePartitioning">The new <see cref="BaseBoundingBoxSpacePartitioning{TElementKey}"/> for the container.</param>
+        protected void SetSpacePartitioningForContainer(VisualElement container, BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey> spacePartitioning)
+        {
+            if (m_SpacePartitioningByContainer.TryGetValue(container, out var oldSpacePartitioning))
+                oldSpacePartitioning.Clear();
+
+            m_SpacePartitioningByContainer[container] = spacePartitioning;
+
+            // Partition already existing GraphElements
+            if (GraphModel == null)
+                return;
+
+            using var pooledChildViewList = ListPool<ChildView>.Get(out var childViewList);
+            GraphModel.GraphElementModels.GetAllViewsInList_Internal(this, modelView => modelView is GraphElement ge && ge.parent == container, childViewList);
+
+            using var pooledList = ListPool<BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement>.Get(out var elementsToPartition);
+            foreach (var modelView in childViewList)
+            {
+                if (modelView is not GraphElement ge || !ge.CanBePartitioned())
+                    continue;
+
+                // Skip views with invalid layout.
+                var graphElementBoundingBox = ge.GetBoundingBox();
+                if (float.IsNaN(graphElementBoundingBox.width) || float.IsNaN(graphElementBoundingBox.height))
+                    continue;
+
+                elementsToPartition.Add(CreateSpacePartitioningElement(ge, graphElementBoundingBox));
+            }
+
+            spacePartitioning.AddOrUpdateElements(elementsToPartition);
+        }
+
+        static BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement CreateSpacePartitioningElement(GraphElement graphElement, Rect graphElementBoundingBox)
+        {
+            return new BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey>.BoundingBoxElement(new GraphElementSpacePartitioningKey(graphElement), graphElementBoundingBox);
+        }
+
+        /// <summary>
+        /// Gets all <see cref="GraphElement"/>s inside a specific region.
+        /// </summary>
+        /// <param name="region">The region in which to find the <see cref="GraphElement"/>s. This region must be specified in the <see cref="ContentViewContainer"/>'s space.</param>
+        /// <param name="allowOverlap">Set to true (default) to allow <see cref="GraphElement"/>s that overlap the region. Otherwise, only <see cref="GraphElement"/>s that are entirely inside the region will be returned.</param>
+        /// <returns>A collection of <see cref="GraphElement"/>s found inside the region.</returns>
+        public IEnumerable<GraphElement> GetGraphElementsInRegion(Rect region, bool allowOverlap = true)
+        {
+            if (m_SpacePartitioningByContainer == null)
+                return Enumerable.Empty<GraphElement>();
+
+            var elementsInRegion = new List<GraphElement>();
+            GetGraphElementsInRegion(region, elementsInRegion, allowOverlap);
+
+            return elementsInRegion;
+        }
+
+        /// <summary>
+        /// Gets all <see cref="GraphElement"/>s inside a specific region.
+        /// </summary>
+        /// <param name="region">The region in which to find the <see cref="GraphElement"/>s. This region must be specified in the <see cref="ContentViewContainer"/>'s space.</param>
+        /// <param name="outGraphElementsInRegion">The list that will contain the <see cref="GraphElement"/>s found in the specified region.</param>
+        /// <param name="allowOverlap">Set to true (default) to allow <see cref="GraphElement"/>s that overlap the region. Otherwise, only <see cref="GraphElement"/>s that are entirely inside the region will be returned.</param>
+        public void GetGraphElementsInRegion(Rect region, List<GraphElement> outGraphElementsInRegion, bool allowOverlap = true)
+        {
+            if (m_SpacePartitioningByContainer == null)
+                return;
+
+            foreach (var kvp in m_SpacePartitioningByContainer)
+            {
+                var container = kvp.Key;
+                var spacePartitioning = kvp.Value;
+                GetGraphElementsInRegionForContainer(region, allowOverlap, container, spacePartitioning, outGraphElementsInRegion);
+            }
+        }
+
+        void GetGraphElementsInRegionForContainer(Rect region, bool allowOverlap, VisualElement container, BaseBoundingBoxSpacePartitioning<GraphElementSpacePartitioningKey> spacePartitioning, List<GraphElement> elementsInRegion)
+        {
+            if (spacePartitioning == null)
+                return;
+
+            var localRegion = ContentViewContainer.ChangeCoordinatesTo(container, region);
+            using var pooledList = ListPool<GraphElementSpacePartitioningKey>.Get(out var containerElementKeys);
+            spacePartitioning.GetElementsInRegion(localRegion, allowOverlap, containerElementKeys);
+            foreach (var elementKey in containerElementKeys)
+            {
+                var graphElementGuid = elementKey.ModelGuid;
+                var graphElementContext = elementKey.ViewContext;
+                var graphElement = graphElementGuid.GetView<GraphElement>(this, graphElementContext);
+                if (graphElement == null)
+                    continue;
+
+                localRegion = ContentViewContainer.ChangeCoordinatesTo(graphElement, region);
+                if (graphElement.Overlaps(localRegion))
+                    elementsInRegion.Add(graphElement);
             }
         }
     }

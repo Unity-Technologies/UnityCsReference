@@ -5,218 +5,139 @@
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using System;
-using System.Linq;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class ButtonDisableCondition
+    internal abstract class PackageToolBarButton : VisualElement
     {
-        private Func<bool> m_Condition;
-        public string tooltip { get; set; }
-
-        private bool? m_Value;
-        public bool value => m_Value ?? m_Condition?.Invoke() ?? false;
-
-        public ButtonDisableCondition(Func<bool> condition, string tooltip)
-        {
-            m_Condition = condition;
-            this.tooltip = tooltip;
-        }
-
-        public ButtonDisableCondition(bool value, string tooltip)
-        {
-            m_Value = value;
-            this.tooltip = tooltip;
-        }
-    }
-
-    [Flags]
-    internal enum PackageActionState : uint
-    {
-        None = 0,
-        Visible = 1 << 0,
-        DisabledGlobally = 1 << 1,
-        DisabledForPackage = 1 << 2,
-        Disabled = DisabledGlobally | DisabledForPackage,
-        InProgress = 1 << 3
-    }
-
-    internal abstract class PackageToolBarButton
-    {
-        // Returns true if the action is triggered, false otherwise.
-        protected abstract bool TriggerAction(IPackageVersion version);
-
-        // Returns true if the action is triggered, false otherwise.
-        protected abstract bool TriggerAction(IList<IPackageVersion> versions);
-
-        protected abstract bool IsInProgress(IPackageVersion version);
-
-        protected abstract bool IsHiddenWhenInProgress(IPackageVersion version);
-
-        protected abstract bool IsVisible(IPackageVersion version);
-
-        protected abstract string GetTooltip(IPackageVersion version, bool isInProgress);
-
-        protected abstract string GetText(IPackageVersion version, bool isInProgress);
-
-        public abstract PackageActionState GetActionState(IPackageVersion version, out string text, out string tooltip);
-
         public abstract void Refresh(IPackageVersion version);
 
         public abstract void Refresh(IEnumerable<IPackageVersion> versions);
+        public abstract event Action onActionTriggered;
     }
 
-    internal abstract class PackageToolBarButton<T> : PackageToolBarButton where T : VisualElement, ITextElement, new()
+    internal abstract class PackageToolBarButtonSingleAction : PackageToolBarButton
     {
-        protected static readonly string k_InProgressGenericTooltip = L10n.Tr("This action is currently in progress.");
+        private readonly List<IPackageVersion> m_Versions = new();
+        private readonly PackageAction m_Action;
+        protected PackageToolBarButtonSingleAction(PackageAction action)
+        {
+            m_Action = action;
+        }
 
-        protected List<IPackageVersion> m_Versions = new List<IPackageVersion>();
+        protected abstract string text { set; }
 
-        public Action onAction;
+        public override event Action onActionTriggered
+        {
+            add => m_Action.onActionTriggered += value;
+            remove => m_Action.onActionTriggered -= value;
+        }
 
-        private ButtonDisableCondition[] m_GlobalDisableConditions;
-
-        protected T m_Element;
-        public T element => m_Element;
-
-        protected virtual void SetPackageVersion(IPackageVersion version)
+        private void SetPackageVersion(IPackageVersion version)
         {
             m_Versions.Clear();
             m_Versions.Add(version);
         }
 
-        protected virtual void SetPackageVersions(IEnumerable<IPackageVersion> versions)
+        private void SetPackageVersions(IEnumerable<IPackageVersion> versions)
         {
             m_Versions.Clear();
             m_Versions.AddRange(versions);
         }
 
-        protected virtual IEnumerable<ButtonDisableCondition> GetDisableConditions(IPackageVersion version)
-        {
-            return Enumerable.Empty<ButtonDisableCondition>();
-        }
-
-        public void SetGlobalDisableConditions(params ButtonDisableCondition[] disableConditions)
-        {
-            m_GlobalDisableConditions = disableConditions;
-        }
-
-        protected void OnClicked()
-        {
-            if (TriggerAction())
-                onAction?.Invoke();
-        }
-
-        protected abstract void RegisterClickAction();
-
-        public PackageToolBarButton()
-        {
-            m_Element = new T();
-            m_Element.name = GetType().Name;
-            RegisterClickAction();
-            m_GlobalDisableConditions = new ButtonDisableCondition[0];
-        }
-
-        public override PackageActionState GetActionState(IPackageVersion version, out string text, out string tooltip)
-        {
-            if (!IsVisible(version))
-            {
-                text = string.Empty;
-                tooltip = string.Empty;
-
-                if (IsHiddenWhenInProgress(version) && IsInProgress(version))
-                    return PackageActionState.InProgress;
-                return PackageActionState.None;
-            }
-
-            var isInProgress = IsInProgress(version);
-            text = GetText(version, isInProgress);
-            if (isInProgress)
-            {
-                tooltip = GetTooltip(version, true);
-                return PackageActionState.Visible | PackageActionState.DisabledForPackage | PackageActionState.InProgress;
-            }
-
-            var disableCondition = GetDisableConditions(version).FirstOrDefault(condition => condition.value);
-            if (disableCondition != null)
-            {
-                tooltip = disableCondition.tooltip;
-                return PackageActionState.Visible | PackageActionState.DisabledForPackage;
-            }
-
-            var globalDisableCondition = m_GlobalDisableConditions.FirstOrDefault(condition => condition.value);
-            if (globalDisableCondition != null)
-            {
-                tooltip = globalDisableCondition.tooltip;
-                return PackageActionState.Visible | PackageActionState.DisabledGlobally;
-            }
-
-            tooltip = GetTooltip(version, false);
-            return PackageActionState.Visible;
-        }
-
         public override void Refresh(IEnumerable<IPackageVersion> versions)
         {
             SetPackageVersions(versions);
-            if (!versions.Any())
+            if (m_Versions.Count == 0)
                 return;
 
             // Since the refresh for multiple versions is called directly from the foldouts, we assume that the button is always visible
             // so we can skip that check and just update the state of the button directly.
-            var version = versions.FirstOrDefault();
-            m_Element.text = GetText(version, IsInProgress(version));
+            var version = m_Versions[0];
+            text = m_Action.GetMultiSelectText(version, m_Action.IsInProgress(version));
 
-            var globalDisableCondition = m_GlobalDisableConditions.FirstOrDefault(condition => condition.value);
-            m_Element.SetEnabled(globalDisableCondition == null);
-            m_Element.tooltip = globalDisableCondition?.tooltip ?? string.Empty;
+            var temporaryDisableCondition = m_Action.GetActiveTemporaryDisableCondition();
+            SetEnabled(temporaryDisableCondition == null);
+            tooltip = temporaryDisableCondition?.tooltip ?? string.Empty;
         }
 
         public override void Refresh(IPackageVersion version)
         {
             SetPackageVersion(version);
 
-            var state = GetActionState(version, out var text, out var tooltip);
+            var state = m_Action.GetActionState(version, out var actionText, out var actionTooltip);
 
             var isVisible = (state & PackageActionState.Visible) != PackageActionState.None;
-            UIUtils.SetElementDisplay(m_Element, isVisible);
+            UIUtils.SetElementDisplay(this, isVisible);
             if (!isVisible)
                 return;
 
             var isDisabled = (state & PackageActionState.Disabled) != PackageActionState.None;
-            m_Element.SetEnabled(!isDisabled);
-            m_Element.text = text;
-            m_Element.tooltip = tooltip;
+            text = actionText;
+            tooltip = actionTooltip;
+            SetEnabled(!isDisabled);
         }
 
         // Returns true if the action is triggered, false otherwise.
-        protected virtual bool TriggerAction()
+        protected void TriggerAction()
         {
-            if (!m_Versions.Any())
-                return false;
-            if (m_Versions.Count == 1)
-                return TriggerAction(m_Versions.FirstOrDefault());
-            return TriggerAction(m_Versions);
-        }
-
-        // By default buttons does not support bulk action
-        protected override bool TriggerAction(IList<IPackageVersion> versions) => false;
-
-        protected override bool IsHiddenWhenInProgress(IPackageVersion version) => false;
-    }
-
-    internal abstract class PackageToolBarRegularButton : PackageToolBarButton<Button>
-    {
-        protected override void RegisterClickAction()
-        {
-            m_Element.clickable.clicked += OnClicked;
+            switch (m_Versions.Count)
+            {
+                case 0:
+                    return;
+                case 1:
+                    m_Action.TriggerAction(m_Versions[0]);
+                    break;
+                default:
+                    m_Action.TriggerAction(m_Versions);
+                    break;
+            }
         }
     }
 
-    internal abstract class PackageToolBarDropdownButton : PackageToolBarButton<DropdownButton>
+    // This button only shows text
+    internal class PackageToolBarSimpleButton : PackageToolBarButtonSingleAction
     {
-        protected override void RegisterClickAction()
+        protected readonly DropdownButton m_Button;
+        public PackageToolBarSimpleButton(PackageAction action) : base(action)
         {
-            m_Element.clickable.clicked += OnClicked;
+            m_Button = new DropdownButton();
+            m_Button.clicked += TriggerAction;
+
+            Add(m_Button);
+        }
+
+        protected override string text { set => m_Button.text = value; }
+    }
+
+    // This button shows text and an optional icon
+    internal class PackageToolBarButtonWithIcon : PackageToolBarSimpleButton
+    {
+        public PackageToolBarButtonWithIcon(PackageAction action) : base(action)
+        {
+            m_Button.SetIcon(action.icon);
+        }
+    }
+
+    // This button shows only icon
+    internal class PackageToolBarIconOnlyButton : PackageToolBarButtonSingleAction
+    {
+        private readonly Button m_Button;
+        public PackageToolBarIconOnlyButton(PackageAction action) : base(action)
+        {
+            m_Button = new Button();
+            m_Button.clicked += TriggerAction;
+            m_Button.text = string.Empty;
+            m_Button.AddToClassList("icon");
+            m_Button.AddToClassList(action.icon.ClassName());
+
+            Add(m_Button);
+        }
+
+        protected override string text
+        {
+            // Since icon buttons are strictly icon only, we never allow the text to be set to anything other than empty
+            set { }
         }
     }
 }

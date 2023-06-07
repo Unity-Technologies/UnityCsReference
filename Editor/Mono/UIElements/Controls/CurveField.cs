@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class CurveField : BaseField<AnimationCurve>
     {
-        internal static readonly DataBindingProperty renderModeProperty = nameof(renderMode);
+        internal static readonly BindingId renderModeProperty = nameof(renderMode);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<AnimationCurve>.UxmlSerializedData

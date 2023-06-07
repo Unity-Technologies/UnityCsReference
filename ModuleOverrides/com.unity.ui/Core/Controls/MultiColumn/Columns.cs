@@ -68,7 +68,7 @@ namespace UnityEngine.UIElements
             [SerializeField] private bool reorderable;
             [SerializeField] private bool resizable;
             [SerializeField] private bool resizePreview;
-            [SerializeField, UxmlObject] private List<Column.UxmlSerializedData> columns;
+            [SerializeReference, UxmlObjectReference] private List<Column.UxmlSerializedData> columns;
             #pragma warning restore 649
 
             public override object CreateInstance() => new Columns();
@@ -148,8 +148,10 @@ namespace UnityEngine.UIElements
         bool m_ResizePreview;
         string m_PrimaryColumnName;
 
+        internal IList<Column> columns => m_Columns;
+
         /// <summary>
-        /// Indicates the column that needs to be considered as primary column, by id.
+        /// Indicates the column that needs to be considered as the primary column, by ID.
         /// </summary>
         /// <remarks>
         /// Needs to match a <see cref="Column"/>'s id, otherwise will be ignored.

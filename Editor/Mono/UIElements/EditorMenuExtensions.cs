@@ -173,7 +173,7 @@ namespace UnityEditor.UIElements
                 var menuWindow = CreateInstance<ContextMenu>();
                 // Reset loaded layout so doesn't mess up positioning (Linux specific).
                 // Revise once Linux windowing is more robust and predictable.
-                menuWindow.position = new Rect(parent.position, Vector2.one * 100);
+                menuWindow.position = new Rect(parent.position, Vector2.one * 50);
                 menuWindow.ShowPopup();
 
                 var menuPanel = menuWindow.rootVisualElement.panel;
@@ -213,7 +213,7 @@ namespace UnityEditor.UIElements
             for (int i = s_ActiveMenuWindows.Count - 1; i >= 0; i--)
                 s_ActiveMenuWindows[i].Close();
         }
-        
+
         static void AuxCleanup(GUIView view)
         {
             view?.Focus();
@@ -676,7 +676,7 @@ namespace UnityEditor.UIElements
                 // Close previous menu child if it is open to avoid multiples
                 parent.m_Child?.Hide(false, false);
                 parent.innerContainer.EnableInClassList(GenericDropdownMenu.latentUssClassName, false);
-                
+
                 var genericMenu = PrepareMenu(submenu, parent);
                 genericMenu.DoDisplayGenericDropdownMenu(submenu.element.worldBound, new DropdownMenuDescriptor()
                 {

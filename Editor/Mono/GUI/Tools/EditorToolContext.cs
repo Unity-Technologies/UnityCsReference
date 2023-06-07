@@ -72,6 +72,8 @@ namespace UnityEditor.EditorTools
 
         public virtual void OnWillBeDeactivated() {}
 
+        public virtual void PopulateMenu(DropdownMenu menu) {}
+
         void IEditor.SetTarget(UnityObject value) => m_Target = value;
 
         void IEditor.SetTargets(UnityObject[] value) => m_Targets = value;

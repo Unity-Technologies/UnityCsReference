@@ -55,9 +55,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            var dropDownButton = new DropdownButton();
-            dropDownButton.name = "loadAssetsDropdown";
-            loadAssetsDropdownContainer.Add(dropDownButton);
+            var dropdownButton = new DropdownButton();
+            dropdownButton.name = "loadAssetsDropdown";
+            loadAssetsDropdownContainer.Add(dropdownButton);
 
             loadMoreLabel.OnLeftClick(LoadItemsClicked);
         }

@@ -72,6 +72,9 @@ namespace Unity.UI.Builder
                     if (variable.name == BuilderConstants.SelectedStyleRulePropertyName)
                         return false;
 
+                    if (variable.name.StartsWith(BuilderConstants.USSVariableUIBuilderPrefix))
+                        return false;
+
                     if (!editorExtensionMode && variable.sheet.IsUnityEditorStyleSheet())
                         return false;
 

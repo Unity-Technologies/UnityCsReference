@@ -35,19 +35,20 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseListView : BaseVerticalCollectionView
     {
-        internal static readonly DataBindingProperty showBoundCollectionSizeProperty = nameof(showBoundCollectionSize);
-        internal static readonly DataBindingProperty showFoldoutHeaderProperty = nameof(showFoldoutHeader);
-        internal static readonly DataBindingProperty headerTitleProperty = nameof(headerTitle);
-        internal static readonly DataBindingProperty makeHeaderProperty = nameof(makeHeader);
-        internal static readonly DataBindingProperty makeFooterProperty = nameof(makeFooter);
-        internal static readonly DataBindingProperty showAddRemoveFooterProperty = nameof(showAddRemoveFooter);
-        internal static readonly DataBindingProperty reorderModeProperty = nameof(reorderMode);
-        internal static readonly DataBindingProperty makeNoneElementProperty = nameof(makeNoneElement);
-        internal static readonly DataBindingProperty allowAddProperty = nameof(allowAdd);
-        internal static readonly DataBindingProperty overridingAddButtonBehaviorProperty = nameof(overridingAddButtonBehavior);
-        internal static readonly DataBindingProperty onAddProperty = nameof(onAdd);
-        internal static readonly DataBindingProperty allowRemoveProperty = nameof(allowRemove);
-        internal static readonly DataBindingProperty onRemoveProperty = nameof(onRemove);
+        internal static readonly BindingId showBoundCollectionSizeProperty = nameof(showBoundCollectionSize);
+        internal static readonly BindingId showFoldoutHeaderProperty = nameof(showFoldoutHeader);
+        internal static readonly BindingId headerTitleProperty = nameof(headerTitle);
+        internal static readonly BindingId makeHeaderProperty = nameof(makeHeader);
+        internal static readonly BindingId makeFooterProperty = nameof(makeFooter);
+        internal static readonly BindingId showAddRemoveFooterProperty = nameof(showAddRemoveFooter);
+        internal static readonly BindingId bindingSourceSelectionModeProperty = nameof(bindingSourceSelectionMode);
+        internal static readonly BindingId reorderModeProperty = nameof(reorderMode);
+        internal static readonly BindingId makeNoneElementProperty = nameof(makeNoneElement);
+        internal static readonly BindingId allowAddProperty = nameof(allowAdd);
+        internal static readonly BindingId overridingAddButtonBehaviorProperty = nameof(overridingAddButtonBehavior);
+        internal static readonly BindingId onAddProperty = nameof(onAdd);
+        internal static readonly BindingId allowRemoveProperty = nameof(allowRemove);
+        internal static readonly BindingId onRemoveProperty = nameof(onRemove);
 
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BaseVerticalCollectionView.UxmlSerializedData
@@ -60,6 +61,7 @@ namespace UnityEngine.UIElements
             [SerializeField] private bool allowRemove;
             [SerializeField] private ListViewReorderMode reorderMode;
             [SerializeField] private bool showBoundCollectionSize;
+            [SerializeField] private BindingSourceSelectionMode bindingSourceSelectionMode;
             #pragma warning restore 649
 
             public override void Deserialize(object obj)
@@ -74,6 +76,7 @@ namespace UnityEngine.UIElements
                 e.allowRemove = allowRemove;
                 e.reorderMode = reorderMode;
                 e.showBoundCollectionSize = showBoundCollectionSize;
+                e.bindingSourceSelectionMode = bindingSourceSelectionMode;
             }
         }
 
@@ -92,6 +95,7 @@ namespace UnityEngine.UIElements
             private readonly UxmlBoolAttributeDescription m_AllowRemove = new UxmlBoolAttributeDescription{ name = "allow-remove", defaultValue = true };
             private readonly UxmlEnumAttributeDescription<ListViewReorderMode> m_ReorderMode = new UxmlEnumAttributeDescription<ListViewReorderMode>() { name = "reorder-mode", defaultValue = ListViewReorderMode.Simple };
             private readonly UxmlBoolAttributeDescription m_ShowBoundCollectionSize = new UxmlBoolAttributeDescription { name = "show-bound-collection-size", defaultValue = true };
+            private readonly UxmlEnumAttributeDescription<BindingSourceSelectionMode> m_BindingSourceSelectionMode = new () { name = "binding-source-selection-mode", defaultValue = BindingSourceSelectionMode.Manual };
 
             /// <summary>
             /// Returns an empty enumerable, because list views usually do not have child elements.
@@ -119,6 +123,7 @@ namespace UnityEngine.UIElements
                 view.allowAdd = m_AllowAdd.GetValueFromBag(bag, cc);
                 view.allowRemove = m_AllowRemove.GetValueFromBag(bag, cc);
                 view.showBoundCollectionSize = m_ShowBoundCollectionSize.GetValueFromBag(bag, cc);
+                view.bindingSourceSelectionMode = m_BindingSourceSelectionMode.GetValueFromBag(bag, cc);
             }
 
             protected UxmlTraits()
@@ -160,7 +165,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal override bool sourceIncludesArraySize => showBoundCollectionSize && binding != null && !showFoldoutHeader;
+        internal override bool sourceIncludesArraySize => showBoundCollectionSize && !showFoldoutHeader && null != GetProperty(internalBindingKey);
 
         bool m_ShowFoldoutHeader;
 
@@ -182,9 +187,7 @@ namespace UnityEngine.UIElements
             get => m_ShowFoldoutHeader;
             set
             {
-                if (m_ShowFoldoutHeader == value)
-                    return;
-
+                var previous = m_ShowFoldoutHeader;
                 m_ShowFoldoutHeader = value;
 
                 try
@@ -230,7 +233,8 @@ namespace UnityEngine.UIElements
                 }
                 finally
                 {
-                    NotifyPropertyChanged(showFoldoutHeaderProperty);
+                    if (previous != m_ShowFoldoutHeader)
+                        NotifyPropertyChanged(showFoldoutHeaderProperty);
                 }
             }
         }
@@ -492,9 +496,36 @@ namespace UnityEngine.UIElements
         public event Action<IEnumerable<int>> itemsAdded;
 
         /// <summary>
-        /// This event is called for every item added to the itemsSource. Includes the item index.
+        /// This event is called for every item removed from the itemsSource. Includes the item index.
         /// </summary>
         public event Action<IEnumerable<int>> itemsRemoved;
+
+        BindingSourceSelectionMode m_BindingSourceSelectionMode;
+
+        /// <summary>
+        /// This property controls whether every element in the list will get its data source setup automatically to the
+        /// correct item in the collection's source.
+        /// </summary>
+        /// <remarks>
+        /// When set to <c>AutoAssign</c>, the bind callbacks don't need to be specified, since bindings can be used
+        /// to fill the elements.
+        /// </remarks>
+        [CreateProperty]
+        public BindingSourceSelectionMode bindingSourceSelectionMode
+        {
+            get => m_BindingSourceSelectionMode;
+            set
+            {
+                if (m_BindingSourceSelectionMode == value)
+                    return;
+
+                m_BindingSourceSelectionMode = value;
+                Rebuild();
+                NotifyPropertyChanged(bindingSourceSelectionModeProperty);
+            }
+        }
+
+        internal bool autoAssignSource => bindingSourceSelectionMode == BindingSourceSelectionMode.AutoAssign;
 
         private void AddItems(int itemCount)
         {
@@ -601,7 +632,6 @@ namespace UnityEngine.UIElements
 
         void OnAddClicked()
         {
-
             var itemsChangedByCustomCallback = false;
             var itemsCountPreCallback = itemsSource?.Count ?? 0;
 
@@ -630,7 +660,7 @@ namespace UnityEngine.UIElements
             }
 
 
-            if (binding == null && itemsChangedByCustomCallback)
+            if (GetProperty(internalBindingKey) == null && itemsChangedByCustomCallback)
             {
                 SetSelection(itemsSource.Count - 1);
                 ScrollToItem(-1);

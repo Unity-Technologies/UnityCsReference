@@ -11,6 +11,8 @@ using static UnityEditor.CameraPreviewUtils;
 
 namespace UnityEditor
 {
+    // marked obsolete @thomastu 2023/04/05
+    [Obsolete("This Overlay is obsolete. Use the global Cameras Overlay instead.", false)]
     [Overlay(id = k_OverlayID, displayName = k_DisplayName, defaultDisplay = true)]
     [Icon("Icons/Overlays/CameraPreview.png")]
     class SceneViewCameraOverlay : IMGUIOverlay

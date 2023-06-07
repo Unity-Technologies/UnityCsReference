@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Profiling;
 using UnityEngine;
 
@@ -25,7 +24,7 @@ namespace Unity.CommandStateObserver
         readonly HashSet<IStateComponent> m_DirtyComponentSet = new HashSet<IStateComponent>();
         readonly List<IStateObserver> m_NewObservers = new List<IStateObserver>();
 
-        int m_MarkerUniqueId = 0;
+        int m_MarkerUniqueId;
         Dictionary<IStateObserver, ProfilerMarker> m_ProfilerMarkers = new ();
 
         /// <summary>
@@ -89,9 +88,11 @@ namespace Unity.CommandStateObserver
 
         void SortObservers()
         {
-            var observers = m_StateObservers.Values.SelectMany(x => x)
-                .Distinct()
-                .ToList();
+            var observers = new List<IStateObserver>();
+            foreach (var observerList in m_StateObservers.Values)
+            {
+                observers.AddFewDistinct_Internal(observerList);
+            }
 
             SortObservers_Internal(observers, out m_SortedObservers);
         }
@@ -101,7 +102,11 @@ namespace Unity.CommandStateObserver
         internal static void SortObservers_Internal(List<IStateObserver> observersToSort, out List<IStateObserver> sortedObservers)
         {
             sortedObservers = new List<IStateObserver>(observersToSort.Count);
-            var modifiedStates = observersToSort.SelectMany(observer => observer.ModifiedStateComponents).ToList();
+            var modifiedStates = new List<IStateComponent>();
+            foreach (var observer in observersToSort)
+            {
+                modifiedStates.AddRange(observer.ModifiedStateComponents);
+            }
 
             var cycleDetected = false;
             while (observersToSort.Count > 0 && !cycleDetected)
@@ -187,7 +192,7 @@ namespace Unity.CommandStateObserver
                         m_NewObservers.Clear();
                     }
 
-                    if (m_ObserverCallList.Any())
+                    if (m_ObserverCallList.Count > 0)
                     {
                         try
                         {

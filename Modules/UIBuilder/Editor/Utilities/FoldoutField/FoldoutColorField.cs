@@ -92,5 +92,10 @@ namespace Unity.UI.Builder
             else
                 return Color.white;
         }
+
+        internal override void SetHeaderInputEnabled(bool enabled)
+        {
+            m_ColorField.SetEnabled(enabled);
+        }
     }
 }

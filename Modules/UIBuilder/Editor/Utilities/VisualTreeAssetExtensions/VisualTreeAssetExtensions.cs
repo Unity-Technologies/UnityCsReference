@@ -29,11 +29,12 @@ namespace Unity.UI.Builder
             }
         }
 
-        public static VisualTreeAsset DeepCopy(this VisualTreeAsset vta)
+        public static VisualTreeAsset DeepCopy(this VisualTreeAsset vta, bool syncSerializedData = true)
         {
             var newTreeAsset = VisualTreeAssetUtilities.CreateInstance();
 
-            UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta));
+            if (syncSerializedData)
+                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(vta));
             vta.DeepOverwrite(newTreeAsset);
 
             return newTreeAsset;
@@ -639,6 +640,16 @@ namespace Unity.UI.Builder
                 for (int i = 0; i < asset.stylesheets.Count; ++i)
                     if (asset.stylesheets[i] != null)
                         element.styleSheets.Add(asset.stylesheets[i]);
+        }
+
+        public static void RemoveBinding(this VisualTreeAsset vta, VisualElementAsset element, string property)
+        {
+            var uxmlBinding = BuilderBindingUtility.FindUxmlBinding(vta, element, property);
+
+            if (uxmlBinding != null)
+            {
+                vta.RemoveUxmlObject(uxmlBinding.id);
+            }
         }
     }
 }

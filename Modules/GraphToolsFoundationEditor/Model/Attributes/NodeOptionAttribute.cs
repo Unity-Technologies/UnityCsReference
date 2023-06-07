@@ -20,6 +20,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public bool ShowInInspectorOnly { get; }
 
         /// <summary>
+        /// The displayed name of the node option.
+        /// </summary>
+        public string DisplayName { get; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="NodeOptionAttribute"/> class.
         /// </summary>
         public NodeOptionAttribute()
@@ -31,9 +36,11 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Initializes a new instance of the <see cref="NodeOptionAttribute"/> class.
         /// </summary>
         /// <param name="showInInspectorOnly">Whether the node option should only be shown in the inspector.</param>
-        public NodeOptionAttribute(bool showInInspectorOnly)
+        /// <param name="displayName">The displayed name of the node option</param>
+        public NodeOptionAttribute(bool showInInspectorOnly = false, string displayName = null)
         {
             ShowInInspectorOnly = showInInspectorOnly;
+            DisplayName = displayName;
         }
     }
 }

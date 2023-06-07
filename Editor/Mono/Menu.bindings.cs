@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.Bindings;
-using System.Collections.Generic;
-using UnityEngine.Scripting;
 using System;
+using System.Collections.Generic;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -41,6 +41,15 @@ namespace UnityEditor
 
         [NativeMethod("MenuController::GetEnabled", true)]
         public static extern bool GetEnabled(string menuPath);
+
+        [NativeMethod("MenuController::GetEnabledWithContext", true)]
+        internal static extern bool GetEnabledWithContext(string menuPath, UnityEngine.Object[] context);
+
+        [NativeMethod("MenuController::GetIconResource", true)]
+        internal static extern string GetIconResource(string menuPath);
+
+        [NativeMethod("MenuController::GetDisabledTooltip", true)]
+        internal static extern string GetDisabledTooltip(string menuPath);
 
         [FreeFunction("MenuController::GetMenuItemDefaultShortcuts")]
         internal static extern void GetMenuItemDefaultShortcuts(List<string> outItemNames, List<string> outItemDefaultShortcuts);

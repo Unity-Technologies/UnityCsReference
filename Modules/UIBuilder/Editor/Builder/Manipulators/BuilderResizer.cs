@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,12 +12,17 @@ namespace Unity.UI.Builder
     class BuilderResizer : BuilderTransformer
     {
         static readonly string s_UssClassName = "unity-builder-resizer";
+        public static readonly string s_CursorSetterUssClassName = s_UssClassName + "__cursor-setter";
+        static readonly string s_TrackedStylesProperty = "TrackedStyles";
         static readonly int s_HighlightHandleOnInspectorChangeDelayMS = 250;
 
         IVisualElementScheduledItem m_UndoWidthHighlightScheduledItem;
         IVisualElementScheduledItem m_UndoHeightHighlightScheduledItem;
 
-        Dictionary<string, VisualElement> m_HandleElements;
+        Dictionary<string, VisualElement> m_HandleElements = new();
+
+        // Used in tests
+        public Dictionary<string, VisualElement> handleElements => m_HandleElements;
 
         public new class UxmlFactory : UxmlFactory<BuilderResizer, UxmlTraits> {}
 
@@ -29,35 +34,17 @@ namespace Unity.UI.Builder
 
             AddToClassList(s_UssClassName);
 
-            m_HandleElements = new Dictionary<string, VisualElement>();
+            // Add side handles
+            AddHandle("top-handle", true, TrackedStyles.Top | TrackedStyles.Height, OnStartDrag, OnEndDrag, OnDragTop);
+            AddHandle("left-handle", true, TrackedStyles.Left | TrackedStyles.Width, OnStartDrag, OnEndDrag, OnDragLeft);
+            AddHandle("bottom-handle", false, TrackedStyles.Bottom | TrackedStyles.Height, OnStartDrag, OnEndDrag, OnDragBottom);
+            AddHandle("right-handle", false, TrackedStyles.Right | TrackedStyles.Width, OnStartDrag, OnEndDrag, OnDragRight);
 
-            m_HandleElements.Add("top-handle", this.Q("top-handle"));
-            m_HandleElements.Add("left-handle", this.Q("left-handle"));
-            m_HandleElements.Add("bottom-handle", this.Q("bottom-handle"));
-            m_HandleElements.Add("right-handle", this.Q("right-handle"));
-
-            m_HandleElements.Add("top-left-handle", this.Q("top-left-handle"));
-            m_HandleElements.Add("top-right-handle", this.Q("top-right-handle"));
-
-            m_HandleElements.Add("bottom-left-handle", this.Q("bottom-left-handle"));
-            m_HandleElements.Add("bottom-right-handle", this.Q("bottom-right-handle"));
-
-            m_HandleElements["top-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTop));
-            m_HandleElements["left-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragLeft));
-            m_HandleElements["bottom-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottom));
-            m_HandleElements["right-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragRight));
-
-            m_HandleElements["top-left-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTopLeft));
-            m_HandleElements["top-right-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragTopRight));
-
-            m_HandleElements["bottom-left-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottomLeft));
-            m_HandleElements["bottom-right-handle"].AddManipulator(new Manipulator(OnStartDrag, OnEndDrag, OnDragBottomRight));
-
-            base.m_AbsoluteOnlyHandleElements.Add(m_HandleElements["top-handle"]);
-            base.m_AbsoluteOnlyHandleElements.Add(m_HandleElements["left-handle"]);
-            base.m_AbsoluteOnlyHandleElements.Add(m_HandleElements["top-left-handle"]);
-            base.m_AbsoluteOnlyHandleElements.Add(m_HandleElements["top-right-handle"]);
-            base.m_AbsoluteOnlyHandleElements.Add(m_HandleElements["bottom-left-handle"]);
+            // Add corner handles
+            AddHandle("top-left-handle", true, TrackedStyles.Left | TrackedStyles.Top | TrackedStyles.Width | TrackedStyles.Height, OnStartDrag, OnEndDrag, OnDragTopLeft);
+            AddHandle("top-right-handle", true, TrackedStyles.Right | TrackedStyles.Top | TrackedStyles.Height | TrackedStyles.Width, OnStartDrag, OnEndDrag, OnDragTopRight);
+            AddHandle("bottom-left-handle", true, TrackedStyles.Left | TrackedStyles.Bottom | TrackedStyles.Width | TrackedStyles.Height, OnStartDrag, OnEndDrag, OnDragBottomLeft);
+            AddHandle("bottom-right-handle", false, TrackedStyles.Right | TrackedStyles.Bottom | TrackedStyles.Width | TrackedStyles.Height, OnStartDrag, OnEndDrag, OnDragBottomRight);
 
             m_UndoWidthHighlightScheduledItem = this.schedule.Execute(UndoWidthHighlight);
             m_UndoWidthHighlightScheduledItem.Pause();
@@ -65,8 +52,48 @@ namespace Unity.UI.Builder
             m_UndoHeightHighlightScheduledItem.Pause();
         }
 
+        private void AddHandle(string handleName, bool absolute, TrackedStyles trackedStyles, Action<VisualElement> startDrag, Action endDrag, Action<Vector2> dragAction)
+        {
+            var handle = this.Q(handleName);
+
+            m_HandleElements.Add(handleName, handle);
+            if (absolute)
+                m_AbsoluteOnlyHandleElements.Add(handle);
+            handle.AddManipulator(new Manipulator(startDrag, endDrag, dragAction));
+            handle.SetProperty(s_TrackedStylesProperty, trackedStyles);
+        }
+
+        protected override void UpdateBoundStyles()
+        {
+            base.UpdateBoundStyles();
+
+            void UpdateHandleFromBindings(VisualElement handle)
+            {
+                var handleName = handle.name;
+                var trackedStyles = (TrackedStyles)handle.GetProperty(s_TrackedStylesProperty);
+                var handleTooltip = string.Empty;
+                var boundTrackedStyles = m_BoundStyles & trackedStyles;
+                var bound = boundTrackedStyles != 0;
+
+                m_HandleElements[handleName].EnableInClassList(s_DisabledHandleClassName, bound);
+
+                if (bound)
+                {
+                    var asText = boundTrackedStyles.ToString().ToLower();
+
+                    handleTooltip = string.Format(BuilderConstants.CannotResizeBecauseOfBoundPropertiesMessage, asText);
+                }
+                m_HandleElements[handleName].Q(className: s_CursorSetterUssClassName).tooltip = handleTooltip;
+            }
+
+            foreach (var handlePair in m_HandleElements)
+            {
+                UpdateHandleFromBindings(handlePair.Value);
+            }
+        }
+
         void OnDrag(
-            TrackedStyle primaryStyle,
+            TrackedStyles primaryStyle,
             float onStartDragLength,
             float onStartDragPrimary,
             float delta,
@@ -97,7 +124,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                if (primaryStyle == TrackedStyle.Top || primaryStyle == TrackedStyle.Left)
+                if (primaryStyle == TrackedStyles.Top || primaryStyle == TrackedStyles.Left)
                 {
                     SetStyleSheetValue(lengthStyle, onStartDragLength + delta);
                     SetStyleSheetValue(primaryStyle, onStartDragPrimary - delta);
@@ -121,7 +148,7 @@ namespace Unity.UI.Builder
         void OnDragTop(Vector2 diff, List<string> changeList)
         {
             OnDrag(
-                TrackedStyle.Top,
+                TrackedStyles.Top,
                 m_TargetRectOnStartDrag.height,
                 m_TargetRectOnStartDrag.y,
                 -diff.y,
@@ -134,7 +161,7 @@ namespace Unity.UI.Builder
         void OnDragLeft(Vector2 diff, List<string> changeList)
         {
             OnDrag(
-                TrackedStyle.Left,
+                TrackedStyles.Left,
                 m_TargetRectOnStartDrag.width,
                 m_TargetRectOnStartDrag.x,
                 -diff.x,
@@ -147,7 +174,7 @@ namespace Unity.UI.Builder
         void OnDragBottom(Vector2 diff, List<string> changeList)
         {
             OnDrag(
-                TrackedStyle.Bottom,
+                TrackedStyles.Bottom,
                 m_TargetRectOnStartDrag.height,
                 m_TargetCorrectedBottomOnStartDrag,
                 diff.y,
@@ -159,7 +186,7 @@ namespace Unity.UI.Builder
         void OnDragRight(Vector2 diff, List<string> changeList)
         {
             OnDrag(
-                TrackedStyle.Right,
+                TrackedStyles.Right,
                 m_TargetRectOnStartDrag.width,
                 m_TargetCorrectedRightOnStartDrag,
                 diff.x,
@@ -263,9 +290,9 @@ namespace Unity.UI.Builder
 
             if (styles.Contains("width"))
             {
-                if (IsNoneOrAuto(TrackedStyle.Left) && !IsNoneOrAuto(TrackedStyle.Right))
+                if (IsNoneOrAuto(TrackedStyles.Left) && !IsNoneOrAuto(TrackedStyles.Right))
                     m_HandleElements["left-handle"].pseudoStates |= PseudoStates.Hover;
-                else if (!IsNoneOrAuto(TrackedStyle.Left) && IsNoneOrAuto(TrackedStyle.Right))
+                else if (!IsNoneOrAuto(TrackedStyles.Left) && IsNoneOrAuto(TrackedStyles.Right))
                     m_HandleElements["right-handle"].pseudoStates |= PseudoStates.Hover;
                 else
                 {
@@ -277,9 +304,9 @@ namespace Unity.UI.Builder
 
             if (styles.Contains("height"))
             {
-                if (IsNoneOrAuto(TrackedStyle.Top) && !IsNoneOrAuto(TrackedStyle.Bottom))
+                if (IsNoneOrAuto(TrackedStyles.Top) && !IsNoneOrAuto(TrackedStyles.Bottom))
                     m_HandleElements["top-handle"].pseudoStates |= PseudoStates.Hover;
-                else if (!IsNoneOrAuto(TrackedStyle.Top) && IsNoneOrAuto(TrackedStyle.Bottom))
+                else if (!IsNoneOrAuto(TrackedStyles.Top) && IsNoneOrAuto(TrackedStyles.Bottom))
                     m_HandleElements["bottom-handle"].pseudoStates |= PseudoStates.Hover;
                 else
                 {

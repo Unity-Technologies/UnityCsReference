@@ -53,7 +53,7 @@ class NativeApiWrapper : INativeApiWrapper
         return scenes;
     }
 
-    public virtual IList<Scene> GetUnsavedScenes()
+    public virtual bool HasUnsavedScenes()
     {
         var unsavedScenes = new List<Scene>();
         for (var index = 0; index < SceneManager.sceneCount; ++index)
@@ -65,7 +65,7 @@ class NativeApiWrapper : INativeApiWrapper
             }
         }
 
-        return unsavedScenes;
+        return unsavedScenes.Count > 0;
     }
 
     public virtual void InvokeLicenseUpdateCallbacks()

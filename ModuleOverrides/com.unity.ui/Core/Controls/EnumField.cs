@@ -46,7 +46,7 @@ namespace UnityEngine.UIElements
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class EnumField : BaseField<Enum>
     {
-        internal static readonly DataBindingProperty textProperty = nameof(text);
+        internal static readonly BindingId textProperty = nameof(text);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Enum>.UxmlSerializedData

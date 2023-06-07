@@ -16,6 +16,8 @@ namespace UnityEngine.UIElements
 
         Stack<IEnumerator<int>> m_IteratorStack = new Stack<IEnumerator<int>>();
 
+        internal TreeData<T> treeData => m_TreeData;
+
         /// <summary>
         /// Sets the root items.
         /// </summary>

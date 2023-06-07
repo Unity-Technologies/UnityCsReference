@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using System.Linq;
 using UnityEngine.Pool;
 
@@ -52,10 +53,20 @@ namespace UnityEngine.UIElements
             listItem.bindableElement.style.paddingTop = 0f;
             listItem.bindableElement.style.flexGrow = 0f;
             listItem.bindableElement.style.flexShrink = 0f;
+
+            if (baseListView.autoAssignSource)
+            {
+                listItem.rootElement.dataSource = itemsSource;
+            }
         }
 
         internal override void InvokeBindItem(ReusableCollectionItem reusableItem, int index)
         {
+            if (baseListView.autoAssignSource)
+            {
+                reusableItem.rootElement.dataSourcePath = PropertyPath.FromIndex(index);
+            }
+
             if (reusableItem is ReusableListViewItem listItem)
             {
                 var usesAnimatedDragger = baseListView.reorderable && baseListView.reorderMode == ListViewReorderMode.Animated;

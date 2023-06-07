@@ -54,7 +54,9 @@ namespace UnityEditor
         // Split resize up down arrows
         SplitResizeUpDown = 18,
         // Split resize left right arrows
-        SplitResizeLeftRight = 19
+        SplitResizeLeftRight = 19,
+        // The requested action will not be carried out
+        NotAllowed = 20,
     }
 
     // User message types.

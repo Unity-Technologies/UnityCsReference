@@ -494,7 +494,7 @@ namespace UnityEngine
         {
             bool isCached = false;
             var textHandle = IMGUITextHandle.GetTextHandle(style, rect, content, color, ref isCached);
-            generationId = TextHandle.s_Settings.GetHashCode();
+            generationId = TextHandle.settings.GetHashCode();
             // If not already cached on the native side, we must send the meshInfo
             if (!isCached)
             {

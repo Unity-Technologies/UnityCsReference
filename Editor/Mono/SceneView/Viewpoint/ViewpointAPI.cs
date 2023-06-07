@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.UIElements;
 using UObject = UnityEngine.Object;
 
 namespace UnityEditor
@@ -14,6 +15,8 @@ namespace UnityEditor
 
         Vector3 Position { get; set; }
         Quaternion Rotation { get; set; }
+
+        VisualElement CreateVisualElement();
     }
 
     public interface ICameraLensData
@@ -96,5 +99,7 @@ namespace UnityEditor
         {
             m_Target = target;
         }
+
+        public virtual VisualElement CreateVisualElement() { return null; }
     }
 }

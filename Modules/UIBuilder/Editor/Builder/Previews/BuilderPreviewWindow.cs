@@ -17,6 +17,8 @@ namespace Unity.UI.Builder
         [SerializeField]
         VisualTreeAsset m_CurrentVisualTreeAsset;
 
+        internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
+
         //[MenuItem("Tests/UI Builder/Document Preview")]
         public static void ShowWindow()
         {

@@ -12,6 +12,19 @@ namespace Unity.CommandStateObserver
     /// </summary>
     interface IChangeset
     {
+        private static List<IChangeset> s_SingleChangesetList = new(1);
+
+        /// <summary>
+        /// Makes this changeset a copy of <paramref name="changeset"/>.
+        /// </summary>
+        /// <param name="changeset">The changesets to copy.</param>
+        void Copy(IChangeset changeset)
+        {
+            s_SingleChangesetList.Add(changeset);
+            AggregateFrom(s_SingleChangesetList);
+            s_SingleChangesetList.Clear();
+        }
+
         /// <summary>
         /// Clears the changeset.
         /// </summary>
@@ -21,7 +34,7 @@ namespace Unity.CommandStateObserver
         /// Makes this changeset a changeset that summarize <paramref name="changesets"/>.
         /// </summary>
         /// <param name="changesets">The changesets to summarize.</param>
-        void AggregateFrom(IEnumerable<IChangeset> changesets);
+        void AggregateFrom(IReadOnlyList<IChangeset> changesets);
 
         /// <summary>
         /// Reverse the direction of the changeset.

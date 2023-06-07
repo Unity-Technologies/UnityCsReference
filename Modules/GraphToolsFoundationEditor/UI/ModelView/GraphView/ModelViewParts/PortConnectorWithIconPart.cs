@@ -46,6 +46,11 @@ namespace Unity.GraphToolsFoundation.Editor
         TypeHandle m_CurrentTypeHandle;
 
         /// <summary>
+        /// The icon of the <see cref="PortConnectorWithIconPart"/>.
+        /// </summary>
+        public VisualElement Icon => m_Icon;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PortConnectorWithIconPart"/> class.
         /// </summary>
         /// <param name="name">The name of the part.</param>

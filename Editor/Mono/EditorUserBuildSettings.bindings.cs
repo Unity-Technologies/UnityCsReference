@@ -157,8 +157,7 @@ namespace UnityEditor
         ASTC = 6,
     }
 
-    // Fallback texture format for Android if ETC2 is selected, but not supported
-    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    [Obsolete("AndroidETC2Fallback is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
     public enum AndroidETC2Fallback
     {
         // 32-bit uncompressed
@@ -646,12 +645,11 @@ namespace UnityEditor
         [NativeMethod("SetSelectedCompressionType")]
         private static extern void SetCompressionTypeInternal(BuildTargetGroup targetGroup, int type);
 
-        public static extern AndroidETC2Fallback androidETC2Fallback
+        [Obsolete("androidETC2Fallback is obsolete and has no effect. It will be removed in a subsequent Unity release.")]
+        public static AndroidETC2Fallback androidETC2Fallback
         {
-            [NativeMethod("GetSelectedAndroidETC2Fallback")]
-            get;
-            [NativeMethod("SetSelectedAndroidETC2Fallback")]
-            set;
+            get { return AndroidETC2Fallback.Quality32Bit; }
+            set { }
         }
 
         public static extern AndroidBuildSystem androidBuildSystem { get; set; }

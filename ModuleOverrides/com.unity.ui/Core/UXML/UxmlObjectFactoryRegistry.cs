@@ -9,6 +9,8 @@ namespace UnityEngine.UIElements
 {
     internal class UxmlObjectFactoryRegistry
     {
+        internal const string uieCoreModule = "UnityEngine.UIElementsModule";
+
         private static Dictionary<string, List<IBaseUxmlObjectFactory>> s_Factories;
 
         internal static Dictionary<string, List<IBaseUxmlObjectFactory>> factories

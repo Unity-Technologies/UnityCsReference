@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 
 // Input System provider
 [assembly: InternalsVisibleTo("Unity.InputSystem.ForUI")]
+[assembly: InternalsVisibleTo("Unity.InputSystem.Tests")]
+[assembly: InternalsVisibleTo("Unity.InputSystem.IntegrationTests")]
 
 // UITK user
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]

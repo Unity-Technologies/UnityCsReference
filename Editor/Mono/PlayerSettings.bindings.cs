@@ -649,6 +649,7 @@ namespace UnityEditor
         public static extern bool enableFrameTimingStats { get; set; }
         public static extern bool enableOpenGLProfilerGPURecorders { get; set; }
 
+        public static extern bool allowHDRDisplaySupport { get; set; }
         public static extern bool useHDRDisplay { get; set; }
 
         [Obsolete("D3DHDRBitDepth has been replaced by hdrBitDepth. (UnityUpgradable) -> hdrBitDepth", true)]

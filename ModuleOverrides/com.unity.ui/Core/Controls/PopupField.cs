@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class PopupField<T> : BasePopupField<T, T>
     {
-        internal static readonly DataBindingProperty indexProperty = nameof(index);
+        internal static readonly BindingId indexProperty = nameof(index);
 
         /// <summary>
         /// Callback that provides a string representation used to display the selected value.

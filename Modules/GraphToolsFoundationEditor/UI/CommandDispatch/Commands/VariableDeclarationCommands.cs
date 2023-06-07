@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.CommandStateObserver;
 using UnityEngine;
 
@@ -272,11 +271,7 @@ namespace Unity.GraphToolsFoundation.Editor
                 using (var graphUpdater = graphModelState.UpdateScope)
                 using (var changeScope = graphModel.ChangeDescriptionScope)
                 {
-                    if (command.VariableDeclarationModel.DataType != command.Type)
-                        command.VariableDeclarationModel.CreateInitializationValue();
-
                     command.VariableDeclarationModel.DataType = command.Type;
-
                     graphUpdater.MarkUpdated(changeScope.ChangeDescription);
                 }
             }

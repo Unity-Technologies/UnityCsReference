@@ -588,7 +588,7 @@ namespace Unity.UI.Builder
                 // after a file has been modified externally will require some
                 // major changes to the document flow.
                 var promptTitle = string.Format(BuilderConstants.SaveDialogExternalChangesPromptTitle,
-                    m_Document.uxmlPath);
+                    uxmlPath);
                 BuilderDialogsUtility.DisplayDialog(
                     promptTitle,
                     BuilderConstants.SaveDialogExternalChangesPromptMessage);

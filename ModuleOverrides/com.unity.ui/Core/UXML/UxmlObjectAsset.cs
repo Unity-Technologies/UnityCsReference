@@ -148,30 +148,27 @@ namespace UnityEngine.UIElements
             return m_DirtyCount;
         }
 
-        public override string ToString() => $"{id}({fullTypeName})";
+        public override string ToString() => $"{fullTypeName}(id:{id})";
     }
 
     [Serializable]
     internal class UxmlObjectAsset : UxmlAsset
     {
-        public UxmlObjectAsset(string fullTypeName)
-            : base(fullTypeName) {}
-    }
-
-    [Serializable]
-    internal class UxmlObjectFieldAsset : UxmlObjectAsset
-    {
         [SerializeField]
-        private string m_FieldName;
+        bool m_IsField;
 
-        public string fieldName => m_FieldName;
+        /// <summary>
+        /// Returns true if the field is a container for one or more UxmlObject.
+        /// Returns false if it's itself a UxmlObject.
+        /// </summary>
+        public bool isField => m_IsField;
 
-        public UxmlObjectFieldAsset(string fieldName)
-            : base(string.Empty)
+        public UxmlObjectAsset(string fullTypeNameOrFieldName, bool isField)
+            : base(fullTypeNameOrFieldName)
         {
-            m_FieldName = fieldName;
+            m_IsField = isField;
         }
 
-        public override string ToString() => $"Reference: {fieldName}";
+        public override string ToString() => isField ? $"Reference: {fullTypeName} (id:{id} parent:{parentId})" : base.ToString();
     }
 }

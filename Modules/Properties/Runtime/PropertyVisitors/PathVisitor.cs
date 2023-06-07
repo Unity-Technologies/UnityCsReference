@@ -136,7 +136,6 @@ namespace Unity.Properties
                 }
                 using (new PropertyScope(this, property))
                 {
-
                     PropertyContainer.Accept(this, ref value);
                 }
 

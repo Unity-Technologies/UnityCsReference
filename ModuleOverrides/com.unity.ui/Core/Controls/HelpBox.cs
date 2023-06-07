@@ -53,8 +53,8 @@ namespace UnityEngine.UIElements
     /// </example>
     public class HelpBox : VisualElement
     {
-        internal static readonly DataBindingProperty textProperty = nameof(text);
-        internal static readonly DataBindingProperty messageTypeProperty = nameof(messageType);
+        internal static readonly BindingId textProperty = nameof(text);
+        internal static readonly BindingId messageTypeProperty = nameof(messageType);
 
         /// <summary>
         /// The USS class name for Elements of this type.

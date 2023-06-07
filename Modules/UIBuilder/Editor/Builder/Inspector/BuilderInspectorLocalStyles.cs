@@ -102,19 +102,19 @@ namespace Unity.UI.Builder
                 isSelector ? BuilderConstants.ContextMenuSetAsValueMessage : BuilderConstants.ContextMenuSetAsInlineValueMessage,
                 action => {},
                 action => DropdownMenuAction.Status.Disabled,
-                evt.target);
+                evt.elementTarget);
 
             evt.menu.AppendAction(
                 BuilderConstants.ContextMenuUnsetMessage,
                 UnsetStyleProperties,
                 action => DropdownMenuAction.Status.Normal,
-                evt.target);
+                evt.elementTarget);
 
             evt.menu.AppendAction(
                 BuilderConstants.ContextMenuUnsetAllMessage,
                 (action) => m_StyleFields.UnsetAllStyleProperties(),
                 m_StyleFields.UnsetAllActionStatus,
-                evt.target);
+                evt.elementTarget);
         }
 
         void UnsetStyleProperties(DropdownMenuAction obj)
@@ -131,7 +131,7 @@ namespace Unity.UI.Builder
                     if (!(styleField is FoldoutField))
                         tempFields.Add(styleField);
                 }
-                m_StyleFields.UnsetStyleProperties(tempFields);
+                m_StyleFields.UnsetStyleProperties(tempFields, true);
             }
         }
 
@@ -174,6 +174,8 @@ namespace Unity.UI.Builder
                     if (!IsIndirectChildOf(styleField, styleRow))
                         continue;
 
+                    m_Inspector.ToggleInlineEditingClasses(styleField, false);
+
                     if (styleField is FoldoutField)
                     {
                         m_StyleFields.RefreshStyleField(styleField as FoldoutField);
@@ -205,30 +207,32 @@ namespace Unity.UI.Builder
 
         public void UpdateStyleCategoryFoldoutOverrides()
         {
+            var hasAnyBoundField = false;
+            var hasAnyOverrides = false;
+
             foreach (var pair in m_StyleCategories)
             {
                 var styleCategory = pair.Key;
-                var hasOverridenField = styleCategory.Q(className: BuilderConstants.InspectorLocalStyleOverrideClassName) != null;
-                styleCategory.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutOverrideClassName, hasOverridenField);
+                var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(styleCategory);
+                var hasBoundField = styleCategory.Q(className: BuilderConstants.InspectorLocalStyleBindingClassName) != null
+                                    || styleCategory.Q(className: BuilderConstants.InspectorLocalStyleUnresolvedBindingClassName) != null;
+
+                styleCategory.EnableInClassList(BuilderConstants.InspectorStyleCategoryFoldoutOverrideClassName, hasOverriddenField);
+                styleCategory.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutBindingClassName, hasBoundField);
+
+                hasAnyBoundField |= hasBoundField;
+                hasAnyOverrides |= hasOverriddenField;
             }
+
+            m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutOverrideClassName, hasAnyOverrides);
+            m_LocalStylesSection.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutBindingClassName, hasAnyBoundField);
         }
 
         void UpdatePositionAnchorsFoldoutState(Enum newValue)
         {
             var newPosition = (Position)newValue;
             var foldout = m_Inspector.Q<Foldout>("anchors-foldout");
-            var styleRow = foldout.GetFirstAncestorOfType<BuilderStyleRow>();
 
-            var styleFields = styleRow.Query<BindableElement>().ToList();
-
-            bool isRowOverride = false;
-            foreach (var styleField in styleFields)
-            {
-                if (BuilderInspectorStyleFields.GetLastStyleProperty(m_Inspector.currentRule, styleField.bindingPath) != null)
-                    isRowOverride = true;
-            }
-
-            foldout.value = newPosition == Position.Absolute || isRowOverride;
             foldout.text = (newPosition == Position.Absolute) ? "Anchors" : "Offsets";
             foldout.EnableInClassList(Position.Relative.ToString().ToLower(), newPosition == Position.Relative);
         }

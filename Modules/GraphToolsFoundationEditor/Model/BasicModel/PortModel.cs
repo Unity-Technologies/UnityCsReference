@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using UnityEngine;
 
@@ -68,8 +67,6 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class PortModel : GraphElementModel, IHasTitle
     {
-        static readonly IReadOnlyList<WireModel> k_EmptyWireList = new List<WireModel>();
-
         string m_UniqueId;
 
         string m_Title;
@@ -246,6 +243,7 @@ namespace Unity.GraphToolsFoundation.Editor
                     return;
                 m_DataTypeHandle = value;
                 m_PortDataTypeCache = null;
+                m_TooltipCache = null;
                 GraphModel?.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Data);
             }
         }
@@ -331,14 +329,25 @@ namespace Unity.GraphToolsFoundation.Editor
         /// Gets the ports connected to this port.
         /// </summary>
         /// <returns>The ports connected to this port.</returns>
-        public virtual IEnumerable<PortModel> GetConnectedPorts()
+        public virtual IReadOnlyList<PortModel> GetConnectedPorts()
         {
             if (GraphModel == null)
-                return Enumerable.Empty<PortModel>();
+                return Array.Empty<PortModel>();
 
-            return GraphModel.GetWiresForPort(this)
-                .Select(e => Direction == PortDirection.Input ? e.FromPort : e.ToPort)
-                .Where(p => p != null);
+            var wires = GraphModel.GetWiresForPort(this);
+            var results = new List<PortModel>(wires.Count);
+
+            for (var i = 0; i < wires.Count; i++)
+            {
+                var wire = wires[i];
+                var port = Direction == PortDirection.Input ? wire.FromPort : wire.ToPort;
+                if (port != null)
+                {
+                    results.Add(port);
+                }
+            }
+
+            return results;
         }
 
         /// <summary>
@@ -347,7 +356,7 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <returns>The wires connected to this port.</returns>
         public virtual IReadOnlyList<WireModel> GetConnectedWires()
         {
-            return GraphModel?.GetWiresForPort(this) ?? k_EmptyWireList;
+            return GraphModel?.GetWiresForPort(this) ?? Array.Empty<WireModel>();
         }
 
         /// <summary>

@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -94,7 +94,7 @@ namespace UnityEngine.UIElements
                         m_RuntimePanel = CreateRelatedRuntimePanel();
                         m_RuntimePanel.sortingPriority = m_Settings.m_SortingOrder;
                         m_RuntimePanel.targetDisplay = m_Settings.m_TargetDisplay;
-                        m_RuntimePanel.panelChangeReceiver = m_Settings.panelChangeReceiver;
+                        m_RuntimePanel.panelChangeReceiver = m_Settings.GetPanelChangeReceiver();
 
                         var root = m_RuntimePanel.visualTree;
                         root.name = m_Settings.name;
@@ -145,7 +145,7 @@ namespace UnityEngine.UIElements
             {
                 if (m_RuntimePanel != null)
                 {
-                    m_RuntimePanel.targetDisplay =  m_Settings.m_TargetDisplay;
+                    m_RuntimePanel.targetDisplay = m_Settings.m_TargetDisplay;
                 }
             }
 
@@ -417,6 +417,25 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
+        BindingLogLevel m_BindingLogLevel;
+
+        /// <summary>
+        /// Sets the log level for bindings in panels using this PanelSettings asset.
+        /// </summary>
+        public BindingLogLevel bindingLogLevel
+        {
+            get => m_BindingLogLevel;
+            set
+            {
+                if (m_BindingLogLevel == value)
+                    return;
+
+                m_BindingLogLevel = value;
+                Binding.SetPanelLogLevel(panel, value);
+            }
+        }
+
+        [SerializeField]
         bool m_ClearDepthStencil = true;
 
         /// <summary>
@@ -618,27 +637,28 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Sets a custom <see cref="IPanelChangeReceiver"/> in the panelChangeReceiver setter to receive every change event.
-        /// This method is available only in debug builds and the editor as it is a debug feature to go along the profiling of an application.
+        /// This method is available only in development builds and the editor, as it is a debug feature to go along the profiling of an application.
         /// </summary>
         /// <remarks>
         /// Note that the values returned may change over time when the underlying architecture is modified.
         /// 
-        /// As this is called at every change marked on any visual element of the panel, the overhead is not negligeable.
-        /// 
+        /// As this is called at every change marked on any visual element of the panel, the overhead is not negligible.
+        /// The callback will not be called in release builds as the method is stripped.
         /// </remarks>
         /// <example>
         /// The following example uses the panelChangeReceiver in a game.
         /// To test it, add the component to a GameObject and the Panel Setting asset linked in the component fields.
         /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ChangeLogger.cs"/>
-        /// </example>
-        public IDebugPanelChangeReceiver panelChangeReceiver {
-            get => m_PanelChangeReceiver;
-            set
-            {
-                m_PanelChangeReceiver = value;
-                m_PanelAccess.SetPanelChangeReceiver();
-            }
+        /// </example
+        ///
+        [Conditional("ENABLE_PROFILER")]
+        public void SetPanelChangeReceiver(IDebugPanelChangeReceiver value)
+        {
+            m_PanelChangeReceiver = value;
+            m_PanelAccess.SetPanelChangeReceiver();
         }
+
+        internal IDebugPanelChangeReceiver GetPanelChangeReceiver() {return m_PanelChangeReceiver; }
 
         internal void UpdateScreenDPI()
         {
@@ -722,6 +742,7 @@ namespace UnityEngine.UIElements
             panel.clearSettings = new PanelClearSettings {clearColor = m_ClearColor, clearDepthStencil = m_ClearDepthStencil, color = m_ColorClearValue};
             panel.referenceSpritePixelsPerUnit = referenceSpritePixelsPerUnit;
             panel.vertexBudget = m_VertexBudget;
+            panel.dataBindingManager.logLevel = m_BindingLogLevel;
 
             var atlas = panel.atlas as DynamicAtlas;
             if (atlas != null)

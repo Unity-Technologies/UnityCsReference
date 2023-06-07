@@ -17,7 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string id => k_Id;
         public override string displayName => L10n.Tr("Built-in");
-        public override PageIcon icon =>  PageIcon.BuiltIn;
+        public override Icon icon =>  Icon.BuiltInPage;
 
         public override RefreshOptions refreshOptions => RefreshOptions.UpmListOffline | RefreshOptions.UpmSearchOffline;
 

@@ -117,6 +117,8 @@ namespace UnityEditor.UIElements
                 return (int)MouseCursor.SplitResizeUpDown;
             else if (string.Equals(value, "split-resize-left-right", StringComparison.OrdinalIgnoreCase))
                 return (int)MouseCursor.SplitResizeLeftRight;
+            else if (string.Equals(value, "not-allowed", StringComparison.OrdinalIgnoreCase))
+                return (int)MouseCursor.NotAllowed;
 
             return (int)MouseCursor.Arrow;
         }

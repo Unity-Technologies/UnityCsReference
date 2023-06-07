@@ -15,12 +15,12 @@ namespace Unity.CommandStateObserver
         /// <summary>
         /// The state components observed by the observer.
         /// </summary>
-        IEnumerable<IStateComponent> ObservedStateComponents { get; }
+        IReadOnlyList<IStateComponent> ObservedStateComponents { get; }
 
         /// <summary>
         /// The state components that can be modified by the observer.
         /// </summary>
-        IEnumerable<IStateComponent> ModifiedStateComponents { get; }
+        IReadOnlyList<IStateComponent> ModifiedStateComponents { get; }
 
         /// <summary>
         /// Observes the <see cref="IStateObserver.ObservedStateComponents"/> and modifies the <see cref="IStateObserver.ModifiedStateComponents"/>.

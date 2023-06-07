@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Scripting.APIUpdating;
@@ -81,8 +80,8 @@ namespace Unity.CommandStateObserver
                 return;
             }
 
-            keys = dic.Keys.ToList();
-            values = dic.Values.ToList();
+            keys = new List<TKey>(dic.Keys);
+            values = new List<TValue>(dic.Values);
         }
 
         static void DeserializeDictionaryFromLists(Dictionary<TKey, TValue> dic, IReadOnlyList<TKey> keys, IReadOnlyList<TValue> values)
@@ -95,7 +94,7 @@ namespace Unity.CommandStateObserver
             {
                 Assert.IsNotNull(keys);
                 Assert.IsNotNull(values);
-                Assert.AreEqual(keys.Count, values.Count);
+                Assert.AreEqual(keys!.Count, values.Count);
                 for (int i = 0; i < numKeys; i++)
                 {
                     if (values[i] != null)
@@ -180,7 +179,7 @@ namespace Unity.CommandStateObserver
         /// </summary>
         /// <param name="item">The item to check.</param>
         /// <returns>True if the dictionary has an entry item.Key with value item.Value. False otherwise.</returns>
-        public bool Contains(KeyValuePair<TKey, TValue> item) => GetSafeDictionary().Contains(item);
+        public bool Contains(KeyValuePair<TKey, TValue> item) => (GetSafeDictionary() as ICollection<KeyValuePair<TKey, TValue>>).Contains(item);
 
         /// <summary>
         /// Copies all the entries of the dictionary to an array, starting at a given index.
@@ -189,9 +188,11 @@ namespace Unity.CommandStateObserver
         /// <param name="arrayIndex">The index in the array where the copy should start.</param>
         public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            foreach (var kvi in GetSafeDictionary().Select((kv, i) => (kv, i)))
+            var i = 0;
+            foreach (var kv in GetSafeDictionary())
             {
-                array[arrayIndex + kvi.i] = kvi.kv;
+                array[arrayIndex + i] = kv;
+                i++;
             }
         }
 

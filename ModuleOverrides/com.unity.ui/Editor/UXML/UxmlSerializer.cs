@@ -15,6 +15,8 @@ namespace UnityEditor.UIElements
 {
     internal class UxmlSerializedAttributeDescription : UxmlAttributeDescription
     {
+        IList<Type> m_UxmlObjectAcceptedTypes;
+
         public new Type type { get; set; }
 
         /// <summary>
@@ -35,7 +37,61 @@ namespace UnityEditor.UIElements
 
         public bool isUnityObject => typeof(Object).IsAssignableFrom(type);
 
-        public bool isUxmlObject => serializedField.GetCustomAttribute<UxmlObjectAttribute>() != null;
+        public bool isUxmlObject => serializedField.GetCustomAttribute<UxmlObjectReferenceAttribute>() != null;
+
+        public bool isList => typeof(IList).IsAssignableFrom(type) && (type.IsArray || type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>));
+
+        /// <summary>
+        /// The UxmlObject types that can be applied to this attribute.
+        /// </summary>
+        public IList<Type> uxmlObjectAcceptedTypes 
+        {
+            get
+            {
+                if (m_UxmlObjectAcceptedTypes != null)
+                    return m_UxmlObjectAcceptedTypes;
+
+                // Were the types set in the UxmlObjectAttribute?
+                var attribute = serializedField.GetCustomAttribute<UxmlObjectReferenceAttribute>();
+                if (attribute.types != null)
+                {
+                    m_UxmlObjectAcceptedTypes = attribute.types;
+                    return m_UxmlObjectAcceptedTypes;
+                }
+
+                var acceptedTypes = new List<Type>();
+
+                void AddType(Type type)
+                {
+                    var declaringType = type.DeclaringType;
+                    if (declaringType.IsAbstract || declaringType.IsGenericType)
+                        return;
+
+                    // We only accept UxmlObjectAttribute types.
+                    if (declaringType.GetCustomAttribute<UxmlObjectAttribute>() == null)
+                        return;
+
+                    acceptedTypes.Add(type);
+                }
+
+                var uxmlObjectType = type;
+                if (isList)
+                {
+                    uxmlObjectType = type.GetArrayOrListElementType();
+                }
+
+                var foundTypes = TypeCache.GetTypesDerivedFrom(uxmlObjectType);
+
+                AddType(uxmlObjectType); // Add the base type
+                foreach (var t in foundTypes)
+                {
+                    AddType(t);
+                }
+
+                m_UxmlObjectAcceptedTypes = acceptedTypes;
+                return m_UxmlObjectAcceptedTypes;
+            }
+        }
 
         internal virtual object GetValueFromBagAsObject(IUxmlAttributes bag, CreationContext cc)
         {
@@ -60,7 +116,42 @@ namespace UnityEditor.UIElements
                 if (!TryGetValueFromObject(obj, out var value))
                     value = defaultValueClone;
 
-                value = UxmlUtility.CloneObject(value);
+                if (isUxmlObject && value != null)
+                {
+                    var previousValue = GetSerializedValue(uxmlSerializedData);
+
+                    if (value is IList list)
+                    {
+                        // We try to use the old data so that we can preserve the uxml asset id.
+                        var previousList = previousValue as IList;
+                        var serializedList = Activator.CreateInstance(serializedField.FieldType) as IList;
+
+                        for (int i = 0; i < list.Count; i++)
+                        {
+                            var item = list[i];
+                            var previousData = previousList != null && i < previousList.Count ? previousList[i] as UxmlSerializedData : null;
+
+                            var desc = UxmlSerializedDataRegistry.GetDescription(item.GetType().FullName);
+                            var data = previousData ?? desc.CreateSerializedData();
+                            desc.SyncSerializedData(item, data);
+                            serializedList.Add(data);
+                        }
+
+                        value = serializedList;
+                    }
+                    else
+                    {
+                        var desc = UxmlSerializedDataRegistry.GetDescription(value.GetType().FullName);
+                        var data = previousValue ?? desc.CreateSerializedData();
+                        desc.SyncSerializedData(value, data);
+                        value = data;
+                    }
+                }
+                else
+                {
+                    value = UxmlUtility.CloneObject(value);
+                }
+
                 SetSerializedValue(uxmlSerializedData, value);
             }
             catch (Exception ex)
@@ -72,10 +163,19 @@ namespace UnityEditor.UIElements
         object ExtractObjectField(object objInstance)
         {
             var fieldName = serializedField.Name;
-            object of = objInstance.GetType().GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (of == null)
-                of = objInstance.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            return of;
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            object oField = null;
+            var oType = objInstance.GetType();
+            while (oField == null && oType != null)
+            {
+                oField = oType.GetProperty(fieldName, flags) ?? (object)oType.GetField(fieldName, flags);
+
+                if (oField == null)
+                    oType = oType.BaseType;
+            }
+
+            return oField;
         }
 
         public bool TryGetValueFromObject(object objInstance, out object value)
@@ -192,9 +292,9 @@ namespace UnityEditor.UIElements
                 {
                     foreach (var asset in entry.uxmlObjectAssets)
                     {
-                        if (asset is UxmlObjectFieldAsset fieldAsset && fieldAsset.fieldName == rootName)
+                        if (asset.isField && asset.fullTypeName == rootName)
                         {
-                            entry = cc.visualTreeAsset.GetUxmlObjectEntry(fieldAsset.id);
+                            entry = cc.visualTreeAsset.GetUxmlObjectEntry(asset.id);
                             break;
                         }
                     }
@@ -206,9 +306,7 @@ namespace UnityEditor.UIElements
                     Type objectType = type;
                     using (ListPool<(UxmlObjectAsset, UxmlSerializedDataDescription)>.Get(out var foundObjects))
                     {
-                        bool isCollection = typeof(IList).IsAssignableFrom(type) && (type.IsArray || type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>));
-
-                        if (isCollection)
+                        if (isList)
                         {
                             objectType = type.GetArrayOrListElementType();
                         }
@@ -216,11 +314,7 @@ namespace UnityEditor.UIElements
                         foreach (var asset in entry.uxmlObjectAssets)
                         {
                             var assetDescription = UxmlSerializedDataRegistry.GetDescription(asset.fullTypeName);
-                            if (assetDescription == null)
-                            {
-                                Debug.LogError("Could not find a UxmlObject type for " + asset.fullTypeName, cc.visualTreeAsset);
-                            }
-                            else if (objectType.IsAssignableFrom(assetDescription.serializedDataType))
+                            if (assetDescription != null && objectType.IsAssignableFrom(assetDescription.serializedDataType))
                             {
                                 foundObjects.Add((asset, assetDescription));
                             }
@@ -229,7 +323,7 @@ namespace UnityEditor.UIElements
                         IList list = null;
                         if (foundObjects.Count > 0)
                         {
-                            if (isCollection)
+                            if (isList)
                             {
                                 list = type.IsArray ? Array.CreateInstance(objectType, foundObjects.Count) : (IList)Activator.CreateInstance(type);
                             }
@@ -240,7 +334,7 @@ namespace UnityEditor.UIElements
                                 var nestedData = UxmlSerializer.Serialize(assetDescription, asset, cc);
                                 if (nestedData != null)
                                 {
-                                    if (isCollection)
+                                    if (isList)
                                     {
                                         if (type.IsArray)
                                             list[i] = nestedData;
@@ -278,6 +372,8 @@ namespace UnityEditor.UIElements
         public static UxmlSerializedData Serialize(UxmlSerializedDataDescription description, IUxmlAttributes bag, CreationContext cc)
         {
             var data = description.CreateSerializedData();
+            if (bag is UxmlAsset uxmlAsset)
+                data.uxmlAssetId = uxmlAsset.id;
 
             // Do we need to handle any legacy fields?
             // Previously, we needed to use multiple fields to represent a composite, eg. x,y,z fields for a Vector3,

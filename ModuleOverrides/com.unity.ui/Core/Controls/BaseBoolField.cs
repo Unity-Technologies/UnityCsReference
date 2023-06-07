@@ -11,7 +11,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseBoolField : BaseField<bool>
     {
-        internal static readonly DataBindingProperty textProperty = nameof(text);
+        internal static readonly BindingId textProperty = nameof(text);
 
         protected Label m_Label;
         protected readonly VisualElement m_CheckMark;
@@ -94,7 +94,16 @@ namespace UnityEngine.UIElements
         protected virtual void InitLabel()
         {
             m_Label = new Label();
-            visualInput.Add(m_Label);
+
+            if (m_CheckMark.hierarchy.parent != visualInput)
+            {
+                visualInput.Add(m_Label);
+            }
+            else
+            {
+                var checkmarkIndex = visualInput.IndexOf(m_CheckMark);
+                visualInput.Insert(checkmarkIndex + 1, m_Label);
+            }
         }
 
         /// <summary>

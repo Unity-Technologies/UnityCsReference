@@ -39,6 +39,8 @@ namespace UnityEditor
             public static readonly GUIContent progressiveGPUChangeWarning = EditorGUIUtility.TrTextContent("Changing the compute device used by the Progressive GPU Lightmapper requires the editor to be relaunched. Do you want to change device and restart?");
             public static readonly GUIContent gpuBakingProfile = EditorGUIUtility.TrTextContent("GPU Baking Profile", "The profile chosen for trading off between performance and memory usage when baking using the GPU.");
 
+            public static readonly GUIContent invalidEnvironmentLabel = EditorGUIUtility.TrTextContentWithIcon("Baked environment lighting does not match the current Scene state. Generate Lighting to update this.", MessageType.Warning);
+
             public static readonly int[] progressiveGPUUnknownDeviceValues = { 0 };
             public static readonly GUIContent[] progressiveGPUUnknownDeviceStrings =
             {
@@ -642,6 +644,16 @@ namespace UnityEditor
         internal static void Summary()
         {
             bool autoGenerate = Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
+            bool outdatedEnvironment = RenderSettings.WasUsingAutoEnvironmentBakingWithNonDefaultSettings();
+            if (outdatedEnvironment && !autoGenerate && !Lightmapping.isRunning)
+            {
+                using (new EditorGUIUtility.IconSizeScope(Vector2.one * 14))
+                {
+                    GUILayout.BeginVertical();
+                    GUILayout.Label(Styles.invalidEnvironmentLabel, EditorStyles.wordWrappedMiniLabel);
+                    GUILayout.EndVertical();
+                }
+            }
 
             // Show the number of lightmaps:
             {

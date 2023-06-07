@@ -46,7 +46,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"border-width", "<length>{1,4}"},
             {"bottom", "<length-percentage> | auto"},
             {"color", "<color>"},
-            {"cursor", "[ [ <resource> | <url> ] [ <integer> <integer> ]? ] | [ arrow | text | resize-vertical | resize-horizontal | link | slide-arrow | resize-up-right | resize-up-left | move-arrow | rotate-arrow | scale-arrow | arrow-plus | arrow-minus | pan | orbit | zoom | fps | split-resize-up-down | split-resize-left-right ]"},
+            {"cursor", "[ [ <resource> | <url> ] [ <integer> <integer> ]? ] | [ arrow | text | resize-vertical | resize-horizontal | link | slide-arrow | resize-up-right | resize-up-left | move-arrow | rotate-arrow | scale-arrow | arrow-plus | arrow-minus | pan | orbit | zoom | fps | split-resize-up-down | split-resize-left-right | not-allowed ]"},
             {"display", "flex | none"},
             {"flex", "none | [ <'flex-grow'> <'flex-shrink'>? || <'flex-basis'> ]"},
             {"flex-basis", "<'width'>"},

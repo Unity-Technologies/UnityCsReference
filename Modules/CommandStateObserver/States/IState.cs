@@ -15,7 +15,7 @@ namespace Unity.CommandStateObserver
         /// <summary>
         /// All the state components.
         /// </summary>
-        IEnumerable<IStateComponent> AllStateComponents { get; }
+        IReadOnlyList<IStateComponent> AllStateComponents { get; }
 
         /// <summary>
         /// Adds a state component to the state.

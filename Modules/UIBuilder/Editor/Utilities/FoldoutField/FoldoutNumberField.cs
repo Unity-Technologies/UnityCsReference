@@ -86,6 +86,11 @@ namespace Unity.UI.Builder
             }
         }
 
+        internal override void SetHeaderInputEnabled(bool enabled)
+        {
+            headerInputField.SetEnabled(enabled);
+        }
+
         void OnDraggerFieldUpdate(ChangeEvent<int> evt)
         {
             m_TextField.value = evt.newValue.ToString();

@@ -21,19 +21,19 @@ namespace UnityEngine.AI
         int m_Hit;
 
         // Position of hit.
-        public Vector3 position { get { return m_Position; } set { m_Position = value; } }
+        public Vector3 position { get => m_Position; set => m_Position = value; }
 
         // Normal at the point of hit.
-        public Vector3 normal { get { return m_Normal; } set { m_Normal = value; } }
+        public Vector3 normal { get => m_Normal; set => m_Normal = value; }
 
         // Distance to the point of hit.
-        public float distance { get { return m_Distance; } set { m_Distance = value; } }
+        public float distance { get => m_Distance; set => m_Distance = value; }
 
         // Mask specifying NavMesh area index at point of hit.
-        public int mask { get { return m_Mask; } set { m_Mask = value; } }
+        public int mask { get => m_Mask; set => m_Mask = value; }
 
         // Flag set when hit.
-        public bool hit { get { return m_Hit != 0; } set { m_Hit = value ? 1 : 0; } }
+        public bool hit { get => m_Hit != 0; set => m_Hit = value ? 1 : 0; }
     }
 
     // Keep this struct in sync with the one defined in "NavMeshBindingTypes.h"
@@ -89,10 +89,7 @@ namespace UnityEngine.AI
 
         public Object owner
         {
-            get
-            {
-                return NavMesh.InternalGetOwner(id);
-            }
+            get => NavMesh.InternalGetOwner(id);
             set
             {
                 var ownerID = value != null ? value.GetInstanceID() : 0;
@@ -122,38 +119,18 @@ namespace UnityEngine.AI
         int m_Area;
         int m_AgentTypeID;
 
-        public Vector3 startPosition { get { return m_StartPosition; } set { m_StartPosition = value; } }
-        public Vector3 endPosition { get { return m_EndPosition; } set { m_EndPosition = value; } }
-        public float costModifier { get { return m_CostModifier; } set { m_CostModifier = value; } }
-        public bool bidirectional { get { return m_Bidirectional != 0; } set { m_Bidirectional = value ? 1 : 0; } }
-        public float width { get { return m_Width; } set { m_Width = value; } }
-        public int area { get { return m_Area; } set { m_Area = value; } }
-        public int agentTypeID { get { return m_AgentTypeID; } set { m_AgentTypeID = value; } }
+        public Vector3 startPosition { get => m_StartPosition; set => m_StartPosition = value; }
+        public Vector3 endPosition { get => m_EndPosition; set => m_EndPosition = value; }
+        public float costModifier { get => m_CostModifier; set => m_CostModifier = value; }
+        public bool bidirectional { get => m_Bidirectional != 0; set => m_Bidirectional = value ? 1 : 0; }
+        public float width { get => m_Width; set => m_Width = value; }
+        public int area { get => m_Area; set => m_Area = value; }
+        public int agentTypeID { get => m_AgentTypeID; set => m_AgentTypeID = value; }
     }
 
-    public struct NavMeshLinkInstance
+    public partial struct NavMeshLinkInstance
     {
-        public bool valid => id != 0 && NavMesh.IsValidLinkHandle(id);
         internal int id { get; set; }
-
-        public void Remove()
-        {
-            NavMesh.RemoveLinkInternal(id);
-        }
-
-        public Object owner
-        {
-            get
-            {
-                return NavMesh.InternalGetLinkOwner(id);
-            }
-            set
-            {
-                var ownerID = value != null ? value.GetInstanceID() : 0;
-                if (!NavMesh.InternalSetLinkOwner(id, ownerID))
-                    Debug.LogError("Cannot set 'owner' on an invalid NavMeshLinkInstance");
-            }
-        }
     }
 
     public struct NavMeshQueryFilter
@@ -281,7 +258,7 @@ namespace UnityEngine.AI
 
         public static NavMeshDataInstance AddNavMeshData(NavMeshData navMeshData)
         {
-            if (navMeshData == null) throw new ArgumentNullException("navMeshData");
+            if (navMeshData == null) throw new ArgumentNullException(nameof(navMeshData));
 
             var handle = new NavMeshDataInstance();
             handle.id = AddNavMeshDataInternal(navMeshData);
@@ -290,7 +267,7 @@ namespace UnityEngine.AI
 
         public static NavMeshDataInstance AddNavMeshData(NavMeshData navMeshData, Vector3 position, Quaternion rotation)
         {
-            if (navMeshData == null) throw new ArgumentNullException("navMeshData");
+            if (navMeshData == null) throw new ArgumentNullException(nameof(navMeshData));
 
             var handle = new NavMeshDataInstance();
             handle.id = AddNavMeshDataTransformedInternal(navMeshData, position, rotation);
@@ -352,6 +329,38 @@ namespace UnityEngine.AI
             RemoveLinkInternal(handle.id);
         }
 
+        public static bool IsLinkActive(NavMeshLinkInstance handle)
+        {
+            return IsOffMeshConnectionActive(handle.id);
+        }
+
+        public static void SetLinkActive(NavMeshLinkInstance handle, bool value)
+        {
+            SetOffMeshConnectionActive(handle.id, value);
+        }
+
+        public static bool IsLinkOccupied(NavMeshLinkInstance handle)
+        {
+            return IsOffMeshConnectionOccupied(handle.id);
+        }
+
+        public static bool IsLinkValid(NavMeshLinkInstance handle)
+        {
+            return IsValidLinkHandle(handle.id);
+        }
+
+        public static Object GetLinkOwner(NavMeshLinkInstance handle)
+        {
+            return InternalGetLinkOwner(handle.id);
+        }
+
+        public static void SetLinkOwner(NavMeshLinkInstance handle, Object owner)
+        {
+            var ownerID = owner != null ? owner.GetInstanceID() : 0;
+            if (!InternalSetLinkOwner(handle.id, ownerID))
+                Debug.LogError("Cannot set 'owner' on an invalid NavMeshLinkInstance");
+        }
+
         [StaticAccessor("GetNavMeshManager()")]
         [NativeName("AddLink")]
         internal static extern int AddLinkInternal(NavMeshLinkData link, Vector3 position, Quaternion rotation);
@@ -359,6 +368,15 @@ namespace UnityEngine.AI
         [StaticAccessor("GetNavMeshManager()")]
         [NativeName("RemoveLink")]
         internal static extern void RemoveLinkInternal(int handle);
+
+        [StaticAccessor("GetNavMeshManager()")]
+        internal static extern bool IsOffMeshConnectionOccupied(int handle);
+
+        [StaticAccessor("GetNavMeshManager()")]
+        internal static extern bool IsOffMeshConnectionActive(int linkHandle);
+
+        [StaticAccessor("GetNavMeshManager()")]
+        internal static extern void SetOffMeshConnectionActive(int linkHandle, bool activated);
 
         public static bool SamplePosition(Vector3 sourcePosition, out NavMeshHit hit, float maxDistance, NavMeshQueryFilter filter)
         {

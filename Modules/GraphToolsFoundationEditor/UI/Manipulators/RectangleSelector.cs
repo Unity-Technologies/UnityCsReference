@@ -16,7 +16,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class RectangleSelector : MouseManipulator
     {
-        static readonly List<ChildView> k_OnMouseUpAllUIs = new();
+        static readonly List<GraphElement> k_OnMouseUpAllUIs = new();
 
         readonly RectangleSelect m_Rectangle;
         bool m_Active;
@@ -155,30 +155,20 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="graphView">The <see cref="GraphView"/> in which to search for the elements.</param>
         protected static void SelectElementsInRegion(Rect selectionRegion, SelectElementsCommand.SelectionMode selectionMode, GraphView graphView)
         {
-            // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
-            List<ChildView> newSelection = new List<ChildView>();
-            graphView.GraphModel?.GraphElementModels
-                .Where(ge => ge.IsSelectable())
-                .GetAllViewsInList_Internal(graphView, null, k_OnMouseUpAllUIs);
-            foreach (var child in k_OnMouseUpAllUIs)
-            {
-                var localSelRect = graphView.ContentViewContainer.ChangeCoordinatesTo(child, selectionRegion);
-                if (child.Overlaps(localSelRect))
-                {
-                    newSelection.Add(child);
-                }
-            }
             k_OnMouseUpAllUIs.Clear();
+            graphView.GetGraphElementsInRegion(selectionRegion, k_OnMouseUpAllUIs);
 
-            var allSelectedModels = newSelection
+            var allSelectedModels = k_OnMouseUpAllUIs
                 .OfType<ModelView>()
                 .Select(elem => elem.Model)
                 .OfType<GraphElementModel>()
+                .Where(model => model.IsSelectable())
                 .ToList();
             bool onlyWiresSelected = allSelectedModels.All(m => m is WireModel);
             var selectedNodes = allSelectedModels
                 .OfType<PortNodeModel>()
                 .ToHashSet();
+            k_OnMouseUpAllUIs.Clear();
 
             foreach (var node in selectedNodes.ToList()) // need to copy the list as it will be changed while iterating.
                 RecurseAddGraphContainerChildren(node, selectedNodes);

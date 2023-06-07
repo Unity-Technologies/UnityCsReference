@@ -16,7 +16,7 @@ namespace Unity.GraphToolsFoundation.Editor
     /// </summary>
     class FreehandSelector : MouseManipulator
     {
-        static readonly List<ChildView> k_OnMouseUpAllUIs = new();
+        static readonly List<GraphElement> k_OnMouseUpAllUIs = new();
 
         readonly FreehandElement m_FreehandElement;
         bool m_Active;
@@ -126,32 +126,28 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="graphView">The <see cref="GraphView"/> in which to search for the elements.</param>
         protected static void SelectElementsUnderLasso(List<Vector2> lassoPoints, bool deleteElements, GraphView graphView)
         {
-            // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
             List<ChildView> newSelection = new List<ChildView>();
-            graphView.GraphModel.GraphElementModels
-                .Where(ge => ge.IsSelectable())
-                .GetAllViewsInList_Internal(graphView, null, k_OnMouseUpAllUIs);
-            foreach (var element in k_OnMouseUpAllUIs)
+            for (var i = 1; i < lassoPoints.Count; i++)
             {
-                for (int i = 1; i < lassoPoints.Count; i++)
-                {
-                    // Apply offset
-                    Vector2 start = graphView.ContentViewContainer.ChangeCoordinatesTo(element, lassoPoints[i - 1]);
-                    Vector2 end = graphView.ContentViewContainer.ChangeCoordinatesTo(element, lassoPoints[i]);
-                    float minx = Mathf.Min(start.x, end.x);
-                    float maxx = Mathf.Max(start.x, end.x);
-                    float miny = Mathf.Min(start.y, end.y);
-                    float maxy = Mathf.Max(start.y, end.y);
+                // Apply offset
+                Vector2 start = lassoPoints[i - 1];
+                Vector2 end = lassoPoints[i];
+                float minx = Mathf.Min(start.x, end.x);
+                float maxx = Mathf.Max(start.x, end.x);
+                float miny = Mathf.Min(start.y, end.y);
+                float maxy = Mathf.Max(start.y, end.y);
 
-                    var rect = new Rect(minx, miny, maxx - minx + 1, maxy - miny + 1);
-                    if (element.Overlaps(rect))
-                    {
-                        newSelection.Add(element);
-                        break;
-                    }
+                var rect = new Rect(minx, miny, maxx - minx + 1, maxy - miny + 1);
+                k_OnMouseUpAllUIs.Clear();
+                graphView.GetGraphElementsInRegion(rect, k_OnMouseUpAllUIs);
+                foreach (var graphElement in k_OnMouseUpAllUIs)
+                {
+                    if (graphElement == null || !graphElement.GraphElementModel.IsSelectable())
+                        continue;
+                    newSelection.Add(graphElement);
                 }
+                k_OnMouseUpAllUIs.Clear();
             }
-            k_OnMouseUpAllUIs.Clear();
 
             var selectedModels = newSelection.OfType<ModelView>().Select(elem => elem.Model).OfType<GraphElementModel>().ToList();
 

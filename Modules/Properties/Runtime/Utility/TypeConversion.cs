@@ -47,8 +47,6 @@ namespace Unity.Properties
             m_Converters = storage;
         }
 
-        public int ConverterCount => m_Converters?.Count ?? 0;
-
         public static ConversionRegistry Create()
         {
             return new ConversionRegistry(new Dictionary<ConverterKey, Delegate>(Comparer));
@@ -57,11 +55,6 @@ namespace Unity.Properties
         public void Register(Type source, Type destination, Delegate converter)
         {
             m_Converters[new ConverterKey(source, destination)] = converter ?? throw new ArgumentException(nameof(converter));
-        }
-
-        public void Unregister(Type source, Type destination)
-        {
-            m_Converters.Remove(new ConverterKey(source, destination));
         }
 
         public Delegate GetConverter(Type source, Type destination)
@@ -76,15 +69,6 @@ namespace Unity.Properties
         {
             converter = GetConverter(source, destination);
             return null != converter;
-        }
-
-        public void GetAllTypesConvertingToType(Type type, List<Type> result)
-        {
-            foreach (var key in m_Converters.Keys)
-            {
-                if (key.DestinationType == type)
-                    result.Add(key.SourceType);
-            }
         }
 
         public bool Equals(ConversionRegistry x, ConversionRegistry y)

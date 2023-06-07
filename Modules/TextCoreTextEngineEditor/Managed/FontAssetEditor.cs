@@ -2362,7 +2362,7 @@ namespace UnityEditor.TextCore.Text
             uint firstCharacterUnicode = (uint)m_FirstCharacterUnicode_prop.intValue;
             if (firstCharacterUnicode != 0)
             {
-                uint glyphIndex = m_fontAsset.GetGlyphIndex(firstCharacterUnicode);
+                uint glyphIndex = m_fontAsset.GetGlyphIndex(firstCharacterUnicode, out bool success);
                 if (glyphIndex != 0)
                     m_EmptyGlyphPairAdjustmentRecord_prop.FindPropertyRelative("m_FirstAdjustmentRecord").FindPropertyRelative("m_GlyphIndex").intValue = (int)glyphIndex;
             }
@@ -2370,7 +2370,7 @@ namespace UnityEditor.TextCore.Text
             uint secondCharacterUnicode = (uint)m_SecondCharacterUnicode_prop.intValue;
             if (secondCharacterUnicode != 0)
             {
-                uint glyphIndex = m_fontAsset.GetGlyphIndex(secondCharacterUnicode);
+                uint glyphIndex = m_fontAsset.GetGlyphIndex(secondCharacterUnicode, out bool success);
                 if (glyphIndex != 0)
                     m_EmptyGlyphPairAdjustmentRecord_prop.FindPropertyRelative("m_SecondAdjustmentRecord").FindPropertyRelative("m_GlyphIndex").intValue = (int)glyphIndex;
             }

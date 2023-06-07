@@ -101,17 +101,17 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class ScrollView : VisualElement
     {
-        internal static readonly DataBindingProperty horizontalScrollerVisibilityProperty = nameof(horizontalScrollerVisibility);
-        internal static readonly DataBindingProperty verticalScrollerVisibilityProperty = nameof(verticalScrollerVisibility);
-        internal static readonly DataBindingProperty scrollOffsetProperty = nameof(scrollOffset);
-        internal static readonly DataBindingProperty horizontalPageSizeProperty = nameof(horizontalPageSize);
-        internal static readonly DataBindingProperty verticalPageSizeProperty = nameof(verticalPageSize);
-        internal static readonly DataBindingProperty mouseWheelScrollSizeProperty = nameof(mouseWheelScrollSize);
-        internal static readonly DataBindingProperty scrollDecelerationRateProperty = nameof(scrollDecelerationRate);
-        internal static readonly DataBindingProperty elasticityProperty = nameof(elasticity);
-        internal static readonly DataBindingProperty touchScrollBehaviorProperty = nameof(touchScrollBehavior);
-        internal static readonly DataBindingProperty nestedInteractionKindProperty = nameof(nestedInteractionKind);
-        internal static readonly DataBindingProperty modeProperty = nameof(mode);
+        internal static readonly BindingId horizontalScrollerVisibilityProperty = nameof(horizontalScrollerVisibility);
+        internal static readonly BindingId verticalScrollerVisibilityProperty = nameof(verticalScrollerVisibility);
+        internal static readonly BindingId scrollOffsetProperty = nameof(scrollOffset);
+        internal static readonly BindingId horizontalPageSizeProperty = nameof(horizontalPageSize);
+        internal static readonly BindingId verticalPageSizeProperty = nameof(verticalPageSize);
+        internal static readonly BindingId mouseWheelScrollSizeProperty = nameof(mouseWheelScrollSize);
+        internal static readonly BindingId scrollDecelerationRateProperty = nameof(scrollDecelerationRate);
+        internal static readonly BindingId elasticityProperty = nameof(elasticity);
+        internal static readonly BindingId touchScrollBehaviorProperty = nameof(touchScrollBehavior);
+        internal static readonly BindingId nestedInteractionKindProperty = nameof(nestedInteractionKind);
+        internal static readonly BindingId modeProperty = nameof(mode);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
@@ -390,6 +390,7 @@ namespace UnityEngine.UIElements
                 var previous = m_HorizontalPageSize;
                 m_HorizontalPageSize = value;
                 UpdateHorizontalSliderPageSize();
+
                 if (!Mathf.Approximately(previous, m_HorizontalPageSize))
                     NotifyPropertyChanged(horizontalPageSizeProperty);
             }
@@ -409,6 +410,7 @@ namespace UnityEngine.UIElements
                 var previous = m_VerticalPageSize;
                 m_VerticalPageSize = value;
                 UpdateVerticalSliderPageSize();
+
                 if (!Mathf.Approximately(previous, m_VerticalPageSize))
                     NotifyPropertyChanged(verticalPageSizeProperty);
             }
@@ -463,6 +465,7 @@ namespace UnityEngine.UIElements
             {
                 var previous = m_ScrollDecelerationRate;
                 m_ScrollDecelerationRate = Mathf.Max(0f, value);
+
                 if (!Mathf.Approximately(previous, m_ScrollDecelerationRate))
                     NotifyPropertyChanged(scrollDecelerationRateProperty);
             }
@@ -485,6 +488,7 @@ namespace UnityEngine.UIElements
             {
                 var previous = m_Elasticity;
                 m_Elasticity = Mathf.Max(0f, value);
+
                 if (!Mathf.Approximately(previous, m_Elasticity))
                     NotifyPropertyChanged(elasticityProperty);
             }
@@ -942,10 +946,10 @@ namespace UnityEngine.UIElements
             get => m_Mode;
             set
             {
-                if (m_Mode == value)
-                    return;
+                var previous = m_Mode;
                 SetScrollViewMode(value);
-                NotifyPropertyChanged(modeProperty);
+                if (previous != m_Mode)
+                    NotifyPropertyChanged(modeProperty);
             }
         }
 

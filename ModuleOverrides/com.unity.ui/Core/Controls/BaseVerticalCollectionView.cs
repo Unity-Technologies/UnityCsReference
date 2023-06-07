@@ -51,6 +51,21 @@ namespace UnityEngine.UIElements
         DynamicHeight,
     }
 
+    /// <summary>
+    /// Option to change the data source assignation when using Data Binding in collection views.
+    /// </summary>
+    public enum BindingSourceSelectionMode
+    {
+        /// <summary>
+        /// Data source assignation will be handled by user code when binding each item.
+        /// </summary>
+        Manual,
+        /// <summary>
+        /// The items source and indexed path are automatically assigned to each item's data source.
+        /// </summary>
+        AutoAssign,
+    }
+
     [Serializable]
     class SerializedVirtualizationData
     {
@@ -67,25 +82,25 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
     {
-        internal static readonly DataBindingProperty itemsSourceProperty = nameof(itemsSource);
-        internal static readonly DataBindingProperty selectionTypeProperty = nameof(selectionType);
-        internal static readonly DataBindingProperty selectedItemProperty = nameof(selectedItem);
-        internal static readonly DataBindingProperty selectedItemsProperty = nameof(selectedItems);
-        internal static readonly DataBindingProperty selectedIndexProperty = nameof(selectedIndex);
-        internal static readonly DataBindingProperty selectedIndicesProperty = nameof(selectedIndices);
-        internal static readonly DataBindingProperty showBorderProperty = nameof(showBorder);
-        internal static readonly DataBindingProperty reorderableProperty = nameof(reorderable);
-        internal static readonly DataBindingProperty horizontalScrollingEnabledProperty = nameof(horizontalScrollingEnabled);
-        internal static readonly DataBindingProperty showAlternatingRowBackgroundsProperty = nameof(showAlternatingRowBackgrounds);
-        internal static readonly DataBindingProperty virtualizationMethodProperty = nameof(virtualizationMethod);
-        internal static readonly DataBindingProperty fixedItemHeightProperty = nameof(fixedItemHeight);
+        internal static readonly BindingId itemsSourceProperty = nameof(itemsSource);
+        internal static readonly BindingId selectionTypeProperty = nameof(selectionType);
+        internal static readonly BindingId selectedItemProperty = nameof(selectedItem);
+        internal static readonly BindingId selectedItemsProperty = nameof(selectedItems);
+        internal static readonly BindingId selectedIndexProperty = nameof(selectedIndex);
+        internal static readonly BindingId selectedIndicesProperty = nameof(selectedIndices);
+        internal static readonly BindingId showBorderProperty = nameof(showBorder);
+        internal static readonly BindingId reorderableProperty = nameof(reorderable);
+        internal static readonly BindingId horizontalScrollingEnabledProperty = nameof(horizontalScrollingEnabled);
+        internal static readonly BindingId showAlternatingRowBackgroundsProperty = nameof(showAlternatingRowBackgrounds);
+        internal static readonly BindingId virtualizationMethodProperty = nameof(virtualizationMethod);
+        internal static readonly BindingId fixedItemHeightProperty = nameof(fixedItemHeight);
 
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
             #pragma warning disable 649
             [UxmlAttribute(obsoleteNames = new[] { "itemHeight, item-height" })]
-            [SerializeField] private float fixedItemHeight;
+            [SerializeField, FixedItemHeightDecorator] private float fixedItemHeight;
             [SerializeField] private CollectionVirtualizationMethod virtualizationMethod;
             [SerializeField] private bool showBorder;
             [SerializeField] private SelectionType selectionType;
@@ -101,6 +116,9 @@ namespace UnityEngine.UIElements
                 base.Deserialize(obj);
 
                 var e = (BaseVerticalCollectionView)obj;
+
+                // Clear the old controller so that the list refreshes
+                e.SetViewController(null);
 
                 // Avoid setting fixedItemHeight unless it's explicitly defined.
                 // Setting fixedItemHeight property will activate inline property mode.

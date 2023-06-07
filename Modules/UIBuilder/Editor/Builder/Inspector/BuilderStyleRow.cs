@@ -3,13 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.UIElements;
-using UnityEditor;
 
 namespace Unity.UI.Builder
 {
     internal class BuilderStyleRow : BindableElement
     {
-        static readonly string s_UssClassName = "unity-builder-style-row";
+        internal static readonly string ussClassName = "unity-builder-style-row";
 
         VisualElement m_Container;
 
@@ -19,7 +18,7 @@ namespace Unity.UI.Builder
 
         public BuilderStyleRow()
         {
-            AddToClassList(s_UssClassName);
+            AddToClassList(ussClassName);
 
             var visualAsset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
                 BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderStyleRow.uxml");

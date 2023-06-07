@@ -5,6 +5,8 @@
 using System.Collections.Generic;
 using System;
 using System.Text;
+using Unity.Jobs.LowLevel.Unsafe;
+using System.Diagnostics;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
@@ -17,7 +19,87 @@ namespace UnityEngine.TextCore.Text
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal static TextCore.Text.TextGenerationSettings s_Settings = new TextCore.Text.TextGenerationSettings();
+        internal static void InitThreadArrays()
+        {
+            if (s_Settings != null && s_Generators != null && s_TextInfosCommon != null)
+                return;
+            s_Settings = new TextGenerationSettings[JobsUtility.ThreadIndexCount];
+            for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
+            {
+                s_Settings[i] = new TextGenerationSettings();
+            }
+            s_Generators = new TextGenerator[JobsUtility.ThreadIndexCount];
+            for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
+            {
+                s_Generators[i] = new TextGenerator();
+            }
+            s_TextInfosCommon = new TextInfo[JobsUtility.ThreadIndexCount];
+            for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
+            {
+                s_TextInfosCommon[i] = new TextInfo(VertexDataLayout.VBO);
+            }
+        }
+
+        static TextGenerationSettings[] s_Settings;
+        internal static TextGenerationSettings[] settingsArray
+        {
+            get
+            {
+                if (s_Settings == null)
+                {
+                    s_Settings = new TextGenerationSettings[JobsUtility.ThreadIndexCount];
+                    for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
+                    {
+                        s_Settings[i] = new TextGenerationSettings();
+                    }
+                }
+                return s_Settings;
+            }
+        }
+
+        static TextGenerator[] s_Generators;
+        internal static TextGenerator[] generators
+        {
+            get
+            {
+                if (s_Generators == null)
+                {
+                    s_Generators = new TextGenerator[JobsUtility.ThreadIndexCount];
+                    s_Generators[0] = TextGenerator.GetTextGenerator();
+                    for (int i = 1; i < JobsUtility.ThreadIndexCount; i++)
+                    {
+                        s_Generators[i] = new TextGenerator();
+                    }
+                }
+                return s_Generators;
+            }
+        }
+
+        static TextInfo[] s_TextInfosCommon;
+        internal static TextInfo[] textInfosCommon
+        {
+            get
+            {
+                if (s_TextInfosCommon == null)
+                {
+                    s_TextInfosCommon = new TextInfo[JobsUtility.ThreadIndexCount];
+                    for (int i = 0; i < JobsUtility.ThreadIndexCount; i++)
+                    {
+                        s_TextInfosCommon[i] = new TextInfo(VertexDataLayout.VBO);
+                    }
+                }
+                return s_TextInfosCommon;
+            }
+        }
+
+        internal static TextInfo textInfoCommon => textInfosCommon[JobsUtility.ThreadIndex];
+        static TextGenerator generator => generators[JobsUtility.ThreadIndex];
+
+        internal static TextGenerationSettings settings
+        {
+            [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+            get => settingsArray [JobsUtility.ThreadIndex];
+        }
 
         ~TextHandle()
         {
@@ -37,10 +119,9 @@ namespace UnityEngine.TextCore.Text
         private LinkedListNode<TextInfo> m_TextInfoNode;
 
         private static LinkedList<TextInfo> s_TextInfoPool = new LinkedList<TextInfo>();
-        private static TextInfo s_TextInfoCommon = new TextInfo(VertexDataLayout.VBO);
         private static double s_MinTimeInCache = 1;
-
-        internal static TextInfo textInfoCommon => s_TextInfoCommon;
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal static double currentTime;
 
         /// <summary>
         /// The TextInfo instance, use from this instead of the m_TextInfo member.
@@ -59,64 +140,80 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
+        static object syncRoot = new object();
         public virtual void AddTextInfoToCache()
         {
-            if (m_IsCached)
+            lock (syncRoot)
             {
-                RefreshCaching();
-                return;
-            }
+                bool isMainThread = !JobsUtility.IsExecutingJob;
+                if (isMainThread)
+                    currentTime = Time.realtimeSinceStartup;
 
-            var currentTime = Time.realtimeSinceStartup;
-            // If last textInfo in the list has not been used in a while, take it. Otherwise, create a new one.
-            if (s_TextInfoPool.Count > 0 && ((currentTime - s_TextInfoPool.Last.Value.lastTimeInCache) > s_MinTimeInCache))
-            {
-                RecycleTextInfoFromCache();
-            }
-            else
-            {
-                var textInfo = new TextInfo(VertexDataLayout.VBO);
-                m_TextInfoNode = new LinkedListNode<TextInfo>(textInfo);
-                s_TextInfoPool.AddFirst(m_TextInfoNode);
-                textInfo.lastTimeInCache = currentTime;
-                textInfo.removedFromCache += RemoveTextInfoFromCache;
-            }
+                if (m_IsCached)
+                {
+                    RefreshCaching();
+                    return;
+                }
 
-            m_IsCached = true;
-            SetDirty();
-            Update(s_Settings);
+                if (s_TextInfoPool.Count > 0 && (currentTime - s_TextInfoPool.Last.Value.lastTimeInCache > s_MinTimeInCache))
+                {
+                    RecycleTextInfoFromCache();
+                }
+                else
+                {
+                    var textInfo = new TextInfo(VertexDataLayout.VBO);
+                    m_TextInfoNode = new LinkedListNode<TextInfo>(textInfo);
+                    s_TextInfoPool.AddFirst(m_TextInfoNode);
+                    textInfo.lastTimeInCache = currentTime;
+                    textInfo.removedFromCache += RemoveTextInfoFromCache;
+                }
+
+                m_IsCached = true;
+                SetDirty();
+                Update(settings);
+            }
         }
 
         public virtual void RemoveTextInfoFromCache()
         {
-            if (!m_IsCached)
-                return;
+            lock (syncRoot)
+            {
+                if (!m_IsCached)
+                    return;
 
-            m_IsCached = false;
-            textInfo.lastTimeInCache = 0;
-            textInfo.removedFromCache = null;
-            s_TextInfoPool.Remove(m_TextInfoNode);
-            s_TextInfoPool.AddLast(m_TextInfoNode);
-            m_TextInfoNode = null;
+                m_IsCached = false;
+                textInfo.lastTimeInCache = 0;
+                textInfo.removedFromCache = null;
+                if (m_TextInfoNode != null)
+                {
+                    s_TextInfoPool.Remove(m_TextInfoNode);
+                    s_TextInfoPool.AddLast(m_TextInfoNode);
+                    m_TextInfoNode = null;
+                }
+            }
         }
 
         private void RefreshCaching()
         {
-            textInfo.lastTimeInCache = Time.realtimeSinceStartup;
+            if (!JobsUtility.IsExecutingJob)
+                currentTime = Time.realtimeSinceStartup;
+
+            textInfo.lastTimeInCache = currentTime;
             s_TextInfoPool.Remove(m_TextInfoNode);
             s_TextInfoPool.AddFirst(m_TextInfoNode);
         }
 
         private void RecycleTextInfoFromCache()
         {
-            var currentTime = Time.realtimeSinceStartup;
+            if (!JobsUtility.IsExecutingJob)
+                currentTime = Time.realtimeSinceStartup;
+
             m_TextInfoNode = s_TextInfoPool.Last;
             m_TextInfoNode.Value.RemoveFromCache();
             s_TextInfoPool.RemoveLast();
             s_TextInfoPool.AddFirst(m_TextInfoNode);
             textInfo.removedFromCache += RemoveTextInfoFromCache;
             textInfo.lastTimeInCache = currentTime;
-            m_IsCached = false;
         }
 
         // For testing purposes
@@ -139,7 +236,7 @@ namespace UnityEngine.TextCore.Text
         public bool IsDirty(TextGenerationSettings settings)
         {
             int hash = settings.GetHashCode();
-            if (m_PreviousGenerationSettingsHash == hash && !isDirty)
+            if (m_PreviousGenerationSettingsHash == hash && !isDirty && m_IsCached)
                 return false;
 
             m_PreviousGenerationSettingsHash = hash;
@@ -711,6 +808,7 @@ namespace UnityEngine.TextCore.Text
             preferredSize = TextGenerator.GetPreferredValues(tgs, textInfoCommon);
         }
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         protected TextInfo Update(TextGenerationSettings tgs)
         {
             screenRect = tgs.screenRect;
@@ -719,12 +817,40 @@ namespace UnityEngine.TextCore.Text
             if (!IsDirty(tgs))
                 return textInfo;
 
-            TextGenerator.GenerateText(tgs, textInfo);
+            TextGenerator.GenerateText(settings, textInfo);
             return textInfo;
-
         }
 
-        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal TextInfo UpdateFontAssetPrepared()
+        {
+            screenRect = settings.screenRect;
+            lineHeightDefault = GetLineHeightDefault(settings);
+            isPlaceholder = settings.isPlaceholder;
+            if (!IsDirty(settings))
+                return textInfo;
+
+            generator.Prepare(settings, textInfo);
+            generator.GenerateTextMesh(settings, textInfo);
+            return textInfo;
+        }
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal bool PrepareFontAsset()
+        {
+            if (settings.fontAsset == null)
+                return false;
+            int hash = settings.GetHashCode();
+            if (m_PreviousGenerationSettingsHash == hash && !isDirty && m_IsCached)
+                return true;
+
+            bool success = generator.PrepareFontAsset(settings);
+            if (success)
+                TextGenerator.AddGradientScalesToList(generator.m_MaterialReferences);
+            return success;
+        }
+
+		[VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal void UpdatePreferredSize(TextGenerationSettings generationSettings)
         {
             if (textInfo.characterCount <= 0)

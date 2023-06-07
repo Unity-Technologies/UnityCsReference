@@ -9,9 +9,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public DownloadFoldoutGroup(AssetStoreDownloadManager assetStoreDownloadManager,
                                     AssetStoreCache assetStoreCache,
                                     PackageOperationDispatcher operationDispatcher,
-                                    UnityConnectProxy unityConnectProxy)
-            : base(new PackageDownloadButton(assetStoreDownloadManager, assetStoreCache, operationDispatcher, unityConnectProxy),
-                   new PackageCancelDownloadButton(assetStoreDownloadManager, operationDispatcher))
+                                    UnityConnectProxy unityConnect,
+                                    ApplicationProxy application)
+            : base(new DownloadAction(operationDispatcher, assetStoreDownloadManager, assetStoreCache, unityConnect, application),
+                   new CancelDownloadAction(operationDispatcher, assetStoreDownloadManager, application))
         {
             mainFoldout.headerTextTemplate = L10n.Tr("Download {0}");
             inProgressFoldout.headerTextTemplate = L10n.Tr("Downloading {0}...");

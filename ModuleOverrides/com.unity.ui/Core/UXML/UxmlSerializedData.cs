@@ -19,6 +19,9 @@ namespace UnityEngine.UIElements
     [Serializable]
     public abstract class UxmlSerializedData
     {
+        [SerializeField, UxmlIgnore]
+        internal int uxmlAssetId;
+
         /// <summary>
         /// Returns an instance of the declaring element.
         /// </summary>

@@ -22,7 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreDownloadManager m_AssetStoreDownloadManager;
         private AssetStoreCache m_AssetStoreCache;
         private BackgroundFetchHandler m_BackgroundFetchHandler;
-        private UnityConnectProxy m_UnityConnectProxy;
+        private UnityConnectProxy m_UnityConnect;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -36,7 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager = container.Resolve<AssetStoreDownloadManager>();
             m_AssetStoreCache = container.Resolve<AssetStoreCache>();
             m_BackgroundFetchHandler = container.Resolve<BackgroundFetchHandler>();
-            m_UnityConnectProxy = container.Resolve<UnityConnectProxy>();
+            m_UnityConnect = container.Resolve<UnityConnectProxy>();
         }
 
         private UnlockFoldout m_UnlockFoldout;
@@ -82,43 +82,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void InitializeFoldouts()
         {
-            var disableIfCompiling = new ButtonDisableCondition(() => m_Application.isCompiling,
-                L10n.Tr("You need to wait until the compilation is finished to perform this action."));
-            var disableIfInstallOrUninstallInProgress = new ButtonDisableCondition(() => m_OperationDispatcher.isInstallOrUninstallInProgress,
-                L10n.Tr("You need to wait until other install or uninstall operations are finished to perform this action."));
-            var disableIfNoNetwork = new ButtonDisableCondition(() => !m_Application.isInternetReachable,
-                L10n.Tr("You need to restore your network connection to perform this action."));
-
             // Standalone foldouts
             m_UnlockFoldout = new UnlockFoldout(m_PageManager);
-            m_UnlockFoldout.button.onAction += Refresh;
+            m_UnlockFoldout.action.onActionTriggered += Refresh;
 
             m_NoActionFoldout = new NoActionsFoldout(m_PageManager);
-
             m_CheckUpdateFoldout = new CheckUpdateFoldout(m_PageManager, m_AssetStoreCache, m_BackgroundFetchHandler);
-
             m_StandaloneFoldouts = new MultiSelectFoldout[] { m_UnlockFoldout, m_NoActionFoldout, m_CheckUpdateFoldout };
 
             // Foldout groups
             m_InstallFoldoutGroup = new InstallFoldoutGroup(m_Application, m_PackageDatabase, m_OperationDispatcher);
-            m_InstallFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfInstallOrUninstallInProgress);
-
             m_RemoveFoldoutGroup = new RemoveFoldoutGroup(m_Application, m_PackageManagerPrefs, m_PackageDatabase, m_OperationDispatcher, m_PageManager);
-            m_RemoveFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfInstallOrUninstallInProgress);
-
             m_UpdateFoldoutGroup = new UpdateFoldoutGroup(m_Application, m_PackageDatabase, m_OperationDispatcher, m_PageManager);
-            m_UpdateFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfInstallOrUninstallInProgress);
-
-            m_DownloadFoldoutGroup = new DownloadFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnectProxy);
-            m_DownloadFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfNoNetwork);
-            m_DownloadFoldoutGroup.cancelButton.SetGlobalDisableConditions(disableIfCompiling);
-
-            m_DownloadUpdateFoldoutGroup = new DownloadUpdateFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnectProxy);
-            m_DownloadUpdateFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling, disableIfNoNetwork);
-            m_DownloadUpdateFoldoutGroup.cancelButton.SetGlobalDisableConditions(disableIfCompiling);
-
+            m_DownloadFoldoutGroup = new DownloadFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnect, m_Application);
+            m_DownloadUpdateFoldoutGroup = new DownloadUpdateFoldoutGroup(m_AssetStoreDownloadManager, m_AssetStoreCache, m_OperationDispatcher, m_UnityConnect, m_Application);
             m_RemoveImportedFoldoutGroup = new RemoveImportedFoldoutGroup(m_Application, m_OperationDispatcher);
-            m_RemoveImportedFoldoutGroup.mainButton.SetGlobalDisableConditions(disableIfCompiling);
 
             m_FoldoutGroups = new MultiSelectFoldoutGroup[]
             {

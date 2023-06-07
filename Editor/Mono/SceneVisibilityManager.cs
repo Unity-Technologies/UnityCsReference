@@ -582,7 +582,7 @@ namespace UnityEditor
 
         //SHORTCUTS
         [Shortcut("Scene Visibility/Toggle Selection Visibility")]
-        private static void ToggleSelectionVisibility()
+        internal static void ToggleSelectionVisibility()
         {
             bool shouldHide = true;
             foreach (var gameObject in Selection.gameObjects)
@@ -769,7 +769,7 @@ namespace UnityEditor
         }
 
         [Shortcut("Scene Visibility/Toggle Isolation on Selection")]
-        private static void ToggleIsolateSelectionShortcut()
+        internal static void ToggleIsolateSelectionShortcut()
         {
             instance.ToggleIsolateSelection();
         }

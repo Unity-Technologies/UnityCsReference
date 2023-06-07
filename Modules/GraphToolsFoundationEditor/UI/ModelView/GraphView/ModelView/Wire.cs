@@ -265,7 +265,12 @@ namespace Unity.GraphToolsFoundation.Editor
                 ShowItemLibrary(mousePosition);
             });
 
-            if (WireModel.GraphModel.Stencil.AllowPortalCreation)
+            // If the wire has a missing port, do not allow creation of portals.
+            var hasNullOrMissingPort = wire.WireModel.ToPort is null || wire.WireModel.FromPort is null ||
+                wire.WireModel.ToPort.PortType == PortType.MissingPort ||
+                wire.WireModel.FromPort.PortType == PortType.MissingPort;
+
+            if (WireModel.GraphModel.Stencil.AllowPortalCreation && !hasNullOrMissingPort)
             {
                 // TODO OYT (GTF-918) : When Junction Points are implemented, a menu item needs to be added to create a Junction Point. The menu item name will be "Add Junction Point".
                 var wires = selection.OfType<WireModel>().ToList();
@@ -346,6 +351,34 @@ namespace Unity.GraphToolsFoundation.Editor
 
             if( WireControl != null)
                 WireControl.Zoom = zoom;
+        }
+
+        /// <inheritdoc/>
+        protected override void UpdateElementFromModel()
+        {
+            base.UpdateElementFromModel();
+            if (WireModel?.GraphModel is not null && (WireModel.ToPort is null || WireModel.FromPort is null))
+            {
+                var (inputResult, outputResult) = WireModel.AddMissingPorts(out var inputNode, out var outputNode);
+
+                if (inputResult == PortMigrationResult.MissingPortAdded && inputNode != null)
+                {
+                    var inputNodeUi = inputNode.GetView_Internal(GraphView);
+                    inputNodeUi?.UpdateFromModel();
+                }
+
+                if (outputResult == PortMigrationResult.MissingPortAdded && outputNode != null)
+                {
+                    var outputNodeUi = outputNode.GetView_Internal(GraphView);
+                    outputNodeUi?.UpdateFromModel();
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override Rect GetBoundingBox()
+        {
+            return WireControl.layout;
         }
     }
 }

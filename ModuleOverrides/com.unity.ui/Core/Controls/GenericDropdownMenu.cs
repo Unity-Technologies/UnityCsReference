@@ -470,7 +470,7 @@ namespace UnityEngine.UIElements
                 return;
 
             UpdateSelection(evt.elementTarget);
-            
+
             if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX && Application.isEditor)
                 ClickItem();
 
@@ -530,7 +530,7 @@ namespace UnityEngine.UIElements
 
             if (!m_Initialized || !isPlayer)
                 return;
-            
+
             Hide(true);
         }
 
@@ -679,7 +679,7 @@ namespace UnityEngine.UIElements
 
         internal MenuItem AddItem(string itemName, bool isChecked, bool isEnabled, Action action1 = null, Action<object> action2 = null, object data = null, Texture2D icon = null, string tooltip = "")
         {
-            var parent = GetOrCreateParents(ref itemName);
+            var parent = GetOrCreateParents(ref itemName, icon);
             var menuItem = new MenuItem
             {
                 name = itemName ?? String.Empty,
@@ -751,7 +751,7 @@ namespace UnityEngine.UIElements
             m_Root.headerActions.Add(item);
         }
 
-        MenuItem GetOrCreateParents(ref string path, bool canCreateParent = true)
+        MenuItem GetOrCreateParents(ref string path, Texture2D icon = null, bool canCreateParent = true)
         {
             var item = m_Root;
 
@@ -760,8 +760,12 @@ namespace UnityEngine.UIElements
 
             var slashIndex = path.IndexOf('/');
 
+            Texture2D elementIcon = null;
             while (m_AllowSubmenus && slashIndex > 0)
             {
+                if (slashIndex == path.Length - 1)
+                    elementIcon = icon;
+
                 var childName = path.Substring(0, slashIndex);
                 var childItem = FirstOrDefault(item.children, i => i.name.Equals(childName));
 
@@ -774,7 +778,7 @@ namespace UnityEngine.UIElements
                     {
                         name = childName,
                         parent = item,
-                        element = BuildItem(childName, false, true, true, null, null, string.Empty),
+                        element = BuildItem(childName, false, true, true, null, elementIcon, string.Empty),
                     };
                     childItem.action = () =>
                     {

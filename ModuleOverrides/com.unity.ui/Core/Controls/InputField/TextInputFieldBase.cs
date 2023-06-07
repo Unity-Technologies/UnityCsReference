@@ -11,29 +11,29 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Abstract base class used for all text-based fields.
     /// </summary>
-    public abstract class TextInputBaseField<TValueType> : BaseField<TValueType>
+    public abstract class TextInputBaseField<TValueType> : BaseField<TValueType>, IDelayedField
     {
-        internal static readonly DataBindingProperty autoCorrectionProperty = nameof(autoCorrection);
-        internal static readonly DataBindingProperty hideMobileInputProperty = nameof(hideMobileInput);
-        internal static readonly DataBindingProperty keyboardTypeProperty = nameof(keyboardType);
-        internal static readonly DataBindingProperty isReadOnlyProperty = nameof(isReadOnly);
-        internal static readonly DataBindingProperty isPasswordFieldProperty = nameof(isPasswordField);
-        internal static readonly DataBindingProperty textSelectionProperty = nameof(textSelection);
-        internal static readonly DataBindingProperty textEditionProperty = nameof(textEdition);
-        internal static readonly DataBindingProperty selectionColorProperty = nameof(selectionColor);
-        internal static readonly DataBindingProperty cursorColorProperty = nameof(cursorColor);
-        internal static readonly DataBindingProperty cursorIndexProperty = nameof(cursorIndex);
-        internal static readonly DataBindingProperty cursorPositionProperty = nameof(cursorPosition);
-        internal static readonly DataBindingProperty selectIndexProperty = nameof(selectIndex);
-        internal static readonly DataBindingProperty selectAllOnFocusProperty = nameof(selectAllOnFocus);
-        internal static readonly DataBindingProperty selectAllOnMouseUpProperty = nameof(selectAllOnMouseUp);
-        internal static readonly DataBindingProperty maxLengthProperty = nameof(maxLength);
-        internal static readonly DataBindingProperty doubleClickSelectsWordProperty = nameof(doubleClickSelectsWord);
-        internal static readonly DataBindingProperty tripleClickSelectsLineProperty = nameof(tripleClickSelectsLine);
-        internal static readonly DataBindingProperty emojiFallbackSupportProperty = nameof(emojiFallbackSupport);
-        internal static readonly DataBindingProperty isDelayedProperty = nameof(isDelayed);
-        internal static readonly DataBindingProperty maskCharProperty = nameof(maskChar);
-        internal static readonly DataBindingProperty verticalScrollerVisibilityProperty = nameof(verticalScrollerVisibility);
+        internal static readonly BindingId autoCorrectionProperty = nameof(autoCorrection);
+        internal static readonly BindingId hideMobileInputProperty = nameof(hideMobileInput);
+        internal static readonly BindingId keyboardTypeProperty = nameof(keyboardType);
+        internal static readonly BindingId isReadOnlyProperty = nameof(isReadOnly);
+        internal static readonly BindingId isPasswordFieldProperty = nameof(isPasswordField);
+        internal static readonly BindingId textSelectionProperty = nameof(textSelection);
+        internal static readonly BindingId textEditionProperty = nameof(textEdition);
+        internal static readonly BindingId selectionColorProperty = nameof(selectionColor);
+        internal static readonly BindingId cursorColorProperty = nameof(cursorColor);
+        internal static readonly BindingId cursorIndexProperty = nameof(cursorIndex);
+        internal static readonly BindingId cursorPositionProperty = nameof(cursorPosition);
+        internal static readonly BindingId selectIndexProperty = nameof(selectIndex);
+        internal static readonly BindingId selectAllOnFocusProperty = nameof(selectAllOnFocus);
+        internal static readonly BindingId selectAllOnMouseUpProperty = nameof(selectAllOnMouseUp);
+        internal static readonly BindingId maxLengthProperty = nameof(maxLength);
+        internal static readonly BindingId doubleClickSelectsWordProperty = nameof(doubleClickSelectsWord);
+        internal static readonly BindingId tripleClickSelectsLineProperty = nameof(tripleClickSelectsLine);
+        internal static readonly BindingId emojiFallbackSupportProperty = nameof(emojiFallbackSupport);
+        internal static readonly BindingId isDelayedProperty = nameof(isDelayed);
+        internal static readonly BindingId maskCharProperty = nameof(maskChar);
+        internal static readonly BindingId verticalScrollerVisibilityProperty = nameof(verticalScrollerVisibility);
 
         static CustomStyleProperty<Color> s_SelectionColorProperty = new CustomStyleProperty<Color>("--unity-selection-color");
         static CustomStyleProperty<Color> s_CursorColorProperty = new CustomStyleProperty<Color>("--unity-cursor-color");

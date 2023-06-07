@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal sealed class BuilderUxmlStringAttributeFieldFactory :  IBuilderUxmlAttributeFieldFactory
+    internal sealed class BuilderUxmlStringAttributeFieldFactory : IBuilderUxmlAttributeFieldFactory
     {
         public bool CanCreateField(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
         {
@@ -194,6 +194,13 @@ namespace Unity.UI.Builder
             {
                 (field as TextField).SetValueWithoutNotify(a.defaultValue);
             }
+        }
+
+        public void ResetFieldValueToInline(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
+        {
+            var a = attribute as UxmlStringAttributeDescription;
+            var value = a.GetValueFromBag(attributeUxmlOwner, CreationContext.Default);
+            SetFieldValue(field, attributeOwner, uxmlDocument, attributeUxmlOwner, attribute, value);
         }
 
         private static string GetAttributeStringValue(object attributeValue)

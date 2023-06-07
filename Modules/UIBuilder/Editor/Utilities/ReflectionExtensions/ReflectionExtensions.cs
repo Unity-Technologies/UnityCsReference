@@ -3,12 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -40,7 +36,7 @@ namespace Unity.UI.Builder
             if (propertyInfo == null)
                 throw new ArgumentException(s_PropertyNotFoundMessage);
 
-            propertyInfo?.SetValue(obj, value, null);
+            propertyInfo.SetValue(obj, value, null);
         }
 
         public static bool CallBoolMethodByReflection(this object obj, string methodName)

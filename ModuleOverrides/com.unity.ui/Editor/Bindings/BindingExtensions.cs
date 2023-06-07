@@ -4,16 +4,14 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements.Bindings
 {
     internal class SerializedObjectBindingContext
     {
-        public UInt64 lastRevision {get; private set; }
+        public ulong lastRevision {get; private set; }
         public SerializedObject serializedObject {get; private set; }
 
         private bool wasUpdated {get; set; }
@@ -70,6 +68,9 @@ namespace UnityEditor.UIElements.Bindings
                 }
                 element.SetProperty(FindContextPropertyKey, null);
             }
+
+            var serializedObjectBinding = element.GetBinding(BindingExtensions.s_SerializedBindingId) as SerializedObjectBindingBase;
+            serializedObjectBinding?.Unbind();
             RemoveBinding(element as IBindable, false);
 
             var childCount = element.hierarchy.childCount;
@@ -464,18 +465,21 @@ namespace UnityEditor.UIElements.Bindings
 
         private void RemoveBinding(IBindable bindable, bool forceRemove)
         {
-            if (bindable == null || !bindable.IsBound())
-            {
+            if (null == bindable)
                 return;
-            }
 
-            if (bindable.binding is SerializedObjectBindingBase bindingBase)
+            var ve = bindable as VisualElement;
+
+            var bindingBase = (SerializedObjectBindingBase) ve?.GetBinding(BindingExtensions.s_SerializedBindingId);
+            if (bindingBase == null)
+                return;
+
+            if (bindingBase.isReleased)
+                return;
+
+            if (forceRemove || bindingBase.bindingContext == this)
             {
-                if (forceRemove || bindingBase.bindingContext == this)
-                {
-                    bindable.binding?.Release();
-                    bindable.binding = null;
-                }
+                bindingBase.Unbind();
             }
         }
 
@@ -483,12 +487,9 @@ namespace UnityEditor.UIElements.Bindings
 
         internal static SerializedObjectBindingContext GetBindingContextFromElement(VisualElement element)
         {
-            if (element is IBindable bindable)
+            if (element is IBindable && element.GetBinding(BindingExtensions.s_SerializedBindingId) is SerializedObjectBindingBase bindingBase)
             {
-                if (bindable.binding is SerializedObjectBindingBase bindingBase)
-                {
-                    return bindingBase.bindingContext;
-                }
+                return bindingBase.bindingContext;
             }
 
             if (element.GetProperty(FindContextPropertyKey) is SerializedObjectBindingContext context)
@@ -701,14 +702,13 @@ namespace UnityEditor.UIElements.Bindings
 
         public SerializedObjectBindingContextUpdater AddBindingUpdater(VisualElement element)
         {
-            var b = VisualTreeBindingsUpdater.GetAdditionalBinding(element);
+            var b = element.GetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId) as SerializedObjectBindingContextUpdater;
 
-            var contextUpdater = b as SerializedObjectBindingContextUpdater;
+            var contextUpdater = b;
 
             if (b == null)
             {
                 contextUpdater = SerializedObjectBindingContextUpdater.Create(element, this);
-                VisualTreeBindingsUpdater.SetAdditionalBinding(element, contextUpdater);
             }
             else
             {
@@ -839,7 +839,8 @@ namespace UnityEditor.UIElements.Bindings
 
             var context = SerializedObjectBindingContext.GetBindingContextFromElement(element);
             RemoveBindingRequest(element);
-            VisualTreeBindingsUpdater.ClearAdditionalBinding(element);
+            (element.GetBinding(BindingExtensions.s_SerializedBindingId) as SerializedObjectBindingBase)?.OnRelease();
+            (element.GetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId) as SerializedObjectBindingBase)?.OnRelease();
 
             if (context != null)
             {
@@ -1072,8 +1073,7 @@ namespace UnityEditor.UIElements.Bindings
 
         public void HandleStyleUpdate(VisualElement element)
         {
-            var bindable = element as IBindable;
-            var binding = bindable?.binding as SerializedObjectBindingBase;
+            var binding = element.GetBinding(BindingExtensions.s_SerializedBindingId) as SerializedObjectBindingBase;
             if (binding?.boundProperty == null)
                 return;
 
@@ -1163,18 +1163,16 @@ namespace UnityEditor.UIElements.Bindings
 
     //TODO: Pool this
 
-
-    internal abstract class SerializedObjectBindingBase : IBinding
+    internal abstract class SerializedObjectBindingBase : CustomBinding
     {
+        protected abstract string bindingId { get; }
+
         public SerializedObjectBindingContext bindingContext
         {
             get => m_BindingContext;
             private set
             {
-                if (m_BindingContext != null)
-                {
-                    m_BindingContext.UnregisterBindingObject(this);
-                }
+                m_BindingContext?.UnregisterBindingObject(this);
 
                 m_BindingContext = value;
 
@@ -1214,10 +1212,26 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        protected bool isReleased { get; set; }
+        protected internal bool isReleased { get; set; }
         protected bool isUpdating { get; set; }
-        public abstract void Update();
-        public abstract void Release();
+
+        public abstract void OnRelease();
+
+        public void Unbind()
+        {
+            if (boundElement is VisualElement element)
+                element.ClearBinding(bindingId);
+            OnRelease();
+        }
+
+        protected internal override BindingResult Update(in BindingContext context)
+        {
+            bindingContext?.UpdateIfNecessary();
+            var result = OnUpdate(in context);
+            return result;
+        }
+
+        public abstract BindingResult OnUpdate(in BindingContext context);
 
         protected void SetContext(SerializedObjectBindingContext context, SerializedProperty prop)
         {
@@ -1232,11 +1246,6 @@ namespace UnityEditor.UIElements.Bindings
         protected void ResetContext()
         {
             bindingContext = null;
-        }
-
-        public void PreUpdate()
-        {
-            bindingContext?.UpdateIfNecessary();
         }
 
         public virtual void ResetUpdate()
@@ -1261,7 +1270,7 @@ namespace UnityEditor.UIElements.Bindings
 
         protected IBindable boundElement
         {
-            get { return m_Field; }
+            get => m_Field;
             set
             {
                 if (m_Field is VisualElement ve)
@@ -1273,10 +1282,8 @@ namespace UnityEditor.UIElements.Bindings
                     m_TooltipWasSet = false;
                 }
 
-                FieldBinding = null;
-
                 m_Field = value;
-                FieldBinding = this;
+
                 UpdateFieldIsAttached();
                 if (m_Field != null)
                 {
@@ -1296,27 +1303,7 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        protected IBinding FieldBinding
-        {
-            get
-            {
-                var bindable = m_Field as IBindable;
-                return bindable?.binding;
-            }
-            set
-            {
-                if (m_Field != null)
-                {
-                    var previousBinding = m_Field.binding;
-                    m_Field.binding = value;
-                    if (previousBinding != this)
-                    {
-                        previousBinding?.Release();
-                    }
-                    (m_Field as VisualElement)?.IncrementVersion(VersionChangeType.Bindings);
-                }
-            }
-        }
+        protected SerializedObjectBindingBase FieldBinding => (m_Field as VisualElement)?.GetBinding(bindingId) as SerializedObjectBindingBase;
 
         protected bool isFieldAttached
         {
@@ -1420,6 +1407,8 @@ namespace UnityEditor.UIElements.Bindings
         public static ObjectPool<SerializedObjectBindingContextUpdater> s_Pool =
             new ObjectPool<SerializedObjectBindingContextUpdater>(() => new SerializedObjectBindingContextUpdater(), 32);
 
+        protected override string bindingId { get; } = BindingExtensions.s_SerializedBindingContextUpdaterId;
+
         private VisualElement owner;
 
         private UInt64 lastTrackedObjectRevision = 0xFFFFFFFFFFFFFFFF;
@@ -1434,6 +1423,7 @@ namespace UnityEditor.UIElements.Bindings
             b.SetContext(context, null);
             b.owner = owner;
             b.lastTrackedObjectRevision = context.lastRevision;
+            owner.SetBinding(BindingExtensions.s_SerializedBindingContextUpdaterId, b);
             return b;
         }
 
@@ -1449,11 +1439,12 @@ namespace UnityEditor.UIElements.Bindings
             trackedProperties.Add(prop);
         }
 
-        public override void Update()
+        public override BindingResult OnUpdate(in BindingContext context)
         {
             if (isReleased)
-                return;
-
+            {
+                return new BindingResult(BindingStatus.Pending);
+            }
 
             if (bindingContext != null)
             {
@@ -1464,12 +1455,14 @@ namespace UnityEditor.UIElements.Bindings
                     lastTrackedObjectRevision = bindingContext.lastRevision;
 
                     registeredCallbacks?.Invoke(owner, bindingContext.serializedObject);
-                    return;
                 }
+                return default;
             }
+
+            return new BindingResult(BindingStatus.Pending);
         }
 
-        public override void Release()
+        public override void OnRelease()
         {
             if (isReleased)
                 return;
@@ -1503,6 +1496,8 @@ namespace UnityEditor.UIElements.Bindings
     {
         EventCallback<ChangeEvent<TValue>> m_FieldValueChanged;
 
+        protected override string bindingId { get; } = BindingExtensions.s_SerializedBindingId;
+
         protected TField field
         {
             get { return m_Field as TField; }
@@ -1532,9 +1527,9 @@ namespace UnityEditor.UIElements.Bindings
             try
             {
                 var bindable = evt.target as IBindable;
-                var binding = bindable?.binding;
+                var element = (VisualElement) bindable;
 
-                if (binding == this && ResolveProperty())
+                if (element?.GetBinding(BindingExtensions.s_SerializedBindingId) == this && ResolveProperty())
                 {
                     if (!isFieldAttached)
                     {
@@ -1561,7 +1556,7 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             // Something was wrong
-            Release();
+            Unbind();
         }
 
         protected override void ResetCachedValues()
@@ -1578,9 +1573,8 @@ namespace UnityEditor.UIElements.Bindings
             {
                 isUpdating = true;
                 var veField = field as VisualElement;
-                var bindable = field as IBindable;
 
-                if (bindable.binding == this)
+                if (veField?.GetBinding(bindingId) == this)
                 {
                     SyncPropertyToField(field, currentPropertyIterator);
                     BindingsStyleHelpers.UpdateElementStyle(veField, currentPropertyIterator);
@@ -1596,19 +1590,23 @@ namespace UnityEditor.UIElements.Bindings
                 isUpdating = false;
             }
             // We unbind here
-            Release();
+            Unbind();
         }
 
-        public override void Update()
+        public override BindingResult OnUpdate(in BindingContext context)
         {
             if (isReleased)
-                return;
+            {
+                return new BindingResult(BindingStatus.Pending);
+            }
             try
             {
                 ResetUpdate();
 
                 if (!IsSynced())
-                    return;
+                {
+                    return new BindingResult(BindingStatus.Pending);
+                }
 
                 isUpdating = true;
 
@@ -1624,7 +1622,7 @@ namespace UnityEditor.UIElements.Bindings
                     if (EditorApplication.isPlaying && SerializedObject.GetLivePropertyFeatureGlobalState() && boundProperty.isLiveModified)
                         BindingsStyleHelpers.UpdateLivePropertyStateStyle(veField, boundProperty);
 
-                    return;
+                    return default;
                 }
             }
             catch (ArgumentNullException)
@@ -1637,7 +1635,8 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             // Something failed, we unbind here
-            Release();
+            Unbind();
+            return new BindingResult(BindingStatus.Pending);
         }
 
         // Read the value from the ui field and save it.
@@ -1680,15 +1679,13 @@ namespace UnityEditor.UIElements.Bindings
 
         protected abstract void AssignValueToField(TProperty lastValue);
 
-        public override void Release()
+        public override void OnRelease()
         {
             if (isReleased)
                 return;
 
             if (FieldBinding == this)
             {
-                FieldBinding = null;
-
                 if (field is BaseField<TValue> bf)
                 {
                     BindingsStyleHelpers.UnregisterRightClickMenu(bf);
@@ -1721,6 +1718,7 @@ namespace UnityEditor.UIElements.Bindings
         {
             var newBinding = s_Pool.Get();
             newBinding.isReleased = false;
+            ((VisualElement) field)?.SetBinding(BindingExtensions.s_SerializedBindingId, newBinding);
             newBinding.SetBinding(field, context, property, propGetValue, propSetValue, propCompareValues);
         }
 
@@ -1765,9 +1763,12 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        public override void Release()
+        public override void OnRelease()
         {
-            base.Release();
+            if (isReleased)
+                return;
+
+            base.OnRelease();
             s_Pool.Release(this);
         }
 
@@ -1824,6 +1825,7 @@ namespace UnityEditor.UIElements.Bindings
 
             var newBinding = s_Pool.Get();
             newBinding.isReleased = false;
+            field.SetBinding(BindingExtensions.s_SerializedBindingId, newBinding);
             newBinding.SetBinding(field, context, property, managedType);
         }
 
@@ -1974,7 +1976,7 @@ namespace UnityEditor.UIElements.Bindings
             return true;
         }
 
-        public override void Release()
+        public override void OnRelease()
         {
             if (isReleased)
                 return;
@@ -1987,7 +1989,6 @@ namespace UnityEditor.UIElements.Bindings
 
                 field = null;
                 saveField.value = null;
-                FieldBinding = null;
             }
 
             ResetContext();
@@ -2022,6 +2023,7 @@ namespace UnityEditor.UIElements.Bindings
         {
             var newBinding = s_Pool.Get();
             newBinding.isReleased = false;
+            field.SetBinding(BindingExtensions.s_SerializedBindingId, newBinding);
             newBinding.SetBinding(field, context, property);
         }
 
@@ -2155,7 +2157,7 @@ namespace UnityEditor.UIElements.Bindings
             return false;
         }
 
-        public override void Release()
+        public override void OnRelease()
         {
             if (isReleased)
                 return;
@@ -2176,8 +2178,6 @@ namespace UnityEditor.UIElements.Bindings
                 {
                     //we did our best
                 }
-
-                FieldBinding = null;
             }
 
 
@@ -2207,6 +2207,7 @@ namespace UnityEditor.UIElements.Bindings
         {
             var newBinding = s_Pool.Get();
             newBinding.isReleased = false;
+            ((VisualElement) field)?.SetBinding(BindingExtensions.s_SerializedBindingId, newBinding);
             newBinding.SetBinding(field, context, property, propGetValue, propSetValue, propCompareValues);
         }
 
@@ -2263,9 +2264,12 @@ namespace UnityEditor.UIElements.Bindings
             lastFieldValue = propGetValue(boundProperty);
         }
 
-        public override void Release()
+        public override void OnRelease()
         {
-            base.Release();
+            if (isReleased)
+                return;
+
+            base.OnRelease();
             s_Pool.Release(this);
         }
 

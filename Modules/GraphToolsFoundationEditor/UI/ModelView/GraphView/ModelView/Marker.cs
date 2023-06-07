@@ -136,5 +136,12 @@ namespace Unity.GraphToolsFoundation.Editor
             if (ParentModel?.IsSelectable() ?? false)
                 ClickSelector ??= CreateClickSelector();
         }
+
+        /// <inheritdoc />
+        public override bool CanBePartitioned()
+        {
+            // We override GraphElement's behavior because a marker doesn't have a GraphElementModel.
+            return true;
+        }
     }
 }

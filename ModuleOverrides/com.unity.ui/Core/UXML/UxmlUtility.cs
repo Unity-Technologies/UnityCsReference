@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     {
         public static List<string> ParseStringListAttribute(string itemList)
         {
-            if (string.IsNullOrEmpty(itemList.Trim()))
+            if (string.IsNullOrEmpty(itemList?.Trim()))
                 return null;
 
             // Here the choices is comma separated in the string...
@@ -31,6 +31,13 @@ namespace UnityEngine.UIElements
             }
 
             return null;
+        }
+
+        public static void MoveListItem(IList list, int src, int dst)
+        {
+            var item = list[src];
+            list.RemoveAt(src);
+            list.Insert(dst, item);
         }
 
         public static float ParseFloat(string value, float defaultValue = default)

@@ -38,8 +38,13 @@ namespace UnityEngine
             get { return GraphicsFormatUtility.GetFormat(this); }
         }
 
+        [ThreadSafe]
         extern private int GetDataWidth();
+
+        [ThreadSafe]
         extern private int GetDataHeight();
+
+        [ThreadSafe]
         extern private TextureDimension GetDimension();
 
         // Note: not implemented setters in base class since some classes do need to actually implement them (e.g. RenderTexture)

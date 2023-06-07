@@ -45,7 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public bool isInPause => (state & DownloadState.InPause) != 0;
 
-        public virtual bool isProgressVisible => (state & ~DownloadState.DownloadRequested & (DownloadState.InPause | DownloadState.InProgress)) != 0;
+        public virtual bool isProgressVisible => (state & (DownloadState.DownloadRequested | DownloadState.InPause | DownloadState.InProgress)) != 0;
 
         public bool isProgressTrackable => true;
 

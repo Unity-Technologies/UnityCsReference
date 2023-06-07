@@ -463,8 +463,6 @@ namespace UnityEditor
 
         void SwitchCamera()
         {
-            DisableCameraViewTool();
-
             EnableCameraViewTool();
         }
 
@@ -503,7 +501,6 @@ namespace UnityEditor
 
     sealed class CameraPreview : IMGUIContainer
     {
-        const string k_DisabledPreviewClass = "unity-imgui-container--disabled";
         readonly string k_NoCameraDisplayLabel = L10n.Tr("No camera selected");
 
         CamerasOverlay m_Overlay;
@@ -513,9 +510,6 @@ namespace UnityEditor
             m_Overlay = overlay;
 
             onGUIHandler += OnGUI;
-            (m_Overlay.containerWindow as SceneView).viewpoint.cameraLookThroughStateChanged += OnViewpointIsActivated;
-
-            OnViewpointIsActivated((m_Overlay.containerWindow as SceneView).viewpoint.hasActiveViewpoint);
         }
 
         void OnGUI()
@@ -572,10 +566,49 @@ namespace UnityEditor
                 Graphics.DrawTexture(previewRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
             }
         }
+    }
 
-        void OnViewpointIsActivated(bool newState)
+    sealed class ViewpointUserData : VisualElement
+    {
+        const string k_USSClass = "unity-user-data";
+
+        CamerasOverlay m_Overlay;
+
+        VisualElement m_CachedVisualElement;
+
+        internal ViewpointUserData(CamerasOverlay overlay)
         {
-            EnableInClassList(k_DisabledPreviewClass, newState);
+            m_Overlay = overlay;
+
+            AddToClassList(k_USSClass);
+
+            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+            if ((m_Overlay.containerWindow as SceneView).viewpoint.hasActiveViewpoint)
+                ViewpointChanged((m_Overlay.containerWindow as SceneView).viewpoint.activeViewpoint);
+        }
+
+        void OnAttachedToPanel(AttachToPanelEvent evt)
+        {
+            m_Overlay.onViewpointSelected += ViewpointChanged;
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            m_Overlay.onViewpointSelected -= ViewpointChanged;
+        }
+
+        void ViewpointChanged(IViewpoint viewpoint)
+        {
+            if (m_CachedVisualElement != null && Contains(m_CachedVisualElement))
+                Remove(m_CachedVisualElement);
+
+            if (viewpoint == null)
+                return;
+
+            m_CachedVisualElement = viewpoint.CreateVisualElement();
+            Add(m_CachedVisualElement);
         }
     }
 
@@ -585,6 +618,7 @@ namespace UnityEditor
     {
         const string k_USSFilePath = "StyleSheets/SceneView/CamerasOverlay/CamerasOverlay.uss";
         const string k_CamerasOverlayUSSClass = "unity-cameras-overlay";
+        const string k_ReducedCamerasOverlayUSSClass = "unity-cameras-overlay--reduced";
         const string k_DisplayName = "Cameras";
 
         static readonly Vector2 k_DefaultOverlaySize = new (246, 177);
@@ -611,6 +645,10 @@ namespace UnityEditor
         }
 
         OverlaySavedState m_SavedStateBeforeReduceMode = default;
+        float m_CurrentBaseHeight;
+
+        CameraPreview m_CameraPreview;
+        ViewpointUserData m_UserData;
 
         List<IViewpoint> m_AvailableViewpoints = new List<IViewpoint>();
         IViewpoint m_SelectedViewpoint;
@@ -652,15 +690,18 @@ namespace UnityEditor
             var styleSheet = EditorGUIUtility.Load(k_USSFilePath) as StyleSheet;
             contentRoot.styleSheets.Add(styleSheet);
 
-            VisualElement root = new VisualElement();
-            root.styleSheets.Add(styleSheet);
-
+            var root = new VisualElement();
             root.Add(new CameraControlsToolbar(this));
-            root.Add(new CameraPreview(this));
+
+            m_CameraPreview = new CameraPreview(this);
+            root.Add(m_CameraPreview);
+
+            m_UserData = new ViewpointUserData(this);
+            m_UserData.RegisterCallback<GeometryChangedEvent>(UpdateSizeBasedOnUserData);
+
+            root.Add(m_UserData);
 
             root.name = "Cameras Preview Overlay";
-            root.AddToClassList(k_CamerasOverlayUSSClass);
-
             return root;
         }
 
@@ -677,6 +718,9 @@ namespace UnityEditor
         {
             EditorApplication.update -= Update;
 
+            if (m_UserData != null)
+                m_UserData.UnregisterCallback<GeometryChangedEvent>(UpdateSizeBasedOnUserData);
+
             (containerWindow as SceneView).viewpoint.cameraLookThroughStateChanged -= CameraViewStateChanged;
 
             onWillBeDestroyed?.Invoke();
@@ -689,32 +733,55 @@ namespace UnityEditor
         {
             if (viewpointIsActive)
             {
+                if (m_SavedStateBeforeReduceMode.previousHeight > 0)
+                    return;
+
                 m_SavedStateBeforeReduceMode = new OverlaySavedState(sizeOverridden, size.y);
 
-                float delta = 0;
-                var previewWidget = contentRoot.Q<CameraPreview>();
-                if (previewWidget != null)
-                    delta = previewWidget.resolvedStyle.height;
-
-                float fixedHeight = resizeTarget.resolvedStyle.height - delta + 5;
+                float delta = m_CameraPreview != null? m_CameraPreview.resolvedStyle.height : 0;
+                m_CurrentBaseHeight = resizeTarget.resolvedStyle.height - delta + 5f;
 
                 // Lock the height. User can't resize the Overlay vertically in reduce mode.
-                minSize = new Vector2(minSize.x, fixedHeight);
-                maxSize = new Vector2(maxSize.x, fixedHeight);
+                maxSize = new Vector2(maxSize.x, m_CurrentBaseHeight);
+                minSize = new Vector2(minSize.x, m_CurrentBaseHeight);
+
+                UpdateOverlayStyling(isInReducedView: true);
             }
             else
             {
-                minSize = defaultSize;
                 maxSize = k_DefaultMaxSize;
+                minSize = defaultSize;
+                size = defaultSize;
+
                 ResetSize();
+
                 // Restore the size used before this overlay got reduced.
                 if (m_SavedStateBeforeReduceMode.sizeWasOverriden || size.x != k_DefaultMaxSize.x)
                     size = new Vector2(size.x, m_SavedStateBeforeReduceMode.previousHeight);
-                else
-                    ResetSize();
 
                 m_SavedStateBeforeReduceMode = default;
+                UpdateOverlayStyling(isInReducedView: false);
             }
+        }
+
+        void UpdateOverlayStyling(bool isInReducedView)
+        {
+            contentRoot.EnableInClassList(k_CamerasOverlayUSSClass, !isInReducedView);
+            contentRoot.EnableInClassList(k_ReducedCamerasOverlayUSSClass, isInReducedView);
+        }
+
+        // Adjust the size of the Overlay based on the size of the ViewpointUserData.
+        void UpdateSizeBasedOnUserData(GeometryChangedEvent evt)
+        {
+            if (!(containerWindow as SceneView).viewpoint.hasActiveViewpoint)
+                return;
+
+            var size = m_UserData.resolvedStyle.height;
+            float fixedHeight = m_CurrentBaseHeight + size;
+
+            // Lock the height. User can't resize the Overlay vertically in reduced mode.
+            maxSize = new Vector2(maxSize.x, fixedHeight);
+            minSize = new Vector2(minSize.x, fixedHeight);
         }
 
         void UpdateViewpointInternalList()

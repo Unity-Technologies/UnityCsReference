@@ -94,17 +94,17 @@ namespace UnityEngine.UIElements
     // Text editing and selection management implementation
     public partial class TextElement : ITextSelection
     {
-        internal static readonly DataBindingProperty isSelectableProperty = nameof(isSelectable);
-        internal static readonly DataBindingProperty cursorIndexProperty = nameof(cursorIndex);
-        internal static readonly DataBindingProperty selectIndexProperty = nameof(selectIndex);
-        internal static readonly DataBindingProperty doubleClickSelectsWordProperty = nameof(doubleClickSelectsWord);
-        internal static readonly DataBindingProperty tripleClickSelectsLineProperty = nameof(tripleClickSelectsLine);
-        internal static readonly DataBindingProperty cursorPositionProperty = nameof(cursorPosition);
-        internal static readonly DataBindingProperty selectionColorProperty = nameof(selectionColor);
-        internal static readonly DataBindingProperty cursorColorProperty = nameof(cursorColor);
-        internal static readonly DataBindingProperty selectAllOnFocusProperty = nameof(selectAllOnFocus);
-        internal static readonly DataBindingProperty selectAllOnMouseUpProperty = nameof(selectAllOnMouseUp);
-        internal static readonly DataBindingProperty selectionProperty = nameof(selection);
+        internal static readonly BindingId isSelectableProperty = nameof(isSelectable);
+        internal static readonly BindingId cursorIndexProperty = nameof(cursorIndex);
+        internal static readonly BindingId selectIndexProperty = nameof(selectIndex);
+        internal static readonly BindingId doubleClickSelectsWordProperty = nameof(doubleClickSelectsWord);
+        internal static readonly BindingId tripleClickSelectsLineProperty = nameof(tripleClickSelectsLine);
+        internal static readonly BindingId cursorPositionProperty = nameof(cursorPosition);
+        internal static readonly BindingId selectionColorProperty = nameof(selectionColor);
+        internal static readonly BindingId cursorColorProperty = nameof(cursorColor);
+        internal static readonly BindingId selectAllOnFocusProperty = nameof(selectAllOnFocus);
+        internal static readonly BindingId selectAllOnMouseUpProperty = nameof(selectAllOnMouseUp);
+        internal static readonly BindingId selectionProperty = nameof(selection);
 
         /// <summary>
         /// Retrieves this TextElement's ITextSelection

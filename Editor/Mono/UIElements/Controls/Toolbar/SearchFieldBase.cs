@@ -15,7 +15,7 @@ namespace UnityEditor.UIElements
     public abstract class SearchFieldBase<TextInputType, T> : VisualElement, INotifyValueChanged<T>
         where TextInputType : TextInputBaseField<T>, new()
     {
-        internal static readonly DataBindingProperty valueProperty = nameof(value);
+        internal static readonly BindingId valueProperty = nameof(value);
 
         private readonly Button m_SearchButton;
         private readonly Button m_CancelButton;

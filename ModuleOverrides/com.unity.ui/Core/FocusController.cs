@@ -17,14 +17,14 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public abstract class Focusable : CallbackEventHandler
     {
-        internal static readonly DataBindingProperty focusableProperty = nameof(focusable);
-        internal static readonly DataBindingProperty tabIndexProperty = nameof(tabIndex);
-        internal static readonly DataBindingProperty delegatesFocusProperty = nameof(delegatesFocus);
-        internal static readonly DataBindingProperty canGrabFocusProperty = nameof(canGrabFocus);
-
+        internal static readonly BindingId focusableProperty = nameof(focusable);
+        internal static readonly BindingId tabIndexProperty = nameof(tabIndex);
+        internal static readonly BindingId delegatesFocusProperty = nameof(delegatesFocus);
+        internal static readonly BindingId canGrabFocusProperty = nameof(canGrabFocus);
 
         protected Focusable()
         {
+            UIElementsRuntimeUtilityNative.VisualElementCreation();
             focusable = true;
             tabIndex = 0;
         }

@@ -142,9 +142,6 @@ namespace UnityEngine.UIElements
             var oldCam = Camera.current;
             var oldRT = RenderTexture.active;
 
-            Camera.SetupCurrent(null);
-            RenderTexture.active = null;
-
             using (s_RepaintProfilerMarker.Auto())
                 panel.Repaint(Event.current);
             (panel.panelDebug?.debuggerOverlayPanel as Panel)?.Repaint(Event.current);

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -51,8 +52,14 @@ namespace Unity.UI.Builder
             m_Value = true;
             AddToClassList(BuilderConstants.FoldoutFieldPropertyName);
             header.AddToClassList(BuilderConstants.FoldoutFieldHeaderClassName);
+
+            var bindingIndicator = new VisualElement();
+            bindingIndicator.AddToClassList(BuilderConstants.InspectorBindingIndicatorClassName);
+            bindingIndicator.tooltip = L10n.Tr(BuilderConstants.FoldoutContainsBindingsString);
+            m_Toggle.visualInput.Insert(0, bindingIndicator);
         }
 
         public virtual void UpdateFromChildFields() {}
+        internal virtual void SetHeaderInputEnabled(bool enabled) {}
     }
 }

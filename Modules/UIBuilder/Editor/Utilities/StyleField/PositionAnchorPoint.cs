@@ -45,7 +45,7 @@ namespace Unity.UI.Builder
                 // be able to send an event toupdate the position style fields when the square preset is clicked
                 using (ChangeEvent<bool> evt = ChangeEvent<bool>.GetPooled(previousValue, m_Value))
                 {
-                    evt.target = this;
+                    evt.elementTarget = this;
                     SendEvent(evt);
                 }
             }

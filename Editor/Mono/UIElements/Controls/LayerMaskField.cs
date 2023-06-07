@@ -18,8 +18,35 @@ namespace UnityEditor.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : MaskField.UxmlSerializedData
         {
+            #pragma warning disable 649
+            [UxmlAttribute("value")]
+            [SerializeField] LayerMask layerMask;
+            [UxmlAttribute("choices")]
+            [SerializeField, HideInInspector] private List<string> layerChoices;
+            #pragma warning restore 649
+
             public override object CreateInstance() => new LayerMaskField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (LayerMaskField)obj;
+                e.SetValueWithoutNotify(layerMask.value);
+                e.choices = layerChoices;
+            }
         }
+
+        internal List<string> layerChoices
+        {
+            get => choices;
+            set
+            {
+                if (value != null )
+                    choices = value;
+            }
+        }
+        internal LayerMask layerMask { get => value; set => this.value = value.value; }
 
         /// <summary>
         /// Instantiates a <see cref="LayerMaskField"/> using the data read from a UXML file.

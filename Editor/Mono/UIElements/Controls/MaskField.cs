@@ -4,11 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using Unity.Properties;
 using System.Text;
+using Unity.Properties;
+using UnityEngine;
 using UnityEngine.Pool;
 using UnityEngine.UIElements;
-using UnityEngine;
 
 namespace UnityEditor.UIElements
 {
@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements
     /// </summary>
     public abstract class BaseMaskField<TChoice> : BasePopupField<TChoice, string>
     {
-        internal static readonly DataBindingProperty choicesMasksProperty = nameof(choicesMasks);
+        internal static readonly BindingId choicesMasksProperty = nameof(choicesMasks);
 
         internal abstract TChoice MaskToValue(int newMask);
         internal abstract int ValueToMask(TChoice value);

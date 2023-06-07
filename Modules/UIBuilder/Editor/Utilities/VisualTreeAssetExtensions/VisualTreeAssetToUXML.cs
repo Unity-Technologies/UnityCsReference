@@ -402,9 +402,11 @@ namespace Unity.UI.Builder
                 }
 
                 foreach (var childAsset in entry.uxmlObjectAssets)
+                {
                     GenerateUXMLRecursive(
                         vta, vtaPath, childAsset, idToChildren, stringBuilder,
                         depth + 1, writingToFile);
+                }
 
                 hasChildTags = true;
             }

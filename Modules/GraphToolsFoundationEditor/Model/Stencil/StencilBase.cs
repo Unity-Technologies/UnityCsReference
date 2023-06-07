@@ -46,6 +46,13 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual bool AllowPortalCreation => true;
 
         /// <summary>
+        /// Whether the node bypass feature is enabled or not.
+        /// </summary>
+        /// <remarks>The node bypass feature allows to replace a node that is connected to an upstream
+        /// and downstream node by a wire connecting directly the upstream and downstream nodes.</remarks>
+        public virtual bool AllowNodeBypass => true;
+
+        /// <summary>
         /// Performs tasks that need to be done when the <see cref="GraphModel"/> is enabled.
         /// </summary>
         public virtual void OnGraphModelEnabled() { }
@@ -79,6 +86,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public virtual Constant CreateConstantValue(TypeHandle constantTypeHandle)
         {
             var constantType = GetConstantType(constantTypeHandle);
+            if (constantType == null)
+                return null;
+
             var instance = (Constant)Activator.CreateInstance(constantType);
             instance.Initialize(constantTypeHandle);
             return instance;

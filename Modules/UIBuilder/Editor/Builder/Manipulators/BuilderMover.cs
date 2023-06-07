@@ -64,7 +64,7 @@ namespace Unity.UI.Builder
         }
 
         void OnMove(
-            TrackedStyle trackedStyle,
+            TrackedStyles trackedStyle,
             bool force,
             float onStartDragPrimary,
             float delta,
@@ -76,8 +76,9 @@ namespace Unity.UI.Builder
             // Make sure our delta is a whole number so we don't end up with non-whole pixel values.
             delta = Mathf.Ceil(delta / canvas.zoomScale);
 
+            SetStyleSheetValue(trackedStyle, onStartDragPrimary + delta);
+
             var styleName = GetStyleName(trackedStyle);
-            SetStyleSheetValue(styleName, onStartDragPrimary + delta);
             m_ScratchChangeList.Add(styleName);
         }
 
@@ -85,19 +86,29 @@ namespace Unity.UI.Builder
         {
             m_ScratchChangeList.Clear();
 
-            bool forceTop = IsNoneOrAuto(TrackedStyle.Top) && IsNoneOrAuto(TrackedStyle.Bottom);
-            bool forceLeft = IsNoneOrAuto(TrackedStyle.Left) && IsNoneOrAuto(TrackedStyle.Right);
+            bool forceTop = IsNoneOrAuto(TrackedStyles.Top) && IsNoneOrAuto(TrackedStyles.Bottom);
+            bool forceLeft = IsNoneOrAuto(TrackedStyles.Left) && IsNoneOrAuto(TrackedStyles.Right);
 
-            OnMove(TrackedStyle.Top, forceTop, m_TargetRectOnStartDrag.y, diff.y, m_ScratchChangeList);
-            OnMove(TrackedStyle.Right, false, m_TargetCorrectedRightOnStartDrag, -diff.x, m_ScratchChangeList);
-            OnMove(TrackedStyle.Left, forceLeft, m_TargetRectOnStartDrag.x, diff.x, m_ScratchChangeList);
-            OnMove(TrackedStyle.Bottom, false, m_TargetCorrectedBottomOnStartDrag, -diff.y, m_ScratchChangeList);
+            // Do not move vertically if either top or bottom is bound
+            if (!AreStylesBound(TrackedStyles.Top | TrackedStyles.Bottom))
+            {
+                OnMove(TrackedStyles.Top, forceTop, m_TargetRectOnStartDrag.y, diff.y, m_ScratchChangeList);
+                OnMove(TrackedStyles.Bottom, false, m_TargetCorrectedBottomOnStartDrag, -diff.y, m_ScratchChangeList);
+                style.top = Mathf.Round(m_ThisRectOnStartDrag.y + diff.y);
+            }
+            // Do not move horizontally if either left or right is bound
+            if (!AreStylesBound(TrackedStyles.Left | TrackedStyles.Right))
+            {
+                OnMove(TrackedStyles.Right, false, m_TargetCorrectedRightOnStartDrag, -diff.x, m_ScratchChangeList);
+                OnMove(TrackedStyles.Left, forceLeft, m_TargetRectOnStartDrag.x, diff.x, m_ScratchChangeList);
+                style.left = Mathf.Round(m_ThisRectOnStartDrag.x + diff.x);
+            }
 
-            style.left = Mathf.Round(m_ThisRectOnStartDrag.x + diff.x);
-            style.top = Mathf.Round(m_ThisRectOnStartDrag.y + diff.y);
-
-            m_Selection.NotifyOfStylingChange(this, m_ScratchChangeList, BuilderStylingChangeType.RefreshOnly);
-            m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            if (m_ScratchChangeList.Count > 0)
+            {
+                m_Selection.NotifyOfStylingChange(this, m_ScratchChangeList, BuilderStylingChangeType.RefreshOnly);
+                m_Selection.NotifyOfHierarchyChange(this, m_Target, BuilderHierarchyChangeType.InlineStyle);
+            }
         }
     }
 }

@@ -9,6 +9,9 @@ using UnityEngine.Profiling;
 using UnityEngine.TextCore.LowLevel;
 using System;
 using System.Text;
+using System.Globalization;
+using Unity.Jobs.LowLevel.Unsafe;
+using System.Threading.Tasks;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -252,11 +255,13 @@ namespace UnityEngine.TextCore.Text
         const int k_MaxCharacters = 8; // Determines the initial allocation and size of the character array / buffer.
 
         static TextGenerator s_TextGenerator;
-        static TextGenerator GetTextGenerator()
+        internal static TextGenerator GetTextGenerator()
         {
             if (s_TextGenerator == null)
             {
                 s_TextGenerator = new TextGenerator();
+                s_DefaultSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
+                UnicodeLineBreakingRules.LoadLineBreakingRules();
             }
 
             return s_TextGenerator;
@@ -264,6 +269,7 @@ namespace UnityEngine.TextCore.Text
 
         public static void GenerateText(TextGenerationSettings settings, TextInfo textInfo)
         {
+            bool isMainThread = !JobsUtility.IsExecutingJob;
             if (settings.fontAsset == null || settings.fontAsset.characterLookupTable == null)
             {
                 Debug.LogWarning("Can't Generate Mesh, No Font Asset has been assigned.");
@@ -283,7 +289,8 @@ namespace UnityEngine.TextCore.Text
             textGenerator.Prepare(settings, textInfo);
 
             // Update font asset atlas textures and font features.
-            FontAsset.UpdateFontAssetsInUpdateQueue();
+            if (isMainThread)
+                FontAsset.UpdateFontAssetsInUpdateQueue();
 
             textGenerator.GenerateTextMesh(settings, textInfo);
             Profiler.EndSample();
@@ -524,7 +531,7 @@ namespace UnityEngine.TextCore.Text
         bool m_IsAutoSizePointSizeSet;
         float m_StartOfLineAscender;
         float m_LineSpacingDelta;
-        MaterialReference[] m_MaterialReferences = new MaterialReference[8];
+        internal MaterialReference[] m_MaterialReferences = new MaterialReference[8];
         int m_SpriteCount = 0;
         TextProcessingStack<int> m_StyleStack = new TextProcessingStack<int>(new int[16]);
         TextProcessingStack<WordWrapState> m_EllipsisInsertionCandidateStack = new TextProcessingStack<WordWrapState>(8, 8);
@@ -541,7 +548,7 @@ namespace UnityEngine.TextCore.Text
 
         Dictionary<int, int> m_MaterialReferenceIndexLookup = new Dictionary<int, int>();
         bool m_IsCalculatingPreferredValues;
-        SpriteAsset m_DefaultSpriteAsset;
+        static SpriteAsset s_DefaultSpriteAsset;
         bool m_TintSprite;
 
         protected SpecialCharacter m_Ellipsis;
@@ -549,11 +556,29 @@ namespace UnityEngine.TextCore.Text
 
         TextElementInfo[] m_InternalTextElementInfo;
 
-        void Prepare(TextGenerationSettings generationSettings, TextInfo textInfo)
+        internal bool PrepareFontAsset(TextGenerationSettings generationSettings)
+        {
+            m_CurrentFontAsset = generationSettings.fontAsset;
+
+            // Set the font style that is assigned by the builder
+            m_FontStyleInternal = generationSettings.fontStyle;
+            m_FontWeightInternal = (m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold ? TextFontWeight.Bold : generationSettings.fontWeight;
+
+            // Find and cache Underline & Ellipsis characters.
+            GetSpecialCharacters(generationSettings);
+
+            //ParseInputText
+            PopulateTextBackingArray(generationSettings.text);
+            PopulateTextProcessingArray(generationSettings);
+            bool success = PopulateFontAsset(generationSettings, m_TextProcessingArray);
+            return success;
+        }
+
+        internal void Prepare(TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             Profiler.BeginSample("TextGenerator.Prepare");
             m_Padding = generationSettings.extraPadding;
-			m_CurrentFontAsset = generationSettings.fontAsset;
+            m_CurrentFontAsset = generationSettings.fontAsset;
 
             // Set the font style that is assigned by the builder
             m_FontStyleInternal = generationSettings.fontStyle;
@@ -583,10 +608,54 @@ namespace UnityEngine.TextCore.Text
             Profiler.EndSample();
         }
 
+        internal static Dictionary<int, Material> gradientScalesToAdd = new Dictionary<int, Material>();
+        internal static Dictionary<int, float> gradientScales = new Dictionary<int, float>();
+
+        static object gradientLock = new object();
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static void UpdateGradientScales()
+        {
+            foreach (var grad in gradientScalesToAdd)
+            {
+                if (grad.Value == null)
+                    continue;
+                var gradientScale = grad.Value.HasProperty(TextShaderUtilities.ID_GradientScale) ? grad.Value.GetFloat(TextShaderUtilities.ID_GradientScale) : 0;
+                gradientScales[grad.Key] = gradientScale;
+            }
+
+            gradientScalesToAdd.Clear();
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static void AddGradientScalesToList(MaterialReference[] refs)
+        {
+            if (refs == null)
+                return;
+
+            lock (gradientLock)
+            {
+                for (int i = 0; i < refs.Length; i++)
+                {
+                    if (((System.Object)refs[i].material) == null)
+                        break;
+
+                    var hash = refs[i].material.GetHashCode();
+                    gradientScalesToAdd[hash] = refs[i].material;
+
+                    if (((System.Object)refs[i].fallbackMaterial) != null)
+                    {
+                        hash = refs[i].fallbackMaterial.GetHashCode();
+                        gradientScalesToAdd[hash] = refs[i].fallbackMaterial;
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// This is the main function that is responsible for creating / displaying the text.
         /// </summary>
-        void GenerateTextMesh(TextGenerationSettings generationSettings, TextInfo textInfo)
+        internal void GenerateTextMesh(TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             // Early exit if no font asset was assigned. This should not be needed since LiberationSans SDF will be assigned by default.
             if (generationSettings.fontAsset == null || generationSettings.fontAsset.characterLookupTable == null)
@@ -803,7 +872,7 @@ namespace UnityEngine.TextCore.Text
                     int endTagIndex;
 
                     // Check if Tag is valid. If valid, skip to the end of the validated tag.
-                    if (ValidateHtmlTag(m_TextProcessingArray, i + 1, out endTagIndex, generationSettings, textInfo))
+                    if (ValidateHtmlTag(m_TextProcessingArray, i + 1, out endTagIndex, generationSettings, textInfo, out bool isThreadSuccess))
                     {
                         i = endTagIndex;
 
@@ -1196,12 +1265,13 @@ namespace UnityEngine.TextCore.Text
 
                 float boldSpacingAdjustment;
                 float stylePadding;
+                bool hasGradientScale = m_CurrentFontAsset.atlasRenderMode != GlyphRenderMode.SMOOTH && m_CurrentFontAsset.atlasRenderMode != GlyphRenderMode.COLOR;
                 if (m_TextElementType == TextElementType.Character && !isUsingAltTypeface && ((m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold)) // Checks for any combination of Bold Style.
                 {
-                    if (m_CurrentMaterial != null && m_CurrentMaterial.HasProperty(TextShaderUtilities.ID_GradientScale))
+                    if (hasGradientScale)
                     {
-                        float gradientScale = m_CurrentMaterial.GetFloat(TextShaderUtilities.ID_GradientScale);
-                        stylePadding = m_CurrentFontAsset.boldStyleWeight / 4.0f * gradientScale * m_CurrentMaterial.GetFloat(TextShaderUtilities.ID_ScaleRatio_A);
+                        float gradientScale = JobsUtility.IsExecutingJob ? gradientScales[m_CurrentMaterial.GetHashCode()] : m_CurrentMaterial.GetFloat(TextShaderUtilities.ID_GradientScale);
+                        stylePadding = m_CurrentFontAsset.boldStyleWeight / 4.0f * gradientScale;
 
                         // Clamp overall padding to Gradient Scale size.
                         if (stylePadding + padding > gradientScale)
@@ -1209,15 +1279,14 @@ namespace UnityEngine.TextCore.Text
                     }
                     else
                         stylePadding = 0;
-
                     boldSpacingAdjustment = m_CurrentFontAsset.boldStyleSpacing;
                 }
                 else
                 {
-                    if (m_CurrentMaterial != null && m_CurrentMaterial.HasProperty(TextShaderUtilities.ID_GradientScale) && m_CurrentMaterial.HasProperty(TextShaderUtilities.ID_ScaleRatio_A))
+                    if (hasGradientScale)
                     {
-                        float gradientScale = m_CurrentMaterial.GetFloat(TextShaderUtilities.ID_GradientScale);
-                        stylePadding = m_CurrentFontAsset.m_RegularStyleWeight / 4.0f * gradientScale * m_CurrentMaterial.GetFloat(TextShaderUtilities.ID_ScaleRatio_A);
+                        float gradientScale = JobsUtility.IsExecutingJob ? gradientScales[m_CurrentMaterial.GetHashCode()] : m_CurrentMaterial.GetFloat(TextShaderUtilities.ID_GradientScale);
+                        stylePadding = m_CurrentFontAsset.m_RegularStyleWeight / 4.0f * gradientScale;
 
                         // Clamp overall padding to Gradient Scale size.
                         if (stylePadding + padding > gradientScale)
@@ -1225,7 +1294,6 @@ namespace UnityEngine.TextCore.Text
                     }
                     else
                         stylePadding = 0;
-
                     boldSpacingAdjustment = 0;
                 }
 
@@ -2853,8 +2921,7 @@ namespace UnityEngine.TextCore.Text
                     }
                     #endregion
 
-                    bool convertToLinearSpace = QualitySettings.activeColorSpace == ColorSpace.Linear
-                        && generationSettings.shouldConvertToLinearSpace;
+                    bool convertToLinearSpace = generationSettings.shouldConvertToLinearSpace;
 
                     // Fill Vertex Buffers for the various types of element
                     if (elementType == TextElementType.Character)
@@ -3162,7 +3229,7 @@ namespace UnityEngine.TextCore.Text
 
                         DrawUnderlineMesh(strikethroughStart, strikethroughEnd, strikethroughScale, strikethroughScale, strikethroughScale, xScale, strikethroughColor, generationSettings, textInfo);
                     }
-                    else if (beginStrikethrough && i < m_CharacterCount && currentFontAsset.GetInstanceID() != textElementInfos[i + 1].fontAsset.GetInstanceID())
+                    else if (beginStrikethrough && i < m_CharacterCount && currentFontAsset.GetHashCode() != textElementInfos[i + 1].fontAsset.GetHashCode())
                     {
                         // Terminate Strikethrough if font asset changes.
                         beginStrikethrough = false;
@@ -3491,8 +3558,10 @@ namespace UnityEngine.TextCore.Text
         /// <param name="startIndex"></param>
         /// <param name="endIndex"></param>
         /// <returns></returns>
-        bool ValidateHtmlTag(TextProcessingElement[] chars, int startIndex, out int endIndex, TextGenerationSettings generationSettings, TextInfo textInfo)
+        bool ValidateHtmlTag(TextProcessingElement[] chars, int startIndex, out int endIndex, TextGenerationSettings generationSettings, TextInfo textInfo, out bool isThreadSuccess)
         {
+            bool isMainThread = !JobsUtility.IsExecutingJob;
+            isThreadSuccess = true;
             TextSettings textSettings = generationSettings.textSettings;
 
             int tagCharCount = 0;
@@ -3766,7 +3835,8 @@ namespace UnityEngine.TextCore.Text
                         {
                             m_StrikethroughColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength);
                             m_StrikethroughColor.a = m_HtmlColor.a < m_StrikethroughColor.a ? (byte)(m_HtmlColor.a) : (byte)(m_StrikethroughColor.a);
-                            textInfo.hasMultipleColors = true;
+                            if (textInfo != null)
+                                textInfo.hasMultipleColors = true;
                         }
                         else
                             m_StrikethroughColor = m_HtmlColor;
@@ -3791,7 +3861,8 @@ namespace UnityEngine.TextCore.Text
                         {
                             m_UnderlineColor = TextGeneratorUtilities.HexCharsToColor(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength);
                             m_UnderlineColor.a = m_HtmlColor.a < m_UnderlineColor.a ? (m_HtmlColor.a) : (m_UnderlineColor.a);
-                            textInfo.hasMultipleColors = true;
+                            if (textInfo != null)
+                                textInfo.hasMultipleColors = true;
                         }
                         else
                             m_UnderlineColor = m_HtmlColor;
@@ -3846,7 +3917,8 @@ namespace UnityEngine.TextCore.Text
 
                         m_HighlightState = new HighlightState(highlightColor, highlightPadding);
                         m_HighlightStateStack.Push(m_HighlightState);
-                        textInfo.hasMultipleColors = true;
+                        if (textInfo != null)
+                            textInfo.hasMultipleColors = true;
 
                         return true;
                     case MarkupTag.SLASH_MARK:
@@ -4084,6 +4156,11 @@ namespace UnityEngine.TextCore.Text
                         {
                             if (tempFont == null)
                             {
+                                if (!isMainThread)
+                                {
+                                    isThreadSuccess = false;
+                                    return false;
+                                }
                                 // Load Font Asset
                                 tempFont = Resources.Load<FontAsset>(textSettings.defaultFontAssetPath + new string(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength));
                             }
@@ -4117,6 +4194,11 @@ namespace UnityEngine.TextCore.Text
                             }
                             else
                             {
+                                if (!isMainThread)
+                                {
+                                    isThreadSuccess = false;
+                                    return false;
+                                }
                                 // Load new material
                                 tempMaterial = Resources.Load<Material>(textSettings.defaultFontAssetPath + new string(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength));
 
@@ -4181,6 +4263,11 @@ namespace UnityEngine.TextCore.Text
                         }
                         else
                         {
+                            if (!isMainThread)
+                            {
+                                isThreadSuccess = false;
+                                return false;
+                            }
                             // Load new material
                             tempMaterial = Resources.Load<Material>(textSettings.defaultFontAssetPath + new string(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength));
 
@@ -4241,7 +4328,7 @@ namespace UnityEngine.TextCore.Text
                         if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
                         {
                             // For IMGUI, we want to treat the a tag as we do with the link tag
-                            if (generationSettings.isIMGUI)
+                            if (generationSettings.isIMGUI && textInfo != null)
                             {
                                 int index = textInfo.linkCount;
 
@@ -4255,7 +4342,7 @@ namespace UnityEngine.TextCore.Text
                                 if (m_XmlAttribute[1].valueLength > 0)
                                     textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, m_XmlAttribute[1].valueLength + m_XmlAttribute[1].valueStartIndex - 2);
                             }
-                            else if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF)
+                            else if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF && textInfo != null)
                             {
                                 // Make sure linkInfo array is of appropriate size.
                                 int index = textInfo.linkCount;
@@ -4272,7 +4359,7 @@ namespace UnityEngine.TextCore.Text
                         return true;
 
                     case MarkupTag.SLASH_A:
-                        if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
+                        if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues && textInfo != null)
                         {
                             if (textInfo.linkInfo.Length <= 0)
                             {
@@ -4289,7 +4376,7 @@ namespace UnityEngine.TextCore.Text
                         return true;
 
                     case MarkupTag.LINK:
-                        if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
+                        if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues && textInfo != null)
                         {
                             int index = textInfo.linkCount;
 
@@ -4304,7 +4391,7 @@ namespace UnityEngine.TextCore.Text
                         }
                         return true;
                     case MarkupTag.SLASH_LINK:
-                        if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
+                        if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues && textInfo != null)
                         {
                             if (textInfo.linkCount < textInfo.linkInfo.Length)
                             {
@@ -4404,7 +4491,8 @@ namespace UnityEngine.TextCore.Text
                     //    }
                     //    return true;
                     case MarkupTag.COLOR:
-                        textInfo.hasMultipleColors = true;
+                        if (textInfo != null)
+                            textInfo.hasMultipleColors = true;
                         // <color=#FFF> 3 Hex (short hand)
                         if (m_HtmlTag[6] == k_NumberSign && tagCharCount == k_LineFeed)
                         {
@@ -4494,6 +4582,11 @@ namespace UnityEngine.TextCore.Text
                             // Load Color Gradient Preset
                             if (tempColorGradientPreset == null)
                             {
+                                if (!isMainThread)
+                                {
+                                    isThreadSuccess = false;
+                                    return false;
+                                }
                                 tempColorGradientPreset = Resources.Load<TextColorGradient>(textSettings.defaultColorGradientPresetsPath + new string(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength));
                             }
 
@@ -4549,7 +4642,7 @@ namespace UnityEngine.TextCore.Text
                         }
                         return true;
                     case MarkupTag.SLASH_CHARACTER_SPACE:
-                        if (!m_isTextLayoutPhase) return true;
+                        if (!m_isTextLayoutPhase || textInfo == null) return true;
 
                         // Adjust xAdvance to remove extra space from last character.
                         if (m_CharacterCount > 0)
@@ -4658,14 +4751,14 @@ namespace UnityEngine.TextCore.Text
                             {
                                 m_CurrentSpriteAsset = textSettings.defaultSpriteAsset;
                             }
-                            else if (m_DefaultSpriteAsset != null)
+                            else if (s_DefaultSpriteAsset != null)
                             {
-                                m_CurrentSpriteAsset = m_DefaultSpriteAsset;
+                                m_CurrentSpriteAsset = s_DefaultSpriteAsset;
                             }
-                            else if (m_DefaultSpriteAsset == null)
+                            else if (s_DefaultSpriteAsset == null && isMainThread)
                             {
-                                m_DefaultSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
-                                m_CurrentSpriteAsset = m_DefaultSpriteAsset;
+                                s_DefaultSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
+                                m_CurrentSpriteAsset = s_DefaultSpriteAsset;
                             }
 
                             // No valid sprite asset available
@@ -4685,7 +4778,14 @@ namespace UnityEngine.TextCore.Text
                                 if (tempSpriteAsset == null)
                                 {
                                     if (tempSpriteAsset == null)
+                                    {
+                                        if (!isMainThread)
+                                        {
+                                            isThreadSuccess = false;
+                                            return false;
+                                        }
                                         tempSpriteAsset = Resources.Load<SpriteAsset>(textSettings.defaultSpriteAssetPath + new string(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength));
+                                    }
                                 }
 
                                 if (tempSpriteAsset == null)
@@ -5273,9 +5373,9 @@ namespace UnityEngine.TextCore.Text
 
             // Setup UVs for the Character
             #region Setup UVs
-            Vector2 uv0 = new Vector2((float)m_CachedTextElement.glyph.glyphRect.x / m_CurrentSpriteAsset.spriteSheet.width, (float)m_CachedTextElement.glyph.glyphRect.y / m_CurrentSpriteAsset.spriteSheet.height); // bottom left
-            Vector2 uv1 = new Vector2(uv0.x, (float)(m_CachedTextElement.glyph.glyphRect.y + m_CachedTextElement.glyph.glyphRect.height) / m_CurrentSpriteAsset.spriteSheet.height); // top left
-            Vector2 uv2 = new Vector2((float)(m_CachedTextElement.glyph.glyphRect.x + m_CachedTextElement.glyph.glyphRect.width) / m_CurrentSpriteAsset.spriteSheet.width, uv1.y); // top right
+            Vector2 uv0 = new Vector2((float)m_CachedTextElement.glyph.glyphRect.x / m_CurrentSpriteAsset.width, (float)m_CachedTextElement.glyph.glyphRect.y / m_CurrentSpriteAsset.height); // bottom left
+            Vector2 uv1 = new Vector2(uv0.x, (float)(m_CachedTextElement.glyph.glyphRect.y + m_CachedTextElement.glyph.glyphRect.height) / m_CurrentSpriteAsset.height); // top left
+            Vector2 uv2 = new Vector2((float)(m_CachedTextElement.glyph.glyphRect.x + m_CachedTextElement.glyph.glyphRect.width) / m_CurrentSpriteAsset.width, uv1.y); // top right
             Vector2 uv3 = new Vector2(uv2.x, uv0.y); // bottom right
 
             // Store UV Information
@@ -5716,6 +5816,359 @@ namespace UnityEngine.TextCore.Text
             textInfo.ClearMeshInfo(updateMesh);
         }
 
+        bool PopulateFontAsset(TextGenerationSettings generationSettings, TextProcessingElement[] textProcessingArray)
+        {
+            bool isMainThread = !JobsUtility.IsExecutingJob;
+            TextSettings textSettings = generationSettings.textSettings;
+
+            int spriteCount = 0;
+
+            m_TotalCharacterCount = 0;
+            m_isTextLayoutPhase = false;
+            m_TagNoParsing = false;
+            m_FontStyleInternal = generationSettings.fontStyle;
+            m_FontStyleStack.Clear();
+
+            m_FontWeightInternal = (m_FontStyleInternal & FontStyles.Bold) == FontStyles.Bold ? TextFontWeight.Bold : generationSettings.fontWeight;
+            m_FontWeightStack.SetDefault(m_FontWeightInternal);
+
+            m_CurrentFontAsset = generationSettings.fontAsset;
+            m_CurrentMaterial = generationSettings.material;
+            m_CurrentMaterialIndex = 0;
+
+            m_MaterialReferenceStack.SetDefault(new MaterialReference(m_CurrentMaterialIndex, m_CurrentFontAsset, null, m_CurrentMaterial, m_Padding));
+
+            m_MaterialReferenceIndexLookup.Clear();
+            MaterialReference.AddMaterialReference(m_CurrentMaterial, m_CurrentFontAsset, ref m_MaterialReferences, m_MaterialReferenceIndexLookup);
+
+            m_TextElementType = TextElementType.Character;
+
+            if (generationSettings.overflowMode == TextOverflowMode.Ellipsis)
+            {
+                GetEllipsisSpecialCharacter(generationSettings);
+
+                if (m_Ellipsis.character != null)
+                {
+                    if (m_Ellipsis.fontAsset.GetHashCode() != m_CurrentFontAsset.GetHashCode())
+                    {
+                        if (textSettings.matchMaterialPreset && m_CurrentMaterial.GetHashCode() != m_Ellipsis.fontAsset.material.GetHashCode())
+                        {
+                            if (!isMainThread)
+                                return false;
+                            m_Ellipsis.material = MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Ellipsis.fontAsset.material);
+                        }
+                        else
+                            m_Ellipsis.material = m_Ellipsis.fontAsset.material;
+
+                        m_Ellipsis.materialIndex = MaterialReference.AddMaterialReference(m_Ellipsis.material, m_Ellipsis.fontAsset, ref m_MaterialReferences, m_MaterialReferenceIndexLookup);
+                        m_MaterialReferences[m_Ellipsis.materialIndex].referenceCount = 0;
+                    }
+                }
+            }
+
+            // Check if we should process Ligatures
+            bool ligature = generationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
+
+            // Parsing XML tags in the text
+            for (int i = 0; i < textProcessingArray.Length && textProcessingArray[i].unicode != 0; i++)
+            {
+                uint unicode = textProcessingArray[i].unicode;
+                int prevMaterialIndex = m_CurrentMaterialIndex;
+
+                // PARSE XML TAGS
+                #region PARSE XML TAGS
+                if (generationSettings.richText && unicode == '<')
+                {
+                    prevMaterialIndex = m_CurrentMaterialIndex;
+                    int endTagIndex;
+
+                    // Check if Tag is Valid
+                    if (ValidateHtmlTag(textProcessingArray, i + 1, out endTagIndex, generationSettings, null, out bool isThreadSuccess))
+                    {
+                        int tagStartIndex = textProcessingArray[i].stringIndex;
+                        i = endTagIndex;
+
+                        if (m_TextElementType == TextElementType.Sprite)
+                        {
+                            // Restore element type and material index to previous values.
+                            m_TextElementType = TextElementType.Character;
+                            m_CurrentMaterialIndex = prevMaterialIndex;
+
+                            spriteCount += 1;
+                            m_TotalCharacterCount += 1;
+                        }
+
+                        continue;
+                    }
+                    if(!isThreadSuccess)
+                        return false;
+                }
+                #endregion
+
+                bool isUsingAlternativeTypeface;
+                bool isUsingFallbackOrAlternativeTypeface = false;
+
+                FontAsset prevFontAsset = m_CurrentFontAsset;
+                Material prevMaterial = m_CurrentMaterial;
+                prevMaterialIndex = m_CurrentMaterialIndex;
+
+                // Handle Font Styles like LowerCase, UpperCase and SmallCaps.
+                #region Handling of LowerCase, UpperCase and SmallCaps Font Styles
+                if (m_TextElementType == TextElementType.Character)
+                {
+                    if ((m_FontStyleInternal & FontStyles.UpperCase) == FontStyles.UpperCase)
+                    {
+                        // If this character is lowercase, switch to uppercase.
+                        if (char.IsLower((char)unicode))
+                            unicode = char.ToUpper((char)unicode);
+
+                    }
+                    else if ((m_FontStyleInternal & FontStyles.LowerCase) == FontStyles.LowerCase)
+                    {
+                        // If this character is uppercase, switch to lowercase.
+                        if (char.IsUpper((char)unicode))
+                            unicode = char.ToLower((char)unicode);
+                    }
+                    else if ((m_FontStyleInternal & FontStyles.SmallCaps) == FontStyles.SmallCaps)
+                    {
+                        // Only convert lowercase characters to uppercase.
+                        if (char.IsLower((char)unicode))
+                            unicode = char.ToUpper((char)unicode);
+                    }
+                }
+                #endregion
+
+                if (!isMainThread && m_CurrentFontAsset.m_CharacterLookupDictionary == null)
+                    return false;
+                    
+                // Lookup the Glyph data for each character and cache it.
+                #region LOOKUP GLYPH
+                TextElement character = GetTextElement(generationSettings, (uint)unicode, m_CurrentFontAsset, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+
+                // Special handling for missing character.
+                // Replace missing glyph by the Square (9633) glyph or possibly the Space (32) glyph.
+                if (character == null)
+                {
+                    if (!isMainThread)
+                        return false;
+
+                    // Save the original unicode character
+                    uint srcGlyph = unicode;
+
+                    // Try replacing the missing glyph character by the Settings file Missing Glyph or Square (9633) character.
+                    unicode = textProcessingArray[i].unicode = (uint)textSettings.missingCharacterUnicode == 0 ? k_Square : (uint)textSettings.missingCharacterUnicode;
+
+                    // Check for the missing glyph character in the currently assigned font asset and its fallbacks
+                    character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+
+                    if (character == null)
+                    {
+                        // Search for the missing glyph character in the Settings Fallback list.
+                        if (textSettings.fallbackFontAssets != null && textSettings.fallbackFontAssets.Count > 0)
+                            character = FontAssetUtilities.GetCharacterFromFontAssets((uint)unicode, m_CurrentFontAsset, textSettings.fallbackFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    }
+
+                    if (character == null)
+                    {
+                        // Search for the missing glyph in the Settings Default Font Asset.
+                        if (textSettings.defaultFontAsset != null)
+                            character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, textSettings.defaultFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    }
+
+                    if (character == null)
+                    {
+                        // Use Space (32) Glyph from the currently assigned font asset.
+                        unicode = textProcessingArray[i].unicode = 32;
+                        character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    }
+
+                    if (character == null)
+                    {
+                        // Use End of Text (0x03) Glyph from the currently assigned font asset.
+                        unicode = textProcessingArray[i].unicode = k_EndOfText;
+                        character = FontAssetUtilities.GetCharacterFromFontAsset((uint)unicode, m_CurrentFontAsset, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface);
+                    }
+
+                    if (textSettings.displayWarnings)
+                    {
+                        string formattedWarning = srcGlyph > 0xFFFF
+                            ? string.Format("The character with Unicode value \\U{0:X8} was not found in the [{1}] font asset or any potential fallbacks. It was replaced by Unicode character \\u{2:X4}.", srcGlyph, generationSettings.fontAsset.name, character.unicode)
+                            : string.Format("The character with Unicode value \\u{0:X4} was not found in the [{1}] font asset or any potential fallbacks. It was replaced by Unicode character \\u{2:X4}.", srcGlyph, generationSettings.fontAsset.name, character.unicode);
+
+                        Debug.LogWarning(formattedWarning);
+                    }
+                }
+
+                if (character.elementType == TextElementType.Character)
+                {
+                    bool textAssetEquals = isMainThread ? character.textAsset.instanceID == m_CurrentFontAsset.instanceID : character.textAsset == m_CurrentFontAsset;
+                    if (!textAssetEquals)
+                    {
+                        isUsingFallbackOrAlternativeTypeface = true;
+                        m_CurrentFontAsset = character.textAsset as FontAsset;
+                    }
+
+                    #region VARIATION SELECTOR
+                    uint nextCharacter = i + 1 < textProcessingArray.Length ? (uint)textProcessingArray[i + 1].unicode : 0;
+                    if (nextCharacter >= 0xFE00 && nextCharacter <= 0xFE0F)
+                    {
+                        // Get potential variant glyph index
+                        uint variantGlyphIndex = m_CurrentFontAsset.GetGlyphVariantIndex((uint)unicode, nextCharacter);
+
+                        if (variantGlyphIndex != 0)
+                        {
+                            if (!isMainThread)
+                                return false;
+
+                            m_CurrentFontAsset.TryAddGlyphInternal(variantGlyphIndex, out Glyph glyph);
+                        }
+
+                        textProcessingArray[i + 1].unicode = 0x1A;
+                        i += 1;
+                    }
+                    #endregion
+
+                    #region LIGATURES
+                    if (ligature && m_CurrentFontAsset.fontFeatureTable.m_LigatureSubstitutionRecordLookup.TryGetValue(character.glyphIndex, out List<LigatureSubstitutionRecord> records))
+                    {
+                        if (records == null)
+                            break;
+
+                        for (int j = 0; j < records.Count; j++)
+                        {
+                            LigatureSubstitutionRecord record = records[j];
+
+                            int componentCount = record.componentGlyphIDs.Length;
+                            uint ligatureGlyphID = record.ligatureGlyphID;
+
+                            //
+                            for (int k = 1; k < componentCount; k++)
+                            {
+                                uint componentUnicode = (uint)textProcessingArray[i + k].unicode;
+
+                                // Special Handling for Zero Width Joiner (ZWJ)
+                                //if (componentUnicode == 0x200D)
+                                //    continue;
+
+                                uint glyphIndex = m_CurrentFontAsset.GetGlyphIndex(componentUnicode, out bool success);
+
+                                if (!success)
+                                    return false;
+
+                                if (glyphIndex == record.componentGlyphIDs[k])
+                                    continue;
+
+                                ligatureGlyphID = 0;
+                                break;
+                            }
+
+                            if (ligatureGlyphID != 0)
+                            {
+                                if (!isMainThread)
+                                    return false;
+
+                                if (m_CurrentFontAsset.TryAddGlyphInternal(ligatureGlyphID, out Glyph glyph))
+                                {
+
+                                    // Update text processing array
+                                    for (int c = 0; c < componentCount; c++)
+                                    {
+                                        if (c == 0)
+                                        {
+                                            textProcessingArray[i + c].length = componentCount;
+                                            continue;
+                                        }
+
+                                        textProcessingArray[i + c].unicode = 0x1A;
+                                    }
+
+                                    i += componentCount - 1;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    #endregion
+                }
+                #endregion
+
+                // Special handling if the character is a sprite.
+                if (character.elementType == TextElementType.Sprite)
+                {
+                    SpriteAsset spriteAssetRef = character.textAsset as SpriteAsset;
+                    m_CurrentMaterialIndex = MaterialReference.AddMaterialReference(spriteAssetRef.material, spriteAssetRef, ref m_MaterialReferences, m_MaterialReferenceIndexLookup);
+                    // Restore element type and material index to previous values.
+                    m_TextElementType = TextElementType.Character;
+                    m_CurrentMaterialIndex = prevMaterialIndex;
+
+                    spriteCount += 1;
+                    m_TotalCharacterCount += 1;
+
+                    continue;
+                }
+
+                if (isUsingFallbackOrAlternativeTypeface && m_CurrentFontAsset.instanceID != generationSettings.fontAsset.instanceID)
+                {
+                    // Create Fallback material instance matching current material preset if necessary
+                    if (isMainThread)
+                    {
+                        if (textSettings.matchMaterialPreset)
+                            m_CurrentMaterial = MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_CurrentFontAsset.material);
+                        else
+                            m_CurrentMaterial = m_CurrentFontAsset.material;
+                    }
+                    else
+                    {
+                        if (textSettings.matchMaterialPreset)
+                            return false;
+                        else
+                            m_CurrentMaterial = m_CurrentFontAsset.material;
+                    }
+
+                    m_CurrentMaterialIndex = MaterialReference.AddMaterialReference(m_CurrentMaterial, m_CurrentFontAsset, ref m_MaterialReferences, m_MaterialReferenceIndexLookup);
+                }
+
+                // Handle Multi Atlas Texture support
+                if (character != null && character.glyph.atlasIndex > 0)
+                {
+                    if (isMainThread)
+                        m_CurrentMaterial = MaterialManager.GetFallbackMaterial(m_CurrentFontAsset, m_CurrentMaterial, character.glyph.atlasIndex);
+                    else 
+                        return false;
+
+                    m_CurrentMaterialIndex = MaterialReference.AddMaterialReference(m_CurrentMaterial, m_CurrentFontAsset, ref m_MaterialReferences, m_MaterialReferenceIndexLookup);
+                    isUsingFallbackOrAlternativeTypeface = true;
+                }
+
+                if (!char.IsWhiteSpace((char)unicode) && unicode != CodePoint.ZERO_WIDTH_SPACE)
+                {
+                    // Limit the mesh of the main text object to 65535 vertices and use sub objects for the overflow.
+                    if (m_MaterialReferences[m_CurrentMaterialIndex].referenceCount < 16383)
+                        m_MaterialReferences[m_CurrentMaterialIndex].referenceCount += 1;
+                    else
+                    {
+                        m_CurrentMaterialIndex = MaterialReference.AddMaterialReference(new Material(m_CurrentMaterial), m_CurrentFontAsset, ref m_MaterialReferences, m_MaterialReferenceIndexLookup);
+                        m_MaterialReferences[m_CurrentMaterialIndex].referenceCount += 1;
+                    }
+                }
+
+                m_MaterialReferences[m_CurrentMaterialIndex].isFallbackMaterial = isUsingFallbackOrAlternativeTypeface;
+
+                // Restore previous font asset and material if fallback font was used.
+                if (isUsingFallbackOrAlternativeTypeface)
+                {
+                    m_MaterialReferences[m_CurrentMaterialIndex].fallbackMaterial = prevMaterial;
+                    m_CurrentFontAsset = prevFontAsset;
+                    m_CurrentMaterial = prevMaterial;
+                    m_CurrentMaterialIndex = prevMaterialIndex;
+                }
+
+                m_TotalCharacterCount += 1;
+            }
+
+            return true;
+        }
+
         // This function parses through the Char[] to determine how many characters will be visible. It then makes sure the arrays are large enough for all those characters.
         int SetArraySizes(TextProcessingElement[] textProcessingArray, TextGenerationSettings generationSettings, TextInfo textInfo)
         {
@@ -5740,6 +6193,7 @@ namespace UnityEngine.TextCore.Text
 
             m_MaterialReferenceIndexLookup.Clear();
             MaterialReference.AddMaterialReference(m_CurrentMaterial, m_CurrentFontAsset, ref m_MaterialReferences, m_MaterialReferenceIndexLookup);
+            m_CurrentSpriteAsset = null;
 
             if (textInfo == null)
                 textInfo = new TextInfo(VertexDataLayout.Mesh);
@@ -5777,9 +6231,9 @@ namespace UnityEngine.TextCore.Text
 
                 if (m_Ellipsis.character != null)
                 {
-                    if (m_Ellipsis.fontAsset.GetInstanceID() != m_CurrentFontAsset.GetInstanceID())
+                    if (m_Ellipsis.fontAsset.GetHashCode() != m_CurrentFontAsset.GetHashCode())
                     {
-                        if (textSettings.matchMaterialPreset && m_CurrentMaterial.GetInstanceID() != m_Ellipsis.fontAsset.material.GetInstanceID())
+                        if (textSettings.matchMaterialPreset && m_CurrentMaterial.GetHashCode() != m_Ellipsis.fontAsset.material.GetHashCode())
                             m_Ellipsis.material = MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Ellipsis.fontAsset.material);
                         else
                             m_Ellipsis.material = m_Ellipsis.fontAsset.material;
@@ -5823,7 +6277,7 @@ namespace UnityEngine.TextCore.Text
                     int endTagIndex;
 
                     // Check if Tag is Valid
-                    if (ValidateHtmlTag(textProcessingArray, i + 1, out endTagIndex, generationSettings, textInfo))
+                    if (ValidateHtmlTag(textProcessingArray, i + 1, out endTagIndex, generationSettings, textInfo, out bool isThreadSuccess))
                     {
                         int tagStartIndex = textProcessingArray[i].stringIndex;
                         i = endTagIndex;
@@ -5952,9 +6406,10 @@ namespace UnityEngine.TextCore.Text
 
                     if (textSettings.displayWarnings)
                     {
+                        bool isMainThread = !JobsUtility.IsExecutingJob;
                         string formattedWarning = srcGlyph > 0xFFFF
-                            ? string.Format("The character with Unicode value \\U{0:X8} was not found in the [{1}] font asset or any potential fallbacks. It was replaced by Unicode character \\u{2:X4}.", srcGlyph, generationSettings.fontAsset.name, character.unicode)
-                            : string.Format("The character with Unicode value \\u{0:X4} was not found in the [{1}] font asset or any potential fallbacks. It was replaced by Unicode character \\u{2:X4}.", srcGlyph, generationSettings.fontAsset.name, character.unicode);
+                            ? string.Format("The character with Unicode value \\U{0:X8} was not found in the [{1}] font asset or any potential fallbacks. It was replaced by Unicode character \\u{2:X4}.", srcGlyph, isMainThread ? generationSettings.fontAsset.name : generationSettings.fontAsset.GetHashCode(), character.unicode)
+                            : string.Format("The character with Unicode value \\u{0:X4} was not found in the [{1}] font asset or any potential fallbacks. It was replaced by Unicode character \\u{2:X4}.", srcGlyph, isMainThread ? generationSettings.fontAsset.name : generationSettings.fontAsset.GetHashCode(), character.unicode);
 
                         Debug.LogWarning(formattedWarning);
                     }
@@ -6012,7 +6467,7 @@ namespace UnityEngine.TextCore.Text
                                 //if (componentUnicode == 0x200D)
                                 //    continue;
 
-                                uint glyphIndex = m_CurrentFontAsset.GetGlyphIndex(componentUnicode);
+                                uint glyphIndex = m_CurrentFontAsset.GetGlyphIndex(componentUnicode, out bool success);
 
                                 if (glyphIndex == record.componentGlyphIDs[k])
                                     continue;
@@ -6178,6 +6633,7 @@ namespace UnityEngine.TextCore.Text
 
         TextElement GetTextElement(TextGenerationSettings generationSettings, uint unicode, FontAsset fontAsset, FontStyles fontStyle, TextFontWeight fontWeight, out bool isUsingAlternativeTypeface)
         {
+            bool isMainThread = !JobsUtility.IsExecutingJob;
             //Debug.Log("Unicode: " + unicode.ToString("X8"));
 
             TextSettings textSettings = generationSettings.textSettings;
@@ -6214,8 +6670,9 @@ namespace UnityEngine.TextCore.Text
                 return character;
             }
 
+            bool fontAssetEquals = isMainThread ? fontAsset.instanceID == generationSettings.fontAsset.instanceID : fontAsset == generationSettings.fontAsset;
             // Search for the character in the primary font asset if not the current font asset
-            if (fontAsset.instanceID != generationSettings.fontAsset.instanceID)
+            if (!fontAssetEquals)
             {
                 // Search primary font asset
                 character = FontAssetUtilities.GetCharacterFromFontAsset(unicode, generationSettings.fontAsset, false, fontStyle, fontWeight, out isUsingAlternativeTypeface);
@@ -6281,6 +6738,8 @@ namespace UnityEngine.TextCore.Text
             // Search for the character in the Default Sprite Asset assigned in the settings file.
             if (textSettings.defaultSpriteAsset != null)
             {
+                if (!isMainThread && textSettings.defaultSpriteAsset.m_SpriteCharacterLookup == null)
+                    return null;
                 SpriteCharacter spriteCharacter = FontAssetUtilities.GetSpriteCharacterFromSpriteAsset(unicode, textSettings.defaultSpriteAsset, true);
 
                 if (spriteCharacter != null)
@@ -6611,7 +7070,7 @@ namespace UnityEngine.TextCore.Text
                     int endTagIndex;
 
                     // Check if Tag is valid. If valid, skip to the end of the validated tag.
-                    if (ValidateHtmlTag(m_TextProcessingArray, i + 1, out endTagIndex, generationSettings, textInfo))
+                    if (ValidateHtmlTag(m_TextProcessingArray, i + 1, out endTagIndex, generationSettings, textInfo, out bool isThreadSuccess))
                     {
                         i = endTagIndex;
 

@@ -5,8 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Internal;
-using UnityEngine.UIElements.StyleSheets.Syntax;
-using static UnityEngine.UIElements.Columns;
 
 namespace UnityEngine.UIElements
 {
@@ -226,7 +224,7 @@ namespace UnityEngine.UIElements
                     {
                         if (asset != null)
                             return asset.Instantiate();
-                        return new Label(Column.k_InvalidTemplateError);
+                        return new Label(BaseVerticalCollectionView.k_InvalidTemplateError);
                     };
                 }
 
@@ -239,14 +237,13 @@ namespace UnityEngine.UIElements
                     {
                         if (asset != null)
                             return asset.Instantiate();
-                        return new Label(Column.k_InvalidTemplateError);
+                        return new Label(BaseVerticalCollectionView.k_InvalidTemplateError);
                     };
                 }
             }
         }
 
         internal const float kDefaultMinWidth = 35f;
-        static readonly string k_InvalidTemplateError = "Not Found";
 
         string m_Name;
 

@@ -28,7 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string id => k_Id;
         public override string displayName => L10n.Tr("My Assets");
-        public override PageIcon icon => PageIcon.MyAssets;
+        public override Icon icon => Icon.MyAssetsPage;
 
         public override IEnumerable<PageFilters.Status> supportedStatusFilters => k_SupportedStatusFilters;
         public override IEnumerable<PageSortOption> supportedSortOptions => k_SupportedSortOptions;

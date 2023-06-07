@@ -379,15 +379,28 @@ namespace UnityEditor
 
         static RenderTexture GetPreviewTexture(int width,  int height, bool hdr)
         {
-            int antiAliasing = Mathf.Max(1, QualitySettings.antiAliasing);
-            if (s_PreviewTexture == null || s_PreviewTexture.width != width || s_PreviewTexture.height != height || s_PreviewTexture.antiAliasing != antiAliasing)
+            if (s_PreviewTexture != null
+                && (s_PreviewTexture.width != width || s_PreviewTexture.height != height
+                    || (GraphicsSettings.currentRenderPipeline == null && s_PreviewTexture.antiAliasing != QualitySettings.antiAliasing)))
             {
-                if (s_PreviewTexture != null)
-                    s_PreviewTexture.Release();
+                s_PreviewTexture.Release();
+            }
 
+            if (s_PreviewTexture == null)
+            {
                 GraphicsFormat format = (hdr) ? SystemInfo.GetGraphicsFormat(DefaultFormat.HDR) : SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
                 s_PreviewTexture = new RenderTexture(width, height, 24, format);
-                s_PreviewTexture.antiAliasing = antiAliasing;
+            }
+
+            if (GraphicsSettings.currentRenderPipeline == null)
+            {
+                // Built-in Render Pipeline.
+                s_PreviewTexture.antiAliasing = QualitySettings.antiAliasing;
+            }
+            else
+            {
+                // SRPs
+                s_PreviewTexture.enableRandomWrite = true;
             }
 
             return s_PreviewTexture;

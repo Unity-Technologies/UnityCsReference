@@ -5,8 +5,6 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
-using UnityEngine.TextCore.Text;
-using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
@@ -23,13 +21,13 @@ namespace UnityEngine.UIElements
     /// </summary>
     public partial class TextElement : BindableElement, ITextElement, INotifyValueChanged<string>
     {
-        internal static readonly DataBindingProperty textProperty = nameof(text);
-        internal static readonly DataBindingProperty enableRichTextProperty = nameof(enableRichText);
-        internal static readonly DataBindingProperty emojiFallbackSupportProperty = nameof(emojiFallbackSupport);
-        internal static readonly DataBindingProperty parseEscapeSequencesProperty = nameof(parseEscapeSequences);
-        internal static readonly DataBindingProperty isElidedProperty = nameof(isElided);
-        internal static readonly DataBindingProperty displayTooltipWhenElidedProperty = nameof(displayTooltipWhenElided);
-        internal static readonly DataBindingProperty valueProperty = nameof(value);
+        internal static readonly BindingId textProperty = nameof(text);
+        internal static readonly BindingId enableRichTextProperty = nameof(enableRichText);
+        internal static readonly BindingId emojiFallbackSupportProperty = nameof(emojiFallbackSupport);
+        internal static readonly BindingId parseEscapeSequencesProperty = nameof(parseEscapeSequences);
+        internal static readonly BindingId isElidedProperty = nameof(isElided);
+        internal static readonly BindingId displayTooltipWhenElidedProperty = nameof(displayTooltipWhenElided);
+        internal static readonly BindingId valueProperty = nameof(value);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
@@ -310,35 +308,21 @@ namespace UnityEngine.UIElements
         {
             UpdateVisibleText();
 
-            DrawText(mgc);
+            if (TextUtilities.IsFontAssigned(this))
+                mgc.meshGenerator.textJobSystem.GenerateText(mgc, this);
+        }
+
+        internal void OnGenerateTextOver(MeshGenerationContext mgc)
+        {
+            if (selection.HasSelection() && selectingManipulator.HasFocus())
+                DrawHighlighting(mgc);
+            else if (!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
+                DrawCaret(mgc);
 
             if (ShouldElide() && uitkTextHandle.TextLibraryCanElide())
                 isElided = uitkTextHandle.IsElided();
 
             UpdateTooltip();
-
-            if(selection.HasSelection() && selectingManipulator.HasFocus())
-                DrawHighlighting(mgc);
-            else if(!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
-                DrawCaret(mgc);
-        }
-
-        internal void DrawText(MeshGenerationContext mgc)
-        {
-            if (TextUtilities.IsFontAssigned(this))
-            {
-                MeshInfo[] meshInfo = uitkTextHandle.Update();
-
-                // If multiple colors are required (e.g., color tags are used), then ignore the dynamic-color hint
-                // since we cannot store multiple colors for a given text element.
-                bool hasMultipleColors = uitkTextHandle.textInfo.hasMultipleColors;
-                if (hasMultipleColors)
-                    renderChainData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
-                else
-                    renderChainData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
-
-                mgc.meshGenerator.DrawText(meshInfo, contentRect.min, hasMultipleColors);
-            }
         }
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)

@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using UnityEditor.Actions;
 using UnityEditor.AnimatedValues;
 using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
@@ -1979,7 +1980,7 @@ namespace UnityEditor
         private void CreateCameraTargetTexture(Rect cameraRect, bool hdr)
         {
             // make sure we actually support R16G16B16A16_SFloat
-            GraphicsFormat format = (hdr && SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, FormatUsage.Render)) ? GraphicsFormat.R16G16B16A16_SFloat : SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
+            GraphicsFormat format = (hdr && SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, GraphicsFormatUsage.Render)) ? GraphicsFormat.R16G16B16A16_SFloat : SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
 
             if (m_SceneTargetTexture != null)
             {
@@ -2640,6 +2641,14 @@ namespace UnityEditor
             onGUIEnded?.Invoke(this);
             if (m_StageHandling != null)
                 m_StageHandling.EndOnGUI();
+        }
+
+        // This will eventually be modified to use the mouse right-click.
+        [Shortcut("Scene View/Show Actions Menu", typeof(SceneView), KeyCode.A)]
+        static void OpenActionsMenu(ShortcutArguments args)
+        {
+            if (args.context is SceneView)
+                ContextMenuUtility.ShowActionMenu();
         }
 
         [Shortcut("Scene View/Render Mode/Shaded", typeof(SceneView))]

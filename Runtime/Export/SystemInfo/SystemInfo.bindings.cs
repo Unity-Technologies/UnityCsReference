@@ -974,11 +974,25 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::SupportsMipStreaming")]
         static extern bool SupportsMipStreaming();
 
+        [Obsolete("Use overload with a GraphicsFormatUsage parameter instead", false)]
+        public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
+        {
+            GraphicsFormatUsage graphicsFormatUsage = (GraphicsFormatUsage)(1 << (int)usage);
+            return IsFormatSupported(format, graphicsFormatUsage);
+        }
+
         [FreeFunction("ScriptingGraphicsCaps::IsFormatSupported")]
-        extern public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage);
+        extern public static bool IsFormatSupported(GraphicsFormat format, GraphicsFormatUsage usage);
+
+        [Obsolete("Use overload with a GraphicsFormatUsage parameter instead", false)]
+        public static GraphicsFormat GetCompatibleFormat(GraphicsFormat format, FormatUsage usage)
+        {
+            GraphicsFormatUsage graphicsFormatUsage = (GraphicsFormatUsage)(1 << (int)usage);
+            return GetCompatibleFormat(format, graphicsFormatUsage);
+        }
 
         [FreeFunction("ScriptingGraphicsCaps::GetCompatibleFormat")]
-        extern public static GraphicsFormat GetCompatibleFormat(GraphicsFormat format, FormatUsage usage);
+        extern public static GraphicsFormat GetCompatibleFormat(GraphicsFormat format, GraphicsFormatUsage usage);
 
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsFormat")]
         extern public static GraphicsFormat GetGraphicsFormat(DefaultFormat format);

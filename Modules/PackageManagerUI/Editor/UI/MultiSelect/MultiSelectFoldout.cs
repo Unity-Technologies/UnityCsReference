@@ -12,16 +12,16 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public string headerTextTemplate { get; set; }
 
-        private List<IPackageVersion> m_Versions = new List<IPackageVersion>();
+        private List<IPackageVersion> m_Versions = new();
         public List<IPackageVersion> versions => m_Versions;
 
-        protected PackageToolBarRegularButton m_Button;
-        public PackageToolBarRegularButton button => m_Button;
+        public PackageAction action { get; }
 
-        protected Toggle m_Toggle;
-        protected VisualElement m_Container;
+        private Toggle m_Toggle;
+        private PackageToolBarButton m_Button;
+        private VisualElement m_Container;
 
-        public MultiSelectFoldout(PackageToolBarRegularButton button = null)
+        public MultiSelectFoldout(PackageAction action = null)
         {
             m_Toggle = new Toggle { name = "multiSelectFoldoutToggle", classList = { "containerTitle", "expander" } };
             m_Container = new VisualElement { name = "multiSelectFoldoutContainer" };
@@ -31,9 +31,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             SetExpanded(false);
             m_Toggle.RegisterValueChangedCallback(evt => SetExpanded(evt.newValue));
 
-            m_Button = button;
-            if (button != null)
-                m_Toggle.Add(button.element);
+            this.action = action;
+            if (action == null)
+                return;
+
+            m_Button = new PackageToolBarSimpleButton(action);
+            m_Toggle.Add(m_Button);
         }
 
         public virtual void Refresh()

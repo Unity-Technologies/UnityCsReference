@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Unity.Properties;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -173,6 +174,12 @@ namespace UnityEditor.UIElements.Debugger
             }
 
             m_SelectedElement.viewDataKey = EditorGUILayout.TextField("View Data Key", m_SelectedElement.viewDataKey);
+
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.TextField("Data Source (type)", null == m_SelectedElement.dataSource ? "<none>" : TypeUtility.GetTypeDisplayName(m_SelectedElement.dataSource.GetType()));
+                EditorGUILayout.TextField("Data Source Path", m_SelectedElement.dataSourcePath.ToString());
+            }
 
             m_SelectedElement.pickingMode = (PickingMode)EditorGUILayout.EnumPopup("Picking Mode", m_SelectedElement.pickingMode);
 

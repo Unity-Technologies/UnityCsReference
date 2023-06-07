@@ -13,7 +13,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class TextField : TextInputBaseField<string>
     {
-        internal static readonly DataBindingProperty multilineProperty = nameof(multiline);
+        internal static readonly BindingId multilineProperty = nameof(multiline);
 
         // This property to alleviate the fact we have to cast all the time
         TextInput textInput => (TextInput)textInputBase;
@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : TextInputBaseField<string>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
             #pragma warning disable 649
-            [SerializeField] private bool multiline;
+            [SerializeField, MultilineDecorator] private bool multiline;
             #pragma warning restore 649
 
             public override object CreateInstance() => new TextField();

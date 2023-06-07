@@ -6,14 +6,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class UnlockFoldout : MultiSelectFoldout
     {
-        public UnlockFoldout(PageManager pageManager) : base(new PackageUnlockButton(pageManager))
+        public UnlockFoldout(PageManager pageManager) : base(new UnlockAction(pageManager))
         {
             headerTextTemplate = L10n.Tr("Unlock {0}");
         }
 
         public override bool AddPackageVersion(IPackageVersion version)
         {
-            if (!m_Button.GetActionState(version, out _, out _).HasFlag(PackageActionState.Visible))
+            if (!action.GetActionState(version, out _, out _).HasFlag(PackageActionState.Visible))
                 return false;
             return base.AddPackageVersion(version);
         }

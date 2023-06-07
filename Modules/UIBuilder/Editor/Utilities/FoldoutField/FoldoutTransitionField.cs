@@ -70,19 +70,19 @@ namespace Unity.UI.Builder
                 styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(k_UssLightSkinPath));
 
             propertyField = this.Q<CategoryDropdownField>(StylePropertyId.TransitionProperty.UssName());
-            propertyField.SetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName, propertyField.GetFirstAncestorOfType<BuilderStyleRow>());
+            propertyField.SetContainingRow(propertyField.GetFirstAncestorOfType<BuilderStyleRow>());
             propertyField.RegisterValueChangedCallback(OnPropertyChanged);
 
             durationField = this.Q<DimensionStyleField>(StylePropertyId.TransitionDuration.UssName());
-            durationField.SetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName, durationField.GetFirstAncestorOfType<BuilderStyleRow>());
+            durationField.SetContainingRow(durationField.GetFirstAncestorOfType<BuilderStyleRow>());
             durationField.RegisterValueChangedCallback(OnDurationChanged);
 
             timingFunctionField = this.Q<EnumField>(StylePropertyId.TransitionTimingFunction.UssName());
-            timingFunctionField.SetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName, timingFunctionField.GetFirstAncestorOfType<BuilderStyleRow>());
+            timingFunctionField.SetContainingRow(timingFunctionField.GetFirstAncestorOfType<BuilderStyleRow>());
             timingFunctionField.RegisterValueChangedCallback(OnTimingFunctionChanged);
 
             delayField = this.Q<DimensionStyleField>(StylePropertyId.TransitionDelay.UssName());
-            delayField.SetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName, delayField.GetFirstAncestorOfType<BuilderStyleRow>());
+            delayField.SetContainingRow(delayField.GetFirstAncestorOfType<BuilderStyleRow>());
             delayField.RegisterValueChangedCallback(OnDelayChanged);
 
             RemoveTransitionButton = new Button(RemoveTransition);
@@ -198,7 +198,7 @@ namespace Unity.UI.Builder
 
         void ApplyOverrides()
         {
-            header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, overrides.Any());
+            header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, overrides.HasAnyFlag());
             propertyField.parent.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, (overrides & TransitionChangeType.Property) == TransitionChangeType.Property);
             durationField.parent.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, (overrides & TransitionChangeType.Duration) == TransitionChangeType.Duration);
             timingFunctionField.parent.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, (overrides & TransitionChangeType.TimingFunction) == TransitionChangeType.TimingFunction);

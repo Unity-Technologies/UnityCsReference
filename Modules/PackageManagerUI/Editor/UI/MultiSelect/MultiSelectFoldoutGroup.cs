@@ -6,14 +6,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class MultiSelectFoldoutGroup : IMultiSelectFoldoutElement
     {
-        public MultiSelectFoldout mainFoldout { get; private set; }
-        public MultiSelectFoldout inProgressFoldout { get; private set; }
+        public MultiSelectFoldout mainFoldout { get; }
+        public MultiSelectFoldout inProgressFoldout { get; }
 
-        public PackageToolBarRegularButton mainButton => mainFoldout.button;
-        public PackageToolBarRegularButton cancelButton => inProgressFoldout.button;
+        public PackageAction mainAction => mainFoldout.action;
+        public PackageAction cancelAction => inProgressFoldout.action;
 
-        public MultiSelectFoldoutGroup(PackageToolBarRegularButton mainButton, PackageToolBarRegularButton cancelButton = null)
-            : this(new MultiSelectFoldout(mainButton), new MultiSelectFoldout(cancelButton))
+        public MultiSelectFoldoutGroup(PackageAction mainAction, PackageAction cancelAction = null)
+            : this(new MultiSelectFoldout(mainAction), new MultiSelectFoldout(cancelAction))
         {
         }
 
@@ -25,10 +25,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool AddPackageVersion(IPackageVersion version)
         {
-            var state = mainButton.GetActionState(version, out _, out _);
+            var state = mainAction.GetActionState(version, out _, out _);
             if (state.HasFlag(PackageActionState.InProgress))
                 inProgressFoldout.AddPackageVersion(version);
-            else if (state == PackageActionState.Visible || state.HasFlag(PackageActionState.DisabledGlobally))
+            else if (state == PackageActionState.Visible || state.HasFlag(PackageActionState.DisabledTemporarily))
                 mainFoldout.AddPackageVersion(version);
             else
                 return false;

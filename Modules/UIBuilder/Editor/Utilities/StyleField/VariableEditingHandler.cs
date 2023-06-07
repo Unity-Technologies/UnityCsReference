@@ -19,6 +19,7 @@ namespace Unity.UI.Builder
         IVisualElementScheduledItem m_ScheduledShowPopup;
 
         string m_InitialText;
+        bool m_InitialEnabledState;
         bool m_ShowingStyleVariableField = false;
         Builder m_Builder;
         BuilderInspector m_Inspector;
@@ -131,6 +132,9 @@ namespace Unity.UI.Builder
         void OnVariableEditingFinished()
         {
             var newVarName = variableField.value;
+
+            targetField.SetEnabled(m_InitialEnabledState);
+
             if (m_InitialText != newVarName)
             {
                 SetVariable(newVarName);
@@ -143,7 +147,7 @@ namespace Unity.UI.Builder
         {
             if (string.IsNullOrEmpty(variableName))
             {
-                m_Inspector.styleFields.UnsetStylePropertyForElement(targetField);
+                m_Inspector.styleFields.UnsetStylePropertyForElement(targetField, true);
             }
             else
             {
@@ -164,6 +168,8 @@ namespace Unity.UI.Builder
             variableField.isReadOnly = !editingEnabled;
             variableField.placeholderText = editingEnabled ? s_PlaceholderText : s_ReadOnlyPlaceholderText;
             variableField.value = m_InitialText = varName;
+            m_InitialEnabledState = targetField.enabledSelf;
+            targetField.SetEnabled(true);
 
             var visualInput = targetField.GetVisualInput();
 
@@ -190,14 +196,14 @@ namespace Unity.UI.Builder
             DisableEditingTemporarily();
         }
 
-        void OnMouseDownEvent(MouseDownEvent e)
+        void OnPointerDownEvent(PointerDownEvent e)
         {
             if (e.button != (int)MouseButton.LeftMouse)
                 return;
 
             if (e.clickCount == 1 && (variableInfoTooltip == null || variableInfoTooltip.currentHandler != this) && !m_PopupTemporarilyDisabled && !isVariableFieldVisible)
             {
-                m_ScheduledShowPopup = labelElement.schedule.Execute(() => ShowPopup(this)).StartingIn(BuilderConstants.DoubleClickDelay);
+                m_ScheduledShowPopup = targetField.schedule.Execute(() => ShowPopup(this)).StartingIn(BuilderConstants.DoubleClickDelay);
             }
             else if (e.clickCount == 2 && !m_EditingTemporarilyDisabled)
             {
@@ -209,15 +215,15 @@ namespace Unity.UI.Builder
 
         public StyleProperty GetStyleProperty()
         {
-            var cSharpStyleName = BuilderInspectorStyleFields.ConvertUssStyleNameToCSharpStyleName(styleName);
+            var cSharpStyleName = BuilderNameUtilities.ConvertUssNameToStyleName(styleName);
             return BuilderInspectorStyleFields.GetLastStyleProperty(m_Inspector.currentRule, cSharpStyleName);
         }
-        
+
         public void RefreshField()
         {
             if (m_Row == null || m_Inspector == null)
                 return;
-            
+
             // Disable completion on text field-based property fields when editing inline styles
             if (m_CompleterOnTarget != null)
                 m_CompleterOnTarget.enabled = BuilderSharedStyles.IsSelectorElement(m_Inspector.currentVisualElement);
@@ -330,7 +336,7 @@ namespace Unity.UI.Builder
             if (m_PopupTemporarilyDisabled)
                 return;
             m_PopupTemporarilyDisabled = true;
-            labelElement.schedule.Execute(() => m_PopupTemporarilyDisabled = false).ExecuteLater(s_InteractionDisableDelay);
+            targetField.schedule.Execute(() => m_PopupTemporarilyDisabled = false).ExecuteLater(s_InteractionDisableDelay);
         }
 
         void DisableEditingTemporarily()
@@ -338,7 +344,7 @@ namespace Unity.UI.Builder
             if (m_EditingTemporarilyDisabled)
                 return;
             m_EditingTemporarilyDisabled = true;
-            labelElement.schedule.Execute(() => m_EditingTemporarilyDisabled = false).ExecuteLater(s_InteractionDisableDelay);
+            targetField.schedule.Execute(() => m_EditingTemporarilyDisabled = false).ExecuteLater(s_InteractionDisableDelay);
         }
 
         static int AdjustDisplayIndexForTransitions(int index, StylePropertyManipulator manipulator)

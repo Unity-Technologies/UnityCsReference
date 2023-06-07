@@ -14,6 +14,8 @@ namespace UnityEditor.UIElements.Bindings
     {
         static ObjectPool<ListViewSerializedObjectBinding> s_Pool = new (() => new ListViewSerializedObjectBinding(), 32);
 
+        protected override string bindingId { get; } = BindingExtensions.s_SerializedBindingId;
+
         ListView listView
         {
             get => boundElement as ListView;
@@ -40,6 +42,7 @@ namespace UnityEditor.UIElements.Bindings
         {
             var newBinding = s_Pool.Get();
             newBinding.isReleased = false;
+            listView.SetBinding(BindingExtensions.s_SerializedBindingId, newBinding);
             newBinding.SetBinding(listView, context, prop);
         }
 
@@ -279,8 +282,11 @@ namespace UnityEditor.UIElements.Bindings
                 listView.arraySizeField.showMixedValue = m_ArraySize.hasMultipleDifferentValues;
         }
 
-        public override void Release()
+        public override void OnRelease()
         {
+            if (isReleased)
+                return;
+
             isReleased = true;
 
             ClearListView();
@@ -324,11 +330,11 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        public override void Update()
+        public override BindingResult OnUpdate(in BindingContext context)
         {
             if (isReleased)
             {
-                return;
+                return new BindingResult(BindingStatus.Pending);
             }
 
             try
@@ -336,7 +342,9 @@ namespace UnityEditor.UIElements.Bindings
                 ResetUpdate();
 
                 if (!IsSynced())
-                    return;
+                {
+                    return new BindingResult(BindingStatus.Pending);
+                }
 
                 isUpdating = true;
 
@@ -345,7 +353,7 @@ namespace UnityEditor.UIElements.Bindings
                 if (listViewShowsMixedValue ||
                     (listView.arraySizeField == null || int.Parse(listView.arraySizeField.value) == currentArraySize) &&
                     listView.sourceIncludesArraySize == m_LastSourceIncludesArraySize)
-                    return;
+                    return default;
 
                 if (currentArraySize != m_ListViewArraySize ||
                     listView.sourceIncludesArraySize != m_LastSourceIncludesArraySize)
@@ -353,7 +361,7 @@ namespace UnityEditor.UIElements.Bindings
                     UpdateArraySize();
                 }
 
-                return;
+                return default;
             }
             catch (ArgumentNullException)
             {
@@ -365,7 +373,8 @@ namespace UnityEditor.UIElements.Bindings
             }
 
             // We unbind here
-            Release();
+            Unbind();
+            return new BindingResult(BindingStatus.Failure, "Failed to update ListView binding");
         }
     }
 

@@ -379,9 +379,15 @@ namespace UnityEngine.UIElements.UIR
                 }
             }
 
-            m_VisualChangesProcessor.ScheduleMeshGenerationJobs();
-
             m_MeshGenerationDeferrer.ProcessDeferredWork(m_VisualChangesProcessor.meshGenerationContext);
+
+            // Mesh Generation doesn't currently support multiple rounds of generation, so we must flush all deferred
+            // work and then schedule the MeshGenerationJobs (and process it's associated callback). Once we make it
+            // support multiple rounds, we should move the following call above ProcessDeferredWork and get rid of the
+            // second call to ProcessDeferredWork.
+            m_VisualChangesProcessor.ScheduleMeshGenerationJobs();
+            m_MeshGenerationDeferrer.ProcessDeferredWork(m_VisualChangesProcessor.meshGenerationContext);
+
             m_VisualChangesProcessor.ConvertEntriesToCommands(ref m_Stats);
             jobManager.CompleteConvertMeshJobs();
             jobManager.CompleteCopyMeshJobs();

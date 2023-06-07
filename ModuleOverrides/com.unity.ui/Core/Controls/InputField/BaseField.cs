@@ -14,23 +14,28 @@ namespace UnityEngine.UIElements
         string label { get; }
     }
 
+    internal interface IDelayedField
+    {
+        bool isDelayed { get; }
+    }
+
     /// <summary>
     /// <para>Abstract base class for controls.</para>
     /// <para>A BaseField is a base class for field elements like <see cref="TextField"/> and <see cref="IntegerField"/>.
-    /// To align a BaseField element automatically with other fields in an Inspector window, 
-    /// use the @@.unity-base-field__aligned@@ USS class. This style class is designed for use with 
+    /// To align a BaseField element automatically with other fields in an Inspector window,
+    /// use the @@.unity-base-field__aligned@@ USS class. This style class is designed for use with
     /// Inspector elements like <see cref="PropertyField"/>, which has the style class by default.
-    /// However, if you manually add a child BaseField element to a PropertyField, you must add 
+    /// However, if you manually add a child BaseField element to a PropertyField, you must add
     /// the style class manually.</para>
-    /// <para>When the style class is present, the field automatically calculates the label width 
-    /// to align with other fields in the Inspector window. If there are IMGUI fields present, 
+    /// <para>When the style class is present, the field automatically calculates the label width
+    /// to align with other fields in the Inspector window. If there are IMGUI fields present,
     /// UI Toolkit fields are aligned with them for consistency and compatibility.</para>
     /// </summary>
     public abstract class BaseField<TValueType> : BindableElement, INotifyValueChanged<TValueType>, IMixedValueSupport, IPrefixLabel
     {
-        internal static readonly DataBindingProperty valueProperty = nameof(value);
-        internal static readonly DataBindingProperty labelProperty = nameof(label);
-        internal static readonly DataBindingProperty showMixedValueProperty = nameof(showMixedValue);
+        internal static readonly BindingId valueProperty = nameof(value);
+        internal static readonly BindingId labelProperty = nameof(label);
+        internal static readonly BindingId showMixedValueProperty = nameof(showMixedValue);
 
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BindableElement.UxmlSerializedData
@@ -330,6 +335,9 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            m_CachedInspectorElement = null;
+            m_CachedContextWidthElement = null;
+
             var currentElement = parent;
             while (currentElement != null)
             {
@@ -349,6 +357,7 @@ namespace UnityEngine.UIElements
 
             if (m_CachedInspectorElement == null)
             {
+                RemoveFromClassList(inspectorFieldUssClassName);
                 return;
             }
 
@@ -405,7 +414,7 @@ namespace UnityEngine.UIElements
 
         private void AlignLabel()
         {
-            if (!ClassListContains(alignedFieldUssClassName))
+            if (!ClassListContains(alignedFieldUssClassName) || m_CachedInspectorElement == null)
             {
                 return;
             }

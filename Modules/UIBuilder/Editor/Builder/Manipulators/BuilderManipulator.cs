@@ -19,28 +19,63 @@ namespace Unity.UI.Builder
         protected static readonly string s_RightStyleName = "right";
         protected static readonly string s_BottomStyleName = "bottom";
 
-        protected enum TrackedStyle
+        [Flags]
+        protected enum TrackedStyles
         {
-            Width,
-            Height,
-            Left,
-            Top,
-            Right,
-            Bottom
+            None = 0,
+            Width = 1,
+            Height = 2,
+            Left = 4,
+            Top = 8,
+            Right = 16,
+            Bottom = 32,
+            All = Width | Height | Left | Top | Right | Bottom
         }
+
+        private static readonly TrackedStyles[] s_TrackedStyles = { TrackedStyles.Width, TrackedStyles.Height, TrackedStyles.Left, TrackedStyles.Top, TrackedStyles.Right, TrackedStyles.Bottom };
 
         BuilderPaneWindow m_PaneWindow;
         protected BuilderSelection m_Selection;
         protected VisualTreeAsset m_VisualTreeAsset;
+        protected BuilderBindingsCacheSubscriber m_BindingsCacheSubscriber;
 
         protected List<VisualElement> m_AbsoluteOnlyHandleElements;
+
+        protected TrackedStyles m_BoundStyles = TrackedStyles.None;
 
         public BuilderManipulator()
         {
             m_AbsoluteOnlyHandleElements = new List<VisualElement>();
+            m_BindingsCacheSubscriber = new BuilderBindingsCacheSubscriber((_, _) =>  UpdateBoundStyles());
+            foreach (var trackedStyle in s_TrackedStyles)
+            {
+                var styleName = GetStyleName(trackedStyle);
+                var propertyPath = BuilderConstants.StylePropertyPathPrefix + BuilderNameUtilities.ConvertStyleUssNameToCSharpName(styleName);
+
+                m_BindingsCacheSubscriber.filteredProperties.Add(propertyPath);
+            }
         }
 
-        public virtual void Activate(BuilderPaneWindow paneWindow, BuilderSelection selection, VisualTreeAsset visualTreeAsset, VisualElement target)
+        protected virtual void UpdateBoundStyles()
+        {
+            m_BoundStyles = TrackedStyles.None;
+
+            foreach (var trackedStyle in s_TrackedStyles)
+            {
+                var styleName = GetStyleName(trackedStyle);
+                var propertyPath = BuilderConstants.StylePropertyPathPrefix + BuilderNameUtilities.ConvertStyleUssNameToCSharpName(styleName);
+
+                if (m_BindingsCacheSubscriber.cache.HasResolvedBinding(m_Target, propertyPath))
+                    m_BoundStyles |= trackedStyle;
+            }
+        }
+
+        protected bool AreStylesBound(TrackedStyles styles)
+        {
+            return (m_BoundStyles & styles) != 0;
+        }
+
+        public virtual void Activate(BuilderPaneWindow paneWindow, BuilderSelection selection, VisualTreeAsset visualTreeAsset, VisualElement target, BuilderBindingsCache bindingsCache)
         {
             base.Activate(target);
 
@@ -50,6 +85,14 @@ namespace Unity.UI.Builder
             m_PaneWindow = paneWindow;
             m_Selection = selection;
             m_VisualTreeAsset = visualTreeAsset;
+            m_BindingsCacheSubscriber.cache = bindingsCache;
+            UpdateBoundStyles();
+        }
+
+        public override void Deactivate()
+        {
+            base.Deactivate();
+            m_BindingsCacheSubscriber.cache = null;
         }
 
         protected override void SetStylesFromTargetStyles()
@@ -84,38 +127,38 @@ namespace Unity.UI.Builder
 
         ///
 
-        protected string GetStyleName(TrackedStyle trackedStyle)
+        protected static string GetStyleName(TrackedStyles trackedStyles)
         {
-            switch (trackedStyle)
+            switch (trackedStyles)
             {
-                case TrackedStyle.Width: return s_WidthStyleName;
-                case TrackedStyle.Height: return s_HeightStyleName;
-                case TrackedStyle.Left: return s_LeftStyleName;
-                case TrackedStyle.Top: return s_TopStyleName;
-                case TrackedStyle.Right: return s_RightStyleName;
-                case TrackedStyle.Bottom: return s_BottomStyleName;
+                case TrackedStyles.Width: return s_WidthStyleName;
+                case TrackedStyles.Height: return s_HeightStyleName;
+                case TrackedStyles.Left: return s_LeftStyleName;
+                case TrackedStyles.Top: return s_TopStyleName;
+                case TrackedStyles.Right: return s_RightStyleName;
+                case TrackedStyles.Bottom: return s_BottomStyleName;
             }
             return null;
         }
 
-        protected float GetResolvedStyleValue(TrackedStyle trackedStyle)
+        protected float GetResolvedStyleValue(TrackedStyles trackedStyles)
         {
-            return GetResolvedStyleFloat(trackedStyle, m_Target);
+            return GetResolvedStyleFloat(trackedStyles, m_Target);
         }
 
-        protected float GetResolvedStyleFloat(TrackedStyle trackedStyle, VisualElement target)
+        protected float GetResolvedStyleFloat(TrackedStyles trackedStyles, VisualElement target)
         {
             if (target == null)
                 return 0;
 
-            switch (trackedStyle)
+            switch (trackedStyles)
             {
-                case TrackedStyle.Width: return target.resolvedStyle.width;
-                case TrackedStyle.Height: return target.resolvedStyle.height;
-                case TrackedStyle.Left: return target.resolvedStyle.left;
-                case TrackedStyle.Top: return target.resolvedStyle.top;
-                case TrackedStyle.Right: return target.resolvedStyle.right;
-                case TrackedStyle.Bottom: return target.resolvedStyle.bottom;
+                case TrackedStyles.Width: return target.resolvedStyle.width;
+                case TrackedStyles.Height: return target.resolvedStyle.height;
+                case TrackedStyles.Left: return target.resolvedStyle.left;
+                case TrackedStyles.Top: return target.resolvedStyle.top;
+                case TrackedStyles.Right: return target.resolvedStyle.right;
+                case TrackedStyles.Bottom: return target.resolvedStyle.bottom;
             }
             return 0;
         }
@@ -130,82 +173,81 @@ namespace Unity.UI.Builder
             return styleLength == StyleKeyword.None || styleLength == StyleKeyword.Auto;
         }
 
-        protected bool IsNoneOrAuto(TrackedStyle trackedStyle)
+        protected bool IsNoneOrAuto(TrackedStyles trackedStyles)
         {
             if (m_Target == null)
                 return false;
 
-            switch (trackedStyle)
+            switch (trackedStyles)
             {
-                case TrackedStyle.Width: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.width);
-                case TrackedStyle.Height: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.height);
-                case TrackedStyle.Left: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.left);
-                case TrackedStyle.Top: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.top);
-                case TrackedStyle.Right: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.right);
-                case TrackedStyle.Bottom: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.bottom);
+                case TrackedStyles.Width: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.width);
+                case TrackedStyles.Height: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.height);
+                case TrackedStyles.Left: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.left);
+                case TrackedStyles.Top: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.top);
+                case TrackedStyles.Right: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.right);
+                case TrackedStyles.Bottom: return IsComputedStyleNoneOrAuto(m_Target.computedStyle.bottom);
             }
 
             return false;
         }
 
-        protected float GetMargineResolvedStyleFloat(TrackedStyle trackedStyle)
+        protected float GetMarginResolvedStyleFloat(TrackedStyles trackedStyles)
         {
-            var target = m_Target;
-            if (target == null)
+            if (m_Target == null)
                 return 0;
 
-            switch (trackedStyle)
+            switch (trackedStyles)
             {
-                case TrackedStyle.Left: return target.resolvedStyle.marginLeft;
-                case TrackedStyle.Top: return target.resolvedStyle.marginTop;
-                case TrackedStyle.Right: return target.resolvedStyle.marginRight;
-                case TrackedStyle.Bottom: return target.resolvedStyle.marginBottom;
+                case TrackedStyles.Left: return m_Target.resolvedStyle.marginLeft;
+                case TrackedStyles.Top: return m_Target.resolvedStyle.marginTop;
+                case TrackedStyles.Right: return m_Target.resolvedStyle.marginRight;
+                case TrackedStyles.Bottom: return m_Target.resolvedStyle.marginBottom;
             }
 
             return 0;
         }
 
-        protected float GetBorderResolvedStyleFloat(TrackedStyle trackedStyle, VisualElement target)
+        protected float GetBorderResolvedStyleFloat(TrackedStyles trackedStyles, VisualElement target)
         {
             if (target == null)
                 return 0;
 
-            switch (trackedStyle)
+            switch (trackedStyles)
             {
-                case TrackedStyle.Left: return target.resolvedStyle.borderLeftWidth;
-                case TrackedStyle.Top: return target.resolvedStyle.borderTopWidth;
-                case TrackedStyle.Right: return target.resolvedStyle.borderRightWidth;
-                case TrackedStyle.Bottom: return target.resolvedStyle.borderBottomWidth;
+                case TrackedStyles.Left: return target.resolvedStyle.borderLeftWidth;
+                case TrackedStyles.Top: return target.resolvedStyle.borderTopWidth;
+                case TrackedStyles.Right: return target.resolvedStyle.borderRightWidth;
+                case TrackedStyles.Bottom: return target.resolvedStyle.borderBottomWidth;
             }
 
             return 0;
         }
 
-        protected TrackedStyle GetOppositeStyle(TrackedStyle trackedStyle)
+        protected TrackedStyles GetOppositeStyle(TrackedStyles trackedStyles)
         {
-            switch (trackedStyle)
+            switch (trackedStyles)
             {
-                case TrackedStyle.Width: return TrackedStyle.Height;
-                case TrackedStyle.Height: return TrackedStyle.Width;
-                case TrackedStyle.Left: return TrackedStyle.Right;
-                case TrackedStyle.Top: return TrackedStyle.Bottom;
-                case TrackedStyle.Right: return TrackedStyle.Left;
-                case TrackedStyle.Bottom: return TrackedStyle.Top;
+                case TrackedStyles.Width: return TrackedStyles.Height;
+                case TrackedStyles.Height: return TrackedStyles.Width;
+                case TrackedStyles.Left: return TrackedStyles.Right;
+                case TrackedStyles.Top: return TrackedStyles.Bottom;
+                case TrackedStyles.Right: return TrackedStyles.Left;
+                case TrackedStyles.Bottom: return TrackedStyles.Top;
             }
 
             throw new Exception("Invalid tracked style.");
         }
 
-        protected TrackedStyle GetLengthStyle(TrackedStyle trackedStyle)
+        protected TrackedStyles GetLengthStyle(TrackedStyles trackedStyles)
         {
-            switch (trackedStyle)
+            switch (trackedStyles)
             {
-                case TrackedStyle.Width: return TrackedStyle.Width;
-                case TrackedStyle.Height: return TrackedStyle.Height;
-                case TrackedStyle.Left: return TrackedStyle.Width;
-                case TrackedStyle.Top: return TrackedStyle.Height;
-                case TrackedStyle.Right: return TrackedStyle.Width;
-                case TrackedStyle.Bottom: return TrackedStyle.Height;
+                case TrackedStyles.Width: return TrackedStyles.Width;
+                case TrackedStyles.Height: return TrackedStyles.Height;
+                case TrackedStyles.Left: return TrackedStyles.Width;
+                case TrackedStyles.Top: return TrackedStyles.Height;
+                case TrackedStyles.Right: return TrackedStyles.Width;
+                case TrackedStyles.Bottom: return TrackedStyles.Height;
             }
 
             throw new Exception("Invalid tracked style.");
@@ -213,12 +255,12 @@ namespace Unity.UI.Builder
 
         ///
 
-        protected float GetStyleSheetFloat(TrackedStyle trackedStyle)
+        protected float GetStyleSheetFloat(TrackedStyles trackedStyles)
         {
-            var name = GetStyleName(trackedStyle);
+            var name = GetStyleName(trackedStyles);
 
-            if (IsNoneOrAuto(trackedStyle))
-                return GetResolvedStyleFloat(trackedStyle, m_Target);
+            if (IsNoneOrAuto(trackedStyles))
+                return GetResolvedStyleFloat(trackedStyles, m_Target);
             else
                 return GetStyleSheetFloat(name);
         }
@@ -239,13 +281,16 @@ namespace Unity.UI.Builder
                 return styleSheet.GetFloat(styleProperty.values[0]);
         }
 
-        protected void SetStyleSheetValue(TrackedStyle trackedStyle, float value)
+        protected void SetStyleSheetValue(TrackedStyles trackedStyles, float value)
         {
-            var name = GetStyleName(trackedStyle);
+            if (AreStylesBound(trackedStyles))
+                return;
+
+            var name = GetStyleName(trackedStyles);
             SetStyleSheetValue(name, value);
         }
 
-        protected void SetStyleSheetValue(string styleName, float value)
+        void SetStyleSheetValue(string styleName, float value)
         {
             BuilderStyleUtilities.SetInlineStyleValue(m_VisualTreeAsset, m_Target, styleName, Mathf.Round(value));
         }

@@ -41,9 +41,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            var dropDownButton = new DropdownButton();
-            dropDownButton.name = "refreshButton";
-            refreshButtonContainer.Add(dropDownButton);
+            var dropdownButton = new DropdownButton();
+            dropdownButton.name = "refreshButton";
+            refreshButtonContainer.Add(dropdownButton);
 
             statusLabel.ShowTextTooltipOnSizeChange();
         }
@@ -60,8 +60,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_BackgroundFetchHandler.onCheckUpdateProgress += OnCheckUpdateProgress;
 
-            refreshButton.SetIcon("refresh");
-            refreshButton.iconTooltip = L10n.Tr("Refresh list");
+            refreshButton.SetIcon(Icon.Refresh);
+            refreshButton.mainButton.tooltip = L10n.Tr("Refresh list");
             refreshButton.clicked += () =>
             {
                 m_PageRefreshHandler.Refresh(m_PageManager.activePage);

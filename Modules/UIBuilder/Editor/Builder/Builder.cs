@@ -21,7 +21,7 @@ namespace Unity.UI.Builder
                     builder.SaveChanges();
             };
         }
-        
+
         BuilderSelection m_Selection;
 
         BuilderToolbar m_Toolbar;
@@ -31,6 +31,7 @@ namespace Unity.UI.Builder
         BuilderUxmlPreview m_UxmlPreview;
         BuilderUssPreview m_UssPreview;
         BuilderHierarchy m_Hierarchy;
+        BuilderBindingsCache m_BindingsCache;
 
         TwoPaneSplitView m_MiddleSplitView;
 
@@ -45,6 +46,7 @@ namespace Unity.UI.Builder
         public BuilderHierarchy hierarchy => m_Hierarchy;
 
         internal override bool liveReloadPreferenceDefault => true;
+        internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
 
         public bool codePreviewVisible
         {
@@ -114,6 +116,9 @@ namespace Unity.UI.Builder
             titleContent = GetLocalizedTitleContent();
             saveChangesMessage = BuilderConstants.SaveDialogSaveChangesPromptMessage;
 
+            m_BindingsCache = new BuilderBindingsCache();
+            m_BindingsCache.onBindingBecameUnresolved += OnEnableAfterAllSerialization;
+
             // Load assets.
             var builderTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.UIBuilderPackagePath + "/Builder.uxml");
 
@@ -134,7 +139,7 @@ namespace Unity.UI.Builder
             var contextMenuManipulator = new BuilderElementContextMenu(this, selection);
 
             // Create viewport first.
-            m_Viewport = new BuilderViewport(this, selection, contextMenuManipulator);
+            m_Viewport = new BuilderViewport(this, selection, contextMenuManipulator, m_BindingsCache);
             selection.documentRootElement = m_Viewport.documentRootElement;
             var overlayHelper = viewport.Q<OverlayPainterHelperElement>();
             overlayHelper.painter = m_HighlightOverlayPainter;
@@ -150,10 +155,11 @@ namespace Unity.UI.Builder
             var libraryDragger = new BuilderLibraryDragger(this, root, selection, m_Viewport, m_Viewport.parentTracker, hierarchy.container, libraryTooltipPreview) { builderStylesheetRoot = styleSheetsPane.container };
             m_Viewport.viewportDragger.builderHierarchyRoot = hierarchy.container;
             m_Library = new BuilderLibrary(this, m_Viewport, selection, libraryDragger, libraryTooltipPreview);
-            m_Inspector = new BuilderInspector(this, selection, m_HighlightOverlayPainter);
+            m_Inspector = new BuilderInspector(this, selection, m_HighlightOverlayPainter, m_BindingsCache, m_Viewport.notifications);
             m_Toolbar = new BuilderToolbar(this, selection, m_Viewport, hierarchy, m_Library, m_Inspector, libraryTooltipPreview);
             m_UxmlPreview = new BuilderUxmlPreview(this);
             m_UssPreview = new BuilderUssPreview(this, selection);
+
             root.Q("viewport").Add(m_Viewport);
             m_Viewport.toolbar.Add(m_Toolbar);
             root.Q("library").Add(m_Library);
@@ -194,6 +200,11 @@ namespace Unity.UI.Builder
             OnEnableAfterAllSerialization();
         }
 
+        private void UpdateBindingsCache()
+        {
+            m_BindingsCache?.UpdateCache(rootVisualElement.panel as Panel);
+        }
+
         void OnFirstDisplay(GeometryChangedEvent evt)
         {
             UpdatePreviewsVisibility();
@@ -203,6 +214,8 @@ namespace Unity.UI.Builder
 
         public override void OnEnableAfterAllSerialization()
         {
+            m_BindingsCache?.Clear();
+
             // Perform post-serialization functions.
             document.OnAfterBuilderDeserialize(m_Viewport.documentRootElement);
             m_Toolbar.OnAfterBuilderDeserialize();
@@ -264,6 +277,12 @@ namespace Unity.UI.Builder
                 rootVisualElement.RegisterCallback<AttachToPanelEvent>(e => SetupPanel());
         }
 
+        private void Update()
+        {
+            UpdateBindingsCache();
+            m_Inspector.UpdateBoundFields();
+        }
+
         void SetupPanel()
         {
             var panel = rootVisualElement.panel as BaseVisualElementPanel;
@@ -315,7 +334,7 @@ namespace Unity.UI.Builder
 
                 var window = GetWindow<Builder>();
                 window.RepaintImmediately();
-                window.m_Viewport.FitCanvas();
+                window.m_Viewport.ResizeCanvasToFitViewport();
             });
         }
     }

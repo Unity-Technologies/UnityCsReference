@@ -221,7 +221,7 @@ namespace UnityEditor.Presets
             {
                 if (boundElement.Value is IBindable bindable)
                 {
-                    if (!(bindable.binding is SerializedObjectBindingBase binding) || binding.boundProperty == null)
+                    if (!(boundElement.Value.GetBinding(BindingExtensions.s_SerializedBindingId) is SerializedObjectBindingBase binding) || binding.boundProperty == null)
                         continue;
 
                     var key = boundElement.Key;

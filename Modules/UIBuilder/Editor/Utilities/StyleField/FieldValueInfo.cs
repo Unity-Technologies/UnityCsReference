@@ -2,16 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEditor.UIElements.Debugger;
+using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
     /// <summary>
-    /// Represents the different ways the value of a field can be bound. 
+    /// Represents the different ways the value of a field can be bound.
     /// </summary>
     internal enum FieldValueBindingInfoType
     {
@@ -26,7 +28,11 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Bound to a USS variable
         /// </summary>
-        USSVariable
+        USSVariable,
+        /// <summary>
+        /// Bound to data binding
+        /// </summary>
+        Binding
     }
 
     /// <summary>
@@ -35,7 +41,7 @@ namespace Unity.UI.Builder
     internal static class FieldValueBindingInfoTypeExtensions
     {
         /// <summary>
-        /// Returns the text displayed in the inspector for a <see cref="FieldValueBindingInfoType"/> value. 
+        /// Returns the text displayed in the inspector for a <see cref="FieldValueBindingInfoType"/> value.
         /// </summary>
         /// <param name="type">The target type</param>
         /// <returns></returns>
@@ -50,7 +56,7 @@ namespace Unity.UI.Builder
     }
 
     /// <summary>
-    /// Provides information about how the value of a field is bound. 
+    /// Provides information about how the value of a field is bound.
     /// </summary>
     internal struct FieldValueBindingInfo
     {
@@ -86,7 +92,7 @@ namespace Unity.UI.Builder
             this.type = type;
             m_Data = default;
         }
-        
+
         /// <summary>
         /// Constructor
         /// </summary>
@@ -126,7 +132,21 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Indicates that the value of the underlying property is default.
         /// </summary>
-        Default
+        Default,
+        /// <summary>
+        /// Indicates that the value of the underlying VisualElement property is resolved from a Binding
+        /// </summary>
+        ResolvedBinding,
+        /// <summary>
+        /// Indicates that the value of the underlying VisualElement property is resolved from a Binding but the binding
+        /// is unresolved
+        /// </summary>
+        UnresolvedBinding,
+        /// <summary>
+        /// Indicates that the value of the underlying VisualElement property is resolved from a Binding but the binding
+        /// is unhandled
+        /// </summary>
+        UnhandledBinding
     }
 
     /// <summary>
@@ -143,7 +163,7 @@ namespace Unity.UI.Builder
             or FieldValueSourceInfoType.MatchingUSSSelector;
 
         /// <summary>
-        /// Returns the text displayed in the inspector for a <see cref="FieldValueSourceInfoType"/> value. 
+        /// Returns the text displayed in the inspector for a <see cref="FieldValueSourceInfoType"/> value.
         /// </summary>
         /// <param name="type">The target type</param>
         /// <returns></returns>
@@ -154,6 +174,9 @@ namespace Unity.UI.Builder
                 FieldValueSourceInfoType.Inherited => BuilderConstants.FieldValueSourceInfoTypeEnumInheritedDisplayString,
                 FieldValueSourceInfoType.MatchingUSSSelector => BuilderConstants.FieldValueSourceInfoTypeEnumUSSSelectorDisplayString,
                 FieldValueSourceInfoType.LocalUSSSelector => BuilderConstants.FieldValueSourceInfoTypeEnumLocalUSSSelectorDisplayString,
+                FieldValueSourceInfoType.ResolvedBinding => BuilderConstants.FieldStatusIndicatorResolvedBindingTooltip,
+                FieldValueSourceInfoType.UnresolvedBinding => BuilderConstants.FieldStatusIndicatorUnresolvedBindingTooltip,
+                FieldValueSourceInfoType.UnhandledBinding => BuilderConstants.FieldStatusIndicatorUnhandledBindingTooltip,
                 _ => type.ToString()
             };
         }
@@ -168,7 +191,7 @@ namespace Unity.UI.Builder
         /// Data that provides details about the value source. It is a <see cref="MatchedRule"/> object if the value is from a USS selector.
         /// </summary>
         object m_Data;
-        
+
         /// <summary>
         /// The type of value source.
         /// </summary>
@@ -234,7 +257,7 @@ namespace Unity.UI.Builder
     internal static class FieldValueInfoTypeExtensions
     {
         /// <summary>
-        /// Returns the text displayed in the inspector for a <see cref="FieldValueInfoType"/> value. 
+        /// Returns the text displayed in the inspector for a <see cref="FieldValueInfoType"/> value.
         /// </summary>
         /// <param name="type">The target type</param>
         /// <returns></returns>
@@ -243,7 +266,7 @@ namespace Unity.UI.Builder
             return type switch
             {
                 FieldValueInfoType.USSProperty => BuilderConstants.FieldValueInfoTypeEnumUSSPropertyDisplayString,
-                FieldValueInfoType.UXMLAttribute => BuilderConstants.FieldValueInfoTypeEnumUUXMLAttributeDisplayString,
+                FieldValueInfoType.UXMLAttribute => BuilderConstants.FieldValueInfoTypeEnumUXMLAttributeDisplayString,
                 _ => null
             };
         }
@@ -272,7 +295,7 @@ namespace Unity.UI.Builder
         public FieldValueSourceInfo valueSource;
 
         /// <summary>
-        /// Gets the value binding and value source information of the specified field in the specified inspector. 
+        /// Gets the value binding and value source information of the specified field in the specified inspector.
         /// </summary>
         /// <param name="inspector">The inspector</param>
         /// <param name="field">The field</param>
@@ -290,7 +313,7 @@ namespace Unity.UI.Builder
     static class FieldValueInfoGetter
     {
         /// <summary>
-        /// Gets the value binding and value source information of the specified field in the specified inspector. 
+        /// Gets the value binding and value source information of the specified field in the specified inspector.
         /// </summary>
         /// <param name="inspector">The inspector</param>
         /// <param name="field">The field</param>
@@ -302,16 +325,14 @@ namespace Unity.UI.Builder
             if (inspector == null)
                 return default;
 
-            var isAttribute = field.HasProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName);
+            var uxmlAttr = field.GetLinkedAttributeDescription();
             FieldValueBindingInfo valueBinding = default;
             FieldValueSourceInfo valueSource = default;
             var propName = "";
-            
+
             // If the field is a UXML attribute of a visual element then...
-            if (isAttribute)
+            if (uxmlAttr != null)
             {
-                var uxmlAttr = field.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) as UxmlAttributeDescription;
-                
                 propName = uxmlAttr.name;
                 valueBinding = new FieldValueBindingInfo(FieldValueBindingInfoType.Constant);
                 bool isInline =
@@ -334,7 +355,7 @@ namespace Unity.UI.Builder
                     // If the variable cannot be resolved then at least set the name
                     if (!varInfo.IsValid())
                         varInfo = new VariableInfo(varName);
-                    
+
                     valueBinding = new FieldValueBindingInfo(FieldValueBindingInfoType.USSVariable, varInfo);
                 }
                 else
@@ -434,9 +455,31 @@ namespace Unity.UI.Builder
                 }
             }
 
+            var bindingProperty = BuilderInspectorUtilities.GetBindingProperty(inspector, field);
+
+            if (inspector.bindingsCache != null
+                && inspector.bindingsCache.TryGetCachedData(inspector.currentVisualElement, bindingProperty, out var cacheData))
+            {
+                valueBinding = new FieldValueBindingInfo(FieldValueBindingInfoType.Binding);
+
+                if (cacheData.isStatusResultValid && cacheData.status == BindingStatus.Success)
+                {
+                    valueSource = new FieldValueSourceInfo(FieldValueSourceInfoType.ResolvedBinding);
+                }
+                // Check if Status Result valid for unhandled
+                else if (cacheData.isStatusResultValid && cacheData.status == BindingStatus.Pending)
+                {
+                    valueSource = new FieldValueSourceInfo(FieldValueSourceInfoType.UnhandledBinding);
+                }
+                else
+                {
+                    valueSource = new FieldValueSourceInfo(FieldValueSourceInfoType.UnresolvedBinding);
+                }
+            }
+
             return new FieldValueInfo()
             {
-                type = isAttribute ? FieldValueInfoType.UXMLAttribute : FieldValueInfoType.USSProperty,
+                type = uxmlAttr != null ? FieldValueInfoType.UXMLAttribute : FieldValueInfoType.USSProperty,
                 name = propName,
                 valueBinding = valueBinding,
                 valueSource = valueSource

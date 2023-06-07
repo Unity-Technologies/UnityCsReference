@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Hierarchy hierarchy
         {
-            get; private set;
+            get;
         }
 
         /// <summary>

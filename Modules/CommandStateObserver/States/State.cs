@@ -69,6 +69,9 @@ namespace Unity.CommandStateObserver
         /// <param name="stateComponent">The state component to add.</param>
         public void AddStateComponent(IStateComponent stateComponent)
         {
+            if (m_StateComponents.Contains(stateComponent))
+                return;
+
             m_StateComponents.Add(stateComponent);
             stateComponent.OnAddedToState(this);
             OnStateComponentListModified?.Invoke(this, stateComponent);
@@ -80,7 +83,9 @@ namespace Unity.CommandStateObserver
         /// <param name="stateComponent">The state component to remove.</param>
         public void RemoveStateComponent(IStateComponent stateComponent)
         {
-            m_StateComponents.RemoveAll(c => c == stateComponent);
+            if (!m_StateComponents.Remove(stateComponent))
+                return;
+
             stateComponent.OnRemovedFromState(this);
             OnStateComponentListModified?.Invoke(this, stateComponent);
         }
@@ -88,6 +93,6 @@ namespace Unity.CommandStateObserver
         /// <summary>
         /// All the state components.
         /// </summary>
-        public virtual IEnumerable<IStateComponent> AllStateComponents => m_StateComponents;
+        public virtual IReadOnlyList<IStateComponent> AllStateComponents => m_StateComponents;
     }
 }

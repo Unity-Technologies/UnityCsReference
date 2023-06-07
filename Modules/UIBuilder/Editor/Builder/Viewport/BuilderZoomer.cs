@@ -12,10 +12,12 @@ namespace Unity.UI.Builder
     internal class BuilderZoomer : PointerManipulator
     {
         private const int MinScaleStart = 25;           // This is the minimum scale (25%), increment in small steps
-        private const int MaxScaleStart = 150;          // At 150%, let's increment in larger steps
-        private const int MaxScaleEnd = 500;            // until we reach the max scale (500%)
+        private const int MiddleScaleStart = 150;       // At 150%, let's increment in larger steps
+        private const int MaxScaleStart = 500;          // At 500%, let's increment in even larger steps
+        private const int MaxScaleEnd = 10000;          // until we reach the max scale (500%)
         private const int LowScaleIncrement = 5;        // Low scale increment step (5%)
-        private const int HighScaleIncrement = 25;      // High scale increment step (25%)
+        private const int MiddleScaleIncrement = 25;    // Middle scale increment step (25%)
+        private const int HighScaleIncrement = 250;     // High scale increment step (100%)
         private List<float> m_ZoomScaleValues;
         private const float DefaultScale = 1;
         private const float ZoomStepDistance = 10;
@@ -28,8 +30,10 @@ namespace Unity.UI.Builder
                 if (m_ZoomScaleValues == null)
                 {
                     m_ZoomScaleValues = new List<float>();
-                    for (var val = MinScaleStart; val < MaxScaleStart; val += LowScaleIncrement)
+                    for (var val = MinScaleStart; val < MiddleScaleStart; val += LowScaleIncrement)
                         m_ZoomScaleValues.Add((float)Math.Round(val/100.0, 2));
+                    for (var val = MiddleScaleStart; val < MaxScaleStart; val += MiddleScaleIncrement)
+                        m_ZoomScaleValues.Add((float)Math.Round(val / 100.0, 2));
                     for (var val = MaxScaleStart; val <= MaxScaleEnd; val += HighScaleIncrement)
                         m_ZoomScaleValues.Add((float)Math.Round(val/100.0, 2));
                 }
@@ -38,7 +42,7 @@ namespace Unity.UI.Builder
         }
 
         // Short list of zoom scales for the Zoom menu
-        public List<float> zoomMenuScaleValues { get; } = new() { 0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 4f, 5f };
+        public List<float> zoomMenuScaleValues { get; } = new() { 0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 4f, 5f, 10f, 25f, 50f, 75f, 100f };
 
         bool m_Zooming;
         Vector2 m_PressPos;
@@ -70,22 +74,28 @@ namespace Unity.UI.Builder
 
         private static float CalculateNewZoom(float currentZoom, float wheelDelta, List<float> zoomValues)
         {
-            currentZoom = Mathf.Clamp(currentZoom, zoomValues[0], zoomValues[^1]);
-
             if (Mathf.Approximately(wheelDelta, 0))
             {
                 return currentZoom;
             }
 
-            var currentZoomIndex = zoomValues.IndexOf(currentZoom);
+            // If the current zoom is not in the bounds of the zoom values list, return the closest zoom value.
+            if (currentZoom < zoomValues[0])
+                return zoomValues[0];
+            if (currentZoom > zoomValues[^1])
+                return zoomValues[^1];
 
-            if (currentZoomIndex == -1)
+            // Find the closest zoom value
+            var currentZoomIndex = 0;
+            for (int i = 0; i < zoomValues.Count; ++i)
             {
-                return DefaultScale;
+                if (zoomValues[i] <= currentZoom)
+                    currentZoomIndex = i;
+                else
+                    break;
             }
 
-            currentZoomIndex =
-                Mathf.Clamp(currentZoomIndex + ((wheelDelta > 0) ? 1 : -1), 0, zoomValues.Count - 1);
+            currentZoomIndex = Mathf.Clamp(currentZoomIndex + ((wheelDelta > 0) ? 1 : -1), 0, zoomValues.Count - 1);
             return zoomValues[currentZoomIndex];
         }
 
@@ -135,10 +145,12 @@ namespace Unity.UI.Builder
             if (BuilderProjectSettings.disableMouseWheelZooming)
                 return;
 
-            var oldScale = m_Viewport.zoomScale;
-
-            m_Viewport.zoomScale = CalculateNewZoom(m_Viewport.zoomScale, delta, zoomScaleValues);
-            m_Viewport.contentOffset = zoomCenter + (m_Viewport.zoomScale / oldScale) * (m_Viewport.contentOffset - zoomCenter);
+            m_Viewport.SetTargetZoomScale(CalculateNewZoom(m_Viewport.targetZoomScale, delta, zoomScaleValues), (_, v) =>
+            {
+                var oldScale = m_Viewport.zoomScale;
+                m_Viewport.zoomScale = v;
+                m_Viewport.contentOffset = (zoomCenter + (v / oldScale) * (m_Viewport.contentOffset - zoomCenter));
+            });
         }
     }
 }

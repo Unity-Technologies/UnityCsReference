@@ -17,7 +17,7 @@ namespace Unity.UI.Builder
 {
     internal class BuilderToolbar : VisualElement, IBuilderAssetModificationProcessor, IBuilderSelectionNotifier
     {
-        public const string FitCanvasButtonName = "fit-canvas-button";
+        public const string FitViewportButtonName = "fit-viewport-button";
         public const string PreviewToggleName = "preview-button";
         public const string BreadcrumbsToolbarName = "breadcrumbs-toolbar";
         public const string BreadcrumbsName = "breadcrumbs-view";
@@ -32,7 +32,7 @@ namespace Unity.UI.Builder
 
         ToolbarMenu m_FileMenu;
         ToolbarMenu m_ZoomMenu;
-        ToolbarButton m_FitCanvasButton;
+        ToolbarButton m_FitViewportButton;
         ToolbarMenu m_CanvasThemeMenu;
         ToolbarMenu m_SettingsMenu;
         Toolbar m_BreadcrumbsToolbar;
@@ -81,9 +81,9 @@ namespace Unity.UI.Builder
             m_ZoomMenu = this.Q<ToolbarMenu>("zoom-menu");
             SetUpZoomMenu();
 
-            // Fit canvas
-            m_FitCanvasButton = this.Q<ToolbarButton>(FitCanvasButtonName);
-            m_FitCanvasButton.clickable.clicked += () => m_Viewport.FitCanvas();
+            // Fit viewport
+            m_FitViewportButton = this.Q<ToolbarButton>(FitViewportButtonName);
+            m_FitViewportButton.clicked += () => m_Viewport.FitViewport();
 
             // Preview Button
             var previewButton = this.Q<ToolbarToggle>(PreviewToggleName);
@@ -477,7 +477,7 @@ namespace Unity.UI.Builder
 
         static string GetTextForZoomScale(float scale)
         {
-            return $"{scale*100f}%";
+            return $"{(int)(scale*100f)}%";
         }
 
         void UpdateZoomMenuText()
@@ -775,9 +775,9 @@ namespace Unity.UI.Builder
                 a => builder.codePreviewVisible ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
             m_SettingsMenu.menu.AppendAction(
-                "Show Notifications",
-                a => m_Viewport.notifications.ResetNotifications(),
-                a => m_Viewport.notifications.hasPendingNotifications ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+                "Reset Notifications",
+                _ => BuilderProjectSettings.ResetNotifications(),
+                _ => BuilderProjectSettings.HasBlockedNotifications() ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
             if (Unsupported.IsDeveloperMode())
             {
@@ -785,17 +785,12 @@ namespace Unity.UI.Builder
                     "Always Use UxmlTraits Attribute fields",
                 a =>
                 {
-                    BuilderUxmlAttributesView.AlwaysUseUxmlTraits = !BuilderUxmlAttributesView.AlwaysUseUxmlTraits;
+                    BuilderUxmlAttributesView.alwaysUseUxmlTraits = !BuilderUxmlAttributesView.alwaysUseUxmlTraits;
                     builder.inspector.RefreshUI();
                 },
-                a => BuilderUxmlAttributesView.AlwaysUseUxmlTraits ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+                a => BuilderUxmlAttributesView.alwaysUseUxmlTraits ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
             }
 
-            AddBuilderProjectSettingsMenu();
-        }
-
-        void AddBuilderProjectSettingsMenu()
-        {
             m_SettingsMenu.menu.AppendAction("Settings"
                 , a => ShowSettingsWindow()
                 , a => DropdownMenuAction.Status.Normal);

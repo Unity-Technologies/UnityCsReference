@@ -31,7 +31,7 @@ class LicenseReturnedWindowContents : TemplateLicenseEventWindowContents
     {
         m_Description = LicenseUpdateHandler.BuildLicenseReturnedText(m_HasUiEntitlement, m_Notification);
 
-        m_Buttons.Add(m_HasUiEntitlement ? EventsButtonType.Ok : EventsButtonType.SaveAndClose);
+        m_Buttons.Add(m_HasUiEntitlement ? EventsButtonType.Ok : EventsButtonType.SaveAndQuit);
 
         m_LogTag = LicenseTrStrings.LicenseReturnedTag;
         m_LogType = LogType.Error;

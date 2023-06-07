@@ -2,9 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.ShortcutManagement;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
-using UnityEngine;
 
 namespace Unity.UI.Builder
 {
@@ -31,6 +30,10 @@ namespace Unity.UI.Builder
                   null)
         {
             viewDataKey = "builder-hierarchy";
+
+            m_ElementHierarchyView.RegisterCallback<FocusEvent>(e => ShortcutIntegration.instance.contextManager.RegisterToolContext(m_Viewport), useTrickleDown: TrickleDown.TrickleDown);
+            m_ElementHierarchyView.RegisterCallback<BlurEvent>(e => ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_Viewport), useTrickleDown: TrickleDown.TrickleDown);
+            m_ElementHierarchyView.RegisterCallback<DetachFromPanelEvent>(e => ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_Viewport));
         }
 
         protected override bool IsSelectedItemValid(VisualElement element)

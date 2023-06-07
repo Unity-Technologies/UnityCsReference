@@ -301,9 +301,9 @@ namespace Unity.GraphToolsFoundation.Editor
                     GraphModel?.UnregisterPort(kv.Value);
                     portsRemoved = true;
                 }
-                else if (kv.Value.PortType == PortType.MissingPort && kv.Value.GetConnectedWires().Any())
+                else if (kv.Value.PortType == PortType.MissingPort && kv.Value.GetConnectedWires().Count > 0)
                 {
-                    // This is needed to prevent added missing ports that aren't obsolete yet from being overwritten by newly instantiated ports in OnDefineNode().
+                    // Prevents added missing ports that aren't obsolete yet from being overwritten by newly instantiated ports in OnDefineNode().
                     m_InputsById.Add(kv.Value);
                 }
             }
@@ -317,9 +317,9 @@ namespace Unity.GraphToolsFoundation.Editor
                     GraphModel?.UnregisterPort(kv.Value);
                     portsRemoved = true;
                 }
-                else if (kv.Value.PortType == PortType.MissingPort && kv.Value.GetConnectedWires().Any())
+                else if (kv.Value.PortType == PortType.MissingPort && kv.Value.GetConnectedWires().Count > 0)
                 {
-                    // This is needed to prevent added missing ports that aren't obsolete yet from being overwritten by newly instantiated ports in OnDefineNode().
+                    // Prevents added missing ports that aren't obsolete yet from being overwritten by newly instantiated ports in OnDefineNode().
                     m_OutputsById.Add(kv.Value);
                 }
             }
@@ -459,44 +459,38 @@ namespace Unity.GraphToolsFoundation.Editor
                 return;
             }
 
-            if (m_InputConstantsById.TryGetValue(id, out var constant))
+            Constant newConstant = null;
+            if (m_InputConstantsById.TryGetValue(id, out var existingConstant))
             {
-                // Destroy existing constant if not compatible
-                var embeddedConstantType = GraphModel.Stencil.GetConstantType(inputPort.DataTypeHandle);
-                Type portDefinitionType;
-                if (embeddedConstantType != null)
-                {
-                    var instance = (Constant)Activator.CreateInstance(embeddedConstantType);
-                    portDefinitionType = instance.Type;
-                }
-                else
-                {
-                    portDefinitionType = inputPort.DataTypeHandle.Resolve();
-                }
+                newConstant = GraphModel.Stencil.CreateConstantValue(inputPort.DataTypeHandle);
+                var portDefinitionType = newConstant != null ? newConstant.Type : inputPort.DataTypeHandle.Resolve();
 
-                if (!constant.IsAssignableFrom(portDefinitionType))
+                if (!existingConstant.IsAssignableFrom(portDefinitionType))
                 {
+                    // Destroy incompatible constant
                     m_InputConstantsById.Remove(id);
                     GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Unspecified);
                 }
                 else
                 {
-                    // We might be reusing a constant for a new compatible port.
-                    constant.OwnerModel = inputPort;
+                    // Reuse compatible constant.
+                    existingConstant.OwnerModel = inputPort;
+                    return;
                 }
             }
 
             // Create new constant if needed
-            if (!m_InputConstantsById.ContainsKey(id)
-                && inputPort.CreateEmbeddedValueIfNeeded
-                && inputPort.DataTypeHandle != TypeHandle.Unknown
-                && GraphModel.Stencil.GetConstantType(inputPort.DataTypeHandle) != null)
+            if (inputPort.CreateEmbeddedValueIfNeeded
+                && inputPort.DataTypeHandle != TypeHandle.Unknown)
             {
-                var embeddedConstant = GraphModel.Stencil.CreateConstantValue(inputPort.DataTypeHandle);
-                embeddedConstant.OwnerModel = inputPort;
-                initializationCallback?.Invoke(embeddedConstant);
-                m_InputConstantsById[id] = embeddedConstant;
-                GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Unspecified);
+                newConstant ??= GraphModel.Stencil.CreateConstantValue(inputPort.DataTypeHandle);
+                if (newConstant != null)
+                {
+                    newConstant.OwnerModel = inputPort;
+                    initializationCallback?.Invoke(newConstant);
+                    m_InputConstantsById[id] = newConstant;
+                    GraphModel.CurrentGraphChangeDescription?.AddChangedModel(this, ChangeHint.Unspecified);
+                }
             }
         }
 

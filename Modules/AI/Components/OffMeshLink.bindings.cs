@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -26,7 +27,7 @@ namespace UnityEngine.AI
     // State of OffMeshLink.
     [MovedFrom("UnityEngine")]
     [NativeHeader("Modules/AI/Components/OffMeshLink.bindings.h")]
-    public struct OffMeshLinkData
+    public partial struct OffMeshLinkData
     {
         internal int m_Valid;
         internal int m_Activated;
@@ -50,39 +51,10 @@ namespace UnityEngine.AI
         // Link end world position (RO).
         public Vector3 endPos => m_EndPos;
 
-        // The [[OffMeshLink]] if the link type is a manually placed Offmeshlink (RO).
-        public OffMeshLink offMeshLink => GetOffMeshLinkInternal(m_InstanceID);
+        // The object that created this link instance if the link type is a manually placed [[Offmeshlink]] or [[NavMeshLinkData]] (RO).
+        public Object owner => GetLinkOwnerInternal(m_InstanceID);
 
-        [FreeFunction("OffMeshLinkScriptBindings::GetOffMeshLinkInternal")]
-        internal static extern OffMeshLink GetOffMeshLinkInternal(int instanceID);
-    }
-
-    // Link allowing movement outside the planar navigation mesh.
-    [MovedFrom("UnityEngine")]
-    public sealed class OffMeshLink : Behaviour
-    {
-        // Is link active.
-        public extern bool activated { get; set; }
-
-        // Is link occupied. (RO)
-        public extern bool occupied { get; }
-
-        // Modify pathfinding cost for the link.
-        public extern float costOverride { get; set; }
-
-        public extern bool biDirectional { get; set; }
-
-        public extern void UpdatePositions();
-
-        [System.Obsolete("Use area instead.")]
-        public int navMeshLayer { get { return area; }  set { area = value; } }
-
-        public extern int area { get; set; }
-
-        public extern bool autoUpdatePositions { get; set; }
-
-        public extern Transform startTransform { get; set; }
-
-        public extern Transform endTransform { get; set; }
+        [FreeFunction("OffMeshLinkScriptBindings::GetLinkOwnerInternal")]
+        static extern Object GetLinkOwnerInternal(int instanceID);
     }
 }

@@ -8,16 +8,16 @@ namespace UnityEngine.UIElements
 {
     internal class SetValueVisitor<TSrcValue> : PathVisitor
     {
-        public static readonly UnityEngine.Pool.ObjectPool<SetValueVisitor<TSrcValue>> Pool = new UnityEngine.Pool.ObjectPool<SetValueVisitor<TSrcValue>>(() => new SetValueVisitor<TSrcValue>(), v => v.Reset());
+        public static readonly UnityEngine.Pool.ObjectPool<SetValueVisitor<TSrcValue>> Pool = new (() => new SetValueVisitor<TSrcValue>(), v => v.Reset());
         public TSrcValue Value;
 
-        public ConversionRegistry ConversionRegistry { get; set; }
+        public ConverterGroup group { get; set; }
 
         public override void Reset()
         {
             base.Reset();
             Value = default;
-            ConversionRegistry = default;
+            group = default;
         }
 
         protected override void VisitPath<TContainer, TValue>(Property<TContainer, TValue> property, ref TContainer container, ref TValue value)
@@ -28,12 +28,11 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (ConversionRegistry.ConverterCount > 0 &&
-                UIConversion.TryConvert(ConversionRegistry, ref Value, out TValue local))
+            if (null != group && group.TryConvert(ref Value, out TValue local))
             {
                 property.SetValue(ref container, local);
             }
-            else if (UIConversion.TryConvert(ref Value, out TValue global))
+            else if (ConverterGroups.TryConvert(ref Value, out TValue global))
             {
                 property.SetValue(ref container, global);
             }

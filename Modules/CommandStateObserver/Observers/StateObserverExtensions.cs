@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Unity.CommandStateObserver
 {
@@ -29,10 +28,16 @@ namespace Unity.CommandStateObserver
         /// </summary>
         /// <param name="observer">The observer.</param>
         /// <param name="stateComponents">The observed state components.</param>
-        /// <returns>The observations as an <see cref="IEnumerable{Observation}"/> object.</returns>
-        public static IEnumerable<Observation> ObserveStates(this IStateObserver observer, IEnumerable<IStateComponent> stateComponents)
+        /// <returns>The observations as an <see cref="List{Observation}"/> object.</returns>
+        public static List<Observation> ObserveStates(this IStateObserver observer, IReadOnlyList<IStateComponent> stateComponents)
         {
-            return stateComponents.Select(s => Observation.Create_Internal(observer, s));
+            var observationList = new List<Observation>(stateComponents.Count);
+            foreach (var stateComponent in stateComponents)
+            {
+                observationList.Add(Observation.Create_Internal(observer, stateComponent));
+            }
+
+            return observationList;
         }
 
         /// <summary>

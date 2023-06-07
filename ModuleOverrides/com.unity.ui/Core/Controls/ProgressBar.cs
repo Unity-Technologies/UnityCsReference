@@ -15,10 +15,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class AbstractProgressBar : BindableElement, INotifyValueChanged<float>
     {
-        internal static readonly DataBindingProperty titleProperty = nameof(title);
-        internal static readonly DataBindingProperty lowValueProperty = nameof(lowValue);
-        internal static readonly DataBindingProperty highValueProperty = nameof(highValue);
-        internal static readonly DataBindingProperty valueProperty = nameof(value);
+        internal static readonly BindingId titleProperty = nameof(title);
+        internal static readonly BindingId lowValueProperty = nameof(lowValue);
+        internal static readonly BindingId highValueProperty = nameof(highValue);
+        internal static readonly BindingId valueProperty = nameof(value);
 
         /// <summary>
         /// USS Class Name used to style the <see cref="ProgressBar"/>.

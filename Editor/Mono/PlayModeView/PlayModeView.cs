@@ -341,7 +341,7 @@ namespace UnityEditor
         private void ConfigureTargetTexture(int width, int height, bool clearTexture, string name, bool hdr)
         {
             // make sure we actually support R16G16B16A16_SFloat
-            GraphicsFormat format = (hdr && SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, FormatUsage.Render)) ? GraphicsFormat.R16G16B16A16_SFloat : SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
+            GraphicsFormat format = (hdr && SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat, GraphicsFormatUsage.Render)) ? GraphicsFormat.R16G16B16A16_SFloat : SystemInfo.GetGraphicsFormat(DefaultFormat.LDR);
 
             // Requires destroying the entire RT object and recreating it if
             // 1. color space is changed;

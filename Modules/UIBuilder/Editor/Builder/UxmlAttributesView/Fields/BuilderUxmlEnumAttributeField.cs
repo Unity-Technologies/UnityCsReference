@@ -3,9 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
+using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -106,7 +110,6 @@ namespace Unity.UI.Builder
             var propInfo = attributeType.GetProperty("defaultValue");
             var defaultEnumValue = propInfo.GetValue(attribute, null) as Enum;
             var uiField = field as BaseField<Enum>;
-
             uiField.SetValueWithoutNotify(defaultEnumValue);
         }
     }

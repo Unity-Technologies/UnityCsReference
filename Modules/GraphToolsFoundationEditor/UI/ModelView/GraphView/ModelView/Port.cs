@@ -50,8 +50,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public static readonly string connectorPartName = "connector-container";
         public static readonly string constantEditorPartName = "constant-editor";
 
+        public static readonly Vector2 minHitBoxSize = new Vector2(44, 24);
+
         static readonly CustomStyleProperty<Color> k_PortColorProperty = new CustomStyleProperty<Color>("--port-color");
-        static readonly Vector2 k_HitBoxSize = new Vector2(40, 20);
         int m_ConnectedWiresCount = Int32.MinValue;
 
         protected string m_CurrentDropHighlightClass = dropHighlightAcceptedClass;
@@ -62,8 +63,8 @@ namespace Unity.GraphToolsFoundation.Editor
         bool m_WillConnect;
 
         WireConnector m_WireConnector;
-
         VisualElement m_ConnectorCache;
+        protected Label m_ConnectorLabel;
 
         TypeHandle m_CurrentTypeHandle;
 
@@ -109,10 +110,13 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             get => m_WillConnect;
             set
-        {
-                m_WillConnect = value;
-                EnableInClassList(willConnectModifierUssClassName, value);
-                GetConnector()?.MarkDirtyRepaint();
+            {
+                if (m_WillConnect != value)
+                {
+                    m_WillConnect = value;
+                    EnableInClassList(willConnectModifierUssClassName, value);
+                    GetConnector()?.MarkDirtyRepaint();
+                }
             }
         }
 
@@ -373,10 +377,15 @@ namespace Unity.GraphToolsFoundation.Editor
             var connector = GetConnector();
             if (connector != null)
             {
-                connector.generateVisualContent = PortModel.PortType == PortType.Execution ? OnGenerateExecutionConnectorVisualContent : OnGenerateDataConnectorVisualContent;
-                connector.MarkDirtyRepaint();
-            }
+                var currentGen = connector.generateVisualContent;
+                Action<MeshGenerationContext> newGen = PortModel.PortType == PortType.Execution ? OnGenerateExecutionConnectorVisualContent : OnGenerateDataConnectorVisualContent;
 
+                if (currentGen != newGen)
+                {
+                    connector.generateVisualContent = newGen;
+                    connector.MarkDirtyRepaint();
+                }
+            }
         }
 
         public Vector3 GetGlobalCenter()
@@ -426,52 +435,111 @@ namespace Unity.GraphToolsFoundation.Editor
                 return Rect.zero;
 
             var node = port.PortModel.NodeModel.GetView<Node>(port.RootView);
-            if (node == null)
+            if (node is null)
                 return Rect.zero;
 
-            var worldBoundHitBoxSize = MultiplyVector2(ref port.worldTransformRef, k_HitBoxSize);
-            var connector = port.GetConnector();
+            // If the wire is being plugged into a token node, the hit box is the whole node.
+            if (port.PortModel.NodeModel is ISingleInputPortNodeModel or ISingleOutputPortNodeModel && !isCreatingFrom)
+                return node.worldBound;
 
+            var minWorldHitBoxSize = MultiplyVector2(ref port.worldTransformRef, minHitBoxSize);
+            var connector = port.GetConnector();
             var direction = port.PortModel.Direction;
             var orientation = port.PortModel.Orientation;
 
-            float hitBoxPosX;
-            float hitBoxPosY;
+            var portConnectorPart = port.PartList.GetPart(connectorPartName) as PortConnectorPart;
+            var portConnector = portConnectorPart?.Root;
+            if (portConnector is null)
+                return Rect.zero;
 
-            if (isCreatingFrom)
+            var hitBoxRect = isCreatingFrom ? GetCreateFromPortHitBox() : GetConnectToPortHitBox();
+            AdjustHitBoxRect();
+
+            return hitBoxRect;
+
+            Rect GetCreateFromPortHitBox()
             {
-                // The user is creating a wire from the port.
+                float x;
+                float y;
+                var hitBoxSize = minWorldHitBoxSize;
                 if (orientation == PortOrientation.Horizontal)
                 {
-                    hitBoxPosX = direction == PortDirection.Input ? node.worldBound.xMin : node.worldBound.xMax - worldBoundHitBoxSize.x;
-                    hitBoxPosY = connector.worldBound.center.y - worldBoundHitBoxSize.y * 0.5f;
+                    // If the port has an icon, use it to compute the create from hit box.
+                    if (portConnectorPart is PortConnectorWithIconPart portConnectorWithIcon && portConnectorWithIcon.Icon.layout.size != Vector2.zero)
+                    {
+                        var iconPos = portConnectorWithIcon.Icon.worldBound;
+                        var margin = iconPos.size.x * 0.2f;
+                        x = direction == PortDirection.Input ? node.worldBound.xMin : iconPos.xMin - margin;
+                        y = portConnector.worldBound.yMin;
+                        hitBoxSize = new Vector2(direction == PortDirection.Input ? iconPos.xMax + margin - x : node.worldBound.xMax - x, portConnector.worldBound.size.y);
+                    }
+                    else
+                    {
+                        // If the port has no icon, use the minWorldHitBoxSize.
+                        x = direction == PortDirection.Input ? node.worldBound.xMin : node.worldBound.xMax - minWorldHitBoxSize.x;
+                        y = connector.worldBound.center.y - minWorldHitBoxSize.y * 0.5f;
+                    }
                 }
                 else
                 {
-                    hitBoxPosX = connector.worldBound.center.x - worldBoundHitBoxSize.x * 0.5f;
-                    hitBoxPosY = direction == PortDirection.Input ? connector.worldBound.yMin : connector.worldBound.yMax - worldBoundHitBoxSize.y;
+                    x = connector.worldBound.center.x - minWorldHitBoxSize.x * 0.5f;
+                    y = direction == PortDirection.Input ? node.worldBound.yMin : node.worldBound.yMax - minWorldHitBoxSize.y;
                 }
+
+                return new Rect(new Vector2(x, y), hitBoxSize);
             }
-            else
+
+            Rect GetConnectToPortHitBox()
             {
-                // The user is plugging a wire into the port.
+                float x;
+                float y;
+                var hitBoxSize = minWorldHitBoxSize;
+                var offset = minWorldHitBoxSize.x * 0.5f;
                 if (orientation == PortOrientation.Horizontal)
                 {
-                    hitBoxPosX = direction == PortDirection.Input ? connector.worldBound.xMax - worldBoundHitBoxSize.x : connector.worldBound.xMin;
-                    hitBoxPosY = connector.worldBound.center.y - worldBoundHitBoxSize.y * 0.5f;
+                    x = direction == PortDirection.Input ? node.worldBound.xMin - offset : portConnector.worldBound.xMin;
+                    y = connector.worldBound.center.y - minWorldHitBoxSize.y * 0.5f;
+                    hitBoxSize = new Vector2(direction == PortDirection.Input ? portConnector.worldBound.xMax - x
+                                : node.worldBound.xMax + offset - x, minWorldHitBoxSize.y);
                 }
                 else
                 {
-                    worldBoundHitBoxSize.x = k_HitBoxSize.y;
-                    worldBoundHitBoxSize.y = k_HitBoxSize.x;
-                    worldBoundHitBoxSize = MultiplyVector2(ref port.worldTransformRef, worldBoundHitBoxSize);
-
-                    hitBoxPosX = connector.worldBound.center.x - worldBoundHitBoxSize.x * 0.5f;
-                    hitBoxPosY = direction == PortDirection.Input ? connector.worldBound.yMin - (worldBoundHitBoxSize.y - connector.layout.height) : connector.worldBound.yMin;
+                    // Rotate the hit box for vertical ports.
+                    hitBoxSize.x = minHitBoxSize.y;
+                    hitBoxSize.y = minHitBoxSize.x;
+                    hitBoxSize = MultiplyVector2(ref port.worldTransformRef, hitBoxSize);
+                    x = connector.worldBound.center.x - hitBoxSize.x * 0.5f;
+                    y = direction == PortDirection.Input ? node.worldBound.yMin - offset : node.worldBound.yMax - offset;
                 }
+
+                return new Rect(new Vector2(x, y), hitBoxSize);
             }
 
-            return new Rect(new Vector2(hitBoxPosX, hitBoxPosY), worldBoundHitBoxSize);
+            void AdjustHitBoxRect()
+            {
+                // If the port's rect is bigger than the default hit box rect, size up the hit box.
+                // Do not adjust horizontally, we do not want to include the label and constant editor.
+                if (orientation is PortOrientation.Horizontal)
+                {
+                    if (hitBoxRect.size.y < port.worldBound.size.y)
+                    {
+                        hitBoxRect.yMin = port.worldBound.yMin;
+                        hitBoxRect.yMax = port.worldBound.yMax;
+                    }
+                }
+
+                // Make sure that the port is covered properly by the hit box.
+                if (direction == PortDirection.Input)
+                {
+                    if (hitBoxRect.yMax < port.worldBound.yMax)
+                        hitBoxRect.yMax = port.worldBound.yMax;
+                }
+                else
+                {
+                    if (hitBoxRect.yMin > port.worldBound.yMin)
+                        hitBoxRect.yMin = port.worldBound.yMin;
+                }
+            }
         }
 
         PortModel GetPortToConnect(GraphElementModel selectable)

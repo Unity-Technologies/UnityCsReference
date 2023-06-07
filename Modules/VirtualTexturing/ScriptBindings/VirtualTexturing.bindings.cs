@@ -316,7 +316,7 @@ namespace UnityEngine.Rendering
                     //GPU PVT relies on Render usage to not cause fallback behaviour.
                     //To allow CPU PVT Sample has to be supported on the format.
 
-                    var formatUsage = (gpuGeneration == 1) ? FormatUsage.Render : FormatUsage.Sample;
+                    var formatUsage = (gpuGeneration == 1) ? GraphicsFormatUsage.Render : GraphicsFormatUsage.Sample;
                     for (int i = 0; i < layers.Length; ++i)
                     {
                         if (SystemInfo.GetCompatibleFormat(layers[i], formatUsage) != layers[i])

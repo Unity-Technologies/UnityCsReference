@@ -28,8 +28,7 @@ namespace UnityEditor.UIElements
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
 
-            if (!s_Registered)
-                Register();
+            Register();
 
             AssetDatabase.UnregisterCustomDependencyPrefixFilter(k_DefaultDependencyPrefix);
             foreach (var typeName in SerializedDataTypes.Keys)
@@ -57,8 +56,11 @@ namespace UnityEditor.UIElements
 
         public static string GetDependencyKeyName(string typeName) => k_DefaultDependencyPrefix + typeName;
 
-        private static void Register()
+        public static void Register()
         {
+            if (s_Registered)
+                return;
+
             var types = TypeCache.GetTypesDerivedFrom<UxmlSerializedData>();
             foreach (var type in types)
             {
@@ -85,9 +87,9 @@ namespace UnityEditor.UIElements
 
         static void RegisterType(string typeName, Type type)
         {
-            if (SerializedDataTypes.ContainsKey(typeName))
+            if (SerializedDataTypes.TryGetValue(typeName, out var desc))
             {
-                Debug.LogError($"A UxmlElement for the type {typeName} was already registered");
+                Debug.LogError($"A UxmlElement for the type {typeName} in the assembly {type.Assembly.GetName().Name} was already registered from another assembly {desc.Assembly.GetName().Name}.");
                 return;
             }
 

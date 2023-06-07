@@ -117,7 +117,7 @@ namespace UnityEngine
                     for (int i = formatIndex; i < table.Length; ++i)
                     {
                         GraphicsFormat format = table[i];
-                        if (SystemInfo.IsFormatSupported(format, FormatUsage.Render))
+                        if (SystemInfo.IsFormatSupported(format, GraphicsFormatUsage.Render))
                             return format;
                     }
 

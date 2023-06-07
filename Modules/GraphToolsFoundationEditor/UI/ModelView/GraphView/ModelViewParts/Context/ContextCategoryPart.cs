@@ -31,7 +31,7 @@ class ContextCategoryPart : GraphElementPart
     /// <inheritdoc />
     protected override void BuildPartUI(VisualElement parent)
     {
-        m_Root = new VisualElement();
+        m_Root = new VisualElement { pickingMode = PickingMode.Ignore };
 
         string ussClass = m_ParentClassName.WithUssElement("category");
 

@@ -35,6 +35,36 @@ namespace Unity.UI.Builder
             transitionsListView.RegisterCallback<TransitionRemovedEvent, TransitionsListView>(OnTransitionRemoved, transitionsListView);
         }
 
+        public void RefreshInlineEditedTransitionField(TransitionsListView transitionsListView, StylePropertyId inlinedEditedProperty)
+        {
+            var computedData = currentVisualElement.computedStyle.transitionData.Read();
+            using var setData = GetBuilderTransitionData();
+
+            var max = Mathf.Max(computedData.MaxCount(), setData.MaxCount());
+            var builderTransitions = ListPool<BuilderTransition>.Get();
+            try
+            {
+                for (var i = 0; i < max; i++)
+                    builderTransitions.Add(default);
+
+                RefreshTransitionStyleProperties(builderTransitions, setData, computedData, inlinedEditedProperty);
+
+                transitionsListView.TrimToCount(max);
+                for (var i = 0; i < builderTransitions.Count; ++i)
+                {
+                    var transition = builderTransitions[i];
+                    var foldoutField = (FoldoutTransitionField)transitionsListView[i];
+                    foldoutField.SetTransitionData(transition);
+                }
+            }
+            finally
+            {
+                ListPool<BuilderTransition>.Release(builderTransitions);
+            }
+
+            transitionsListView.Refresh(setData.GetOverrides(), setData.GetKeywords(), setData.GetBindings());
+        }
+
         public void RefreshStyleField(TransitionsListView transitionsListView)
         {
             var computedData = currentVisualElement.computedStyle.transitionData.Read();
@@ -49,7 +79,7 @@ namespace Unity.UI.Builder
 
                 ClearTransitionStyleFieldLists();
 
-                RefreshTransitionStyleProperties(builderTransitions, setData, computedData);
+                RefreshTransitionStyleProperties(builderTransitions, setData, computedData, StylePropertyId.Unknown);
 
                 transitionsListView.TrimToCount(max);
                 for (var i = 0; i < builderTransitions.Count; ++i)
@@ -59,6 +89,7 @@ namespace Unity.UI.Builder
                     foldoutTransitionField.index = i;
 
                     SetTransitionVariableEditors(foldoutTransitionField, i);
+
                     UpdateFieldStatus(foldoutTransitionField.propertyField, setData.transitionProperty.styleProperty);
                     UpdateFieldStatus(foldoutTransitionField.durationField, setData.transitionDuration.styleProperty);
                     UpdateFieldStatus(foldoutTransitionField.timingFunctionField, setData.transitionTimingFunction.styleProperty);
@@ -70,7 +101,7 @@ namespace Unity.UI.Builder
                 ListPool<BuilderTransition>.Release(builderTransitions);
             }
 
-            transitionsListView.Refresh(setData.GetOverrides(), setData.GetKeywords());
+            transitionsListView.Refresh(setData.GetOverrides(), setData.GetKeywords(), setData.GetBindings());
             updateStyleCategoryFoldoutOverrides();
         }
 
@@ -82,12 +113,12 @@ namespace Unity.UI.Builder
             GetOrCreateFieldListForStyleName(TransitionConstants.Delay).Clear();
         }
 
-        static void RefreshTransitionStyleProperties(List<BuilderTransition> transitions, BuilderTransitionData setData, TransitionData computedData)
+        static void RefreshTransitionStyleProperties(List<BuilderTransition> transitions, BuilderTransitionData setData, TransitionData computedData, StylePropertyId inlineEditedProperty)
         {
-            RefreshTransitionProperty(transitions, setData.transitionProperty, computedData.transitionProperty);
-            RefreshTransitionDuration(transitions, setData.transitionDuration, computedData.transitionDuration);
-            RefreshTransitionTimingFunction(transitions, setData.transitionTimingFunction, computedData.transitionTimingFunction);
-            RefreshTransitionDelay(transitions, setData.transitionDelay, computedData.transitionDelay);
+            RefreshTransitionProperty(transitions, setData.transitionProperty, computedData.transitionProperty, setData.GetBindings(), inlineEditedProperty == StylePropertyId.TransitionProperty);
+            RefreshTransitionDuration(transitions, setData.transitionDuration, computedData.transitionDuration, setData.GetBindings(), inlineEditedProperty == StylePropertyId.TransitionDuration);
+            RefreshTransitionTimingFunction(transitions, setData.transitionTimingFunction, computedData.transitionTimingFunction, setData.GetBindings(), inlineEditedProperty == StylePropertyId.TransitionTimingFunction);
+            RefreshTransitionDelay(transitions, setData.transitionDelay, computedData.transitionDelay, setData.GetBindings(), inlineEditedProperty == StylePropertyId.TransitionDelay);
         }
 
         void SetTransitionVariableEditors(FoldoutTransitionField foldoutTransitionField, int index)
@@ -98,15 +129,16 @@ namespace Unity.UI.Builder
             SetVariableEditor(foldoutTransitionField.delayField, index);
         }
 
-        static void RefreshTransitionProperty(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<StylePropertyName> computedData)
+        static void RefreshTransitionProperty(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<StylePropertyName> computedData, TransitionChangeType bindings, bool forceInlineValue)
         {
-            var isSet = null != manipulator.styleProperty;
-            var valueCount = isSet ? manipulator.GetValuesCount() : computedData.Count;
+            var showInlineValue = null != manipulator.styleProperty && ((bindings & TransitionChangeType.Property) == 0 || forceInlineValue);
+            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Count;
 
             for (var i = 0; i < transitions.Count; ++i)
             {
                 var transition = transitions[i];
-                if (isSet)
+
+                if (showInlineValue)
                 {
                     if (i < valueCount)
                     {
@@ -136,15 +168,15 @@ namespace Unity.UI.Builder
             }
         }
 
-        static void RefreshTransitionDuration(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<TimeValue> computedData)
+        static void RefreshTransitionDuration(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<TimeValue> computedData, TransitionChangeType bindings, bool forceInlineValue)
         {
-            var isSet = null != manipulator.styleProperty;
-            var valueCount = isSet ? manipulator.GetValuesCount() : computedData.Count;
+            var showInlineValue = null != manipulator.styleProperty && ((bindings & TransitionChangeType.Duration) == 0 || forceInlineValue);
+            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Count;
 
             for (var i = 0; i < transitions.Count; ++i)
             {
                 var transition = transitions[i];
-                if (isSet)
+                if (showInlineValue)
                 {
                     var handle = manipulator.GetValueContextAtIndex(i % valueCount);
                     if (handle.handle.valueType == StyleValueType.Keyword)
@@ -170,15 +202,15 @@ namespace Unity.UI.Builder
             }
         }
 
-        static void RefreshTransitionTimingFunction(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<EasingFunction> computedData)
+        static void RefreshTransitionTimingFunction(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<EasingFunction> computedData, TransitionChangeType bindings, bool forceInlineValue)
         {
-            var isSet = null != manipulator.styleProperty;
-            var valueCount = isSet ? manipulator.GetValuesCount() : computedData.Count;
+            var showInlineValue = null != manipulator.styleProperty && ((bindings & TransitionChangeType.TimingFunction) == 0 || forceInlineValue);
+            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Count;
 
             for (var i = 0; i < transitions.Count; ++i)
             {
                 var transition = transitions[i];
-                if (isSet)
+                if (showInlineValue)
                 {
                     var handle = manipulator.GetValueContextAtIndex(i % valueCount);
                     if (handle.handle.valueType == StyleValueType.Keyword)
@@ -202,15 +234,15 @@ namespace Unity.UI.Builder
             }
         }
 
-        static void RefreshTransitionDelay(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<TimeValue> computedData)
+        static void RefreshTransitionDelay(List<BuilderTransition> transitions, StylePropertyManipulator manipulator, List<TimeValue> computedData, TransitionChangeType bindings, bool forceInlineValue)
         {
-            var isSet = null != manipulator.styleProperty;
-            var valueCount = isSet ? manipulator.GetValuesCount() : computedData.Count;
+            var showInlineValue = null != manipulator.styleProperty && ((bindings & TransitionChangeType.Delay) == 0 || forceInlineValue);
+            var valueCount = showInlineValue ? manipulator.GetValuesCount() : computedData.Count;
 
             for (var i = 0; i < transitions.Count; ++i)
             {
                 var transition = transitions[i];
-                if (isSet)
+                if (showInlineValue)
                 {
                     var handle = manipulator.GetValueContextAtIndex(i % valueCount);
                     if (handle.handle.valueType == StyleValueType.Keyword)
@@ -260,6 +292,11 @@ namespace Unity.UI.Builder
                 SetUpContextualMenuOnStyleField(foldoutField.durationField);
                 SetUpContextualMenuOnStyleField(foldoutField.timingFunctionField);
                 SetUpContextualMenuOnStyleField(foldoutField.delayField);
+
+                m_Inspector.RegisterFieldToInlineEditingEvents(foldoutField.propertyField);
+                m_Inspector.RegisterFieldToInlineEditingEvents(foldoutField.durationField);
+                m_Inspector.RegisterFieldToInlineEditingEvents(foldoutField.timingFunctionField);
+                m_Inspector.RegisterFieldToInlineEditingEvents(foldoutField.delayField);
             }
 
             GetOrCreateFieldListForStyleName(TransitionConstants.Property).Add(foldoutField.propertyField);
@@ -267,8 +304,15 @@ namespace Unity.UI.Builder
             GetOrCreateFieldListForStyleName(TransitionConstants.TimingFunction).Add(foldoutField.timingFunctionField);
             GetOrCreateFieldListForStyleName(TransitionConstants.Delay).Add(foldoutField.delayField);
 
-            // These need to be called after the field has been added to the hierarchy
-            foldoutField.SetTransitionData(transition);
+            if (!m_Inspector.IsInlineEditingEnabled(foldoutField.propertyField)
+                && !m_Inspector.IsInlineEditingEnabled(foldoutField.durationField)
+                && !m_Inspector.IsInlineEditingEnabled(foldoutField.timingFunctionField)
+                && !m_Inspector.IsInlineEditingEnabled(foldoutField.delayField))
+            {
+                // These need to be called after the field has been added to the hierarchy
+                foldoutField.SetTransitionData(transition);
+            }
+
             return foldoutField;
         }
 
@@ -493,7 +537,7 @@ namespace Unity.UI.Builder
 
             NotifyStyleChanges(s_StyleChangeList, true);
             foldout.UpdateFromChildFields();
-            transitionsListView.Refresh(setData.GetOverrides() | changeType, setData.GetKeywords());
+            transitionsListView.Refresh(setData.GetOverrides() | changeType, setData.GetKeywords(), setData.GetBindings());
         }
 
         void OnTransitionAdded(TransitionAddedEvent evt, TransitionsListView listView)

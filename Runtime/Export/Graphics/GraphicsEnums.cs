@@ -283,7 +283,8 @@ namespace UnityEngine
         Rec2020 = 2,
         DisplayP3 = 3,
         HDR10 = 4,
-        DolbyHDR = 5
+        DolbyHDR = 5,
+        P3D65G22 = 6
     }
     
     [UsedByNativeCode]
@@ -312,7 +313,8 @@ namespace UnityEngine
         sRGB = 0,
         BT1886 = 1,
         PQ = 2,
-        Linear = 3
+        Linear = 3,
+        Gamma22 = 4
     }
 
     public enum ScreenOrientation
@@ -626,8 +628,8 @@ namespace UnityEngine
                 [Obsolete("IgnoreMipmapLimit flag is no longer used since this is now the default behavior for all Texture shapes. Please provide mipmap limit information using a MipmapLimitDescriptor argument.", false)]
                 IgnoreMipmapLimit = 1 << 11,
             }
-
-            // Keep in sync with FormatUsage in Runtime/Graphics/Format.h
+            
+            [Obsolete("Use GraphicsFormatUsage instead", false)]
             public enum FormatUsage
             {
                 Sample = 0,
@@ -645,6 +647,31 @@ namespace UnityEngine
                 MSAA8x = 13,
                 //MSAA16x = 14, // this is only used internally.
                 StencilSampling = 16,
+            }
+
+            // Keep in sync with GraphicsFormatUsage in Runtime/Graphics/Format.h
+            [Flags]
+            public enum GraphicsFormatUsage
+            {
+                None = 0,
+                Sample =          1 << 0,
+                Linear =          1 << 1,
+                Sparse =          1 << 2,
+                //Vertex =          1 << 3, // this is only used internally.
+                Render =          1 << 4,
+                Blend =           1 << 5,
+                GetPixels =       1 << 6,
+                SetPixels =       1 << 7,
+                SetPixels32 =     1 << 8,
+                ReadPixels =      1 << 9,
+                LoadStore =       1 << 10,
+                MSAA2x =          1 << 11,
+                MSAA4x =          1 << 12,
+                MSAA8x =          1 << 13,
+                //MSAA16x =         1 << 14, // this is only used internally.
+                //MSAA32x =         1 << 15, // this is only used internally.
+                StencilSampling = 1 << 16,
+                //ShadingRate =     1 << 17, // this is only used internally.
             }
 
             // Keep in sync with DefaultFormat in Runtime/Graphics/Format.h

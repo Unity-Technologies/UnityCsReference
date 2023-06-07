@@ -26,8 +26,6 @@ namespace Unity.GraphToolsFoundation.Editor
     class PortWireIndex_Internal<TWire> where TWire : class, IPortWireIndexModel_Internal
 
     {
-        static readonly IReadOnlyList<TWire> k_EmptyWireModelList = new List<TWire>();
-
         /// <summary>
         /// Used to send 1 wire to the list reordering method.
         /// </summary>
@@ -55,9 +53,9 @@ namespace Unity.GraphToolsFoundation.Editor
         public IReadOnlyList<TWire> GetWiresForPort(PortModel portModel)
         {
             if (portModel?.NodeModel == null)
-                return k_EmptyWireModelList;
+                return Array.Empty<TWire>();
 
-            return TryGetWiresForPort(portModel, out var list) ? list : k_EmptyWireModelList;
+            return TryGetWiresForPort(portModel, out var list) ? list : Array.Empty<TWire>();
         }
 
         /// <summary>

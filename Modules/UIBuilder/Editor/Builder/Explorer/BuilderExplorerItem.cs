@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using UnityEngine;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -183,8 +184,20 @@ namespace Unity.UI.Builder
                     nameLabel.text = m_RenameTextField.text;
                 }
 
+                // Update Uxml asset
                 documentElement.name = value;
                 vea.SetAttribute("name", value);
+
+                // Update SerializedData
+                var desc = UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName);
+                if (desc != null)
+                {
+                    if (vea.serializedData == null)
+                        vea .serializedData = desc.CreateDefaultSerializedData();
+
+                    var attribute = desc.FindAttributeWithPropertyName("name");
+                    attribute.SetSerializedValue(vea.serializedData, value);
+                }
             }
 
             selection.NotifyOfHierarchyChange();

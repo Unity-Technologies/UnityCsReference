@@ -144,7 +144,7 @@ namespace Unity.UI.Builder
             // Rebuild value from sub fields
             value = new BuilderRotate()
             {
-                x = new Dimension { value = m_RotateXField.length, unit = m_RotateXField.unit } 
+                x = new Dimension { value = m_RotateXField.length, unit = m_RotateXField.unit }
             };
         }
 

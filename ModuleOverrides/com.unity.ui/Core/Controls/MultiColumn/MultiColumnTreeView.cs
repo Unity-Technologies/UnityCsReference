@@ -17,8 +17,8 @@ namespace UnityEngine.UIElements
         {
             #pragma warning disable 649
             [SerializeField] private bool sortingEnabled;
-            [SerializeField, UxmlObject] private Columns.UxmlSerializedData columns;
-            [SerializeField, UxmlObject] private SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
+            [SerializeReference, UxmlObjectReference] private Columns.UxmlSerializedData columns;
+            [SerializeReference, UxmlObjectReference] private SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
             #pragma warning restore 649
 
             public override object CreateInstance() => new MultiColumnTreeView();

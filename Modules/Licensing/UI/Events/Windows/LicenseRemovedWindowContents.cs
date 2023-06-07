@@ -29,7 +29,7 @@ class LicenseRemovedWindowContents : TemplateLicenseEventWindowContents
     {
         m_Description = LicenseUpdateHandler.BuildLicenseRemovedText(m_HasUiEntitlement, m_Notification);
 
-        m_Buttons.Add(m_HasUiEntitlement ? EventsButtonType.OpenUnityHub : EventsButtonType.SaveAndClose);
+        m_Buttons.Add(m_HasUiEntitlement ? EventsButtonType.OpenUnityHub : EventsButtonType.SaveAndQuit);
 
         m_LogTag = LicenseTrStrings.LicenseRemovedTag;
         m_LogType = LogType.Error;

@@ -449,7 +449,7 @@ namespace UnityEditor
         // Returns the progress of a build when the bake job is running, returns 0 when no bake job is running.
         public static extern float buildProgress {[FreeFunction] get; }
 
-        // Deletes all runtime lighting data for the current scene.
+        // Deletes all stored runtime lighting data for the current scene, resets environment lighting to default values.
         [FreeFunction]
         public static extern void Clear();
 

@@ -17,13 +17,13 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class Image : VisualElement
     {
-        internal static readonly DataBindingProperty imageProperty = nameof(image);
-        internal static readonly DataBindingProperty spriteProperty = nameof(sprite);
-        internal static readonly DataBindingProperty vectorImageProperty = nameof(vectorImage);
-        internal static readonly DataBindingProperty sourceRectProperty = nameof(sourceRect);
-        internal static readonly DataBindingProperty uvProperty = nameof(uv);
-        internal static readonly DataBindingProperty scaleModeProperty = nameof(scaleMode);
-        internal static readonly DataBindingProperty tintColorProperty = nameof(tintColor);
+        internal static readonly BindingId imageProperty = nameof(image);
+        internal static readonly BindingId spriteProperty = nameof(sprite);
+        internal static readonly BindingId vectorImageProperty = nameof(vectorImage);
+        internal static readonly BindingId sourceRectProperty = nameof(sourceRect);
+        internal static readonly BindingId uvProperty = nameof(uv);
+        internal static readonly BindingId scaleModeProperty = nameof(scaleMode);
+        internal static readonly BindingId tintColorProperty = nameof(tintColor);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
@@ -337,7 +337,7 @@ namespace UnityEngine.UIElements
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void SetProperty<T0, T1, T2>(T0 src, ref T0 dst, ref T1 alt0, ref T2 alt1, DataBindingProperty binding)
+        private void SetProperty<T0, T1, T2>(T0 src, ref T0 dst, ref T1 alt0, ref T2 alt1, BindingId binding)
             where T0 : Object where T1 : Object where T2 : Object
         {
             if (src == dst)

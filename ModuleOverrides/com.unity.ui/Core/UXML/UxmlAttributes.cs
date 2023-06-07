@@ -128,17 +128,15 @@ namespace UnityEngine.UIElements
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_MyDrawerExample.cs"/>
     /// </example>
     /// <example>
-    /// __Note:__ To access other serialized properties, prepend the name with @@serializedData@@.
-    /// For example, to find the @@myColor@@ attribute, use @@serializedData.myColor@@.
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_MyDrawerAttributePropertyDrawer.cs"/>
     /// </example>
     /// <example>
     ///{img UIB-propertydrawer.gif}
     ///
-    /// You can use struct or class instances as attributes and even lists of struct or class instances in UXML.However,
-    /// they must be convertible to and from a string and you must declare a ::ref::UxmlAttributeConverter to support this conversion.
+    /// You can use struct or class instances as attributes and even lists of struct or class instances in UXML.
+    /// However, they must be convertible to and from a string and you must declare a ::ref::UxmlAttributeConverter to support this conversion.
     /// When using the class in a list, ensure that its string representation does not contain any commas (",") as this character is used by
-    /// the list to separate the items.
+    /// the list to separate the items. See ::ref::UxmlObjectReferenceAttribute for an example of a field supports more complex data.
     /// The following example shows how a class instance can support a property and list:
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_MyClassWithData.cs"/>
     /// </example>
@@ -147,6 +145,16 @@ namespace UnityEngine.UIElements
     /// </example>
     /// <example>
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_MyClassWithDataConverter.uxml"/>
+    /// </example>
+    /// <example>
+    /// When an attribute shares the same UXML name as an attribute from a child class,
+    /// it takes precedence and overrides that field, appearing in the inspector instead.
+    /// With this feature, you can substitute a field with a different type or a custom property.
+    /// The following example demonstrates how to replace the IntegerField value with a SliderField.
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_OverrideExample.cs"/>
+    /// </example>
+    /// <example>
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_OverrideExampleEditor.cs"/>
     /// </example>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public class UxmlAttributeAttribute : Attribute
@@ -223,17 +231,97 @@ namespace UnityEngine.UIElements
         }
     }
 
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
-    internal class UxmlObjectAttribute : Attribute
+    /// <summary>
+    /// Used for fields that are serialized but do not come from UXML data, such as <see cref="UxmlSerializedData.uxmlAssetId"/>.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field, Inherited = false)]
+    internal class UxmlIgnoreAttribute : Attribute
     {
+    }
+
+    /// <summary>
+    /// Declares that a class can be instantiated from UXML and contain UXML attributes.
+    /// </summary>
+    /// <remarks>
+    /// A UXML object is a class that can be instantiated from UXML and contain UXML attributes.
+    ///  By utilizing the <see cref="UxmlObjectReferenceAttribute"/> attribute, you can use a UXML object to associate complex data with a field, surpassing the capabilities of a single <see cref="UxmlAttributeAttribute"/>. 
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    public class UxmlObjectAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Declares that a field or property is associated with nested UXML objects.
+    /// </summary>
+    /// <remarks>
+    /// You can utilize the UxmlObjectReferenceAttribute to indicate that a property or field is
+    /// linked to one or multiple UXML objects.
+    /// By adding the <see cref="UxmlObjectAttribute"/> attribute to a class, you can declare a UXML object.
+    /// You can use these UXML objects to associate complex data with a field,
+    /// surpassing the capabilities of a single <see cref="UxmlAttributeAttribute"/>.
+    /// </remarks>
+    /// <example>
+    /// The following example shows a common use case for the UxmlObjectReferenceAttribute. It uses the attribute to associate a list of UXML objects with a field or property:
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_MyColoredListField.cs"/>
+    /// </example>
+    /// <example>
+    /// Example UXML:
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_MyColoredListField.uxml"/>
+    /// </example>
+    /// <example>
+    /// You can employ a base type and incorporate derived types as UXML objects.
+    /// The following example customizes a button to exhibit different behaviors when clicked,
+    /// such as displaying a label or playing a sound effect.
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_InheritanceExample.cs"/>
+    /// </example>
+    /// <example>
+    /// Example UXML:
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlObject_InheritanceExample.uxml"/>
+    /// </example>
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = false)]
+    public class UxmlObjectReferenceAttribute : Attribute
+    {
+        /// <summary>
+        /// The name of the nested UXML element that the UXML Objects are serialized to. __Note__: A null or empty value will result in the objects being serialized into the root.
+        /// </summary>
         public string name;
 
-        public UxmlObjectAttribute() : this(null)
-        { }
+        /// <summary>
+        /// In UI Builder, when adding a UXML Object to a field that has multiple derived types,
+        /// a dropdown list appears with a selection of available types that can be added to the field. By default,
+        /// this list comprises all types that inherit from the UXML object type. You can use a parameter
+        /// to specify a list of accepted types to be displayed, rather than showing all available types
+        /// </summary>
+        public Type[] types;
 
-        public UxmlObjectAttribute(string uxmlName)
+        /// <summary>
+        /// Declares that a field or property is associated with nested UXML objects.
+        /// </summary>
+        public UxmlObjectReferenceAttribute() : this(null, null)
+        {
+        }
+
+        /// <summary>
+        /// Declares that a field or property is associated with nested UXML objects.
+        /// </summary>
+        /// <param name="uxmlName">The name of the nested UXML element that the UXML Objects are serialized to. __Note__: This field can not be null or empty.</param>
+        public UxmlObjectReferenceAttribute(string uxmlName) : this(uxmlName, null)
+        {
+        }
+
+        /// <summary>
+        /// Declares that a field or property is associated with nested UXML objects.
+        /// </summary>
+        /// <param name="uxmlName">The name of the nested UXML element that the UXML Objects are serialized to. __Note__: A null or empty value will result in the objects being serialized into the root.</param>
+        /// <param name="acceptedTypes">In UI Builder, when adding a UXML Object to a field that has multiple derived types,
+        /// a dropdown list appears with a selection of available types that can be added to the field. By default,
+        /// this list comprises all types that inherit from the UXML object type. You can use a parameter
+        /// to specify a list of accepted types to be displayed, rather than showing all available types.</param>
+        public UxmlObjectReferenceAttribute(string uxmlName, params Type[] acceptedTypes)
         {
             name = uxmlName;
+            types = acceptedTypes;
         }
     }
 }

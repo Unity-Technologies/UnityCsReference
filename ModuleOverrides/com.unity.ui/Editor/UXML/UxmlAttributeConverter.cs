@@ -68,7 +68,7 @@ namespace UnityEditor.UIElements
                 result = cc.visualTreeAsset.GetAsset(value, type);
                 return true;
             }
-            else if (!string.IsNullOrEmpty(value) && TryGetConverter(type, out var converter))
+            else if (TryGetConverter(type, out var converter))
             {
                 result = converter.FromString(value);
                 return true;
@@ -194,9 +194,9 @@ namespace UnityEditor.UIElements
     /// however, to properly serialize these attributes, you must declare a UxmlAttributeConverter.
     /// This converter converts the string attribute value into the appropriate data type for the marked field.
     ///
-    /// 
+    ///
     /// __Note:__ The following types have native support and you can use them without declaring a UxmlAttributeConverter:
-    /// 
+    ///
     ///* bool
     ///* char
     ///* string
@@ -253,7 +253,7 @@ namespace UnityEditor.UIElements
         /// </remarks>
         /// <param name="value">The value to be converted into a string.</param>
         /// <returns>A string representation of the type.</returns>
-        public virtual string ToString(T value) => value.ToString();
+        public virtual string ToString(T value) => Convert.ToString(value, CultureInfo.InvariantCulture);
 
         string IUxmlAttributeConverter.ToString(object value) => ToString((T)value);
         object IUxmlAttributeConverter.FromString(string value) => FromString(value);
@@ -356,6 +356,12 @@ namespace UnityEditor.UIElements
     internal class LengthAttributeConverter : UxmlAttributeConverter<Length>
     {
         public override Length FromString(string value) => Length.ParseString(value);
+    }
+
+    internal class LayerMaskConverter : UxmlAttributeConverter<LayerMask>
+    {
+        public override LayerMask FromString(string value) => UxmlUtility.ParseInt(value);
+        public override string ToString(LayerMask lm) => lm.value.ToString();
     }
 
     internal class BoundsAttributeConverter : UxmlAttributeConverter<Bounds>
@@ -499,6 +505,9 @@ namespace UnityEditor.UIElements
     {
         public override List<T> FromString(string value)
         {
+            if (value == null)
+                return null;
+
             var items = value.Split(',');
             if (items.Length <= 0 || !UxmlAttributeConverter.TryGetConverter<T>(out var converter))
                 return null;

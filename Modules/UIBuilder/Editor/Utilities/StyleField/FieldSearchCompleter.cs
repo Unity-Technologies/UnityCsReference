@@ -4,15 +4,26 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEditor;
 
 namespace Unity.UI.Builder
 {
-    class FieldSearchCompleter<TData>
+    internal interface IFieldSearchCompleter
+    {
+        public FieldSearchCompleterPopup popup { get; }
+
+        /// <summary>
+        /// Refreshes the result.
+        /// </summary>
+        public void Refresh();
+    }
+
+    class FieldSearchCompleter<TData> : IFieldSearchCompleter
     {
         const int k_ItemHeight = 20;
+        const int k_PauseDelay = 250;
 
         static readonly List<TData> s_EmptyMatchingDataList = new List<TData>();
 
@@ -30,6 +41,7 @@ namespace Unity.UI.Builder
         Func<string, TData, bool> m_MatcherCallback;
         Func<string, string> m_GetFilterFromTextCallback;
         Func<TData, string> m_GetTextFromDataCallback;
+        private Func<int, string> m_GetResultCountTextCallback;
 
         // List view properties
         int m_ItemHeight;
@@ -40,10 +52,20 @@ namespace Unity.UI.Builder
         // UI parts
         FieldSearchCompleterPopup m_Popup;
         VisualElement m_DetailsContent;
+        VisualElement m_Footer;
         TextField m_TextField;
 
-        // External references
-        Builder m_Builder;
+        private bool m_TemporarilyDontShowPopup;
+
+        private bool m_IsEvaluatingFocus;
+        private bool m_HasPendingValueChanged;
+        private string m_PendingPreviousValue;
+
+        /// <summary>
+        /// Indicates whether the popup is a native popup window rather than a overlay VisualElement.
+        /// The default value is false.
+        /// </summary>
+        public bool usesNativePopupWindow { get; set; }
 
         public bool enabled
         {
@@ -68,7 +90,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        public bool alwaysVisible { get; set; } = false;
+        public bool alwaysVisible { get; set; }
 
         public List<TData> results
         {
@@ -77,8 +99,12 @@ namespace Unity.UI.Builder
             {
                 // Refresh every time set is called even when it has not changed
                 m_Results = value;
-                popup.listView.itemsSource = m_Results;
-                popup.Refresh();
+                if (m_Popup != null)
+                {
+                    popup.listView.itemsSource = m_Results;
+                    popup.resultLabel.text = GetResultCountText(m_Results?.Count ?? 0);
+                    popup.Refresh();
+                }
             }
         }
 
@@ -135,7 +161,9 @@ namespace Unity.UI.Builder
             }
         }
 
+        public event Action<TData> hoveredItemChanged;
         public event Action<TData> selectionChanged;
+        public Action<int> itemChosen;
 
         public int itemHeight
         {
@@ -143,7 +171,8 @@ namespace Unity.UI.Builder
             set
             {
                 m_ItemHeight = value;
-                UpdatePopup();
+                if (m_Popup != null)
+                    m_Popup.listView.fixedItemHeight = m_ItemHeight;
             }
         }
 
@@ -153,7 +182,8 @@ namespace Unity.UI.Builder
             set
             {
                 m_MakeItem = value;
-                UpdatePopup();
+                if (m_Popup != null)
+                    m_Popup.listView.makeItem = m_MakeItem;
             }
         }
 
@@ -163,7 +193,8 @@ namespace Unity.UI.Builder
             set
             {
                 m_DestroyItem = value;
-                UpdatePopup();
+                if (m_Popup != null)
+                    m_Popup.listView.destroyItem = m_DestroyItem;
             }
         }
 
@@ -173,19 +204,8 @@ namespace Unity.UI.Builder
             set
             {
                 m_BindItem = value;
-                UpdatePopup();
-            }
-        }
-
-        void UpdatePopup()
-        {
-            if (m_Popup != null)
-            {
-                m_Popup.listView.fixedItemHeight = m_ItemHeight;
-                m_Popup.listView.makeItem = m_MakeItem;
-                m_Popup.listView.destroyItem = m_DestroyItem;
-                m_Popup.listView.bindItem = m_BindItem;
-                m_Popup.anchoredControl = textField;
+                if (m_Popup != null)
+                    m_Popup.listView.bindItem = m_BindItem;
             }
         }
 
@@ -195,52 +215,40 @@ namespace Unity.UI.Builder
             set => m_GetFilterFromTextCallback = value;
         }
 
+        public Func<int, string> getResultCountTextCallback
+        {
+            get => m_GetResultCountTextCallback;
+            set => m_GetResultCountTextCallback = value;
+        }
+
         public Func<TData, string> getTextFromDataCallback
         {
             get => m_GetTextFromDataCallback;
             set => m_GetTextFromDataCallback = value;
         }
 
-        public FieldSearchCompleterPopup popup
-        {
-            get
-            {
-                if (m_Popup == null)
-                {
-                    var inspector = m_TextField.GetFirstAncestorOfType<BuilderInspector>();
-                    if (inspector != null)
-                    {
-                        m_Builder = inspector.paneWindow as Builder;
-                    }
-                    else
-                    {
-                        m_Builder = null;
-                    }
-
-                    if (m_Builder != null)
-                    {
-                        m_Popup = new FieldSearchCompleterPopup();
-                        if (detailsContent != null)
-                            m_Popup.Add(detailsContent);
-                        m_Builder.rootVisualElement.Add(m_Popup);
-                        m_Popup.Hide();
-                        m_Popup.elementChosen += (index) =>
-                        {
-                            textField.value = GetTextFromData(results[index]);
-                            textField.Blur();
-                        };
-                        m_Popup.selectionChanged += (index) => selectionChanged?.Invoke(index != -1 ? results[index] : default(TData));
-                        UpdatePopup();
-                    }
-                }
-                return m_Popup;
-            }
-        }
+        public FieldSearchCompleterPopup popup => m_Popup;
 
         public VisualElement detailsContent
         {
             get => m_DetailsContent;
-            set => m_DetailsContent = value;
+            set
+            {
+                m_DetailsContent?.RemoveFromClassList(FieldSearchCompleterPopup.s_DetailsViewUssClassName);
+                m_DetailsContent = value;
+                m_DetailsContent?.AddToClassList(FieldSearchCompleterPopup.s_DetailsViewUssClassName);
+            }
+        }
+
+        public VisualElement footer
+        {
+            get => m_Footer;
+            set
+            {
+                m_Footer?.RemoveFromClassList(FieldSearchCompleterPopup.s_FooterUssClassName);
+                m_Footer = value;
+                m_Footer?.AddToClassList(FieldSearchCompleterPopup.s_FooterUssClassName);
+            }
         }
 
         public TextField textField
@@ -256,7 +264,68 @@ namespace Unity.UI.Builder
                 m_TextField = value;
 
                 ConnectToField();
-                UpdatePopup();
+                if (m_Popup != null)
+                    m_Popup.anchoredControl = m_TextField.visualInput;
+            }
+        }
+
+        void EnsurePopupIsCreated()
+        {
+            if (m_Popup == null)
+            {
+                VisualElement rootElement;
+
+                var inspector = m_TextField.GetFirstAncestorOfType<BuilderInspector>();
+                if (inspector != null)
+                {
+                    var builder = inspector.paneWindow as Builder;
+                    rootElement = builder.rootVisualElement;
+                }
+                else
+                {
+                    rootElement = m_TextField.GetRootVisualContainer();
+                }
+
+                if (rootElement != null)
+                {
+                    m_Popup = CreatePopup();
+                    m_Popup.usesNativeWindow = usesNativePopupWindow;
+
+                    if (footer != null)
+                        m_Popup.Add(footer);
+
+                    if (detailsContent != null)
+                    {
+                        m_Popup.Add(detailsContent);
+                    }
+
+                    if (!usesNativePopupWindow)
+                    {
+                        rootElement.Add(m_Popup);
+                    }
+
+                    m_Popup.elementChosen += (index) =>
+                    {
+                        CancelEvaluateFocus();
+                        textField.value = GetTextFromData(results[index]);
+                        m_TemporarilyDontShowPopup = true;
+                        textField.schedule.Execute((e) =>
+                        {
+                            textField.Blur();
+                            m_TemporarilyDontShowPopup = false;
+                        }).ExecuteLater(k_PauseDelay);
+                        if (usesNativePopupWindow)
+                        {
+                            m_Popup?.Hide();
+                        }
+
+                        itemChosen?.Invoke(index);
+                    };
+                    m_Popup.hoveredItemChanged += (index) => hoveredItemChanged?.Invoke(index != -1 ? results[index] : default(TData));
+                    m_Popup.selectionChanged += (index) => selectionChanged?.Invoke(index != -1 ? results[index] : default(TData));
+                    m_Popup.onHide += OnPopupWindowClose;
+                    UpdatePopup();
+                }
             }
         }
 
@@ -264,9 +333,11 @@ namespace Unity.UI.Builder
         {
             if (m_TextField != null && enabled)
             {
-                m_TextField.Q(TextField.textInputUssName).RegisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
-                m_TextField.Q(TextField.textInputUssName).RegisterCallback<BlurEvent>(OnBlur, TrickleDown.TrickleDown);
+                m_TextField.RegisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
+                m_TextField.RegisterCallback<FocusOutEvent>(OnFocusOut, TrickleDown.TrickleDown);
+                m_TextField.RegisterValueChangedCallback(OnTextValueChange);
                 m_TextField.Q(TextField.textInputUssName).RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+                m_TextField.RegisterCallback<DetachFromPanelEvent>(OnTextFieldDetached);
             }
         }
 
@@ -274,9 +345,19 @@ namespace Unity.UI.Builder
         {
             if (m_TextField != null)
             {
-                m_TextField.Q(TextField.textInputUssName).UnregisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
-                m_TextField.Q(TextField.textInputUssName).UnregisterCallback<BlurEvent>(OnBlur, TrickleDown.TrickleDown);
+                m_TextField.UnregisterCallback<DetachFromPanelEvent>(OnTextFieldDetached);
+                m_TextField.UnregisterValueChangedCallback(OnTextValueChange);
+                m_TextField.UnregisterCallback<FocusInEvent>(OnFocusIn, TrickleDown.TrickleDown);
+                m_TextField.UnregisterCallback<FocusOutEvent>(OnFocusOut, TrickleDown.TrickleDown);
                 m_TextField.Q(TextField.textInputUssName).UnregisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+            }
+        }
+
+        void OnTextFieldDetached(DetachFromPanelEvent evt)
+        {
+            if (m_Popup != null && m_Popup.isOpened)
+            {
+                m_Popup.Hide();
             }
         }
 
@@ -295,21 +376,52 @@ namespace Unity.UI.Builder
             };
             bindItem = (e, i) =>
             {
-                (e as Label).text = GetTextFromData(results[i]);
+                if (e is Label label)
+                    label.text = GetTextFromData(results[i]);
             };
         }
+
+        void UpdatePopup()
+        {
+            if (m_Popup != null)
+            {
+                m_Popup.listView.fixedItemHeight = m_ItemHeight;
+                m_Popup.listView.makeItem = m_MakeItem;
+                m_Popup.listView.destroyItem = m_DestroyItem;
+                m_Popup.listView.bindItem = m_BindItem;
+                m_Popup.anchoredControl = textField.visualInput;
+            }
+        }
+
+        // This has to be called during an event to ensure that GUIUtility.GUIToScreenRect() uses the window containing the attached text field.
+        void UpdateAnchoredControlScreenPosition()
+        {
+            var field = textField.visualInput;
+
+            if (field != null)
+            {
+                field.SetProperty(BuilderConstants.CompleterAnchoredControlScreenRectVEPropertyName, GUIUtility.GUIToScreenRect(field.worldBound));
+            }
+        }
+
+        protected virtual FieldSearchCompleterPopup CreatePopup() => new FieldSearchCompleterPopup();
 
         static bool DefaultMatcher(string filter, TData data)
         {
             var text = data.ToString();
-            return string.IsNullOrEmpty(text) ? false : text.Contains(filter);
+            return !string.IsNullOrEmpty(text) && text.Contains(filter);
         }
 
         void OnTextChanged()
         {
+            UpdateFilter(m_TextField.text);
+        }
+
+        void ScheduleTextChange()
+        {
             if (m_ScheduledFilterUpdate == null)
             {
-                m_ScheduledFilterUpdate = popup?.schedule.Execute(a => UpdateFilter(m_TextField.text));
+                m_ScheduledFilterUpdate = m_TextField?.schedule.Execute(a => UpdateFilter(m_TextField.text));
             }
             else
             {
@@ -320,6 +432,18 @@ namespace Unity.UI.Builder
         protected virtual bool IsValidText(string text)
         {
             return true;
+        }
+
+        /// <summary>
+        /// Refreshes the result.
+        /// </summary>
+        public void Refresh()
+        {
+            m_DataSourceDirty = true;
+            if (m_Popup != null)
+            {
+                OnTextChanged();
+            }
         }
 
         void UpdateFilter(string text)
@@ -333,34 +457,45 @@ namespace Unity.UI.Builder
             SetFilter(GetFilterFromText(text));
         }
 
-        string GetFilterFromText(string text)
+        private string GetFilterFromText(string text)
         {
             return m_GetFilterFromTextCallback != null ? m_GetFilterFromTextCallback(text) : text;
         }
 
-        string GetTextFromData(TData data)
+        protected virtual string GetTextFromData(TData data)
         {
             return m_GetTextFromDataCallback != null ? m_GetTextFromDataCallback(data) : data.ToString();
         }
 
-        void SetFilter(string filter)
+        protected virtual string GetResultCountText(int count)
         {
-            if (dataSource == null || popup == null || matcherCallback == null)
+            return m_GetResultCountTextCallback?.Invoke(count) ?? $"{count} found";
+        }
+
+        protected virtual bool MatchFilter(string filter, in TData data)
+        {
+            return string.IsNullOrEmpty(filter) || (matcherCallback?.Invoke(filter, data) ?? false);
+        }
+
+        private void SetFilter(string filter)
+        {
+            if (dataSource == null || matcherCallback == null)
                 return;
 
             var matchingDataList = new List<TData>();
 
             foreach (var data in dataSource)
             {
-                if (string.IsNullOrEmpty(filter) || matcherCallback(filter, data))
+                if (MatchFilter(filter, in data))
                     matchingDataList.Add(data);
             }
 
             results = matchingDataList;
 
-            if (popup.resolvedStyle.display != DisplayStyle.Flex)
+            if (!popup.isOpened && !m_TemporarilyDontShowPopup)
             {
                 popup.Show();
+                popup.listView.RefreshItems();
 
                 int selectedIndex = -1;
                 int i = 0;
@@ -389,21 +524,116 @@ namespace Unity.UI.Builder
 
         void OnFocusIn(FocusInEvent e)
         {
+            if (m_TemporarilyDontShowPopup)
+                return;
+
             m_DataSourceDirty = true;
+            EnsurePopupIsCreated();
 
             if (alwaysVisible)
             {
                 if (textField.isReadOnly)
                     return;
-
+                UpdateAnchoredControlScreenPosition();
                 OnTextChanged();
             }
         }
 
-        void OnBlur(BlurEvent e)
+        void OnFocusOut(FocusOutEvent e)
         {
             m_ScheduledFilterUpdate?.Pause();
-            m_Popup?.Hide();
+            if (usesNativePopupWindow)
+            {
+                ScheduleEvaluateFocus();
+            }
+            else
+            {
+                m_Popup?.Hide();
+            }
+        }
+
+        void OnPopupWindowClose()
+        {
+            ScheduleEvaluateFocus();
+        }
+
+        void OnTextValueChange(ChangeEvent<string> e)
+        {
+            // Do not submit the value change until we evaluate the current focus. See EvaluateFocus.
+            if (m_IsEvaluatingFocus)
+            {
+                PendValueChange(e);
+            }
+            else
+            {
+                ClearPendingValueChange();
+            }
+        }
+
+        /*
+         * Schedule the check of the current focus on the next frame
+         */
+        void ScheduleEvaluateFocus()
+        {
+            if (m_IsEvaluatingFocus)
+                return;
+            
+            m_IsEvaluatingFocus = true;
+            m_TextField.schedule.Execute(EvaluateFocus);
+        }
+
+        void CancelEvaluateFocus()
+        {
+            ClearPendingValueChange();
+            m_IsEvaluatingFocus = false;
+        }
+
+        /*
+         * When the target text field loses focus, we do not submit (by blocking ChangeEvent notification) the new value right away because we want to ensure that
+         * the text field did not lose focus because the user click on the completer popup window (e.g user scrolls the results using the scrollbar).
+         * If this is what happened then we will submit the pending change only when the popup window will also lose focus unless the focus is given back to the text field or if the user choses a result.
+        */
+        void EvaluateFocus()
+        {
+            if (!m_IsEvaluatingFocus)
+                return;
+
+            m_IsEvaluatingFocus = false;
+
+            if (m_TextField.hasFocus || (m_Popup?.nativeWindow != null && m_Popup?.nativeWindow == EditorWindow.focusedWindow))
+                return;
+
+            SubmitPendingValueChange();
+        }
+
+        void PendValueChange(ChangeEvent<string> e)
+        {
+            m_HasPendingValueChanged = true;
+            m_PendingPreviousValue = e.previousValue;
+            e.StopImmediatePropagation();
+        }
+
+        void ClearPendingValueChange()
+        {
+            m_HasPendingValueChanged = false;
+            m_PendingPreviousValue = null;
+        }
+
+        void SubmitPendingValueChange()
+        {
+            if (!m_HasPendingValueChanged)
+                return;
+
+            try
+            {
+                using var evt = ChangeEvent<string>.GetPooled(m_PendingPreviousValue, m_TextField.value);
+                evt.elementTarget = m_TextField;
+                m_TextField.SendEvent(evt);
+            }
+            finally
+            {
+                ClearPendingValueChange();
+            }
         }
 
         bool IsNavigationEvent(KeyDownEvent evt)
@@ -430,6 +660,9 @@ namespace Unity.UI.Builder
             if (textField.isReadOnly)
                 return;
 
+            EnsurePopupIsCreated();
+            UpdateAnchoredControlScreenPosition();
+
             // If the users presses DownArrow key but the popup is not visible then search using the current text
             if (e.keyCode == KeyCode.KeypadEnter || e.keyCode == KeyCode.Return || e.character == 3 || e.character == '\n')
             {
@@ -438,11 +671,18 @@ namespace Unity.UI.Builder
                 if (selectedIndex != -1)
                 {
                     m_TextField.value = GetTextFromData(m_Results[selectedIndex]);
-                    return;
+                    textField.Blur();
+                    m_TemporarilyDontShowPopup = true;
+                    textField.schedule.Execute((e) => m_TemporarilyDontShowPopup = false).ExecuteLater(k_PauseDelay);
+                    if (usesNativePopupWindow)
+                    {
+                        m_Popup?.Hide();
+                    }
+                    itemChosen?.Invoke(selectedIndex);
                 }
             }
 
-            if (e.keyCode == KeyCode.DownArrow && popup.resolvedStyle.display != DisplayStyle.Flex)
+            if (e.keyCode == KeyCode.DownArrow && m_Popup is not {isOpened: true})
             {
                 OnTextChanged();
             }
@@ -470,7 +710,7 @@ namespace Unity.UI.Builder
             }
             else if (!IsNavigationEvent(e))
             {
-                OnTextChanged();
+                ScheduleTextChange();
             }
         }
     }
@@ -478,14 +718,31 @@ namespace Unity.UI.Builder
     class FieldSearchCompleterPopup : StyleFieldPopup
     {
         static readonly string s_UssClassName = "unity-field-search-completer-popup";
-        static readonly string s_ResultLabelUssClassName = "unity-field-search-completer-popup__result-label";
+        public static readonly string s_DetailsViewUssClassName = s_UssClassName + "__details-view";
+        public static readonly string s_FooterUssClassName = s_UssClassName + "__footer";
+        public static readonly string s_ResultLabelUssClassName = s_UssClassName + "__result-label";
 
-        Label m_ResultLabel;
+        int m_HoveredIndex = -1;
 
         public Action<int> elementChosen;
         public Action<int> selectionChanged;
+        public event Action<int> hoveredItemChanged;
 
-        public ListView listView { get; private set; }
+        public int hoveredIndex
+        {
+            get => m_HoveredIndex;
+            set
+            {
+                if (m_HoveredIndex == value)
+                    return;
+                m_HoveredIndex = value;
+                hoveredItemChanged?.Invoke(value);
+            }
+        }
+
+        public ListView listView { get; }
+
+        public Label resultLabel { get;  }
 
         public FieldSearchCompleterPopup()
         {
@@ -507,8 +764,8 @@ namespace Unity.UI.Builder
             };
 
             Add(listView);
-            Add(m_ResultLabel = new Label());
-            m_ResultLabel.AddToClassList(s_ResultLabelUssClassName);
+            Add(resultLabel = new Label());
+            resultLabel.AddToClassList(s_ResultLabelUssClassName);
 
             // Avoid focus change when clicking on the popup
             listView.Q<ScrollView>().contentContainer.focusable = true;
@@ -522,7 +779,29 @@ namespace Unity.UI.Builder
             {
                 e.StopImmediatePropagation();
             });
+            listView.scrollView.contentContainer.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+            listView.scrollView.contentContainer.RegisterCallback<PointerLeaveEvent>(OnPointerLeaveEvent);
             style.minHeight = 0;
+        }
+
+
+        void OnPointerMove(PointerMoveEvent evt)
+        {
+            var index = listView.virtualizationController.GetIndexFromPosition(evt.localPosition);
+
+            if (index > listView.viewController.itemsSource.Count - 1)
+            {
+                hoveredIndex = -1;
+            }
+            else
+            {
+                hoveredIndex = index;
+            }
+        }
+
+        void OnPointerLeaveEvent(PointerLeaveEvent evt)
+        {
+            hoveredIndex = -1;
         }
 
         public override void AdjustGeometry()
@@ -536,9 +815,7 @@ namespace Unity.UI.Builder
         public void Refresh()
         {
             listView.RefreshItems();
-
             listView.ClearSelection();
-            m_ResultLabel.text = (listView.itemsSource != null ? listView.itemsSource.Count : 0) + " found";
         }
     }
 }

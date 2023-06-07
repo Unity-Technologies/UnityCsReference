@@ -19,7 +19,7 @@ namespace Unity.UI.Builder
 
     static class TransitionChangeTypeExtensions
     {
-        public static bool Any(this TransitionChangeType value)
+        public static bool HasAnyFlag(this TransitionChangeType value)
         {
             return (value & TransitionChangeType.All) != TransitionChangeType.None;
         }

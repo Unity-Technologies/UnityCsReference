@@ -10,8 +10,8 @@ enum EventsButtonType
 {
     Ok,
     ManageLicense,
-    SaveAndClose,
-    Close,
+    SaveAndQuit,
+    Quit,
     UpdateLicense,
     OpenUnityHub
 }

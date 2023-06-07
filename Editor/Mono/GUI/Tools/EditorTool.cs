@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 
-using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.EditorTools
@@ -83,6 +83,8 @@ namespace UnityEditor.EditorTools
         public virtual void OnWillBeDeactivated() {}
 
         public virtual void OnToolGUI(EditorWindow window) {}
+
+        public virtual void PopulateMenu(DropdownMenu menu) {}
 
         public virtual bool IsAvailable()
         {

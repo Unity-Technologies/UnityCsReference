@@ -582,7 +582,7 @@ namespace UnityEngine.UIElements
 
                 var wrapper = new TreeViewItemWrapper(treeItem, depth);
                 wrappers.Add(wrapper);
-                m_TreeItemIdsWithItemWrappers.Add(id); 
+                m_TreeItemIdsWithItemWrappers.Add(id);
 
                 if (baseTreeView?.expandedItemIds == null)
                     continue;

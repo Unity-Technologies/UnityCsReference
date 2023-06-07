@@ -19,7 +19,6 @@ namespace Unity.UI.Builder
 
         const int k_DefaultCellSize = 50;
         const int k_TextureSize = 64;
-        const int k_NumberOfQuadsInRow = 4;
         int m_CellSize = k_DefaultCellSize;
         static readonly Color k_DefaultOddCellColor = new Color(0f, 0f, 0f, 0.18f);
         static readonly Color k_DefaultEvenCellColor = new Color(0f, 0f, 0f, 0.38f);
@@ -51,6 +50,7 @@ namespace Unity.UI.Builder
         {
             pickingMode = PickingMode.Ignore;
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
+            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             style.position = Position.Absolute;
             generateVisualContent += OnGenerateVisualContent;
@@ -69,22 +69,62 @@ namespace Unity.UI.Builder
             m_Texture = null;
         }
 
-        void OnGenerateVisualContent(MeshGenerationContext context)
+        void OnAttachToPanel(AttachToPanelEvent e)
         {
-            var quadSize = localBound.size / k_NumberOfQuadsInRow;
-            for (var x = 0; x < k_NumberOfQuadsInRow; x++)
-                for (var y = 0; y < k_NumberOfQuadsInRow; y++)
-                    Quad(new Vector2(x * quadSize.x, y * quadSize.y), quadSize, Color.white, m_Texture, context);
+            if (parent != null)
+            {
+                parent.RegisterCallback<GeometryChangedEvent>(e => { UpdateWidthAndHeight(); });
+            }
         }
 
-        void Quad(Vector2 pos, Vector2 size, Color color, Texture2D texture2D, MeshGenerationContext context)
+        void UpdateWidthAndHeight()
         {
-            var mesh = context.Allocate(4, 6, texture2D);
+            if (parent != null)
+            {
+                var parentSize = new Vector2(parent.worldClip.width, parent.worldClip.height);
+                var veSize = m_CellSize * k_TextureSize;
+                var quadSize = new Vector2(veSize, veSize);
+
+                int dimX = (int)Mathf.Max(Mathf.Ceil(parentSize.x / quadSize.x), 1.0f);
+                int dimY = (int)Mathf.Max(Mathf.Ceil(parentSize.y / quadSize.y), 1.0f);
+
+                style.width = dimX * quadSize.x;
+                style.height = dimY * quadSize.y;
+
+                MarkDirtyRepaint();
+            }
+        }
+
+        void OnGenerateVisualContent(MeshGenerationContext context)
+        {
+            var veSize = m_CellSize * k_TextureSize;
+            var quadSize = new Vector2(veSize, veSize);
+
+            int dimX = (int)(resolvedStyle.width / quadSize.x) + 1;
+            int dimY = (int)(resolvedStyle.height / quadSize.x) + 1;
+
+            float offsetX = ((int)(worldClip.x - worldBound.x) / (m_CellSize * 2)) * (m_CellSize * 2);
+            float offsetY = ((int)(worldClip.y - worldBound.y) / (m_CellSize * 2)) * (m_CellSize * 2);
+
+            int dim = dimX * dimY;
+            var mesh = context.Allocate(4 * dim, 6 * dim, m_Texture);
+
+            for (var x = 0; x < dimX; x++)
+                for (var y = 0; y < dimY; y++)
+                {
+                    Quad(mesh, new Vector2(offsetX + x * quadSize.x, offsetY + y * quadSize.y), quadSize, Color.white);
+                }
+        }
+
+        void Quad(MeshWriteData mesh, Vector2 pos, Vector2 size, Color color)
+        {
             var x0 = pos.x;
             var y0 = pos.y;
 
             var x1 = pos.x + size.x;
             var y1 = pos.y + size.y;
+
+            int indexOffset = mesh.currentVertex;
 
             mesh.SetNextVertex(new Vertex
             {
@@ -112,27 +152,50 @@ namespace Unity.UI.Builder
                 uv = new Vector2(1,1)
             });
 
-            mesh.SetNextIndex(0);
-            mesh.SetNextIndex(1);
-            mesh.SetNextIndex(2);
+            mesh.SetNextIndex((ushort)(indexOffset + 0));
+            mesh.SetNextIndex((ushort)(indexOffset + 1));
+            mesh.SetNextIndex((ushort)(indexOffset + 2));
 
-            mesh.SetNextIndex(1);
-            mesh.SetNextIndex(3);
-            mesh.SetNextIndex(2);
+            mesh.SetNextIndex((ushort)(indexOffset + 1));
+            mesh.SetNextIndex((ushort)(indexOffset + 3));
+            mesh.SetNextIndex((ushort)(indexOffset + 2));
         }
 
         void OnCustomStyleResolved(CustomStyleResolvedEvent e)
         {
+            bool generateResources = false;
+
             if (e.customStyle.TryGetValue(k_CellSizeProperty, out var cellSizeProperty))
-                m_CellSize = cellSizeProperty;
+            {
+                if (m_CellSize != cellSizeProperty)
+                {
+                    m_CellSize = cellSizeProperty;
+                    generateResources = true;
+                }
+            }
 
             if (e.customStyle.TryGetValue(k_OddCellColorProperty, out var oddCellColor))
-                m_OddCellColor = oddCellColor;
+            {
+                if (m_OddCellColor != oddCellColor)
+                {
+                    m_OddCellColor = oddCellColor;
+                    generateResources = true;
+                }
+            }
 
             if (e.customStyle.TryGetValue(k_EvenCellColorProperty, out var evenCellColor))
-                m_EvenCellColor = evenCellColor;
+            {
+                if (m_EvenCellColor != evenCellColor)
+                {
+                    m_EvenCellColor = evenCellColor;
+                    generateResources = true;
+                }
+            }
 
-            GenerateResources();
+            if (generateResources)
+            {
+                GenerateResources();
+            }
         }
 
         void GenerateResources()
@@ -156,9 +219,10 @@ namespace Unity.UI.Builder
                 even = !even;
             }
 
+            // The width and height will not directly be used since we compute a dynamic size in OnGenerateVisualContent
             var veSize = m_CellSize * k_TextureSize;
-            style.width = veSize * k_NumberOfQuadsInRow;
-            style.height = veSize * k_NumberOfQuadsInRow;
+            style.width = veSize;
+            style.height = veSize;
 
             m_Texture.Apply(false, true);
         }

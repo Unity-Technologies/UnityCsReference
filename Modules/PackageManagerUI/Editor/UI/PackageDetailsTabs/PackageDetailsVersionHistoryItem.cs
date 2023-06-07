@@ -14,10 +14,10 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public IPackageVersion version => m_Version;
         public bool expanded => versionHistoryItemToggle.value;
-        public PackageToolBarButton button => m_Button;
+        public PackageAction action { get; }
 
         private IPackageVersion m_Version;
-        private readonly PackageToolBarRegularButton m_Button;
+        private readonly PackageToolBarButton m_Button;
         private readonly PackageDatabase m_PackageDatabase;
         private readonly PackageOperationDispatcher m_OperationDispatcher;
         private readonly UpmCache m_UpmCache;
@@ -37,7 +37,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             bool multipleVersionsVisible,
             bool isLatestVersion,
             bool expanded,
-            PackageToolBarRegularButton button)
+            PackageAction action)
         {
             m_Version = version;
             m_PackageDatabase = packageDatabase;
@@ -63,10 +63,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 onToggleChanged?.Invoke(evt.newValue);
             });
 
-            m_Button = button;
-            if (m_Button != null)
-                versionHistoryItemToggleRightContainer.Add(m_Button.element);
-
+            this.action = action;
+            if (action != null)
+            {
+                m_Button = new PackageToolBarSimpleButton(action);
+                versionHistoryItemToggleRightContainer.Add(m_Button);
+            }
             Refresh(multipleVersionsVisible, isLatestVersion);
         }
 

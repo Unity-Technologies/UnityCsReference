@@ -75,7 +75,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public abstract string id { get; }
         public abstract string displayName { get; }
-        public abstract PageIcon icon { get; }
+        public abstract Icon icon { get; }
         public abstract RefreshOptions refreshOptions { get; }
         public abstract IVisualStateList visualStates { get; }
 

@@ -451,7 +451,7 @@ namespace Unity.UI.Builder
             if (newValue < (int)BuilderConstants.CanvasMinWidth)
             {
                 newValue = (int)BuilderConstants.CanvasMinWidth;
-                var field = evt.target as IntegerField;
+                var field = evt.elementTarget as IntegerField;
 
                 // HACK until fix goes in:
                 field.isDelayed = false;
@@ -473,7 +473,7 @@ namespace Unity.UI.Builder
             {
                 newValue = (int)BuilderConstants.CanvasMinHeight;
 
-                var field = evt.target as IntegerField;
+                var field = evt.elementTarget as IntegerField;
 
                 // HACK until fix goes in:
                 field.isDelayed = false;

@@ -17,6 +17,7 @@ namespace UnityEditor.UIElements
     {
         private const string k_LiveReloadMenuText = "UI Toolkit Live Reload";
         private const string k_LiveReloadPreferenceKeySuffix = ".LiveReloadOn";
+        private const string k_BindingLogLevelKeySuffix = ".DataBinding.LogLevel";
         private static string k_GameViewLiveReloadPreferenceKey = null;
 
         private IMGUIContainer m_NotificationContainer;
@@ -46,6 +47,7 @@ namespace UnityEditor.UIElements
         private EditorWindowVisualTreeAssetTracker m_LiveReloadVisualTreeAssetTracker = null;
 
         private string m_LiveReloadPreferenceKey;
+        private string m_BindingLogLevelKey;
 
         public override void OnCreate(IWindowModel model)
         {
@@ -122,6 +124,9 @@ namespace UnityEditor.UIElements
             // Live Reload is off by default for all Editor Windows, except for the ones overriding liveReloadPreferenceDefault (Game View, UI Builder)
             m_LiveReloadPreferenceKey = GetWindowLiveReloadPreferenceKey(editorWindowModel.window.GetType());
             m_Panel.enableAssetReload = EditorPrefs.GetBool(m_LiveReloadPreferenceKey, editorWindowModel.window.liveReloadPreferenceDefault);
+
+            m_BindingLogLevelKey = GetWindowBindingLogLevelKey(editorWindowModel.window.GetType());
+            Binding.SetPanelLogLevel(m_Panel, GetBindingLogLevel(m_BindingLogLevelKey));
 
             var root = window.baseRootVisualElement;
             m_Panel.liveReloadSystem.RegisterVisualTreeAssetTracker(m_LiveReloadVisualTreeAssetTracker, root);
@@ -420,6 +425,7 @@ namespace UnityEditor.UIElements
                 AddUIELayoutDebuggerToMenu(menu);
             }
             AddUIElementsDebuggerToMenu(menu);
+            AddBindingLogOptionsToMenu(menu);
         }
 
         private void AddLiveReloadOptionToMenu(GenericMenu menu)
@@ -451,7 +457,7 @@ namespace UnityEditor.UIElements
             if (shortcut != null && shortcut.combinations.Any())
                 itemContent += $" {KeyCombination.SequenceToMenuString(shortcut.combinations)}";
 
-            menu.AddItem(EditorGUIUtility.TextContent(itemContent), false, DebugWindow, editorWindowModel.window);
+            menu.AddItem(EditorGUIUtility.TrTextContent(itemContent), false, DebugWindow, editorWindowModel.window);
         }
 
         private void AddUIELayoutDebuggerToMenu(GenericMenu menu)
@@ -472,6 +478,32 @@ namespace UnityEditor.UIElements
             {
                 UIElementsDebugger.OpenAndInspectWindow(window);
             }
+        }
+
+        private void AddBindingLogOptionsToMenu(GenericMenu menu)
+        {
+            var cachedEnum = EnumDataUtility.GetCachedEnumData(typeof(BindingLogLevel));
+            var i = 0;
+            foreach (var optionObj in cachedEnum.values)
+            {
+                var name = cachedEnum.displayNames[i++];
+                var content = EditorGUIUtility.TrTextContent($"Binding Console Logs/{name}");
+                var isOn = panel.dataBindingManager.logLevel == (BindingLogLevel)optionObj;
+                menu.AddItem(content, isOn, o => SetBindingLogLevel((BindingLogLevel)o), optionObj);
+            }
+        }
+
+        private BindingLogLevel GetBindingLogLevel(string key)
+        {
+            var optionStr = EditorPrefs.GetString(key, null);
+            return Enum.TryParse(optionStr, out BindingLogLevel result) ? result : editorWindowModel.window.defaultBindingLogLevel;
+        }
+
+        // Internal for tests.
+        internal void SetBindingLogLevel(BindingLogLevel logLevel)
+        {
+            Binding.SetPanelLogLevel(panel, logLevel);
+            EditorPrefs.SetString(m_BindingLogLevelKey, logLevel.ToString());
         }
 
         private void LayoutDebugWindow(object userData)
@@ -526,6 +558,11 @@ namespace UnityEditor.UIElements
         private static string GetWindowLiveReloadPreferenceKey(Type windowType)
         {
             return windowType + k_LiveReloadPreferenceKeySuffix;
+        }
+
+        private static string GetWindowBindingLogLevelKey(Type windowType)
+        {
+            return windowType + k_BindingLogLevelKeySuffix;
         }
 
         internal static bool IsGameViewWindowLiveReloadOn()

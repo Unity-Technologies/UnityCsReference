@@ -74,7 +74,8 @@ namespace UnityEditor.UIElements
                 field.label = m_Label.GetValueFromBag(bag, cc);
 
                 string propPath = m_PropertyPath.GetValueFromBag(bag, cc);
-                field.bindingPath = (string.IsNullOrEmpty(propPath)) ? string.Empty : propPath;
+                if (!string.IsNullOrEmpty(propPath))
+                    field.bindingPath = propPath;
             }
         }
 
@@ -94,6 +95,8 @@ namespace UnityEditor.UIElements
         public string label { get; set; }
 
         SerializedObject m_SerializedObject;
+        internal SerializedObject serializedObject => m_SerializedObject;
+
         SerializedProperty m_SerializedProperty;
         string m_SerializedPropertyReferenceTypeName;
         PropertyField m_ParentPropertyField;

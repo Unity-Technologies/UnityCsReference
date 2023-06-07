@@ -129,7 +129,7 @@ namespace UnityEngine.InputForUI
         internal static void NotifyUpdate()
         {
             // Don't Update if there are no registered users. Avoid unexpected InputForUI errors in the console.
-            if (_registrations.Count == 0)
+            if (!Application.isPlaying || _registrations.Count == 0)
                 return;
 
             s_sanitizer.BeforeProviderUpdate();

@@ -23,7 +23,7 @@ using StyleSheet = UnityEngine.UIElements.StyleSheet;
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
-    [ScriptedImporter(version: 13, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 14, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -912,7 +912,7 @@ namespace UnityEditor.UIElements
             if (UxmlSerializedDataRegistry.GetDescription(fullName) is UxmlSerializedDataDescription desc &&
                 desc.isUxmlObject)
             {
-                return new UxmlObjectAsset(fullName);
+                return new UxmlObjectAsset(fullName, false);
             }
 
             // Does the element contain values for a field marked with the UxmlObjectAttribute?
@@ -920,13 +920,13 @@ namespace UnityEditor.UIElements
                 UxmlSerializedDataRegistry.GetDescription(parent.fullTypeName) is UxmlSerializedDataDescription descParent &&
                 descParent.IsUxmlObjectField(fullName))
             {
-                return new UxmlObjectFieldAsset(fullName);
+                return new UxmlObjectAsset(fullName, true);
             }
 
             // Check for "legacy" UxmlObject
             if (UxmlObjectFactoryRegistry.factories.ContainsKey(fullName))
             {
-                return new UxmlObjectAsset(fullName);
+                return new UxmlObjectAsset(fullName, false);
             }
 
             if (elt.Name.LocalName == k_TemplateInstanceNode && elementNamespaceName == typeof(TemplateContainer).Namespace)

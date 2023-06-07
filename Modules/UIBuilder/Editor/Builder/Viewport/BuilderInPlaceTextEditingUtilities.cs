@@ -118,6 +118,12 @@ namespace Unity.UI.Builder
             if (s_EditedTextAttribute == null)
                 return;
 
+            if (viewport.bindingsCache.HasResolvedBinding(element, s_EditedTextAttribute.name))
+            {
+                Builder.ShowWarning(string.Format(BuilderConstants.CannotEditBoundPropertyMessage, s_EditedTextAttribute.name));
+                return;
+            }
+
             s_Viewport = viewport;
             s_EditedElement = element;
             s_EditedTextElement = textElement;
@@ -246,6 +252,9 @@ namespace Unity.UI.Builder
 
                     try
                     {
+                        // We need to clear bindings before calling Init to avoid corrupting the data source.
+                        BuilderBindingUtility.ClearUxmlBindings(s_EditedElement);
+
                         traits.Init(s_EditedElement, vea, context);
                     }
                     catch

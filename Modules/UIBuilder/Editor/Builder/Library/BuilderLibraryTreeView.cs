@@ -127,7 +127,7 @@ namespace Unity.UI.Builder
 
         void OnOpenButtonClick(EventBase evt)
         {
-            var button = evt.target as Button;
+            var button = evt.elementTarget as Button;
             var item = button.userData as BuilderLibraryTreeItem;
 
             if (item?.sourceAsset == null)

@@ -3,12 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
+using static Unity.UI.Builder.BuilderUxmlAttributesView;
 
 namespace Unity.UI.Builder
 {
@@ -29,16 +29,37 @@ namespace Unity.UI.Builder
 
         public static UxmlAttributeDescription GetLinkedAttributeDescription(this VisualElement ve)
         {
-            // UxmlSerializedFields have a PropertyField as the parent
-            var propertyField = ve as PropertyField ?? ve.parent as PropertyField;
-            if (propertyField != null)
-                return propertyField.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) as UxmlAttributeDescription;
-            return ve.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) as UxmlAttributeDescription;
+            // UxmlSerializedFields have a UxmlSerializedDataAttributeField as the parent
+            var dataField = ve as UxmlSerializedDataAttributeField ?? ve.GetFirstAncestorOfType<UxmlSerializedDataAttributeField>();
+            return (dataField ?? ve).GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) as UxmlAttributeDescription;
         }
 
         public static void SetLinkedAttributeDescription(this VisualElement ve, UxmlAttributeDescription attribute)
         {
             ve.SetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName, attribute);
+        }
+
+        public static BuilderStyleRow GetContainingRow(this VisualElement ve)
+        {
+            return ve.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow;
+        }
+
+        public static void SetContainingRow(this VisualElement ve, BuilderStyleRow row)
+        {
+            ve.SetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName, row);
+        }
+
+        public static List<VisualElement> GetLinkedFieldElements(this BuilderStyleRow row)
+        {
+            return row.GetProperty(BuilderConstants.InspectorLinkedFieldsForStyleRowVEPropertyName) as List<VisualElement>;
+        }
+
+        public static void AddLinkedFieldElement(this BuilderStyleRow row, VisualElement fieldElement)
+        {
+            var list = row.GetProperty(BuilderConstants.InspectorLinkedFieldsForStyleRowVEPropertyName) as List<VisualElement>;
+            list ??= new List<VisualElement>();
+            list.Add(fieldElement);
+            row.SetProperty(BuilderConstants.InspectorLinkedFieldsForStyleRowVEPropertyName, list);
         }
 
         public static List<UxmlAttributeDescription> GetAttributeDescriptions(this VisualElement ve, bool useTraits = false)
@@ -480,11 +501,16 @@ namespace Unity.UI.Builder
 
         public static FieldStatusIndicator GetFieldStatusIndicator(this VisualElement field)
         {
+            // UxmlSerialization uses a common parent.
+            var dataField = field as UxmlSerializedDataAttributeField ?? field.GetFirstAncestorOfType<UxmlSerializedDataAttributeField>();
+            if (dataField != null)
+                field = dataField;
+
             var statusIndicator = field.GetProperty(FieldStatusIndicator.s_FieldStatusIndicatorVEPropertyName) as FieldStatusIndicator;
 
             if (statusIndicator == null)
             {
-                var row = field.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow;
+                var row = field.GetContainingRow();
 
                 if (row == null)
                     return null;

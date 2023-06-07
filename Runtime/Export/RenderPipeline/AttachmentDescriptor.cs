@@ -252,7 +252,6 @@ namespace UnityEngine.Rendering
             }
         }
 
-
         public int this[int index]
         {
             get
@@ -284,6 +283,14 @@ namespace UnityEngine.Rendering
                         array[index] = value;
                     }
                 }
+            }
+        }
+
+        public int Length
+        {
+            get
+            {
+                return activeAttachments;
             }
         }
     }

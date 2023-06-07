@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Jobs.LowLevel.Unsafe;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -18,9 +19,10 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public static Material GetFallbackMaterial(Material sourceMaterial, Material targetMaterial)
         {
-            int sourceId = sourceMaterial.GetInstanceID();
-            Texture tex = targetMaterial.GetTexture(TextShaderUtilities.ID_MainTex);
-            int texId = tex.GetInstanceID();
+            bool isMainThread = !JobsUtility.IsExecutingJob;
+            int sourceId = sourceMaterial.GetHashCode();
+          
+            int texId = targetMaterial.GetHashCode();
             long key = (long)sourceId << 32 | (uint)texId;
 
             Material fallbackMaterial;
@@ -30,6 +32,9 @@ namespace UnityEngine.TextCore.Text
                     s_FallbackMaterials.Remove(key);
                 else
                 {
+                    // If we're not on the main thread, take for granted materials haven't change since last check.
+                    if (!isMainThread)
+                        return fallbackMaterial;
                     // Check if source material properties have changed.
                     int sourceMaterialCRC = sourceMaterial.ComputeCRC();
                     int fallbackMaterialCRC = fallbackMaterial.ComputeCRC();
@@ -46,6 +51,7 @@ namespace UnityEngine.TextCore.Text
             // Create new material from the source material and copy properties if using distance field shaders.
             if (sourceMaterial.HasProperty(TextShaderUtilities.ID_GradientScale) && targetMaterial.HasProperty(TextShaderUtilities.ID_GradientScale))
             {
+                Texture tex = targetMaterial.GetTexture(TextShaderUtilities.ID_MainTex);
                 fallbackMaterial = new Material(sourceMaterial);
                 fallbackMaterial.hideFlags = HideFlags.HideAndDontSave;
 
@@ -72,14 +78,20 @@ namespace UnityEngine.TextCore.Text
 
         public static Material GetFallbackMaterial(FontAsset fontAsset, Material sourceMaterial, int atlasIndex)
         {
-            int sourceMaterialID = sourceMaterial.GetInstanceID();
+            bool isMainThread = !JobsUtility.IsExecutingJob;
+            int sourceMaterialID = sourceMaterial.GetHashCode();
             Texture tex = fontAsset.atlasTextures[atlasIndex];
-            int texID = tex.GetInstanceID();
+            int texID = tex.GetHashCode();
             long key = (long)sourceMaterialID << 32 | (uint)texID;
 
             Material fallbackMaterial;
             if (s_FallbackMaterials.TryGetValue(key, out fallbackMaterial))
             {
+                // If we're not on the main thread, we assume nothng has changed since the last comparison (which should have been in the frame)
+                if (!isMainThread)
+                {
+                    return fallbackMaterial;
+                }
                 // Check if source material properties have changed.
                 int sourceMaterialCRC = sourceMaterial.ComputeCRC();
                 int fallbackMaterialCRC = fallbackMaterial.ComputeCRC();

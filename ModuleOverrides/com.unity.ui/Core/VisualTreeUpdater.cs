@@ -28,6 +28,7 @@ namespace UnityEngine.UIElements
     {
         ViewData,
         Bindings,
+        DataBinding,
         Animation,
         Styles,
         Layout,
@@ -149,6 +150,7 @@ namespace UnityEngine.UIElements
         {
             SetUpdater<VisualTreeViewDataUpdater>(VisualTreeUpdatePhase.ViewData);
             SetUpdater<VisualTreeBindingsUpdater>(VisualTreeUpdatePhase.Bindings);
+            SetUpdater<VisualTreeDataBindingsUpdater>(VisualTreeUpdatePhase.DataBinding);
             SetUpdater<VisualElementAnimationSystem>(VisualTreeUpdatePhase.Animation);
             SetUpdater<VisualTreeStyleUpdater>(VisualTreeUpdatePhase.Styles);
             SetUpdater<UIRLayoutUpdater>(VisualTreeUpdatePhase.Layout);

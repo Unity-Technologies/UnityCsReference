@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 namespace Unity.UI.Builder
 {
     /// <summary>
-    /// Creates a ui field based on uxml attributes. 
+    /// Creates a ui field based on uxml attributes.
     /// </summary>
     internal interface IBuilderUxmlAttributeFieldFactory
     {
@@ -20,7 +20,7 @@ namespace Unity.UI.Builder
         /// <param name="attribute">The uxml attribute to evaluate.</param>
         /// <returns>Return true if the factory can create field for the specified attribute.</returns>
         bool CanCreateField(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute);
-        
+
         /// <summary>
         /// Creates a ui field based on uxml attributes.
         /// </summary>
@@ -30,7 +30,7 @@ namespace Unity.UI.Builder
         /// <param name="onValueChange">The callback to invoke whenever the value of the create field changes.</param>
         /// <returns>The field created for the specified uxml attribute.</returns>
         VisualElement CreateField(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute, Action<VisualElement, UxmlAttributeDescription, object, string> onValueChange);
-        
+
         /// <summary>
         /// Sets the value of the specified field created from the specified uxml attribute.
         /// </summary>
@@ -41,7 +41,7 @@ namespace Unity.UI.Builder
         /// <param name="attribute">The uxml attribute related to the field to update.</param>
         /// <param name="value">The new value to set</param>
         void SetFieldValue(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute, object value);
-        
+
         /// <summary>
         /// Resets the value of the specified field created from the specified uxml attribute to its default value.
         /// </summary>
@@ -51,6 +51,8 @@ namespace Unity.UI.Builder
         /// <param name="attributeUxmlOwner">The uxml element that owns the uxml attribute related to field to reset.</param>
         /// <param name="attribute">The uxml attribute related to the field to reset.</param>
         void ResetFieldValue(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute);
+
+        void ResetFieldValueToInline(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute);
     }
 
     /// <summary>
@@ -108,6 +110,15 @@ namespace Unity.UI.Builder
         {
             var typedAttribute = attribute as TypedUxmlAttributeDescription<T>;
             (field as TFieldType).SetValueWithoutNotify(typedAttribute.defaultValue);
+        }
+
+        public virtual void ResetFieldValueToInline(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument,
+            UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
+        {
+            var typedAttribute = attribute as TypedUxmlAttributeDescription<T>;
+            var value = typedAttribute.GetValueFromBag(attributeUxmlOwner, CreationContext.Default);
+
+            SetFieldValue(field, attributeOwner, uxmlDocument, attributeUxmlOwner, attribute, value);
         }
 
         /// <summary>

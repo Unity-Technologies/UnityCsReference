@@ -24,7 +24,7 @@ namespace UnityEditor
 
         [SerializeField]
         [HideInInspector]
-        Vector2 m_MinSize = new Vector2(100, 100);
+        Vector2 m_MinSize = new Vector2(50, 50);
 
         [SerializeField]
         [HideInInspector]
@@ -77,6 +77,7 @@ namespace UnityEditor
         }
 
         internal virtual bool liveReloadPreferenceDefault => false;
+        internal virtual BindingLogLevel defaultBindingLogLevel => BindingLogLevel.All;
         internal bool isUIToolkitWindow => m_UIRootElement != null && m_UIRootElement.childCount > 0;
 
         [HideInInspector]

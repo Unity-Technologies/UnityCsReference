@@ -89,6 +89,7 @@ namespace Unity.UI.Builder
         }
 
         public static readonly string ussClassName = "unity-foldout";
+        public static readonly string unindentedUssClassName = ussClassName + "--unindented";
         public static readonly string toggleUssClassName = ussClassName + "__toggle";
         public static readonly string headerUssClassName = ussClassName + "__header";
         public static readonly string contentUssClassName = ussClassName + "__content";

@@ -103,11 +103,11 @@ namespace Unity.GraphToolsFoundation.Editor
         const string k_MovePlacematBackwardStringSingular = "Move Placemat Backward";
         const string k_MovePlacematBackwardStringPlural = "Move Placemats Backward";
 
-        const string k_MovePlacematTopStringSingular = "Move Placemat Top";
-        const string k_MovePlacematTopStringPlural = "Move Placemats Top";
+        const string k_MovePlacematTopStringSingular = "Move Placemat To Front";
+        const string k_MovePlacematTopStringPlural = "Move Placemats To Front";
 
-        const string k_MovePlacematBottomStringSingular = "Move Placemat Bottom";
-        const string k_MovePlacematBottomStringPlural = "Move Placemats Bottom";
+        const string k_MovePlacematBottomStringSingular = "Move Placemat To Back";
+        const string k_MovePlacematBottomStringPlural = "Move Placemats To Back";
 
         /// <summary>
         /// The type of reordering required.

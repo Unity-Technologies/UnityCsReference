@@ -616,10 +616,10 @@ namespace UnityEditor.Modules
             }
         }
 
-        public virtual string PrepareForBuild(BuildOptions options, BuildTarget target)
+        public virtual string PrepareForBuild(BuildPlayerOptions buildOptions)
         {
             // Clean the Bee folder in PrepareForBuild, so that it is also clean for script compilation.
-            if ((options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
+            if ((buildOptions.options & BuildOptions.CleanBuildCache) == BuildOptions.CleanBuildCache)
                 EditorCompilation.ClearBeeBuildArtifacts();
 
             return null;

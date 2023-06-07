@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
+using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore.LowLevel;
 
@@ -332,10 +333,13 @@ namespace UnityEngine.TextCore.Text
                 InitializeFontReferenceLookup();
             }
 
-            int id = font.GetInstanceID() + shader.GetInstanceID().GetHashCode();
+            int id = font.GetHashCode() + shader.GetHashCode();
 
             if (m_FontLookup.ContainsKey(id))
                 return m_FontLookup[id];
+
+            if (JobsUtility.IsExecutingJob)
+                return null;
 
             FontAsset fontAsset;
             if (font.name == "System Normal" || font.name == "System Small" || font.name == "System Big" || font.name == "System Warning")
@@ -366,7 +370,7 @@ namespace UnityEngine.TextCore.Text
             return fontAsset;
         }
 
-        [VisibleToOtherModules("UnityEngine.IMGUIModule")]
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal virtual float GetEditorTextSharpness()
         {
             Debug.LogWarning("GetEditorTextSettings() should only be called on EditorTextSettings");

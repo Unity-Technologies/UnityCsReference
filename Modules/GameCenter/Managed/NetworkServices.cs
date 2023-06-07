@@ -9,6 +9,7 @@ namespace UnityEngine
     using UnityEngine.SocialPlatforms;
 
     // A facade for the social API namespace, no state, only helper functions which delegate into others
+    [Obsolete("Social is deprecated and will be removed in a future release.", false)]
     public static class Social
     {
         public static ISocialPlatform Active
@@ -74,6 +75,8 @@ namespace UnityEngine
 namespace UnityEngine.SocialPlatforms
 {
     // The state of the current active social implementation
+
+    [Obsolete("ActivePlatform is deprecated and will be removed in a future release.", false)]
     internal static class ActivePlatform
     {
         private static ISocialPlatform _active;
@@ -99,6 +102,7 @@ namespace UnityEngine.SocialPlatforms
         }
     }
 
+    [Obsolete("ISocialPlatform is deprecated and will be removed in a future release.", false)]
     public interface ISocialPlatform
     {
         ILocalUser localUser { get; }
@@ -125,6 +129,7 @@ namespace UnityEngine.SocialPlatforms
         bool GetLoading(ILeaderboard board);
     }
 
+    [Obsolete("ILocalUser is deprecated and will be removed in a future release.", false)]
     public interface ILocalUser : IUserProfile
     {
         void Authenticate(Action<bool> callback);
@@ -137,6 +142,7 @@ namespace UnityEngine.SocialPlatforms
         bool underage { get; }
     }
 
+    [Obsolete("UserState is deprecated and will be removed in a future release.", false)]
     public enum UserState
     {
         Online,
@@ -146,6 +152,7 @@ namespace UnityEngine.SocialPlatforms
         Playing
     }
 
+    [Obsolete("IUserProfile is deprecated and will be removed in a future release.", false)]
     public interface IUserProfile
     {
         string userName { get; }
@@ -155,6 +162,7 @@ namespace UnityEngine.SocialPlatforms
         Texture2D image { get; }
     }
 
+    [Obsolete("IAchievement is deprecated and will be removed in a future release.", false)]
     public interface IAchievement
     {
         void ReportProgress(Action<bool> callback);
@@ -166,6 +174,7 @@ namespace UnityEngine.SocialPlatforms
         DateTime lastReportedDate { get; }
     }
 
+    [Obsolete("IAchievementDescription is deprecated and will be removed in a future release.", false)]
     public interface IAchievementDescription
     {
         string id { get; set; }
@@ -177,6 +186,7 @@ namespace UnityEngine.SocialPlatforms
         int points { get; }
     }
 
+    [Obsolete("IScore is deprecated and will be removed in a future release.", false)]
     public interface IScore
     {
         void ReportScore(Action<bool> callback);
@@ -190,12 +200,14 @@ namespace UnityEngine.SocialPlatforms
         int rank { get; }
     }
 
+    [Obsolete("UserScope is deprecated and will be removed in a future release.", false)]
     public enum UserScope
     {
         Global = 0,
         FriendsOnly
     }
 
+    [Obsolete("TimeScope is deprecated and will be removed in a future release.", false)]
     public enum TimeScope
     {
         Today = 0,
@@ -203,6 +215,7 @@ namespace UnityEngine.SocialPlatforms
         AllTime
     }
 
+    [Obsolete("Range is deprecated and will be removed in a future release.", false)]
     public struct Range
     {
         public int from;
@@ -215,6 +228,7 @@ namespace UnityEngine.SocialPlatforms
         }
     }
 
+    [Obsolete("ILeaderboard is deprecated and will be removed in a future release.", false)]
     public interface ILeaderboard
     {
         void SetUserFilter(string[] userIDs);

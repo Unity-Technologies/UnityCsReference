@@ -16,8 +16,8 @@ namespace UnityEngine.UIElements
         public new class UxmlSerializedData : BaseListView.UxmlSerializedData
         {
             #pragma warning disable 649
-            [SerializeField, UxmlObject] private Columns.UxmlSerializedData columns;
-            [SerializeField, UxmlObject] private SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
+            [SerializeReference, UxmlObjectReference] private Columns.UxmlSerializedData columns;
+            [SerializeReference, UxmlObjectReference] private SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
             [SerializeField] private bool sortingEnabled;
             #pragma warning restore 649
 

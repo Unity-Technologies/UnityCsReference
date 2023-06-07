@@ -44,6 +44,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.SceneViewModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UnityConnectModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsSamplesModule")]
+[assembly: InternalsVisibleTo("UnityEditor.UI.EditorTests")]
 
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")] // com.unity.2d.sprite: VisualElement.styleSheetList, FocusController.IsFocused
 [assembly: InternalsVisibleTo("Unity.2D.Tilemap.Editor")] // com.unity.2d.tilemap: IGenericMenu

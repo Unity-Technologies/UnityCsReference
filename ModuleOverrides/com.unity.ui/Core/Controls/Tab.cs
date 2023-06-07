@@ -16,9 +16,9 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class Tab : VisualElement
     {
-        internal static readonly DataBindingProperty labelProperty = nameof(label);
-        internal static readonly DataBindingProperty iconImageProperty = nameof(iconImage);
-        internal static readonly DataBindingProperty closeableProperty = nameof(closeable);
+        internal static readonly BindingId labelProperty = nameof(label);
+        internal static readonly BindingId iconImageProperty = nameof(iconImage);
+        internal static readonly BindingId closeableProperty = nameof(closeable);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData

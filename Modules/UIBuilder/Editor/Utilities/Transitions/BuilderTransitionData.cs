@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -64,6 +65,34 @@ namespace Unity.UI.Builder
             if (IsKeyword(transitionDelay))
                 keywords |= TransitionChangeType.Delay;
             return keywords;
+        }
+
+        public TransitionChangeType GetBindings()
+        {
+            var bindings = TransitionChangeType.None;
+
+            if (DataBindingUtility.TryGetLastUIBindingResult(VisualElement.StyleProperties.transitionPropertyProperty, transitionProperty.element, out var propertyBindingResult)
+                && propertyBindingResult.status == BindingStatus.Success)
+            {
+                bindings |= TransitionChangeType.Property;
+            }
+            if (DataBindingUtility.TryGetLastUIBindingResult(VisualElement.StyleProperties.transitionDurationProperty, transitionDuration.element, out var durationBindingResult)
+                && durationBindingResult.status == BindingStatus.Success)
+            {
+                bindings |= TransitionChangeType.Duration;
+            }
+            if (DataBindingUtility.TryGetLastUIBindingResult(VisualElement.StyleProperties.transitionTimingFunctionProperty, transitionTimingFunction.element, out var timingFunctionBindingResult)
+                && timingFunctionBindingResult.status == BindingStatus.Success)
+            {
+                bindings |= TransitionChangeType.TimingFunction;
+            }
+            if (DataBindingUtility.TryGetLastUIBindingResult(VisualElement.StyleProperties.transitionDelayProperty, transitionDelay.element, out var delayBindingResult)
+                && delayBindingResult.status == BindingStatus.Success)
+            {
+                bindings |= TransitionChangeType.Delay;
+            }
+
+            return bindings;
         }
 
         bool IsKeyword(StylePropertyManipulator manipulator)

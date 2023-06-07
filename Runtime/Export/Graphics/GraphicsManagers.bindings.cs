@@ -84,6 +84,8 @@ namespace UnityEngine
 
         [FreeFunction("GetRenderSettings")] extern internal static Object GetRenderSettings();
         [StaticAccessor("RenderSettingsScripting", StaticAccessorType.DoubleColon)] extern internal static void Reset();
+
+        extern internal static bool WasUsingAutoEnvironmentBakingWithNonDefaultSettings();
     }
 
     // Keep in sync with MipmapLimitSettings in Runtime\Graphics\Texture.h

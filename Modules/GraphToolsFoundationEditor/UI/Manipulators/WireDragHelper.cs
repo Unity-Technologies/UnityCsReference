@@ -112,6 +112,7 @@ namespace Unity.GraphToolsFoundation.Editor
             m_GhostWire = null;
             ClearWireCandidate();
             EnableAllWires_Internal(GraphView);
+            GraphView.IsWireDragging = false;
 
             if (GraphView?.elementPanel != null)
                 ContentDragger.ChangeMouseCursorTo_Internal(GraphView.elementPanel, (int)MouseCursor.Arrow);
@@ -160,6 +161,8 @@ namespace Unity.GraphToolsFoundation.Editor
 
             HighlightCompatiblePorts_Internal();
 
+            GraphView.IsWireDragging = true;
+
             m_WireCandidate.UpdateFromModel();
 
             m_PanHelper.OnMouseDown(evt, GraphView, Pan);
@@ -201,9 +204,14 @@ namespace Unity.GraphToolsFoundation.Editor
                 Debug.Assert(m_GhostWireModel != null);
 
                 var sideForEndPort = WireCandidateModel.FromPort == null ? WireSide.From : WireSide.To;
-                m_GhostWireModel.SetPort(sideForEndPort, endPort.PortModel);
-                ClearWillConnect(m_GhostWireModel, sideForEndPort);
+                var previousEndPort = m_GhostWireModel?.GetPort(sideForEndPort);
+                if (previousEndPort != null && previousEndPort.Guid != endPort.PortModel.Guid)
+                    ClearWillConnect(previousEndPort);
+
+                m_GhostWireModel?.SetPort(sideForEndPort, endPort.PortModel);
                 endPort.WillConnect = true;
+                // When the port will connect, show the node hover border.
+                ToggleNodeHoverBorder(endPort, true);
 
                 var otherSide = sideForEndPort.GetOtherSide();
                 m_GhostWireModel.SetPort(otherSide, WireCandidateModel.GetPort(otherSide));
@@ -253,7 +261,24 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             var port = portModel?.GetView<Port>(GraphView);
             if (port != null)
+            {
                 port.WillConnect = false;
+                // When the port will not connect, clear the node hover border.
+                ToggleNodeHoverBorder(port, false);
+            }
+        }
+
+        void ToggleNodeHoverBorder(Port port, bool showHoverBorder)
+        {
+            var nodeUI = port.PortModel.NodeModel.GetView<Node>(GraphView);
+            if (nodeUI != null)
+            {
+                nodeUI.Border.Hovered = showHoverBorder;
+                
+                // Also toggle the hover border of the container, if there is any.
+                if (port.PortModel.NodeModel.Container is GraphElementModel container && container.GetView_Internal(GraphView) is GraphElement containerUI)
+                    containerUI.Border.Hovered = showHoverBorder;
+            }
         }
 
         void Pan(TimerState timerState)

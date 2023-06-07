@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
 using UnityEngine;
 
 namespace Unity.CommandStateObserver
@@ -107,9 +106,15 @@ namespace Unity.CommandStateObserver
                 // Make sure the state gets emptied before getting destroyed
                 // so the components get a chance to cleanup.
                 if (State != null)
-                    foreach (var stateComponent in State.AllStateComponents.ToList())
+                {
+                    for (var index = State.AllStateComponents.Count - 1; index >= 0; index--)
+                    {
+                        var stateComponent = State.AllStateComponents[index];
                         State.RemoveStateComponent(stateComponent);
-                State = null;
+                    }
+
+                    State = null;
+                }
             }
         }
 

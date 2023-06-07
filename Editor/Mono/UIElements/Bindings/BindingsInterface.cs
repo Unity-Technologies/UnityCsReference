@@ -47,6 +47,8 @@ namespace UnityEditor.UIElements
         internal static readonly string livePropertyBarUssClassName = "unity-binding__live-property-bar";
 
         internal static readonly PropertyName s_DataSourceProperty = new PropertyName("unity-data-source");
+        internal static readonly string s_SerializedBindingId = "--unity-serialized-object-bindings";
+        internal static readonly string s_SerializedBindingContextUpdaterId = "--unity-serialized-object-bindings-context-updater";
 
         internal static ISerializedObjectBindingImplementation bindingImpl = null;
 

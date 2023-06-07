@@ -214,7 +214,7 @@ namespace Unity.UI.Builder
             if (inspector == null)
                 return Dimension.Unit.Unitless;
 
-            var cSharpStyleName = BuilderInspectorStyleFields.ConvertUssStyleNameToCSharpStyleName(styleName);
+            var cSharpStyleName = BuilderNameUtilities.ConvertUssNameToStyleName(styleName);
             var styleProperty = BuilderInspectorStyleFields.GetLastStyleProperty(inspector.currentRule, cSharpStyleName);
 
             if (styleProperty == null || styleProperty.IsVariable())

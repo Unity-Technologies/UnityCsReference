@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                              PackageDatabase packageDatabase,
                              PackageOperationDispatcher operationDispatcher,
                              PageManager pageManager)
-            : base(new PackageUpdateButton(applicationProxy, packageDatabase, operationDispatcher, pageManager))
+            : base(new UpdateAction(operationDispatcher, applicationProxy, packageDatabase, pageManager))
         {
         }
 

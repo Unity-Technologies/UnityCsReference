@@ -23,9 +23,9 @@ namespace UnityEngine.UIElements
         public Vector2 ComputeTextSize(string textToMeasure, float width, float height)
         {
             ConvertUssToTextGenerationSettings();
-            s_Settings.text = textToMeasure;
-            s_Settings.screenRect = new Rect(0, 0, width, height);
-            UpdatePreferredValues(s_Settings);
+            settings.text = textToMeasure;
+            settings.screenRect = new Rect(0, 0, width, height);
+            UpdatePreferredValues(settings);
             return preferredSize;
         }
 
@@ -33,32 +33,15 @@ namespace UnityEngine.UIElements
         {
             ConvertUssToTextGenerationSettings();
 
-            // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
-            var size = m_TextElement.contentRect.size;
-
-            // If the size is the last rounded size, we use the cached size before the rounding that was calculated
-            if (Mathf.Abs(size.x - RoundedSizes.x) < 0.01f && Mathf.Abs(size.y - RoundedSizes.y) < 0.01f)
-            {
-                size = MeasuredSizes;
-            }
-            else
-            {
-                //the size has change, we need to save that information
-                RoundedSizes = size;
-                MeasuredSizes = size;
-            }
-
-            s_Settings.screenRect = new Rect(Vector2.zero, size);
-
-
             // this should be a dynamic asset
-            if (m_PreviousGenerationSettingsHash == s_Settings.GetHashCode())
+            if (m_PreviousGenerationSettingsHash == settings.GetHashCode())
                 AddTextInfoToCache();
             else
-                Update(s_Settings);
+                Update(settings);
 
             HandleATag();
             HandleLinkTag();
+            HandleLinkAndATagCallbacks();
 
             return textInfo.meshInfo;
         }
@@ -230,19 +213,57 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void HandleLinkAndATagCallbacks()
+        {
+            if (m_TextElement == null || m_TextElement.panel == null)
+                return;
+
+            if (hasLinkTag)
+            {
+                m_TextElement.RegisterCallback<PointerDownEvent>(LinkTagOnPointerDown, TrickleDown.TrickleDown);
+                m_TextElement.RegisterCallback<PointerUpEvent>(LinkTagOnPointerUp, TrickleDown.TrickleDown);
+                m_TextElement.RegisterCallback<PointerMoveEvent>(LinkTagOnPointerMove, TrickleDown.TrickleDown);
+                m_TextElement.RegisterCallback<PointerOutEvent>(LinkTagOnPointerOut, TrickleDown.TrickleDown);
+            }
+            else
+            {
+                m_TextElement.UnregisterCallback<PointerDownEvent>(LinkTagOnPointerDown, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback<PointerUpEvent>(LinkTagOnPointerUp, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback<PointerMoveEvent>(LinkTagOnPointerMove, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback<PointerOutEvent>(LinkTagOnPointerOut, TrickleDown.TrickleDown);
+            }
+            if (hasATag)
+            {
+                m_TextElement.RegisterCallback<PointerUpEvent>(ATagOnPointerUp, TrickleDown.TrickleDown);
+                // Switching the cursor to the Link cursor has been disable at runtime until OS cursor support is available at runtime.
+                if (m_TextElement.panel.contextType == ContextType.Editor)
+                {
+                    m_TextElement.RegisterCallback<PointerMoveEvent>(ATagOnPointerMove, TrickleDown.TrickleDown);
+                    m_TextElement.RegisterCallback<PointerOverEvent>(ATagOnPointerOver, TrickleDown.TrickleDown);
+                    m_TextElement.RegisterCallback<PointerOutEvent>(ATagOnPointerOut, TrickleDown.TrickleDown);
+                }
+            }
+            else
+            {
+                m_TextElement.UnregisterCallback<PointerUpEvent>(ATagOnPointerUp, TrickleDown.TrickleDown);
+                if (m_TextElement.panel.contextType == ContextType.Editor)
+                {
+                    m_TextElement.UnregisterCallback<PointerMoveEvent>(ATagOnPointerMove, TrickleDown.TrickleDown);
+                    m_TextElement.UnregisterCallback<PointerOverEvent>(ATagOnPointerOver, TrickleDown.TrickleDown);
+                    m_TextElement.UnregisterCallback<PointerOutEvent>(ATagOnPointerOut, TrickleDown.TrickleDown);
+                }
+            }
+        }
+
         // Used by our automated tests.
         internal bool hasLinkTag = false;
-        void HandleLinkTag()
+        internal void HandleLinkTag()
         {
-            for(int i = 0; i < textInfo.linkCount; i++)
+            for (int i = 0; i < textInfo.linkCount; i++)
             {
                 var linkInfo = textInfo.linkInfo[i];
                 if (linkInfo.hashCode != (int)MarkupTag.HREF)
                 {
-                    m_TextElement.RegisterCallback<PointerDownEvent>(LinkTagOnPointerDown, TrickleDown.TrickleDown);
-                    m_TextElement.RegisterCallback<PointerUpEvent>(LinkTagOnPointerUp, TrickleDown.TrickleDown);
-                    m_TextElement.RegisterCallback<PointerMoveEvent>(LinkTagOnPointerMove, TrickleDown.TrickleDown);
-                    m_TextElement.RegisterCallback<PointerOutEvent>(LinkTagOnPointerOut, TrickleDown.TrickleDown);
                     hasLinkTag = true;
                     AddTextInfoToCache();
                     return;
@@ -252,31 +273,19 @@ namespace UnityEngine.UIElements
             if (hasLinkTag)
             {
                 hasLinkTag = false;
-                m_TextElement.UnregisterCallback<PointerDownEvent>(LinkTagOnPointerDown, TrickleDown.TrickleDown);
-                m_TextElement.UnregisterCallback<PointerUpEvent>(LinkTagOnPointerUp, TrickleDown.TrickleDown);
-                m_TextElement.UnregisterCallback<PointerMoveEvent>(LinkTagOnPointerMove, TrickleDown.TrickleDown);
-                m_TextElement.UnregisterCallback<PointerOutEvent>(LinkTagOnPointerOut, TrickleDown.TrickleDown);
                 RemoveTextInfoFromCache();
             }
         }
 
         // Used by our automated tests.
         internal bool hasATag = false;
-        void HandleATag()
+        internal void HandleATag()
         {
-            for(int i = 0; i < textInfo.linkCount; i++)
+            for (int i = 0; i < textInfo.linkCount; i++)
             {
                 var linkInfo = textInfo.linkInfo[i];
                 if (linkInfo.hashCode == (int)MarkupTag.HREF)
                 {
-                    m_TextElement.RegisterCallback<PointerUpEvent>(ATagOnPointerUp, TrickleDown.TrickleDown);
-                    // Switching the cursor to the Link cursor has been disable at runtime until OS cursor support is available at runtime.
-                    if (m_TextElement.panel.contextType == ContextType.Editor)
-                    {
-                        m_TextElement.RegisterCallback<PointerMoveEvent>(ATagOnPointerMove, TrickleDown.TrickleDown);
-                        m_TextElement.RegisterCallback<PointerOverEvent>(ATagOnPointerOver, TrickleDown.TrickleDown);
-                        m_TextElement.RegisterCallback<PointerOutEvent>(ATagOnPointerOut, TrickleDown.TrickleDown);
-                    }
                     hasATag = true;
                     AddTextInfoToCache();
                     return;
@@ -286,13 +295,6 @@ namespace UnityEngine.UIElements
             if (hasATag)
             {
                 hasATag = false;
-                m_TextElement.UnregisterCallback<PointerUpEvent>(ATagOnPointerUp, TrickleDown.TrickleDown);
-                if (m_TextElement.panel.contextType == ContextType.Editor)
-                {
-                    m_TextElement.UnregisterCallback<PointerMoveEvent>(ATagOnPointerMove, TrickleDown.TrickleDown);
-                    m_TextElement.UnregisterCallback<PointerOverEvent>(ATagOnPointerOver, TrickleDown.TrickleDown);
-                    m_TextElement.UnregisterCallback<PointerOutEvent>(ATagOnPointerOut, TrickleDown.TrickleDown);
-                }
                 RemoveTextInfoFromCache();
             }
         }
@@ -319,7 +321,7 @@ namespace UnityEngine.UIElements
         internal void ConvertUssToTextGenerationSettings()
         {
             var style = m_TextElement.computedStyle;
-            var tgs = s_Settings;
+            var tgs = settings;
             tgs.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
             if (tgs.textSettings == null)
                 return;
@@ -363,6 +365,23 @@ namespace UnityEngine.UIElements
             tgs.fontFeatures = m_ActiveFontFeatures;
             tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
             tgs.isIMGUI = false;
+
+            // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
+            var size = m_TextElement.contentRect.size;
+
+            // If the size is the last rounded size, we use the cached size before the rounding that was calculated
+            if (Mathf.Abs(size.x - RoundedSizes.x) < 0.01f && Mathf.Abs(size.y - RoundedSizes.y) < 0.01f)
+            {
+                size = MeasuredSizes;
+            }
+            else
+            {
+                //the size has change, we need to save that information
+                RoundedSizes = size;
+                MeasuredSizes = size;
+            }
+
+            tgs.screenRect = new Rect(Vector2.zero, size);
         }
 
         internal bool TextLibraryCanElide()
@@ -407,7 +426,18 @@ namespace UnityEngine.UIElements
     internal static class TextUtilities
     {
         public static Func<TextSettings> getEditorTextSettings;
-        public static Func<string, float> getEditorTextSharpness;
+        private static TextSettings s_TextSettings;
+        public static TextSettings textSettings
+        {
+            get
+            {
+                if (s_TextSettings == null)
+                {
+                    s_TextSettings = getEditorTextSettings();
+                }
+                return s_TextSettings;
+            }
+        }
 
         internal static Vector2 MeasureVisualElementTextSize(TextElement te, string textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode)
         {
@@ -419,7 +449,7 @@ namespace UnityEngine.UIElements
 
             float pixelsPerPoint = te.scaledPixelsPerPoint;
 
-            if ( pixelsPerPoint <= 0)
+            if (pixelsPerPoint <= 0)
                 return Vector2.zero;
 
 
@@ -534,7 +564,8 @@ namespace UnityEngine.UIElements
             if (outlineWidth < UIRUtility.k_Epsilon)
                 outlineColor.a = 0.0f;
 
-            return new TextCoreSettings() {
+            return new TextCoreSettings()
+            {
                 faceColor = faceColor,
                 outlineColor = outlineColor,
                 outlineWidth = outlineWidth,

@@ -32,7 +32,7 @@ class LicenseOfflineValidityEndedWindowContents : TemplateLicenseEventWindowCont
         m_LogType = LogType.Error;
         m_LogMessage = m_Description;
 
-        m_Buttons.Add(EventsButtonType.SaveAndClose);
+        m_Buttons.Add(EventsButtonType.SaveAndQuit);
         m_Buttons.Add(EventsButtonType.UpdateLicense);
 
         CreateContents();

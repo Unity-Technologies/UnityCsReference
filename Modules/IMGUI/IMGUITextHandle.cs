@@ -56,14 +56,14 @@ namespace UnityEngine
         internal static IMGUITextHandle GetTextHandle(GUIStyle style, Rect position, string content, Color32 textColor)
         {
             bool isCached = false;
-            ConvertGUIStyleToGenerationSettings(s_Settings, style, textColor, content, position);
-            return GetTextHandle(s_Settings, false, ref isCached);
+            ConvertGUIStyleToGenerationSettings(settings, style, textColor, content, position);
+            return GetTextHandle(settings, false, ref isCached);
         }
 
         internal static IMGUITextHandle GetTextHandle(GUIStyle style, Rect position, string content, Color32 textColor, ref bool isCached)
         {
-            ConvertGUIStyleToGenerationSettings(s_Settings, style, textColor, content, position);
-            return GetTextHandle(s_Settings, true, ref isCached);
+            ConvertGUIStyleToGenerationSettings(settings, style, textColor, content, position);
+            return GetTextHandle(settings, true, ref isCached);
         }
 
         private static void ClearUnusedTextHandles()
@@ -124,8 +124,8 @@ namespace UnityEngine
 
         internal static float GetLineHeight(GUIStyle style)
         {
-            ConvertGUIStyleToGenerationSettings(s_Settings, style, Color.white, "", Rect.zero);
-            return GetLineHeightDefault(s_Settings);
+            ConvertGUIStyleToGenerationSettings(settings, style, Color.white, "", Rect.zero);
+            return GetLineHeightDefault(settings);
         }
 
         internal Vector2 GetPreferredSize()

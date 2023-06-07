@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
@@ -61,6 +62,11 @@ namespace Unity.UI.Builder
             }
         }
 
+        /// <summary>
+        /// Called when the window closes.
+        /// </summary>
+        public event Action closing;
+
         protected static T GetWindowAndInit<T>() where T : BuilderPaneWindow
         {
             var window = GetWindow<T>();
@@ -110,10 +116,8 @@ namespace Unity.UI.Builder
             var root = rootVisualElement;
 
             // Load assets.
-            var mainSS = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/Builder.uss");
-            var themeSS = EditorGUIUtility.isProSkin
-                ? BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/BuilderDark.uss")
-                : BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UIBuilderPackagePath + "/BuilderLight.uss");
+            var mainSS = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UssPath_BuilderWindow);
+            var themeSS = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UssPath_BuilderWindow_Themed);
 
             // HACK: Check for null assets.
             // See: https://fogbugz.unity3d.com/f/cases/1180330/
@@ -162,6 +166,9 @@ namespace Unity.UI.Builder
 
         protected virtual void OnDisable()
         {
+            // Notify that the window is closing.
+            closing?.Invoke();
+
             // Unregister window.
             document.UnregisterWindow(this);
 

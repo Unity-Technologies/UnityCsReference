@@ -13,10 +13,10 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class Scroller : VisualElement
     {
-        internal static readonly DataBindingProperty valueProperty = nameof(value);
-        internal static readonly DataBindingProperty lowValueProperty = nameof(lowValue);
-        internal static readonly DataBindingProperty highValueProperty = nameof(highValue);
-        internal static readonly DataBindingProperty directionProperty = nameof(direction);
+        internal static readonly BindingId valueProperty = nameof(value);
+        internal static readonly BindingId lowValueProperty = nameof(lowValue);
+        internal static readonly BindingId highValueProperty = nameof(highValue);
+        internal static readonly BindingId directionProperty = nameof(direction);
 
         class ScrollerSlider : Slider
         {

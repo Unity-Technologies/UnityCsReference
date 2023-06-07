@@ -13,7 +13,7 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ToolbarSpacer : VisualElement
     {
-        internal static readonly DataBindingProperty flexProperty = nameof(flex);
+        internal static readonly BindingId flexProperty = nameof(flex);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData

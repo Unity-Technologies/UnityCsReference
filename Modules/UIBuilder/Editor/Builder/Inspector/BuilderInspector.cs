@@ -8,10 +8,11 @@ using UnityEngine.UIElements;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
 using UnityEditor.UIElements.Debugger;
-using UnityEditor.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -65,6 +66,10 @@ namespace Unity.UI.Builder
         // Utilities
         BuilderInspectorMatchingSelectors m_MatchingSelectors;
         BuilderInspectorStyleFields m_StyleFields;
+        BuilderBindingsCache m_BindingsCache;
+        BuilderNotifications m_Notifications;
+        public BuilderBindingsCache bindingsCache => m_BindingsCache;
+
         public BuilderInspectorMatchingSelectors matchingSelectors => m_MatchingSelectors;
         public BuilderInspectorStyleFields styleFields => m_StyleFields;
 
@@ -109,6 +114,8 @@ namespace Unity.UI.Builder
         VisualElement m_NothingSelectedDayZeroVisualElement;
         VisualElement m_NothingSelectedIdleStateVisualElement;
         VisualElement m_MultiSelectionSection;
+
+        HashSet<VisualElement> m_ResolvedBoundFields = new();
 
         public BuilderSelection selection => m_Selection;
         public BuilderDocument document => m_PaneWindow.document;
@@ -197,9 +204,13 @@ namespace Unity.UI.Builder
         HighlightOverlayPainter m_HighlightOverlayPainter;
         public HighlightOverlayPainter highlightOverlayPainter => m_HighlightOverlayPainter;
 
-        public BuilderInspector(BuilderPaneWindow paneWindow, BuilderSelection selection, HighlightOverlayPainter highlightOverlayPainter = null)
+        public bool isBoundFieldInlineValueBeingEdited { get; private set; }
+
+        public BuilderInspector(BuilderPaneWindow paneWindow, BuilderSelection selection, HighlightOverlayPainter highlightOverlayPainter = null, BuilderBindingsCache bindingsCache = null, BuilderNotifications builderNotifications = null)
         {
+            m_BindingsCache = bindingsCache;
             m_HighlightOverlayPainter = highlightOverlayPainter;
+            m_Notifications = builderNotifications;
 
             // Yes, we give ourselves a view data key. Don't do this at home!
             viewDataKey = "unity-ui-builder-inspector";
@@ -227,11 +238,8 @@ namespace Unity.UI.Builder
 
             // Load styles.
             AddToClassList(s_UssClassName);
-            styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.InspectorUssPathNoExt + ".uss"));
-            if (EditorGUIUtility.isProSkin)
-                styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.InspectorUssPathNoExt + "Dark.uss"));
-            else
-                styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.InspectorUssPathNoExt + "Light.uss"));
+            styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UssPath_InspectorWindow));
+            styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(BuilderConstants.UssPath_InspectorWindow_Themed));
 
             // Matching Selectors
             m_MatchingSelectors = new BuilderInspectorMatchingSelectors(this);
@@ -301,6 +309,173 @@ namespace Unity.UI.Builder
             this.Query().Where(e => e.focusable).ForEach((e) => AddFocusable(e));
 
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+
+            if (m_BindingsCache != null)
+            {
+                m_BindingsCache.onBindingStatusChanged += OnBindingStatusChanged;
+                m_BindingsCache.onBindingRemoved += OnBindingStatusChanged;
+            }
+        }
+
+        public void UnsetBoundFieldInlineValue(DropdownMenuAction menuAction)
+        {
+            isBoundFieldInlineValueBeingEdited = true;
+            var fieldElement = menuAction.userData as VisualElement;
+            attributeSection.UnsetAttributeProperty(fieldElement, false);
+            isBoundFieldInlineValueBeingEdited = false;
+        }
+
+        public void SetBoundPropertyFieldDisplay(VisualElement fieldElement, bool display)
+        {
+            var boundPropertyField = fieldElement.Q<PropertyField>(BuilderUxmlAttributesView.builderBoundPropertyFieldName);
+            boundPropertyField.style.display = display ? DisplayStyle.Flex : DisplayStyle.None;
+
+            var serializedPropertyField = fieldElement.Q<PropertyField>(BuilderUxmlAttributesView.builderSerializedPropertyFieldName);
+            serializedPropertyField.style.display = display ? DisplayStyle.None : DisplayStyle.Flex;
+        }
+
+        public void EnableInlineValueEditing(VisualElement fieldElement)
+        {
+            isBoundFieldInlineValueBeingEdited = true;
+
+            var notificationData = new BuilderNotifications.NotificationData()
+            {
+                key = BuilderConstants.inlineEditingNotificationKey,
+                message = BuilderConstants.InlineValuesOnCanvasNotification,
+            };
+
+            m_Notifications.AddNotification(notificationData);
+
+            if (fieldElement == null)
+            {
+                return;
+            }
+
+            SetFieldsEnabled(fieldElement, true);
+            ToggleInlineEditingClasses(fieldElement, true);
+
+            var isAttribute = fieldElement.HasLinkedAttributeDescription();
+            if (isAttribute)
+            {
+                SetBoundPropertyFieldDisplay(fieldElement, false);
+            }
+            else
+            {
+                var styleName =
+                    fieldElement.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
+
+                if (!string.IsNullOrEmpty(styleName) &&
+                    StylePropertyUtil.s_NameToId.TryGetValue(styleName, out var id) &&
+                    id.IsTransitionId())
+                {
+                    var transitionsListView = fieldElement.GetFirstAncestorOfType<TransitionsListView>();
+                    styleFields.RefreshInlineEditedTransitionField(transitionsListView, id);
+                }
+                else
+                {
+                    styleFields.RefreshStyleFieldValue(styleName, fieldElement, true);
+                }
+            }
+
+            var baseField = fieldElement.Q<VisualElement>(className: BaseField<string>.ussClassName);
+            baseField?.Focus();
+        }
+
+        public void RegisterFieldToInlineEditingEvents(VisualElement field)
+        {
+            field.RegisterCallback<FocusOutEvent, VisualElement>((evt, e) =>
+            {
+                DisableInlineValueEditing(e, false);
+            }, field, TrickleDown.TrickleDown);
+            field.RegisterCallback<KeyDownEvent, VisualElement>((evt, e) =>
+            {
+                if (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.Escape)
+                {
+                    DisableInlineValueEditing(e, true);
+                }
+            }, field, TrickleDown.TrickleDown);
+
+            var objectFields = field.Query<ObjectField>();
+            objectFields.ForEach(x => x.onObjectSelectorShow += x.Focus);
+        }
+
+        private void DisableInlineValueEditing(VisualElement fieldElement, bool skipFocusCheck)
+        {
+            isBoundFieldInlineValueBeingEdited = false;
+            m_Notifications.ClearNotifications(BuilderConstants.inlineEditingNotificationKey);
+
+            if (!IsInlineEditingEnabled(fieldElement))
+            {
+                return;
+            }
+
+            if (skipFocusCheck)
+            {
+                DisableInlineEditedField(fieldElement);
+            }
+            else
+            {
+                // We keep inline editing enabled if focus is still in the field.
+                // This check is delayed so the focus is updated properly.
+                fieldElement.schedule.Execute(t =>
+                {
+                    var focusedElement = fieldElement.FindElement(x => x.IsFocused());
+                    if (focusedElement != null)
+                    {
+                        return;
+                    }
+
+                    DisableInlineEditedField(fieldElement);
+                });
+            }
+        }
+
+        private void DisableInlineEditedField(VisualElement fieldElement)
+        {
+            ToggleInlineEditingClasses(fieldElement, false);
+            SetFieldsEnabled(fieldElement, false);
+        }
+
+        public void ToggleInlineEditingClasses(VisualElement fieldElement, bool value)
+        {
+            var styleRow = fieldElement.GetProperty(BuilderConstants.InspectorLinkedStyleRowVEPropertyName) as BuilderStyleRow;
+            var statusIndicator = fieldElement.GetFieldStatusIndicator();
+
+            styleRow?.EnableInClassList(BuilderConstants.InspectorFieldBindingInlineEditingEnabledClassName, value);
+            statusIndicator?.EnableInClassList(BuilderConstants.InspectorFieldBindingInlineEditingEnabledClassName, value);
+            fieldElement.SetProperty(BuilderConstants.InspectorFieldBindingInlineEditingEnabledPropertyName, value);
+        }
+
+        public bool IsInlineEditingEnabled(VisualElement field)
+        {
+            return field.HasProperty(BuilderConstants.InspectorFieldBindingInlineEditingEnabledPropertyName)
+                   && (bool)field.GetProperty(BuilderConstants.InspectorFieldBindingInlineEditingEnabledPropertyName);
+        }
+
+        private void OnBindingStatusChanged(VisualElement target, string bindingPath)
+        {
+            if (target != currentVisualElement || !IsElementSelected())
+                return;
+
+            // Find field
+            var field = BuilderInspectorUtilities.FindInspectorField(this, bindingPath);
+
+            if (field != null)
+            {
+                UpdateFieldStatus(field, null);
+            }
+        }
+
+        public void UpdateBoundFields()
+        {
+            if (!IsElementSelected())
+                return;
+
+            foreach (var field in m_ResolvedBoundFields)
+            {
+                // Update value current visual element
+                UpdateBoundValue(field);
+            }
         }
 
         public new void AddFocusable(VisualElement focusable)
@@ -388,15 +563,153 @@ namespace Unity.UI.Builder
             field.SetProperty(BuilderConstants.InspectorFieldValueInfoVEPropertyName, valueInfo);
             UpdateFieldStatusIconAndStyling(currentVisualElement, field, valueInfo);
             UpdateFieldTooltip(field, valueInfo);
+            UpdateBoundFieldsState(field, valueInfo);
 
-            var isAttribute = field.HasProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName);
+            var isAttribute = field.HasLinkedAttributeDescription();
             if (isAttribute)
             {
                 attributeSection.UpdateAttributeOverrideStyle(field);
             }
             else
             {
+                m_StyleFields.UpdateOverrideStyles(field, property);
+                var isSelectorElement = currentVisualElement.IsSelector();
+                if (isSelectorElement)
+                {
+                    var isVariable = valueInfo.valueBinding.type == FieldValueBindingInfoType.USSVariable;
+                    if (isVariable)
+                    {
+                        var isResolvedVariable = valueInfo.valueBinding.variable.sheet != null;
+                        SetFieldsEnabled(field, !isResolvedVariable);
+                    }
+                }
+
                 m_LocalStylesSection.UpdateStyleCategoryFoldoutOverrides();
+            }
+        }
+
+        private void UpdateBoundFieldsState(VisualElement field, FieldValueInfo valueInfo)
+        {
+            var hasBinding = valueInfo.valueBinding.type == FieldValueBindingInfoType.Binding;
+            var hasResolvedBinding = false;
+
+            if (hasBinding)
+            {
+                hasResolvedBinding = valueInfo.valueSource.type == FieldValueSourceInfoType.ResolvedBinding;
+
+                if (hasResolvedBinding)
+                {
+                    m_ResolvedBoundFields.Add(field);
+                }
+                else
+                {
+                    if (m_ResolvedBoundFields.Contains(field))
+                    {
+                        if (field.HasLinkedAttributeDescription())
+                        {
+                            SetBoundPropertyFieldDisplay(field, false);
+                        }
+
+                        m_ResolvedBoundFields.Remove(field);
+                    }
+                }
+            }
+            else
+            {
+                if (m_ResolvedBoundFields.Contains(field))
+                {
+                    if (field.HasLinkedAttributeDescription())
+                    {
+                        SetBoundPropertyFieldDisplay(field, false);
+                    }
+
+                    m_ResolvedBoundFields.Remove(field);
+                }
+            }
+
+            SetFieldsEnabled(field, !hasResolvedBinding);
+        }
+
+        public void SetFieldsEnabled(VisualElement field, bool enabled)
+        {
+            if (IsInlineEditingEnabled(field))
+            {
+                return;
+            }
+
+            if (field is TextShadowStyleField)
+            {
+                // Special case for TextShadowStyleField.
+                // We need to disabled the fields inside so the foldout is still functional
+                var foldout = field.Q<Foldout>();
+                foldout.contentContainer.SetEnabled(enabled);
+            }
+            else
+            {
+                field.SetEnabled(enabled);
+
+                if (field.GetProperty(BuilderConstants.FoldoutFieldPropertyName) is FoldoutField foldout)
+                {
+                    var fields = foldout.Query<VisualElement>(classes: BaseField<float>.ussClassName);
+                    var hasBindings = false;
+                    var hasResolvedBindings = false;
+
+                    fields.ForEach(x =>
+                    {
+                        var bindingProperty = BuilderInspectorUtilities.GetBindingProperty(this, x);
+                        var bindingId = new BindingId(bindingProperty);
+                        if (DataBindingUtility.TryGetLastUIBindingResult(bindingId, currentVisualElement, out var bindingResult))
+                        {
+                            hasBindings = true;
+                            hasResolvedBindings |= bindingResult.status == BindingStatus.Success;
+                        }
+                    });
+
+                    foldout.EnableInClassList(BuilderConstants.BoundFoldoutFieldClassName, hasBindings);
+                    foldout.SetHeaderInputEnabled(!hasResolvedBindings);
+                }
+            }
+        }
+
+        void UpdateBoundValue(VisualElement field)
+        {
+            var isAttribute = field.HasLinkedAttributeDescription();
+
+            if (IsInlineEditingEnabled(field))
+            {
+                // Don't update value now, it's being edited
+                return;
+            }
+
+            if (isAttribute)
+            {
+                var attributeName = BuilderInspectorUtilities.GetBindingProperty(this, field);
+                var value = currentVisualElement.GetValueByReflection(attributeName);
+
+                var boundPropertyField = field.Q<PropertyField>(BuilderUxmlAttributesView.builderBoundPropertyFieldName);
+                boundPropertyField.style.display = DisplayStyle.Flex;
+
+                var serializedPropertyField = field.Q<PropertyField>(BuilderUxmlAttributesView.builderSerializedPropertyFieldName);
+                serializedPropertyField.style.display = DisplayStyle.None;
+
+                attributeSection.SetBoundValue(field, value);
+            }
+            else
+            {
+                var styleName =
+                    field.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
+
+                StylePropertyUtil.s_NameToId.TryGetValue(styleName, out var id);
+
+                if (id.IsTransitionId())
+                {
+                    var transitionsListView = field.GetFirstAncestorOfType<TransitionsListView>();
+                    styleFields.RefreshStyleField(transitionsListView);
+                }
+                else
+                {
+                    styleFields.RefreshStyleFieldValue(styleName, field);
+                }
             }
         }
 
@@ -411,6 +724,8 @@ namespace Unity.UI.Builder
                 ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleSelectorClassName);
                 ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleVariableClassName);
                 ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleUnresolvedVariableClassName);
+                ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleBindingClassName);
+                ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleUnresolvedBindingClassName);
                 ve.RemoveFromClassList(BuilderConstants.InspectorLocalStyleSelectorElementClassName);
             };
 
@@ -422,6 +737,8 @@ namespace Unity.UI.Builder
                 FieldValueBindingInfoType.USSVariable => valueInfo.valueBinding.variable.sheet != null
                     ? BuilderConstants.InspectorLocalStyleVariableClassName
                     : BuilderConstants.InspectorLocalStyleUnresolvedVariableClassName,
+                FieldValueBindingInfoType.Binding => valueInfo.valueSource.type == FieldValueSourceInfoType.ResolvedBinding ?
+                BuilderConstants.InspectorLocalStyleBindingClassName : BuilderConstants.InspectorLocalStyleUnresolvedBindingClassName,
                 _ => valueInfo.valueSource.type switch
                 {
                     FieldValueSourceInfoType.Inherited => BuilderConstants.InspectorLocalStyleInheritedClassName,
@@ -446,21 +763,23 @@ namespace Unity.UI.Builder
 
         internal static void UpdateFieldTooltip(VisualElement field, FieldValueInfo valueInfo)
         {
+            // TODO: FIX labelElement not existing sometimes OR MOVE to BuilderInspectorStyleFields.BindStyleField . Maybe move this code to the class?
+
             var draggerLabel = GetDraggerLabel(field);
             var tooltipValue = GetFieldTooltip(field, valueInfo);
-            var fieldLabel = field as PropertyField ?? field.GetValueByReflection("labelElement") as VisualElement;
+            // var fieldLabel = field.Q<PropertyField>() ?? field.Q<BindableElement>()?.GetValueByReflection("labelElement") as VisualElement;
 
             if (draggerLabel != null)
             {
                 draggerLabel.tooltip = tooltipValue;
             }
 
-            if (fieldLabel != null)
-            {
-                fieldLabel.tooltip = tooltipValue;
-            }
+            // if (fieldLabel != null)
+            // {
+            //     fieldLabel.tooltip = tooltipValue;
+            // }
 
-            field.GetFieldStatusIndicator().tooltip = GetFieldStatusIndicatorTooltip(valueInfo);
+            field.GetFieldStatusIndicator().tooltip = GetFieldStatusIndicatorTooltip(valueInfo, field);
         }
 
         internal static Label GetDraggerLabel(VisualElement field)
@@ -469,21 +788,77 @@ namespace Unity.UI.Builder
             return labelDraggers.Count != 1 ? null : labelDraggers.First();
         }
 
-        static string GetFieldStatusIndicatorTooltip(FieldValueInfo info)
+        static string GetFieldStatusIndicatorTooltip(FieldValueInfo info, VisualElement field, string description = null)
         {
             if (info.valueSource.type == FieldValueSourceInfoType.Default)
                 return BuilderConstants.FieldStatusIndicatorDefaultTooltip;
             if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
                 return info.valueBinding.variable.sheet != null ? BuilderConstants.FieldStatusIndicatorVariableTooltip : BuilderConstants.FieldStatusIndicatorUnresolvedVariableTooltip;
 
-            return info.valueSource.type switch
+            var valueDefinitionDataText = "";
+            var valueDataText = "";
+            var tooltipFormat = BuilderConstants.FieldTooltipWithoutValueFormatString;
+
+            // generic binding
+            if (info.valueSource.type != FieldValueSourceInfoType.Default
+                && info.valueSource.type != FieldValueSourceInfoType.Inherited)
             {
-                FieldValueSourceInfoType.Inline => BuilderConstants.FieldStatusIndicatorInlineTooltip,
-                FieldValueSourceInfoType.Inherited => BuilderConstants.FieldStatusIndicatorInheritedTooltip,
-                FieldValueSourceInfoType.MatchingUSSSelector => BuilderConstants.FieldStatusIndicatorFromSelectorTooltip,
-                FieldValueSourceInfoType.LocalUSSSelector => BuilderConstants.FieldStatusIndicatorLocalTooltip,
-                _ => null
-            };
+                // if the value is bound to variable then display the variable info
+                if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
+                {
+                    valueDataText = $"\n{GetVariableTooltip(info.valueBinding.variable)}";
+                }
+
+                // data binding
+                if (info.valueBinding.type == FieldValueBindingInfoType.Binding)
+                {
+                    // detailed binding information
+                            var inspector = Builder.ActiveWindow.inspector;
+                            var currentVisualElement = inspector.currentVisualElement;
+                            var property = BuilderInspectorUtilities.GetBindingProperty(inspector, field);
+
+                            if (!BuilderBindingUtility.TryGetBinding(property, out var binding, out var bindingUxml) ||
+                                binding is not DataBinding dataBinding)
+                                return BuilderConstants.FieldStatusIndicatorUnresolvedBindingTooltip;
+
+                            var notDefinedString = L10n.Tr(BuilderConstants.BindingNotDefinedAttributeString);
+                            var currentElementDataSource =
+                                BuilderBindingUtility.GetBindingDataSourceOrRelativeHierarchicalDataSource(currentVisualElement,
+                                    property);
+                            var dataSourceString = currentElementDataSource ?? notDefinedString;
+                            var bindingMode = dataBinding.bindingMode;
+                            var dataSourcePathStr = dataBinding.dataSourcePath.IsEmpty
+                                ? notDefinedString
+                                : dataBinding.dataSourcePath.ToString();
+                            var convertersToSource =
+                                bindingUxml.GetAttributeValue(BuilderBindingUxmlAttributesView
+                                    .k_BindingAttr_ConvertersToSource);
+                            var convertersToUI =
+                                bindingUxml.GetAttributeValue(BuilderBindingUxmlAttributesView.k_BindingAttr_ConvertersToUi);
+                            var converters = GetFormattedConvertersString(convertersToSource, convertersToUI);
+
+                            return info.valueSource.type switch
+                            {
+                                FieldValueSourceInfoType.ResolvedBinding => string.Format(BuilderConstants.FieldTooltipDataDefinitionBindingFormatString,
+                                    BuilderConstants.FieldStatusIndicatorResolvedBindingTooltip,
+                                    dataSourceString, dataSourcePathStr, bindingMode, converters),
+                                FieldValueSourceInfoType.UnhandledBinding => string.Format(BuilderConstants.FieldTooltipDataDefinitionBindingFormatString,
+                                    BuilderConstants.FieldStatusIndicatorUnhandledBindingTooltip,
+                                    dataSourceString, dataSourcePathStr, bindingMode, converters),
+                                _ => string.Format(BuilderConstants.FieldTooltipDataDefinitionBindingFormatString,
+                                    BuilderConstants.FieldStatusIndicatorUnresolvedBindingTooltip,
+                                    dataSourceString, dataSourcePathStr, bindingMode, converters),
+                            };
+                }
+            }
+
+            // source
+            if (info.valueSource.type.IsFromUSSSelector())
+                valueDefinitionDataText = $"\n{GetMatchingStyleSheetRuleSourceTooltip(info.valueSource.matchedRule)}";
+
+            tooltipFormat = BuilderConstants.FieldTooltipValueOnlyFormatString;
+            var value = string.Format(tooltipFormat, info.valueBinding.type.ToDisplayString(), valueDataText, info.valueSource.type.ToDisplayString(), valueDefinitionDataText);
+            return value;
         }
 
         internal static string GetFieldTooltip(VisualElement field, FieldValueInfo info, string description = null)
@@ -491,29 +866,30 @@ namespace Unity.UI.Builder
             if (info.type == FieldValueInfoType.None)
                 return "";
 
-            var tooltipFormat = BuilderConstants.FieldTooltipWithoutValueFormatString;
-            var valueDataText = "";
-            var valueDefinitionDataText = "";
+            var tooltipFormat = BuilderConstants.FieldTooltipNameOnlyFormatString;
 
-            // binding
-            if (info.valueSource.type != FieldValueSourceInfoType.Default
-                && info.valueSource.type != FieldValueSourceInfoType.Inherited)
-            {
-                tooltipFormat = BuilderConstants.FieldTooltipFormatString;
-
-                    // if the value is bound to variable then display the variable info
-                if (info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
-                    valueDataText = $"\n{GetVariableTooltip(info.valueBinding.variable)}";
-            }
-
-            // source
-            if (info.valueSource.type.IsFromUSSSelector())
-                valueDefinitionDataText = $"\n{GetMatchingStyleSheetRuleSourceTooltip(info.valueSource.matchedRule)}";
-
-            var value = string.Format(tooltipFormat, info.type.ToDisplayString(), info.name, info.valueBinding.type.ToDisplayString(), valueDataText, info.valueSource.type.ToDisplayString(), valueDefinitionDataText);
+            var value = string.Format(tooltipFormat, info.type.ToDisplayString(), info.name);
             if (!string.IsNullOrEmpty(description))
                 value += "\n\n" + description;
             return value;
+        }
+
+        static string GetFormattedConvertersString(string convertersToSource, string convertersToUI)
+        {
+            if (string.IsNullOrEmpty(convertersToSource) && string.IsNullOrEmpty(convertersToUI))
+            {
+                return L10n.Tr(BuilderConstants.EmptyConvertersString);
+            }
+            if (string.IsNullOrEmpty(convertersToSource))
+            {
+                return convertersToUI;
+            }
+            if (string.IsNullOrEmpty(convertersToUI))
+            {
+                return convertersToSource;
+            }
+
+            return $"{convertersToSource}, {convertersToUI}";
         }
 
         static string GetMatchingStyleSheetRuleSourceTooltip(MatchedRule matchedRule)
@@ -652,6 +1028,8 @@ namespace Unity.UI.Builder
                 return;
             }
 
+            m_ResolvedBoundFields.Clear();
+
             // Determine what to show based on selection.
             ResetSections();
             UpdateSelectorPreviewsVisibility();
@@ -754,7 +1132,7 @@ namespace Unity.UI.Builder
         {
             m_HeaderSection.Refresh();
 
-            if (changeType == BuilderHierarchyChangeType.Attributes)
+            if ((changeType & BuilderHierarchyChangeType.Attributes) == BuilderHierarchyChangeType.Attributes)
             {
                 m_AttributesSection.Refresh();
             }
@@ -762,9 +1140,23 @@ namespace Unity.UI.Builder
 
         public void SelectionChanged()
         {
-            if (m_CurrentVisualElement != null && BuilderSharedStyles.IsSelectorElement(m_CurrentVisualElement))
+            if (isBoundFieldInlineValueBeingEdited)
             {
-                StyleSheetUtilities.RemoveFakeSelector(m_CurrentVisualElement);
+                var element = this.focusController.focusedElement as VisualElement;
+                if (element != null && IsInlineEditingEnabled(element))
+                {
+                    DisableInlineValueEditing(element, true);
+                }
+            }
+
+            if (m_CurrentVisualElement != null)
+            {
+                if (BuilderSharedStyles.IsSelectorElement(m_CurrentVisualElement))
+                {
+                    StyleSheetUtilities.RemoveFakeSelector(m_CurrentVisualElement);
+                }
+
+                m_CurrentVisualElement.UnregisterCallback<PropertyChangedEvent>(OnPropertyChanged, TrickleDown.TrickleDown);
             }
 
             m_CurrentVisualElement = null;
@@ -782,6 +1174,7 @@ namespace Unity.UI.Builder
 
             if (m_CurrentVisualElement != null)
             {
+                m_CurrentVisualElement.RegisterCallback<PropertyChangedEvent>(OnPropertyChanged, TrickleDown.TrickleDown);
                 m_CachedVisualElement = m_CurrentVisualElement;
             }
 
@@ -802,6 +1195,15 @@ namespace Unity.UI.Builder
             else
             {
                 RefreshUI();
+            }
+        }
+
+        private void OnPropertyChanged(PropertyChangedEvent evt)
+        {
+            if (isBoundFieldInlineValueBeingEdited)
+            {
+                // Stop propagation during inline editing to avoid changing data source
+                evt.StopImmediatePropagation();
             }
         }
 
@@ -838,9 +1240,11 @@ namespace Unity.UI.Builder
             if (traits == null)
                 return;
 
+            // We need to clear bindings before calling Init to avoid corrupting the data source.
+            BuilderBindingUtility.ClearUxmlBindings(currentVisualElement);
+
             var context = new CreationContext(null, null, visualTreeAsset, currentVisualElement);
             var vea = currentVisualElement.GetVisualElementAsset();
-
             traits.Init(currentVisualElement, vea, context);
         }
 
@@ -852,8 +1256,10 @@ namespace Unity.UI.Builder
             if (traits == null)
                 return;
 
-            var context = new CreationContext(null, attributeOverridesRanges, null, null);
+            // We need to clear bindings before calling Init to avoid corrupting the data source.
+            BuilderBindingUtility.ClearUxmlBindings(currentVisualElement);
 
+            var context = new CreationContext(null, attributeOverridesRanges, null, null);
             traits.Init(visualElement, vea, context);
         }
 
@@ -889,6 +1295,58 @@ namespace Unity.UI.Builder
             {
                 RefreshUI();
             }
+        }
+
+        public VisualElement FindFieldAtPath(string propertyPath)
+        {
+            const string k_StylePrefix = "style.";
+
+            if (propertyPath.StartsWith(k_StylePrefix))
+            {
+                return FindStyleField(BuilderNameUtilities.ConvertStyleCSharpNameToUssName(propertyPath.Substring(k_StylePrefix.Length)));
+            }
+            else
+            {
+                return FindAttributeField(attributeSection.GetRemapCSPropertyToAttributeName(propertyPath));
+            }
+        }
+
+        public VisualElement FindAttributeField(string propName)
+        {
+            bool IsFieldElement(VisualElement ve)
+            {
+                var attribute = ve.GetLinkedAttributeDescription();
+                return attribute?.name == propName;
+            }
+
+            VisualElement field = attributeSection.root.Query().Where(IsFieldElement);
+
+            return field;
+        }
+
+        VisualElement FindTransitionField(string fieldPath)
+        {
+            var openBracketIndex = fieldPath.IndexOf('[');
+            var closeBracketIndex = fieldPath.IndexOf(']');
+            var transitionIndexStr = fieldPath.Substring(openBracketIndex + 1, (closeBracketIndex - openBracketIndex - 1));
+            var transitionIndex = int.Parse(transitionIndexStr);
+            var fieldName = fieldPath.Substring(closeBracketIndex + 2);
+            var transitionListView = this.Q<TransitionsListView>();
+            var transitionView = transitionListView[transitionIndex];
+
+            return transitionView.Q(fieldName);
+        }
+
+        public VisualElement FindStyleField(string styleName)
+        {
+            VisualElement field = null;
+
+            if (styleName.StartsWith("transitions"))
+                field = FindTransitionField(styleName);
+            else
+                field = styleFields.m_StyleFields[styleName].First();
+
+            return field;
         }
 
         void OnFirstDisplay(GeometryChangedEvent evt)

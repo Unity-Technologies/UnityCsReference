@@ -30,6 +30,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("ScriptableRenderContext::EndRenderPass")]
         static extern void EndRenderPass_Internal(IntPtr self);
 
+        [FreeFunction("ScriptableRenderContext::HasInvokeOnRenderObjectCallbacks")]
+        static extern bool HasInvokeOnRenderObjectCallbacks_Internal();
+
         [FreeFunction("ScriptableRenderPipeline_Bindings::Internal_Cull")]
         static extern void Internal_Cull(ref ScriptableCullingParameters parameters, ScriptableRenderContext renderLoop, IntPtr results);
 

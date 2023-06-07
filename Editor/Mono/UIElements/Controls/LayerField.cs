@@ -18,7 +18,20 @@ namespace UnityEditor.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : PopupField<int>.UxmlSerializedData
         {
+            #pragma warning disable 649
+            [UxmlAttribute("value")]
+            [SerializeField, LayerDecorator] int layer;
+            #pragma warning restore 649
+
             public override object CreateInstance() => new LayerField();
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (LayerField)obj;
+                e.SetValueWithoutNotify(layer);
+            }
         }
 
         /// <summary>
@@ -48,6 +61,7 @@ namespace UnityEditor.UIElements
             }
         }
 
+        internal int layer { get => value; set => this.value = value; }
 
         internal override string GetValueToDisplay()
         {

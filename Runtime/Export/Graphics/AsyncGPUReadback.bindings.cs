@@ -125,7 +125,7 @@ namespace UnityEngine.Rendering
         internal static void ValidateFormat(Texture src, GraphicsFormat dstformat)
         {
             GraphicsFormat srcformat = GraphicsFormatUtility.GetFormat(src);
-            if (!SystemInfo.IsFormatSupported(srcformat, FormatUsage.ReadPixels))
+            if (!SystemInfo.IsFormatSupported(srcformat, GraphicsFormatUsage.ReadPixels))
                 Debug.LogError(String.Format("'{0}' doesn't support ReadPixels usage on this platform. Async GPU readback failed.", srcformat));
         }
 

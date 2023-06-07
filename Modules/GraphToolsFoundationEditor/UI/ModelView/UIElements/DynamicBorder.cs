@@ -39,6 +39,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         float m_Zoom = 1;
         protected const float k_MinZoom = 0.1f;
+        GraphView m_GraphView;
 
         /// <summary>
         /// The width of the selection outline.
@@ -54,7 +55,6 @@ namespace Unity.GraphToolsFoundation.Editor
         /// The width of the hover outline.
         /// </summary>
         public float HoverWidth { get; private set; } = 1;
-
 
         /// <summary>
         /// The zoom threshold at which the selection width change.
@@ -168,6 +168,7 @@ namespace Unity.GraphToolsFoundation.Editor
             style.position = Position.Absolute;
             pickingMode = PickingMode.Ignore;
 
+            m_GraphView = view.RootView as GraphView;
             view.RegisterCallback<MouseEnterEvent>(OnEnter);
             view.RegisterCallback<MouseLeaveEvent>(OnLeave);
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
@@ -180,6 +181,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
         void OnEnter(MouseEnterEvent e)
         {
+            // When a wire is being dragged, graph elements' hover borders should not be shown.
+            if (m_GraphView is { IsWireDragging: true })
+                return;
+
             m_Hover = true;
             MarkDirtyRepaint();
         }

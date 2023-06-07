@@ -54,7 +54,7 @@ namespace UnityEditor.Rendering
                 throw new ArgumentException($"{renderPipelineType} must be a valid {nameof(RenderPipeline)}");
         }
 
-        public static void UpdateGraphicsSettings(RenderPipelineGlobalSettings newSettings, Type renderPipelineType)
+        public static void SetRenderPipelineGlobalSettingsAsset(Type renderPipelineType, RenderPipelineGlobalSettings newSettings)
         {
             CheckRenderPipelineType(renderPipelineType);
 
@@ -64,40 +64,22 @@ namespace UnityEditor.Rendering
                 Internal_UnregisterRenderPipeline(renderPipelineType.FullName);
         }
 
-        public static void RegisterRenderPipelineSettings(Type renderPipelineType, RenderPipelineGlobalSettings settings)
-        {
-            CheckRenderPipelineType(renderPipelineType);
-            Internal_RegisterRenderPipeline(renderPipelineType.FullName, settings);
-        }
-
-        public static void RegisterRenderPipelineSettings<T>(RenderPipelineGlobalSettings settings)
+        public static void SetRenderPipelineGlobalSettingsAsset<T>(RenderPipelineGlobalSettings newSettings)
             where T : RenderPipeline
         {
-            Internal_RegisterRenderPipeline(typeof(T).FullName, settings);
+            SetRenderPipelineGlobalSettingsAsset(typeof(T), newSettings);
         }
 
-        public static void UnregisterRenderPipelineSettings<T>()
-            where T : RenderPipeline
-        {
-            Internal_UnregisterRenderPipeline(typeof(T).FullName);
-        }
-
-        public static void UnregisterRenderPipelineSettings(Type renderPipelineType)
-        {
-            CheckRenderPipelineType(renderPipelineType);
-            Internal_UnregisterRenderPipeline(renderPipelineType.FullName);
-        }
-
-        public static RenderPipelineGlobalSettings GetSettingsForRenderPipeline(Type renderPipelineType)
+        public static RenderPipelineGlobalSettings GetRenderPipelineGlobalSettingsAsset(Type renderPipelineType)
         {
             CheckRenderPipelineType(renderPipelineType);
             return Internal_GetSettingsForRenderPipeline(renderPipelineType.FullName) as RenderPipelineGlobalSettings;
         }
 
-        public static RenderPipelineGlobalSettings GetSettingsForRenderPipeline<T>()
+        public static RenderPipelineGlobalSettings GetRenderPipelineGlobalSettingsAsset<T>()
             where T : RenderPipeline
         {
-            return Internal_GetSettingsForRenderPipeline(typeof(T).FullName) as RenderPipelineGlobalSettings;
+            return GetRenderPipelineGlobalSettingsAsset(typeof(T));
         }
     }
 }

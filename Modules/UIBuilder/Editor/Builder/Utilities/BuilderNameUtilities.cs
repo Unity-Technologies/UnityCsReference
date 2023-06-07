@@ -5,6 +5,7 @@
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -71,11 +72,32 @@ namespace Unity.UI.Builder
 
         public static string ConvertStyleCSharpNameToUssName(string csharpName)
         {
-            var dash = ConvertCamelToDash(csharpName);
-            if (dash.StartsWith("unity-"))
-                dash = "-" + dash;
+            StylePropertyUtil.s_CSharpNameToUssName.TryGetValue(csharpName, out var ussName);
+            return ussName;
+        }
 
-            return dash;
+        public static string ConvertStyleUssNameToCSharpName(string ussName)
+        {
+            StylePropertyUtil.s_UssNameToCSharpName.TryGetValue(ussName, out var cSharpStyleName);
+            return cSharpStyleName;
+        }
+
+        public static string ConvertUssNameToStyleName(string ussName)
+        {
+            if (ussName == "-unity-font-style")
+                return "-unity-font-style-and-weight";
+
+            return ussName;
+        }
+
+        public static string ConvertUssNameToStyleCSharpName(string ussName)
+        {
+            ussName = ConvertUssNameToStyleName(ussName);
+
+            if (ussName.StartsWith("-unity"))
+                ussName = ussName.Substring(1);
+
+            return ConvertDashToCamel(ussName);
         }
 
         public static string CapStringLengthAndAddEllipsis(string str, int maxLength)
@@ -122,6 +144,6 @@ namespace Unity.UI.Builder
 
         public static Regex attributeRegex { get; } = new Regex(@"^[a-zA-Z0-9\-_]+$");
         public static Regex styleSelectorRegex { get; } = new Regex(@"^[a-zA-Z0-9\-_:#\*>. ]+$");
-        public static Regex bindingPathAttributeRegex { get; } = new Regex(@"^[a-zA-Z0-9\-_.]+$");
+        public static Regex bindingPathAttributeRegex { get; } = new Regex(@"^[a-zA-Z0-9\-_.\[\]]+$");
     }
 }

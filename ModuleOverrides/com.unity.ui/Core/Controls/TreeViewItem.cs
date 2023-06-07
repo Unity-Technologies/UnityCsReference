@@ -18,6 +18,8 @@ namespace UnityEngine.UIElements
 
         public IEnumerable<int> rootItemIds => m_RootItemIds;
 
+        internal Dictionary<int, TreeViewItemData<T>> tree => m_Tree;
+
         public TreeData(IList<TreeViewItemData<T>> rootItems)
         {
             m_RootItemIds = new List<int>();

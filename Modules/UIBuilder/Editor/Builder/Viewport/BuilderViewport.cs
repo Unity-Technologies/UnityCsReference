@@ -2,16 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.UIElements.Bindings;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Experimental;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderViewport : BuilderPaneContent, IBuilderSelectionNotifier
+    internal class BuilderViewport : BuilderPaneContent, IBuilderSelectionNotifier, IShortcutToolContext
     {
         static readonly string s_PreviewModeClassName = "unity-builder-viewport--preview";
         static readonly float s_CanvasViewportMinWidthDiff = 30;
@@ -46,9 +50,12 @@ namespace Unity.UI.Builder
         BuilderElementContextMenu m_ContextMenuManipulator;
 
         List<VisualElement> m_PickedElements = new List<VisualElement>();
-        Vector2 m_PreviousPickMousePosition;
-        double m_PreviousPickMouseTime;
-        int m_SameLocationPickCount;
+
+        internal const int k_AnimationDuration = 250;
+        ValueAnimation<float> m_ZoomAnimation;
+        ValueAnimation<Vector2> m_ContentOffsetAnimation;
+        readonly Action<VisualElement, float> m_ZoomAnimationAction;
+        readonly Action<VisualElement, Vector2> m_ContentOffsetAnimationAction;
 
         List<VisualElement> m_MatchingExplorerItems = new List<VisualElement>();
 
@@ -94,6 +101,16 @@ namespace Unity.UI.Builder
             }
         }
 
+        public float targetZoomScale
+        {
+            get
+            {
+                if (m_ZoomAnimation?.isRunning == true)
+                    return m_ZoomAnimation.to;
+                return zoomScale;
+            }
+        }
+
         private Vector2 m_ContentOffset = Vector2.zero;
 
         public Vector2 contentOffset
@@ -112,10 +129,24 @@ namespace Unity.UI.Builder
             }
         }
 
+        public Vector2 targetContentOffset
+        {
+            get
+            {
+                if (m_ContentOffsetAnimation?.isRunning == true)
+                    return m_ContentOffsetAnimation.to;
+                return contentOffset;
+            }
+        }
+
         void UpdateSurface()
         {
             m_Surface.style.left = m_ContentOffset.x;
             m_Surface.style.top = m_ContentOffset.y;
+            if (m_CheckerboardBackground != null)
+            {
+                m_CheckerboardBackground.MarkDirtyRepaint();
+            }
         }
 
         public BuilderParentTracker parentTracker => m_BuilderParentTracker;
@@ -134,12 +165,19 @@ namespace Unity.UI.Builder
         public VisualElement editorLayer => m_EditorLayer;
         public TextField textEditor => m_TextEditor;
 
+        public BuilderBindingsCache bindingsCache { get; set; }
+        public bool isPreviewEnabled { get; private set; }
 
-        public BuilderViewport(BuilderPaneWindow paneWindow, BuilderSelection selection, BuilderElementContextMenu contextMenuManipulator)
+        bool IShortcutToolContext.active => true;
+
+        public BuilderViewport(BuilderPaneWindow paneWindow, BuilderSelection selection, BuilderElementContextMenu contextMenuManipulator, BuilderBindingsCache bindingsCache = null)
         {
             m_PaneWindow = paneWindow;
             m_Selection = selection;
             m_ContextMenuManipulator = contextMenuManipulator;
+            this.bindingsCache = bindingsCache;
+            m_ZoomAnimationAction = (_, v) => zoomScale = v;
+            m_ContentOffsetAnimationAction = (_, v) => contentOffset = v;
 
             AddToClassList("unity-builder-viewport");
 
@@ -160,7 +198,7 @@ namespace Unity.UI.Builder
             m_StyleSelectorElementContainer = this.Q(BuilderConstants.StyleSelectorElementContainerName);
             m_DocumentRootElement = this.Q("document");
             m_DocumentRootElement.StretchToParentSize();
-            
+
             // Fix UUM-16248 : Ensure the size of the document cannot be changed inside the builder with the :root selector
             m_DocumentRootElement.style.width = StyleKeyword.Initial;
             m_DocumentRootElement.style.height = StyleKeyword.Initial;
@@ -195,7 +233,6 @@ namespace Unity.UI.Builder
             m_PickOverlay.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
             m_BuilderViewportDragger.RegisterCallbacksOnTarget(m_PickOverlay);
             m_Viewport.RegisterCallback<MouseDownEvent>(OnMissPick);
-
             m_Canvas.header.AddManipulator(new Clickable(OnCanvasHeaderClick));
             m_ContextMenuManipulator?.RegisterCallbacksOnTarget(m_Viewport);
 
@@ -209,8 +246,24 @@ namespace Unity.UI.Builder
 
             // Repaint bug workaround.
             m_CheckerboardBackground = this.Q<CheckerboardBackground>();
-            RegisterCallback<BlurEvent>(e => { m_CheckerboardBackground.MarkDirtyRepaint(); });
-            RegisterCallback<FocusEvent>(e => { m_CheckerboardBackground.MarkDirtyRepaint(); });
+            RegisterCallback<BlurEvent>(e =>
+            {
+                ShortcutIntegration.instance.contextManager.DeregisterToolContext(this);
+                m_CheckerboardBackground.MarkDirtyRepaint();
+            });
+
+            RegisterCallback<DetachFromPanelEvent>(e =>
+            {
+                ShortcutIntegration.instance.contextManager.DeregisterToolContext(this);
+            });
+
+            RegisterCallback<FocusEvent>(e =>
+            {
+                ShortcutIntegration.instance.contextManager.RegisterToolContext(this);
+                m_CheckerboardBackground.MarkDirtyRepaint();
+            });
+
+            m_Canvas.RegisterCallback<GeometryChangedEvent>(e => { m_CheckerboardBackground.MarkDirtyRepaint(); });
         }
 
         private void ResetViewTransform()
@@ -234,7 +287,22 @@ namespace Unity.UI.Builder
 
             // Clear selection state
             m_PickedElements.Clear();
-            m_PreviousPickMousePosition.Set(0,0);
+        }
+
+        public void SetTargetZoomScale(float targetZoomScale, Action<VisualElement, float> updateAction = null, int animationDuration = k_AnimationDuration)
+        {
+            if (m_ZoomAnimation?.isRunning == true)
+                m_ZoomAnimation.Stop();
+
+            m_ZoomAnimation = m_Viewport.experimental.animation.Start(zoomScale, targetZoomScale, animationDuration, updateAction ?? m_ZoomAnimationAction);
+        }
+
+        public void SetTargetContentOffset(Vector2 targetOffset, int animationDuration = k_AnimationDuration)
+        {
+            if (m_ContentOffsetAnimation?.isRunning == true)
+                m_ContentOffsetAnimation.Stop();
+
+            m_ContentOffsetAnimation = m_Viewport.experimental.animation.Start(contentOffset, targetOffset, animationDuration, m_ContentOffsetAnimationAction);
         }
 
         [EventInterest(EventInterestOptions.Inherit)]
@@ -248,9 +316,15 @@ namespace Unity.UI.Builder
             pane.subTitle = m_SubTitle;
         }
 
-        public void FitCanvas()
+        public void ResizeCanvasToFitViewport()
         {
             const float kMargin = 8f;
+
+            if (canvas.matchGameView)
+            {
+                Builder.ShowWarning(BuilderConstants.DocumentMatchGameViewModeDisabled);
+                canvas.matchGameView = false;
+            }
 
             ResetViewTransform();
             m_Canvas.x = m_Canvas.y = 0.0f;
@@ -268,6 +342,35 @@ namespace Unity.UI.Builder
                 m_Canvas.height = maxCanvasHeight;
 
             CenterCanvas();
+        }
+
+        public void FitViewport(VisualElement target = null)
+        {
+            float elementWidth = target == null ? m_Canvas.width : target.worldBound.width / zoomScale;
+            float elementHeight = target == null ? m_Canvas.height : target.worldBound.height / zoomScale;
+            if (elementWidth == 0 || elementHeight == 0)
+                return;
+
+            float aspectRatio = elementWidth / elementHeight;
+
+            float targetZoom;
+            if (m_Viewport.resolvedStyle.height * aspectRatio > m_Viewport.resolvedStyle.width)
+                targetZoom = m_Viewport.resolvedStyle.width / elementWidth;
+            else
+                targetZoom = m_Viewport.resolvedStyle.height / elementHeight;
+
+            var targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
+
+            // Scale the target zoom
+            targetOffset /= zoomScale / targetZoom;
+
+            // Center the target 
+            targetOffset += new Vector2(
+                (m_Viewport.resolvedStyle.width - (elementWidth * targetZoom)) / 2,
+                (m_Viewport.resolvedStyle.height - (elementHeight * targetZoom)) / 2);
+
+            SetTargetZoomScale(targetZoom);
+            SetTargetContentOffset(targetOffset);
         }
 
         void OnCanvasHeaderClick(EventBase obj)
@@ -308,41 +411,6 @@ namespace Unity.UI.Builder
 
             if (pickedElement != null)
             {
-                var timeSinceStartup = EditorApplication.timeSinceStartup;
-                var previousMouseRect = new Rect(
-                    m_PreviousPickMousePosition.x - BuilderConstants.PickSelectionRepeatRectHalfSize,
-                    m_PreviousPickMousePosition.y - BuilderConstants.PickSelectionRepeatRectHalfSize,
-                    BuilderConstants.PickSelectionRepeatRectSize,
-                    BuilderConstants.PickSelectionRepeatRectSize);
-                if (timeSinceStartup - m_PreviousPickMouseTime > BuilderConstants.PickSelectionRepeatMinTimeDelay && previousMouseRect.Contains(evt.mousePosition))
-                {
-                    m_SameLocationPickCount++;
-                    var offset = 0;
-
-                    var index = m_PickedElements.IndexOf(pickedElement);
-                    // For compound controls, we don't seem to have the actual field root element
-                    // in the pickedElements list. So we get index == -1 here. We need to do
-                    // some magic to select the proper parent element from the list then.
-                    if (index < 0)
-                    {
-                        index = m_PickedElements.IndexOf(pickedElement.parent);
-                        offset = 1;
-                    }
-
-                    var maxIndex = m_PickedElements.Count - 1;
-                    var newIndex = index + m_SameLocationPickCount - offset;
-                    if (newIndex > maxIndex)
-                        m_SameLocationPickCount = 0;
-                    else
-                        pickedElement = m_PickedElements[newIndex];
-                }
-                else
-                {
-                    m_SameLocationPickCount = 0;
-                }
-                m_PreviousPickMousePosition = evt.mousePosition;
-                m_PreviousPickMouseTime = EditorApplication.timeSinceStartup;
-
                 m_Selection.Select(this, pickedElement);
                 SetInnerSelection(pickedElement);
 
@@ -454,10 +522,67 @@ namespace Unity.UI.Builder
             m_Selection.ClearSelection(this);
         }
 
+        private void OnDoNotShowAgainButtonPressed()
+        {
+            BuilderProjectSettings.BlockNotification(BuilderConstants.previewNotificationKey);
+            m_Notifications.ClearNotifications(BuilderConstants.previewNotificationKey);
+        }
+
+        [Shortcut("UI Builder/Frame Selected", typeof(BuilderViewport), KeyCode.F)]
+        static void OnFrameSelectedShortcut(ShortcutArguments args)
+        {
+            var builderViewPort = args.context as BuilderViewport;
+            builderViewPort.FitViewport(builderViewPort.selection.selection.FirstOrDefault());
+        }
+
         public void SetPreviewMode(bool mode)
         {
+            isPreviewEnabled = mode;
+
             if (mode)
             {
+                var boundElements = new List<VisualElement>();
+                DataBindingUtility.GetBoundElements(panel, boundElements);
+
+                var documentHasBindings = false;
+                foreach (var boundElement in boundElements)
+                {
+                    var bindingsInfo = new List<BindingInfo>();
+                    DataBindingUtility.GetBindingsForElement(boundElement, bindingsInfo);
+
+                    foreach (var bindingInfo in bindingsInfo)
+                    {
+                        if (bindingInfo.binding is SerializedObjectBindingBase) continue;
+                        documentHasBindings = true;
+                        break;
+                    }
+
+                    if (documentHasBindings)
+                    {
+                        break;
+                    }
+                }
+
+                if (documentHasBindings)
+                {
+                    var isNotificationBlocked = BuilderProjectSettings.IsNotificationBlocked(BuilderConstants.previewNotificationKey);
+
+                    if (!isNotificationBlocked)
+                    {
+                        var notificationData = new BuilderNotifications.NotificationData
+                        {
+                            key = BuilderConstants.previewNotificationKey,
+                            message = BuilderConstants.BindingsOnPreviewModeNotification,
+                            actionButtonText = BuilderConstants.DoNotShowAgainNotificationButtonText,
+                            onActionButtonClicked = OnDoNotShowAgainButtonPressed,
+                            showDismissButton =  true,
+                            notificationType = BuilderNotifications.NotificationType.Warning,
+                        };
+
+                        m_Notifications.AddNotification(notificationData);
+                    }
+                }
+
                 m_ViewportWrapper.AddToClassList(s_PreviewModeClassName);
                 m_Viewport.AddToClassList(s_PreviewModeClassName);
                 m_PickOverlay.AddToClassList(s_PreviewModeClassName);
@@ -466,6 +591,7 @@ namespace Unity.UI.Builder
             }
             else
             {
+                m_Notifications.ClearNotifications(BuilderConstants.previewNotificationKey);
                 m_ViewportWrapper.RemoveFromClassList(s_PreviewModeClassName);
                 m_Viewport.RemoveFromClassList(s_PreviewModeClassName);
                 m_PickOverlay.RemoveFromClassList(s_PreviewModeClassName);
@@ -482,8 +608,8 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            m_BuilderResizer.Activate(m_PaneWindow, m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement);
-            m_BuilderMover.Activate(m_PaneWindow, m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement);
+            m_BuilderResizer.Activate(m_PaneWindow, m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement, bindingsCache);
+            m_BuilderMover.Activate(m_PaneWindow, m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement, bindingsCache);
 
             m_Canvas.SetHighlighted(false);
             switch (m_Selection.selectionType)
@@ -491,7 +617,7 @@ namespace Unity.UI.Builder
                 case BuilderSelectionType.Element:
                 case BuilderSelectionType.ElementInTemplateInstance:
                 case BuilderSelectionType.ElementInControlInstance:
-                    m_BuilderSelectionIndicator.Activate(m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement);
+                    m_BuilderSelectionIndicator.Activate(m_Selection, m_PaneWindow.document.visualTreeAsset, selectedElement, bindingsCache);
                     break;
                 case BuilderSelectionType.VisualTreeAsset:
                     m_Canvas.SetHighlighted(true);

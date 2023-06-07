@@ -9,41 +9,35 @@ using Object = UnityEngine.Object;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderUxmlImageAttributeFieldFactory : IBuilderUxmlAttributeFieldFactory
+    internal class BuilderUxmlImageAttributeFieldFactory : BuilderTypedUxmlAttributeFieldFactoryBase<Object, BaseField<Object>>
     {
-        public bool CanCreateField(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
+        public override bool CanCreateField(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
         {
             return attribute.GetType() == typeof(UxmlImageAttributeDescription);
         }
 
-        public VisualElement CreateField(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute, Action<VisualElement, UxmlAttributeDescription, object, string> onValueChange)
+        protected override BaseField<Object> InstantiateField(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
         {
-            var fieldLabel = BuilderNameUtilities.ConvertDashToHuman(attribute.name);
-            var imageTypeField = new ImageStyleField(fieldLabel);
-
-            imageTypeField.RegisterValueChangedCallback((evt) =>
-            {
-                NotifyValueChanged(evt, imageTypeField, attribute, ValueToUxml.Convert(evt.newValue), onValueChange);
-            });
-
-            return imageTypeField;
+            return new ImageStyleField();
         }
 
-        public void SetFieldValue(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute, object value)
+        public override void SetFieldValue(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute, object value)
         {
             (field as ImageStyleField).SetValueWithoutNotify((value as Background?).Value.GetSelectedImage() ?? value as Object);
         }
 
-        public void ResetFieldValue(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
+        public override void ResetFieldValue(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
         {
             (field as ImageStyleField).SetValueWithoutNotify(null);
         }
 
-        protected void NotifyValueChanged(ChangeEvent<UnityEngine.Object> evt
-            , ImageStyleField field
-            , UxmlAttributeDescription attribute
-            , string uxmlValue
-            , Action<VisualElement, UxmlAttributeDescription, object, string> onValueChange)
+        protected override void NotifyValueChanged(ChangeEvent<Object> evt,
+            BaseField<Object> field,
+            object attributeOwner,
+            UxmlAsset attributeUxmlOwner,
+            UxmlAttributeDescription attribute,
+            string uxmlValue,
+            Action<VisualElement, UxmlAttributeDescription, object, string> onValueChange)
         {
             var assetPath = AssetDatabase.GetAssetPath(evt.newValue);
             if (BuilderAssetUtilities.IsBuiltinPath(assetPath))
@@ -55,7 +49,7 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            onValueChange?.Invoke(field, attribute, evt.newValue, uxmlValue);
+            base.NotifyValueChanged(evt, field, attributeOwner, attributeUxmlOwner, attribute, uxmlValue, onValueChange);
         }
     }
 }

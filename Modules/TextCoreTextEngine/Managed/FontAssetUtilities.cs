@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-
+using Unity.Jobs.LowLevel.Unsafe;
 
 namespace UnityEngine.TextCore.Text
 {
@@ -47,6 +47,7 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         private static Character GetCharacterFromFontAsset_Internal(uint unicode, FontAsset sourceFontAsset, bool includeFallbacks, FontStyles fontStyle, TextFontWeight fontWeight, out bool isAlternativeTypeface)
         {
+            bool isMainThread = !JobsUtility.IsExecutingJob;
             isAlternativeTypeface = false;
             Character character = null;
 
@@ -95,6 +96,9 @@ namespace UnityEngine.TextCore.Text
 
                 if (temp != null)
                 {
+                    if (!isMainThread && temp.m_CharacterLookupDictionary == null)
+                        return null;
+
                     if (temp.characterLookupTable.TryGetValue(unicode, out character))
                     {
                         if (character.textAsset != null)
@@ -109,10 +113,12 @@ namespace UnityEngine.TextCore.Text
 
                     if (temp.atlasPopulationMode == AtlasPopulationMode.Dynamic || temp.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
                     {
+                        if (!isMainThread)
+                            return null;
+
                         if (temp.TryAddCharacterInternal(unicode, out character))
                         {
                             isAlternativeTypeface = true;
-
                             return character;
                         }
 
@@ -137,6 +143,9 @@ namespace UnityEngine.TextCore.Text
             }
             #endregion
 
+            if (!isMainThread && sourceFontAsset.m_CharacterLookupDictionary == null)
+                return null;
+
             // Search the source font asset for the requested character.
             if (sourceFontAsset.characterLookupTable.TryGetValue(unicode, out character))
             {
@@ -148,9 +157,15 @@ namespace UnityEngine.TextCore.Text
 
             if (sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.Dynamic || sourceFontAsset.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
             {
+                if (!isMainThread)
+                    return null;
+
                 if (sourceFontAsset.TryAddCharacterInternal(unicode, out character))
                     return character;
             }
+
+            if (character == null && !isMainThread)
+                return null;
 
             // Search fallback font assets if we still don't have a valid character and include fallback is set to true.
             if (character == null && includeFallbacks && sourceFontAsset.fallbackFontAssetTable != null)
@@ -169,7 +184,7 @@ namespace UnityEngine.TextCore.Text
                     if (temp == null)
                         continue;
 
-                    int id = temp.instanceID;
+                    int id = temp.GetHashCode();
 
                     // Try adding font asset to search list. If already present skip to the next one otherwise check if it contains the requested character.
                     if (k_SearchedAssets.Add(id) == false)
@@ -297,6 +312,7 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public static SpriteCharacter GetSpriteCharacterFromSpriteAsset(uint unicode, SpriteAsset spriteAsset, bool includeFallbacks)
         {
+            bool isMainThread = !JobsUtility.IsExecutingJob;
             // Make sure we have a valid sprite asset to search
             if (spriteAsset == null)
                 return null;
@@ -316,7 +332,7 @@ namespace UnityEngine.TextCore.Text
                     k_SearchedAssets.Clear();
 
                 // Add current sprite asset to already searched assets.
-                k_SearchedAssets.Add(spriteAsset.instanceID);
+                k_SearchedAssets.Add(spriteAsset.GetHashCode());
 
                 List<SpriteAsset> fallbackSpriteAsset = spriteAsset.fallbackSpriteAssets;
 
@@ -331,7 +347,7 @@ namespace UnityEngine.TextCore.Text
                         if (temp == null)
                             continue;
 
-                        int id = temp.instanceID;
+                        int id = temp.GetHashCode();
 
                         // Try adding asset to search list. If already present skip to the next one otherwise check if it contains the requested character.
                         if (k_SearchedAssets.Add(id) == false)
@@ -378,7 +394,7 @@ namespace UnityEngine.TextCore.Text
                         if (temp == null)
                             continue;
 
-                        int id = temp.instanceID;
+                        int id = temp.GetHashCode();
 
                         // Try adding asset to search list. If already present skip to the next one otherwise check if it contains the requested character.
                         if (k_SearchedAssets.Add(id) == false)

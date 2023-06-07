@@ -13,7 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                                   PackageDatabase packageDatabase,
                                   PackageOperationDispatcher operationDispatcher,
                                   PageManager pageManager)
-            : base(new PackageRemoveButton(applicationProxy, packageManagerPrefs, packageDatabase, operationDispatcher, pageManager), null)
+            : base(new RemoveAction(operationDispatcher, applicationProxy, packageManagerPrefs, packageDatabase, pageManager))
         {
         }
 

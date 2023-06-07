@@ -22,10 +22,10 @@ namespace UnityEngine.UIElements
             protected InlineStyleProperty()
             {
                 // Defines basic conversions between value, keyword and StyleValue
-                UIConversion.RegisterGlobal((ref TStyleValue sv) => sv.value);
-                UIConversion.RegisterGlobal((ref TValue v) => new TStyleValue {value = v});
-                UIConversion.RegisterGlobal((ref TStyleValue sv) => sv.keyword);
-                UIConversion.RegisterGlobal((ref StyleKeyword kw) => new TStyleValue {keyword = kw});
+                ConverterGroups.RegisterGlobal((ref TStyleValue sv) => sv.value);
+                ConverterGroups.RegisterGlobal((ref TValue v) => new TStyleValue {value = v});
+                ConverterGroups.RegisterGlobal((ref TStyleValue sv) => sv.keyword);
+                ConverterGroups.RegisterGlobal((ref StyleKeyword kw) => new TStyleValue {keyword = kw});
             }
 
             public abstract string ussName { get; }
@@ -40,8 +40,8 @@ namespace UnityEngine.UIElements
         {
             protected InlineStyleColorProperty()
             {
-                UIConversion.RegisterGlobal((ref Color32 v) => new StyleColor(v));
-                UIConversion.RegisterGlobal((ref StyleColor sv) => (Color32) sv.value);
+                ConverterGroups.RegisterGlobal((ref Color32 v) => new StyleColor(v));
+                ConverterGroups.RegisterGlobal((ref StyleColor sv) => (Color32) sv.value);
             }
         }
 
@@ -49,13 +49,13 @@ namespace UnityEngine.UIElements
         {
             protected InlineStyleBackgroundProperty()
             {
-                UIConversion.RegisterGlobal((ref Texture2D v) => new StyleBackground(v));
-                UIConversion.RegisterGlobal((ref Sprite v) => new StyleBackground(v));
-                UIConversion.RegisterGlobal((ref VectorImage v) => new StyleBackground(v));
-                UIConversion.RegisterGlobal((ref StyleBackground sv) => sv.value.texture);
-                UIConversion.RegisterGlobal((ref StyleBackground sv) => sv.value.sprite);
-                UIConversion.RegisterGlobal((ref StyleBackground sv) => sv.value.renderTexture);
-                UIConversion.RegisterGlobal((ref StyleBackground sv) => sv.value.vectorImage);
+                ConverterGroups.RegisterGlobal((ref Texture2D v) => new StyleBackground(v));
+                ConverterGroups.RegisterGlobal((ref Sprite v) => new StyleBackground(v));
+                ConverterGroups.RegisterGlobal((ref VectorImage v) => new StyleBackground(v));
+                ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.texture);
+                ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.sprite);
+                ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.renderTexture);
+                ConverterGroups.RegisterGlobal((ref StyleBackground sv) => sv.value.vectorImage);
             }
         }
 
@@ -63,10 +63,10 @@ namespace UnityEngine.UIElements
         {
             protected InlineStyleLengthProperty()
             {
-                UIConversion.RegisterGlobal((ref float v) => new StyleLength(v));
-                UIConversion.RegisterGlobal((ref int v) => new StyleLength(v));
-                UIConversion.RegisterGlobal((ref StyleLength sv) => sv.value.value);
-                UIConversion.RegisterGlobal((ref StyleLength sv) => (int)sv.value.value);
+                ConverterGroups.RegisterGlobal((ref float v) => new StyleLength(v));
+                ConverterGroups.RegisterGlobal((ref int v) => new StyleLength(v));
+                ConverterGroups.RegisterGlobal((ref StyleLength sv) => sv.value.value);
+                ConverterGroups.RegisterGlobal((ref StyleLength sv) => (int)sv.value.value);
             }
         }
 
@@ -74,8 +74,8 @@ namespace UnityEngine.UIElements
         {
             protected InlineStyleFloatProperty()
             {
-                UIConversion.RegisterGlobal((ref int v) => new StyleFloat(v));
-                UIConversion.RegisterGlobal((ref StyleFloat sv) => (int)sv.value);
+                ConverterGroups.RegisterGlobal((ref int v) => new StyleFloat(v));
+                ConverterGroups.RegisterGlobal((ref StyleFloat sv) => (int)sv.value);
             }
         }
 
@@ -91,10 +91,10 @@ namespace UnityEngine.UIElements
         {
             protected InlineStyleFontDefinitionProperty()
             {
-                UIConversion.RegisterGlobal((ref Font v) => new StyleFontDefinition(v));
-                UIConversion.RegisterGlobal((ref FontAsset v) => new StyleFontDefinition(v));
-                UIConversion.RegisterGlobal((ref StyleFontDefinition sv) => sv.value.font);
-                UIConversion.RegisterGlobal((ref StyleFontDefinition sv) => sv.value.fontAsset);
+                ConverterGroups.RegisterGlobal((ref Font v) => new StyleFontDefinition(v));
+                ConverterGroups.RegisterGlobal((ref FontAsset v) => new StyleFontDefinition(v));
+                ConverterGroups.RegisterGlobal((ref StyleFontDefinition sv) => sv.value.font);
+                ConverterGroups.RegisterGlobal((ref StyleFontDefinition sv) => sv.value.fontAsset);
             }
         }
 

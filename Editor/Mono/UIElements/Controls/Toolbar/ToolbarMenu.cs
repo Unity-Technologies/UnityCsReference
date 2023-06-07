@@ -13,8 +13,8 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ToolbarMenu : TextElement, IToolbarMenuElement
     {
-        internal static readonly DataBindingProperty menuProperty = nameof(menu);
-        internal static readonly DataBindingProperty variantProperty = nameof(variant);
+        internal static readonly BindingId menuProperty = nameof(menu);
+        internal static readonly BindingId variantProperty = nameof(variant);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : TextElement.UxmlSerializedData

@@ -13,9 +13,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class TwoPaneSplitView : VisualElement
     {
-        internal static readonly DataBindingProperty fixedPaneIndexProperty = nameof(fixedPaneIndex);
-        internal static readonly DataBindingProperty fixedPaneInitialDimensionProperty = nameof(fixedPaneInitialDimension);
-        internal static readonly DataBindingProperty orientationProperty = nameof(orientation);
+        internal static readonly BindingId fixedPaneIndexProperty = nameof(fixedPaneIndex);
+        internal static readonly BindingId fixedPaneInitialDimensionProperty = nameof(fixedPaneInitialDimension);
+        internal static readonly BindingId orientationProperty = nameof(orientation);
 
         const float k_FixedPaneInitialDimension = 100f;
 

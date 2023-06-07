@@ -10,7 +10,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private BackgroundFetchHandler m_BackgroundFetchHandler;
 
         public CheckUpdateFoldout(PageManager pageManager, AssetStoreCache assetStoreCache, BackgroundFetchHandler backgroundFetchHandler)
-            : base(new PackageDeselectButton(pageManager, "deselectCheckUpdate"))
+            : base(new DeselectAction(pageManager, "deselectCheckUpdate"))
         {
             m_AssetStoreCache = assetStoreCache;
             m_BackgroundFetchHandler = backgroundFetchHandler;

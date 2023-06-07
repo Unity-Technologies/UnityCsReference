@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class TabView : VisualElement
     {
-        internal static readonly DataBindingProperty reorderableProperty = nameof(reorderable);
+        internal static readonly BindingId reorderableProperty = nameof(reorderable);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData

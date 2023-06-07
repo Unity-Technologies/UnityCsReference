@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class GroupBox : BindableElement, IGroupBox
     {
-        internal static readonly DataBindingProperty textProperty = nameof(text);
+        internal static readonly BindingId textProperty = nameof(text);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData

@@ -111,7 +111,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void DisplayPackagesCacheSetting()
         {
-            packagesCacheDropdown.SetIcon("folder");
+            packagesCacheDropdown.SetIcon(Icon.Folder);
             var packagesCacheDropdownMenu = new DropdownMenu();
             packagesCacheDropdownMenu.AppendAction(k_OpenFolder, action =>
             {
@@ -160,7 +160,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             assetsCacheLocationInfo.enableRichText = true;
             assetsCacheLocationInfo.text = string.Format(L10n.Tr("Your assets will be stored in <b>{0}</b> subfolder."), k_AssetStoreFolder);
-            assetsCacheDropdown.SetIcon("folder");
+            assetsCacheDropdown.SetIcon(Icon.Folder);
             var assetsCacheDropdownMenu = new DropdownMenu();
             assetsCacheDropdownMenu.AppendAction(k_OpenFolder, action =>
             {

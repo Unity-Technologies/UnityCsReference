@@ -70,8 +70,12 @@ namespace UnityEngine.Rendering
         public bool overridesEnableLODCrossFade { get; set; } = false;
         public bool rendererProbes { get; set; } = true;
         public bool particleSystemInstancing { get; set; } = true;
-        public bool autoAmbientProbeBaking { get; set; } = true;
-        public bool autoDefaultReflectionProbeBaking { get; set; } = true;
+        [Obsolete("autoAmbientProbeBaking is obsolete. To enable or disable baking of the ambient probe, use ambientProbeBaking instead. (UnityUpgradable) -> ambientProbeBaking", false)]
+        public bool autoAmbientProbeBaking { get { return ambientProbeBaking; } set { ambientProbeBaking = value; } }
+        [Obsolete("autoDefaultReflectionProbeBaking is obsolete. To enable or disable baking of the default reflection probe, use defaultReflectionProbeBaking instead. (UnityUpgradable) -> defaultReflectionProbeBaking", false)]
+        public bool autoDefaultReflectionProbeBaking { get { return defaultReflectionProbeBaking; } set { defaultReflectionProbeBaking = value; } }
+        public bool ambientProbeBaking { get; set; } = true;
+        public bool defaultReflectionProbeBaking { get; set; } = true; 
         public bool overridesShadowmask { get; set; } = false;
         public bool overridesLightProbeSystem { get; set; } = false;
         public bool supportsHDR { get; set; } = false;
@@ -229,17 +233,17 @@ namespace UnityEngine.Rendering
         }
 
         [RequiredByNativeCode]
-        internal static unsafe void IsAutoAmbientProbeBakingSupported(IntPtr isSupportedPtr)
+        internal static unsafe void IsAmbientProbeBakingSupported(IntPtr isSupportedPtr)
         {
             var isSupported = (bool*)isSupportedPtr;
-            *isSupported = active.autoAmbientProbeBaking;
+            *isSupported = active.ambientProbeBaking;
         }
 
         [RequiredByNativeCode]
-        internal static unsafe void IsAutoDefaultReflectionProbeBakingSupported(IntPtr isSupportedPtr)
+        internal static unsafe void IsDefaultReflectionProbeBakingSupported(IntPtr isSupportedPtr)
         {
             var isSupported = (bool*)isSupportedPtr;
-            *isSupported = active.autoDefaultReflectionProbeBaking;
+            *isSupported = active.defaultReflectionProbeBaking;
         }
 
         internal static unsafe int FallbackLightmapper()

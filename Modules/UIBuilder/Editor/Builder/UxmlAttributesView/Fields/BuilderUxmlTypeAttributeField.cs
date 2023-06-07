@@ -58,6 +58,7 @@ namespace Unity.UI.Builder
             var uiField = new TextField(label) { isDelayed = true };
             var completer = new FieldSearchCompleter<TypeInfo>(uiField);
 
+            completer.usesNativePopupWindow = true;
             // When possible, the popup should have the same width as the input field, so that the auto-complete
             // characters will try to match said input field.
             completer.matcherCallback += (str, info) => info.value.IndexOf(str, StringComparison.OrdinalIgnoreCase) >= 0;
@@ -127,6 +128,15 @@ namespace Unity.UI.Builder
                 f.SetValueWithoutNotify(a.defaultValue.ToString());
         }
 
+        public void ResetFieldValueToInline(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute)
+        {
+            var a = attribute as TypedUxmlAttributeDescription<Type>;
+            var value = a.GetValueFromBag(attributeUxmlOwner, CreationContext.Default);
+            var f = field as TextField;
+
+            f.SetValueWithoutNotify(value.ToString());
+        }
+
         void OnValidatedTypeAttributeChange(ChangeEvent<string> evt, Type desiredType
             , object attributeOwner, UxmlAttributeDescription attribute
             , Action<VisualElement, UxmlAttributeDescription, object, string> onValueChange)
@@ -135,7 +145,7 @@ namespace Unity.UI.Builder
             var typeName = evt.newValue;
             var fullTypeName = typeName;
 
-            if (evt.target == field.labelElement)
+            if (field == null || evt.target == field.labelElement)
                 return;
 
             Type type = null;

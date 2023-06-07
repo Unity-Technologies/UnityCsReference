@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
@@ -32,6 +33,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public bool hasChildren => m_Children != null && m_Children.Count > 0;
 
+        [CreateProperty]
         readonly T m_Data;
         readonly IList<TreeViewItemData<T>> m_Children;
 

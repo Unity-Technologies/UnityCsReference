@@ -42,7 +42,7 @@ class LicenseRevokedWindowContents : TemplateLicenseEventWindowContents
         if (!m_HasUiEntitlement)
         {
             m_Description = shortTitle + " " + LicenseTrStrings.RevokedDescriptionNoUiEntitlement;
-            m_Buttons.Add(EventsButtonType.SaveAndClose);
+            m_Buttons.Add(EventsButtonType.SaveAndQuit);
         }
         else
         {

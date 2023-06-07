@@ -41,7 +41,10 @@ namespace Unity.UI.Builder
         AttributeOverrides  = 1 << 5,
         Variables           = 1 << 6,
         ListView            = 1 << 7,
-        TreeView            = 1 << 8
+        TreeView            = 1 << 8,
+        DataBinding         = 1 << 9,
+        UserDataBinding   = 1 << 10,
+        CustomBinding       = 1 << 11,
     }
     
     internal static class BuilderAnalyticsUtility
@@ -112,10 +115,34 @@ namespace Unity.UI.Builder
             {
                 features |= Features.TreeView;
             }
+            if (vta.uxmlObjectEntries.Any(x => x.uxmlObjectAssets.Any(o => o.fullTypeName == typeof(DataBinding).FullName)))
+            {
+                features |= Features.DataBinding;
+            }
+            if (vta.uxmlObjectEntries.Any(x => x.uxmlObjectAssets.Any(IsCustomBinding<DataBinding>)))
+            {
+                features |= Features.UserDataBinding;
+            }
+            if (vta.uxmlObjectEntries.Any(x => x.uxmlObjectAssets.Any(IsCustomBinding<CustomBinding>)))
+            {
+                features |= Features.CustomBinding;
+            }
 
             return features == 0 ? Array.Empty<string>() : features.ToString().Split();
         }
-        
+
+        static bool IsCustomBinding<T>(UxmlObjectAsset o)
+        {
+            if (UxmlObjectFactoryRegistry.factories.TryGetValue(o.fullTypeName, out var factories))
+            {
+                var uxmlType = factories[0].GetUxmlType();
+                var type = typeof(T);
+                return type != uxmlType && type.IsAssignableFrom(uxmlType) && uxmlType.Assembly.GetName().Name != UxmlObjectFactoryRegistry.uieCoreModule;
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// It gathers and sends the data for the builder save event
         /// </summary>

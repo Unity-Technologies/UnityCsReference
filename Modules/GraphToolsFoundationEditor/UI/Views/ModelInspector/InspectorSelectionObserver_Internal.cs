@@ -17,10 +17,24 @@ namespace Unity.GraphToolsFoundation.Editor
         List<SelectionStateComponent> m_SelectionStates;
         ModelInspectorStateComponent m_ModelInspectorState;
 
+        static IStateComponent[] MakeArray(IStateComponent first, IStateComponent second, IReadOnlyList<IStateComponent> remaining)
+        {
+            var size = remaining.Count + 2;
+            var result = new IStateComponent[size];
+            result[0] = first;
+            result[1] = second;
+            for (var i = 0; i < remaining.Count; i++)
+            {
+                result[i + 2] = remaining[i];
+            }
+
+            return result;
+        }
+
         public InspectorSelectionObserver_Internal(ToolStateComponent toolState, GraphModelStateComponent graphModelState,
-            IReadOnlyCollection<SelectionStateComponent> selectionStates, ModelInspectorStateComponent modelInspectorState)
-            : base(new IStateComponent[] { toolState, graphModelState }.Concat(selectionStates),
-                new[] { modelInspectorState })
+            IReadOnlyList<SelectionStateComponent> selectionStates, ModelInspectorStateComponent modelInspectorState)
+            : base(MakeArray(toolState, graphModelState, selectionStates),
+                new IStateComponent[] { modelInspectorState })
         {
             m_ToolState = toolState;
             m_GraphModelStateComponent = graphModelState;
@@ -34,7 +48,7 @@ namespace Unity.GraphToolsFoundation.Editor
             if (graphModel == null)
                 return;
 
-            var selectionObservations = this.ObserveStates(m_SelectionStates).ToList();
+            var selectionObservations = this.ObserveStates(m_SelectionStates);
             try
             {
                 using (var toolObservation = this.ObserveState(m_ToolState))

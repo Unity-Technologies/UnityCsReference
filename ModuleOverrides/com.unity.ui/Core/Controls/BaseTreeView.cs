@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseTreeView : BaseVerticalCollectionView
     {
-        internal static readonly DataBindingProperty autoExpandProperty = nameof(autoExpand);
+        internal static readonly BindingId autoExpandProperty = nameof(autoExpand);
 
         /// <summary>
         /// The USS class name for TreeView elements.

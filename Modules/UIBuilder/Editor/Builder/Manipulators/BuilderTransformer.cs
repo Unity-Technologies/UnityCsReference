@@ -14,6 +14,8 @@ namespace Unity.UI.Builder
     {
         static readonly string s_UssClassName = "unity-builder-transformer";
         static readonly string s_ActiveHandleClassName = "unity-builder-transformer--active";
+        public static readonly string s_DisabledHandleClassName = "unity-builder-transformer--disabled";
+
 
         protected List<string> m_ScratchChangeList;
 
@@ -86,9 +88,9 @@ namespace Unity.UI.Builder
             m_DragHoverCoverLayer.RemoveFromClassList(s_ActiveClassName);
         }
 
-        protected class Manipulator : MouseManipulator
+        protected class Manipulator : PointerManipulator
         {
-            Vector2 m_Start;
+            Vector3 m_Start;
             protected bool m_Active;
 
             Action<VisualElement> m_StartDrag;
@@ -106,21 +108,21 @@ namespace Unity.UI.Builder
 
             protected override void RegisterCallbacksOnTarget()
             {
-                target.RegisterCallback<MouseDownEvent>(OnMouseDown);
-                target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
-                target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+                target.RegisterCallback<PointerDownEvent>(OnPointerDown);
+                target.RegisterCallback<PointerMoveEvent>(OnPointerMove);
+                target.RegisterCallback<PointerUpEvent>(OnPointerUp);
             }
 
             protected override void UnregisterCallbacksFromTarget()
             {
-                target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
-                target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
-                target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+                target.UnregisterCallback<PointerDownEvent>(OnPointerDown);
+                target.UnregisterCallback<PointerMoveEvent>(OnPointerMove);
+                target.UnregisterCallback<PointerUpEvent>(OnPointerUp);
             }
 
-            protected void OnMouseDown(MouseDownEvent e)
+            protected void OnPointerDown(PointerDownEvent e)
             {
-                if (m_Active)
+                if (m_Active || target.ClassListContains(s_DisabledHandleClassName))
                 {
                     e.StopImmediatePropagation();
                     return;
@@ -133,7 +135,7 @@ namespace Unity.UI.Builder
                         return;
 
                     m_StartDrag(target);
-                    m_Start = e.mousePosition;
+                    m_Start = e.position;
 
                     m_Active = true;
                     target.CaptureMouse();
@@ -143,19 +145,19 @@ namespace Unity.UI.Builder
                 }
             }
 
-            protected void OnMouseMove(MouseMoveEvent e)
+            protected void OnPointerMove(PointerMoveEvent e)
             {
                 if (!m_Active || !target.HasMouseCapture())
                     return;
 
-                Vector2 diff = e.mousePosition - m_Start;
+                Vector2 diff = e.position - m_Start;
 
                 m_DragAction(diff);
 
                 e.StopPropagation();
             }
 
-            protected void OnMouseUp(MouseUpEvent e)
+            protected void OnPointerUp(PointerUpEvent e)
             {
                 if (!m_Active || !target.HasMouseCapture() || !CanStopManipulation(e))
                     return;

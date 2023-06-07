@@ -268,6 +268,7 @@ namespace UnityEngine.UIElements
                 panel.UpdateAssetTrackers();
                 panel.timerEventScheduler.UpdateScheduledEvents();
                 panel.ValidateFocus();
+                panel.UpdateDataBinding();
                 panel.UpdateAnimations();
                 panel.UpdateBindings();
             }

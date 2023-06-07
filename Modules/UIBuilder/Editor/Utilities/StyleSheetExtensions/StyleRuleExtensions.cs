@@ -56,12 +56,11 @@ namespace Unity.UI.Builder
         }
 
         public static void RemoveProperty(
-            this StyleSheet styleSheet, StyleRule rule, StyleProperty property,
-            string undoMessage = null)
+            this StyleSheet styleSheet, StyleRule rule, StyleProperty property, string undoMessage = null)
         {
             // Undo/Redo
             if (string.IsNullOrEmpty(undoMessage))
-                undoMessage = "Change UI Style Value";
+                undoMessage = BuilderConstants.ChangeUIStyleValueUndoMessage;
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
             var properties = rule.properties.ToList();

@@ -7,7 +7,7 @@ using System;
 namespace UnityEngine
 {
     // Base class to derive custom property attributes from. Use this to create custom attributes for script variables.
-    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     [UnityEngine.Scripting.UsedByNativeCode]
     public abstract class PropertyAttribute : Attribute
     {
@@ -74,7 +74,7 @@ namespace UnityEngine
         }
     }
 
-    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = true)]
+    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = true)]
     public class HeaderAttribute : PropertyAttribute
     {
         public readonly string header;
@@ -86,7 +86,7 @@ namespace UnityEngine
     }
 
     // Attribute used to make a float or int variable in a script be restricted to a specific range.
-    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class RangeAttribute : PropertyAttribute
     {
         public readonly float min;
@@ -101,7 +101,7 @@ namespace UnityEngine
     }
 
     // Attribute used to make a float or int variable in a script be restricted to a specific minimum value.
-    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class MinAttribute : PropertyAttribute
     {
         public readonly float min;
@@ -114,7 +114,7 @@ namespace UnityEngine
     }
 
     // Attribute to make a string be edited with a multi-line textfield
-    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class MultilineAttribute : PropertyAttribute
     {
         public readonly int lines;
@@ -132,7 +132,7 @@ namespace UnityEngine
     }
 
     // Attribute to make a string be edited with a multi-line textfield
-    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class TextAreaAttribute : PropertyAttribute
     {
         public readonly int minLines;
@@ -153,7 +153,7 @@ namespace UnityEngine
     }
 
     // Attribute to control how the color can be manipulated in the ColorPicker
-    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class ColorUsageAttribute : PropertyAttribute
     {
         public readonly bool showAlpha = true;
@@ -207,7 +207,7 @@ namespace UnityEngine
     }
 
     // Attribute to make int or float fields delayed.
-    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Property, Inherited = true, AllowMultiple = false)]
     public sealed class DelayedAttribute : PropertyAttribute
     {
     }

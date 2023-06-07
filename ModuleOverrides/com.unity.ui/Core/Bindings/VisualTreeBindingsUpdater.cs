@@ -222,7 +222,7 @@ namespace UnityEngine.UIElements
 
         public static bool ShouldThrottle(long startTime)
         {
-            return !disableBindingsThrottling &&  (CurrentTime() - startTime) < k_MaxBindingTimeMs;
+            return disableBindingsThrottling || (CurrentTime() - startTime) < k_MaxBindingTimeMs;
         }
 
         public void PerformTrackingOperations()
@@ -256,7 +256,7 @@ namespace UnityEngine.UIElements
                 using (s_ProfilerBindingRequestsMarker.Auto())
                 {
                     long startTime = CurrentTime();
-                    while (m_ElementsToBind.Count > 0 && (CurrentTime() - startTime) < k_MaxBindingTimeMs)
+                    while (m_ElementsToBind.Count > 0 && ShouldThrottle(startTime))
                     {
                         var element = m_ElementsToBind.FirstOrDefault();
 

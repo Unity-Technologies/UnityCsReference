@@ -46,7 +46,16 @@ namespace UnityEngine.UIElements
         {
             int n = m_VisualElementAssets?.Count ?? 0;
             n += m_TemplateAssets?.Count ?? 0;
-            n += m_UxmlObjectEntries?.Count ?? 0;
+
+            if (m_UxmlObjectEntries != null)
+            {
+                n += m_UxmlObjectEntries.Count;
+                foreach (var entry in m_UxmlObjectEntries)
+                {
+                    if (entry.uxmlObjectAssets != null)
+                        n += entry.uxmlObjectAssets.Count;
+                }
+            }
             return n;
         }
 
@@ -118,6 +127,19 @@ namespace UnityEngine.UIElements
                 this.parentId = parentId;
                 this.uxmlObjectAssets = uxmlObjectAssets;
             }
+
+            public UxmlObjectAsset GetField(string fieldName)
+            {
+                foreach (var asset in uxmlObjectAssets)
+                {
+                    if (asset.isField && asset.fullTypeName == fieldName)
+                        return asset;
+                }
+
+                return null;
+            }
+
+            public override string ToString() => $"UxmlObjectEntry parent:{parentId} ({uxmlObjectAssets?.Count})";
         }
 
         [Serializable]
@@ -138,7 +160,7 @@ namespace UnityEngine.UIElements
                 {
                     if (m_AssetReference.isSet)
                     {
-                        return m_AssetReference.asset;
+                        return m_AssetReference.asset == null && m_InstanceID != 0 ? CreateMissingReferenceObject(m_InstanceID) : m_AssetReference.asset;
                     }
 
                     return m_InstanceID != 0 ? CreateMissingReferenceObject(m_InstanceID) : null;
@@ -194,7 +216,7 @@ namespace UnityEngine.UIElements
 
         [SerializeField] internal StyleSheet inlineSheet;
 
-        [SerializeField] private List<VisualElementAsset> m_VisualElementAssets;
+        [SerializeField] internal List<VisualElementAsset> m_VisualElementAssets;
 
         /// <summary>
         /// The stylesheets used by this VisualTreeAsset.
@@ -243,7 +265,7 @@ namespace UnityEngine.UIElements
             set { m_VisualElementAssets = value; }
         }
 
-        [SerializeField] private List<TemplateAsset> m_TemplateAssets;
+        [SerializeField] internal List<TemplateAsset> m_TemplateAssets;
 
         internal List<TemplateAsset> templateAssets
         {
@@ -257,6 +279,7 @@ namespace UnityEngine.UIElements
         internal List<UxmlObjectEntry> uxmlObjectEntries => m_UxmlObjectEntries;
         internal List<int> uxmlObjectIds => m_UxmlObjectIds;
 
+        // Called when parsing Uxml
         internal void RegisterUxmlObject(UxmlObjectAsset uxmlObjectAsset)
         {
             m_UxmlObjectEntries ??= new List<UxmlObjectEntry>();
@@ -275,6 +298,134 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName)
+        {
+            m_UxmlObjectEntries ??= new List<UxmlObjectEntry>();
+            m_UxmlObjectIds ??= new List<int>();
+
+            var entry = GetUxmlObjectEntry(parent.id);
+            if (entry.uxmlObjectAssets == null)
+            {
+                entry = new UxmlObjectEntry(parent.id, new List<UxmlObjectAsset>());
+                m_UxmlObjectEntries.Add(entry);
+                m_UxmlObjectIds.Add(GetNextUxmlObjectId(parent.id));
+            }
+
+            if (string.IsNullOrEmpty(fieldUxmlName))
+            {
+                var newAsset = new UxmlObjectAsset(fullTypeName, false);
+                newAsset.parentId = parent.id;
+                newAsset.id = GetNextUxmlObjectId(parent.parentId);
+                entry.uxmlObjectAssets.Add(newAsset);
+                return newAsset;
+            }
+
+            var fieldAsset = entry.GetField(fieldUxmlName);
+            if (fieldAsset == null)
+            {
+                fieldAsset = new UxmlObjectAsset(fieldUxmlName, true);
+                entry.uxmlObjectAssets.Add(fieldAsset);
+                fieldAsset.parentId = parent.id;
+                fieldAsset.id = GetNextUxmlObjectId(parent.parentId);
+            }
+
+            return AddUxmlObject(fieldAsset, null, fullTypeName);
+        }
+
+        int GetNextUxmlObjectId(int parentId)
+        {
+            return (GetNextChildSerialNumber() + 585386304) * -1521134295 + parentId;
+        }
+
+        internal void RemoveUxmlObject(int id, bool onlyIfIsField = false)
+        {
+            if (m_UxmlObjectEntries == null)
+                return;
+
+            for (var i = 0; i < m_UxmlObjectEntries.Count; ++i)
+            {
+                var entry = m_UxmlObjectEntries[i];
+                for (var j = 0; j < entry.uxmlObjectAssets.Count; ++j)
+                {
+                    var asset = entry.uxmlObjectAssets[j];
+                    if (asset.id == id)
+                    {
+                        if (onlyIfIsField && !asset.isField)
+                            return;
+
+                        entry.uxmlObjectAssets.RemoveAt(j);
+
+                        if (entry.uxmlObjectAssets.Count == 0)
+                        {
+                            var index = m_UxmlObjectEntries.IndexOf(entry);
+                            m_UxmlObjectEntries.RemoveAt(index);
+                            m_UxmlObjectIds.RemoveAt(index);
+
+                            RemoveUxmlObject(entry.parentId, true);
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+
+        internal void MoveUxmlObject(UxmlAsset parent, string fieldName, int src, int dst)
+        {
+            if (m_UxmlObjectEntries == null)
+                return;
+
+            foreach (var e in m_UxmlObjectEntries)
+            {
+                if (e.parentId == parent.id)
+                {
+                    if (!string.IsNullOrEmpty(fieldName))
+                    {
+                        var fieldAsset = e.GetField(fieldName);
+                        if (fieldAsset != null)
+                        {
+                            MoveUxmlObject(fieldAsset, null, src, dst);
+                        }
+                    }
+                    else
+                    {
+                        UxmlUtility.MoveListItem(e.uxmlObjectAssets, src, dst);
+                    }
+                    return;
+                }
+            }
+        }
+
+        internal void CollectUxmlObjectAssets(UxmlAsset parent, string fieldName, List<UxmlObjectAsset> foundEntries)
+        {
+            if (m_UxmlObjectEntries == null)
+                return;
+
+            foreach (var e in m_UxmlObjectEntries)
+            {
+                if (e.parentId == parent.id)
+                {
+                    if (!string.IsNullOrEmpty(fieldName))
+                    {
+                        var fieldAsset = e.GetField(fieldName);
+                        if (fieldAsset != null)
+                        {
+                            CollectUxmlObjectAssets(fieldAsset, null, foundEntries);
+                        }
+                    }
+                    else
+                    {
+                        foreach (var asset in e.uxmlObjectAssets)
+                        {
+                            if (!asset.isField)
+                                foundEntries.Add(asset);
+                        }
+                    }
+                    return;
+                }
+            }
+        }
+
+        // Obsolete - Used by UxmlTraits system
         internal List<T> GetUxmlObjects<T>(IUxmlAttributes asset, CreationContext cc) where T : new()
         {
             if (m_UxmlObjectEntries == null)
@@ -331,6 +482,12 @@ namespace UnityEngine.UIElements
         {
             m_AssetEntries ??= new List<AssetEntry>();
             m_AssetEntries.Add(new AssetEntry(path, type, asset));
+        }
+
+        internal void TransferAssetEntries(VisualTreeAsset otherVta)
+        {
+            m_AssetEntries.Clear();
+            m_AssetEntries.AddRange(otherVta.m_AssetEntries);
         }
 
         internal T GetAsset<T>(string path) where T : Object => GetAsset(path, typeof(T)) as T;

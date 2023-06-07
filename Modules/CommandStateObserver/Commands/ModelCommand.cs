@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Unity.CommandStateObserver
 {
@@ -66,6 +65,7 @@ namespace Unity.CommandStateObserver
         /// </summary>
         /// <param name="undoStringSingular">The string to display in the undo menu item when there is only one model affected.</param>
         /// <param name="undoStringPlural">The string to display in the undo menu item when there are many models affected.</param>
+        /// <param name="value">The value to set on the models.</param>
         /// <param name="models">The models affected by the command.</param>
         protected ModelCommand(string undoStringSingular, string undoStringPlural,
                                TValue value,

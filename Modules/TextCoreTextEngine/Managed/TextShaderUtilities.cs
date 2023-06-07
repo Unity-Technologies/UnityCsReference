@@ -149,14 +149,14 @@ namespace UnityEngine.TextCore.Text
             get
             {
                 // Try to use TMP shaders first
-                if (k_ShaderRef_MobileSDF == null)
+                if (((System.Object)k_ShaderRef_MobileSDF) == null)
                 {
                     k_ShaderRef_MobileSDF = Shader.Find("TextMeshPro/Mobile/Distance Field SSD");
 
-                    if (k_ShaderRef_MobileSDF == null)
+                    if (((System.Object)k_ShaderRef_MobileSDF) == null)
                         k_ShaderRef_MobileSDF = Shader.Find("Text/Mobile/Distance Field SSD");
 
-                    if (k_ShaderRef_MobileSDF == null)
+                    if (((System.Object)k_ShaderRef_MobileSDF) == null)
                         k_ShaderRef_MobileSDF = Shader.Find("Hidden/TextCore/Distance Field SSD");
                 }
 

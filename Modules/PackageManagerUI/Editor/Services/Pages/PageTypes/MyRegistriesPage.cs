@@ -14,7 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override string id => k_Id;
         public override string displayName => L10n.Tr("My Registries");
-        public override PageIcon icon => PageIcon.MyRegistries;
+        public override Icon icon => Icon.MyRegistriesPage;
 
         public override RefreshOptions refreshOptions => RefreshOptions.UpmList | RefreshOptions.UpmSearch;
 

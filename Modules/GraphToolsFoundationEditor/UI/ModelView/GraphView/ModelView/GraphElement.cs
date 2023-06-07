@@ -294,5 +294,47 @@ namespace Unity.GraphToolsFoundation.Editor
         {
             Border.MarkDirtyRepaint();
         }
+
+        protected override void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            base.OnGeometryChanged(evt);
+            UpdateGraphViewPartitioning();
+        }
+
+        /// <summary>
+        /// Checks if a <see cref="GraphElement"/> can be space partitioned.
+        /// </summary>
+        /// <returns>True if it can be partitioned, false otherwise.</returns>
+        public virtual bool CanBePartitioned()
+        {
+            // Only root level models are partitioned.
+            return GraphElementModel != null && GraphElementModel.Container == GraphElementModel.GraphModel;
+        }
+
+        /// <summary>
+        /// Marks this <see cref="GraphElement"/> to be partitioned or repartitioned in the <see cref="GraphView"/>'s <see cref="SpacePartitioningStateComponent"/>.
+        /// This should be overriden if the <see cref="GraphElement"/> doesn't have a <see cref="GraphElementModel"/> but still needs to be partitioned.
+        /// </summary>
+        protected virtual void UpdateGraphViewPartitioning()
+        {
+            if (!CanBePartitioned())
+                return;
+
+            if (GraphView is { GraphViewModel: { SpacePartitioningState: { } } })
+            {
+                using var updater = GraphView.GraphViewModel.SpacePartitioningState.UpdateScope;
+                updater.MarkGraphElementForPartitioning(this);
+            }
+        }
+
+        /// <summary>
+        /// Gets the actual bounding box used for overlapping tests. If you override <see cref="VisualElement.Overlaps"/>, you should override this
+        /// to keep it in sync.
+        /// </summary>
+        /// <returns>The bounding box of the <see cref="GraphElement"/>.</returns>
+        public virtual Rect GetBoundingBox()
+        {
+            return layout;
+        }
     }
 }

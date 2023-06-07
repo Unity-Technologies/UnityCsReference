@@ -230,12 +230,12 @@ namespace UnityEngine
 
         public virtual bool supportsIndirectArgumentsBuffer => UnityEngine.SystemInfo.supportsIndirectArgumentsBuffer;
 
-        public virtual bool IsFormatSupported(GraphicsFormat format, FormatUsage usage)
+        public virtual bool IsFormatSupported(GraphicsFormat format, GraphicsFormatUsage usage)
         {
             return UnityEngine.SystemInfo.IsFormatSupported(format, usage);
         }
 
-        public virtual GraphicsFormat GetCompatibleFormat(GraphicsFormat format, FormatUsage usage)
+        public virtual GraphicsFormat GetCompatibleFormat(GraphicsFormat format, GraphicsFormatUsage usage)
         {
             return UnityEngine.SystemInfo.GetCompatibleFormat(format, usage);
         }

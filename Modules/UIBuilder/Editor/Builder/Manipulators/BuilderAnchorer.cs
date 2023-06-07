@@ -55,25 +55,25 @@ namespace Unity.UI.Builder
             m_HandleElements["left-anchor"].RemoveFromClassList(s_ActiveAnchorClassName);
             m_HandleElements["bottom-anchor"].RemoveFromClassList(s_ActiveAnchorClassName);
             m_HandleElements["right-anchor"].RemoveFromClassList(s_ActiveAnchorClassName);
-            if (!IsNoneOrAuto(TrackedStyle.Top))
+            if (!IsNoneOrAuto(TrackedStyles.Top))
                 m_HandleElements["top-anchor"].AddToClassList(s_ActiveAnchorClassName);
-            if (!IsNoneOrAuto(TrackedStyle.Left))
+            if (!IsNoneOrAuto(TrackedStyles.Left))
                 m_HandleElements["left-anchor"].AddToClassList(s_ActiveAnchorClassName);
-            if (!IsNoneOrAuto(TrackedStyle.Bottom))
+            if (!IsNoneOrAuto(TrackedStyles.Bottom))
                 m_HandleElements["bottom-anchor"].AddToClassList(s_ActiveAnchorClassName);
-            if (!IsNoneOrAuto(TrackedStyle.Right))
+            if (!IsNoneOrAuto(TrackedStyles.Right))
                 m_HandleElements["right-anchor"].AddToClassList(s_ActiveAnchorClassName);
         }
 
-        void SetAnchorHandleState(TrackedStyle style, bool state)
+        void SetAnchorHandleState(TrackedStyles style, bool state)
         {
             string anchorName = string.Empty;
             switch (style)
             {
-                case TrackedStyle.Top: anchorName = "top-anchor"; break;
-                case TrackedStyle.Left: anchorName = "left-anchor"; break;
-                case TrackedStyle.Bottom: anchorName = "bottom-anchor"; break;
-                case TrackedStyle.Right: anchorName = "right-anchor"; break;
+                case TrackedStyles.Top: anchorName = "top-anchor"; break;
+                case TrackedStyles.Left: anchorName = "left-anchor"; break;
+                case TrackedStyles.Bottom: anchorName = "bottom-anchor"; break;
+                case TrackedStyles.Right: anchorName = "right-anchor"; break;
                 default: return;
             }
 
@@ -83,7 +83,7 @@ namespace Unity.UI.Builder
                 m_HandleElements[anchorName].RemoveFromClassList(s_ActiveAnchorClassName);
         }
 
-        void OnAnchorClick(TrackedStyle primaryStyle, TrackedStyle oppositeStyle, TrackedStyle lengthStyle)
+        void OnAnchorClick(TrackedStyles primaryStyle, TrackedStyles oppositeStyle, TrackedStyles lengthStyle)
         {
             var primaryIsUnset = IsNoneOrAuto(primaryStyle); // We can enable primary.
             var oppositeIsSet = !IsNoneOrAuto(oppositeStyle); // We can safely unset primary.
@@ -102,8 +102,8 @@ namespace Unity.UI.Builder
             var primaryName = GetStyleName(primaryStyle);
             var lengthName = GetStyleName(lengthStyle);
 
-            var marginPrimary = GetMargineResolvedStyleFloat(primaryStyle);
-            var marginOpposite = GetMargineResolvedStyleFloat(oppositeStyle);
+            var marginPrimary = GetMarginResolvedStyleFloat(primaryStyle);
+            var marginOpposite = GetMarginResolvedStyleFloat(oppositeStyle);
             var totalAxisMargin = marginPrimary + marginOpposite;
 
             var changeList = new List<string>() { primaryName, lengthName };
@@ -111,7 +111,7 @@ namespace Unity.UI.Builder
             if (primaryIsUnset)
             {
                 var newPrimaryValue = parentLength - opposite - length - totalAxisMargin - parentBorderOpposite - parentBorderPrimary;
-                SetStyleSheetValue(primaryName, newPrimaryValue);
+                SetStyleSheetValue(primaryStyle, newPrimaryValue);
                 RemoveStyleSheetValue(lengthName);
 
                 SetAnchorHandleState(primaryStyle, true);
@@ -122,7 +122,7 @@ namespace Unity.UI.Builder
             else if (oppositeIsSet)
             {
                 var newLengthValue = parentLength - opposite - primary - totalAxisMargin - parentBorderOpposite - parentBorderPrimary;
-                SetStyleSheetValue(lengthName, newLengthValue);
+                SetStyleSheetValue(lengthStyle, newLengthValue);
                 RemoveStyleSheetValue(primaryName);
 
                 SetAnchorHandleState(primaryStyle, false);
@@ -134,22 +134,22 @@ namespace Unity.UI.Builder
 
         public void OnAnchorClickTop()
         {
-            OnAnchorClick(TrackedStyle.Top, TrackedStyle.Bottom, TrackedStyle.Height);
+            OnAnchorClick(TrackedStyles.Top, TrackedStyles.Bottom, TrackedStyles.Height);
         }
 
         public void OnAnchorClickRight()
         {
-            OnAnchorClick(TrackedStyle.Right, TrackedStyle.Left, TrackedStyle.Width);
+            OnAnchorClick(TrackedStyles.Right, TrackedStyles.Left, TrackedStyles.Width);
         }
 
         public void OnAnchorClickBottom()
         {
-            OnAnchorClick(TrackedStyle.Bottom, TrackedStyle.Top, TrackedStyle.Height);
+            OnAnchorClick(TrackedStyles.Bottom, TrackedStyles.Top, TrackedStyles.Height);
         }
 
         public void OnAnchorClickLeft()
         {
-            OnAnchorClick(TrackedStyle.Left, TrackedStyle.Right, TrackedStyle.Width);
+            OnAnchorClick(TrackedStyles.Left, TrackedStyles.Right, TrackedStyles.Width);
         }
     }
 }

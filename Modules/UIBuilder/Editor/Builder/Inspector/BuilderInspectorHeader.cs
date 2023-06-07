@@ -21,6 +21,8 @@ namespace Unity.UI.Builder
         FieldStatusIndicator m_StatusIndicator;
         Label m_Pill;
         TextField m_TextField;
+        internal BuilderDataSourceAndPathView m_DataSourceAndPathView;
+        private VisualElement m_DataSourceViewContainer;
 
         UnityEngine.UIElements.HelpBox m_EditorWarningHelpBox;
         VisualElement m_ErrorIcon;
@@ -74,6 +76,15 @@ namespace Unity.UI.Builder
 
             m_TextField.RegisterValueChangedCallback(m_ElementNameChangeCallback);
             m_RightClickManipulator = new ContextualMenuManipulator(BuildNameFieldContextualMenu);
+
+            m_DataSourceViewContainer = new VisualElement();
+
+            m_Header.Add(m_DataSourceViewContainer);
+            m_DataSourceAndPathView = new BuilderDataSourceAndPathView
+            {
+                fieldsContainer = m_DataSourceViewContainer,
+                onNotifyAttributesChanged = () => m_Inspector.selection.NotifyOfHierarchyChange(m_Inspector)
+            };
         }
 
         public void Refresh()
@@ -133,6 +144,21 @@ namespace Unity.UI.Builder
 
             m_Pill.style.display = isEditorOnlyElement ? DisplayStyle.Flex : DisplayStyle.None;
             AdjustBottomPadding(isEditorOnlyElement && !m_Inspector.document.fileSettings.editorExtensionMode);
+
+            if (m_Selection.selectionType is
+                BuilderSelectionType.ElementInTemplateInstance or
+                BuilderSelectionType.ElementInControlInstance or
+                BuilderSelectionType.ElementInParentDocument or
+                BuilderSelectionType.Element)
+            {
+                m_DataSourceViewContainer.style.display = DisplayStyle.Flex;
+                m_DataSourceAndPathView.SetAttributesOwner(m_Inspector.visualTreeAsset, currentVisualElement, m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance);
+                m_DataSourceAndPathView.Refresh();
+            }
+            else
+            {
+                m_DataSourceViewContainer.style.display = DisplayStyle.None;
+            }
         }
 
         private void SetTypeAndIcon()
@@ -172,7 +198,7 @@ namespace Unity.UI.Builder
 
         private void BuildNameFieldContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            BuildNameFieldContextualMenu(evt.menu, evt.target);
+            BuildNameFieldContextualMenu(evt.menu, evt.elementTarget);
         }
 
         private void UnsetName(DropdownMenuAction action)

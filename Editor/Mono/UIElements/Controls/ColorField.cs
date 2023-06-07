@@ -14,9 +14,9 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class ColorField : BaseField<Color>
     {
-        internal static readonly DataBindingProperty showEyeDropperProperty = nameof(showEyeDropper);
-        internal static readonly DataBindingProperty showAlphaProperty = nameof(showAlpha);
-        internal static readonly DataBindingProperty hdrProperty = nameof(hdr);
+        internal static readonly BindingId showEyeDropperProperty = nameof(showEyeDropper);
+        internal static readonly BindingId showAlphaProperty = nameof(showAlpha);
+        internal static readonly BindingId hdrProperty = nameof(hdr);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Color>.UxmlSerializedData

@@ -32,13 +32,13 @@ namespace Unity.UI.Builder
             m_CanvasStyleControls = m_Header.Q<BuilderCanvasStyleControls>();
         }
 
-        public void Activate(BuilderSelection selection, VisualTreeAsset visualTreeAsset, VisualElement element)
+        public void Activate(BuilderSelection selection, VisualTreeAsset visualTreeAsset, VisualElement element, BuilderBindingsCache bindingCache)
         {
             base.Activate(element);
 
             UpdateLabel();
 
-            m_CanvasStyleControls.Activate(selection, visualTreeAsset, element);
+            m_CanvasStyleControls.Activate(selection, visualTreeAsset, element, bindingCache);
         }
 
         public override void Deactivate()

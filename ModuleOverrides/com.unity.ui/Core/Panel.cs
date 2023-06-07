@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
@@ -104,6 +103,14 @@ namespace UnityEngine.UIElements
         /// The DisableRendering flag has changed
         /// </summary>
         DisableRendering = 1 << 17,
+        /// <summary>
+        /// Add or remove a binding was requested
+        /// </summary>
+        BindingRegistration = 1 << 18,
+        /// <summary>
+        /// The data source of the element was changed
+        /// </summary>
+        DataSource = 1 << 19,
     }
 
     /// <summary>
@@ -291,7 +298,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// Implement this to receive callbacks for visual element changes.
-    /// This interface is exclusively available in debug builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
+    /// This interface is exclusively available in development builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
     /// </summary>
     /// <remarks>
     /// <see cref="PanelSettings.panelChangeReceiver"/>
@@ -300,7 +307,7 @@ namespace UnityEngine.UIElements
     {
         /// <summary>
         /// Receives notifications for every change that occurs on the panel's visual elements.
-        /// This method is exclusively available in debug builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
+        /// This method is exclusively available in development builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
         /// </summary>
         /// <remarks>
         /// The number of times the callback is called, the value returned, and the order in which they are returned are subject to change between each minor release of Unity, as this is considered internal.
@@ -381,6 +388,7 @@ namespace UnityEngine.UIElements
         public abstract void ValidateLayout();
         public abstract void UpdateAnimations();
         public abstract void UpdateBindings();
+        public abstract void UpdateDataBinding();
         public abstract void ApplyStyles();
 
         public abstract void UpdateAssetTrackers();
@@ -518,6 +526,9 @@ namespace UnityEngine.UIElements
         // Need virtual for tests
         internal virtual ICursorManager cursorManager { get; set; }
         public ContextualMenuManager contextualMenuManager { get; internal set; }
+
+        // Need virtual for tests
+        internal virtual DataBindingManager dataBindingManager { get; set; }
 
         //IPanel
         public abstract VisualElement visualTree { get; }
@@ -668,6 +679,7 @@ namespace UnityEngine.UIElements
             ValidateLayout();
             UpdateAnimations();
             UpdateBindings();
+            UpdateDataBinding();
         }
     }
 
@@ -701,6 +713,7 @@ namespace UnityEngine.UIElements
         ProfilerMarker m_MarkerUpdate;
         ProfilerMarker m_MarkerLayout;
         ProfilerMarker m_MarkerBindings;
+        ProfilerMarker m_MarkerDataBinding;
         ProfilerMarker m_MarkerAnimations;
         ProfilerMarker m_MarkerPanelChangeReceiver;
         static ProfilerMarker s_MarkerPickAll = new ProfilerMarker("Panel.PickAll");
@@ -815,12 +828,11 @@ namespace UnityEngine.UIElements
                 CreateMarkers();
             }
         }
-
         private IDebugPanelChangeReceiver m_PanelChangeReceiver;
 
         /// <summary>
         /// Sets a custom <see cref="IPanelChangeReceiver"> in the panelChangeReceiver setter to receive every change event.
-        /// This method is exclusively available in debug builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
+        /// This method is exclusively available in development builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
         /// </summary>
         /// <remarks>
         /// Note that the values returned might change over time when the underlying architecture is modified.
@@ -834,7 +846,7 @@ namespace UnityEngine.UIElements
             {
                 m_PanelChangeReceiver = value;
                 if (value != null)
-                    Debug.LogWarning($"IPanelChangeReceiver suscribed to panel '{name}' and this may affect perfromance. This callback should be used only in debugging scenario and wont work in release builds");
+                    Debug.LogWarning($"IPanelChangeReceiver suscribed to panel '{name}' and may affect performance. The callback should be used only in debugging scenario and won't work outside development builds");
             }
         }
 
@@ -846,6 +858,7 @@ namespace UnityEngine.UIElements
                 m_MarkerUpdate = new ProfilerMarker($"Panel.Update.{m_PanelName}");
                 m_MarkerLayout = new ProfilerMarker($"Panel.Layout.{m_PanelName}");
                 m_MarkerBindings = new ProfilerMarker($"Panel.Bindings.{m_PanelName}");
+                m_MarkerDataBinding = new ProfilerMarker($"Panel.DataBinding.{m_PanelName}");
                 m_MarkerAnimations = new ProfilerMarker($"Panel.Animations.{m_PanelName}");
                 m_MarkerPanelChangeReceiver = new ProfilerMarker($"Panel.PanelChangeReceiver.{m_PanelName}");
             }
@@ -855,7 +868,9 @@ namespace UnityEngine.UIElements
                 m_MarkerUpdate = new ProfilerMarker("Panel.Update");
                 m_MarkerLayout = new ProfilerMarker("Panel.Layout");
                 m_MarkerBindings = new ProfilerMarker("Panel.Bindings");
+                m_MarkerDataBinding = new ProfilerMarker($"Panel.DataBinding");
                 m_MarkerAnimations = new ProfilerMarker("Panel.Animations");
+
                 m_MarkerPanelChangeReceiver = new ProfilerMarker("Panel.PanelChangeReceiver");
             }
         }
@@ -916,6 +931,7 @@ namespace UnityEngine.UIElements
             repaintData = new RepaintData();
             cursorManager = new CursorManager();
             contextualMenuManager = null;
+            dataBindingManager = new DataBindingManager(this);
             m_VisualTreeUpdater = new VisualTreeUpdater(this);
             var initFunc = initEditorUpdater ?? initEditorUpdaterFunc;
             initFunc.Invoke(this, m_VisualTreeUpdater);
@@ -1090,6 +1106,13 @@ namespace UnityEngine.UIElements
             m_MarkerBindings.End();
         }
 
+        public override void UpdateDataBinding()
+        {
+            m_MarkerDataBinding.Begin();
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);
+            m_MarkerDataBinding.End();
+        }
+
         public override void ApplyStyles()
         {
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
@@ -1105,6 +1128,7 @@ namespace UnityEngine.UIElements
         {
             //Here we don't want to update animation and bindings which are ticked by the scheduler
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.ViewData);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
@@ -1115,6 +1139,7 @@ namespace UnityEngine.UIElements
         {
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.ViewData);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Bindings);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Animation);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
@@ -1186,11 +1211,11 @@ namespace UnityEngine.UIElements
             ++m_Version;
             m_VisualTreeUpdater.OnVersionChanged(ve, versionChangeType);
 
-            using (m_MarkerPanelChangeReceiver.Auto())
-            {
-                if (panelChangeReceiver != null)
+            if (panelChangeReceiver != null)
+                using (m_MarkerPanelChangeReceiver.Auto())
+                {
                     panelChangeReceiver.OnVisualElementChange(ve, versionChangeType);
-            }
+                }
 
             if ((versionChangeType & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
                 ++m_HierarchyVersion;

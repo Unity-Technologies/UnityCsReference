@@ -146,7 +146,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElement m_PackageActionContainer;
 
         private List<DetailsExtension> m_DetailsExtensions = new List<DetailsExtension>();
-        private List<PackageAction> m_PackageActions = new List<PackageAction>();
+        private List<PackageExtensionAction> m_PackageExtensionActions = new List<PackageExtensionAction>();
 
         private DropdownButton m_CollapsedPackageActions;
 
@@ -192,7 +192,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ToolbarExtensionContainer = null;
 
             m_PackageActionContainer.Clear();
-            m_PackageActions.Clear();
+            m_PackageExtensionActions.Clear();
             m_PackageActionContainer.RemoveFromHierarchy();
             m_CollapsedPackageActions.RemoveFromHierarchy();
 
@@ -205,7 +205,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void CollapsedPackageActionsOnBeforeShowDropdown()
         {
             var newDropdownMenu = new DropdownMenu();
-            foreach (var extension in m_PackageActions.Where(a => a.visible))
+            foreach (var extension in m_PackageExtensionActions.Where(a => a.visible))
             {
                 var packageActionText = !string.IsNullOrEmpty(extension.text) ? extension.text : extension.tooltip;
                 if (!extension.visibleDropdownItems.Any())
@@ -223,7 +223,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshPackageActionsBasedOnWidth()
         {
-            var childrenWidth = m_PackageActions.Sum(a => a.visible ? a.dropdownButton.estimatedWidth : 0.0f);
+            var childrenWidth = m_PackageExtensionActions.Sum(a => a.visible ? a.dropdownButton.estimatedWidth : 0.0f);
             UIUtils.SetElementDisplay(m_ToolbarExtensionContainer, childrenWidth != 0);
             var showCollapsedButton = childrenWidth > m_ToolbarExtensionContainer.rect.width;
             if (showCollapsedButton == UIUtils.IsElementVisible(m_CollapsedPackageActions))
@@ -255,25 +255,25 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_DetailsExtensionContainer.Add(extension);
         }
 
-        private PackageAction CreatePackageAction()
+        private PackageExtensionAction CreatePackageAction()
         {
-            var result = new PackageAction(m_Window);
+            var result = new PackageExtensionAction(m_Window);
             result.onPriorityChanged += OnPackageActionPriorityChanged;
             result.onVisibleChanged += RefreshPackageActionsBasedOnWidth;
 
-            m_PackageActions.Add(result);
+            m_PackageExtensionActions.Add(result);
             m_PackageActionContainer.Add(result.dropdownButton);
             OnPackageActionPriorityChanged();
             RefreshPackageActionsBasedOnWidth();
             return result;
         }
 
-        public PackageAction CreatePackageActionButton()
+        public PackageExtensionAction CreatePackageActionButton()
         {
             return CreatePackageAction();
         }
 
-        public PackageAction CreatePackageActionMenu()
+        public PackageExtensionAction CreatePackageActionMenu()
         {
             var result = CreatePackageAction();
             result.dropdownButton.alwaysShowDropdown = true;
@@ -282,12 +282,12 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnPackageActionPriorityChanged()
         {
-            if (IsSorted(m_PackageActions))
+            if (IsSorted(m_PackageExtensionActions))
                 return;
-            m_PackageActions.Sort(CompareExtensions);
+            m_PackageExtensionActions.Sort(CompareExtensions);
 
             m_PackageActionContainer.Clear();
-            foreach (var extension in m_PackageActions)
+            foreach (var extension in m_PackageExtensionActions)
                 m_PackageActionContainer.Add(extension.dropdownButton);
         }
 

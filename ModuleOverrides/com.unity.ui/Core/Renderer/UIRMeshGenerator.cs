@@ -8,11 +8,10 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Jobs;
-using Unity.Jobs.LowLevel.Unsafe;
 using Unity.Profiling;
+using UnityEngine.TextCore.LowLevel;
 using UnityEngine.TextCore.Text;
 using static UnityEngine.UIElements.MeshGenerationContext;
-using GCHandlePool = UnityEngine.UIElements.UIR.GCHandlePool;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -20,7 +19,8 @@ namespace UnityEngine.UIElements.UIR
     interface IMeshGenerator
     {
         VisualElement currentElement { get; set; }
-        public void DrawText(MeshInfo[] meshInfo, Vector2 offset, bool hasMultipleColors);
+        UITKTextJobSystem textJobSystem { get; set; }
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes, int meshInfoCount);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
@@ -55,9 +55,12 @@ namespace UnityEngine.UIElements.UIR
         {
             m_MeshGenerationContext = mgc;
             m_OnMeshGenerationDelegate = OnMeshGeneration;
+            textJobSystem = new UITKTextJobSystem();
         }
 
         public VisualElement currentElement { get; set; }
+
+        public UITKTextJobSystem textJobSystem { get; set; }
 
         public struct BorderParams
         {
@@ -593,50 +596,103 @@ namespace UnityEngine.UIElements.UIR
             if (style.borderBottomWidth >= 1.0f && style.borderBottomColor.a >= 1.0f) { rect.height -= 0.5f; }
         }
 
-        public void DrawText(MeshInfo[] meshInfo, Vector2 offset, bool hasMultipleColors)
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes, int meshInfoCount)
         {
-            DrawTextInfo(meshInfo, offset, !hasMultipleColors);
+            DrawTextInfo(vertices, indices, materials, renderModes, meshInfoCount);
         }
 
         TextInfo m_TextInfo = new TextInfo(VertexDataLayout.VBO);
+        TextCore.Text.TextGenerationSettings m_Settings = new TextCore.Text.TextGenerationSettings()
+        {
+            screenRect = Rect.zero,
+            richText = true,
+            inverseYAxis = true
+        };
+
+        List<NativeSlice<Vertex>> m_VerticesArray = new List<NativeSlice<Vertex>>();
+        List<NativeSlice<ushort>> m_IndicesArray = new List<NativeSlice<ushort>>();
+        List<Material> m_Materials = new List<Material>();
+        List<GlyphRenderMode> m_RenderModes = new List<GlyphRenderMode>();
 
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font)
         {
             var textSettings = TextUtilities.GetTextSettingsFrom(currentElement);
 
             m_TextInfo.Clear();
-            var textGenerationSettings = new TextCore.Text.TextGenerationSettings() {
-                text = text,
-                screenRect = Rect.zero,
-                fontAsset = font,
-                textSettings = textSettings,
-                fontSize = fontSize,
-                color = color,
-                material = font.material,
-                richText = true,
-                inverseYAxis = true
-            };
-            TextCore.Text.TextGenerator.GenerateText(textGenerationSettings, m_TextInfo);
+            m_Settings.text = text;
+            m_Settings.fontAsset = font;
+            m_Settings.textSettings = textSettings;
+            m_Settings.fontSize = fontSize;
+            m_Settings.color = color;
+            m_Settings.material = font.material;
 
-            DrawTextInfo(m_TextInfo.meshInfo, pos, false);
+            TextCore.Text.TextGenerator.GenerateText(m_Settings, m_TextInfo);
+
+            var meshInfoCount = m_TextInfo.meshInfo.Length;
+
+            for (int i = 0; i < meshInfoCount; i++)
+            {
+                var meshInfo = m_TextInfo.meshInfo[i];
+                int vertexCount = LimitTextVertices(meshInfo.vertexCount);
+                int quadCount = vertexCount / 4;
+                int indexCount = quadCount * 6;
+
+                if (i >= m_Materials.Count)
+                    m_Materials.Add(meshInfo.material);
+                else
+                    m_Materials[i] = meshInfo.material;
+
+                if (i >= m_RenderModes.Count)
+                    m_RenderModes.Add(meshInfo.glyphRenderMode);
+                else
+                    m_RenderModes[i] = meshInfo.glyphRenderMode;
+
+                m_MeshGenerationContext.AllocateTempMesh(quadCount * 4, indexCount, out var vertices, out var indices);
+
+                for (int q = 0, v = 0, j = 0; q < quadCount; ++q, v += 4, j += 6)
+                {
+                    vertices[v + 0] = ConvertTextVertexToUIRVertex(meshInfo, v + 0, pos);
+                    vertices[v + 1] = ConvertTextVertexToUIRVertex(meshInfo, v + 1, pos);
+                    vertices[v + 2] = ConvertTextVertexToUIRVertex(meshInfo, v + 2, pos);
+                    vertices[v + 3] = ConvertTextVertexToUIRVertex(meshInfo, v + 3, pos);
+
+                    indices[j + 0] = (ushort)(v + 0);
+                    indices[j + 1] = (ushort)(v + 1);
+                    indices[j + 2] = (ushort)(v + 2);
+                    indices[j + 3] = (ushort)(v + 2);
+                    indices[j + 4] = (ushort)(v + 3);
+                    indices[j + 5] = (ushort)(v + 0);
+                }
+
+                if (i >= m_VerticesArray.Count)
+                    m_VerticesArray.Add(vertices);
+                else
+                    m_VerticesArray[i] = vertices;
+
+                if (i >= m_IndicesArray.Count)
+                    m_IndicesArray.Add(indices);
+                else
+                    m_IndicesArray[i] = indices;
+            }
+
+            DrawTextInfo(m_VerticesArray, m_IndicesArray, m_Materials, m_RenderModes, meshInfoCount);
         }
 
-        void DrawTextInfo(MeshInfo[] meshInfo, Vector2 offset, bool useHints)
+        void DrawTextInfo(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes, int meshInfoCount)
         {
-            for (int i = 0; i < meshInfo.Length; i++)
+            for (int i = 0; i < meshInfoCount; i++)
             {
-                if (meshInfo[i].vertexCount == 0)
+                if (vertices[i].Length == 0)
                     continue;
 
                 // SpriteAssets and Color Glyphs use an RGBA texture
-                if(((Texture2D)meshInfo[i].material.mainTexture).format != TextureFormat.Alpha8)
+                if (((Texture2D)materials[i].mainTexture).format != TextureFormat.Alpha8)
                 {
                     // Assume a sprite asset or Color Glyph
                     MakeText(
-                        meshInfo[i].material.mainTexture,
-                        meshInfo[i],
-                        offset,
-                        false,
+                        materials[i].mainTexture,
+                        vertices[i],
+                        indices[i],
                         false,
                         0,
                         0);
@@ -645,28 +701,25 @@ namespace UnityEngine.UIElements.UIR
                 {
                     // SDF scale is used to differentiate between Bitmap and SDF. The Bitmap Material doesn't have the
                     // GradientScale property which results in sdfScale always being 0.
+
                     float sdfScale = 0;
-                    if (!TextGeneratorUtilities.IsBitmapRendering(meshInfo[i].glyphRenderMode))
-                        sdfScale = meshInfo[i].material.GetFloat(TextShaderUtilities.ID_GradientScale);
-                    bool isDynamicColor = useHints && RenderEvents.NeedsColorID(currentElement);
-                    var sharpness = meshInfo[i].material.GetFloat("_Sharpness");
+                    if (!TextGeneratorUtilities.IsBitmapRendering(renderModes[i]))
+                        sdfScale = materials[i].GetFloat(TextShaderUtilities.ID_GradientScale);
+
+                    var sharpnessId = TextShaderUtilities.ID_Sharpness;
+                    var sharpness = materials[i].HasProperty(sharpnessId) ? materials[i].GetFloat(sharpnessId) : 0.0f;
                     // Set the dynamic-color hint on TextCore fancy-text or the EditorUIE shader applies the
                     // tint over the fragment output, affecting the outline/shadows.
-                    if (useHints)
-                        isDynamicColor = isDynamicColor || (sdfScale > 0 && RenderEvents.NeedsTextCoreSettings(currentElement));
                     if (sharpness == 0.0f && currentElement.panel.contextType == ContextType.Editor)
                     {
-                        var font = TextUtilities.GetFont(currentElement);
-                        if (font)
-                            sharpness = TextUtilities.getEditorTextSharpness(font.name);
+                        sharpness = TextUtilities.textSettings.GetEditorTextSharpness();
                     }
 
                     MakeText(
-                        meshInfo[i].material.mainTexture,
-                        meshInfo[i],
-                        offset,
+                        materials[i].mainTexture,
+                        vertices[i],
+                        indices[i],
                         true,
-                        isDynamicColor,
                         sdfScale,
                         sharpness);
                 }
@@ -675,7 +728,7 @@ namespace UnityEngine.UIElements.UIR
 
         static readonly int s_MaxTextMeshVertices = 0xC000; // Max 48k vertices. We leave room for masking, borders, background, etc.
 
-        static Vertex ConvertTextVertexToUIRVertex(MeshInfo info, int index, Vector2 offset, bool isDynamicColor = false)
+        internal static Vertex ConvertTextVertexToUIRVertex(MeshInfo info, int index, Vector2 offset, bool isDynamicColor = false)
         {
             float dilate = 0.0f;
             // If Bold, dilate the shape (this value is hardcoded, should be set from the font actual bold weight)
@@ -690,7 +743,7 @@ namespace UnityEngine.UIElements.UIR
             };
         }
 
-        static int LimitTextVertices(int vertexCount, bool logTruncation = true)
+        internal static int LimitTextVertices(int vertexCount, bool logTruncation = true)
         {
             if (vertexCount <= s_MaxTextMeshVertices)
                 return vertexCount;
@@ -701,29 +754,8 @@ namespace UnityEngine.UIElements.UIR
             return s_MaxTextMeshVertices;
         }
 
-        void MakeText(Texture texture, MeshInfo meshInfo, Vector2 offset, bool isSdf, bool isDynamicColor, float sdfScale, float sharpness)
+        void MakeText(Texture texture, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, bool isSdf, float sdfScale, float sharpness)
         {
-            int vertexCount = LimitTextVertices(meshInfo.vertexCount);
-            int quadCount = vertexCount / 4;
-            int indexCount = quadCount * 6;
-
-            m_MeshGenerationContext.AllocateTempMesh(quadCount * 4, indexCount, out var vertices, out var indices);
-
-            for (int q = 0, v = 0, i = 0; q < quadCount; ++q, v += 4, i += 6)
-            {
-                vertices[v + 0] = ConvertTextVertexToUIRVertex(meshInfo, v + 0, offset, isDynamicColor);
-                vertices[v + 1] = ConvertTextVertexToUIRVertex(meshInfo, v + 1, offset, isDynamicColor);
-                vertices[v + 2] = ConvertTextVertexToUIRVertex(meshInfo, v + 2, offset, isDynamicColor);
-                vertices[v + 3] = ConvertTextVertexToUIRVertex(meshInfo, v + 3, offset, isDynamicColor);
-
-                indices[i + 0] = (ushort)(v + 0);
-                indices[i + 1] = (ushort)(v + 1);
-                indices[i + 2] = (ushort)(v + 2);
-                indices[i + 3] = (ushort)(v + 2);
-                indices[i + 4] = (ushort)(v + 3);
-                indices[i + 5] = (ushort)(v + 0);
-            }
-
             if (isSdf)
                 m_MeshGenerationContext.entryRecorder.DrawSdfText(m_MeshGenerationContext.parentEntry, vertices, indices, texture, sdfScale, sharpness);
             else

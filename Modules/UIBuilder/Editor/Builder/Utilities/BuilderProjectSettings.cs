@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor;
 
 namespace Unity.UI.Builder
@@ -10,9 +11,9 @@ namespace Unity.UI.Builder
     static class BuilderProjectSettings
     {
         const string k_EditorExtensionModeKey = "UIBuilder.EditorExtensionModeKey";
-        const string k_HideNotificationAboutMissingUITKPackage = "UIBuilder.HideNotificationAboutMissingUITKPackage";
         const string k_DisableMouseWheelZooming = "UIBuilder.DisableMouseWheelZooming";
         const string k_EnableAbsolutePositionPlacement = "UIBuilder.EnableAbsolutePositionPlacement";
+        const string k_BlockedNotifications = "UIBuilder.BlockedNotifications";
 
         public static bool enableEditorExtensionModeByDefault
         {
@@ -24,12 +25,6 @@ namespace Unity.UI.Builder
         {
             get => GetBool(k_DisableMouseWheelZooming);
             set => SetBool(k_DisableMouseWheelZooming, value);
-        }
-
-        public static bool hideNotificationAboutMissingUITKPackage
-        {
-            get => GetBool(k_HideNotificationAboutMissingUITKPackage);
-            set => SetBool(k_HideNotificationAboutMissingUITKPackage, value);
         }
 
         public static bool enableAbsolutePositionPlacement
@@ -55,8 +50,52 @@ namespace Unity.UI.Builder
         internal static void Reset()
         {
             EditorUserSettings.SetConfigValue(k_EditorExtensionModeKey, null);
-            EditorUserSettings.SetConfigValue(k_HideNotificationAboutMissingUITKPackage, null);
             EditorUserSettings.SetConfigValue(k_EnableAbsolutePositionPlacement, null);
+            ResetNotifications();
+        }
+
+        public static void BlockNotification(string notificationKey)
+        {
+            var blockedNotifications = EditorUserSettings.GetConfigValue(k_BlockedNotifications);
+            var blockedNotificationsList = string.IsNullOrEmpty(blockedNotifications) ? new List<object>() : Json.Deserialize(blockedNotifications) as IList<object>;
+
+            if (!blockedNotificationsList.Contains(notificationKey))
+            {
+                blockedNotificationsList.Add(notificationKey);
+            }
+
+            var newStringArray = Json.Serialize(blockedNotificationsList);
+            EditorUserSettings.SetConfigValue(k_BlockedNotifications, newStringArray);
+        }
+
+        public static void ResetNotifications()
+        {
+            EditorUserSettings.SetConfigValue(k_BlockedNotifications, null);
+        }
+
+        public static bool HasBlockedNotifications()
+        {
+            var blockedNotifications = EditorUserSettings.GetConfigValue(k_BlockedNotifications);
+            if (!string.IsNullOrEmpty(blockedNotifications))
+            {
+                var blockedNotificationsList = Json.Deserialize(blockedNotifications) as IList<object>;
+                return blockedNotificationsList != null && blockedNotificationsList.Count > 0;
+            }
+
+            return false;
+        }
+
+        public static bool IsNotificationBlocked(string notificationKey)
+        {
+            var blockedNotifications = EditorUserSettings.GetConfigValue(k_BlockedNotifications);
+
+            if (!string.IsNullOrEmpty(blockedNotifications))
+            {
+                var blockedNotificationsList = Json.Deserialize(blockedNotifications) as IList<object>;
+                return blockedNotificationsList?.Contains(notificationKey) ?? false;
+            }
+
+            return false;
         }
     }
 }

@@ -16,6 +16,7 @@ namespace UnityEditor.UIElements
         const string k_EnableAbsolutePositionPlacement = "UIBuilder.EnableAbsolutePositionPlacement";
         const string k_EnableEventDebugger = "UIToolkit.EnableEventDebugger";
         const string k_EnableLayoutDebugger = "UIToolkit.EnableLayoutDebugger";
+        const string k_EnableTextJobs = "UIToolkit.EnableTextJobs";
 
         public static bool enableEditorExtensionModeByDefault
         {
@@ -111,6 +112,7 @@ namespace UnityEditor.UIElements
             EditorUserSettings.SetConfigValue(k_DisableMouseWheelZooming, null);
             EditorUserSettings.SetConfigValue(k_EnableAbsolutePositionPlacement, null);
             EditorUserSettings.SetConfigValue(k_EnableEventDebugger, null);
+            EditorUserSettings.SetConfigValue(k_EnableTextJobs, null);
         }
     }
 }

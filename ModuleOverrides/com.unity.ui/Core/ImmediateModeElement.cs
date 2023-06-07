@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public abstract class ImmediateModeElement : VisualElement
     {
-        internal static readonly DataBindingProperty cullingEnabledProperty = nameof(cullingEnabled);
+        internal static readonly BindingId cullingEnabledProperty = nameof(cullingEnabled);
 
         static readonly Dictionary<Type, ProfilerMarker> s_Markers = new Dictionary<Type, ProfilerMarker>();
         readonly ProfilerMarker m_ImmediateRepaintMarker;

@@ -34,6 +34,7 @@ namespace UnityEditor.UIElements.Inspector
 
         private EnumField m_ScaleModeField;
         private EnumField m_ScreenMatchModeField;
+        private EnumField m_DataBindingLogLevelField;
 
         private VisualElement m_ScaleModeConstantPixelSizeGroup;
         private VisualElement m_ScaleModeScaleWithScreenSizeGroup;
@@ -75,6 +76,7 @@ namespace UnityEditor.UIElements.Inspector
 
             m_ScaleModeField = m_RootVisualElement.MandatoryQ<EnumField>("scale-mode");
             m_ScreenMatchModeField = m_RootVisualElement.MandatoryQ<EnumField>("screen-match-mode");
+            m_DataBindingLogLevelField = m_RootVisualElement.MandatoryQ<EnumField>("log-level");
 
             m_ScaleModeConstantPixelSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-constant-pixel-size");
             m_ScaleModeScaleWithScreenSizeGroup = m_RootVisualElement.MandatoryQ("scale-mode-scale-with-screen-size");
@@ -94,6 +96,7 @@ namespace UnityEditor.UIElements.Inspector
             var choices = new List<int> {0, 1, 2, 3, 4, 5, 6, 7};
             m_TargetDisplayField = new PopupField<int>("Target Display", choices, 0, i => $"Display {i + 1}", i => $"Display {i + 1}");
             m_TargetDisplayField.bindingPath = "m_TargetDisplay";
+            m_TargetDisplayField.AddToClassList("unity-base-field__aligned");
 
             m_TargetTextureField.parent.Add(m_TargetDisplayField);
             m_TargetDisplayField.PlaceInFront(m_TargetTextureField);
@@ -109,6 +112,8 @@ namespace UnityEditor.UIElements.Inspector
                 UpdateColorClearValue(evt.newValue));
             m_RenderModeField.RegisterCallback<ChangeEvent<Enum>>(evt =>
                 UpdateRenderMode((PanelRenderMode)evt.newValue));
+            m_DataBindingLogLevelField.RegisterCallback<ChangeEvent<Enum>>(evt =>
+                ((PanelSettings)target).bindingLogLevel = (BindingLogLevel)evt.newValue);
 
             m_ThemeStyleSheetField.RegisterValueChangedCallback(evt => UpdateHelpBoxDisplay());
         }

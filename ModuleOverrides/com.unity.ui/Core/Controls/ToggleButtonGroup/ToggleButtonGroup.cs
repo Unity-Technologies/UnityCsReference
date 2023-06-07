@@ -22,8 +22,8 @@ namespace UnityEngine.UIElements
         private const int k_MaxToggleButtons = 64;
         private static readonly string k_MaxToggleButtonGroupMessage = $"The number of buttons added to ToggleButtonGroup has exceeds the maximum allowed ({k_MaxToggleButtons}). The newly added button will not be treated as part of this control.";
 
-        internal static readonly DataBindingProperty isMultipleSelectionProperty = nameof(isMultipleSelection);
-        internal static readonly DataBindingProperty allowEmptySelectionProperty = nameof(allowEmptySelection);
+        internal static readonly BindingId isMultipleSelectionProperty = nameof(isMultipleSelection);
+        internal static readonly BindingId allowEmptySelectionProperty = nameof(allowEmptySelection);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<ToggleButtonGroupState>.UxmlSerializedData

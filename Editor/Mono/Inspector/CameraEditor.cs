@@ -863,12 +863,14 @@ namespace UnityEditor
         }
 
         // marked obsolete @karlh 2021/02/13
-        [Obsolete("OnOverlayGUI is obsolete. Override CreatePreviewOverlay to create a preview.")]
+        [Obsolete("OnOverlayGUI is obsolete. Use global Cameras Overlay instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public virtual void OnOverlayGUI(Object target, SceneView sceneView)
         {
         }
 
+        // marked obsolete @thomastu 2023/04/05
+        [Obsolete("CreatePreviewOverlay is obsolete. Use global Cameras Overlay instead.", false)]
         public virtual Overlay CreatePreviewOverlay(Camera cam) => SceneViewCameraOverlay.GetOrCreateCameraOverlay(cam);
 
         [RequiredByNativeCode]

@@ -13,6 +13,11 @@ namespace Unity.UI.Builder
     internal class BuilderCanvasStyleControls : VisualElement
     {
         // Strings
+        const string k_UssClassName = "unity-builder-canvas-style-controls";
+        private const string k_ButtonUssClassName = k_UssClassName + "__button";
+        private const string k_ButtonForBoundStyleUssClassName = k_ButtonUssClassName + "--value-bound";
+        private const string k_OriginalTooltipProperty = "originalTooltip";
+
         const string k_FlexDirectionName = "flex-direction";
         const string k_AlignItemsName = "align-items";
         const string k_JustifyContentName = "justify-content";
@@ -46,11 +51,15 @@ namespace Unity.UI.Builder
         VisualTreeAsset m_VisualTreeAsset;
         VisualElement m_Target;
 
+        private BuilderBindingsCacheSubscriber m_BindingsCacheSubscriber;
+
         public new class UxmlFactory : UxmlFactory<BuilderCanvasStyleControls, UxmlTraits> {}
 
         public BuilderCanvasStyleControls()
         {
-            this.AddToClassList("unity-builder-canvas-style-controls");
+            this.AddToClassList(k_UssClassName);
+
+            m_BindingsCacheSubscriber = new BuilderBindingsCacheSubscriber((_, _) => UpdateButtonsFromBindings());
 
             // Load Template
             var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
@@ -63,14 +72,14 @@ namespace Unity.UI.Builder
             this.styleSheets.Add(uss);
 
             // Fetch buttons.
-            m_FlexDirectionButton = QueryAndBindButton(k_FlexDirectionButtonName, FlexDirectionOnToggle);
-            m_AlignItemsButton = QueryAndBindButton(k_AlignItemsButtonName, AlignItemsOnToggle);
-            m_JustifyContentButton = QueryAndBindButton(k_JustifyContentButtonName, JustifyContentOnToggle);
-            m_HorizontalTextAlignButton = QueryAndBindButton(k_HorizontalTextAlignButtonName, HorizontalTextAlignOnToggle);
-            m_VerticalTextAlignButton = QueryAndBindButton(k_VerticalTextAlignButtonName, VerticalTextAlignOnToggle);
-            m_TextWrapButton = QueryAndBindButton(k_TextWrapButtonName, TextWrapOnToggle);
-            m_TextOverflowButton = QueryAndBindButton(k_TextOverflowButtonName, TextOverflowOnToggle);
-            m_AlignSelfButton = QueryAndBindButton(k_AlignSelfButtonName, AlignSelfOnToggle);
+            m_FlexDirectionButton = QueryAndBindButton(k_FlexDirectionButtonName, "flex-direction", FlexDirectionOnToggle);
+            m_AlignItemsButton = QueryAndBindButton(k_AlignItemsButtonName, "align-items", AlignItemsOnToggle);
+            m_JustifyContentButton = QueryAndBindButton(k_JustifyContentButtonName, "justify-content", JustifyContentOnToggle);
+            m_HorizontalTextAlignButton = QueryAndBindButton(k_HorizontalTextAlignButtonName, "-unity-text-align", HorizontalTextAlignOnToggle);
+            m_VerticalTextAlignButton = QueryAndBindButton(k_VerticalTextAlignButtonName, "-unity-text-align", VerticalTextAlignOnToggle);
+            m_TextWrapButton = QueryAndBindButton(k_TextWrapButtonName, "white-space", TextWrapOnToggle);
+            m_TextOverflowButton = QueryAndBindButton(k_TextOverflowButtonName, "text-overflow", TextOverflowOnToggle);
+            m_AlignSelfButton = QueryAndBindButton(k_AlignSelfButtonName, "align-self", AlignSelfOnToggle);
 
             // Group special buttons.
             m_FlexAlignButtons.Add(m_FlexDirectionButton);
@@ -88,11 +97,14 @@ namespace Unity.UI.Builder
             ActivateInner();
         }
 
-        public void Activate(BuilderSelection selection, VisualTreeAsset visualTreeAsset, VisualElement target)
+        public void Activate(BuilderSelection selection, VisualTreeAsset visualTreeAsset, VisualElement target, BuilderBindingsCache bindingsCache)
         {
             m_Selection = selection;
             m_VisualTreeAsset = visualTreeAsset;
             m_Target = target;
+            m_BindingsCacheSubscriber.cache = bindingsCache;
+
+            UpdateButtonsFromBindings();
 
             // On the first RefreshUI, if an element is already selected, we need to make sure it
             // has a valid style. If not, we need to delay our UI building until it is properly initialized.
@@ -103,6 +115,34 @@ namespace Unity.UI.Builder
             }
 
             ActivateInner();
+        }
+
+        void UpdateButtonsFromBindings()
+        {
+            void UpdateButtonForBindings(Button button)
+            {
+                var styleName = button.GetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName) as string;
+                var styleProperty = BuilderNameUtilities.ConvertStyleUssNameToCSharpName(styleName);
+                var bindingProperty = BuilderConstants.StylePropertyPathPrefix + styleProperty;
+                var bound = m_BindingsCacheSubscriber.cache.HasResolvedBinding(m_Target, bindingProperty);
+
+                button.EnableInClassList(k_ButtonForBoundStyleUssClassName, bound);
+                button.SetEnabled(!bound);
+
+                // tooltip
+                var originalTooltip = button.tooltip;
+
+                if (!button.HasProperty(k_OriginalTooltipProperty))
+                     button.SetProperty(k_OriginalTooltipProperty, originalTooltip);
+
+                originalTooltip = button.GetProperty(k_OriginalTooltipProperty) as string;
+                button.tooltip = bound ? $"{originalTooltip}: Cannot edit bound style property '{styleName}'" : originalTooltip;
+            }
+
+            foreach (var button in m_AllButtons)
+            {
+                UpdateButtonForBindings(button);
+            }
         }
 
         void ActivateInner()
@@ -152,6 +192,7 @@ namespace Unity.UI.Builder
             m_Selection = null;
             m_VisualTreeAsset = null;
             m_Target = null;
+            m_BindingsCacheSubscriber.cache = null;
         }
 
         public void UpdateButtonIcons(List<string> styles)
@@ -178,11 +219,13 @@ namespace Unity.UI.Builder
         // Utilities
         //
 
-        Button QueryAndBindButton(string name, Action action)
+        Button QueryAndBindButton(string name, string styleName, Action action)
         {
             var button = this.Q<Button>(name);
             button.clickable.clicked += action;
+            button.SetProperty(BuilderConstants.InspectorStylePropertyNameVEPropertyName, styleName);
             m_AllButtons.Add(button);
+            m_BindingsCacheSubscriber.filteredProperties.Add(BuilderConstants.StylePropertyPathPrefix +  BuilderNameUtilities.ConvertStyleUssNameToCSharpName(styleName));
             return button;
         }
 

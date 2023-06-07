@@ -14,7 +14,7 @@ interface INativeApiWrapper
     bool HasUiEntitlement();
     bool SaveUnsavedChanges();
     Scene[] GetAllScenes();
-    IList<Scene> GetUnsavedScenes();
+    bool HasUnsavedScenes();
     void InvokeLicenseUpdateCallbacks();
     void OpenHubLicenseManagementWindow();
     bool UpdateLicense();

@@ -172,7 +172,7 @@ namespace Unity.GraphToolsFoundation.Editor
             /// <param name="model">The model to hide.</param>
             public virtual void AddModelToHideDuringAutoPlacement(GraphElementModel model)
             {
-                m_ModelsToHideDuringAutoPlacement.Add(model.Guid);
+                    m_ModelsToHideDuringAutoPlacement.Add(model.Guid);
             }
 
             /// <inheritdoc />
@@ -190,13 +190,18 @@ namespace Unity.GraphToolsFoundation.Editor
             }
 
             /// <inheritdoc/>
-            public virtual void AggregateFrom(IEnumerable<IChangeset> changesets)
+            public virtual void AggregateFrom(IReadOnlyList<IChangeset> changesets)
             {
-                foreach (var changeset in changesets.OfType<Changeset>())
+                Clear();
+
+                foreach (var cs in changesets)
                 {
-                    m_ModelsToAutoAlign.UnionWith(changeset.m_ModelsToAutoAlign);
-                    m_ModelsToRepositionAtCreation.UnionWith(changeset.m_ModelsToRepositionAtCreation);
-                    m_ModelsToHideDuringAutoPlacement.UnionWith(changeset.m_ModelsToHideDuringAutoPlacement);
+                    if (cs is Changeset changeset)
+                    {
+                        m_ModelsToAutoAlign.UnionWith(changeset.m_ModelsToAutoAlign);
+                        m_ModelsToRepositionAtCreation.UnionWith(changeset.m_ModelsToRepositionAtCreation);
+                        m_ModelsToHideDuringAutoPlacement.UnionWith(changeset.m_ModelsToHideDuringAutoPlacement);
+                    }
                 }
 
                 m_ModelsToRepositionAtCreation.RemoveWhere(m => m_ModelsToAutoAlign.Contains(m.Model));
@@ -244,7 +249,7 @@ namespace Unity.GraphToolsFoundation.Editor
             {
                 SetUpdateType(UpdateType.Partial);
 
-                CurrentChangeset.AggregateFrom(new[] { changeset });
+                (CurrentChangeset as IChangeset).Copy(changeset);
             }
         }
     }

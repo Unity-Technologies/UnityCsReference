@@ -28,13 +28,15 @@ namespace Unity.GraphToolsFoundation.Editor
         /// <param name="inspectedObjects">The models that owns the field.</param>
         /// <param name="inspectedField">The inspected field.</param>
         /// <param name="fieldTooltip">The tooltip for the field.</param>
+        /// <param name="displayName">The field's displayed name.</param>
         public ModelSerializedFieldField_Internal(
             ICommandTarget commandTarget,
             IEnumerable<Model> models,
             IEnumerable<object> inspectedObjects,
             FieldInfo inspectedField,
-            string fieldTooltip)
-            : base(commandTarget, models, inspectedField.Name, null, inspectedField, fieldTooltip)
+            string fieldTooltip,
+            string displayName)
+            : base(commandTarget, models, inspectedField.Name, displayName, inspectedField, fieldTooltip)
         {
             m_ValueGetter = MakeFieldValueGetter(inspectedField, inspectedObjects);
 

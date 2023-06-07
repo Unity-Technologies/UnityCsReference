@@ -293,9 +293,13 @@ namespace UnityEngine.UIElements
         /// Informs the data binding system that a property of a control has changed.
         /// </summary>
         /// <param name="property">The property that has changed.</param>
-        internal void NotifyPropertyChanged(DataBindingProperty property)
+        protected void NotifyPropertyChanged(BindingId property)
         {
-            // Intentionally left empty. This will be implemented with the data binding feature.
+            using (var evt = PropertyChangedEvent.GetPooled(property))
+            {
+                evt.target = this;
+                SendEvent(evt);
+            }
         }
     }
 }

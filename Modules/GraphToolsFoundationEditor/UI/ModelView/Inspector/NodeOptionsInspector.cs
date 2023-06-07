@@ -38,8 +38,6 @@ namespace Unity.GraphToolsFoundation.Editor
         NodeOptionsInspector(string name, IReadOnlyList<Model> models, ChildView ownerElement, string parentClassName, Func<FieldInfo, bool> filter)
             : base(name, models, ownerElement, parentClassName, filter) { }
 
-
-
         struct OptionFieldInfo
         {
             public string name;
@@ -101,15 +99,10 @@ namespace Unity.GraphToolsFoundation.Editor
 
             BaseModelPropertyField GetFieldFromNodeOptions(IReadOnlyCollection<NodeOption> options)
             {
-                if (options.Count == 1)
-                {
-                    var option = options.First();
-                    m_MutableFieldInfos.Add(new OptionFieldInfo(){name = option.PortModel.UniqueName, type = option.PortModel.DataTypeHandle, inspectorOnly = option.IsInInspectorOnly});
-                }
                 var constants = options.Select(o => o.PortModel.EmbeddedValue);
                 var nodeOptionEditor = InlineValueEditor.CreateEditorForConstants(
                     OwnerRootView, constants.Select(c => c.OwnerModel), constants,
-                    false, options.First().PortModel.UniqueName ?? "");
+                    false, options.First().PortModel.DisplayTitle ?? "");
 
                 return nodeOptionEditor;
             }
@@ -128,6 +121,12 @@ namespace Unity.GraphToolsFoundation.Editor
                     {
                         foreach (var option in nodeModel.NodeOptions)
                         {
+                            m_MutableFieldInfos.Add(new OptionFieldInfo
+                            {
+                                name = option.PortModel.DisplayTitle,
+                                type = option.PortModel.DataTypeHandle,
+                                inspectorOnly = option.IsInInspectorOnly
+                            });
                             if (!option.IsInInspectorOnly || isInspectorModelView)
                                 nodeOptionsDict[option.PortModel.UniqueName] = new List<NodeOption> { option };
                         }
@@ -152,7 +151,7 @@ namespace Unity.GraphToolsFoundation.Editor
 
         protected override void UpdatePartFromModel()
         {
-            if ( ShouldRebuildFields())
+            if (ShouldRebuildFields())
             {
                 BuildFields();
             }
@@ -176,12 +175,12 @@ namespace Unity.GraphToolsFoundation.Editor
 
             foreach (var oldNCurrent in nodeModel.NodeOptions.Zip(m_MutableFieldInfos, (a, b) => new { old = b, current = a }))
             {
-                if( oldNCurrent.current.PortModel.UniqueName != oldNCurrent.old.name)
+                if (oldNCurrent.current.PortModel.DisplayTitle != oldNCurrent.old.name)
                     return true;
-                if( oldNCurrent.current.PortModel.DataTypeHandle != oldNCurrent.old.type)
+                if (oldNCurrent.current.PortModel.DataTypeHandle != oldNCurrent.old.type)
                     return true;
-                if( ! isInspectorModelView)
-                    if( oldNCurrent.current.IsInInspectorOnly != oldNCurrent.old.inspectorOnly)
+                if (!isInspectorModelView)
+                    if (oldNCurrent.current.IsInInspectorOnly != oldNCurrent.old.inspectorOnly)
                         return true;
             }
 

@@ -19,8 +19,8 @@ namespace UnityEngine.UIElements
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public abstract class BasePopupField<TValueType, TValueChoice> : BaseField<TValueType>
     {
-        internal static readonly DataBindingProperty choicesProperty = nameof(choices);
-        internal static readonly DataBindingProperty textProperty = nameof(text);
+        internal static readonly BindingId choicesProperty = nameof(choices);
+        internal static readonly BindingId textProperty = nameof(text);
 
         internal List<TValueChoice> m_Choices;
         TextElement m_TextElement;

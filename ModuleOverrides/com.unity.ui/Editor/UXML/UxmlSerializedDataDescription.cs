@@ -72,7 +72,7 @@ namespace UnityEditor.UIElements
             return data;
         }
 
-        public IEnumerable<UxmlSerializedAttributeDescription> serializedAttributes => m_SerializedAttributes;
+        public IReadOnlyList<UxmlSerializedAttributeDescription> serializedAttributes => m_SerializedAttributes;
 
         public UxmlSerializedAttributeDescription FindAttributeWithUxmlName(string name)
         {
@@ -119,10 +119,6 @@ namespace UnityEditor.UIElements
         {
             foreach (var attribute in m_SerializedAttributes)
             {
-                // We dont currently support UxmlObjects.
-                if (attribute.isUxmlObject)
-                    continue;
-
                 attribute.SyncSerializedData(obj, uxmlSerializedData);
             }
         }
@@ -148,7 +144,7 @@ namespace UnityEditor.UIElements
 
                 // When a UxmlObjectAttribute does not contain a name then we treat it as a legacy field,
                 // one that does not have an element for the field name, e.g MultiColumnListView.
-                var referenceField = fieldInfo.GetCustomAttribute<UxmlObjectAttribute>();
+                var referenceField = fieldInfo.GetCustomAttribute<UxmlObjectReferenceAttribute>();
                 if (referenceField != null && !string.IsNullOrEmpty(referenceField.name))
                 {
                     m_UxmlObjectFields.Add(referenceField.name);
@@ -181,8 +177,10 @@ namespace UnityEditor.UIElements
         private static UxmlSerializedAttributeDescription CreateSerializedAttributeDescription(FieldInfo fieldInfo, object defaultObject)
         {
             UxmlSerializedAttributeDescription uxmlAttributeDescription;
+            if (fieldInfo.GetCustomAttribute<UxmlIgnoreAttribute>() != null)
+                return null;
 
-            if (fieldInfo.GetCustomAttribute<UxmlObjectAttribute>() is UxmlObjectAttribute objectReferenceAttribute)
+            if (fieldInfo.GetCustomAttribute<UxmlObjectReferenceAttribute>() is { } objectReferenceAttribute)
             {
                 uxmlAttributeDescription = new UxmlSerializedUxmlObjectAttributeDescription { rootName = objectReferenceAttribute.name };
             }
@@ -278,7 +276,7 @@ namespace UnityEditor.UIElements
                     value = field.GetValue(defaultObject);
             }
 
-            if (value != null && fieldInfo.GetCustomAttribute<UxmlObjectAttribute>() != null)
+            if (value != null && fieldInfo.GetCustomAttribute<UxmlObjectReferenceAttribute>() != null)
             {
                 // UxmlObject fields are not serialized directly, they use their corresponding UxmlSerializedData
                 value = UxmlSerializer.SerializeObject(value);

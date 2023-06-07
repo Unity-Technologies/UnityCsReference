@@ -18,7 +18,7 @@ namespace UnityEngine.UIElements
         {
             base.Init(item);
 
-            var root = new VisualElement() { name = ListView.reorderableItemUssClassName };
+            var root = new VisualElement() { name = BaseListView.reorderableItemUssClassName };
             UpdateHierarchy(root, bindableElement, usesAnimatedDragger);
         }
 

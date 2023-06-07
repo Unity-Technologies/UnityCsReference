@@ -1393,24 +1393,18 @@ namespace UnityEngine.Rendering
 
 
         [FreeFunction("RenderingCommandBuffer_Bindings::BeginRenderPass", HasExplicitThis = true)]
-        extern unsafe void BeginRenderPass_Internal(int width, int height, int volumeDepth, int samples, IntPtr attachments, int numAttachments, int depthAttachmentIndex, IntPtr subPasses, int numSubPasses);
+        extern void BeginRenderPass_Internal(int width, int height, int volumeDepth, int samples, ReadOnlySpan<AttachmentDescriptor> attachments, int depthAttachmentIndex, ReadOnlySpan<SubPassDescriptor> subPasses, ReadOnlySpan<byte> debugNameUtf8);
 
         public void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
-            unsafe
-            {
-               BeginRenderPass_Internal(width, height, 1, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex, (IntPtr)subPasses.GetUnsafeReadOnlyPtr(), subPasses.Length);
-            }
+            BeginRenderPass_Internal(width, height, 1, samples, attachments, depthAttachmentIndex, subPasses, new ReadOnlySpan<byte>());
         }
 
         public void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
-            unsafe
-            {
-                BeginRenderPass_Internal(width, height, volumeDepth, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex, (IntPtr)subPasses.GetUnsafeReadOnlyPtr(), subPasses.Length);
-            }
+            BeginRenderPass_Internal(width, height, volumeDepth, samples, attachments, depthAttachmentIndex, subPasses, new ReadOnlySpan<byte>());
         }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::NextSubPass", HasExplicitThis = true)]

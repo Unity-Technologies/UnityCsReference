@@ -13,11 +13,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public class MinMaxSlider : BaseField<Vector2>
     {
-        internal static readonly DataBindingProperty minValueProperty = nameof(minValue);
-        internal static readonly DataBindingProperty maxValueProperty = nameof(maxValue);
-        internal static readonly DataBindingProperty rangeProperty = nameof(range);
-        internal static readonly DataBindingProperty lowLimitProperty = nameof(lowLimit);
-        internal static readonly DataBindingProperty highLimitProperty = nameof(highLimit);
+        internal static readonly BindingId minValueProperty = nameof(minValue);
+        internal static readonly BindingId maxValueProperty = nameof(maxValue);
+        internal static readonly BindingId rangeProperty = nameof(range);
+        internal static readonly BindingId lowLimitProperty = nameof(lowLimit);
+        internal static readonly BindingId highLimitProperty = nameof(highLimit);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Vector2>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler

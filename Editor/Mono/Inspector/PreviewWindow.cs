@@ -16,6 +16,8 @@ namespace UnityEditor
 
         VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement.Q(className: "unity-inspector-preview"));
 
+        internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
+
         public void SetParentInspector(InspectorWindow inspector)
         {
             m_ParentInspectorWindow = inspector;

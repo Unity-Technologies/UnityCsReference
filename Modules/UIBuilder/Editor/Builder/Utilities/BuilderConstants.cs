@@ -56,6 +56,18 @@ namespace Unity.UI.Builder
         const string BuilderDocumentDiskSettingsJsonFolderPath = "Library/UIBuilder/DocumentSettings";
         public const string EditorResourcesBundlePath = "Library/unity editor resources";
 
+        public const string UssPath_BuilderWindow = BuilderConstants.UIBuilderPackagePath + "/Builder.uss";
+        public const string UssPath_BuilderWindow_Dark = BuilderConstants.UIBuilderPackagePath + "/BuilderDark.uss";
+        public const string UssPath_BuilderWindow_Light = BuilderConstants.UIBuilderPackagePath + "/BuilderLight.uss";
+        public static string UssPath_BuilderWindow_Themed => EditorGUIUtility.isProSkin ? UssPath_BuilderWindow_Dark : UssPath_BuilderWindow_Light;
+
+        public const string UssPath_InspectorWindow = BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspector.uss";
+        public const string UssPath_InspectorWindow_Dark = BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspectorDark.uss";
+        public const string UssPath_InspectorWindow_Light = BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspectorLight.uss";
+        public static string UssPath_InspectorWindow_Themed => EditorGUIUtility.isProSkin ? UssPath_InspectorWindow_Dark : UssPath_InspectorWindow_Light;
+
+        public const string UssPath_BindingWindow = BuilderConstants.UIBuilderPackagePath + "/Inspector/BindingWindow.uss";
+
         // Global Style Class Names
         public static readonly string HiddenStyleClassName = "unity-builder-hidden";
         public static readonly string ReadOnlyStyleClassName = "unity-builder--readonly";
@@ -66,6 +78,7 @@ namespace Unity.UI.Builder
         public static readonly string ElementPseudoStateClassName = "unity-builder-code-label--element-pseudo-state";
         public static readonly string TagPillClassName = "unity-builder-tag-pill";
         public static readonly string StyleSelectorBelongsParent = "unity-selector-parent-subdocument";
+        public static readonly string SeparatorLineStyleClassName = "unity-builder-separator-line";
 
         // Random Symbols
         public static readonly string SingleSpace = " ";
@@ -78,6 +91,10 @@ namespace Unity.UI.Builder
         public const string OpenBracket = "(";
         public const string CloseBracket = ")";
         public const string EllipsisText = "...";
+
+        // Notifications
+        public static readonly string previewNotificationKey = "builder-preview-mode-notification";
+        public static readonly string inlineEditingNotificationKey = "builder-inline-editing-notification";
 
         //
         // Elements
@@ -111,15 +128,19 @@ namespace Unity.UI.Builder
         public static readonly string InspectorClassPillLinkedSelectorElementVEPropertyName = "__unity-ui-builder-class-linked-pill-selector-element";
 
         // Inspector Style Property and Class Names
+        public static readonly string InspectorFoldoutOverrideClassName = "unity-foldout--override";
+        public static readonly string InspectorCategoryFoldoutOverrideClassName = "unity-builder-inspector__category-foldout--override";
         public static readonly string BuilderStyleRowBlueOverrideBoxClassName = "unity-builder-inspector-blue-override-box";
         public static readonly string FoldoutFieldPropertyName = "unity-foldout-field";
+        public static readonly string BoundFoldoutFieldClassName = FoldoutFieldPropertyName + "--binding";
         public static readonly string FoldoutFieldHeaderClassName = FoldoutFieldPropertyName + "__header";
         public static readonly string InspectorMultiLineTextFieldClassName = "unity-builder-inspector__multi-line-text-field";
         public static readonly string InspectorFlexColumnModeClassName = "unity-builder-inspector--flex-column";
         public static readonly string InspectorFlexColumnReverseModeClassName = "unity-builder-inspector--flex-column-reverse";
         public static readonly string InspectorFlexRowModeClassName = "unity-builder-inspector--flex-row";
         public static readonly string InspectorFlexRowReverseModeClassName = "unity-builder-inspector--flex-row-reverse";
-        public static readonly string InspectorCategoryFoldoutOverrideClassName = "unity-builder-inspector__style-category-foldout--override";
+        public static readonly string InspectorStyleCategoryFoldoutOverrideClassName = "unity-builder-inspector__style-category-foldout--override";
+        public static readonly string InspectorCategoryFoldoutBindingClassName = "unity-builder-inspector__style-category-foldout--binding";
         public static readonly string InspectorLocalStyleOverrideClassName = "unity-builder-inspector__style--override";
         public static readonly string InspectorLocalStyleResetClassName = "unity-builder-inspector__style--reset"; // used to reset font style of children
         public static readonly string InspectorLocalStyleUnresolvedVariableClassName = "unity-builder-inspector__style--unresolved-variable";
@@ -127,6 +148,8 @@ namespace Unity.UI.Builder
         public static readonly string InspectorLocalStyleVariableEditingClassName = "unity-builder-inspector__style--variable-editing";
         public static readonly string InspectorLocalStyleInheritedClassName = "unity-builder-inspector__style--inherited";
         public static readonly string InspectorLocalStyleSelectorClassName = "unity-builder-inspector__style--uss-selector";
+        public static readonly string InspectorLocalStyleBindingClassName = "unity-builder-inspector__style--binding";
+        public static readonly string InspectorLocalStyleUnresolvedBindingClassName = "unity-builder-inspector__style--unresolved-binding";
         public static readonly string InspectorLocalStyleSelectorElementClassName = "unity-builder-inspector__style--selector-element";
         public static readonly string InspectorLocalStyleDefaultStatusClassName = "unity-builder-inspector__style--default";
         public static readonly string InspectorEmptyFoldoutLabelClassName = "unity-builder-inspector__empty-foldout-label";
@@ -135,15 +158,20 @@ namespace Unity.UI.Builder
         public static readonly string InspectorContainerClassName = "unity-builder-inspector__container";
         public static readonly string InspectorMultiFieldsRowClassName = "unity-builder-composite-field-row";
         public static readonly string InspectorCompositeStyleRowElementClassName = "unity-builder-composite-style-row-element";
+        public static readonly string InspectorBindingIndicatorClassName = "unity-builder-foldout-binding-indicator";
+        public static readonly string InspectorFieldBindingInlineEditingEnabledClassName = "unity-builder-binding-inline-editing-enabled";
         public static readonly string InspectorFixedItemHeightFieldClassName = "unity-builder-uxml-attribute__fixed-item-height";
         public static readonly string InspectorShownNegativeWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--shown";
         public static readonly string InspectorHiddenNegativeWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--hidden";
         public static readonly string InspectorListViewAllowAddRemoveFieldClassName = "unity-builder-uxml-attribute__allow-add-remove";
 
         // Inspector Links VE Property Names
+        public static readonly string InspectorLinkedFieldsForStyleRowVEPropertyName = "__unity-ui-builder-fields-for-row";
         public static readonly string InspectorLinkedStyleRowVEPropertyName = "__unity-ui-builder-style-row";
         public static readonly string InspectorLinkedAttributeDescriptionVEPropertyName = "__unity-ui-builder-attribute-description";
         public static readonly string InspectorFieldValueInfoVEPropertyName = "__unity-ui-builder-property-value-info";
+        public static readonly string InspectorFieldBindingInlineEditingEnabledPropertyName =
+            "__unity-builder-binding-inline-editing-enabled";
 
         // Inspector Header
         public static readonly string BuilderInspectorSelector = "Selector";
@@ -156,6 +184,8 @@ namespace Unity.UI.Builder
         public static readonly string ContextMenuSetAsInlineValueMessage = "Set as inline value";
         public static readonly string ContextMenuSetAsValueMessage = "Set as value";
         public static readonly string ContextMenuUnsetMessage = "Unset";
+        public static readonly string ContextMenuUnsetObjectMessage = "Unset Object Source";
+        public static readonly string ContextMenuUnsetTypeMessage = "Unset Type Source";
         public static readonly string ContextMenuUnsetAllMessage = "Unset all";
         public static readonly string ContextMenuViewVariableMessage = "View variable";
         public static readonly string ContextMenuSetVariableMessage = "Set variable";
@@ -163,6 +193,11 @@ namespace Unity.UI.Builder
         public static readonly string ContextMenuRemoveVariableMessage = "Remove variable";
         public static readonly string ContextMenuOpenSelectorInIDEMessage = "Open selector in IDE";
         public static readonly string ContextMenuGoToSelectorMessage = "Go to selector";
+        public static readonly string ContextMenuAddBindingMessage = "Add binding...";
+        public static readonly string ContextMenuEditBindingMessage = "Edit binding...";
+        public static readonly string ContextMenuRemoveBindingMessage = "Remove binding";
+        public static readonly string ContextMenuEditInlineValueMessage = "Edit inline value...";
+        public static readonly string ContextMenuUnsetInlineValueMessage = "Unset inline value";
         public static readonly string InspectorClassPillDoubleClickToCreate = "Double-click to create new USS selector.";
         public static readonly string InspectorClassPillDoubleClickToSelect = "Double-click to select and edit USS selector.";
         public static readonly string InspectorLocalStylesSectionTitleForSelector = "Styles";
@@ -176,6 +211,7 @@ namespace Unity.UI.Builder
         public static readonly string EditPropertyToAddNewTransition = "Set a property to a non-keyword value to add a new transition.";
         public static readonly string FileNotFoundMessage = "File not found";
         public static readonly string HeaderSectionHelpBoxMessage = "This control is not supported in Runtime UI. Remove it, or enable Editor Extension Authoring in the Library.";
+        public static readonly string UnresolvedValue = "Unresolved";
         public static readonly string HeightIntFieldValueCannotBeNegativeMessage = "Please enter a positive number. Non-positive numbers will default to 1.";
         public static readonly string UnnamedValue = "<No Name>";
 
@@ -187,6 +223,9 @@ namespace Unity.UI.Builder
         public static readonly string FieldStatusIndicatorFromSelectorTooltip = "Selector";
         public static readonly string FieldStatusIndicatorVariableTooltip = "Variable";
         public static readonly string FieldStatusIndicatorUnresolvedVariableTooltip = "Unresolved variable";
+        public static readonly string FieldStatusIndicatorResolvedBindingTooltip = "Resolved binding";
+        public static readonly string FieldStatusIndicatorUnresolvedBindingTooltip = "Unresolved binding\nEdit binding for more details.";
+        public static readonly string FieldStatusIndicatorUnhandledBindingTooltip = "Unhandled binding (resolution pending)";
 
         public static readonly string FieldValueBindingInfoTypeEnumUSSVariableDisplayString = "USS variable";
 
@@ -195,12 +234,19 @@ namespace Unity.UI.Builder
         public static readonly string FieldValueSourceInfoTypeEnumLocalUSSSelectorDisplayString = "Local";
 
         public static readonly string FieldValueInfoTypeEnumUSSPropertyDisplayString = "USS property";
-        public static readonly string FieldValueInfoTypeEnumUUXMLAttributeDisplayString = "UXML attribute";
+        public static readonly string FieldValueInfoTypeEnumUXMLAttributeDisplayString = "UXML attribute";
 
+        public static readonly string FieldTooltipNameOnlyFormatString = "{0}: {1}";
+        public static readonly string FieldTooltipValueOnlyFormatString = "Value: {0}{1}\n\nValue definition: {2}{3}";
         public static readonly string FieldTooltipFormatString = "{0}: {1}\n\nValue: {2}{3}\n\nValue definition: {4}{5}";
         public static readonly string FieldTooltipWithoutValueFormatString = "{0}: {1}\n\nValue definition: {4}{5}";
+        public static readonly string FieldTooltipDataDefinitionBindingFormatString = "{0}\n\nData Source: {1}\nData Source Path: {2}\nBinding Mode: {3}\nConverter(s) Used: {4}";
         public static readonly string MatchingStyleSheetRuleSourceTooltipFormatString = "    Selector: {0}\n    Sheet: {1}";
         public static readonly string VariableBindingTooltipFormatString =  "    Name: {0}\n    Sheet: {1}";
+
+        public static readonly string FoldoutContainsBindingsString = "One or more properties contain a binding (resolved or unresolved).";
+        public static readonly string BindingNotDefinedAttributeString = "Not Defined";
+        public static readonly string EmptyConvertersString = "None";
 
         // Selector Preview
         public const string PreviewConvertToFloatingWindow = "Convert to Floating Window";
@@ -212,6 +258,10 @@ namespace Unity.UI.Builder
 
         // Attribute fields
         public static readonly string AttributeFieldFactoryVEPropertyName = "__unity-ui-builder-attribute-field-factory";
+
+        // Completion
+        public static readonly string CompleterAnchoredControlScreenRectVEPropertyName = "__unity-ui-builder-completer-popup-window-screen-rect";
+        public static readonly string CompleterCurrentEntryItemId = "__unity-ui-builder-completer-current-entry-item";
 
         // Dimension Style Field specific
         public const float DimensionStyleFieldReducedDragStep = 0.1f;
@@ -328,6 +378,8 @@ namespace Unity.UI.Builder
 
         // Canvas Messages
         public static readonly string CannotManipulateResizedOrScaledItemMessage = "The selected item is rotated or scaled.\nTransforming it from the viewport is not properly supported yet.";
+        public static readonly string CannotResizeBecauseOfBoundPropertiesMessage = "Cannot resize because of bound property(ies): {0}";
+        public static readonly string CannotEditBoundPropertyMessage = "Cannot edit bound property '{0}'";
 
         //
         // Toolbar
@@ -363,10 +415,33 @@ namespace Unity.UI.Builder
         public static readonly string AddNewSelectorUndoMessage = "Create USS Selector";
         public static readonly string RenameSelectorUndoMessage = "Rename USS Selector";
         public static readonly string DeleteSelectorUndoMessage = "Delete USS Selector";
+        public static readonly string ModifyUxmlObject = "Modify UXML Object";
         public static readonly string MoveUSSSelectorUndoMessage = "Move USS Selector";
+        public static readonly string AddBindingUndoMessage = "Add Binding";
+        public static readonly string DeleteBindingUndoMessage = "Delete Binding";
         public static readonly string ChangeCanvasDimensionsOrMatchViewUndoMessage = "Change Canvas Dimensions or Match View";
         public static readonly string SaveAsNewDocumentsDialogMessage = "Save As New UI Documents";
         public static readonly string NewDocumentsDialogMessage = "New UI Documents";
+        public static readonly string UnsetStyleUndoMessage = "Unset Style Value";
+
+        //
+        // Binding Window
+        //
+        public static readonly string AddBindingTitle = "Add Binding";
+        public static readonly string EditBindingTitle = "Edit Binding";
+        public static readonly string BindingWindowMissingDataSourceErrorMessage = "Data source is not required but only if it is defined elsewhere in code";
+        public static readonly string BindingWindowNotResolvedPathErrorMessage = "Path cannot be resolved";
+        public static readonly string BindingWindowMissingPathErrorMessage = "Path is missing";
+        public static readonly string BindingWindowCannotCreateBindingErrorMessage = "Cannot create binding on {0}";
+        public static readonly string BindingWindowCannotEditBindingErrorMessage = "Cannot edit binding on {0}";
+        public static readonly string BindingWindowLocalConverterPlaceholderText = "Enter a converter group";
+        public static readonly string BindingWindowLocalConverterNotApplicableMessage = "It is not applicable for the specified binding mode";
+        public static readonly string BindingWindowConverterCompleter_IncompatibleMessage = "Not currently compatible with type";
+        public static readonly string BindingWindowConverterCompleter_CompatibleMessage = "Compatible with type";
+        public static readonly string BindingWindowConverterCompleter_UnknownCompatibilityMessage = "Unknown";
+        public static readonly string BindingWindowConverterCompleter_SelectEditedText = "Select to use a custom group ID";
+        public static readonly string BindingWindowConverterCompleter_UseCurrentEntryMessage = "Use \"{0}\" as group ID";
+        public static readonly string BindingWindowShowOnlyCompatibleMessage = "Show only compatible";
 
         //
         // Dialogs
@@ -440,6 +515,9 @@ namespace Unity.UI.Builder
 
         // Notifications
         public const string NoUIToolkitPackageInstalledNotification = "Your Project is not configured to support UI Toolkit runtime UI. To enable runtime support, install the UI Toolkit package.";
+        public const string InlineValuesOnCanvasNotification = "Changes made to inline values on properties with resolved bindings do not appear on the canvas.";
+        public const string BindingsOnPreviewModeNotification = "Modifying attribute values in Preview could change a resolved binding's value depending on binding mode.";
+        public const string DoNotShowAgainNotificationButtonText = "Do not show again";
 
         //
         // UXML/USS
@@ -476,8 +554,11 @@ namespace Unity.UI.Builder
         public static readonly string UssVariablePrefix = "--";
         public static readonly string USSVariablePattern = @"[^a-z0-9A-Z_-]";
         public static readonly string USSVariableInvalidCharFiller = "-";
+        public static readonly string USSVariableUIBuilderPrefix = "--unity_builder";
 
         // Styles
+        public static readonly string StylePropertyPathPrefix = "style.";
+
         public static readonly List<string> SpecialSnowflakeLengthStyles = new List<string>()
         {
             "border-left-width",

@@ -44,6 +44,11 @@ namespace Unity.GraphToolsFoundation.Editor
         public GraphProcessingErrorsStateComponent ProcessingErrorsState { get; }
 
         /// <summary>
+        /// The space partitioning state component.
+        /// </summary>
+        public SpacePartitioningStateComponent SpacePartitioningState { get; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GraphViewModel"/> class.
         /// </summary>
         public GraphViewModel(string graphViewName, GraphModel graphModel)
@@ -62,6 +67,8 @@ namespace Unity.GraphToolsFoundation.Editor
             GraphProcessingState = new GraphProcessingStateComponent();
 
             ProcessingErrorsState = new GraphProcessingErrorsStateComponent();
+
+            SpacePartitioningState = new SpacePartitioningStateComponent();
         }
 
         /// <inheritdoc />
@@ -73,6 +80,7 @@ namespace Unity.GraphToolsFoundation.Editor
             state?.AddStateComponent(AutoPlacementState);
             state?.AddStateComponent(GraphProcessingState);
             state?.AddStateComponent(ProcessingErrorsState);
+            state?.AddStateComponent(SpacePartitioningState);
         }
 
         /// <inheritdoc />
@@ -84,6 +92,7 @@ namespace Unity.GraphToolsFoundation.Editor
             state?.RemoveStateComponent(AutoPlacementState);
             state?.RemoveStateComponent(GraphProcessingState);
             state?.RemoveStateComponent(ProcessingErrorsState);
+            state?.RemoveStateComponent(SpacePartitioningState);
         }
     }
 }

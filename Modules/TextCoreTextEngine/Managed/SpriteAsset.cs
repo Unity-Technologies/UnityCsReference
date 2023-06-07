@@ -33,10 +33,18 @@ namespace UnityEngine.TextCore.Text
         public Texture spriteSheet
         {
             get { return m_SpriteAtlasTexture; }
-            internal set { m_SpriteAtlasTexture = value; }
+            internal set
+            {
+                m_SpriteAtlasTexture = value;
+                width = m_SpriteAtlasTexture.width;
+                height = m_SpriteAtlasTexture.height;
+            }
         }
         [FormerlySerializedAs("spriteSheet")][SerializeField]
         internal Texture m_SpriteAtlasTexture;
+
+        internal float width { get; private set; }
+        internal float height { get; private set; }
 
         /// <summary>
         /// List containing the sprite characters.
@@ -124,6 +132,8 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         public void UpdateLookupTables()
         {
+            width = m_SpriteAtlasTexture.width;
+            height = m_SpriteAtlasTexture.height;
             //Debug.Log("Updating [" + this.name + "] Lookup tables.");
 
             // Initialize / Clear glyph index lookup dictionary.
@@ -371,7 +381,7 @@ namespace UnityEngine.TextCore.Text
             else
                 k_searchedSpriteAssets.Clear();
 
-            int id = spriteAsset.instanceID;
+            int id = spriteAsset.GetHashCode();
 
             // Add to list of font assets already searched.
             k_searchedSpriteAssets.Add(id);
@@ -453,7 +463,7 @@ namespace UnityEngine.TextCore.Text
                 SpriteAsset temp = spriteAssets[i];
                 if (temp == null) continue;
 
-                int id = temp.instanceID;
+                int id = temp.GetHashCode();
 
                 // Skip sprite asset if it has already been searched.
                 if (k_searchedSpriteAssets.Add(id) == false)

@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class Button : TextElement
     {
-        internal static readonly DataBindingProperty iconImageProperty = nameof(iconImage);
+        internal static readonly BindingId iconImageProperty = nameof(iconImage);
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : TextElement.UxmlSerializedData

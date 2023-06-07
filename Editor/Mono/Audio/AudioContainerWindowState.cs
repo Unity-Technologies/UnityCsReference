@@ -12,27 +12,30 @@ namespace UnityEditor;
 sealed class AudioContainerWindowState
 {
     AudioRandomContainer m_AudioContainer;
-    bool m_IsPlayingOrPaused;
     AudioSource m_PreviewAudioSource;
     SerializedObject m_SerializedObject;
-    string m_TargetPath;
 
-    internal event EventHandler OnPlaybackStateChanged;
-    internal event EventHandler OnTargetChanged;
-    internal event EventHandler OnPauseStateChanged;
+    // Need this flag to track transport state changes immediately, as there could be a
+    // one-frame delay to get the correct value from AudioSource.isContainerPlaying.
+    bool m_IsPlayingOrPausedLocalFlag;
+
+    internal event EventHandler TargetChanged;
+    internal event EventHandler TransportStateChanged;
+    internal event EventHandler EditorPauseStateChanged;
 
     internal AudioContainerWindowState()
     {
         EditorApplication.playModeStateChanged += OnEditorPlayModeStateChanged;
-        Selection.selectionChanged += OnSelectionChanged;
         EditorApplication.pauseStateChanged += OnEditorPauseStateChanged;
+        Selection.selectionChanged += OnSelectionChanged;
     }
 
     internal AudioRandomContainer AudioContainer
     {
         get
         {
-            if (m_AudioContainer == null) UpdateTarget();
+            if (m_AudioContainer == null)
+                UpdateTarget();
 
             return m_AudioContainer;
         }
@@ -42,112 +45,39 @@ sealed class AudioContainerWindowState
     {
         get
         {
-            if (m_AudioContainer != null && (m_SerializedObject == null || m_SerializedObject.targetObject != m_AudioContainer)) m_SerializedObject = new SerializedObject(m_AudioContainer);
+            if (m_AudioContainer != null && (m_SerializedObject == null || m_SerializedObject.targetObject != m_AudioContainer))
+                m_SerializedObject = new SerializedObject(m_AudioContainer);
 
             return m_SerializedObject;
         }
     }
 
-    internal string TargetPath => m_TargetPath;
-
-    bool IsPlayingOrPaused
-    {
-        get => m_IsPlayingOrPaused;
-        set
-        {
-            m_IsPlayingOrPaused = value;
-            OnPlaybackStateChanged?.Invoke(this, EventArgs.Empty);
-        }
-    }
+    internal string TargetPath { get; private set; }
 
     internal void Reset()
     {
+        Stop();
         m_AudioContainer = null;
         m_SerializedObject = null;
-        m_IsPlayingOrPaused = false;
-        m_TargetPath = null;
-
-        if (m_PreviewAudioSource != null)
-        {
-            Stop();
-            m_PreviewAudioSource.resource = null;
-        }
+        m_IsPlayingOrPausedLocalFlag = false;
+        TargetPath = null;
     }
 
     internal void OnDestroy()
     {
         Stop();
+
+        if (m_PreviewAudioSource != null)
+            Object.DestroyImmediate(m_PreviewAudioSource.gameObject);
+
         EditorApplication.playModeStateChanged -= OnEditorPlayModeStateChanged;
         Selection.selectionChanged -= OnSelectionChanged;
         EditorApplication.pauseStateChanged -= OnEditorPauseStateChanged;
-
-        if (m_PreviewAudioSource != null) Object.DestroyImmediate(m_PreviewAudioSource.gameObject);
     }
 
-    internal void Play()
-    {
-        CreatePreviewObjects();
-
-        if (!IsReadyToPlay()) return;
-
-        m_PreviewAudioSource.Play();
-        IsPlayingOrPaused = true;
-        EditorApplication.update += OnEditorApplicationUpdate;
-    }
-
-    internal void Stop()
-    {
-        if (!IsPlaying()) return;
-
-        m_PreviewAudioSource.Stop();
-        IsPlayingOrPaused = false;
-        EditorApplication.update -= OnEditorApplicationUpdate;
-    }
-
-    internal void Skip()
-    {
-        if (!IsPlaying()) return;
-        m_PreviewAudioSource.SkipToNextElementIfHasContainer();
-    }
-
-    internal bool IsPlaying()
-    {
-        return IsPlayingOrPaused || (m_PreviewAudioSource != null && m_PreviewAudioSource.isContainerPlaying);
-    }
-
-    internal bool IsReadyToPlay()
-    {
-        if (m_AudioContainer == null)
-        {
-            return false;
-        }
-
-        CreatePreviewObjects();
-
-        if (m_PreviewAudioSource == null)
-        {
-            return false;
-        }
-
-        var elements = m_AudioContainer.elements;
-        var elementCount = m_AudioContainer.elements.Length;
-
-        for (var i = 0; i < elementCount; ++i)
-        {
-            if (elements[i] != null && elements[i].audioClip != null && elements[i].enabled)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    internal ActivePlayable[] GetActivePlayables()
-    {
-        return m_PreviewAudioSource == null ? null : m_PreviewAudioSource.containerActivePlayables;
-    }
-
+    /// <summary>
+    /// Updates the current target based on the currently selected object in the editor.
+    /// </summary>
     internal void UpdateTarget()
     {
         AudioRandomContainer newTarget = null;
@@ -161,9 +91,7 @@ sealed class AudioContainerWindowState
                 var audioSource = go.GetComponent<AudioSource>();
 
                 if (audioSource != null)
-                {
                     newTarget = audioSource.resource as AudioRandomContainer;
-                }
             }
             else
             {
@@ -172,51 +100,100 @@ sealed class AudioContainerWindowState
             }
         }
 
-        if (!audioClipSelected && (newTarget != null && newTarget != m_AudioContainer))
+        if (!audioClipSelected && newTarget != null && newTarget != m_AudioContainer)
         {
             if (m_AudioContainer != null)
-            {
                 Stop();
-            }
 
             Reset();
             m_AudioContainer = newTarget;
 
             if (m_AudioContainer != null)
-            {
-                m_TargetPath = AssetDatabase.GetAssetPath(m_AudioContainer);
-                CreatePreviewObjects();
-            }
+                TargetPath = AssetDatabase.GetAssetPath(m_AudioContainer);
 
-            OnTargetChanged?.Invoke(this, EventArgs.Empty);
+            TargetChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 
-    /// <summary>
-    /// This method creates a hidden game object in the scene with an audio source for editor previewing purposes.
-    /// The preview object is created with the window and destroyed when the window is closed.
-    /// This means that this AudioSource object is a hidden part of the user's scene –
-    /// but only in the editor and only while the window is open.
-    /// </summary>
-    void CreatePreviewObjects()
+    internal void Play()
     {
-        if (m_AudioContainer == null) return;
-
-        if (m_PreviewAudioSource != null)
-        {
-            m_PreviewAudioSource.resource = m_AudioContainer;
+        if (IsPlayingOrPaused() || !IsReadyToPlay())
             return;
+
+        if (m_PreviewAudioSource == null)
+        {
+            // Create a hidden game object in the scene with an AudioSource for editor previewing purposes.
+            // The preview object is created on play and destroyed on stop.
+            // This means that this object is a hidden part of the user's scene during play/pause.
+            var gameObject = new GameObject
+            {
+                name = "PreviewAudioSource595651",
+
+                hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
+            };
+
+            m_PreviewAudioSource = gameObject.AddComponent<AudioSource>();
+            m_PreviewAudioSource.playOnAwake = false;
         }
 
-        var audioSourceGO = new GameObject
-        {
-            name = "PreviewAudioSource595651",
-            hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
-        };
-
-        m_PreviewAudioSource = audioSourceGO.AddComponent<AudioSource>();
-        m_PreviewAudioSource.playOnAwake = false;
         m_PreviewAudioSource.resource = m_AudioContainer;
+        m_PreviewAudioSource.Play();
+        m_IsPlayingOrPausedLocalFlag = true;
+        TransportStateChanged?.Invoke(this, EventArgs.Empty);
+        EditorApplication.update += OnEditorApplicationUpdate;
+    }
+
+    internal void Stop()
+    {
+        if (!IsPlayingOrPaused())
+            return;
+
+        m_PreviewAudioSource.Stop();
+        m_PreviewAudioSource.resource = null;
+        m_IsPlayingOrPausedLocalFlag = false;
+        TransportStateChanged?.Invoke(this, EventArgs.Empty);
+        EditorApplication.update -= OnEditorApplicationUpdate;
+    }
+
+    internal void Skip()
+    {
+        if (!IsPlayingOrPaused())
+            return;
+
+        m_PreviewAudioSource.SkipToNextElementIfHasContainer();
+    }
+
+    internal bool IsPlayingOrPaused()
+    {
+        return m_IsPlayingOrPausedLocalFlag || (m_PreviewAudioSource != null && m_PreviewAudioSource.isContainerPlaying);
+    }
+
+    /// <summary>
+    /// Checks if the window has a current target with at least one enabled audio clip assigned.
+    /// </summary>
+    /// <returns>Whether or not there are valid audio clips to play</returns>
+    internal bool IsReadyToPlay()
+    {
+        if (m_AudioContainer == null)
+            return false;
+
+        var elements = m_AudioContainer.elements;
+
+        for (var i = 0; i < elements.Length; ++i)
+            if (elements[i] != null && elements[i].audioClip != null && elements[i].enabled)
+                return true;
+
+        return false;
+    }
+
+    internal ActivePlayable[] GetActivePlayables()
+    {
+        return IsPlayingOrPaused() ? m_PreviewAudioSource.containerActivePlayables : null;
+    }
+
+    internal float GetMeterValue()
+    {
+        return IsPlayingOrPaused() ? m_PreviewAudioSource.GetAudioRandomContainerRuntimeMeterValue() : -80f;
     }
 
     internal bool IsDirty()
@@ -226,33 +203,34 @@ sealed class AudioContainerWindowState
 
     void OnEditorApplicationUpdate()
     {
-        if (!IsPlayingOrPaused || !m_PreviewAudioSource.isContainerPlaying)
-        {
-            IsPlayingOrPaused = false;
-            EditorApplication.update -= OnEditorApplicationUpdate;
-        }
+        if (m_PreviewAudioSource != null && m_PreviewAudioSource.isContainerPlaying)
+            return;
+
+        m_IsPlayingOrPausedLocalFlag = false;
+        TransportStateChanged?.Invoke(this, EventArgs.Empty);
+        EditorApplication.update -= OnEditorApplicationUpdate;
     }
 
     void OnEditorPlayModeStateChanged(PlayModeStateChange state)
     {
-        if (state == PlayModeStateChange.ExitingEditMode || state == PlayModeStateChange.ExitingPlayMode)
+        if (state is PlayModeStateChange.ExitingEditMode or PlayModeStateChange.ExitingPlayMode)
         {
             Stop();
+
+            if (m_PreviewAudioSource != null)
+            {
+                Object.DestroyImmediate(m_PreviewAudioSource.gameObject);
+            }
         }
     }
 
-    internal float GetMeterValue()
+    void OnEditorPauseStateChanged(PauseState state)
     {
-        return m_PreviewAudioSource == null ? 0.0f : m_PreviewAudioSource.GetAudioRandomContainerRuntimeMeterValue();
+        EditorPauseStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
     void OnSelectionChanged()
     {
         UpdateTarget();
-    }
-
-    void OnEditorPauseStateChanged(PauseState state)
-    {
-        OnPauseStateChanged?.Invoke(this, EventArgs.Empty);
     }
 }

@@ -17,7 +17,6 @@ namespace UnityEditor.UIElements
             DefaultEventSystem.IsEditorRemoteConnected = () => EditorApplication.isRemoteConnected;
 
             TextUtilities.getEditorTextSettings = () => EditorTextSettings.defaultTextSettings;
-            TextUtilities.getEditorTextSharpness = (string fontAssetName) => EditorPrefs.GetFloat($"EditorTextSharpness_{fontAssetName}", 0.0f);
 
             UIDocument.IsEditorPlaying = () => EditorApplication.isPlaying;
             UIDocument.IsEditorPlayingOrWillChangePlaymode = () => EditorApplication.isPlayingOrWillChangePlaymode;
