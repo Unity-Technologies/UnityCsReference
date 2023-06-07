@@ -169,6 +169,11 @@ namespace UnityEditor.UIElements.Bindings
                         // We intentionally re-register this event on the container per element and
                         // never unregister.
                         container.RegisterCallback<GeometryChangedEvent, BarType>(UpdatePrefabOverrideOrLivePropertyBarStyleEvent, BarType.LiveProperty);
+                        element.RegisterCallback<DetachFromPanelEvent>(_ =>
+                        {
+                            element.RemoveFromClassList(BindingExtensions.livePropertyUssClassName);
+                            livePropertyBar.RemoveFromHierarchy();
+                        });
                     }
                 }
             }
@@ -263,6 +268,11 @@ namespace UnityEditor.UIElements.Bindings
                         // We intentionally re-register this event on the container per element and
                         // never unregister.
                         container.RegisterCallback<GeometryChangedEvent, BarType>(UpdatePrefabOverrideOrLivePropertyBarStyleEvent, BarType.PrefabOverride);
+                        element.RegisterCallback<DetachFromPanelEvent>(_ =>
+                        {
+                            element.RemoveFromClassList(BindingExtensions.prefabOverrideUssClassName);
+                            prefabOverrideBar.RemoveFromHierarchy();
+                        });
                     }
                 }
             }
@@ -347,11 +357,28 @@ namespace UnityEditor.UIElements.Bindings
             for (var i = 0; i < barContainer.childCount; i++)
             {
                 var element = barContainer[i].userData as VisualElement;
-                if (FindPrefabOverrideOrLivePropertyBarCompatibleParent(element) == null)
+                if (element == null || FindPrefabOverrideOrLivePropertyBarCompatibleParent(element) != null) continue;
+
+                switch (barType)
                 {
-                    barContainer.RemoveFromHierarchy();
-                    return;
+                    case BarType.PrefabOverride:
+                    {
+                        element.RemoveFromClassList(BindingExtensions.prefabOverrideUssClassName);
+                        var prefabOverridePropertyBar = element.GetProperty(BindingExtensions.prefabOverrideBarName) as VisualElement;
+                        prefabOverridePropertyBar?.RemoveFromHierarchy();
+                        break;
+                    }
+                    case BarType.LiveProperty:
+                    {
+                        element.RemoveFromClassList(BindingExtensions.livePropertyUssClassName);
+                        var livePropertyBar = element.GetProperty(BindingExtensions.livePropertyBarName) as VisualElement;
+                        livePropertyBar?.RemoveFromHierarchy();
+                        break;
+                    }
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(barType), barType, null);
                 }
+                return;
             }
 
             for (var i = 0; i < barContainer.childCount; i++)

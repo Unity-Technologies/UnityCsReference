@@ -303,8 +303,8 @@ namespace UnityEditor
             }
         }
 
-        private static GraphicsJobMode[] m_GfxJobModeValues = new GraphicsJobMode[] { GraphicsJobMode.Native, GraphicsJobMode.Legacy };
-        private static GUIContent[] m_GfxJobModeNames = new GUIContent[] { EditorGUIUtility.TrTextContent("Native"), EditorGUIUtility.TrTextContent("Legacy") };
+        private static GraphicsJobMode[] m_GfxJobModeValues = new GraphicsJobMode[] { GraphicsJobMode.Native, GraphicsJobMode.Legacy, GraphicsJobMode.Split };
+        private static GUIContent[] m_GfxJobModeNames = new GUIContent[] { EditorGUIUtility.TrTextContent("Native"), EditorGUIUtility.TrTextContent("Legacy"), EditorGUIUtility.TrTextContent("Split") };
         private static MeshDeformation[] m_MeshDeformations = { MeshDeformation.CPU, MeshDeformation.GPU, MeshDeformation.GPUBatched };
 
         // Section and tab selection state
@@ -1966,6 +1966,12 @@ namespace UnityEditor
                 }
             }
 
+            if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
+            {
+                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                gfxJobModesSupported = (gfxAPIs[0] == GraphicsDeviceType.Direct3D12) || (gfxAPIs[0] == GraphicsDeviceType.Vulkan);
+            }
+
             // GPU Skinning toggle (only show on relevant platforms)
             if (!BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
             {
@@ -2023,8 +2029,7 @@ namespace UnityEditor
                 GraphicsJobMode newGfxJobMode = GraphicsJobMode.Legacy;
                 if (gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12)
                 {
-                    newGfxJobMode = GraphicsJobMode.Native;
-                    graphicsJobsOptionEnabled = false;
+                    newGfxJobMode = GraphicsJobMode.Split;
                     if (graphicsJobs == false)
                     {
                         PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, true);
@@ -2033,7 +2038,7 @@ namespace UnityEditor
                     }
                 }
                 PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
-                graphicsJobsModeOptionEnabled = false;
+                PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.SplitJobs);
             }
             else if (platform.namedBuildTarget == NamedBuildTarget.PS5)
             {
@@ -2050,6 +2055,7 @@ namespace UnityEditor
                     }
 
                     PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, GraphicsJobMode.Native);
+                    PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerNativeJobs);
                     graphicsJobsModeOptionEnabled = false;
                 }
             }
@@ -2098,6 +2104,13 @@ namespace UnityEditor
                     {
                         Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobModeString);
                         PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
+
+                        if(newGfxJobMode == GraphicsJobMode.Native)
+                            PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerNativeJobs);
+                        else if (newGfxJobMode == GraphicsJobMode.Legacy)
+                            PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerJobs);
+                        else if (newGfxJobMode == GraphicsJobMode.Split)
+                            PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.SplitJobs);
                     }
                 }
             }

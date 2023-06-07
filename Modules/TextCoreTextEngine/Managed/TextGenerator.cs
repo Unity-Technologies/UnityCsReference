@@ -4152,7 +4152,8 @@ namespace UnityEngine.TextCore.Text
                                 textInfo.linkInfo[index].linkTextfirstCharacterIndex = m_CharacterCount;
 
                                 textInfo.linkInfo[index].linkIdFirstCharacterIndex = 3;
-                                textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, m_XmlAttribute[1].valueLength + m_XmlAttribute[1].valueStartIndex - 2);
+                                if (m_XmlAttribute[1].valueLength > 0)
+                                    textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, m_XmlAttribute[1].valueLength + m_XmlAttribute[1].valueStartIndex - 2);
                             }
                             else if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF)
                             {
