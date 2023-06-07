@@ -66,8 +66,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            m_UserModificationsInstanceId = m_UserModifications.GetInstanceID();
-            m_OriginalInstanceId = m_Original.GetInstanceID();
+            if (m_UserModifications != null)
+                m_UserModificationsInstanceId = m_UserModifications.GetInstanceID();
+
+            if (m_Original != null)
+                m_OriginalInstanceId = m_Original.GetInstanceID();
         }
 
         // do nothing

@@ -486,6 +486,19 @@ namespace UnityEngine
                 Internal_RenderMesh(rparams, mesh, submeshIndex, objectToWorld, null);
         }
 
+        internal static Dictionary<int, RenderInstancedDataLayout> s_RenderInstancedDataLayouts = new Dictionary<int, RenderInstancedDataLayout>();
+        private static RenderInstancedDataLayout GetCachedRenderInstancedDataLayout(Type type)
+        {
+            int typeHashCode = type.GetHashCode();
+            RenderInstancedDataLayout layout;
+            if(!s_RenderInstancedDataLayouts.TryGetValue(typeHashCode, out layout))
+            {
+                layout = new RenderInstancedDataLayout(type);
+                s_RenderInstancedDataLayouts.Add(typeHashCode, layout);
+            }
+            return layout;
+        }
+
         public unsafe static void RenderMeshInstanced<T>(in RenderParams rparams, Mesh mesh, int submeshIndex, T[] instanceData, [uei.DefaultValue("-1")] int instanceCount = -1, [uei.DefaultValue("0")] int startInstance = 0) where T : unmanaged
         {
             if (!SystemInfo.supportsInstancing)
@@ -494,7 +507,7 @@ namespace UnityEngine
                 throw new InvalidOperationException("Material needs to enable instancing for use with RenderMeshInstanced.");
             else if (instanceData == null)
                 throw new ArgumentNullException("instanceData");
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = GetCachedRenderInstancedDataLayout(typeof(T));
             uint count = Math.Min((uint)instanceCount, (uint)Math.Max(0, instanceData.Length - startInstance));
             fixed(T *data = instanceData) {Internal_RenderMeshInstanced(rparams, mesh, submeshIndex, (IntPtr)(data + startInstance), layout, count);}
         }
@@ -507,7 +520,7 @@ namespace UnityEngine
                 throw new InvalidOperationException("Material needs to enable instancing for use with RenderMeshInstanced.");
             else if (instanceData == null)
                 throw new ArgumentNullException("instanceData");
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = GetCachedRenderInstancedDataLayout(typeof(T));
             uint count = Math.Min((uint)instanceCount, (uint)Math.Max(0, instanceData.Count - startInstance));
             fixed(T *data = NoAllocHelpers.ExtractArrayFromListT(instanceData)) {Internal_RenderMeshInstanced(rparams, mesh, submeshIndex, (IntPtr)(data + startInstance), layout, count);}
         }
@@ -520,7 +533,7 @@ namespace UnityEngine
                 throw new InvalidOperationException("Material needs to enable instancing for use with RenderMeshInstanced.");
             else if (instanceData == null)
                 throw new ArgumentNullException("instanceData");
-            RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
+            RenderInstancedDataLayout layout = GetCachedRenderInstancedDataLayout(typeof(T));
             uint count = Math.Min((uint)instanceCount, (uint)Math.Max(0, instanceData.Length - startInstance));
             Internal_RenderMeshInstanced(rparams, mesh, submeshIndex, (IntPtr)((T*)instanceData.GetUnsafePtr() + startInstance), layout, count);
         }
