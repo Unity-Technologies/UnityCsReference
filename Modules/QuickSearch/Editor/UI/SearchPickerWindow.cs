@@ -12,7 +12,7 @@ namespace UnityEditor.Search
     [EditorWindowTitle(title = "Search")]
     class SearchPickerWindow : QuickSearch
     {
-        protected override bool IsPicker()
+        internal override bool IsPicker()
         {
             return true;
         }

@@ -96,7 +96,7 @@ namespace UnityEditor.Search
 
                 using (var s = new EditorGUILayout.VerticalScope(Styles.inspector))
                 {
-                    if (showOptions.HasAny(ShowDetailsOptions.Actions))
+                    if (showOptions.HasAny(ShowDetailsOptions.Actions) && m_SearchView is QuickSearch qs && !qs.IsPicker())
                         DrawActions(context);
 
                     if (selectionCount == 1)

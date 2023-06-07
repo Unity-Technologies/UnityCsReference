@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Hardware;
-using UnityEditor.Collaboration;
 using UnityEngine.Assertions;
 
 namespace UnityEditor
@@ -413,21 +412,14 @@ namespace UnityEditor
             if (m_IsGlobalSettings)
                 ShowUnityRemoteGUI(editorEnabled);
 
-            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
             GUILayout.Space(10);
 
+            GUI.enabled = true;
+            GUILayout.Label(Content.assetSerialization, EditorStyles.boldLabel);
+            GUI.enabled = editorEnabled;
+
             int index = m_SerializationMode.intValue;
-            using (new EditorGUI.DisabledScope(!collabEnabled))
-            {
-                GUI.enabled = !collabEnabled;
-                GUILayout.Label(Content.assetSerialization, EditorStyles.boldLabel);
-                GUI.enabled = editorEnabled && !collabEnabled;
-                CreatePopupMenu("Mode", serializationPopupList, index, SetAssetSerializationMode);
-            }
-            if (collabEnabled)
-            {
-                EditorGUILayout.HelpBox("Asset Serialization is forced to Text when using Collaboration feature.", MessageType.Warning);
-            }
+            CreatePopupMenu("Mode", serializationPopupList, index, SetAssetSerializationMode);
 
             if (m_SerializationMode.intValue != (int)SerializationMode.ForceBinary)
             {

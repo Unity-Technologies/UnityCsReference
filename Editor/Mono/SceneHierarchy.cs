@@ -1210,6 +1210,16 @@ namespace UnityEditor
 
 
             menu.AddSeparator("");
+            if (Selection.activeGameObject)
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Find References in Scene"), false, FindReferenceInScene);
+            }
+            else
+            {
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Find References in Scene"));
+            }
+
+            menu.AddSeparator("");
 
             GameObject selectedObject = null;
             if (Selection.objects.Length > 0)
@@ -1360,6 +1370,14 @@ namespace UnityEditor
             }
 
             menu.ShowAsContext();
+        }
+
+        private void FindReferenceInScene()
+        {
+            var selectedObject = Selection.activeObject;
+            if (!selectedObject)
+                return;
+            SearchableEditorWindow.SearchForReferencesToInstanceID(selectedObject.GetInstanceID());
         }
 
         protected void AddCreateGameObjectItemsToSceneMenu(GenericMenu menu, Scene scene)

@@ -165,9 +165,15 @@ namespace UnityEditor.Search
                     break;
 
                 case MaterialProperty.PropType.Texture:
-                    if (matProp.textureValue != (Texture)newValue)
-                        matProp.textureValue = (Texture)newValue;
-                    break;
+                    {
+                        var texValue = newValue as Texture;
+                        if ((newValue == null || texValue != null) && matProp.textureValue != texValue)
+                        {
+                            matProp.textureValue = texValue;
+                        }
+                        break;
+                    }
+                    
             }
         }
 

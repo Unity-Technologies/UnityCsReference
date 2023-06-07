@@ -31,7 +31,7 @@ namespace UnityEditor.Search.Providers
             return new SearchProvider(type, displayName)
             {
                 priority = 85,
-                filterId = "#",
+                filterId = "api:",
                 isExplicitProvider = true,
                 fetchItems = (context, items, provider) => FetchItems(context, provider),
                 fetchThumbnail = (item, context) => Icons.staticAPI
@@ -65,8 +65,9 @@ namespace UnityEditor.Search.Providers
 
         private static MethodInfo[] FetchStaticAPIMethodInfo()
         {
-            bool isDevBuild = Unsupported.IsDeveloperBuild();
-            return AppDomain.CurrentDomain.GetAllStaticMethods(isDevBuild);
+            // Note: since 23.2 an internal api causes a hard crash when fetching for it.
+            // bool isDevBuild = Unsupported.IsDeveloperBuild();
+            return AppDomain.CurrentDomain.GetAllStaticMethods(false);
         }
 
         private static MethodInfo[] GetAllStaticMethods(this AppDomain aAppDomain, bool showInternalAPIs)

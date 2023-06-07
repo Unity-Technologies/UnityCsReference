@@ -256,6 +256,8 @@ namespace UnityEditor.Search
             EditorApplication.quitting += OnQuitting;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
             EditorSceneManager.activeSceneChangedInEditMode += (_, __) => InvalidateCurrentScene();
+            EditorSceneManager.sceneOpened += (scene, mode) => InvalidateCurrentScene();
+            EditorSceneManager.sceneClosed += scene => InvalidateCurrentScene();
             PrefabStage.prefabStageOpened += _ => InvalidateCurrentScene();
             PrefabStage.prefabStageClosing += _ => InvalidateCurrentScene();
 
