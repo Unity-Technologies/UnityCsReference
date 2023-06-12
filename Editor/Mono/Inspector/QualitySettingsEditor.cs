@@ -66,6 +66,7 @@ namespace UnityEditor
             public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TrTextContent("Billboards Face Camera Position", "When enabled, terrain billboards face towards the camera position. Otherwise, they face towards the camera plane. This makes billboards look nicer when the camera rotates but it is more resource intensive to process.");
             public static readonly GUIContent kUseLegacyDistribution = EditorGUIUtility.TrTextContent("Use Legacy Details Distribution", "When enabled, terrain details will be scattered using the old scattering algorithm that often resulted in overlapping details. Included for backwards compatibility with terrain authored in Unity 2022.1 and earlier.");
             public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count", "Specifies how Unity synchronizes rendering with the refresh rate of the display device.");
+            public static readonly GUIContent kRealtimeLGiCpuUsageLabel = EditorGUIUtility.TrTextContent("Realtime GI CPU Usage", "How many CPU worker threads to create for Realtime Global Illumination lighting calculations in the Player. Increasing this makes the system react faster to changes in lighting at a cost of using more CPU time. The higher the CPU Usage value, the more worker threads are created for solving Realtime GI.");
             public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Bias", "The bias Unity uses to determine which model to render when a GameObject’s on-screen size is between two LOD levels. Values between 0 and 1 favor the less detailed model. Values greater than 1 favor the more detailed model.");
             public static readonly GUIContent kMaximumLODLevelLabel = EditorGUIUtility.TrTextContent("Maximum LOD Level", "The highest LOD to use in the application.");
             public static readonly GUIContent kEnableLODCrossFadeLabel = EditorGUIUtility.TrTextContent("LOD Cross Fade", "Enables or disables LOD Cross Fade.");
@@ -650,6 +651,7 @@ namespace UnityEditor
             var terrainFadeLengthProperty = currentSettings.FindPropertyRelative("terrainFadeLength");
             var terrainMaxTreesProperty = currentSettings.FindPropertyRelative("terrainMaxTrees");
             var vSyncCountProperty = currentSettings.FindPropertyRelative("vSyncCount");
+            var realtimeGICPUUsageProperty = currentSettings.FindPropertyRelative("realtimeGICPUUsage");
             var lodBiasProperty = currentSettings.FindPropertyRelative("lodBias");
             var maximumLODLevelProperty = currentSettings.FindPropertyRelative("maximumLODLevel");
             var enableLODCrossFadeProperty = currentSettings.FindPropertyRelative("enableLODCrossFade");
@@ -704,6 +706,9 @@ namespace UnityEditor
                 if (vSyncCountProperty.intValue > 0)
                     EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on Android, iOS and tvOS.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
             }
+
+            if (usingSRP)
+                EditorGUILayout.PropertyField(realtimeGICPUUsageProperty, Content.kRealtimeLGiCpuUsageLabel);
 
             bool shadowMaskSupported = SupportedRenderingFeatures.IsMixedLightingModeSupported(MixedLightingMode.Shadowmask);
             bool showShadowMaskUsage = shadowMaskSupported && !SupportedRenderingFeatures.active.overridesShadowmask;

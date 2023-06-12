@@ -1438,11 +1438,20 @@ namespace UnityEditor
                     Debug.LogError($"No undo was registered when removing {assetComponent.name} from {assetRoot.name}. \nError: {errorMessage}", assetRoot);
             }
 
+            var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
+
+            if (action == InteractionMode.UserAction)
+                Undo.RegisterCompleteObjectUndo(prefabInstanceObject, actionName);
+
+            // Having registered undo on the Prefab instance we can now apply the removed component override
             using (var scope = new EditPrefabContentsScope(assetPath))
             {
                 //Search components in file that matches the FileIds of componentInAsset
-                void DeleteCorrespondingComponent(Component componentInAsset)
+                bool DeleteCorrespondingComponent(Component componentInAsset)
                 {
+                    if (componentInAsset == null)
+                        return false;
+
                     var assetComponentId = Unsupported.GetFileIDHint(componentInAsset);
                     var componentsOfTypeInAsset = scope.prefabContentsRoot.GetComponentsInChildren(componentInAsset.GetType(), true);
 
@@ -1451,17 +1460,23 @@ namespace UnityEditor
                         if (Unsupported.GetOrGenerateFileIDHint(component) == assetComponentId)
                         {
                             Object.DestroyImmediate(component);
-                            return;
+                            return true;
                         }
                     }
                     Debug.LogError($"Component {componentInAsset} could not be found and deleted from corresponding asset.");
+                    return false;
                 }
 
-                DeleteCorrespondingComponent(assetComponent);
-                if (coupledAssetComponent != null)
-                    DeleteCorrespondingComponent(coupledAssetComponent);
+                if (DeleteCorrespondingComponent(assetComponent))
+                {
+                    RemoveRemovedComponentOverride(instanceGameObject, assetComponent);
+
+                    if (DeleteCorrespondingComponent(coupledAssetComponent))
+                        RemoveRemovedComponentOverride(instanceGameObject, coupledAssetComponent);
+                }
             }
 
+            // Register undo for the changed asset
             if (action == InteractionMode.UserAction && originalFileContent != null)
             {
                 var guid = AssetDatabase.GUIDFromAssetPath(assetPath);
@@ -1471,10 +1486,8 @@ namespace UnityEditor
                     Debug.LogError($"No undo was registered when removing {assetComponent.name} from {assetRoot.name}. \nError: {errorMessage}", assetRoot);
             }
 
-            var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
-
-            if (action == InteractionMode.UserAction)
-                Undo.RegisterCompleteObjectUndo(prefabInstanceObject, actionName);
+            // Ensure correct action name after asset undo
+            Undo.SetCurrentGroupName(actionName);
 
             RemoveRemovedComponentOverridesWhichAreInvalid(prefabInstanceObject);
 

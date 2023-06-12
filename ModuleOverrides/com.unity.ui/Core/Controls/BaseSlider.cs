@@ -44,6 +44,8 @@ namespace UnityEngine.UIElements
         internal VisualElement dragBorderElement { get; private set; }
         internal TextField inputTextField { get; private set; }
 
+        bool m_IsEditingTextField;
+
         [SerializeField, DontCreateProperty]
         private TValueType m_LowValue;
 
@@ -728,6 +730,7 @@ namespace UnityEngine.UIElements
                     inputTextField.AddToClassList(textFieldClassName);
                     inputTextField.RegisterCallback<NavigationMoveEvent>(OnInputNavigationMoveEvent, TrickleDown.TrickleDown);
                     inputTextField.RegisterValueChangedCallback(OnTextFieldValueChange);
+                    inputTextField.RegisterCallback<FocusInEvent>(OnTextFieldFocusIn);
                     inputTextField.RegisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
                     visualInput.Add(inputTextField);
                     UpdateTextFieldValue();
@@ -740,6 +743,7 @@ namespace UnityEngine.UIElements
 
                 inputTextField.UnregisterCallback<NavigationMoveEvent>(OnInputNavigationMoveEvent);
                 inputTextField.UnregisterValueChangedCallback(OnTextFieldValueChange);
+                inputTextField.UnregisterCallback<FocusInEvent>(OnTextFieldFocusIn);
                 inputTextField.UnregisterCallback<FocusOutEvent>(OnTextFieldFocusOut);
                 inputTextField = null;
             }
@@ -747,14 +751,20 @@ namespace UnityEngine.UIElements
 
         private void UpdateTextFieldValue()
         {
-            if (inputTextField == null)
+            if (inputTextField == null || m_IsEditingTextField)
                 return;
 
             inputTextField.SetValueWithoutNotify(String.Format(CultureInfo.InvariantCulture, "{0:g7}", value));
         }
 
+        private void OnTextFieldFocusIn(FocusInEvent evt)
+        {
+            m_IsEditingTextField = true;
+        }
+
         private void OnTextFieldFocusOut(FocusOutEvent evt)
         {
+            m_IsEditingTextField = false;
             UpdateTextFieldValue();
         }
 
@@ -769,7 +779,7 @@ namespace UnityEngine.UIElements
             var newValue = GetClampedValue(ParseStringToValue(evt.newValue));
             if (!EqualityComparer<TValueType>.Default.Equals(newValue, value))
             {
-                base.SetValueWithoutNotify(newValue);
+                value = newValue;
                 evt.StopPropagation();
 
                 if (elementPanel != null)

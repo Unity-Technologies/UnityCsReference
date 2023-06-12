@@ -677,14 +677,14 @@ namespace UnityEditor
         protected override void OnContentGUI(Rect rect, int row, TreeViewItem item, string label, bool selected, bool focused,
             bool useBoldFont, bool isPinging)
         {
-            if (Event.current.type != EventType.Repaint)
-                return;
-
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
             if (goItem == null)
                 return;
 
             EnsureLazyInitialization(goItem);
+
+            if (Event.current.type != EventType.Repaint)
+                return;
 
             rect.xMax = m_ContentRectRight;
 

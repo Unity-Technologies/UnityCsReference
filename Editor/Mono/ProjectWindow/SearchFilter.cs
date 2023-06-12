@@ -8,8 +8,6 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using UnityEditor.Collaboration;
-using UnityEditor.Connect;
 
 namespace UnityEditor
 {
@@ -44,10 +42,6 @@ namespace UnityEditor
         [SerializeField]
         private string[] m_AssetBundleNames = new string[0];
         [SerializeField]
-        private string[] m_VersionControlStates = new string[0];
-        [SerializeField]
-        private string[] m_SoftLockControlStates = new string[0];
-        [SerializeField]
         private int[] m_ReferencingInstanceIDs = new int[0];
         [SerializeField]
         private int[] m_SceneHandles;
@@ -81,8 +75,6 @@ namespace UnityEditor
         public string nameFilter { get { return m_NameFilter; } set { m_NameFilter = value; }}
         public string[] classNames { get { return m_ClassNames; } set { m_ClassNames = value; }}
         public string[] assetLabels { get { return m_AssetLabels; } set { m_AssetLabels = value; }}
-        public string[] versionControlStates { get { return m_VersionControlStates; } set { m_VersionControlStates = value; }}
-        public string[] softLockControlStates { get { return m_SoftLockControlStates; } set { m_SoftLockControlStates = value; }}
         public string[] assetBundleNames { get { return m_AssetBundleNames; } set { m_AssetBundleNames = value; }}
         public int[] referencingInstanceIDs { get { return m_ReferencingInstanceIDs; } set { m_ReferencingInstanceIDs = value; }}
         public int[] sceneHandles { get { return m_SceneHandles; } set { m_SceneHandles = value; }}
@@ -111,8 +103,6 @@ namespace UnityEditor
             m_Globs = new string[0];
             m_ProductIds = new int[0];
             m_AnyWithAssetOrigin = false;
-            m_VersionControlStates = new string[0];
-            m_SoftLockControlStates = new string[0];
             m_ShowAllHits = false;
             m_SkipHidden = false;
             m_ImportLogFlags = ImportLogFlags.None;
@@ -135,8 +125,6 @@ namespace UnityEditor
                 !IsNullOrEmpty(m_ReferencingInstanceIDs) ||
                 m_ImportLogFlags != ImportLogFlags.None;
 
-            isSearchActive = isSearchActive || !IsNullOrEmpty(m_VersionControlStates);
-            isSearchActive = isSearchActive || !IsNullOrEmpty(m_SoftLockControlStates);
 
 
             bool foldersActive = !IsNullOrEmpty(m_Folders);
@@ -196,16 +184,6 @@ namespace UnityEditor
             if (newFilter.m_Folders != m_Folders)
             {
                 m_Folders = newFilter.m_Folders;
-                changed = true;
-            }
-            if (newFilter.m_VersionControlStates != m_VersionControlStates)
-            {
-                m_VersionControlStates = newFilter.m_VersionControlStates;
-                changed = true;
-            }
-            if (newFilter.m_SoftLockControlStates != m_SoftLockControlStates)
-            {
-                m_SoftLockControlStates = newFilter.m_SoftLockControlStates;
                 changed = true;
             }
             if (newFilter.m_AssetLabels != m_AssetLabels)
@@ -292,11 +270,6 @@ namespace UnityEditor
             if (m_AssetLabels != null && m_AssetLabels.Length > 0)
                 result += "[Labels: " + m_AssetLabels[0] + "]";
 
-            if (m_VersionControlStates != null && m_VersionControlStates.Length > 0)
-                result += "[VersionStates: " + m_VersionControlStates[0] + "]";
-
-            if (m_SoftLockControlStates != null && m_SoftLockControlStates.Length > 0)
-                result += "[SoftLockStates: " + m_SoftLockControlStates[0] + "]";
 
             if (m_AssetBundleNames != null && m_AssetBundleNames.Length > 0)
                 result += "[AssetBundleNames: " + m_AssetBundleNames[0] + "]";
@@ -357,8 +330,6 @@ namespace UnityEditor
             // See SearchUtility.cs for search tokens
             AddToString(FormatFilterTokenForSearchEngine("t"), m_ClassNames, ref result);
             AddToString(FormatFilterTokenForSearchEngine("l"), m_AssetLabels, ref result);
-            AddToString("v:", m_VersionControlStates, ref result);
-            AddToString("s:", m_SoftLockControlStates, ref result);
             AddToString("b:", m_AssetBundleNames, ref result);
             AddToString("glob:", m_Globs.Select(a => $"\"{a}\"").ToArray(), ref result);
             AddToString("assetorigin.productid:", m_ProductIds.Select(o => $"\"{o}\"").ToArray(), ref result);
