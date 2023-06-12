@@ -48,7 +48,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     : AssemblyDataFrom(CodeGenAssemblies(CompilationPipeline.GetScriptAssemblies(editorCompilation, AssembliesType.Editor, extraScriptingDefines)));
             }
 
-            var movedFromExtractorPath = EditorApplication.applicationContentsPath + $"/Tools/ScriptUpdater/ApiUpdater.MovedFromExtractor.exe";
+            var movedFromExtractorPath = $"{EditorApplication.applicationContentsPath}/Tools/Compilation/ApiUpdater/ApiUpdater.MovedFromExtractor.dll";
             var dotNetSdkRoslynPath = EditorApplication.applicationContentsPath + $"/DotNetSdkRoslyn";
 
             var localization = "en-US";

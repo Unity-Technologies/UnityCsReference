@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.AssetImporters;
 using Object = UnityEngine.Object;
-using UnityEditor.Collaboration;
-using UnityEditor.Connect;
 
 namespace UnityEditor
 {
@@ -119,25 +117,6 @@ namespace UnityEditor
                 parsed = true;
             }
 
-            // Support: 'v:versionState' syntax
-            if (HasFilter(searchString, "v"))
-            {
-                string versionStateString = searchString.Substring(2);
-                List<string> tmp = new List<string>(filter.versionControlStates);
-                tmp.Add(versionStateString);
-                filter.versionControlStates = tmp.ToArray();
-                parsed = true;
-            }
-
-            // Support: 's:softLockState' syntax
-            if (HasFilter(searchString, "s"))
-            {
-                string softLockStateString = searchString.Substring(2);
-                List<string> tmp = new List<string>(filter.softLockControlStates);
-                tmp.Add(softLockStateString);
-                filter.softLockControlStates = tmp.ToArray();
-                parsed = true;
-            }
             // Support: 'a:area' syntax
             if (HasFilter(searchString, "a"))
             {

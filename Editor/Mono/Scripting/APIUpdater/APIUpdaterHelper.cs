@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Runtime.InteropServices;
 using Mono.Cecil;
 using NiceIO;
 using UnityEditor.PackageManager;
@@ -18,10 +19,14 @@ using UnityEngine;
 using UnityEngine.Scripting.APIUpdating;
 using static System.Environment;
 
-namespace UnityEditor.Scripting.Compilers
+namespace UnityEditor.Scripting
 {
     internal static class APIUpdaterHelper
     {
+        private static string ComputePlatformExecutableExtension() => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : string.Empty;
+        
+        internal static readonly string PlatformExecutableExtensionWithDot = ComputePlatformExecutableExtension();
+
         public static bool IsInPackage(this string filePath)
         {
             return EditorCompilationInterface.Instance.IsPathInPackageDirectory(filePath);

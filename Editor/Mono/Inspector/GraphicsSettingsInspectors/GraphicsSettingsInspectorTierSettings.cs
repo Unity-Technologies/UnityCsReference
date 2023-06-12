@@ -324,8 +324,9 @@ namespace UnityEditor
                 ts.renderingPath = RenderingPathPopup(ts.renderingPath);
             }
 
-            if (SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
-                ts.realtimeGICPUUsage = RealtimeGICPUUsagePopup(ts.realtimeGICPUUsage);
+            if (!usingSRP)
+                if (SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
+                    ts.realtimeGICPUUsage = RealtimeGICPUUsagePopup(ts.realtimeGICPUUsage);
 
             if (EditorGUI.EndChangeCheck())
             {
