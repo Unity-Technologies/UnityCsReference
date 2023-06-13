@@ -37,16 +37,18 @@ namespace UnityEditor
         [Serializable]
         public struct CameraMode
         {
-            internal CameraMode(DrawCameraMode drawMode, string name, string section)
+            internal CameraMode(DrawCameraMode drawMode, string name, string section, bool show = true)
             {
                 this.drawMode = drawMode;
                 this.name = name;
                 this.section = section;
+                this.show = show;
             }
 
             public DrawCameraMode drawMode;
             public string name;
             public string section;
+            internal bool show;
 
             public static bool operator==(CameraMode a, CameraMode z)
             {
@@ -79,6 +81,28 @@ namespace UnityEditor
         }
 
         static SceneView s_LastActiveSceneView;
+
+        [RequiredByNativeCode]
+        internal static DrawCameraMode[] GetInteractiveDrawCameraModeValues()
+        {
+            List<DrawCameraMode> drawCameraModes = new List<DrawCameraMode>();
+            foreach (SceneView sceneView in SceneView.sceneViews)
+            {
+                if (sceneView.usesInteractiveLightBakingData)
+                    drawCameraModes.Add(sceneView.cameraMode.drawMode);
+            }
+            return drawCameraModes.ToArray();
+        }
+
+        internal static bool IsInteractiveBakingEnabled()
+        {
+            foreach (SceneView sceneView in SceneView.sceneViews)
+            {
+                if (sceneView.usesInteractiveLightBakingData)
+                    return true;
+            }
+            return false;
+        }
 
         static string GetLegacyOverlayId(OverlayWindow overlayData)
         {
@@ -204,7 +228,17 @@ namespace UnityEditor
 
         internal bool showBackfaceHighlightsToggle => this.showLightmapResolutionToggle;
 
-        internal bool showLightingVisualizationPanel => this.showExposureSettings || this.showBackfaceHighlightsToggle || this.showLightmapResolutionToggle;
+        static readonly HashSet<DrawCameraMode> s_ShowInteractiveLightBakingToggleCameraModes = new HashSet<DrawCameraMode>()
+        {
+            DrawCameraMode.BakedLightmap, DrawCameraMode.BakedDirectionality,
+            DrawCameraMode.ShadowMasks, DrawCameraMode.BakedAlbedo,
+            DrawCameraMode.BakedEmissive, DrawCameraMode.BakedCharting,
+            DrawCameraMode.BakedTexelValidity, DrawCameraMode.BakedUVOverlap,
+            DrawCameraMode.BakedIndices, DrawCameraMode.LightOverlap,
+        };
+        internal bool currentDrawModeMayUseInteractiveLightBakingData => s_ShowInteractiveLightBakingToggleCameraModes.Contains(this.cameraMode.drawMode);
+
+        internal bool showLightingVisualizationPanel => this.showExposureSettings || this.showBackfaceHighlightsToggle || this.showLightmapResolutionToggle || this.currentDrawModeMayUseInteractiveLightBakingData;
 
         internal static Transform GetDefaultParentObjectIfSet()
         {
@@ -409,7 +443,7 @@ namespace UnityEditor
         public event Action<bool> gridVisibilityChanged;
         internal event Action<bool> sceneLightingChanged;
         internal event Action<bool> sceneAudioChanged;
-        internal event Action<bool> sceneUseInteractiveLightBakingDataChanged;
+        internal event Action<bool> debugDrawModesUseInteractiveLightBakingDataChanged;
         internal event Action<bool> sceneVisActiveChanged;
         internal event Action<bool> drawGizmosChanged;
         internal event Action<bool> modeChanged2D;
@@ -586,20 +620,22 @@ namespace UnityEditor
         static SceneView s_AudioSceneView;
 
         [SerializeField]
-        bool m_UseInteractiveLightBakingData = false;
+        bool m_DebugDrawModesUseInteractiveLightBakingData = false;
 
-        internal bool useInteractiveLightBakingData
+        internal bool debugDrawModesUseInteractiveLightBakingData
         {
-            get => m_UseInteractiveLightBakingData;
+            get => m_DebugDrawModesUseInteractiveLightBakingData;
 
             set
             {
-                if (value == m_UseInteractiveLightBakingData)
+                if (value == m_DebugDrawModesUseInteractiveLightBakingData)
                     return;
-                ChangeUseInteractiveLightBakingData(value);
-                sceneUseInteractiveLightBakingDataChanged?.Invoke(m_UseInteractiveLightBakingData);
+                m_DebugDrawModesUseInteractiveLightBakingData = value;
+                debugDrawModesUseInteractiveLightBakingDataChanged?.Invoke(m_DebugDrawModesUseInteractiveLightBakingData);
             }
         }
+
+        internal bool usesInteractiveLightBakingData => this.debugDrawModesUseInteractiveLightBakingData && this.currentDrawModeMayUseInteractiveLightBakingData;
 
         [SerializeField]
         AnimVector3 m_Position = new AnimVector3(kDefaultPivot);
@@ -1152,6 +1188,9 @@ namespace UnityEditor
         private Object m_LastLockedObject;
 
         [SerializeField]
+        private DrawCameraMode m_LastDebugDrawMode = DrawCameraMode.GIContributorsReceivers;
+
+        [SerializeField]
         bool m_ViewIsLockedToObject;
         internal bool viewIsLockedToObject
         {
@@ -1259,28 +1298,8 @@ namespace UnityEditor
             }
         }
 
-        internal bool IsAnySceneViewUsingInteractiveLightBakingData()
-        {
-            return m_UseInteractiveLightBakingData || IsAnySceneViewUsingInteractiveLightBakingDataExceptMe();
-        }
-
-        internal bool IsAnySceneViewUsingInteractiveLightBakingDataExceptMe()
-        {
-            foreach (SceneView sv in SceneView.sceneViews)
-                if (sv.useInteractiveLightBakingData && sv != this)
-                    return true;
-            return false;
-        }
-
-        private void ChangeUseInteractiveLightBakingData(bool newValue)
-        {
-            m_UseInteractiveLightBakingData = newValue;
-            Lightmapping.isInteractive = IsAnySceneViewUsingInteractiveLightBakingData();
-        }
-
         public override void OnEnable()
         {
-            ChangeUseInteractiveLightBakingData(m_UseInteractiveLightBakingData);
             baseRootVisualElement.Insert(0, prefabToolbar);
             rootVisualElement.Add(cameraViewVisualElement);
             rootVisualElement.RegisterCallback<MouseEnterEvent>(e => SceneViewMotion.s_ViewportsUnderMouse = true);
@@ -1328,6 +1347,12 @@ namespace UnityEditor
             onCameraModeChanged += delegate
             {
                 if (cameraMode.drawMode == DrawCameraMode.ShadowCascades) sceneLighting = true;
+
+                // If this a draw mode for debugging purposes, take note of it, so we can toggle back and forth between it and the previous mode.
+                if (cameraMode.drawMode != DrawCameraMode.Textured && cameraMode.drawMode != DrawCameraMode.Wireframe && cameraMode.drawMode != DrawCameraMode.TexturedWire)
+                {
+                    m_LastDebugDrawMode = cameraMode.drawMode;
+                }
             };
 
             m_DraggingLockedState = DraggingLockedState.NotDragging;
@@ -1527,9 +1552,6 @@ namespace UnityEditor
 
         public override void OnDisable()
         {
-            if (!IsAnySceneViewUsingInteractiveLightBakingDataExceptMe())
-                Lightmapping.isInteractive = false;
-
             EditorApplication.modifierKeysChanged -= RepaintAll;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             SceneVisibilityManager.visibilityChanged -= VisibilityChanged;
@@ -1658,7 +1680,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        if (!source.isPlaying)
+                        if (!source.isPlaying && source.isActiveAndEnabled)
                             source.Play();
                     }
                 }
@@ -2651,33 +2673,74 @@ namespace UnityEditor
                 ContextMenuUtility.ShowActionMenu();
         }
 
-        [Shortcut("Scene View/Render Mode/Shaded", typeof(SceneView))]
-        static void SetShadedMode(ShortcutArguments args)
+        internal void SwitchToRenderMode(DrawCameraMode mode, bool sceneLighting = true)
         {
-            var view = args.context as SceneView;
-            if (view != null)
+            this.sceneLighting = sceneLighting;
+            this.cameraMode = GetBuiltinCameraMode(mode);
+        }
+
+        internal void SwitchToUnlit() => SwitchToRenderMode(DrawCameraMode.Textured, false);
+
+        internal void ToggleLastDebugDrawMode()
+        {
+            if (cameraMode.drawMode == m_LastDebugDrawMode)
             {
-                view.cameraMode = GetBuiltinCameraMode(DrawCameraMode.Normal);
+                SwitchToRenderMode(DrawCameraMode.Textured);
+            }
+            else
+            {
+                SwitchToRenderMode(m_LastDebugDrawMode);
             }
         }
 
-        [Shortcut("Scene View/Render Mode/Shaded Wireframe", typeof(SceneView))]
-        static void SetShadedWireframeMode(ShortcutArguments args)
-        {
-            var view = args.context as SceneView;
-            if (view != null)
-            {
-                view.cameraMode = GetBuiltinCameraMode(DrawCameraMode.TexturedWire);
-            }
-        }
-
-        [Shortcut("Scene View/Render Mode/Wireframe", typeof(SceneView))]
+        [Shortcut("Scene View/Render Mode/Wireframe", typeof(SceneView), KeyCode.Alpha1, ShortcutModifiers.Alt)]
         static void SetWireframeMode(ShortcutArguments args)
         {
             var view = args.context as SceneView;
             if (view != null)
             {
-                view.cameraMode = GetBuiltinCameraMode(DrawCameraMode.Wireframe);
+                view.SwitchToRenderMode(DrawCameraMode.Wireframe);
+            }
+        }
+
+
+        [Shortcut("Scene View/Render Mode/Shaded Wireframe", typeof(SceneView), KeyCode.Alpha2, ShortcutModifiers.Alt)]
+        static void SetShadedWireframeMode(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                view.SwitchToRenderMode(DrawCameraMode.TexturedWire);
+            }
+        }
+
+        [Shortcut("Scene View/Render Mode/Unlit", typeof(SceneView), KeyCode.Alpha3, ShortcutModifiers.Alt)]
+        static void SetUnlitMode(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                view.SwitchToUnlit();
+            }
+        }
+
+        [Shortcut("Scene View/Render Mode/Shaded", typeof(SceneView), KeyCode.Alpha4, ShortcutModifiers.Alt)]
+        static void SetShadedMode(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                view.SwitchToRenderMode(DrawCameraMode.Normal);
+            }
+        }
+
+        [Shortcut("Scene View/Render Mode/Last Debug Draw Mode", typeof(SceneView), KeyCode.Alpha6, ShortcutModifiers.Alt)]
+        static void SetLastDebugDrawMode(ShortcutArguments args)
+        {
+            var view = args.context as SceneView;
+            if (view != null)
+            {
+                view.SwitchToRenderMode(view.m_LastDebugDrawMode);
             }
         }
 
@@ -3069,7 +3132,7 @@ namespace UnityEditor
         {
             var mainCamera = GetMainCamera();
 
-            m_Camera.useInteractiveLightBakingData = m_UseInteractiveLightBakingData;
+            m_Camera.useInteractiveLightBakingData = usesInteractiveLightBakingData;
 
             // update physical camera properties
             if (mainCamera != null)

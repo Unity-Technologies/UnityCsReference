@@ -196,6 +196,12 @@ namespace UnityEngine.UIElements.UIR
                 renderChain.ChildWillBeRemoved(ve);
                 CommandManipulator.ResetCommands(renderChain, ve);
                 renderChain.ResetTextures(ve);
+                if (ve.renderChainData.hasExtraData)
+                {
+                    renderChain.FreeExtraMeshes(ve);
+                    renderChain.FreeExtraData(ve);
+                }
+
                 ve.renderChainData.flags &= ~RenderDataFlags.IsInChain;
                 ve.renderChainData.clipMethod = ClipMethod.Undetermined;
 
@@ -724,6 +730,19 @@ namespace UnityEngine.UIElements.UIR
                 PrepareNudgeVertices(ve, device, ve.renderChainData.tailMesh, out job.tailSrc, out job.tailDst, out job.tailCount);
 
             renderChain.jobManager.Add(ref job);
+
+            if (ve.renderChainData.hasExtraMeshes)
+            {
+                ExtraRenderChainVEData extraData = renderChain.GetOrAddExtraData(ve);
+                BasicNode<MeshHandle> extraMesh = extraData.extraMesh;
+                while (extraMesh != null)
+                {
+                    var extraJob = new NudgeJobData { transform = job.transform };
+                    PrepareNudgeVertices(ve, device, extraMesh.data, out extraJob.headSrc, out extraJob.headDst, out extraJob.headCount);
+                    renderChain.jobManager.Add(ref extraJob);
+                    extraMesh = extraMesh.next;
+                }
+            }
 
             k_NudgeVerticesMarker.End();
             return true;

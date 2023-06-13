@@ -269,6 +269,12 @@ namespace UnityEngine
             else    Internal_SetNullRT();
         }
 
+        internal static void SetRenderTargetImpl(GraphicsTexture rt, int mipLevel, CubemapFace face, int depthSlice)
+        {
+            if (rt != null) Internal_SetGfxRT(rt, mipLevel, face, depthSlice);
+            else    Internal_SetNullRT();
+        }
+
         internal static void SetRenderTargetImpl(RenderBuffer[] colorBuffers, RenderBuffer depthBuffer, int mipLevel, CubemapFace face, int depthSlice)
         {
             RenderBuffer depth = depthBuffer;
@@ -276,6 +282,11 @@ namespace UnityEngine
         }
 
         public static void SetRenderTarget(RenderTexture rt, [uei.DefaultValue("0")] int mipLevel, [uei.DefaultValue("CubemapFace.Unknown")] CubemapFace face, [uei.DefaultValue("0")] int depthSlice)
+        {
+            SetRenderTargetImpl(rt, mipLevel, face, depthSlice);
+        }
+
+        public static void SetRenderTarget(GraphicsTexture rt, [uei.DefaultValue("0")] int mipLevel, [uei.DefaultValue("CubemapFace.Unknown")] CubemapFace face, [uei.DefaultValue("0")] int depthSlice)
         {
             SetRenderTargetImpl(rt, mipLevel, face, depthSlice);
         }
@@ -913,6 +924,63 @@ namespace UnityEngine
             if (offsets.Length == 0)
                 throw new ArgumentException("empty offsets list passed.", "offsets");
             Internal_BlitMultiTap5(source, dest, mat, offsets, destDepthSlice);
+        }
+
+        //
+        // Blit to GraphicsTexture
+        //
+
+        public static void Blit(Texture source, GraphicsTexture dest)
+        {
+            BlitGfx2(source, dest);
+        }
+
+        public static void Blit(Texture source, GraphicsTexture dest, int sourceDepthSlice, int destDepthSlice)
+        {
+            BlitGfx3(source, dest, sourceDepthSlice, destDepthSlice);
+        }
+
+        public static void Blit(Texture source, GraphicsTexture dest, Vector2 scale, Vector2 offset)
+        {
+            BlitGfx4(source, dest, scale, offset);
+        }
+
+        public static void Blit(Texture source, GraphicsTexture dest, Vector2 scale, Vector2 offset, int sourceDepthSlice, int destDepthSlice)
+        {
+            BlitGfx5(source, dest, scale, offset, sourceDepthSlice, destDepthSlice);
+        }
+
+        public static void Blit(Texture source, GraphicsTexture dest, Material mat, [uei.DefaultValue("-1")] int pass)
+        {
+            Internal_BlitMaterialGfx5(source, dest, mat, pass, true);
+        }
+
+        public static void Blit(Texture source, GraphicsTexture dest, Material mat, int pass, int destDepthSlice)
+        {
+            Internal_BlitMaterialGfx6(source, dest, mat, pass, true, destDepthSlice);
+        }
+
+        public static void Blit(Texture source, GraphicsTexture dest, Material mat)
+        {
+            Blit(source, dest, mat, -1);
+        }
+
+        public static void BlitMultiTap(Texture source, GraphicsTexture dest, Material mat, params Vector2[] offsets)
+        {
+            // in case params were not passed, we will end up with empty array (not null) but our cpp code is not ready for that.
+            // do explicit argument exception instead of potential nullref coming from native side
+            if (offsets.Length == 0)
+                throw new ArgumentException("empty offsets list passed.", "offsets");
+            Internal_BlitMultiTapGfx4(source, dest, mat, offsets);
+        }
+
+        public static void BlitMultiTap(Texture source, GraphicsTexture dest, Material mat, int destDepthSlice, params Vector2[] offsets)
+        {
+            // in case params were not passed, we will end up with empty array (not null) but our cpp code is not ready for that.
+            // do explicit argument exception instead of potential nullref coming from native side
+            if (offsets.Length == 0)
+                throw new ArgumentException("empty offsets list passed.", "offsets");
+            Internal_BlitMultiTapGfx5(source, dest, mat, offsets, destDepthSlice);
         }
     }
 }

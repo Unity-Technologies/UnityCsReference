@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -12,9 +10,13 @@ namespace UnityEngine.UIElements
     public enum BindingUpdateTrigger
     {
         /// <summary>
-        /// Only when a change is detected in the source.
+        /// Only when <see cref="Binding.MarkDirty"/> has been called.
         /// </summary>
         WhenDirty,
+        /// <summary>
+        /// Only when a change is detected in the source or <see cref="Binding.MarkDirty"/> has been called.
+        /// </summary>
+        OnSourceChanged,
         /// <summary>
         /// On every update, regardless of data source changes.
         /// </summary>
@@ -72,10 +74,10 @@ namespace UnityEngine.UIElements
         /// When set to <see langword="true"/>, the binding instance updates during the next update cycle.
         /// When set to <see langword="false"/>, the binding instance updates only if a change is detected.
         /// </summary>
-        public bool isDirty => m_Dirty || updateTrigger == BindingUpdateTrigger.EveryUpdate;
+        public bool isDirty => m_Dirty;
 
         /// <summary>
-        /// When set to <c>EveryUpdate</c>>, the binding instance updates in every update, regardless of the
+        /// When set to <see cref="BindingUpdateTrigger.EveryUpdate"/>, the binding instance updates in every update, regardless of the
         /// data source version.
         /// </summary>
         public BindingUpdateTrigger updateTrigger

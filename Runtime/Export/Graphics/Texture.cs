@@ -53,23 +53,13 @@ namespace UnityEngine
                     return shadowSamplingMode != ShadowSamplingMode.None ? RenderTextureFormat.Shadowmap : RenderTextureFormat.Depth;
                 }
             }
-            // Setter can produce any of these following valid combinations, other combos are invalid. ('depthStencilFormat' untouched unless RTFormat infers a depth-only RT)
-            // graphicsFormat: None                                     depthStencilFormat: a depth-stencil format (D16_UNorm, ...)     <- depth-only RT.
-            // graphicsFormat: a color format (R8G8B8A8_SRGB, ...)      depthStencilFormat: a depth-stencil format (D16_UNorm, ...)     <- color + depth RT.
-            // graphicsFormat: a color format (R8G8B8A8_SRGB, ...)      depthStencilFormat: None                                        <- color-only RT.
             set
             {
-                if (value == RenderTextureFormat.Depth || value == RenderTextureFormat.Shadowmap)
+                if (value == RenderTextureFormat.Shadowmap)
                 {
-                    if (depthStencilFormat == GraphicsFormat.None)
-                    {
-                        RenderTexture.WarnAboutFallbackTo16BitsDepth(value);
-                        depthStencilFormat = GraphicsFormat.D16_UNorm;
-                    }
-                    if (value == RenderTextureFormat.Shadowmap)
-                    {
-                        shadowSamplingMode = ShadowSamplingMode.CompareDepths;
-                    }
+                    shadowSamplingMode = ShadowSamplingMode.CompareDepths;
+                    // 'shadowSamplingMode' must be set immediately as we otherwise are unable to track the fact
+                    // that a Shadowmap was requested. (+ see comment below regarding setting 'graphicsFormat' as well)
                 }
                 // Update 'graphicsFormat' last because it also updates 'depthBufferBits', which relies on the 'colorFormat',
                 // which itself relies on the 'shadowSamplingMode' to make the distinction between RTF.Depth/RTF.Shadowmap.
@@ -83,9 +73,7 @@ namespace UnityEngine
             get { return GraphicsFormatUtility.IsSRGBFormat(graphicsFormat); }
             set
             {
-                graphicsFormat = (value && QualitySettings.activeColorSpace == ColorSpace.Linear
-                    && colorFormat != RenderTextureFormat.R8 && colorFormat != RenderTextureFormat.RG16)
-                    // ^ Maintain parity with old behaviour: respect project color space + do not consider R8_SRGB / R8G8_SRGB.
+                graphicsFormat = (value && QualitySettings.activeColorSpace == ColorSpace.Linear) // Maintain parity with old behavior: respect project color space.
                     ? GraphicsFormatUtility.GetSRGBFormat(graphicsFormat)
                     : GraphicsFormatUtility.GetLinearFormat(graphicsFormat);
             }
@@ -242,7 +230,7 @@ namespace UnityEngine
 
         public RenderTexture(RenderTextureDescriptor desc)
         {
-            ValidateRenderTextureDesc(desc);
+            ValidateRenderTextureDesc(ref desc);
             Internal_Create(this);
             SetRenderTextureDescriptor(desc);
         }
@@ -252,9 +240,10 @@ namespace UnityEngine
             if (textureToCopy == null)
                 throw new ArgumentNullException("textureToCopy");
 
-            ValidateRenderTextureDesc(textureToCopy.descriptor);
+            RenderTextureDescriptor desc = textureToCopy.descriptor;
+            ValidateRenderTextureDesc(ref desc);
             Internal_Create(this);
-            SetRenderTextureDescriptor(textureToCopy.descriptor);
+            SetRenderTextureDescriptor(desc);
         }
 
         [uei.ExcludeFromDocs]
@@ -384,14 +373,17 @@ namespace UnityEngine
         public RenderTextureDescriptor descriptor
         {
             get { return GetDescriptor(); }
-            set { ValidateRenderTextureDesc(value); SetRenderTextureDescriptor(value); }
+            set { ValidateRenderTextureDesc(ref value); SetRenderTextureDescriptor(value); }
         }
 
 
-        private static void ValidateRenderTextureDesc(RenderTextureDescriptor desc)
+        private static void ValidateRenderTextureDesc(ref RenderTextureDescriptor desc)
         {
             if (desc.graphicsFormat == GraphicsFormat.None && desc.depthStencilFormat == GraphicsFormat.None)
-                throw new ArgumentException("RenderTextureDesc graphicsFormat and depthStencilFormat cannot both be None.");
+            {
+                WarnAboutFallbackTo16BitsDepth(desc.colorFormat);
+                desc.depthStencilFormat = GraphicsFormat.D16_UNorm;
+            }
             if (desc.graphicsFormat != GraphicsFormat.None && !SystemInfo.IsFormatSupported(desc.graphicsFormat, GraphicsFormatUsage.Render))
                 throw new ArgumentException("RenderTextureDesc graphicsFormat must be a supported GraphicsFormat. " + desc.graphicsFormat + " is not supported on this platform.", "desc.graphicsFormat");
             if (desc.depthStencilFormat != GraphicsFormat.None && !GraphicsFormatUtility.IsDepthStencilFormat(desc.depthStencilFormat))
@@ -471,7 +463,8 @@ namespace UnityEngine
 
         public static RenderTexture GetTemporary(RenderTextureDescriptor desc)
         {
-            ValidateRenderTextureDesc(desc); desc.createdFromScript = true;
+            ValidateRenderTextureDesc(ref desc);
+            desc.createdFromScript = true;
             return GetTemporary_Internal(desc);
         }
 
@@ -659,6 +652,29 @@ namespace UnityEngine
     {
         public static readonly int GenerateAllMips = -1;
 
+        // In TextureFormat constructors, we eventually need to convert the TextureFormat to a GraphicsFormat
+        // in order to call Internal_Create.
+        // When a GraphicsFormat is obtained (with GetGraphicsFormat), Unity is allowed to choose one that
+        // doesn't necessarily reflect what the user asked (sRGB / Linear) -- this is by design, TextureFormat
+        // should be easy to use, so the GraphicsFormat may indeed be UNorm instead of SRGB in gamma projects.
+        // However, if the Internal_Create only receives colorspace information through the GraphicsFormat,
+        // then the texture does not know what the (CPU) data colorspace really should have been.
+        // The texture then re-uses the GraphicsFormat information, which can cause issues if the user then
+        // converts the texture to an asset.
+        // That is why we separately pass the result of "GetTextureColorSpace" here to Internal_Create,
+        // so that we can have a proper distinction between CPU data colorspace & GPU colorspace.
+        internal TextureColorSpace GetTextureColorSpace(bool linear)
+        {
+            return linear ? TextureColorSpace.Linear : TextureColorSpace.sRGB;
+        }
+
+        // Do not use this in TextureFormat constructors, you would otherwise obtain a TextureColorSpace that
+        // may not reflect what the user asked. Always use the above in TextureFormat constructors instead.
+        internal TextureColorSpace GetTextureColorSpace(GraphicsFormat format)
+        {
+            return GetTextureColorSpace(!GraphicsFormatUtility.IsSRGBFormat(format));
+        }
+
         internal bool ValidateFormat(RenderTextureFormat format)
         {
             if (SystemInfo.SupportsRenderTextureFormat(format))
@@ -767,7 +783,7 @@ namespace UnityEngine
 
 
             if (ValidateFormat(format, width, height))
-                Internal_Create(this, width, height, mipCount, format, flags, nativeTex, !useMipmapLimit, mipmapLimitGroupName);
+                Internal_Create(this, width, height, mipCount, format, GetTextureColorSpace(format), flags, nativeTex, !useMipmapLimit, mipmapLimitGroupName);
         }
 
         [uei.ExcludeFromDocs]
@@ -833,7 +849,7 @@ namespace UnityEngine
                 flags |= TextureCreationFlags.Crunch;
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
-            Internal_Create(this, width, height, mipCount, format, flags, nativeTex, !mipmapLimitDescriptor.useMipmapLimit, mipmapLimitDescriptor.groupName);
+            Internal_Create(this, width, height, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex, !mipmapLimitDescriptor.useMipmapLimit, mipmapLimitDescriptor.groupName);
         }
 
         public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("-1")] int mipCount, [uei.DefaultValue("false")] bool linear)
@@ -877,10 +893,11 @@ namespace UnityEngine
         public Texture2D(int width, int height)
         {
             TextureFormat format = TextureFormat.RGBA32;
+            const bool linear = false;
             if (width == 0 && height == 0)
                 Internal_CreateEmptyImpl(this);
             else if (ValidateFormat(format, width, height))
-                Internal_Create(this, width, height, Texture.GenerateAllMips, GraphicsFormatUtility.GetGraphicsFormat(format, true), TextureCreationFlags.MipChain, IntPtr.Zero, true, null);
+                Internal_Create(this, width, height, Texture.GenerateAllMips, GraphicsFormatUtility.GetGraphicsFormat(format, !linear), GetTextureColorSpace(linear), TextureCreationFlags.MipChain, IntPtr.Zero, true, null);
         }
 
         public static Texture2D CreateExternalTexture(int width, int height, TextureFormat format, bool mipChain, bool linear, IntPtr nativeTex)
@@ -1216,7 +1233,7 @@ namespace UnityEngine
 
             ValidateIsNotCrunched(flags); // Script created Crunched Cubemaps not supported
 
-            Internal_Create(this, width, mipCount, format, flags, IntPtr.Zero);
+            Internal_Create(this, width, mipCount, format, GetTextureColorSpace(format), flags, IntPtr.Zero);
         }
 
         internal Cubemap(int width, TextureFormat textureFormat, int mipCount, IntPtr nativeTex, bool createUninitialized)
@@ -1224,14 +1241,15 @@ namespace UnityEngine
             if (!ValidateFormat(textureFormat, width))
                 return;
 
-            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
+            const bool linear = true;
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags); // Script created Crunched Cubemaps not supported
-            Internal_Create(this, width, mipCount, format, flags, nativeTex);
+            Internal_Create(this, width, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex);
         }
 
         public Cubemap(int width, TextureFormat textureFormat, bool mipChain)
@@ -1370,7 +1388,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags, IntPtr.Zero);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(format), flags, IntPtr.Zero);
         }
 
         [uei.ExcludeFromDocs]
@@ -1389,14 +1407,15 @@ namespace UnityEngine
             if (!ValidateFormat(textureFormat))
                 return;
 
-            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
+            const bool linear = true;
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = (mipCount != 1) ? TextureCreationFlags.MipChain : TextureCreationFlags.None;
             if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
                 flags |= TextureCreationFlags.Crunch;
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags, nativeTex);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(linear), flags, nativeTex);
         }
 
         [uei.ExcludeFromDocs]
@@ -1581,7 +1600,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags, !mipmapLimitDescriptor.useMipmapLimit, mipmapLimitDescriptor.groupName);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(format), flags, !mipmapLimitDescriptor.useMipmapLimit, mipmapLimitDescriptor.groupName);
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear, bool createUninitialized, MipmapLimitDescriptor mipmapLimitDescriptor)
@@ -1596,7 +1615,7 @@ namespace UnityEngine
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, height, depth, mipCount, format, flags, !mipmapLimitDescriptor.useMipmapLimit, mipmapLimitDescriptor.groupName);
+            Internal_Create(this, width, height, depth, mipCount, format, GetTextureColorSpace(linear), flags, !mipmapLimitDescriptor.useMipmapLimit, mipmapLimitDescriptor.groupName);
         }
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, int mipCount, bool linear, bool createUninitialized)
@@ -1719,7 +1738,7 @@ namespace UnityEngine
                 return;
 
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, cubemapCount, mipCount, format, flags);
+            Internal_Create(this, width, cubemapCount, mipCount, format, GetTextureColorSpace(format), flags);
         }
 
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, int mipCount, bool linear, [uei.DefaultValue("false")] bool createUninitialized)
@@ -1734,7 +1753,7 @@ namespace UnityEngine
             if (createUninitialized)
                 flags |= TextureCreationFlags.DontUploadUponCreate | TextureCreationFlags.DontInitializePixels;
             ValidateIsNotCrunched(flags);
-            Internal_Create(this, width, cubemapCount, mipCount, format, flags);
+            Internal_Create(this, width, cubemapCount, mipCount, format, GetTextureColorSpace(linear), flags);
         }
 
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, int mipCount, bool linear)
@@ -1874,7 +1893,7 @@ namespace UnityEngine
             if (!ValidateSize(width, height, format))
                 return;
 
-            Internal_Create(this, width, height, format, mipCount);
+            Internal_Create(this, width, height, format, GetTextureColorSpace(format), mipCount);
         }
 
         [uei.ExcludeFromDocs]
@@ -1911,7 +1930,7 @@ namespace UnityEngine
             if (!ValidateSize(width, height, format))
                 return;
 
-            Internal_Create(this, width, height, format, mipCount);
+            Internal_Create(this, width, height, format, GetTextureColorSpace(linear), mipCount);
         }
     }
 }

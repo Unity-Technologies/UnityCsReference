@@ -9,7 +9,7 @@ using UnityEngine.Assertions;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// An instance of this class holds a tree of `VisualElementAsset`s, created from a UXML file. Each node in the file corresponds to a `VisualElementAsset`. You can clone a `VisualTreeAsset` to create a tree of `VisualElement`s.
+    /// An instance of this class holds a tree of `VisualElementAsset's`, created from a UXML file. Each node in the file corresponds to a `VisualElementAsset`. You can clone a `VisualTreeAsset` to create a tree of `VisualElement's`.
     ///
     /// **Note**: You can't generate a `VisualTreeAsset` from raw UXML at runtime.
     /// </summary>
@@ -617,7 +617,7 @@ namespace UnityEngine.UIElements
         /// Build a tree of VisualElements from the asset.
         /// </summary>
         /// <remarks>
-        /// This function will be deprecated. Use <see cref="VisualElement.Instantiate"/> instead.
+        /// This function will be deprecated. Use <see cref="VisualTreeAsset.Instantiate"/> instead.
         /// </remarks>
         /// <returns>The root of the tree of VisualElements that was just cloned.</returns>
         public TemplateContainer CloneTree()
@@ -631,7 +631,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="bindingPath">The path to the property that you want to bind to the root of the cloned tree.</param>
         /// <remarks>
-        /// This function will be deprecated. Use <see cref="VisualElement.Instantiate"/> instead.
+        /// This function will be deprecated. Use <see cref="VisualTreeAsset.Instantiate"/> instead.
         /// </remarks>
         /// <returns>The root of the tree of VisualElements that was just cloned.</returns>
         public TemplateContainer CloneTree(string bindingPath)

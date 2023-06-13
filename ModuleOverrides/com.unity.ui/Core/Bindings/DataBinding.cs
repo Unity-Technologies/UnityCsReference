@@ -184,7 +184,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public DataBinding()
         {
-            updateTrigger = BindingUpdateTrigger.WhenDirty;
+            updateTrigger = BindingUpdateTrigger.OnSourceChanged;
         }
 
         /// <summary>

@@ -30,6 +30,7 @@ namespace UnityEditor
         bool HasPreviewGUI();
         GUIContent GetPreviewTitle();
         void DrawPreview(Rect previewArea);
+        VisualElement CreatePreview(VisualElement container);
         void OnPreviewGUI(Rect r, GUIStyle background);
         void OnInteractivePreviewGUI(Rect r, GUIStyle background);
         void OnPreviewSettings();
@@ -101,23 +102,35 @@ namespace UnityEditor
             return false;
         }
 
+        public virtual VisualElement CreatePreview(VisualElement inspectorPreviewWindow)
+        {
+            return null;
+        }
+
         public virtual GUIContent GetPreviewTitle()
         {
             GUIContent guiContent = new GUIContent();
+            guiContent.text = GetPreviewTitleString();
+            return guiContent;
+        }
+
+        string GetPreviewTitleString()
+        {
+            string title = String.Empty;
             if (m_Targets.Length == 1)
-                guiContent.text = target.name;
+                title = target.name;
             else
             {
-                guiContent.text = m_Targets.Length + " ";
+                title = m_Targets.Length + " ";
                 if (NativeClassExtensionUtilities.ExtendsANativeType(target))
-                    guiContent.text += MonoScript.FromScriptedObject(target).GetClass().Name;
+                    title += MonoScript.FromScriptedObject(target).GetClass().Name;
                 else
-                    guiContent.text += ObjectNames.NicifyVariableName(ObjectNames.GetClassName(target));
+                    title += ObjectNames.NicifyVariableName(ObjectNames.GetClassName(target));
 
-                guiContent.text += "s";
+                title += "s";
             }
 
-            return guiContent;
+            return title;
         }
 
         public virtual void OnPreviewGUI(Rect r, GUIStyle background)
@@ -1301,6 +1314,11 @@ namespace UnityEditor
         public virtual bool HasPreviewGUI()
         {
             return preview.HasPreviewGUI();
+        }
+
+        public virtual VisualElement CreatePreview(VisualElement inspectorPreviewWindow)
+        {
+            return preview.CreatePreview(inspectorPreviewWindow);
         }
 
         // Override this method if you want to change the label of the Preview area.

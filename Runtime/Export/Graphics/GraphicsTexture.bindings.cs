@@ -17,6 +17,14 @@ using UnityEngine.Profiling;
 
 namespace UnityEngine.Rendering
 {
+    [Flags]
+    public enum GraphicsTextureDescriptorFlags
+    {
+        None = 0,
+        RenderTarget = 1 << 0,
+        RandomWriteTarget = 1 << 1
+    };
+
     [NativeHeader("Runtime/Export/Graphics/GraphicsTexture.bindings.h")]
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
@@ -28,10 +36,13 @@ namespace UnityEngine.Rendering
         public int depth;
         public int arrayLength;
         public GraphicsFormat format;
-        public int mipCount;
         public TextureDimension dimension;
+        public int mipCount;
+        public int numSamples;
+        public GraphicsTextureDescriptorFlags flags;
     };
 
+    // Keep in sync with GraphicsTextureState in GraphicsTexture.bindings.h
     [NativeType("Runtime/Export/Graphics/GraphicsTexture.bindings.h")]
     [UsedByNativeCode]
     public enum GraphicsTextureState
@@ -97,6 +108,10 @@ namespace UnityEngine.Rendering
             [FreeFunction("GraphicsTexture_Bindings::GetState", HasExplicitThis = true, IsThreadSafe = true)]
             get;
         }
+
+        [FreeFunction("GraphicsTexture_Bindings::GetActive")] extern private static GraphicsTexture GetActive();
+        [FreeFunction("RenderTextureScripting::SetActive")] extern private static void SetActive(GraphicsTexture target);
+        public static GraphicsTexture active { get { return GetActive(); } set { SetActive(value); } }
 
         // --------------------------------------------------------------------
         // Bindings

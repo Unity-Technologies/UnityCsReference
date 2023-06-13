@@ -94,20 +94,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreCache m_AssetStoreCache;
         [NonSerialized]
         private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
+        [NonSerialized]
+        private LocalInfoHandler m_LocalInfoHandler;
         public void ResolveDependencies(AssetStoreUtils assetStoreUtils,
             AssetStoreRestAPI assetStoreRestAPI,
             AssetStoreCache assetStoreCache,
-            AssetStoreCachePathProxy assetStoreCachePathProxy)
+            AssetStoreCachePathProxy assetStoreCachePathProxy,
+            LocalInfoHandler localInfoHandler)
         {
             m_AssetStoreUtils = assetStoreUtils;
             m_AssetStoreRestAPI = assetStoreRestAPI;
             m_AssetStoreCache = assetStoreCache;
             m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
+            m_LocalInfoHandler = localInfoHandler;
         }
 
-        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCache assetStoreCache, AssetStoreCachePathProxy assetStoreCachePathProxy, long productId, string oldPath)
+        public AssetStoreDownloadOperation(AssetStoreUtils assetStoreUtils, AssetStoreRestAPI assetStoreRestAPI, AssetStoreCache assetStoreCache, AssetStoreCachePathProxy assetStoreCachePathProxy, LocalInfoHandler localInfoHandler, long productId, string oldPath)
         {
-            ResolveDependencies(assetStoreUtils, assetStoreRestAPI, assetStoreCache, assetStoreCachePathProxy);
+            ResolveDependencies(assetStoreUtils, assetStoreRestAPI, assetStoreCache, assetStoreCachePathProxy, localInfoHandler);
 
             m_ProductId = productId;
             m_ProductOldPath = oldPath;
@@ -119,6 +123,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 case "ok":
                     state = DownloadState.Completed;
+                    m_LocalInfoHandler.UpdateExtraInfoInCacheIfNeeded(m_ProductNewPath, downloadInfo);
                     onOperationSuccess?.Invoke(this);
                     onOperationFinalized?.Invoke(this);
                     break;

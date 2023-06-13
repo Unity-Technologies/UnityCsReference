@@ -457,6 +457,16 @@ namespace UnityEditor.Overlays
             return 0;
         }
 
+        internal VisualElement GetSimpleHeader()
+        {
+            var header = new VisualElement();
+            var title = new Label(displayName);
+            title.name = headerTitle;
+            header.Add(title);
+
+            return header;
+        }
+
         // Rebuild the Overlay contents, taking into account the container and layout. If the container does not support
         // the requested layout, the overlay will be collapsed (the collapsed property will not be modified, and the
         // next time RebuildContent is invoked this method will try again to build the requested layout and un-collapse

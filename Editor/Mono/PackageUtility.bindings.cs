@@ -52,6 +52,9 @@ namespace UnityEditor
 
         [FreeFunction]
         internal static extern PackageInfo[] GetPackageList();
+
+        [FreeFunction]
+        internal static extern PackageInfo GetPackageInfo(string packagePath);
     }
 
     [NativeHeader("Editor/Mono/PackageUtility.bindings.h")]

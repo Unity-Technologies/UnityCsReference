@@ -264,6 +264,8 @@ namespace UnityEditor.Overlays
             return null;
         }
 
+        //Used by tests
+        internal bool m_MouseInCurrentCanvas = false;
         OverlayMenu m_Menu;
         internal string lastAppliedPresetName => m_LastAppliedPresetName;
         List<Overlay> m_Overlays = new List<Overlay>();
@@ -307,6 +309,8 @@ namespace UnityEditor.Overlays
         internal IEnumerable<Overlay> overlays => m_Overlays.AsReadOnly();
 
         internal IEnumerable<Overlay> transientOverlays => m_TransientOverlays;
+
+        OverlayPopup m_PopupOverlay;
 
         VisualElement m_WindowRoot;
         internal VisualElement windowRoot => m_WindowRoot;
@@ -418,17 +422,31 @@ namespace UnityEditor.Overlays
         {
             //this is used to clamp overlays to floating container bounds.
             floatingContainer.RegisterCallback<GeometryChangedEvent>(GeometryChanged);
+            rootVisualElement.RegisterCallback<MouseEnterEvent>(OnMouseEnter);
+            rootVisualElement.RegisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
 
         void OnDetachedFromPanel(DetachFromPanelEvent evt)
         {
             floatingContainer.UnregisterCallback<GeometryChangedEvent>(GeometryChanged);
+            rootVisualElement.UnregisterCallback<MouseEnterEvent>(OnMouseEnter);
+            rootVisualElement.UnregisterCallback<MouseLeaveEvent>(OnMouseLeave);
         }
 
         internal void OnContainerWindowDisabled()
         {
             foreach (var overlay in m_Overlays)
                 overlay.OnWillBeDestroyed();
+        }
+
+        void OnMouseEnter(MouseEnterEvent evt)
+        {
+            m_MouseInCurrentCanvas = true;
+        }
+
+        void OnMouseLeave(MouseLeaveEvent evt)
+        {
+            m_MouseInCurrentCanvas = false;
         }
 
         internal Rect ClampToOverlayWindow(Rect rect)
@@ -499,7 +517,7 @@ namespace UnityEditor.Overlays
         internal void ShowMenu(bool show, bool atMousePosition = true)
         {
             if (show && !menuVisible)
-                menu.Show(atMousePosition);
+                menu.Show(atMousePosition && m_MouseInCurrentCanvas);
             else if (!show)
                 menu.Hide();
         }
@@ -683,6 +701,49 @@ namespace UnityEditor.Overlays
             root.UnregisterCallback<MouseLeaveEvent>(OnMouseLeaveOverlay);
             root.RemoveFromHierarchy();
             return true;
+        }
+
+        public void CreateOverlayPopup<T>() where T : Overlay, new()
+        {
+            if (m_PopupOverlay != null)
+            {
+                ClosePopupOverlay();
+                return;
+            }
+
+            if (!m_MouseInCurrentCanvas)
+                return;
+
+            var overlay = new T();
+            // OnCreated must be invoked before contents are requested for the first time
+            overlay.OnCreated();
+            overlay.displayed = false;
+
+            m_PopupOverlay = new OverlayPopup(this, overlay);
+            m_PopupOverlay.RegisterCallback<FocusOutEvent>(evt =>
+            {
+                if (evt.relatedTarget is VisualElement target && (m_PopupOverlay == target || m_PopupOverlay.Contains(target)))
+                    return;
+
+                // When the new focus is an embedded IMGUIContainer or popup window, give focus back to the modal
+                // popup so that the next focus out event has the opportunity to close the element.
+                if (evt.relatedTarget == null && m_PopupOverlay.containsCursor)
+                    EditorApplication.delayCall += m_PopupOverlay.Focus;
+                else
+                {
+                    ClosePopupOverlay();
+                    overlay.OnWillBeDestroyed();
+                }
+            });
+
+            rootVisualElement.Add(m_PopupOverlay);
+            m_PopupOverlay.Focus();
+        }
+
+        void ClosePopupOverlay()
+        {
+            m_PopupOverlay?.RemoveFromHierarchy();
+            m_PopupOverlay = null;
         }
 
         // AddOverlay just registers the Overlay with Canvas. It does not init save data or add to a valid container.

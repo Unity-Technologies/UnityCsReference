@@ -13,14 +13,6 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/GI/InteractiveLightBaking.Bindings.h")]
     internal class InteractiveLightBaking
     {
-        public struct InteractiveLightProbeData
-        {
-            public UInt32 numProbes;
-            public Vector3[] positions;
-            public SphericalHarmonicsL2[] bakedCoefficients;
-            // @TODO: Add probe occlusion binding
-        }
-
         public struct InteractiveLightmapData
         {
             public Int32 numLightmaps;
@@ -44,8 +36,6 @@ namespace UnityEditor
             }
         }
 
-        [FreeFunction]
-        public static extern InteractiveLightProbeData GetLightProbeData();
         [FreeFunction]
         public static extern InteractiveLightmapData GetLightmapData();
         [FreeFunction]

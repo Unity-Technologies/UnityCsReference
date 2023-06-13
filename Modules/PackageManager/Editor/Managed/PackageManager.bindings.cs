@@ -100,12 +100,6 @@ namespace UnityEditor.PackageManager
         public static extern PackageInfo[] GetAllRegisteredPackages();
         public static extern bool IsPackageRegistered(string name);
 
-        [NativeName("GetPredefinedPackageTypes")]
-        internal static extern string[] GetPredefinedPackageTypes();
-
-        [NativeName("GetPredefinedHiddenByDefaultPackageTypes")]
-        internal static extern string[] GetPredefinedHiddenByDefaultPackageTypes();
-
         [NativeName("GetPackageByAssetPathFromScript")]
         private static extern PackageInfo[] GetPackageByAssetPath(string assetPath);
 

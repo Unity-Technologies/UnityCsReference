@@ -87,7 +87,6 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Baked UV Charts"),
                 EditorGUIUtility.TrTextContent("Baked Texel Validity"),
                 EditorGUIUtility.TrTextContent("Baked UV Overlap"),
-                EditorGUIUtility.TrTextContent("Baked Lightmap Culling")
             };
 
             public static readonly GUIStyle PreviewLabel = new GUIStyle(EditorStyles.whiteLabel);
@@ -484,15 +483,16 @@ namespace UnityEditor
                 }
             }
 
+            const bool useInteractiveLightBakingData = false;
             Hash128 contentHash = isRealtimeLightmap ? LightmapVisualizationUtility.GetRealtimeGITextureHash(m_RealtimeTextureHash, textureType) :
-                LightmapVisualizationUtility.GetBakedGITextureHash(m_LightmapIndex, m_InstanceID, textureType);
+                LightmapVisualizationUtility.GetBakedGITextureHash(m_LightmapIndex, m_InstanceID, textureType, useInteractiveLightBakingData);
 
             // if we need to fetch a new texture
             if (m_CachedTexture.texture == null || m_CachedTexture.type != textureType || m_CachedTexture.contentHash != contentHash || m_CachedTexture.contentHash == new Hash128())
             {
                 m_CachedTexture = isRealtimeLightmap ?
                     LightmapVisualizationUtility.GetRealtimeGITexture(m_RealtimeTextureHash, textureType) :
-                    LightmapVisualizationUtility.GetBakedGITexture(m_LightmapIndex, m_InstanceID, textureType);
+                    LightmapVisualizationUtility.GetBakedGITexture(m_LightmapIndex, m_InstanceID, textureType, useInteractiveLightBakingData);
             }
 
             if (!m_ShowUVOverlay)

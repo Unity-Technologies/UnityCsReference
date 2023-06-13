@@ -175,7 +175,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Removes this child from the hierarchy
+        /// Removes this child from the <see cref="contentContainer"/> <see cref="hierarchy"/>.
         /// </summary>
         public void Remove(VisualElement element)
         {
@@ -508,8 +508,12 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Removes this child from the hierarchy
+            /// Removes this child from the hierarchy.
             /// </summary>
+            /// <remarks>
+            /// This method will first calculate the index of the child, followed by calling the <see cref="RemoveAt(int)"/> method to remove it from the hierarchy.
+            /// If the element is null or not present in the hierarchy, an exception will be thrown.
+            /// </remarks>
             public void Remove(VisualElement child)
             {
                 if (child == null)
@@ -525,6 +529,11 @@ namespace UnityEngine.UIElements
             /// <summary>
             /// Remove the child element located at this position from this element's contentContainer
             /// </summary>
+            /// <remarks>
+            /// Removes the element from both the child list and the layout list.
+            /// If the index is out of range, an exception will be thrown.
+            /// Trying to remove an element during a layout pass will trigger an invalid operation exception to prevent unintended consequences.
+            /// </remarks>
             public void RemoveAt(int index)
             {
                 if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)

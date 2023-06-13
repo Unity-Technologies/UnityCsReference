@@ -87,7 +87,6 @@ namespace UnityEditor.AI
 
         internal static void SetupLegacyNavigationWindow()
         {
-            NavMeshEditorWindow.SetupWindow();
         }
     }
 }

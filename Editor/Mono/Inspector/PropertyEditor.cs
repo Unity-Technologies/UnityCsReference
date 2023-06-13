@@ -56,6 +56,10 @@ namespace UnityEditor
         protected const string s_HeaderInfoClassName = "unity-inspector-header-info";
         protected const string s_FooterInfoClassName = "unity-inspector-footer-info";
         internal const string s_MainContainerClassName = "unity-inspector-main-container";
+        protected const string s_PreviewContainer = "preview-container";
+        protected const string s_Footer = "footer";
+        protected const string s_dragline = "unity-dragline";
+        protected const string s_draglineAnchor = "unity-dragline-anchor";
 
         protected const float kBottomToolbarHeight = 21f;
         protected const float kAddComponentButtonHeight = 45f;
@@ -66,6 +70,10 @@ namespace UnityEditor
         protected const int k_MinimumRootVisualHeight = 81;
         protected const int k_MinimumWindowWidth = 275;
         protected const int k_AutoScrollZoneHeight = 24;
+        const float m_PreviewDefaultHeight = 200;
+        const float m_PreviewMinHeight = 20;
+
+        float m_CachedPreviewHeight = m_PreviewDefaultHeight;
 
         protected const long delayRepaintWhilePlayingAnimation = 150; // Delay between repaints in milliseconds while playing animation
         protected long m_LastUpdateWhilePlayingAnimation = 0;
@@ -125,7 +133,7 @@ namespace UnityEditor
         protected bool m_PreviousPreviewExpandedState;
         protected bool m_HasPreview;
         protected HashSet<int> m_DrawnSelection = new HashSet<int>();
-
+        internal bool hasFloatingPreviewWindow { get; set; }
         readonly List<Type> m_EditorTargetTypes = new List<Type>();
 
         List<DataMode> m_SupportedDataModes = new(4);
@@ -301,6 +309,7 @@ namespace UnityEditor
             editorDragging = new EditorDragging(this);
             minSize = new Vector2(k_MinimumWindowWidth, minSize.y);
             m_EditorElementUpdater = new EditorElementUpdater(this);
+            hasFloatingPreviewWindow = false;
         }
 
         [UsedImplicitly]
@@ -352,6 +361,7 @@ namespace UnityEditor
         [UsedImplicitly]
         protected virtual void OnDisable()
         {
+            hasFloatingPreviewWindow = false;
             ClearPreviewables();
 
             // save vertical scroll position
@@ -410,6 +420,8 @@ namespace UnityEditor
             // Check if scripts have changed without calling set dirty
             tracker.VerifyModifiedMonoBehaviours();
             InspectorUtility.DirtyLivePropertyChanges(tracker);
+            if(previewWindow != null)
+                UpdateLabel(previewWindow);
 
             if (!tracker.isDirty || !ReadyToRepaint())
                 return;
@@ -1099,12 +1111,60 @@ namespace UnityEditor
                 }));
             }
 
+            if(m_SplitView == null)
+                m_SplitView = rootVisualElement.Q<TwoPaneSplitView>();
+
+            ClearPreview();
+
             if (m_PreviewResizer != null && editors.Any())
             {
-                var previewAndLabelsContainer = CreateIMGUIContainer(DrawPreviewAndLabels, "preview-container");
-                m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
-                if (previewAndLabelElement != null)
-                    previewAndLabelElement.Add(previewAndLabelsContainer);
+                if (previewAndLabelElement != null && !hasFloatingPreviewWindow)
+                {
+                    VisualElement previewItem = null;
+                        CreatePreviewables();
+                        IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
+                        m_cachedPreviewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
+
+                        if (m_cachedPreviewEditor != null && m_cachedPreviewEditor.HasPreviewGUI())
+                        {
+                            if (previewWindow == null)
+                                previewWindow = new InspectorPreviewWindow();
+
+                            preview = m_SplitView.Q(s_PreviewContainer);
+                            IStyle style = preview.style;
+                            style.minHeight = m_PreviewMinHeight;
+                            previewItem = m_cachedPreviewEditor.CreatePreview(previewWindow);
+
+                            if (previewItem != null)
+                            {
+                                // Temporary naming while in transition to UITK
+                                InitUITKPreview();
+                            }
+
+                            // IMGUI fallback if no UITK preview found
+                            if (previewItem == null)
+                            {
+                                var previewAndLabelsContainer =
+                                    CreateIMGUIContainer(DrawPreviewAndLabels, s_PreviewContainer);
+                                m_PreviewResizer.SetContainer(previewAndLabelsContainer, kBottomToolbarHeight);
+                                previewAndLabelElement.Add(previewAndLabelsContainer);
+
+                                if (preview == null)
+                                    m_SplitView.Add(previewAndLabelElement);
+                            }
+                            else
+                            {
+                                preview = m_SplitView.Q(s_PreviewContainer);
+                                preview.Add(previewWindow);
+                            }
+                        }
+                }
+                // Footer
+                if (previewAndLabelElement?.childCount == 0)
+                {
+                    var footerContainer = CreateIMGUIContainer(DrawFooter, s_Footer);
+                    previewAndLabelElement.Add(footerContainer);
+                }
             }
 
             k_CreateInspectorElements.Begin();
@@ -1127,6 +1187,153 @@ namespace UnityEditor
             EndRebuildContentContainers();
             Repaint();
             RefreshTitle();
+        }
+
+        void ClearPreview()
+        {
+            if (m_Previews == null)
+            {
+                if (m_SplitView?.fixedPane?.resolvedStyle != null)
+                {
+                    float height = m_SplitView.fixedPane.resolvedStyle.height;
+                    if(height != 0 && height != m_PreviewMinHeight)
+                        m_CachedPreviewHeight = height;
+                }
+
+                UpdatePreviewHeight(0);
+
+                m_cachedPreviewEditor = null;
+
+                if(preview?.childCount > 0 && previewWindow != null && preview.Q(previewWindow.name) != null)
+                    preview.Remove(previewWindow);
+
+                var footer = previewAndLabelElement?.Q(s_Footer);
+                if(previewAndLabelElement?.childCount > 0 && footer != null)
+                    previewAndLabelElement.Remove(footer);
+            }
+        }
+
+        void InitUITKPreview()
+        {
+            // Toolbar
+            PrepareToolbar(previewWindow);
+            UpdateLabel(previewWindow);
+
+            // Dragline
+            m_SplitView.AddToClassList(InspectorPreviewWindow.Styles.ussClassName);
+            var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
+            var dragline = draglineAnchor.Q(s_dragline);
+            dragline.style.height = m_PreviewMinHeight;
+            dragline.RegisterCallback<GeometryChangedEvent>(e =>
+                OnDraglineGeometryChange(previewWindow, dragline));
+
+            draglineAnchor.RegisterCallback<PointerUpEvent>(OnDragLineChange);
+            UpdatePreviewHeight(m_CachedPreviewHeight);
+
+            // IMGUI Preview
+            VisualElement previewPane = previewWindow.GetPreviewPane();
+            if (previewPane.childCount == 0)
+            {
+                var previewAndLabelsContainer =
+                    CreateIMGUIContainer(() => DrawPreview(m_cachedPreviewEditor), "preview");
+                previewPane.Add(previewAndLabelsContainer);
+            }
+        }
+
+        private void OnDraglineGeometryChange(VisualElement window, VisualElement dragline)
+        {
+            if (window == null)
+                return;
+
+            var header = window.Q(InspectorPreviewWindow.Styles.headerName);
+            var toolbar = header?.Q(InspectorPreviewWindow.Styles.toolbarName);
+            var ellipsisMenu = header?.Q(InspectorPreviewWindow.Styles.elipsisMenuName);
+            float margin = dragline.resolvedStyle.marginRight;
+
+            if (header != null && toolbar != null && ellipsisMenu != null)
+            {
+                margin = toolbar.resolvedStyle.width + ellipsisMenu.resolvedStyle.width;
+            }
+
+            dragline.style.marginRight = margin;
+        }
+
+        private IPreviewable m_cachedPreviewEditor;
+
+        internal void PrepareToolbar(InspectorPreviewWindow toolbar, bool isFloatingPreviewWindow = false)
+        {
+            IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
+            IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
+
+            if(!isFloatingPreviewWindow)
+                CreatePreviewEllipsisMenu(toolbar, this);
+        }
+
+        internal void UpdateLabel(InspectorPreviewWindow toolbar)
+        {
+            IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
+            IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
+
+            string label;
+            if (previewEditor != null && previewEditor.HasPreviewGUI())
+            {
+                string userDefinedTitle = previewEditor.GetPreviewTitle().text;
+                label = !String.IsNullOrEmpty(userDefinedTitle)? userDefinedTitle :  Styles.preTitle.text;
+            }
+            else
+            {
+                label = Styles.labelTitle.text;
+            }
+
+            var header = toolbar?.Q(InspectorPreviewWindow.Styles.headerName);
+            if (header?.Q(InspectorPreviewWindow.Styles.titleName) is Label labelElement)
+            {
+                labelElement.text = label;
+            }
+        }
+
+        public bool showingPreview => m_SplitView?.fixedPane?.resolvedStyle.height > m_PreviewMinHeight;
+
+        void UpdatePreviewHeight(float newHeight)
+        {
+            var draglineAnchor = m_SplitView?.Q(s_draglineAnchor);
+
+            if (draglineAnchor != null && m_SplitView.fixedPane != null)
+            {
+                m_SplitView.fixedPane.style.height = newHeight;
+                m_SplitView.fixedPaneDimension = newHeight;
+                draglineAnchor.style.top = m_SplitView.resolvedStyle.height - newHeight;
+            }
+        }
+
+        private void OnDragLineChange(PointerUpEvent evt)
+        {
+            var previewHeight = m_SplitView.fixedPane.resolvedStyle.height;
+            var isSingleClick = (previewHeight == m_CachedPreviewHeight || previewHeight == m_PreviewMinHeight)
+                                && Math.Abs(m_SplitView.m_Resizer.delta) <= 5;
+
+            if (isSingleClick && evt.button == (int) MouseButton.LeftMouse)
+            {
+                ExpandCollapsePreview();
+                return;
+            }
+
+            if (!showingPreview) return;
+            m_CachedPreviewHeight = previewHeight;
+        }
+
+        internal void ExpandCollapsePreview()
+        {
+            if (showingPreview)
+            {
+                m_CachedPreviewHeight = m_SplitView.fixedPane.resolvedStyle.height;
+                UpdatePreviewHeight(m_PreviewMinHeight);
+                m_CachedPreviewHeight = m_PreviewMinHeight;
+            }
+            else
+            {
+                UpdatePreviewHeight(m_CachedPreviewHeight);
+            }
         }
 
         internal void AutoScroll(Vector2 mousePosition)
@@ -1348,6 +1555,11 @@ namespace UnityEditor
 
         protected virtual bool BeginDrawPreviewAndLabels() { return true; }
         protected virtual void EndDrawPreviewAndLabels(Event evt, Rect rect, Rect dragRect) {}
+        protected virtual void CreatePreviewEllipsisMenu(InspectorPreviewWindow window, PropertyEditor editor) {}
+
+        TwoPaneSplitView m_SplitView = null;
+        VisualElement preview = null;
+        internal InspectorPreviewWindow previewWindow = null;
         private void DrawPreviewAndLabels()
         {
             CreatePreviewables();
@@ -1380,17 +1592,16 @@ namespace UnityEditor
                 GUILayout.FlexibleSpace();
                 dragRect = GUILayoutUtility.GetLastRect();
 
-                // The label rect is also needed to know which area should be draggable.
-                GUIContent title;
-                if (m_HasPreview)
-                {
-                    GUIContent userDefinedTitle = previewEditor.GetPreviewTitle();
-                    title = userDefinedTitle ?? Styles.preTitle;
-                }
-                else
-                {
-                    title = Styles.labelTitle;
-                }
+            GUIContent title;
+            if (m_HasPreview)
+            {
+                GUIContent userDefinedTitle = previewEditor.GetPreviewTitle();
+                title = userDefinedTitle ?? Styles.preTitle;
+            }
+            else
+            {
+                title = Styles.labelTitle;
+            }
 
                 dragIconRect.x = dragRect.x + dragPadding;
                 dragIconRect.y = dragRect.y + (kBottomToolbarHeight - Styles.dragHandle.fixedHeight) / 2;
@@ -1503,27 +1714,11 @@ namespace UnityEditor
                 // Draw preview
                 if (m_HasPreview)
                 {
-                    var previewRect = GUILayoutUtility.GetRect(0, 10240, 64, 10240);
-                    if (!float.IsNaN(previewRect.height) && !float.IsNaN(previewRect.width))
-                    {
-                        previewEditor.DrawPreview(previewRect);
-                    }
+                    DrawPreview(previewEditor);
                 }
 
-                GUILayout.BeginVertical(Styles.footer);
-                if (hasLabels)
-                {
-                    using (new EditorGUI.DisabledScope(assets.Any(a => EditorUtility.IsPersistent(a) && !Editor.IsAppropriateFileOpenForEdit(a))))
-                    {
-                        m_LabelGUI.OnLabelGUI(assets);
-                    }
-                }
+                DrawFooter();
 
-                if (hasBundleName)
-                {
-                    m_AssetBundleNameGUI.OnAssetBundleNameGUI(assets);
-                }
-                GUILayout.EndVertical();
             }
             GUILayout.EndVertical();
 
@@ -1534,6 +1729,47 @@ namespace UnityEditor
 
             m_PreviousFooterHeight = previewSize;
             m_PreviousPreviewExpandedState = m_PreviewResizer.GetExpanded();
+        }
+
+        private void DrawPreview(IPreviewable editor)
+        {
+            var previewRect = GUILayoutUtility.GetRect(0, 10240, 64, 10240);
+            if (!float.IsNaN(previewRect.height) && !float.IsNaN(previewRect.width))
+            {
+                editor.DrawPreview(previewRect);
+            }
+        }
+
+        private void DrawFooter()
+        {
+            Object[] assets = GetInspectedAssets();
+            bool hasLabels = assets.Length > 0;
+            bool hasBundleName = assets.Any(a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
+
+            IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
+            IPreviewable previewEditor = GetEditorThatControlsPreview(editorsWithPreviews);
+
+            if (previewEditor == null || !previewEditor.HasPreviewGUI())
+            {
+                GUILayout.BeginVertical(Styles.footer);
+                GUILayout.Label(Styles.labelTitle, Styles.preToolbarLabel);
+                GUILayout.EndVertical();
+            }
+
+            GUILayout.BeginVertical(Styles.footer);
+            if (hasLabels)
+            {
+                using (new EditorGUI.DisabledScope(assets.Any(a => EditorUtility.IsPersistent(a) && !Editor.IsAppropriateFileOpenForEdit(a))))
+                {
+                    m_LabelGUI.OnLabelGUI(assets);
+                }
+            }
+
+            if (hasBundleName)
+            {
+                m_AssetBundleNameGUI.OnAssetBundleNameGUI(assets);
+            }
+            GUILayout.EndVertical();
         }
 
         private void OnPreviewSelected(object userData, string[] options, int selected)

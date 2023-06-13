@@ -210,7 +210,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Sets the value of a property at the given path to the given value, using this converter group or the global ones.
+        /// Sets the value of a property at the given path to the given value, using the global converters.
         /// </summary>
         /// <remarks>
         /// This method isn't thread-safe.

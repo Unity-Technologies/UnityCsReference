@@ -109,7 +109,12 @@ namespace UnityEngine
         }
 
         [NativeName("AutoGenerate")]
-        public extern bool autoGenerate { get; set; }
+        [Obsolete("LightingSettings.autoGenerate is obsolete.", false)]
+        public bool autoGenerate
+        {
+            get { return false; }
+            set { }
+        }
 
         [NativeName("MixedBakeMode")]
         public extern MixedLightingMode mixedBakeMode { get; set; }

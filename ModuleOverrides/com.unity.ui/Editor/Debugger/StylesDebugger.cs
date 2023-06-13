@@ -14,6 +14,7 @@ using UnityEngine;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements;
 using Cursor = UnityEngine.UIElements.Cursor;
+using UnityEngine.UIElements.Layout;
 
 namespace UnityEditor.UIElements.Debugger
 {
@@ -22,7 +23,6 @@ namespace UnityEditor.UIElements.Debugger
         private DebuggerSelection m_DebuggerSelection;
         private ScrollView m_ScrollView;
         private BoxModelView m_BoxModelView;
-        private IMGUIContainer m_IMGUIStylesDebugger;
         private StylePropertyDebugger m_StylePropertyDebugger;
 
         private IPanelDebug m_PanelDebug;
@@ -43,11 +43,16 @@ namespace UnityEditor.UIElements.Debugger
                 m_SelectedElementUxml = null;
                 m_ClassList = null;
 
-                m_IMGUIStylesDebugger.IncrementVersion(VersionChangeType.Layout);
-                GetElementMatchers();
-
-                m_StylePropertyDebugger.SetMatchRecords(m_SelectedElement, m_MatchedRulesExtractor.matchRecords);
+                this.Query<IMGUIContainer>().ForEach( i => i.IncrementVersion(VersionChangeType.Layout));
+                UpdateMatchs();
             }
+        }
+
+        //Used by StylePropertyDebugger to return to a "not Inline" style
+        public void UpdateMatchs()
+        {
+            GetElementMatchers();
+            m_StylePropertyDebugger.SetMatchRecords(m_SelectedElement, m_MatchedRulesExtractor.matchRecords);
         }
 
         public StylesDebugger(DebuggerSelection debuggerSelection)
@@ -60,15 +65,29 @@ namespace UnityEditor.UIElements.Debugger
             selectedElement = m_DebuggerSelection.element;
 
             m_ScrollView = new ScrollView();
+            m_ScrollView.StretchToParentSize();
 
+            Foldout layoutInfo = new() { text = "Layout", viewDataKey = "layoutInfo"};
+            layoutInfo.contentContainer.style.flexDirection = FlexDirection.Row;
+            layoutInfo.contentContainer.style.flexWrap = Wrap.Wrap;
+            layoutInfo.contentContainer.style.alignItems = Align.Center;
+            layoutInfo.contentContainer.style.alignContent = Align.Center;
+            layoutInfo.contentContainer.style.justifyContent = Justify.SpaceAround;
             m_BoxModelView = new BoxModelView();
-            m_ScrollView.Add(m_BoxModelView);
+            layoutInfo.Add(m_BoxModelView);
+            layoutInfo.Add(new IMGUIContainer(DrawLayoutInfo) { style = { flexShrink = 0, minWidth = 420 } });
+            m_ScrollView.Add(layoutInfo);
 
-            m_IMGUIStylesDebugger = new IMGUIContainer(OnGUI);
-            m_ScrollView.Add(m_IMGUIStylesDebugger);
+            m_ScrollView.Add(new IMGUIContainer(DrawMatchingRules));
 
+            m_ScrollView.Add(new IMGUIContainer(DrawProperties));
+
+            Foldout StylesInfo = new() { text = "Styles", viewDataKey = "StylesInfo" };
             m_StylePropertyDebugger = new StylePropertyDebugger(selectedElement);
-            m_ScrollView.Add(m_StylePropertyDebugger);
+            StylesInfo.Add(m_StylePropertyDebugger);
+            m_ScrollView.Add(StylesInfo);
+
+            m_ScrollView.Add(new IMGUIContainer(DrawUxmlDump));
 
             Add(m_ScrollView);
         }
@@ -85,13 +104,6 @@ namespace UnityEditor.UIElements.Debugger
 
         private VisualElement m_SelectedElement;
 
-        public void OnGUI()
-        {
-            if (m_PanelDebug == null || selectedElement == null)
-                return;
-
-            DrawSelection();
-        }
 
         public void RefreshStylePropertyDebugger()
         {
@@ -103,18 +115,13 @@ namespace UnityEditor.UIElements.Debugger
             m_BoxModelView.Refresh(mgc);
         }
 
-        private void DrawSelection()
+
+        private void DrawUxmlDump()
         {
             if (m_SelectedElement == null)
                 return;
 
-            DrawUxmlDump(m_SelectedElement);
-            DrawMatchingRules();
-            DrawProperties();
-        }
-
-        private void DrawUxmlDump(VisualElement selectedElement)
-        {
+            VisualElement selectedElement = m_SelectedElement;
             m_UxmlDumpExpanded = EditorGUILayout.Foldout(m_UxmlDumpExpanded, Styles.uxmlContent);
             if (m_UxmlDumpExpanded)
             {
@@ -159,8 +166,23 @@ namespace UnityEditor.UIElements.Debugger
             m_MatchedRulesExtractor.FindMatchingRules(m_SelectedElement);
         }
 
+        private void DrawLayoutInfo()
+        {
+            if (m_PanelDebug == null || selectedElement == null)
+                return;
+            EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
+            EditorGUILayout.LabelField("World Clip", m_SelectedElement.worldClip.ToString());
+            EditorGUILayout.LabelField("Bounding Box", m_SelectedElement.boundingBox.ToString());
+
+            EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
+            EditorGUILayout.LabelField("LastLayout", m_SelectedElement.lastLayout.ToString());
+        }
+
         private void DrawProperties()
         {
+            if (m_PanelDebug == null || m_SelectedElement == null)
+                return;
+
             EditorGUILayout.Space();
             EditorGUILayout.LabelField(Styles.elementStylesContent, Styles.KInspectorTitle);
 
@@ -203,25 +225,25 @@ namespace UnityEditor.UIElements.Debugger
             m_SelectedElement.usageHints = (UsageHints)EditorGUILayout.EnumFlagsField("Usage Hints", m_SelectedElement.usageHints);
             m_SelectedElement.tabIndex = EditorGUILayout.IntField("Tab Index", m_SelectedElement.tabIndex);
 
-            EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
-            EditorGUILayout.LabelField("LastLayout", m_SelectedElement.lastLayout.ToString());
-
-            if (GUILayout.Button("Increment Version Change - Repaint"))
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("Increment Version");
+            if (GUILayout.Button("Repaint"))
             {
                 m_SelectedElement.IncrementVersion(VersionChangeType.Repaint);
             }
 
             if (Unsupported.IsDeveloperBuild())
             {
-                if (GUILayout.Button("Increment Version Change - Size"))
+                if (GUILayout.Button("Size"))
                 {
                     m_SelectedElement.IncrementVersion(VersionChangeType.Size);
                 }
-                if (GUILayout.Button("Increment Version Change - Transform"))
+                if (GUILayout.Button("Transform"))
                 {
                     m_SelectedElement.IncrementVersion(VersionChangeType.Transform);
                 }
             }
+            EditorGUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
             var displayDescription = string.Empty;
@@ -235,9 +257,7 @@ namespace UnityEditor.UIElements.Debugger
                 m_SelectedElement.style.display = chosenStyle;
             GUILayout.EndHorizontal();
 
-            EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
-            EditorGUILayout.LabelField("World Clip", m_SelectedElement.worldClip.ToString());
-            EditorGUILayout.LabelField("Bounding Box", m_SelectedElement.boundingBox.ToString());
+
 
             if (m_ClassList == null)
                 InitClassList();
@@ -269,95 +289,115 @@ namespace UnityEditor.UIElements.Debugger
             };
         }
 
+        bool showStylesheet = false;
+        bool showSelectors = false;
         private void DrawMatchingRules()
         {
+            if (m_PanelDebug == null || m_SelectedElement == null)
+                return;
+
             if (m_MatchedRulesExtractor.selectedElementStylesheets != null && m_MatchedRulesExtractor.selectedElementStylesheets.Count > 0)
             {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField(Styles.stylesheetsContent, Styles.KInspectorTitle);
-                foreach (string sheet in m_MatchedRulesExtractor.selectedElementStylesheets)
+                showStylesheet = EditorGUILayout.Foldout(showStylesheet, Styles.stylesheetsContent);
+                if (showStylesheet)
                 {
-                    if (GUILayout.Button(sheet) && CanOpenStyleSheet(sheet))
-                        InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.Space();
+                    EditorGUILayout.BeginVertical();
+                    foreach (string sheet in m_MatchedRulesExtractor.selectedElementStylesheets)
+                    {
+                        if (GUILayout.Button(sheet) && CanOpenStyleSheet(sheet))
+                            InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
+                    }
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.EndHorizontal();
                 }
             }
 
             if (m_MatchedRulesExtractor.selectedElementRules != null && m_MatchedRulesExtractor.selectedElementRules.Count > 0)
             {
-                EditorGUILayout.Space();
-                EditorGUILayout.LabelField(Styles.selectorsContent, Styles.KInspectorTitle);
-                int i = 0;
-                foreach (var rule in m_MatchedRulesExtractor.selectedElementRules)
+
+                showSelectors = EditorGUILayout.Foldout(showSelectors, Styles.selectorsContent);
+                if (showSelectors)
                 {
-                    StringBuilder builder = new StringBuilder();
-                    for (int j = 0; j < rule.matchRecord.complexSelector.selectors.Length; j++)
-                    {
-                        StyleSelector sel = rule.matchRecord.complexSelector.selectors[j];
-                        switch (sel.previousRelationship)
-                        {
-                            case StyleSelectorRelationship.Child:
-                                builder.Append(" > ");
-                                break;
-                            case StyleSelectorRelationship.Descendent:
-                                builder.Append(" ");
-                                break;
-                        }
-                        for (int k = 0; k < sel.parts.Length; k++)
-                        {
-                            StyleSelectorPart part = sel.parts[k];
-                            switch (part.type)
-                            {
-                                case StyleSelectorType.Class:
-                                    builder.Append(".");
-                                    break;
-                                case StyleSelectorType.ID:
-                                    builder.Append("#");
-                                    break;
-                                case StyleSelectorType.PseudoClass:
-                                case StyleSelectorType.RecursivePseudoClass:
-                                    builder.Append(":");
-                                    break;
-                                case StyleSelectorType.Wildcard:
-                                    break;
-                            }
-                            builder.Append(part.value);
-                        }
-                    }
-
-                    StyleProperty[] props = rule.matchRecord.complexSelector.rule.properties;
-                    bool expanded = m_CurFoldout.Contains(i);
                     EditorGUILayout.BeginHorizontal();
-                    bool foldout = EditorGUILayout.Foldout(m_CurFoldout.Contains(i), new GUIContent(builder.ToString()), true);
-                    if (rule.displayPath != null && GUILayout.Button(rule.displayPath, EditorStyles.miniButton, GUILayout.MaxWidth(250)) && CanOpenStyleSheet(rule.fullPath))
-                        InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber, -1);
-                    EditorGUILayout.EndHorizontal();
-
-                    if (expanded && !foldout)
-                        m_CurFoldout.Remove(i);
-                    else if (!expanded && foldout)
-                        m_CurFoldout.Add(i);
-
-                    if (foldout)
+                    EditorGUILayout.Space();
+                    EditorGUILayout.BeginVertical();
+                    int i = 0;
+                    foreach (var rule in m_MatchedRulesExtractor.selectedElementRules)
                     {
-                        EditorGUI.indentLevel++;
-                        for (int j = 0; j < props.Length; j++)
+                        StringBuilder builder = new StringBuilder();
+                        for (int j = 0; j < rule.matchRecord.complexSelector.selectors.Length; j++)
                         {
-                            string s = "";
-                            for (int k = 0; k < props[j].values.Length; k++)
+                            StyleSelector sel = rule.matchRecord.complexSelector.selectors[j];
+                            switch (sel.previousRelationship)
                             {
-                                if (k > 0)
-                                    s += " ";
-
-                                s += rule.matchRecord.sheet.ReadAsString(props[j].values[k]);
+                                case StyleSelectorRelationship.Child:
+                                    builder.Append(" > ");
+                                    break;
+                                case StyleSelectorRelationship.Descendent:
+                                    builder.Append(" ");
+                                    break;
                             }
-
-                            s = s.ToLower();
-                            EditorGUILayout.LabelField(new GUIContent(props[j].name), new GUIContent(s));
+                            for (int k = 0; k < sel.parts.Length; k++)
+                            {
+                                StyleSelectorPart part = sel.parts[k];
+                                switch (part.type)
+                                {
+                                    case StyleSelectorType.Class:
+                                        builder.Append(".");
+                                        break;
+                                    case StyleSelectorType.ID:
+                                        builder.Append("#");
+                                        break;
+                                    case StyleSelectorType.PseudoClass:
+                                    case StyleSelectorType.RecursivePseudoClass:
+                                        builder.Append(":");
+                                        break;
+                                    case StyleSelectorType.Wildcard:
+                                        break;
+                                }
+                                builder.Append(part.value);
+                            }
                         }
 
-                        EditorGUI.indentLevel--;
+                        StyleProperty[] props = rule.matchRecord.complexSelector.rule.properties;
+                        bool expanded = m_CurFoldout.Contains(i);
+                        EditorGUILayout.BeginHorizontal();
+                        bool foldout = EditorGUILayout.Foldout(m_CurFoldout.Contains(i), new GUIContent(builder.ToString()), true);
+                        if (rule.displayPath != null && GUILayout.Button(rule.displayPath, EditorStyles.miniButton, GUILayout.MaxWidth(250)) && CanOpenStyleSheet(rule.fullPath))
+                            InternalEditorUtility.OpenFileAtLineExternal(rule.fullPath, rule.lineNumber, -1);
+                        EditorGUILayout.EndHorizontal();
+
+                        if (expanded && !foldout)
+                            m_CurFoldout.Remove(i);
+                        else if (!expanded && foldout)
+                            m_CurFoldout.Add(i);
+
+                        if (foldout)
+                        {
+                            EditorGUI.indentLevel++;
+                            for (int j = 0; j < props.Length; j++)
+                            {
+                                string s = "";
+                                for (int k = 0; k < props[j].values.Length; k++)
+                                {
+                                    if (k > 0)
+                                        s += " ";
+
+                                    s += rule.matchRecord.sheet.ReadAsString(props[j].values[k]);
+                                }
+
+                                s = s.ToLower();
+                                EditorGUILayout.LabelField(new GUIContent(props[j].name), new GUIContent(s));
+                            }
+
+                            EditorGUI.indentLevel--;
+                        }
+                        i++;
                     }
-                    i++;
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.EndHorizontal();
                 }
             }
         }

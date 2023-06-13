@@ -27,6 +27,12 @@ namespace UnityEditor
             "CameraEditor_FrustumHandleRight".GetHashCode()
         };
 
+        public static Func<Camera> virtualCameraPreviewInstantiator
+        {
+            get => CameraPreviewUtils.s_VirtualCameraPreviewInstantiator;
+            set => CameraPreviewUtils.s_VirtualCameraPreviewInstantiator = value;
+        }
+
         public static void HandleFrustum(Camera c, int cameraEditorTargetIndex)
         {
             bool ContainsHandleId(int targetId)
@@ -322,6 +328,8 @@ namespace UnityEditor
         static Camera s_PreviewCamera;
         static RenderTexture s_PreviewTexture;
 
+        internal static Func<Camera> s_VirtualCameraPreviewInstantiator;
+
         internal struct PreviewSettings
         {
             public Vector2 size;
@@ -410,6 +418,9 @@ namespace UnityEditor
         {
             get
             {
+                if (s_PreviewCamera == null && CameraEditorUtils.virtualCameraPreviewInstantiator != null)
+                    s_PreviewCamera = CameraEditorUtils.virtualCameraPreviewInstantiator();
+
                 if (s_PreviewCamera == null)
                 {
                     s_PreviewCamera = EditorUtility.CreateGameObjectWithHideFlags("Preview Camera",

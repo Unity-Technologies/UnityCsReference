@@ -77,7 +77,7 @@ namespace UnityEngine.LightBaking
         {
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
             var wmContext = context as WintermuteContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Temp);
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
             context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
             UnityEngine.Vector3* positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.TempJob);
@@ -98,7 +98,7 @@ namespace UnityEngine.LightBaking
         {
             Debug.Assert(context is WintermuteContext, "Expected WintermuteContext but got something else.");
             var wmContext = context as WintermuteContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Temp);
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
             context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
             UnityEngine.Vector3* positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.TempJob);
@@ -119,7 +119,7 @@ namespace UnityEngine.LightBaking
         {
             Debug.Assert(context is WintermuteContext, "Expected RadeonRaysContext but got something else.");
             var wmContext = context as WintermuteContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Temp);
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
             context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
             void* positionsPtr = NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             var validityBuffer = new NativeArray<float>(positionCount, Allocator.TempJob);
@@ -165,7 +165,7 @@ namespace UnityEngine.LightBaking
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Temp);
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
             context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
             UnityEngine.Vector3* positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.TempJob);
@@ -186,7 +186,7 @@ namespace UnityEngine.LightBaking
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Temp);
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
             context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
             UnityEngine.Vector3* positionsPtr = (Vector3*)NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             var radianceBuffer = new NativeArray<Rendering.SphericalHarmonicsL2>(positionCount, Allocator.TempJob);
@@ -207,7 +207,7 @@ namespace UnityEngine.LightBaking
         {
             Debug.Assert(context is RadeonRaysContext, "Expected RadeonRaysContext but got something else.");
             var rrContext = context as RadeonRaysContext;
-            using var positions = new NativeArray<Vector3>(positionCount, Allocator.Temp);
+            using var positions = new NativeArray<Vector3>(positionCount, Allocator.TempJob);
             context.ReadBuffer(_positions.Id, positions.Reinterpret<byte>(sizeOfVector3));
             void* positionsPtr = NativeArrayUnsafeUtility.GetUnsafePtr(positions);
             var validityBuffer = new NativeArray<float>(positionCount, Allocator.TempJob);

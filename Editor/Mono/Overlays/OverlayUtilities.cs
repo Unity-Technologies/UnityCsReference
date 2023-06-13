@@ -89,15 +89,17 @@ namespace UnityEditor.Overlays
             Overlay overlay = null;
 
             // Reflection is super slow, avoid it if this this a known type.
-            if(type == typeof(EditorToolSettingsOverlay))
+            if (type == typeof(EditorToolSettingsOverlay))
                 overlay = new EditorToolSettingsOverlay();
-            else if(type == typeof(SearchToolBar))
+            else if (type == typeof(SearchToolBar))
                 overlay = new SearchToolBar();
-            else if(type == typeof(TransformToolsOverlayToolBar))
+            else if (type == typeof(TransformToolsOverlayToolBar))
                 overlay = new TransformToolsOverlayToolBar();
-            else if(type == typeof(SceneViewToolBar))
+            else if (type == typeof(SceneViewToolBar))
                 overlay = new SceneViewToolBar();
-            else if(type == typeof(GridAndSnapToolBar))
+            else if (type == typeof(SceneViewCameraModeToolbar))
+                overlay = new SceneViewCameraModeToolbar();
+            else if (type == typeof(GridAndSnapToolBar))
                 overlay = new GridAndSnapToolBar();
             else
             {

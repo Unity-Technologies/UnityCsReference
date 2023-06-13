@@ -133,19 +133,19 @@ namespace UnityEditor
             {
                 for (int i = 0; i < pairHeaders.Length; i++)
                 {
-                    var n = pairHeaders[i].PairCount;
+                    var n = pairHeaders[i].pairCount;
 
                     for (int j = 0; j < n; j++)
                     {
                         ref readonly var pair = ref pairHeaders[i].GetContactPair(j);
 
-                        if (pair.IsCollisionExit)
+                        if (pair.isCollisionExit)
                             continue;
 
-                        var shape0 = pair.ColliderInstanceID;
-                        var shape1 = pair.OtherColliderInstanceID;
+                        var shape0 = pair.colliderInstanceID;
+                        var shape1 = pair.otherColliderInstanceID;
 
-                        for(int k = 0; k < pair.ContactCount; k++)
+                        for(int k = 0; k < pair.contactCount; k++)
                         {
                             ref readonly var contact = ref pair.GetContactPoint(k);
 
@@ -256,12 +256,12 @@ namespace UnityEditor
                 for (int i = 0; i < pairHeaders.Length; i++)
                 {
                     var header = pairHeaders[i];
-                    for (int j = 0; j < header.PairCount; j++)
+                    for (int j = 0; j < header.pairCount; j++)
                     {
                         ref readonly var pair = ref header.GetContactPair(j);
 
-                        if (!pair.IsCollisionExit)
-                            nbContacts += pair.ContactCount;
+                        if (!pair.isCollisionExit)
+                            nbContacts += pair.contactCount;
                     }
                 }
 

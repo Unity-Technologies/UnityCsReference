@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor.EditorTools;
 using UnityEditor.Overlays;
 using UnityEditor.Toolbars;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -76,9 +78,7 @@ namespace UnityEditor
     {
         const string k_Id = "unity-scene-view-toolbar";
         public SceneViewToolBar() : base(
-            "SceneView/Camera Mode",
             "SceneView/2D",
-            "SceneView/Lighting",
             "SceneView/Audio",
             "SceneView/Fx",
             "SceneView/Scene Visibility",
@@ -86,6 +86,52 @@ namespace UnityEditor
             "SceneView/Metal Capture",
             "SceneView/Scene Camera",
             "SceneView/Gizmos") {}
+    }
+
+    [Overlay(typeof(SceneView), k_Id, "Draw Modes", true, defaultDockIndex = 1, defaultDockPosition = DockPosition.Bottom, defaultLayout = Layout.HorizontalToolbar, defaultDockZone = DockZone.TopToolbar)]
+    [Icon("Icons/Overlays/ViewOptions.png")]
+    class SceneViewCameraModeToolbar : ToolbarOverlay
+    {
+        const string k_Id = "unity-scene-view-camera-mode-toolbar";
+        public SceneViewCameraModeToolbar() : base(
+            "SceneView/Common Camera Mode",
+            "SceneView/Camera Mode") {}
+
+        private SceneView m_SceneView;
+
+        public override void OnCreated()
+        {
+            m_SceneView = containerWindow as SceneView;
+            m_SceneView.onCameraModeChanged += UpdateIcon;
+            UpdateIcon(m_SceneView.cameraMode);
+        }
+
+        public override void OnWillBeDestroyed()
+        {
+            m_SceneView.onCameraModeChanged -= UpdateIcon;
+        }
+
+        internal void UpdateIcon(SceneView.CameraMode cameraMode)
+        {
+            switch (cameraMode.drawMode)
+            {
+                case DrawCameraMode.Wireframe:
+                    collapsedIcon = EditorGUIUtility.LoadIconRequired("Toolbars/wireframe");
+                    break;
+                case DrawCameraMode.TexturedWire:
+                    collapsedIcon = EditorGUIUtility.LoadIconRequired("Toolbars/ShadedWireframe");
+                    break;
+                case DrawCameraMode.Textured when !m_SceneView.sceneLighting:
+                    collapsedIcon = EditorGUIUtility.LoadIconRequired("Toolbars/UnlitMode");
+                    break;
+                case DrawCameraMode.Textured:
+                    collapsedIcon = EditorGUIUtility.LoadIconRequired("Toolbars/Shaded");
+                    break;
+                default:
+                    collapsedIcon = EditorGUIUtility.LoadIconRequired("Toolbars/debug");
+                    break;
+            }
+        }
     }
 
     [Overlay(typeof(SceneView), k_Id, "Search", true)]

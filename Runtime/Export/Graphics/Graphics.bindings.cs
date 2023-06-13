@@ -622,6 +622,8 @@ namespace UnityEngine
         [FreeFunction("GraphicsScripting::GetActiveDepthBuffer")] extern private static RenderBuffer GetActiveDepthBuffer();
 
         [FreeFunction("GraphicsScripting::SetNullRT")] extern private static void Internal_SetNullRT();
+        [NativeMethod(Name = "GraphicsScripting::SetGfxRT", IsFreeFunction = true, ThrowsException = true)]
+        extern private static void Internal_SetGfxRT(GraphicsTexture gfxTex, int mip, CubemapFace face, int depthSlice);
         [NativeMethod(Name = "GraphicsScripting::SetRTSimple", IsFreeFunction = true, ThrowsException = true)]
         extern private static void Internal_SetRTSimple(RenderBuffer color, RenderBuffer depth, int mip, CubemapFace face, int depthSlice);
         [NativeMethod(Name = "GraphicsScripting::SetMRTSimple", IsFreeFunction = true, ThrowsException = true)]
@@ -754,6 +756,30 @@ namespace UnityEngine
 
         [FreeFunction("GraphicsScripting::Blit")]
         extern private static void Blit5(Texture source, RenderTexture dest, Vector2 scale, Vector2 offset, int sourceDepthSlice, int destDepthSlice);
+
+        [FreeFunction("GraphicsScripting::BlitMaterial")]
+        extern private static void Internal_BlitMaterialGfx5(Texture source, GraphicsTexture dest, [NotNull] Material mat, int pass, bool setRT);
+
+        [FreeFunction("GraphicsScripting::BlitMaterial")]
+        extern private static void Internal_BlitMaterialGfx6(Texture source, GraphicsTexture dest, [NotNull] Material mat, int pass, bool setRT, int destDepthSlice);
+
+        [FreeFunction("GraphicsScripting::BlitMultitap")]
+        extern private static void Internal_BlitMultiTapGfx4(Texture source, GraphicsTexture dest, [NotNull] Material mat, [NotNull] Vector2[] offsets);
+
+        [FreeFunction("GraphicsScripting::BlitMultitap")]
+        extern private static void Internal_BlitMultiTapGfx5(Texture source, GraphicsTexture dest, [NotNull] Material mat, [NotNull] Vector2[] offsets, int destDepthSlice);
+
+        [FreeFunction("GraphicsScripting::Blit")]
+        extern private static void BlitGfx2(Texture source, GraphicsTexture dest);
+
+        [FreeFunction("GraphicsScripting::Blit")]
+        extern private static void BlitGfx3(Texture source, GraphicsTexture dest, int sourceDepthSlice, int destDepthSlice);
+
+        [FreeFunction("GraphicsScripting::Blit")]
+        extern private static void BlitGfx4(Texture source, GraphicsTexture dest, Vector2 scale, Vector2 offset);
+
+        [FreeFunction("GraphicsScripting::Blit")]
+        extern private static void BlitGfx5(Texture source, GraphicsTexture dest, Vector2 scale, Vector2 offset, int sourceDepthSlice, int destDepthSlice);
 
         [NativeMethod(Name = "GraphicsScripting::CreateGPUFence", IsFreeFunction = true, ThrowsException = true)]
         extern private static IntPtr CreateGPUFenceImpl(GraphicsFenceType fenceType, SynchronisationStageFlags stage);

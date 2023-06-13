@@ -50,5 +50,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return UnityAssetStorePackageInfo.GetPackageList();
         }
 
+        public virtual UnityAssetStorePackageInfo GetLocalPackageInfo(string packagePath)
+        {
+            return UnityAssetStorePackageInfo.GetPackageInfo(packagePath);
+        }
     }
 }

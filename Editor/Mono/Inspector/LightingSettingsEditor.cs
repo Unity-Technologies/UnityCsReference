@@ -53,8 +53,6 @@ namespace UnityEditor
         SavedBool m_ShowGeneralLightingSettings;
         SavedBool m_ShowInternalSettings;
 
-        SerializedProperty m_GIWorkflowMode;
-
         //realtime GI
         SerializedProperty m_EnableRealtimeGI;
         SerializedProperty m_RealtimeResolution;
@@ -197,7 +195,6 @@ namespace UnityEditor
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
             public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
 
-            public static readonly GUIContent autoGenerate = EditorGUIUtility.TrTextContent("Auto Generate", "Automatically generates lighting data in the Scene when any changes are made to the lighting systems.");
             public static readonly GUIContent enableBaked = EditorGUIUtility.TrTextContent("Baked Global Illumination", "Controls whether Mixed and Baked lights will use baked Global Illumination. If enabled, Mixed lights are baked using the specified Lighting Mode and Baked lights will be completely baked and not adjustable at runtime.");
             public static readonly GUIContent bounceScale = EditorGUIUtility.TrTextContent("Bounce Scale", "Multiplier for indirect lighting. Use with care.");
             public static readonly GUIContent updateThreshold = EditorGUIUtility.TrTextContent("Update Threshold", "Threshold for updating realtime GI. A lower value causes more frequent updates (default 1.0).");
@@ -279,28 +276,9 @@ namespace UnityEditor
 
         public void OnGUI(bool compact, bool drawAutoGenerate)
         {
-            if (drawAutoGenerate)
+            if (currentLSO == null || currentLSO != m_EnabledBakedGI.serializedObject)
             {
-                bool iterative = m_GIWorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative;
-
-                var rect = EditorGUILayout.GetControlRect();
-                EditorGUI.BeginProperty(rect, Styles.autoGenerate, m_GIWorkflowMode);
-                EditorGUI.BeginChangeCheck();
-
-                iterative = EditorGUI.Toggle(rect, Styles.autoGenerate, iterative);
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    m_GIWorkflowMode.intValue = (int)(iterative ? Lightmapping.GIWorkflowMode.Iterative : Lightmapping.GIWorkflowMode.OnDemand);
-                }
-                EditorGUI.EndProperty();
-
-                EditorGUILayout.Space();
-            }
-
-            if (currentLSO == null || currentLSO != m_GIWorkflowMode.serializedObject)
-            {
-                currentLSO = m_GIWorkflowMode.serializedObject;
+                currentLSO = m_EnabledBakedGI.serializedObject;
                 ClampMaxRanges();
             }
 
@@ -314,8 +292,6 @@ namespace UnityEditor
         {
             if (lightingSettingsObject == null)
                 return;
-
-            m_GIWorkflowMode = lightingSettingsObject.FindProperty("m_GIWorkflowMode");
 
             //realtime GI
             m_RealtimeResolution = lightingSettingsObject.FindProperty("m_RealtimeResolution");
@@ -536,11 +512,6 @@ namespace UnityEditor
                             {
                                 EditorGUI.indentLevel++;
 
-                                bool iterative = m_GIWorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative;
-                                if (iterative)
-                                {
-                                    EditorGUILayout.PropertyField(m_PVRCulling, Styles.culling);
-                                }
                                 EditorGUILayout.PropertyField(m_PVREnvironmentIS, Styles.environmentImportanceSampling);
 
                                 MultiEditableLogarithmicIntSlider(m_PVRDirectSampleCount, Styles.directSampleCount, 1, maxDirectSamples, 1, 1 << 30);

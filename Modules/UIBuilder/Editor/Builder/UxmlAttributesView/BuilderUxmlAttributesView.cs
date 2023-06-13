@@ -923,7 +923,7 @@ namespace Unity.UI.Builder
                 var tooltip = attribute.serializedField.GetCustomAttribute<TooltipAttribute>();
                 var valueInfo = GetValueInfo(propertyField);
 
-                e.tooltip = BuilderInspector.GetFieldTooltip(propertyField, valueInfo, tooltip?.tooltip);
+                e.tooltip = BuilderInspector.GetFieldTooltip(propertyField, valueInfo, tooltip?.tooltip, false);
             }
             else
             {

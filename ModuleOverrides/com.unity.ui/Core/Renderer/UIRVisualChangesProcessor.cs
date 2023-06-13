@@ -173,13 +173,13 @@ namespace UnityEngine.UIElements.UIR
 
                         ++depth;
                         processor.Init(processingInfo.rootEntry, m_RenderChain, processingInfo.visualElement);
-                        processor.ProcessHead(ref stats);
+                        processor.ProcessHead();
                     }
                     else
                     {
                         --depth;
                         EntryProcessor processor = m_Processors[depth];
-                        processor.ProcessTail(ref stats);
+                        processor.ProcessTail();
 
                         bool hasCommands = processor.firstHeadCommand != null || processor.firstTailCommand != null;
                         if (hasCommands) { }
@@ -203,6 +203,17 @@ namespace UnityEngine.UIElements.UIR
 
                 if (ve.renderChainData.tailMesh != null)
                     DoUpdateOpacityId(ve, renderChain, ve.renderChainData.tailMesh);
+
+                if (ve.renderChainData.hasExtraMeshes)
+                {
+                    ExtraRenderChainVEData extraData = renderChain.GetOrAddExtraData(ve);
+                    BasicNode<MeshHandle> extraMesh = extraData.extraMesh;
+                    while (extraMesh != null)
+                    {
+                        DoUpdateOpacityId(ve, renderChain, extraMesh.data);
+                        extraMesh = extraMesh.next;
+                    }
+                }
 
                 k_UpdateOpacityIdMarker.End();
             }

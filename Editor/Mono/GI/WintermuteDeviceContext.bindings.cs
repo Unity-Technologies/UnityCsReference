@@ -23,10 +23,13 @@ namespace UnityEngine.LightTransport
         {
             public static IntPtr ConvertToNative(WintermuteContext obj) => obj.m_Ptr;
         }
+
         [NativeMethod(IsThreadSafe = true)]
-        public extern bool Initialize();
         static extern IntPtr Internal_Create();
+
+        [NativeMethod(IsThreadSafe = true)]
         static extern void Internal_Destroy(IntPtr ptr);
+
         public WintermuteContext()
         {
             m_Ptr = Internal_Create();
@@ -54,6 +57,10 @@ namespace UnityEngine.LightTransport
                 m_Ptr = IntPtr.Zero;
             }
         }
+
+        [NativeMethod(IsThreadSafe = true)]
+        public extern bool Initialize();
+
         public BufferID CreateBuffer(UInt64 size)
         {
             Debug.Assert(size != 0, "Buffer size cannot be zero.");

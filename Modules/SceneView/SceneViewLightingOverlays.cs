@@ -38,6 +38,9 @@ namespace UnityEditor
 
         VisualElement m_ContentRoot;
 
+        // Interactive preview toggle
+        VisualElement m_InteractiveBakingContent;
+
         // Draw lightmap resolution
         VisualElement m_LightmapResolutionContent;
 
@@ -65,11 +68,19 @@ namespace UnityEditor
             m_ShouldDisplay = false;
             m_SceneView = view;
             m_SceneView.onCameraModeChanged += OnCameraModeChanged;
+            m_SceneView.debugDrawModesUseInteractiveLightBakingDataChanged += OnUseInteractiveLightBakingDataChanged;
+            Lightmapping.bakeStarted += OnBakeStarted;
+            Lightmapping.bakeCompleted += OnBakeCompleted;
+            Lightmapping.bakeCancelled += OnBakeCompleted;
         }
 
         public override void OnWillBeDestroyed()
         {
             m_SceneView.onCameraModeChanged -= OnCameraModeChanged;
+            m_SceneView.debugDrawModesUseInteractiveLightBakingDataChanged -= OnUseInteractiveLightBakingDataChanged;
+            Lightmapping.bakeStarted -= OnBakeStarted;
+            Lightmapping.bakeCompleted -= OnBakeCompleted;
+            Lightmapping.bakeCancelled -= OnBakeCompleted;
         }
 
         void OnCollapsedChanged(bool collapsed)
@@ -88,6 +99,7 @@ namespace UnityEditor
             m_SceneView = view;
 
             m_ContentRoot = new VisualElement();
+            m_ContentRoot.Add(m_InteractiveBakingContent = CreateInteractiveBakingContent());
             m_ContentRoot.Add(m_LightmapResolutionContent = CreateLightmapResolutionContent());
             m_ContentRoot.Add(m_BackfaceHighlightsContent = CreateBackfaceHighlightsContent());
             m_ContentRoot.Add(m_LightExposureContent = CreateLightExposureContent());
@@ -103,6 +115,7 @@ namespace UnityEditor
             if (m_ContentRoot == null)
                 CreatePanelContent();
 
+            m_InteractiveBakingContent.EnableInClassList(Styles.k_UnityHiddenClass, !sceneView.currentDrawModeMayUseInteractiveLightBakingData);
             m_LightmapResolutionContent.EnableInClassList(Styles.k_UnityHiddenClass, !sceneView.showLightmapResolutionToggle);
             m_BackfaceHighlightsContent.EnableInClassList(Styles.k_UnityHiddenClass, !sceneView.showBackfaceHighlightsToggle);
             m_LightExposureContent.EnableInClassList(Styles.k_UnityHiddenClass, !sceneView.showExposureSettings);
@@ -116,6 +129,39 @@ namespace UnityEditor
             {
                 m_ShouldDisplay = false;
             }
+        }
+
+        void OnUseInteractiveLightBakingDataChanged(bool useInteractiveLightBakingDataChanged)
+        {
+            m_InteractiveBakingContent?.Q<Toggle>()?.SetValueWithoutNotify(useInteractiveLightBakingDataChanged);
+        }
+
+        void OnBakeStarted()
+        {
+            m_InteractiveBakingContent?.Q<Toggle>()?.SetEnabled(false);
+        }
+
+        void OnBakeCompleted()
+        {
+            m_InteractiveBakingContent?.Q<Toggle>()?.SetEnabled(true);
+        }
+
+        VisualElement CreateInteractiveBakingContent()
+        {
+            var useInteractiveLightBakingDataChanged = SceneView.lastActiveSceneView?.debugDrawModesUseInteractiveLightBakingData ?? false;
+
+            var root = new VisualElement();
+            root.tooltip = "Interactively bake data for this Scene View Mode instead of showing existing baked data.";
+
+            var toggle = new Toggle { label = "Interactive Preview" };
+            toggle.labelElement.AddToClassList(Styles.k_ToggleLabelClass);
+            toggle.visualInput.AddToClassList(Styles.k_ToggleClass);
+            toggle.RegisterValueChangedCallback((ChangeEvent<bool> evt) => SceneView.lastActiveSceneView.debugDrawModesUseInteractiveLightBakingData = evt.newValue);
+            toggle.SetValueWithoutNotify(useInteractiveLightBakingDataChanged);
+            toggle.SetEnabled(!Lightmapping.isRunning);
+
+            root.Add(toggle);
+            return root;
         }
 
         VisualElement CreateLightmapResolutionContent()

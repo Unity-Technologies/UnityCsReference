@@ -90,7 +90,8 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private int m_PreviousInMemoryAssetsVersion = 0;
+        private int m_PreviousInMemoryAssetsHierarchyVersion = 0;
+        private int m_PreviousInMemoryAssetsStyleVersion = 0;
 
         private const int kMinUpdateDelayMs = 1000; // TODO this should probably be a setting at some point
         private long m_LastUpdateTimeMs = 0;
@@ -277,7 +278,8 @@ namespace UnityEditor.UIElements
             if (m_TrackersToRefresh.Count == 0)
                 return;
 
-            UIElementsUtility.InMemoryAssetsHaveBeenChanged();
+            UIElementsUtility.InMemoryAssetsHierarchyHaveBeenChanged();
+            UIElementsUtility.InMemoryAssetsStyleHaveBeenChanged();
 
             // Player panel require an update here or else it will only update when Unity is focused
             if (panel.contextType == ContextType.Player)
@@ -349,17 +351,22 @@ namespace UnityEditor.UIElements
                 m_LastUpdateTimeMs = currentTimeMs;
             }
 
+            // InMemoryAssets versions are split into two categories to help track what needs recreating.
+            bool shouldRecreateUI =
+                m_PreviousInMemoryAssetsHierarchyVersion != UIElementsUtility.m_InMemoryAssetsHierarchyVersion;
+            bool shouldRefreshStyles =
+                m_PreviousInMemoryAssetsStyleVersion != UIElementsUtility.m_InMemoryAssetsStyleVersion;
+
             // There's no need to reload anything if there are no changes.
-            if (m_PreviousInMemoryAssetsVersion == UIElementsUtility.m_InMemoryAssetsVersion)
+            if (!shouldRecreateUI && !shouldRefreshStyles)
             {
                 return;
             }
 
             // This value is updated by the UI Builder whenever an asset is changed.
             // We update here to prevent unnecessary checking of asset changes.
-            m_PreviousInMemoryAssetsVersion = UIElementsUtility.m_InMemoryAssetsVersion;
-
-            bool shouldRefreshStyles = false;
+            m_PreviousInMemoryAssetsHierarchyVersion = UIElementsUtility.m_InMemoryAssetsHierarchyVersion;
+            m_PreviousInMemoryAssetsStyleVersion = UIElementsUtility.m_InMemoryAssetsStyleVersion;
 
             // We iterate on the assets to avoid calling GetDirtyCount for the same asset more than once.
             // In Editor this seems very likely and in Runtime we're assuming there are not multiple panels going
@@ -377,7 +384,6 @@ namespace UnityEditor.UIElements
                 var elementCount = trackedAsset.visualElementAssets.Count;
                 var inlinePropertiesCount = trackedAsset.inlineSheet.rules.Sum(r => r.properties.Length);
                 var attributePropertiesDirtyCount = trackedAsset.GetAttributePropertiesDirtyCount();
-                bool shouldRecreateUI = false;
 
                 if (dirtyCount != trackersEntry.m_LastDirtyCount)
                 {

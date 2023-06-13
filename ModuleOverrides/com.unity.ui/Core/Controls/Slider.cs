@@ -94,20 +94,29 @@ namespace UnityEngine.UIElements
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
         /// <summary>
-        /// Constructor.
+        /// Creates a new instance of a Slider.
         /// </summary>
         public Slider()
             : this((string)null, 0, kDefaultHighValue) {}
 
         /// <summary>
-        /// Constructor.
+        /// Creates a new instance of a Slider.
         /// </summary>
+        /// <param name="start">The minimum value that the slider encodes.</param>
+        /// <param name="end">The maximum value that the slider encodes.</param>
+        /// <param name="direction">The direction of the slider (Horizontal or Vertical).</param>
+        /// <param name="pageSize">A generic page size used to change the value when clicking in the slider.</param>
         public Slider(float start, float end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : this(null, start, end, direction, pageSize) {}
 
         /// <summary>
-        /// Constructor.
+        /// Creates a new instance of a Slider.
         /// </summary>
+        /// <param name="label">The string representing the label that will appear beside the field.</param>
+        /// <param name="start">The minimum value that the slider encodes.</param>
+        /// <param name="end">The maximum value that the slider encodes.</param>
+        /// <param name="direction">The direction of the slider (Horizontal or Vertical).</param>
+        /// <param name="pageSize">A generic page size used to change the value when clicking in the slider.</param>
         public Slider(string label, float start = 0, float end = kDefaultHighValue, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : base(label, start, end, direction, pageSize)
         {

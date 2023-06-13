@@ -1398,7 +1398,7 @@ namespace UnityEditor
         [Shortcut("Overlays/Show Overlay Menu", typeof(OverlayShortcutContext),  KeyCode.BackQuote)]
         static void ShowOverlayMenu(ShortcutArguments args)
         {
-            if(args.context is OverlayShortcutContext context)
+            if (args.context is OverlayShortcutContext context)
                 context.editorWindow.overlayCanvas.ShowMenu(!context.editorWindow.overlayCanvas.menuVisible);
         }
 

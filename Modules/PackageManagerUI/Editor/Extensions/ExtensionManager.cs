@@ -207,13 +207,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             var newDropdownMenu = new DropdownMenu();
             foreach (var extension in m_PackageExtensionActions.Where(a => a.visible))
             {
-                var packageActionText = !string.IsNullOrEmpty(extension.text) ? extension.text : extension.tooltip;
+                var packageActionTooltip = extension.tooltip ?? string.Empty;
+                var packageActionText = !string.IsNullOrEmpty(extension.text) ? extension.text : packageActionTooltip;
                 if (!extension.visibleDropdownItems.Any())
-                    newDropdownMenu.AppendAction(packageActionText, a => { extension.action?.Invoke(m_Window.activeSelection); });
+                    newDropdownMenu.AppendAction(packageActionText, a => { extension.action?.Invoke(m_Window.activeSelection); }, a =>
+                    {
+                        a.tooltip = packageActionTooltip;
+                        return extension.enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+                    });
                 else
                 {
                     if (extension.action != null)
-                        newDropdownMenu.AppendAction($"{packageActionText}/{packageActionText}", a => { extension.action?.Invoke(m_Window.activeSelection); });
+                        newDropdownMenu.AppendAction($"{packageActionText}/{packageActionText}", a => { extension.action?.Invoke(m_Window.activeSelection); },a =>
+                        {
+                            a.tooltip = packageActionTooltip;
+                            return extension.enabled ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled;
+                        });
                     foreach (var item in extension.visibleDropdownItems)
                         newDropdownMenu.AppendAction($"{packageActionText}/{item.text}", a => { item.action?.Invoke(m_Window.activeSelection); }, item.statusCallback);
                 }

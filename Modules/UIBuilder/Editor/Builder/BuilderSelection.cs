@@ -115,8 +115,6 @@ namespace Unity.UI.Builder
 
         public bool isEmpty { get { return m_Selection.Count == 0; } }
 
-        MethodInfo m_LiveReloadTriggerMethod;
-
         public BuilderSelection(VisualElement root, BuilderPaneWindow paneWindow)
         {
             m_Notifiers = new List<IBuilderSelectionNotifier>();
@@ -133,8 +131,6 @@ namespace Unity.UI.Builder
             m_DummyElementForStyleChangeNotifications.style.width = 1;
             m_DummyElementForStyleChangeNotifications.RegisterCallback<GeometryChangedEvent>(AfterPanelUpdaterChange);
             m_Root.Add(m_DummyElementForStyleChangeNotifications);
-
-            m_LiveReloadTriggerMethod = ReflectionExtensions.GetStaticMethodByReflection(typeof(UIElementsUtility), "InMemoryAssetsHaveBeenChanged");
         }
 
         public void AssignNotifiers(IEnumerable<IBuilderSelectionNotifier> notifiers)
@@ -262,7 +258,14 @@ namespace Unity.UI.Builder
             // This is so anyone interested can refresh their use of this UXML with
             // the latest (unsaved to disk) changes.
             EditorUtility.SetDirty(m_PaneWindow.document.visualTreeAsset);
-            m_LiveReloadTriggerMethod?.Invoke(null, null);
+
+            var liveReloadChanges = ((changeType & BuilderHierarchyChangeType.InlineStyle) != 0
+                                        ? BuilderAssetUtilities.LiveReloadChanges.Styles
+                                        : 0) |
+                                    ((changeType & ~BuilderHierarchyChangeType.InlineStyle) != 0
+                                        ? BuilderAssetUtilities.LiveReloadChanges.Hierarchy
+                                        : 0);
+            BuilderAssetUtilities.LiveReload(liveReloadChanges);
 
             foreach (var notifier in m_Notifiers)
                 if (notifier != source)
@@ -302,7 +305,7 @@ namespace Unity.UI.Builder
             // the latest (unsaved to disk) changes.
             //RetainedMode.FlagStyleSheetChange(); // Works but TOO SLOW.
             m_PaneWindow.document.MarkStyleSheetsDirty();
-            m_LiveReloadTriggerMethod?.Invoke(null, null);
+            BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Styles);
 
             foreach (var notifier in m_Notifiers)
                 if (notifier != m_CurrentNotifier)

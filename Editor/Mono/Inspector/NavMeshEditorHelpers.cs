@@ -19,16 +19,7 @@ namespace UnityEditor.AI
         static CheckNavigationPackage()
         {
             if (!IsInstalled())
-            {
                 EditorApplication.CallDelayed(HideNavComponents);
-                EditorApplication.CallDelayed(CloseNavigationWindow);
-            }
-        }
-
-        static void CloseNavigationWindow()
-        {
-            if (EditorWindow.HasOpenInstances<NavMeshEditorWindow>())
-                EditorWindow.GetWindow<NavMeshEditorWindow>().Close();
         }
 
         static void HideNavComponents()

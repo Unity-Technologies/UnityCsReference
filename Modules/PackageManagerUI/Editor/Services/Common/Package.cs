@@ -169,7 +169,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             public void AddError(Package package, UIError error)
             {
-                if (error.errorCode == UIErrorCode.UpmError_Forbidden)
+                if (error.errorCode == UIErrorCode.UpmError_Forbidden && package.versions?.primary.hasEntitlementsError == true)
                 {
                     package.m_Errors.Add(package.versions?.primary.isInstalled == true ? UIError.k_EntitlementError : UIError.k_EntitlementWarning);
                     return;

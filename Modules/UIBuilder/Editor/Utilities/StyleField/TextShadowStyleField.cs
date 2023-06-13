@@ -166,5 +166,13 @@ namespace Unity.UI.Builder
 
             return isNewValue;
         }
+
+        internal void UpdateSubFieldVisualInputTooltips(string offsetXTooltip, string offsetYTooltip, string blurRadiusTooltip, string colorTooltip)
+        {
+            m_OffsetXField.visualInput.tooltip = offsetXTooltip;
+            m_OffsetYField.visualInput.tooltip = offsetYTooltip;
+            m_BlurRadiusField.visualInput.tooltip = blurRadiusTooltip;
+            m_ColorField.visualInput.tooltip = colorTooltip;
+        }
     }
 }

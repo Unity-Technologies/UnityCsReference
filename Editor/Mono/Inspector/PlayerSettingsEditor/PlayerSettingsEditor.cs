@@ -255,6 +255,11 @@ namespace UnityEditor
 
             public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing (e.g., by com.unity.logging");
 
+            // WebGPU
+            public static readonly GUIContent webGLEnableWebGPU = EditorGUIUtility.TrTextContent("Enable WebGPU Support", "Enable WebGPU. This feature is experimental and not ready for production use. Changing this value will enable the WebGPU Graphics API in the WebGL build target. This option cannot be disabled if WebGPU is enabled in any Graphics API lists. To disable WebGPU Support, first remove it from the Graphics API lists.");
+
+            // End WebGPU
+
             public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
             public static readonly string undoChangedGraphicsAPIString              = L10n.Tr("Changed Graphics API Settings");
             public static readonly string undoChangedScriptingDefineString          = L10n.Tr("Changed Scripting Define Settings");
@@ -438,6 +443,9 @@ namespace UnityEditor
         SerializedProperty m_LightmapStreamingPriority;
 
         SerializedProperty m_HDRBitDepth;
+
+        // WebGPU
+        SerializedProperty m_WebGPUSupportEnabled;
 
         // Legacy
         SerializedProperty m_LegacyClampBlendShapeWeights;
@@ -651,6 +659,9 @@ namespace UnityEditor
             m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
             m_RequireES32                   = FindPropertyAssert("openGLRequireES32");
+
+            // WebGPU
+            m_WebGPUSupportEnabled           = FindPropertyAssert("webGLEnableWebGPU");
 
             m_LegacyClampBlendShapeWeights = FindPropertyAssert("legacyClampBlendShapeWeights");
             m_AndroidEnableTango           = FindPropertyAssert("AndroidEnableTango");
@@ -1186,13 +1197,18 @@ namespace UnityEditor
         // Converts a GraphicsDeviceType to a string, along with visual modifiers for given target platform
         static private string GraphicsDeviceTypeToString(BuildTarget target, GraphicsDeviceType graphicsDeviceType)
         {
+        
+            if (graphicsDeviceType == GraphicsDeviceType.WebGPU)
+            {
+                return "WebGPU";
+            }
+            else if (target == BuildTarget.WebGL)
+            {
+                return "WebGL 2";
+            }
+                
             switch (target) 
             {
-                case BuildTarget.WebGL:
-                    if (graphicsDeviceType == GraphicsDeviceType.OpenGLES3)
-                        return "WebGL 2";
-                    break;
-
                 case BuildTarget.StandaloneWindows:
                 case BuildTarget.StandaloneWindows64:
                     if (graphicsDeviceType == GraphicsDeviceType.OpenGLCore) 
@@ -1208,6 +1224,7 @@ namespace UnityEditor
         {
             graphicsDeviceType = graphicsDeviceType.Replace(" (Deprecated)", "");
             graphicsDeviceType = graphicsDeviceType.Replace(" (Experimental)", "");
+            if (graphicsDeviceType.Contains("WebGPU")) return GraphicsDeviceType.WebGPU;
             if (graphicsDeviceType == "WebGL 2") return GraphicsDeviceType.OpenGLES3;
             return (GraphicsDeviceType)Enum.Parse(typeof(GraphicsDeviceType), graphicsDeviceType, true);
         }
@@ -1235,6 +1252,14 @@ namespace UnityEditor
             {
                 var availableDeviceList = availableDevices.ToList();
                 availableDeviceList.Remove(GraphicsDeviceType.OpenGLCore);
+                availableDevices = availableDeviceList.ToArray();
+            }
+
+            // Gate the display of WebGPU based on the WebGL.enableWebGPU flag
+            if (!PlayerSettings.WebGL.enableWebGPU)
+            {
+                var availableDeviceList = availableDevices.ToList();
+                availableDeviceList.Remove(GraphicsDeviceType.WebGPU);
                 availableDevices = availableDeviceList.ToArray();
             }
 
@@ -1884,6 +1909,19 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_ForceSRGBBlit, SettingsContent.forceSRGBBlit);
             }
 
+            // WebGPU Support
+            if (platform.namedBuildTarget == NamedBuildTarget.WebGL
+                || platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
+            {
+                var hasWebGPUInApiList = CheckIfWebGPUInGfxAPIList();
+                // Ensure that the setting is consistent if the API is in the list.
+                if (hasWebGPUInApiList)
+                {
+                    m_WebGPUSupportEnabled.boolValue = true;
+                    PlayerSettings.WebGL.enableWebGPU = true;
+                }
+            }
+
             // Graphics APIs
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
             {
@@ -2041,17 +2079,22 @@ namespace UnityEditor
                     // We need to do this because gpuSkinning/meshDeformation are properties which are shared between all platforms
                     // and if the user sets gpuSkinning mode to "enabled", we actually want to preserve "batchEnabled" if it was set for other platforms.
                     // Platforms that do not support batching but have meshDeformation == GPUBatched just silently use original non-batched code.
-                    EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(m_SkinOnGPU, SettingsContent.skinOnGPU);
-                    if (EditorGUI.EndChangeCheck())
+
+                    // WebGPU is kept behind a settings gate for now while it's in development.
+                    if (platform.namedBuildTarget != NamedBuildTarget.WebGL || PlayerSettings.WebGL.enableWebGPU)
                     {
-                        // Preserve the value of m_MeshDeformation when possible.
-                        if (!m_SkinOnGPU.boolValue)
-                            m_MeshDeformation.intValue = (int)MeshDeformation.CPU;
-                        else
-                            m_MeshDeformation.intValue = m_MeshDeformation.intValue != (int)MeshDeformation.CPU ? m_MeshDeformation.intValue : (int)MeshDeformation.GPUBatched;
-                        serializedObject.ApplyModifiedProperties();
-                        ShaderUtil.RecreateSkinnedMeshResources();
+                        EditorGUI.BeginChangeCheck();
+                        EditorGUILayout.PropertyField(m_SkinOnGPU, SettingsContent.skinOnGPU);
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            // Preserve the value of m_MeshDeformation when possible.
+                            if (!m_SkinOnGPU.boolValue)
+                                m_MeshDeformation.intValue = (int)MeshDeformation.CPU;
+                            else
+                                m_MeshDeformation.intValue = m_MeshDeformation.intValue != (int)MeshDeformation.CPU ? m_MeshDeformation.intValue : (int)MeshDeformation.GPUBatched;
+                            serializedObject.ApplyModifiedProperties();
+                            ShaderUtil.RecreateSkinnedMeshResources();
+                        }
                     }
                 }
             }
@@ -2428,6 +2471,24 @@ namespace UnityEditor
             }
 
             return !supportedAPI;
+        }
+
+        // WebGPU
+        private static IReadOnlyList<BuildTarget> k_WebGPUSupportedBuildTargets => new List<BuildTarget> {
+            BuildTarget.WebGL,
+        };
+
+        private bool CheckIfWebGPUInGfxAPIList()
+        {
+            foreach (var target in k_WebGPUSupportedBuildTargets)
+            {
+                if (PlayerSettings.GetGraphicsAPIs(target).Contains(GraphicsDeviceType.WebGPU))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void OtherSectionIdentificationGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)

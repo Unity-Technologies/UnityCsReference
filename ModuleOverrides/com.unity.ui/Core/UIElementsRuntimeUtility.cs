@@ -40,6 +40,7 @@ namespace UnityEngine.UIElements
         {
             // We no longer need it
             UIElementsRuntimeUtilityNative.RepaintOverlayPanelsCallback = () => {};  //RepaintOverlayPanels;
+            UIElementsRuntimeUtilityNative.RepaintOffscreenPanelsCallback = RepaintOffscreenPanels;
 
             Canvas.externBeginRenderOverlays = BeginRenderOverlays;
             Canvas.externRenderOverlaysBefore = (displayIndex, sortOrder) => RenderOverlaysBeforePriority(displayIndex, sortOrder);
@@ -135,6 +136,17 @@ namespace UnityEngine.UIElements
             // Call the package override of RepaintOverlayPanels, when available
             if (s_onRepaintOverlayPanels != null)
                 s_onRepaintOverlayPanels();
+        }
+
+        public static void RepaintOffscreenPanels()
+        {
+            foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
+            {
+                if (!panel.drawsInCameras && panel.targetTexture != null)
+                {
+                    RepaintOverlayPanel(panel);
+                }
+            }
         }
 
         public static void RepaintOverlayPanel(BaseRuntimePanel panel)

@@ -19,58 +19,6 @@ namespace UnityEditor
 {
     [UsedByNativeCode]
     [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
-    internal struct LightmapConvergence
-    {
-        [NativeName("IsConverged")]
-        public extern bool IsConverged();
-
-        public bool       IsValid() { return -1 != visibleConvergedDirectTexelCount; }
-
-        [NativeName("GetTileCount")]
-        internal extern int GetTileCount();
-
-        [NativeName("m_CullingHash")]                      public Hash128 cullingHash;
-        [NativeName("m_VisibleConvergedDirectTexelCount")] public int     visibleConvergedDirectTexelCount;
-        [NativeName("m_VisibleConvergedGITexelCount")]     public int     visibleConvergedGITexelCount;
-        [NativeName("m_VisibleConvergedEnvTexelCount")]    public int     visibleConvergedEnvTexelCount;
-        [NativeName("m_VisibleTexelCount")]                public int     visibleTexelCount;
-
-        [NativeName("m_ConvergedDirectTexelCount")]        public int     convergedDirectTexelCount;
-        [NativeName("m_ConvergedGITexelCount")]            public int     convergedGITexelCount;
-        [NativeName("m_ConvergedEnvTexelCount")]           public int     convergedEnvTexelCount;
-        [NativeName("m_OccupiedTexelCount")]               public int     occupiedTexelCount;
-        [NativeName("m_OccupiedTexelCountInCurrentTile")]  public int     occupiedTexelCountInCurrentTile;
-
-        [NativeName("m_MinDirectSamples")]                 public int     minDirectSamples;
-        [NativeName("m_MinGISamples")]                     public int     minGISamples;
-        [NativeName("m_MinEnvSamples")]                    public int     minEnvSamples;
-        [NativeName("m_MaxDirectSamples")]                 public int     maxDirectSamples;
-        [NativeName("m_MaxGISamples")]                     public int     maxGISamples;
-        [NativeName("m_MaxEnvSamples")]                    public int     maxEnvSamples;
-        [NativeName("m_AvgDirectSamples")]                 public int     avgDirectSamples;
-        [NativeName("m_AvgGISamples")]                     public int     avgGISamples;
-        [NativeName("m_AvgEnvSamples")]                    public int     avgEnvSamples;
-
-        [NativeName("m_ForceStop")]                        public bool     avgGIForceStop;
-
-        [NativeName("m_Progress")]                         public float   progress;
-        [NativeName("m_TilingMode")]                       public int     tilingMode;
-        [NativeName("m_TilingPassNum")]                    public int     tilingPassNum;
-    }
-
-    [UsedByNativeCode]
-    [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
-    internal struct LightProbesConvergence
-    {
-        public bool IsConverged() { return probeSetCount == convergedProbeSetCount; }
-        public bool IsValid() { return -1 != probeSetCount; }
-
-        [NativeName("m_ProbeSetCount")]             public int  probeSetCount;
-        [NativeName("m_ConvergedProbeSetCount")]    public int  convergedProbeSetCount;
-    }
-
-    [UsedByNativeCode]
-    [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
     internal struct LightmapSize
     {
         [NativeName("m_Width")]  public int width;
@@ -156,11 +104,11 @@ namespace UnityEditor
         public delegate void OnStartedFunction();
         public delegate void OnCompletedFunction();
 
-//        [Obsolete("Lightmapping.giWorkflowMode is obsolete, use LightingSettings.autoGenerate instead. ", false)]
+        [Obsolete("Lightmapping.giWorkflowMode is obsolete.", false)]
         public static GIWorkflowMode giWorkflowMode
         {
-            get { return GetLightingSettingsOrDefaultsFallback().autoGenerate ? GIWorkflowMode.Iterative : GIWorkflowMode.OnDemand; }
-            set { GetOrCreateLightingsSettings().autoGenerate = (value == GIWorkflowMode.Iterative); }
+            get => GIWorkflowMode.OnDemand;
+            set { }
         }
 
 //        [Obsolete("Lightmapping.realtimeGI is obsolete, use LightingSettings.realtimeGI instead. ", false)]
@@ -191,16 +139,22 @@ namespace UnityEditor
             set { GetOrCreateLightingsSettings().albedoBoost = value; }
         }
 
-        [FreeFunction]
-        private static extern void SetLightBakingIsInteractive(bool value);
-
-        [FreeFunction]
-        private static extern bool GetLightBakingIsInteractive();
+        [RequiredByNativeCode]
+        internal static bool GetIsInteractive()
+        {
+            return SceneView.IsInteractiveBakingEnabled();
+        }
 
         internal static bool isInteractive
         {
-            set { SetLightBakingIsInteractive(value); }
-            get { return GetLightBakingIsInteractive(); }
+            get { return GetIsInteractive(); }
+        }
+
+        [RequiredByNativeCode]
+        internal static void KickSceneViewsOutOfInteractiveMode()
+        {
+            foreach (SceneView sv in SceneView.sceneViews)
+                sv.debugDrawModesUseInteractiveLightBakingData = false;
         }
 
         // Set concurrent jobs type. Warning, high priority can impact Editor performance
@@ -250,23 +204,7 @@ namespace UnityEditor
         internal static extern bool isProgressiveLightmapperDone {[NativeName("IsBakedGIDone")] get; }
 
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern ulong occupiedTexelCount { get; }
-
-        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern ulong GetVisibleTexelCount(int lightmapIndex);
-
-        // TODO: Note that 'atlasCount' is only used in auto mode, it can be deleted when auto mode is removed!
-        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern int atlasCount { [NativeName("GetAtlasCount")] get; }
-
-        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern LightmapConvergence GetLightmapConvergence(int lightmapIndex);
-
-        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern RunningBakeInfo GetRunningBakeInfo();
-
-        [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern LightProbesConvergence GetLightProbesConvergence();
 
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float ComputeTotalGPUMemoryUsageInBytes();
@@ -435,6 +373,14 @@ namespace UnityEditor
             if (completed != null)
                 completed();
 #pragma warning restore 0618
+        }
+
+        internal static event Action bakeCancelled;
+
+        private static void Internal_CallBakeCancelledFunctions()
+        {
+            if (bakeCancelled != null)
+                bakeCancelled();
         }
 
         internal static event Action<string> bakeAnalytics;

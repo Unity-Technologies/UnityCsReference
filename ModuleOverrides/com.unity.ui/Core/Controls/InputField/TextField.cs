@@ -177,9 +177,6 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The string currently being exposed by the field.
         /// </summary>
-        /// <remarks>
-        /// Note that changing this will not trigger a change event to be sent.
-        /// </remarks>
         public override string value
         {
             get { return base.value; }

@@ -976,5 +976,10 @@ namespace UnityEditorInternal
         [FreeFunction]
         [NativeHeader("Editor/Src/Undo/DefaultParentObjectUndo.h")]
         internal static extern void RegisterSetDefaultParentObjectUndo(string sceneGUID, int instanceID, string undoName);
+
+        // Aux window functionality is quite brittle. It is strongly advised to avoid
+        // using this method but if you really need it, consult Desktop team first.
+        [StaticAccessor("GetAuxWindowManager()", StaticAccessorType.Dot)]
+        internal static extern void RetainAuxWindows();
     }
 }

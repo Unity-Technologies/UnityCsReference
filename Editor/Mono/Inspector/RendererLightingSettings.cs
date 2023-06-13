@@ -548,11 +548,12 @@ namespace UnityEditor
             if (m_LightmapIndex == null || m_LightmapIndex.intValue >= 0xFFFE)
                 return;
 
-            Hash128 contentHash = LightmapVisualizationUtility.GetBakedGITextureHash(m_LightmapIndex.intValue, 0, GITextureType.Baked);
+            const bool useInteractiveLightBakingData = false;
+            Hash128 contentHash = LightmapVisualizationUtility.GetBakedGITextureHash(m_LightmapIndex.intValue, 0, GITextureType.Baked, useInteractiveLightBakingData);
 
             // if we need to fetch a new texture
             if (m_CachedBakedTexture.texture == null || m_CachedBakedTexture.contentHash != contentHash)
-                m_CachedBakedTexture = LightmapVisualizationUtility.GetBakedGITexture(m_LightmapIndex.intValue, 0, GITextureType.Baked);
+                m_CachedBakedTexture = LightmapVisualizationUtility.GetBakedGITexture(m_LightmapIndex.intValue, 0, GITextureType.Baked, useInteractiveLightBakingData);
 
             if (m_CachedBakedTexture.texture == null)
                 return;

@@ -92,34 +92,29 @@ namespace UnityEditor
             private static readonly string kShadingMode = "Shading Mode";
             private static readonly string kMiscellaneous = "Miscellaneous";
             private static readonly string kDeferred = "Deferred";
-            private static readonly string kGlobalIllumination = "Global Illumination";
+            private static readonly string kLighting = "Lighting";
             private static readonly string kRealtimeGI = "Realtime Global Illumination";
             private static readonly string kBakedGI = "Baked Global Illumination";
-            private static readonly string kMaterialValidation = "Material Validation";
 
             // Map all builtin DrawCameraMode entries
             // This defines the order in which the entries appear in the dropdown menu!
             public static readonly SceneView.CameraMode[] sBuiltinCameraModes =
             {
-                new SceneView.CameraMode(DrawCameraMode.Textured, "Shaded", kShadingMode),
-                new SceneView.CameraMode(DrawCameraMode.Wireframe, "Wireframe", kShadingMode),
-                new SceneView.CameraMode(DrawCameraMode.TexturedWire, "Shaded Wireframe", kShadingMode),
+                new SceneView.CameraMode(DrawCameraMode.Textured, "Shaded", kShadingMode, false),
+                new SceneView.CameraMode(DrawCameraMode.Wireframe, "Wireframe", kShadingMode, false),
+                new SceneView.CameraMode(DrawCameraMode.TexturedWire, "Shaded Wireframe", kShadingMode, false),
 
-                new SceneView.CameraMode(DrawCameraMode.DeferredDiffuse, "Albedo", kDeferred),
-                new SceneView.CameraMode(DrawCameraMode.DeferredSpecular, "Specular", kDeferred),
-                new SceneView.CameraMode(DrawCameraMode.DeferredSmoothness, "Smoothness", kDeferred),
-                new SceneView.CameraMode(DrawCameraMode.DeferredNormal, "Normal", kDeferred),
+                new SceneView.CameraMode(DrawCameraMode.GIContributorsReceivers, "Contributors / Receivers", kLighting),
+                new SceneView.CameraMode(DrawCameraMode.ShadowCascades, "Shadow Cascades", kLighting),
 
-                new SceneView.CameraMode(DrawCameraMode.Systems, "Systems", kGlobalIllumination),
-                new SceneView.CameraMode(DrawCameraMode.Clustering, "Clustering", kGlobalIllumination),
-                new SceneView.CameraMode(DrawCameraMode.LitClustering, "Lit Clustering", kGlobalIllumination),
-                new SceneView.CameraMode(DrawCameraMode.RealtimeCharting, "UV Charts", kGlobalIllumination),
-                new SceneView.CameraMode(DrawCameraMode.GIContributorsReceivers, "Contributors / Receivers", kGlobalIllumination),
-
-                new SceneView.CameraMode(DrawCameraMode.RealtimeAlbedo, "Albedo", kRealtimeGI),
-                new SceneView.CameraMode(DrawCameraMode.RealtimeEmissive, "Emissive", kRealtimeGI),
                 new SceneView.CameraMode(DrawCameraMode.RealtimeIndirect, "Indirect", kRealtimeGI),
                 new SceneView.CameraMode(DrawCameraMode.RealtimeDirectionality, "Directionality", kRealtimeGI),
+                new SceneView.CameraMode(DrawCameraMode.RealtimeAlbedo, "Albedo", kRealtimeGI),
+                new SceneView.CameraMode(DrawCameraMode.RealtimeEmissive, "Emissive", kRealtimeGI),
+                new SceneView.CameraMode(DrawCameraMode.RealtimeCharting, "UV Charts", kRealtimeGI),
+                new SceneView.CameraMode(DrawCameraMode.Systems, "Systems", kRealtimeGI),
+                new SceneView.CameraMode(DrawCameraMode.Clustering, "Clustering", kRealtimeGI),
+                new SceneView.CameraMode(DrawCameraMode.LitClustering, "Lit Clustering", kRealtimeGI),
 
                 new SceneView.CameraMode(DrawCameraMode.BakedLightmap, "Baked Lightmap", kBakedGI),
                 new SceneView.CameraMode(DrawCameraMode.BakedDirectionality, "Directionality", kBakedGI),
@@ -129,20 +124,22 @@ namespace UnityEditor
                 new SceneView.CameraMode(DrawCameraMode.BakedCharting, "UV Charts", kBakedGI),
                 new SceneView.CameraMode(DrawCameraMode.BakedTexelValidity, "Texel Validity", kBakedGI),
                 new SceneView.CameraMode(DrawCameraMode.BakedUVOverlap, "UV Overlap", kBakedGI),
-                new SceneView.CameraMode(DrawCameraMode.BakedLightmapCulling, "Baked Lightmap Culling", kBakedGI),
                 new SceneView.CameraMode(DrawCameraMode.BakedIndices, "Lightmap Indices", kBakedGI),
                 new SceneView.CameraMode(DrawCameraMode.LightOverlap, "Light Overlap", kBakedGI),
 
-                new SceneView.CameraMode(DrawCameraMode.ValidateAlbedo, "Validate Albedo", kMaterialValidation),
-                new SceneView.CameraMode(DrawCameraMode.ValidateMetalSpecular, "Validate Metal Specular", kMaterialValidation),
+                new SceneView.CameraMode(DrawCameraMode.DeferredDiffuse, "Albedo", kDeferred),
+                new SceneView.CameraMode(DrawCameraMode.DeferredSpecular, "Specular", kDeferred),
+                new SceneView.CameraMode(DrawCameraMode.DeferredSmoothness, "Smoothness", kDeferred),
+                new SceneView.CameraMode(DrawCameraMode.DeferredNormal, "Normal", kDeferred),
 
-                new SceneView.CameraMode(DrawCameraMode.ShadowCascades, "Shadow Cascades", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.RenderPaths, "Render Paths", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.AlphaChannel, "Alpha Channel", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.Overdraw, "Overdraw", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.Mipmaps, "Mipmaps", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.TextureStreaming, "Texture Streaming", kMiscellaneous),
                 new SceneView.CameraMode(DrawCameraMode.SpriteMask, "Sprite Mask", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.ValidateAlbedo, "Validate Albedo", kMiscellaneous),
+                new SceneView.CameraMode(DrawCameraMode.ValidateMetalSpecular, "Validate Metal Specular", kMiscellaneous),
             };
 
         }
@@ -157,12 +154,12 @@ namespace UnityEditor
                 int modes;
 
                 // Hide unsupported items and headers
-                headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode))
+                headers = Styles.sBuiltinCameraModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show)
                               .Select(mode => mode.section).Distinct().Count() +
-                          SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode))
+                          SceneView.userDefinedModes.Where(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show)
                               .Select(mode => mode.section).Distinct().Count();
-                modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode)) +
-                        SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode));
+                modes = Styles.sBuiltinCameraModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show) +
+                        SceneView.userDefinedModes.Count(mode => m_SceneView.IsCameraDrawModeSupported(mode) && mode.show);
 
                 return UpdatedHeight(headers, modes, GraphicsSettings.renderPipelineAsset != null);
             }
@@ -191,8 +188,8 @@ namespace UnityEditor
                 return;
 
             // We do not use the layout event
-           if (Event.current.type == EventType.Layout)
-               return;
+            if (Event.current.type == EventType.Layout)
+                return;
 
             Draw(rect.width);
 
@@ -254,6 +251,9 @@ namespace UnityEditor
             foreach (SceneView.CameraMode mode in SceneView.userDefinedModes.OrderBy(mode => mode.section)
                          .Concat(Styles.sBuiltinCameraModes))
             {
+                if (!mode.show)
+                    continue;
+
                 // Draw separators and headers
                 if (mode.drawMode != DrawCameraMode.UserDefined && !m_SceneView.IsCameraDrawModeSupported(mode))
                     // Hide unsupported items and headers
@@ -318,6 +318,9 @@ namespace UnityEditor
             foreach (SceneView.CameraMode mode in SceneView.userDefinedModes.OrderBy(mode => mode.section)
                          .Concat(Styles.sBuiltinCameraModes))
             {
+                if (!mode.show)
+                    continue;
+
                 if (mode.drawMode != DrawCameraMode.UserDefined && !m_SceneView.IsCameraDrawModeSupported(mode))
                     continue;
 

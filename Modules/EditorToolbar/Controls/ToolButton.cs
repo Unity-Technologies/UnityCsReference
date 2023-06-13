@@ -115,8 +115,16 @@ namespace UnityEditor.Toolbars
 
         void OnMouseDown(MouseDownEvent evt)
         {
-            this.CaptureMouse();
+            //at the top of the function to ensure we don't get weird behavior where the scene view steals the input while right clicking
             evt.StopPropagation();
+
+            if (evt.button != 0)
+                return;
+
+            if (m_ToolVariantDropdown != null)
+                return;
+
+            this.CaptureMouse();
 
             if (hasVariants)
                 m_OpenMenuScheduler = schedule.Execute(OpenVariantsDropdown).StartingIn(k_DelayBeforeOpenDropdown);
@@ -232,6 +240,9 @@ namespace UnityEditor.Toolbars
 
         void OnMouseUp(MouseUpEvent evt)
         {
+            if (evt.button != 0)
+                return;
+
             m_OpenMenuScheduler?.Pause();
 
             // If the button was clicked and released, activate current variant

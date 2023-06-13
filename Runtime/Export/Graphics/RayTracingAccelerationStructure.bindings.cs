@@ -142,6 +142,26 @@ namespace UnityEngine.Rendering
     [MovedFrom("UnityEngine.Experimental.Rendering")]
     public struct RayTracingMeshInstanceConfig
     {
+        public RayTracingMeshInstanceConfig()
+        {
+            mesh = null;
+            subMeshIndex = 0;
+            material = null;
+            subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
+            dynamicGeometry = false;
+            materialProperties = null;
+            enableTriangleCulling = true;
+            frontTriangleCounterClockwise = false;
+            layer = 0;
+            renderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
+            mask = 0xFF;
+            motionVectorMode = MotionVectorGenerationMode.Camera;
+            lightProbeUsage = LightProbeUsage.Off;
+            lightProbeProxyVolume = null;
+            accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+            accelerationStructureBuildFlagsOverride = false;
+        }
+
         public RayTracingMeshInstanceConfig(Mesh mesh, uint subMeshIndex, Material material)
         {
             this.mesh = mesh;
@@ -160,8 +180,8 @@ namespace UnityEngine.Rendering
             lightProbeProxyVolume = null;
             accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
             accelerationStructureBuildFlagsOverride = false;
-
         }
+
         public Mesh mesh;
         public uint subMeshIndex;
         public RayTracingSubMeshFlags subMeshFlags;
@@ -182,6 +202,21 @@ namespace UnityEngine.Rendering
 
     public struct RayTracingAABBsInstanceConfig
     {
+        public RayTracingAABBsInstanceConfig()
+        {
+            aabbBuffer = null;
+            aabbCount = 0;
+            material = null;
+            dynamicGeometry = false;
+            opaqueMaterial = true;
+            aabbOffset = 0;
+            materialProperties = null;
+            layer = 0;
+            mask = 0xFF;
+            accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+            accelerationStructureBuildFlagsOverride = false;
+        }
+
         public RayTracingAABBsInstanceConfig(GraphicsBuffer aabbBuffer, int aabbCount, bool dynamicGeometry, Material material)
         {
             this.aabbBuffer = aabbBuffer;
@@ -195,7 +230,6 @@ namespace UnityEngine.Rendering
             mask = 0xFF;
             accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
             accelerationStructureBuildFlagsOverride = false;
-
         }
         public GraphicsBuffer aabbBuffer { get; set; }
         public int aabbCount { get; set; }
@@ -206,6 +240,81 @@ namespace UnityEngine.Rendering
         public MaterialPropertyBlock materialProperties { get; set; }
         public int layer { get; set; }
         public uint mask { get; set; }
+        public RayTracingAccelerationStructureBuildFlags accelerationStructureBuildFlags { get; set; }
+        public bool accelerationStructureBuildFlagsOverride { get; set; }
+    }
+
+    public struct RayTracingGeometryInstanceConfig
+    {
+        public RayTracingGeometryInstanceConfig()
+        {
+            material = null;
+            vertexBuffer = null;
+            indexBuffer = null;
+            vertexAttributes = null;
+            vertexStart = 0;
+            indexStart = 0;
+            vertexCount = -1;
+            indexCount = -1;
+            subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
+            dynamicGeometry = false;
+            materialProperties = null;
+            enableTriangleCulling = true;
+            frontTriangleCounterClockwise = false;
+            layer = 0;
+            renderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
+            mask = 0xFF;
+            motionVectorMode = MotionVectorGenerationMode.Camera;
+            lightProbeUsage = LightProbeUsage.Off;
+            lightProbeProxyVolume = null;
+            accelerationStructureBuildFlagsOverride = false;
+            accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+        }
+
+        public RayTracingGeometryInstanceConfig(GraphicsBuffer vertexBuffer, VertexAttributeDescriptor[] vertexAttributes, GraphicsBuffer indexBuffer, Material material)
+        {
+            this.material = material;
+            this.vertexBuffer = vertexBuffer;
+            this.indexBuffer = indexBuffer;
+            this.vertexAttributes = vertexAttributes;
+            vertexStart = 0;
+            indexStart = 0;
+            vertexCount = -1;
+            indexCount = -1;
+            subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
+            dynamicGeometry = false;
+            materialProperties = null;
+            enableTriangleCulling = true;
+            frontTriangleCounterClockwise = false;
+            layer = 0;
+            renderingLayerMask = GraphicsSettings.defaultRenderingLayerMask;
+            mask = 0xFF;
+            motionVectorMode = MotionVectorGenerationMode.Camera;
+            lightProbeUsage = LightProbeUsage.Off;
+            lightProbeProxyVolume = null;
+            accelerationStructureBuildFlagsOverride = false;
+            accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
+        }
+
+        public GraphicsBuffer vertexBuffer { get; set; }
+        public VertexAttributeDescriptor[] vertexAttributes { get; set; }
+        public uint vertexStart { get; set; }
+        public int vertexCount { get; set; }
+        public GraphicsBuffer indexBuffer { get; set; }
+        public uint indexStart { get; set; }
+        public int indexCount { get; set; }
+        public RayTracingSubMeshFlags subMeshFlags { get; set; }
+        public bool dynamicGeometry {  get; set; }
+        public Material material { get; set; }
+        public MaterialPropertyBlock materialProperties { get; set; }
+        public bool enableTriangleCulling { get; set; }
+        public bool frontTriangleCounterClockwise { get; set; }
+        public int layer { get; set; }
+        public uint renderingLayerMask { get; set; }
+        public uint mask { get; set; }
+        public MotionVectorGenerationMode motionVectorMode { get; set; }
+        public LightProbeUsage lightProbeUsage { get; set; }
+        public LightProbeProxyVolume lightProbeProxyVolume { get; set; }
         public RayTracingAccelerationStructureBuildFlags accelerationStructureBuildFlags { get; set; }
         public bool accelerationStructureBuildFlagsOverride { get; set; }
     }
@@ -401,6 +510,62 @@ namespace UnityEngine.Rendering
                 return AddMeshInstance(config, matrix, &temp, id);
             }
             return AddMeshInstance(config, matrix, null, id);
+        }
+
+        public unsafe int AddInstance(in RayTracingGeometryInstanceConfig config, Matrix4x4 matrix, [DefaultValue("null")] Matrix4x4? prevMatrix = null, uint id = 0xFFFFFFFF)
+        {
+            if (config.vertexBuffer == null)
+                throw new ArgumentException("config.vertexBuffer must not be null.");
+
+            if (config.vertexCount == -1 && config.vertexStart >= config.vertexBuffer.count)
+                throw new ArgumentOutOfRangeException("config.vertexStart", "config.vertexStart is out of range. Not enough vertices in the vertex buffer.");
+
+            if (config.vertexCount != -1 && config.vertexStart + config.vertexCount > config.vertexBuffer.count)
+                throw new ArgumentOutOfRangeException("config.vertexStart", "config.vertexStart + config.vertexCount is out of range. Not enough vertices in the vertex buffer.");
+
+            int vertexCount = (config.vertexCount < 0) ? config.vertexBuffer.count : config.vertexCount;
+
+            if (vertexCount == 0)
+                throw new ArgumentOutOfRangeException("config.vertexCount", "The amount of vertices used must be greater than 0.");
+
+            if (config.indexBuffer != null)
+            {
+                if (config.indexBuffer.count < 3)
+                    throw new ArgumentOutOfRangeException("config.indexBuffer", "config.indexBuffer must contain at least 3 indices.");
+
+                if (config.indexCount == -1 && config.indexStart >= config.indexBuffer.count)
+                    throw new ArgumentOutOfRangeException("config.indexStart", "config.indexStart is out of range. Not enough indices in the index buffer.");
+
+                if (config.indexCount != -1 && config.indexStart + config.indexCount > config.indexBuffer.count)
+                    throw new ArgumentOutOfRangeException("config.indexStart", "config.indexStart + config.indexCount is out of range. Not enough indices in the index buffer.");
+
+                int indexCount = (config.indexCount < 0) ? config.indexBuffer.count : config.indexCount;
+
+                if (indexCount % 3 != 0)
+                    throw new ArgumentOutOfRangeException("config.indexBuffer", $"The amount of indices used must be a multiple of 3. Only triangle geometries are supported. Currently using {indexCount} indices.");
+            }
+            else
+            {
+                if (vertexCount % 3 != 0)
+                    throw new ArgumentOutOfRangeException("config.vertexBuffer", $"When config.indexBuffer is null, the amount of vertices used must be a multiple of 3. Only triangle geometries are supported. Currently using {vertexCount} vertices.");
+            }
+
+            if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
+                throw new ArgumentException("config.lightProbeProxyVolume must not be null if config.lightProbeUsage is set to UseProxyVolume.");
+
+            if (config.vertexAttributes == null)
+                throw new ArgumentNullException("config.vertexAttributes");
+
+            if (config.vertexAttributes.Length == 0)
+                throw new ArgumentException("config.vertexAttributes must contain at least one entry.");
+
+            if (prevMatrix.HasValue)
+            {
+                Matrix4x4 temp = prevMatrix.Value;
+                return AddGeometryInstance(config, matrix, &temp, id);
+            }
+
+            return AddGeometryInstance(config, matrix, null, id);
         }
 
         public unsafe int AddInstances<T>(in RayTracingMeshInstanceConfig config, T[] instanceData, [DefaultValue("-1")] int instanceCount = -1, [DefaultValue("0")] int startInstance = 0, uint id = 0xFFFFFFFF) where T : unmanaged
@@ -621,10 +786,13 @@ namespace UnityEngine.Rendering
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::AddInstanceSubMeshFlagsArray", HasExplicitThis = true)]
         extern private int AddInstanceSubMeshFlagsArray([NotNull] Renderer targetRenderer, RayTracingSubMeshFlags[] subMeshFlags, bool enableTriangleCulling = true, bool frontTriangleCounterClockwise = false, uint mask = 0xFF, uint id = 0xFFFFFFFF);
 
-        [FreeFunction("RayTracingAccelerationStructure_Bindings::AddMeshInstance", HasExplicitThis = true, ThrowsException = true)]
+        [FreeFunction("RayTracingAccelerationStructure_Bindings::AddMeshInstance", HasExplicitThis = true)]
         extern unsafe private int AddMeshInstance(RayTracingMeshInstanceConfig config, Matrix4x4 matrix, Matrix4x4* prevMatrix, uint id = 0xFFFFFFFF);
-		
-        [FreeFunction("RayTracingAccelerationStructure_Bindings::AddMeshInstances", HasExplicitThis = true, ThrowsException = true)]
+
+        [FreeFunction("RayTracingAccelerationStructure_Bindings::AddGeometryInstance", HasExplicitThis = true)]
+        extern unsafe private int AddGeometryInstance(in RayTracingGeometryInstanceConfig config, Matrix4x4 matrix, Matrix4x4* prevMatrix, uint id = 0xFFFFFFFF);
+
+        [FreeFunction("RayTracingAccelerationStructure_Bindings::AddMeshInstances", HasExplicitThis = true)]
 		extern unsafe private int AddMeshInstances(RayTracingMeshInstanceConfig config, IntPtr instancedData, RenderInstancedDataLayout layout, uint instanceCount, uint id = 0xFFFFFFFF);
 
         [FreeFunction("RayTracingAccelerationStructure_Bindings::AddAABBsInstance", HasExplicitThis = true)]

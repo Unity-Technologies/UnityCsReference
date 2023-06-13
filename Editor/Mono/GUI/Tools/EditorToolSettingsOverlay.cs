@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEditor.Overlays;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -162,6 +163,14 @@ namespace UnityEditor.EditorTools
             root.Add(context);
             root.Add(tool);
             return root;
+        }
+
+        [Shortcut("Overlays/Show Tool Settings", typeof(SceneView), KeyCode.S)]
+        static void ShowOverlay(ShortcutArguments args)
+        {
+            var window = args.context as EditorWindow;
+            if (window is ISupportsOverlays)
+                window.overlayCanvas.CreateOverlayPopup<EditorToolSettingsOverlay>();
         }
     }
 }

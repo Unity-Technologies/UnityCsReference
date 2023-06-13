@@ -128,7 +128,7 @@ namespace UnityEditor
         {
             m_ScrollPosition = GUILayout.BeginScrollView(m_ScrollPosition);
 
-            if (!Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate && !isRealtimeLightmap)
+            if (!isRealtimeLightmap)
             {
                 EditorGUI.BeginChangeCheck();
                 var lda = (LightingDataAsset)EditorGUILayout.ObjectField(Styles.LightingDataAsset, Lightmapping.lightingDataAsset, typeof(LightingDataAsset), true);

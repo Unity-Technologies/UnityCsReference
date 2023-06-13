@@ -295,7 +295,7 @@ namespace UnityEditor
 
         protected override bool BeginDrawPreviewAndLabels()
         {
-            if (m_PreviewWindow && Event.current.type == EventType.Repaint)
+            if (m_PreviewWindow && Event.current?.type == EventType.Repaint)
                 m_PreviewWindow.Repaint();
             return m_PreviewWindow == null;
         }
@@ -314,9 +314,15 @@ namespace UnityEditor
                         () =>
                         {
                             if (m_PreviewWindow == null)
+                            {
+                                hasFloatingPreviewWindow = true;
                                 DetachPreview(false);
+                            }
                             else
+                            {
                                 m_PreviewWindow.Close();
+                                hasFloatingPreviewWindow = false;
+                            }
                         });
                     menu.AddItem(
                         EditorGUIUtility.TrTextContent(m_PreviewResizer.GetExpanded()
@@ -337,12 +343,47 @@ namespace UnityEditor
                 DetachPreview();
         }
 
+        protected override void CreatePreviewEllipsisMenu(InspectorPreviewWindow window, PropertyEditor editor)
+        {
+            if (editor.previewWindow != null)
+            {
+                window.ClearEllipsisMenu();
+                window.AppendActionToEllipsisMenu(
+                    "Convert to Floating Window",
+                    (e) =>
+                    {
+                        if (m_PreviewWindow == null)
+                        {
+                            DetachPreview(false);
+                            hasFloatingPreviewWindow = true;
+                            window.parent.Remove(window);
+                        }
+                        else
+                        {
+                            hasFloatingPreviewWindow = false;
+                            m_PreviewWindow.Close();
+                        }
+                    },
+                    a => hasFloatingPreviewWindow ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+
+                window.AppendActionToEllipsisMenu(
+                    "Minimize in Inspector",
+                    (e) =>
+                    {
+                        editor.ExpandCollapsePreview();
+                    },
+                    a => !editor.showingPreview ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal
+                );
+            }
+        }
+
         private void DetachPreview(bool exitGUI = true)
         {
             if (Event.current != null)
                 Event.current.Use();
             m_PreviewWindow = CreateInstance(typeof(PreviewWindow)) as PreviewWindow;
             m_PreviewWindow.SetParentInspector(this);
+            m_PreviewWindow.RebuildContentsContainers();
             m_PreviewWindow.Show();
             Repaint();
             UIEventRegistration.MakeCurrentIMGUIContainerDirty();

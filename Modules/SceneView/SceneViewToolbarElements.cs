@@ -12,70 +12,189 @@ using FrameCaptureDestination = UnityEngine.Apple.FrameCaptureDestination;
 
 namespace UnityEditor.Toolbars
 {
-    [EditorToolbarElement("SceneView/Camera Mode", typeof(SceneView))]
-    sealed class CameraModeElement : EditorToolbarDropdown, IAccessContainerWindow
+    [EditorToolbarElement("SceneView/Common Camera Mode", typeof(SceneView))]
+    sealed class CommonCameraModeElement : VisualElement, IAccessContainerWindow
     {
         public EditorWindow containerWindow { get; set; }
         SceneView sceneView => containerWindow as SceneView;
 
-        static readonly string s_UssClassName_Shaded = "cameramode-shaded";
-        static readonly string s_UssClassName_ShadedWireframe = "cameramode-shadedwireframe";
         static readonly string s_UssClassName_Wireframe = "cameramode-wireframe";
-        static readonly string s_UssClassName_Debug = "cameramode-debug";
+        static readonly string s_UssClassName_ShadedWireframe = "cameramode-shadedwireframe";
+        static readonly string s_UssClassName_Unlit = "cameramode-unlit";
+        static readonly string s_UssClassName_Shaded = "cameramode-shaded";
 
-        string currentUssClassName;
+        readonly EditorToolbarToggle m_WireframeButton;
+        readonly EditorToolbarToggle m_ShadedWireframeButton;
+        readonly EditorToolbarToggle m_UnlitButton;
+        readonly EditorToolbarToggle m_ShadedButton;
+        readonly VisualElement m_UIElementsRoot;
+
+        public CommonCameraModeElement()
+        {
+            name = "CommonCameraModes";
+            EditorToolbarUtility.SetupChildrenAsButtonStrip(this);
+            SceneViewToolbarStyles.AddStyleSheets(this);
+
+            Add(m_UIElementsRoot = new VisualElement());
+            m_UIElementsRoot.AddToClassList("toolbar-contents");
+
+            m_UIElementsRoot.Add(m_WireframeButton = new EditorToolbarToggle
+            {
+                name = "Wireframe",
+                tooltip = "Wireframe Draw Mode",
+            });
+            m_WireframeButton.AddToClassList(s_UssClassName_Wireframe);
+            m_WireframeButton.RegisterValueChangedCallback((evt) =>
+            {
+                sceneView.SwitchToRenderMode(DrawCameraMode.Wireframe);
+            });
+
+            m_UIElementsRoot.Add(m_ShadedWireframeButton = new EditorToolbarToggle
+            {
+                name = "Shaded Wireframe",
+                tooltip = "Shaded Wireframe Draw Mode",
+            });
+            m_ShadedWireframeButton.AddToClassList(s_UssClassName_ShadedWireframe);
+            m_ShadedWireframeButton.RegisterValueChangedCallback((evt) =>
+            {
+                sceneView.SwitchToRenderMode(DrawCameraMode.TexturedWire);
+            });
+
+            m_UIElementsRoot.Add(m_UnlitButton = new EditorToolbarToggle
+            {
+                name = "Unlit",
+                tooltip = "Unlit Draw Mode",
+            });
+            m_UnlitButton.AddToClassList(s_UssClassName_Unlit);
+            m_UnlitButton.RegisterValueChangedCallback((evt) =>
+            {
+                sceneView.SwitchToUnlit();
+            });
+
+            m_UIElementsRoot.Add(m_ShadedButton = new EditorToolbarToggle
+            {
+                name = "Shaded",
+                tooltip = "Shaded Draw Mode",
+            });
+            m_ShadedButton.AddToClassList(s_UssClassName_Shaded);
+            m_ShadedButton.RegisterValueChangedCallback((evt) =>
+            {
+                sceneView.SwitchToRenderMode(DrawCameraMode.Textured);
+            });
+
+            EditorToolbarUtility.SetupChildrenAsButtonStrip(m_UIElementsRoot);
+
+            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
+        }
+
+        void OnAttachedToPanel(AttachToPanelEvent evt)
+        {
+            sceneView.onCameraModeChanged += OnCameraModeChanged;
+            sceneView.debugDrawModesUseInteractiveLightBakingDataChanged += OnUseInteractiveLightBakingDataChanged;
+            sceneView.sceneLightingChanged += OnSceneLightingChanged;
+
+            ValidateShadingMode(sceneView.cameraMode.drawMode);
+        }
+
+        void OnDetachedFromPanel(DetachFromPanelEvent evt)
+        {
+            sceneView.onCameraModeChanged -= OnCameraModeChanged;
+            sceneView.debugDrawModesUseInteractiveLightBakingDataChanged -= OnUseInteractiveLightBakingDataChanged;
+            sceneView.sceneLightingChanged -= OnSceneLightingChanged;
+        }
+
+        void OnCameraModeChanged(SceneView.CameraMode mode) => ValidateShadingMode(mode.drawMode);
+
+        void OnSceneLightingChanged(bool lit)
+        {
+            m_UnlitButton.SetValueWithoutNotify(!lit);
+            ValidateShadingMode(sceneView.cameraMode.drawMode);
+        }
+
+        void OnUseInteractiveLightBakingDataChanged(bool useInteractiveLightBakingData)
+        {
+            ValidateShadingMode(sceneView.cameraMode.drawMode);
+        }
+
+        // Given the current DrawCameraMode, make sure the state of this toolbar is correct.
+        void ValidateShadingMode(DrawCameraMode mode)
+        {
+            m_WireframeButton.SetValueWithoutNotify(false);
+            m_ShadedWireframeButton.SetValueWithoutNotify(false);
+            m_UnlitButton.SetValueWithoutNotify(false);
+            m_ShadedButton.SetValueWithoutNotify(false);
+
+            switch (mode)
+            {
+                case DrawCameraMode.Wireframe:
+                    m_WireframeButton.SetValueWithoutNotify(true);
+                    break;
+                case DrawCameraMode.TexturedWire:
+                    m_ShadedWireframeButton.SetValueWithoutNotify(true);
+                    break;
+                case DrawCameraMode.Textured when !sceneView.sceneLighting:
+                    m_UnlitButton.SetValueWithoutNotify(true);
+                    break;
+                case DrawCameraMode.Textured:
+                    m_ShadedButton.SetValueWithoutNotify(true);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    [EditorToolbarElement("SceneView/Camera Mode", typeof(SceneView))]
+    sealed class CameraModeElement : EditorToolbarDropdownToggle, IAccessContainerWindow
+    {
+        public EditorWindow containerWindow { get; set; }
+        SceneView sceneView => containerWindow as SceneView;
+
+        static readonly string s_UssClassName_Debug = "cameramode-debug";
 
         public CameraModeElement()
         {
             name = "CameraModeDropDown";
-            tooltip = L10n.Tr("The Draw Mode used to display the Scene.");
+            tooltip = L10n.Tr("Debug Draw Mode");
 
-            clicked += () => PopupWindow.Show(worldBound, new SceneRenderModeWindow(sceneView));
+            dropdownClicked += () => PopupWindow.Show(worldBound, new SceneRenderModeWindow(sceneView));
+
+            this.RegisterValueChangedCallback((evt) => sceneView.ToggleLastDebugDrawMode());
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
             AddToClassList(s_UssClassName_Debug);
-            currentUssClassName = s_UssClassName_Debug;
             SceneViewToolbarStyles.AddStyleSheets(this);
         }
 
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
-            SceneViewOnCameraModeChanged(sceneView.cameraMode);
+            sceneView.onCameraModeChanged += OnCameraModeChanged;
+            OnCameraModeChanged(sceneView.cameraMode);
+
             //Settings the icon display explicitly as this is set to DisplayStyle.Flex when icon = null
             //Here the icon is set using USS so on the C# side icon = null
             var iconElement = this.Q<Image>();
             iconElement.style.display = DisplayStyle.Flex;
-            sceneView.onCameraModeChanged += SceneViewOnCameraModeChanged;
         }
 
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        void OnDetachedFromPanel(DetachFromPanelEvent evt)
         {
-            sceneView.onCameraModeChanged -= SceneViewOnCameraModeChanged;
+            sceneView.onCameraModeChanged -= OnCameraModeChanged;
         }
 
-        void SceneViewOnCameraModeChanged(SceneView.CameraMode mode)
+        void OnCameraModeChanged(SceneView.CameraMode mode)
         {
-            RemoveFromClassList(currentUssClassName);
-            switch (mode.name)
+            // These modes are handled in CommonCameraModeElement
+            if (mode.drawMode == DrawCameraMode.Textured || mode.drawMode == DrawCameraMode.Wireframe || mode.drawMode == DrawCameraMode.TexturedWire)
             {
-                case "Shaded":
-                    currentUssClassName = s_UssClassName_Shaded;
-                    break;
-
-                case "Wireframe":
-                    currentUssClassName = s_UssClassName_Wireframe;
-                    break;
-
-                case "Shaded Wireframe":
-                    currentUssClassName = s_UssClassName_ShadedWireframe;
-                    break;
-
-                default:
-                    currentUssClassName = s_UssClassName_Debug;
-                    break;
+                SetValueWithoutNotify(false);
             }
-            AddToClassList(currentUssClassName);
+            else
+            {
+                SetValueWithoutNotify(true);
+            }
         }
     }
 
@@ -109,40 +228,6 @@ namespace UnityEditor.Toolbars
         void OnModeChanged(bool enabled)
         {
             value = enabled;
-        }
-    }
-
-    [EditorToolbarElement("SceneView/Lighting", typeof(SceneView))]
-    sealed class SceneLightingElement : EditorToolbarToggle, IAccessContainerWindow
-    {
-        public EditorWindow containerWindow { get; set; }
-        SceneView sceneView => containerWindow as SceneView;
-
-        public SceneLightingElement()
-        {
-            name = "SceneviewLighting";
-            tooltip = L10n.Tr("When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
-
-            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            this.RegisterValueChangedCallback(evt => sceneView.sceneLighting = evt.newValue);
-            SceneViewToolbarStyles.AddStyleSheets(this);
-        }
-
-        void OnAttachedToPanel(AttachToPanelEvent evt)
-        {
-            value = sceneView.sceneLighting;
-            sceneView.sceneLightingChanged += SceneViewOnsceneLightingChanged;
-        }
-
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
-        {
-            sceneView.sceneLightingChanged -= SceneViewOnsceneLightingChanged;
-        }
-
-        void SceneViewOnsceneLightingChanged(bool lightingOn)
-        {
-            value = lightingOn;
         }
     }
 

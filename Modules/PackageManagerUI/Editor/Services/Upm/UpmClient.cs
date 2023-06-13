@@ -336,20 +336,21 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var packageInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
-            if (packageInfo != null)
+            var resolvedPath = packageInfo?.resolvedPath;
+            if (string.IsNullOrEmpty(resolvedPath))
+                return;
+
+            try
             {
-                try
-                {
-                    // Fix case 1237777, make files writable first
-                    foreach (var file in m_IOProxy.DirectoryGetFiles(packageInfo.resolvedPath, "*", System.IO.SearchOption.AllDirectories))
-                        m_IOProxy.MakeFileWritable(file, true);
-                    m_IOProxy.DeleteDirectory(packageInfo.resolvedPath);
-                    Resolve();
-                }
-                catch (System.IO.IOException e)
-                {
-                    Debug.Log($"[Package Manager Window] Cannot remove embedded package {packageName}: {e.Message}");
-                }
+                // Fix case 1237777, make files writable first
+                foreach (var file in m_IOProxy.DirectoryGetFiles(resolvedPath, "*", System.IO.SearchOption.AllDirectories))
+                    m_IOProxy.MakeFileWritable(file, true);
+                m_IOProxy.DeleteDirectory(resolvedPath);
+                Resolve();
+            }
+            catch (System.IO.IOException e)
+            {
+                Debug.Log($"[Package Manager Window] Cannot remove embedded package {packageName}: {e.Message}");
             }
         }
 

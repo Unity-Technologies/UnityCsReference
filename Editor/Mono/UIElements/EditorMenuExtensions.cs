@@ -8,6 +8,7 @@ using UnityEditor.ShortcutManagement;
 using System.Collections.Generic;
 using System;
 using System.Text.RegularExpressions;
+using UnityEditorInternal;
 
 namespace UnityEditor.UIElements
 {
@@ -60,6 +61,7 @@ namespace UnityEditor.UIElements
 
             const float k_WindowOffset = 9;
 
+            EditorWindow m_ParentWindow;
             Rect m_ParentRect = k_InvalidRect;
             Vector2 m_MaxSize;
             float m_ScrollBarAdjust;
@@ -171,6 +173,11 @@ namespace UnityEditor.UIElements
                 s_ActiveMenus.Add(menu);
 
                 var menuWindow = CreateInstance<ContextMenu>();
+
+                var parentMenu = EditorWindow.focusedWindow as ContextMenu;
+                var parentIsMenu = parentMenu != null;
+                menuWindow.m_ParentWindow = parentIsMenu ? parentMenu.m_ParentWindow : EditorWindow.focusedWindow;
+
                 // Reset loaded layout so doesn't mess up positioning (Linux specific).
                 // Revise once Linux windowing is more robust and predictable.
                 menuWindow.position = new Rect(parent.position, Vector2.one * 50);
@@ -194,9 +201,25 @@ namespace UnityEditor.UIElements
                 menuWindow.m_ScrollBarAdjust = scrollBarWidth;
                 menuWindow.Host(menu);
                 menuWindow.Focus();
+                menuWindow.Repaint();
 
                 menu.menuContainer.RegisterCallback<DetachFromPanelEvent>(e => menu.m_Parent?.contentContainer.Focus());
                 menu.onHide += menuWindow.Close;
+                menu.m_OnBeforePerformAction = (submenu, autoClose) =>
+                {
+                    if (!submenu && autoClose)
+                    {
+                        // If action is going to close menu, focus on the parent
+                        // window to correctly forward possible command events.
+                        menuWindow.m_ParentWindow?.Focus();
+
+                        // When closing, menu will shift focus around prompting
+                        // cleanup of aux windows. If context menu creates aux window,
+                        // without temporary disable of cleanup, aux windows would be
+                        // closed as soon as they are created.
+                        InternalEditorUtility.RetainAuxWindows();
+                    }
+                };
 
                 s_ActiveMenuWindows.Add(menuWindow);
                 return menuWindow;
@@ -495,7 +518,7 @@ namespace UnityEditor.UIElements
 
             menu.onKey += (c, code, mod) =>
             {
-                if (c == '\0')
+                if (c == '\0' || c == '\t')
                     return;
 
                 search.Focus();
@@ -634,7 +657,10 @@ namespace UnityEditor.UIElements
                             }
 
                             if (item.isSubmenu)
+                            {
+                                menu.m_OnBeforePerformAction?.Invoke(item.isSubmenu, menu.autoClose);
                                 item.PerformAction();
+                            }
                         }, EditorPrefs.GetFloat(EditorMenuExtensions.k_AutoExpandDelayKeyName,
                             EditorMenuExtensions.k_SubmenuExpandDelay));
 

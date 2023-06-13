@@ -8,7 +8,7 @@ namespace UnityEngine.Rendering
 {
     public abstract partial class RenderPipelineAsset
     {
-        [Obsolete($"{nameof(renderPipelineType)} is obsolete. Use {nameof(pipelineType)} instead. #from(23.2)", false)]
+        [Obsolete($"This property is obsolete. Use {nameof(pipelineType)} instead. #from(23.2)", false)]
         protected internal virtual Type renderPipelineType
         {
             get
@@ -22,7 +22,7 @@ namespace UnityEngine.Rendering
     public abstract partial class RenderPipelineAsset<TRenderPipeline>
         where TRenderPipeline : RenderPipeline
     {
-        [Obsolete($"{nameof(renderPipelineType)} is obsolete. Use {nameof(pipelineType)} instead. #from(23.2)", false)]
+        [Obsolete($"This property is obsolete. Use {nameof(pipelineType)} instead. #from(23.2)", false)]
         protected internal sealed override Type renderPipelineType => typeof(TRenderPipeline);
     }
 }

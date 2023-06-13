@@ -282,6 +282,7 @@ namespace UnityEngine
 
         extern internal int overrideCount { get; }
         extern internal int lockCount { get; }
+        extern internal bool allowLocking { get; }
 
         [NativeName("IsChildOf")]          extern public bool IsChildOf([NotNull] Material ancestor);
         [NativeName("RevertAllOverrides")] extern public void RevertAllPropertyOverrides();

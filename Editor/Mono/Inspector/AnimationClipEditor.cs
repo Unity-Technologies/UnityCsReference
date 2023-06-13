@@ -501,10 +501,7 @@ namespace UnityEditor
             if (m_IsSelectingMultipleClips)
                 return false;
 
-            if (Event.current.type == EventType.Layout)
-            {
-                InitPreview();
-            }
+            InitPreview();
             return m_AvatarPreview != null;
         }
 

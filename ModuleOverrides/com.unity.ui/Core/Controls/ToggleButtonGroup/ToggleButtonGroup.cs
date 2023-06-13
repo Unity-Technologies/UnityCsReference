@@ -110,6 +110,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string buttonRightClassName = buttonClassName + "--right";
 
+        /// <summary>
+        /// USS class name for the Button if only one is available in the group.
+        /// </summary>
+        public static readonly string buttonStandaloneClassName = buttonClassName + "--standalone";
+
         // Main container that will hold the group of buttons.
         VisualElement m_ButtonGroupContainer;
 
@@ -118,10 +123,6 @@ namespace UnityEngine.UIElements
 
         private bool m_IsMultipleSelection;
         private bool m_AllowEmptySelection;
-        // To be used internally as a source of truth. Because we are providing more flexibility to our users, we need
-        // a copy to alter the data before applying it to the base field's value. Note that this control's value and
-        // this private copy will be synced when an update to the data happens, either internal or external.
-        private ToggleButtonGroupState m_ToggleButtonGroupState;
 
         /// <summary>
         /// Whether all buttons can be selected.
@@ -135,14 +136,15 @@ namespace UnityEngine.UIElements
                 if (m_IsMultipleSelection == value)
                     return;
 
-                var selected = m_ToggleButtonGroupState.GetActiveOptions(stackalloc int[m_ToggleButtonGroupState.length]);
+                var toggleButtonGroupState = this.value;
+                var selected = toggleButtonGroupState.GetActiveOptions(stackalloc int[toggleButtonGroupState.length]);
                 if (selected.Length > 1 && m_Buttons.Count > 0)
                 {
                     // Clear additional selected buttons and assign the first available to be selected
-                    m_ToggleButtonGroupState.ResetAllOptions();
-                    m_ToggleButtonGroupState[selected[0]] = true;
+                    toggleButtonGroupState.ResetAllOptions();
+                    toggleButtonGroupState[selected[0]] = true;
 
-                    SetValueWithoutNotify(m_ToggleButtonGroupState);
+                    SetValueWithoutNotify(toggleButtonGroupState);
                 }
 
                 m_IsMultipleSelection = value;
@@ -168,11 +170,12 @@ namespace UnityEngine.UIElements
                 // Select the first button if empty selection is not allowed
                 if (!value)
                 {
-                    var selected = m_ToggleButtonGroupState.GetActiveOptions(stackalloc int[m_ToggleButtonGroupState.length]);
+                    var toggleButtonGroupState = this.value;
+                    var selected = toggleButtonGroupState.GetActiveOptions(stackalloc int[toggleButtonGroupState.length]);
                     if (selected.Length == 0 && m_Buttons.Count > 0)
                     {
-                        m_ToggleButtonGroupState[0] = true;
-                        SetValueWithoutNotify(m_ToggleButtonGroupState);
+                        toggleButtonGroupState[0] = true;
+                        SetValueWithoutNotify(toggleButtonGroupState);
                     }
                 }
 
@@ -190,7 +193,20 @@ namespace UnityEngine.UIElements
         /// Constructs a ToggleButtonGroup.
         /// </summary>
         /// <param name="label">The text used as a label.</param>
-        public ToggleButtonGroup(string label)
+        public ToggleButtonGroup(string label) : this(label, new ToggleButtonGroupState(0, k_MaxToggleButtons)) { }
+
+        /// <summary>
+        /// Constructs a ToggleButtonGroup.
+        /// </summary>
+        /// <param name="toggleButtonGroupState">The ToggleButtonGroupState to be used by this control.</param>
+        public ToggleButtonGroup(ToggleButtonGroupState toggleButtonGroupState) : this(null, toggleButtonGroupState) { }
+
+        /// <summary>
+        /// Constructs a ToggleButtonGroup.
+        /// </summary>
+        /// <param name="label">The text used as a label.</param>
+        /// <param name="toggleButtonGroupState">The ToggleButtonGroupState to be used by this control.</param>
+        public ToggleButtonGroup(string label, ToggleButtonGroupState toggleButtonGroupState)
             : base(label)
         {
             AddToClassList(ussClassName);
@@ -206,7 +222,23 @@ namespace UnityEngine.UIElements
             m_ButtonGroupContainer.elementAdded += OnButtonGroupContainerElementAdded;
             m_ButtonGroupContainer.elementRemoved += OnButtonGroupContainerElementRemoved;
 
-            m_ToggleButtonGroupState = new ToggleButtonGroupState(0, k_MaxToggleButtons);
+            SetValueWithoutNotify(toggleButtonGroupState);
+        }
+
+        protected override void UpdateMixedValueContent()
+        {
+            if (showMixedValue)
+            {
+                foreach (var button in m_Buttons)
+                {
+                    button.pseudoStates &= ~(PseudoStates.Checked);
+                    button.IncrementVersion(VersionChangeType.Styles);
+                }
+            }
+            else
+            {
+                SetValueWithoutNotify(value);
+            }
         }
 
         /// <summary>
@@ -215,12 +247,10 @@ namespace UnityEngine.UIElements
         /// <param name="newValue">The new value.</param>
         public override void SetValueWithoutNotify(ToggleButtonGroupState newValue)
         {
+            if (newValue.length == 0)
+                newValue = new ToggleButtonGroupState(0, k_MaxToggleButtons);
+
             base.SetValueWithoutNotify(newValue);
-
-            // Sync state in cases where the user interacts directly with SetValueWithoutNotify
-            if (newValue.length > 0 && !m_ToggleButtonGroupState.Equals(newValue))
-                m_ToggleButtonGroupState = newValue;
-
             UpdateButtonStates(newValue);
         }
 
@@ -263,12 +293,13 @@ namespace UnityEngine.UIElements
             m_Buttons = m_ButtonGroupContainer.Query<Button>().ToList();
             UpdateButtonsStyling();
 
-            var selected = m_ToggleButtonGroupState.GetActiveOptions(stackalloc int[m_ToggleButtonGroupState.length]);
+            var toggleButtonGroupState = value;
+            var selected = toggleButtonGroupState.GetActiveOptions(stackalloc int[toggleButtonGroupState.length]);
             // If we don't allow empty selection, we set the first button to be checked.
             if (selected.Length == 0 && !allowEmptySelection)
             {
-                m_ToggleButtonGroupState[0] = true;
-                SetValueWithoutNotify(m_ToggleButtonGroupState);
+                toggleButtonGroupState[0] = true;
+                SetValueWithoutNotify(toggleButtonGroupState);
             }
         }
 
@@ -277,8 +308,9 @@ namespace UnityEngine.UIElements
             if (ve is not Button button)
                 return;
 
+            var toggleButtonGroupState = value;
             var checkedButtonIndex = m_Buttons.IndexOf(button);
-            var selected = m_ToggleButtonGroupState.GetActiveOptions(stackalloc int[m_ToggleButtonGroupState.length]);
+            var selected = toggleButtonGroupState.GetActiveOptions(stackalloc int[toggleButtonGroupState.length]);
             var isRemovedButtonChecked = selected.IndexOf(checkedButtonIndex) != -1;
             button.clickable.clickedWithEventInfo -= OnOptionChange;
 
@@ -290,23 +322,23 @@ namespace UnityEngine.UIElements
 
             if (m_Buttons.Count == 0)
             {
-                m_ToggleButtonGroupState.ResetAllOptions();
-                SetValueWithoutNotify(m_ToggleButtonGroupState);
+                toggleButtonGroupState.ResetAllOptions();
+                SetValueWithoutNotify(toggleButtonGroupState);
             }
             else if (isRemovedButtonChecked)
             {
-                m_ToggleButtonGroupState[checkedButtonIndex] = false;
+                toggleButtonGroupState[checkedButtonIndex] = false;
 
                 if (!allowEmptySelection && selected.Length == 1)
-                    m_ToggleButtonGroupState[0] = true;
+                    toggleButtonGroupState[0] = true;
 
-                SetValueWithoutNotify(m_ToggleButtonGroupState);
+                SetValueWithoutNotify(toggleButtonGroupState);
             }
         }
 
         void UpdateButtonStates(ToggleButtonGroupState options)
         {
-            var span = options.GetActiveOptions(stackalloc int[m_ToggleButtonGroupState.length]);
+            var span = options.GetActiveOptions(stackalloc int[value.length]);
             for (var i = 0; i < m_Buttons.Count; i++)
             {
                 if (span.IndexOf(i) == -1)
@@ -325,37 +357,50 @@ namespace UnityEngine.UIElements
         {
             var button = evt.target as Button;
             var index = m_Buttons.IndexOf(button);
-            var selected = m_ToggleButtonGroupState.GetActiveOptions(stackalloc int[m_ToggleButtonGroupState.length]);
+            var toggleButtonGroupState = value;
+            var selected = toggleButtonGroupState.GetActiveOptions(stackalloc int[toggleButtonGroupState.length]);
+
+            // With showMixedValue, we want to make sure we are starting with an empty state to match the logic inside
+            // the updateMixedValueContent method. Additionally, this makes base.value trigger a valid value change.
+            if (showMixedValue)
+            {
+                var emptiedState = value;
+                emptiedState.ResetAllOptions();
+                if (value != emptiedState)
+                {
+                    SetValueWithoutNotify(emptiedState);
+                }
+            }
 
             if (isMultipleSelection)
             {
                 // Always have one selected even for a multiple selection ToggleButtonGroup - return if we're trying
                 // to deselect the last active one
-                if (!allowEmptySelection && selected.Length == 1 && m_ToggleButtonGroupState[index])
+                if (!allowEmptySelection && selected.Length == 1 && toggleButtonGroupState[index])
                     return;
 
-                if (m_ToggleButtonGroupState[index])
-                    m_ToggleButtonGroupState[index] = false;
+                if (toggleButtonGroupState[index])
+                    toggleButtonGroupState[index] = false;
                 else
-                    m_ToggleButtonGroupState[index] = true;
+                    toggleButtonGroupState[index] = true;
             }
             else
             {
-                if (allowEmptySelection && selected.Length == 1 && m_ToggleButtonGroupState[selected[0]])
+                if (allowEmptySelection && selected.Length == 1 && toggleButtonGroupState[selected[0]])
                 {
-                    m_ToggleButtonGroupState[selected[0]] = false;
+                    toggleButtonGroupState[selected[0]] = false;
 
                     if (index != selected[0])
-                        m_ToggleButtonGroupState[index] = true;
+                        toggleButtonGroupState[index] = true;
                 }
                 else
                 {
-                    m_ToggleButtonGroupState.ResetAllOptions();
-                    m_ToggleButtonGroupState[index] = true;
+                    toggleButtonGroupState.ResetAllOptions();
+                    toggleButtonGroupState[index] = true;
                 }
             }
 
-            value = m_ToggleButtonGroupState;
+            value = toggleButtonGroupState;
         }
 
         void UpdateButtonsStyling()
@@ -364,10 +409,12 @@ namespace UnityEngine.UIElements
             for (var i = 0; i < buttonCount; i++)
             {
                 var button = m_Buttons[i];
-                var isLeftButton = i == 0;
-                var isRightButton = i == buttonCount - 1;
-                var isMiddleButton = !isLeftButton && !isRightButton;
+                var isStandaloneButton = buttonCount == 1;
+                var isLeftButton = i == 0 && !isStandaloneButton;
+                var isRightButton = i == buttonCount - 1 && !isStandaloneButton;
+                var isMiddleButton = !isLeftButton && !isRightButton && !isStandaloneButton;
 
+                button.EnableInClassList(buttonStandaloneClassName, isStandaloneButton);
                 button.EnableInClassList(buttonLeftClassName, isLeftButton);
                 button.EnableInClassList(buttonRightClassName, isRightButton);
                 button.EnableInClassList(buttonMidClassName, isMiddleButton);

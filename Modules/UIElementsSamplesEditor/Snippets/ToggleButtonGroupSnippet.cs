@@ -39,21 +39,21 @@ namespace UnityEditor.UIElements.Samples
             container.Add(csharpToggleButtonGroupSingleSelectionAndAllowEmptySelection);
 
             // Create a ToggleButtonGroup that allows multiple active selections.
-            var csharpToggleButtonGroupAllowMultiSelect = new ToggleButtonGroup("C# Toggle Button Group With Multiple Selection Enabled") { isMultipleSelection = true };
+            var csharpToggleButtonGroupAllowMultiSelect = new ToggleButtonGroup("C# Toggle Button Group with Multiple Selection Enabled") { isMultipleSelection = true };
             csharpToggleButtonGroupAllowMultiSelect.Add(new Button() { text = "X", tooltip = "tooltip text for X" });
             csharpToggleButtonGroupAllowMultiSelect.Add(new Button() { text = "Y", tooltip = "tooltip text for Y" });
             csharpToggleButtonGroupAllowMultiSelect.Add(new Button() { text = "Z", tooltip = "tooltip text for Z" });
             container.Add(csharpToggleButtonGroupAllowMultiSelect);
 
             // Create a ToggleButtonGroup that allows multiple active selections and allow empty selection.
-            var csharpToggleButtonGroupAllowMultiSelectWithAllowEmptySelection = new ToggleButtonGroup("C# Toggle Button Group With Multiple Selection and Allow Empty Selection") { isMultipleSelection = true, allowEmptySelection = true };
+            var csharpToggleButtonGroupAllowMultiSelectWithAllowEmptySelection = new ToggleButtonGroup("C# Toggle Button Group with Multiple Selection and Allow Empty Selection") { isMultipleSelection = true, allowEmptySelection = true };
             csharpToggleButtonGroupAllowMultiSelectWithAllowEmptySelection.Add(new Button() { text = "X", tooltip = "tooltip text for X" });
             csharpToggleButtonGroupAllowMultiSelectWithAllowEmptySelection.Add(new Button() { text = "Y", tooltip = "tooltip text for Y" });
             csharpToggleButtonGroupAllowMultiSelectWithAllowEmptySelection.Add(new Button() { text = "Z", tooltip = "tooltip text for Z" });
             container.Add(csharpToggleButtonGroupAllowMultiSelectWithAllowEmptySelection);
 
             // Create ToggleButtonGroup with a custom class that sets the text's font style to Bold.
-            var csharpToggleButtonGroupWithCustomClass = new ToggleButtonGroup("C# Toggle Button Group With Multiple Selection Enabled");
+            var csharpToggleButtonGroupWithCustomClass = new ToggleButtonGroup("C# Toggle Button Group with a Custom Class");
             csharpToggleButtonGroupWithCustomClass.AddToClassList("my-custom-style");
             csharpToggleButtonGroupWithCustomClass.Add(new Button() { text = "Button A", tooltip = "Bolded font Button A" });
             csharpToggleButtonGroupWithCustomClass.Add(new Button() { text = "Button B", tooltip = "Bolded font Button B" });

@@ -273,10 +273,17 @@ namespace Unity.UI.Builder
                 m_ShouldRefocusSelectorFieldOnBlur = true;
             }
 
-            var newSelectorStr = newValue;
-            if (newSelectorStr.StartsWith(BuilderConstants.UssSelectorClassNameSymbol))
+            var newSelectorStr = newValue.Trim();
+            var selectorTypeSymbol = (newSelectorStr[0]) switch
             {
-                newSelectorStr = BuilderConstants.UssSelectorClassNameSymbol + newSelectorStr.TrimStart(BuilderConstants.UssSelectorClassNameSymbol[0]);
+                '.' => BuilderConstants.UssSelectorClassNameSymbol,
+                '#' => BuilderConstants.UssSelectorNameSymbol,
+                ':' => BuilderConstants.UssSelectorPseudoStateSymbol,
+                _ => ""
+            };
+            if (!string.IsNullOrEmpty(selectorTypeSymbol))
+            {
+                newSelectorStr = selectorTypeSymbol + newSelectorStr.Trim(selectorTypeSymbol[0]).Trim();
             }
 
             if (string.IsNullOrEmpty(newSelectorStr))

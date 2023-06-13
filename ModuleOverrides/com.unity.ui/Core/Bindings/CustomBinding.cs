@@ -30,7 +30,7 @@
         /// <returns>A <see cref="BindingResult"/> indicating if the binding update succeeded or not.</returns>
         protected internal virtual BindingResult Update(in BindingContext context)
         {
-            return new BindingResult(BindingStatus.Pending);
+            return new BindingResult(BindingStatus.Success);
         }
     }
 }

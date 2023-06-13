@@ -57,8 +57,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (DirectoryExists(path))
                     DeleteDirectory(path);
 
-                if (FileExists(path + ".meta"))
-                    DeleteFile(path + ".meta");
+                DeleteIfExists(path + ".meta");
 
                 if (removeEmptyParent)
                 {
@@ -149,7 +148,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual string GetFileName(string filePath) => new NPath(filePath).FileName;
 
-        public virtual void DeleteFile(string filePath) => new NPath(filePath).DeleteIfExists();
+        public virtual void DeleteIfExists(string filePath) => new NPath(filePath).DeleteIfExists();
 
         public virtual bool FileExists(string filePath) => new NPath(filePath).FileExists();
 

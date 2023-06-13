@@ -207,12 +207,12 @@ namespace UnityEngine
         private bool m_Flipped;
         private ContactPoint[] m_LegacyContacts = null;
 
-        public Vector3 impulse => m_Pair.ImpulseSum;
+        public Vector3 impulse => m_Pair.impulseSum;
         public Vector3 relativeVelocity => m_Flipped ? m_Header.m_RelativeVelocity : -m_Header.m_RelativeVelocity;
         public Rigidbody rigidbody => body as Rigidbody;
         public ArticulationBody articulationBody => body as ArticulationBody;
-        public Component body => m_Flipped ? m_Header.Body : m_Header.OtherBody;
-        public Collider collider => m_Flipped ? m_Pair.Collider : m_Pair.OtherCollider;
+        public Component body => m_Flipped ? m_Header.body : m_Header.otherBody;
+        public Collider collider => m_Flipped ? m_Pair.collider : m_Pair.otherCollider;
         public Transform transform { get { return rigidbody != null ? rigidbody.transform : collider.transform; } }
         public GameObject gameObject { get { return body != null ? body.gameObject : collider.gameObject; } }
         internal bool Flipped { get { return m_Flipped; } set { m_Flipped = value; } }
@@ -281,8 +281,8 @@ namespace UnityEngine
                     ptr->m_Normal * sign,
                     ptr->m_Impulse,
                     ptr->m_Separation,
-                    m_Flipped ? m_Pair.OtherColliderInstanceID : m_Pair.ColliderInstanceID,
-                    m_Flipped ? m_Pair.ColliderInstanceID : m_Pair.OtherColliderInstanceID);
+                    m_Flipped ? m_Pair.otherColliderInstanceID : m_Pair.colliderInstanceID,
+                    m_Flipped ? m_Pair.colliderInstanceID : m_Pair.otherColliderInstanceID);
         }
 
         // Get contacts for this collision.

@@ -7,7 +7,6 @@ using UnityEngine.UIElements;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.UIElements.Debugger;
 
 namespace UnityEditor.UIElements.Samples
 {
@@ -170,13 +169,12 @@ namespace UnityEditor.UIElements.Samples
                 m_ContentPanel.Add(sampleItem.makeItem(sampleItem));
             };
 
-            var splitter = new DebuggerSplitter();
+            var splitter = new TwoPaneSplitView(0, k_SplitterLeftPaneStartingWidth,TwoPaneSplitViewOrientation.Horizontal);
             splitter.AddToClassList(k_SplitterClassName);
-            splitter.leftPane.style.width = k_SplitterLeftPaneStartingWidth;
             root.Add(splitter);
 
-            splitter.leftPane.Add(treeView);
-            splitter.rightPane.Add(m_ContentPanel);
+            splitter.Add(treeView);
+            splitter.Add(m_ContentPanel);
 
             treeView.viewDataKey = "samples-tree";
             treeView.fixedItemHeight = 20;

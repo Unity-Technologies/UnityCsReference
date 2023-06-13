@@ -16,8 +16,8 @@ namespace UnityEditor
 
         VisualElement previewElement => m_previewElement ?? (m_previewElement = rootVisualElement.Q(className: "unity-inspector-preview"));
 
+        private readonly string k_PreviewName = "preview-container";
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
-
         public void SetParentInspector(InspectorWindow inspector)
         {
             m_ParentInspectorWindow = inspector;
@@ -47,7 +47,6 @@ namespace UnityEditor
             rootVisualElement.hierarchy.Add(container);
 
             rootVisualElement.AddStyleSheetPath("StyleSheets/InspectorWindow/PreviewWindow.uss");
-
             RebuildContentsContainers();
         }
 
@@ -55,7 +54,10 @@ namespace UnityEditor
         {
             base.OnDisable();
             if (m_ParentInspectorWindow != null)
+            {
+                m_ParentInspectorWindow.hasFloatingPreviewWindow = false;
                 m_ParentInspectorWindow.RebuildContentsContainers();
+            }
         }
 
         protected override void CreateTracker()
@@ -68,80 +70,101 @@ namespace UnityEditor
 
         internal override Editor GetLastInteractedEditor()
         {
+            if (m_ParentInspectorWindow == null)
+                return null;
+
             return m_ParentInspectorWindow.GetLastInteractedEditor();
         }
 
         internal override void RebuildContentsContainers()
         {
+            Editor.m_AllowMultiObjectAccess = true;
             var preview = previewElement;
             preview.Clear();
-            var container = new IMGUIContainer(() =>
-            {
-                CreatePreviewables();
-                DrawPreview();
-            });
-            container.style.flexGrow = 1f;
-            container.style.flexShrink = 0f;
-            container.style.flexBasis = 0f;
+            CreatePreviewables();
 
-            preview.Add(container);
-        }
-
-        protected void DrawPreview()
-        {
-            GUI.color = EditorApplication.isPlayingOrWillChangePlaymode ? HostView.kPlayModeDarken : Color.white;
-            if (m_ParentInspectorWindow == null)
-            {
-                Close();
-                EditorGUIUtility.ExitGUI();
-            }
-
-            Editor.m_AllowMultiObjectAccess = true;
-
-            // Do we have an editor that supports previews? Null if not.
+            previewWindow = new InspectorPreviewWindow();
             IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
             IPreviewable editor = GetEditorThatControlsPreview(editorsWithPreviews);
+            previewWindow = editor?.CreatePreview(previewWindow) as InspectorPreviewWindow;
 
-            bool hasPreview = (editor != null) && editor.HasPreviewGUI();
-
-            // Toolbar
-            Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, EditorStyles.toolbar, GUILayout.Height(kBottomToolbarHeight));
+            if (m_ParentInspectorWindow != null && previewWindow != null)
             {
-                // Label
-                string label = string.Empty;
-                if ((editor != null))
+                if (previewWindow.childCount == 0)
                 {
-                    label = editor.GetPreviewTitle().text;
+                    PrepareToolbar(previewWindow, true);
+                    UpdateLabel(previewWindow);
+                    VisualElement previewPane = previewWindow.GetPreviewPane();
+
+                    // IMGUI fallback
+                    if (previewPane?.childCount == 0)
+                    {
+                        previewPane.Add(DrawPreview());
+                    }
                 }
 
-                GUILayout.Label(label, Styles.preToolbarLabel);
+                SetPreviewStyle(previewWindow);
 
-                GUILayout.FlexibleSpace();
-
-                if (hasPreview)
-                    editor.OnPreviewSettings();
-            } EditorGUILayout.EndHorizontal();
-
-
-            Event evt = Event.current;
-            if (evt.type == EventType.MouseUp && evt.button == 1 && toolbarRect.Contains(evt.mousePosition))
-            {
-                evt.Use();
-                Close();
-                // Don't draw preview if we just closed this window
-                return;
+                if (preview.Q(k_PreviewName) == null)
+                    preview.Add(previewWindow);
             }
+            else
+            {
+                var container = DrawPreview(true);
+                SetPreviewStyle(container);
 
-            // Preview
-            Rect previewPosition = GUILayoutUtility.GetRect(0, 10240, 64, 10240);
+                if (preview.Q(k_PreviewName) == null)
+                    preview.Add(container);
+            }
+        }
 
-            // Draw background
-            if (Event.current.type == EventType.Repaint)
-                Styles.preBackground.Draw(previewPosition, false, false, false, false);
+        void SetPreviewStyle(VisualElement element)
+        {
+            element.style.flexGrow = 1f;
+            element.style.flexShrink = 0f;
+            element.style.flexBasis = 0f;
+            element.name = k_PreviewName;
+        }
 
-            // Draw preview
-            if ((editor != null) && editor.HasPreviewGUI())
-                editor.DrawPreview(previewPosition);
+        IMGUIContainer DrawPreview(bool drawToolbar = false)
+        {
+            return new IMGUIContainer(() =>
+            {
+                IPreviewable[] editorsWithPreviews = GetEditorsWithPreviews(tracker.activeEditors);
+                IPreviewable editor = GetEditorThatControlsPreview(editorsWithPreviews);
+
+                if (drawToolbar)
+                {
+                    Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, EditorStyles.toolbar,
+                        GUILayout.Height(kBottomToolbarHeight));
+                    {
+                        // Label
+                        string label = string.Empty;
+                        if ((editor != null))
+                        {
+                            label = editor.GetPreviewTitle().text;
+                        }
+
+                        GUILayout.Label(label, Styles.preToolbarLabel);
+
+                        GUILayout.FlexibleSpace();
+
+                        if (editor != null && editor.HasPreviewGUI())
+                            editor.OnPreviewSettings();
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                Rect previewPosition = GUILayoutUtility.GetRect(0, 10240, 64, 10240);
+
+                // Draw background
+                if (Event.current.type == EventType.Repaint)
+                    Styles.preBackground.Draw(previewPosition, false, false, false, false);
+
+                // Draw preview
+                if (editor != null && editor.HasPreviewGUI())
+                    editor.DrawPreview(previewPosition);
+            });
         }
 
         public override void AddItemsToMenu(GenericMenu menu)

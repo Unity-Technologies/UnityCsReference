@@ -77,6 +77,11 @@ namespace UnityEditor
             public static readonly GUIContent hierarchyIcon = EditorGUIUtility.IconContent("UnityEditor.SceneHierarchyWindow", "|Open Material Hierarchy Popup."); // right of | means tooltip
             public static readonly GUIContent convertIcon = EditorGUIUtility.IconContent("d_RotateTool", "|This material is in a conversion process."); // right of | means tooltip
 
+            public const string timeUpdateButtonName = "TimeUpdateButton";
+            public const string selectedMeshButtonName = "SelectedMeshButton";
+            public const string lightModeButtonName = "LightModeButton";
+            public const string reflectionProbeDropdownName = "ReflectionProbeDropdown";
+
             public const int kPadding = 3;
             public const int kHierarchyIconWidth = 44;
             public const float kSpaceForFoldoutArrow = 10f;
@@ -1388,18 +1393,18 @@ namespace UnityEditor
         {
             return VectorProperty(prop, new GUIContent(label));
         }
-        
+
         public Vector4 VectorProperty(MaterialProperty prop, GUIContent label)
         {
             Rect r = GetPropertyRect(prop, label, true);
             return VectorProperty(r, prop, label);
         }
-        
+
         public Vector4 VectorProperty(Rect position, MaterialProperty prop, string label)
         {
             return VectorPropertyInternal(position, prop, new GUIContent(label));
         }
-        
+
         public Vector4 VectorProperty(Rect position, MaterialProperty prop, GUIContent label)
         {
             return VectorPropertyInternal(position, prop, label);
@@ -1576,7 +1581,7 @@ namespace UnityEditor
         {
             return TextureProperty(position, prop, new GUIContent(label, string.Empty));
         }
-        
+
         public Texture TextureProperty(Rect position, MaterialProperty prop, GUIContent label)
         {
             bool scaleOffset = ((prop.flags & MaterialProperty.PropFlags.NoScaleOffset) == 0);
@@ -1587,7 +1592,7 @@ namespace UnityEditor
         {
             return TextureProperty(position, prop, label, string.Empty, scaleOffset);
         }
-        
+
         public Texture TextureProperty(Rect position, MaterialProperty prop, string label, string tooltip, bool scaleOffset)
         {
             return TextureProperty(position, prop, new GUIContent(label, tooltip), scaleOffset);
@@ -2566,6 +2571,7 @@ namespace UnityEditor
             {
                 var oldSelectedMeshVal = m_SelectedMesh;
                 m_TimeUpdate = PreviewGUI.CycleButton(m_TimeUpdate, s_TimeIcons);
+
                 m_SelectedMesh = PreviewGUI.CycleButton(m_SelectedMesh, s_MeshIcons);
 
                 if (oldSelectedMeshVal != m_SelectedMesh)
@@ -2761,6 +2767,60 @@ namespace UnityEditor
                 m_CustomShaderGUI.OnMaterialPreviewGUI(this, r, background);
             else
                 DefaultPreviewGUI(r, background);
+        }
+
+        // TO DO: remove IMGUI code after fully finished with UITK one
+        public override VisualElement CreatePreview(VisualElement inspectorPreviewWindow)
+        {
+            var window = inspectorPreviewWindow as InspectorPreviewWindow;
+            var toolbar = window?.GetButtonPane();
+
+            var mat = target as Material;
+            if (!SupportsRenderingPreview(mat))
+                return null;
+
+            Init();
+
+            var viewType = GetPreviewType(mat);
+            if (toolbar != null && (targets.Length > 1 || viewType == PreviewType.Mesh))
+            {
+                window.AddButton(Styles.timeUpdateButtonName, (Texture2D)s_TimeIcons[m_TimeUpdate].image, () => OnTimeUpdateClick(window));
+                window.AddButton(Styles.selectedMeshButtonName, (Texture2D)s_MeshIcons[m_SelectedMesh].image, () => OnSelectedMeshClick(window));
+                window.AddButton(Styles.lightModeButtonName, (Texture2D)s_LightIcons[m_LightMode].image, () => OnLightModeClick(window));
+                window.AddDropdownWithIcon(Styles.reflectionProbeDropdownName, (Texture2D)Styles.reflectionProbePickerIcon.image, () => OnReflectionProbeClick(toolbar));
+            }
+
+            return window;
+        }
+
+        void OnTimeUpdateClick(InspectorPreviewWindow window) { m_TimeUpdate = OnButtonClick(Styles.timeUpdateButtonName, m_TimeUpdate, s_TimeIcons, window); }
+
+        void OnLightModeClick(InspectorPreviewWindow window) { m_LightMode = OnButtonClick(Styles.lightModeButtonName, m_LightMode, s_LightIcons, window); }
+
+        void OnSelectedMeshClick(InspectorPreviewWindow window)
+        {
+            m_SelectedMesh = OnButtonClick(Styles.selectedMeshButtonName, m_SelectedMesh, s_MeshIcons, window);
+            EditorPrefs.SetInt(kDefaultMaterialPreviewMesh, m_SelectedMesh);
+        }
+
+        void OnReflectionProbeClick(VisualElement toolbar)
+        {
+            var button = toolbar.Q(Styles.reflectionProbeDropdownName);
+            if (button != null)
+            {
+                PopupWindow.Show(button.worldBound, m_ReflectionProbePicker);
+            }
+        }
+
+        int OnButtonClick(string name, int state, GUIContent[] icons, InspectorPreviewWindow window)
+        {
+            state++;
+            if (state == icons.Length)
+                state = 0;
+
+            window.UpdateButtonIcon(name, (Texture2D)icons[state].image);
+
+            return state;
         }
 
         private static bool SupportsRenderingPreview(Material material)

@@ -263,6 +263,11 @@ namespace Unity.UI.Builder
             base.DiscardChanges();
         }
 
+        public void ReloadDocument()
+        {
+            m_Toolbar.ReloadDocument();
+        }
+
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -320,6 +325,10 @@ namespace Unity.UI.Builder
             if (builderWindow.document.visualTreeAsset != asset)
             {
                 builderWindow.LoadDocument(asset);
+            }
+            else
+            {
+                builderWindow.ReloadDocument();
             }
 
             return true;

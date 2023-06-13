@@ -21,9 +21,6 @@ namespace UnityEngine.UIElements.UIR
             public int indexOffset; // From the beginning of the "real" index buffer to the first index actually being read
         }
 
-        static readonly ProfilerMarker k_ProcessHeadEntriesMarker = new ProfilerMarker("UIR.ProcessHeadEntries");
-        static readonly ProfilerMarker k_ProcessTailEntriesMarker = new ProfilerMarker("UIR.ProcessTailEntries");
-
         EntryPreProcessor m_PreProcessor = new EntryPreProcessor();
 
         RenderChain m_RenderChain;
@@ -56,6 +53,8 @@ namespace UnityEngine.UIElements.UIR
         NativeSlice<Vertex> m_Verts;    // The current destination vertex slice
         NativeSlice<UInt16> m_Indices;  // The current destination index slice
         ushort m_IndexOffset;           // The index offset provided by the render device for the current sub-alloc
+        int m_AllocVertexCount;         // Number of vertices in the current alloc
+        int m_AllocIndex;               // Index of the current alloc in the list of allocs
 
         // Increases as we fill the alloc
         int m_VertsFilled;
@@ -68,8 +67,6 @@ namespace UnityEngine.UIElements.UIR
         int m_GradientSettingIndexOffset;
         bool m_IsTail;
 
-        bool m_Fails;
-
         // First command is always a dummy
         RenderChainCommand m_FirstCommand;
         RenderChainCommand m_LastCommand;
@@ -81,83 +78,68 @@ namespace UnityEngine.UIElements.UIR
 
         public void Init(Entry root, RenderChain renderChain, VisualElement ve)
         {
+            UIRenderDevice device = renderChain.device;
             m_RenderChain = renderChain;
             m_CurrentElement = ve;
 
             m_PreProcessor.PreProcess(root);
 
-            m_Fails = false;
-            if (m_PreProcessor.headAllocs.Count > 1 || m_PreProcessor.tailAllocs.Count > 1)
+            // Free the allocated meshes, if necessary
+            if (m_PreProcessor.headAllocs.Count == 0 && ve.renderChainData.headMesh != null)
             {
-                int headVertexCount = m_PreProcessor.headAllocs.Sum(alloc => alloc.vertexCount);
-                int tailVertexCount = m_PreProcessor.tailAllocs.Sum(alloc => alloc.vertexCount);
-                int maxVertexCount = Mathf.Max(headVertexCount, tailVertexCount);
-                Debug.LogError($"A VisualElement of type '{ve.fullTypeName}' attempted to allocate {maxVertexCount} " +
-                    $"vertices, which exceeds the limit of {UIRenderDevice.maxVerticesPerPage} vertices per VisualElement. " +
-                    $"Its name is '{ve.name}' and its debug id is {ve.controlid}.)");
-                m_Fails = true;
-            }
-
-            // Free the allocated meshes if necessary
-            if ((m_Fails || m_PreProcessor.headAllocs.Count == 0) && ve.renderChainData.headMesh != null)
-            {
-                m_RenderChain.device.Free(ve.renderChainData.headMesh);
+                device.Free(ve.renderChainData.headMesh);
                 ve.renderChainData.headMesh = null;
             }
 
-            if ((m_Fails || m_PreProcessor.tailAllocs.Count == 0) && ve.renderChainData.tailMesh != null)
+            if (m_PreProcessor.tailAllocs.Count == 0 && ve.renderChainData.tailMesh != null)
             {
-                m_RenderChain.device.Free(ve.renderChainData.tailMesh);
+                device.Free(ve.renderChainData.tailMesh);
                 ve.renderChainData.tailMesh = null;
             }
 
+            if (ve.renderChainData.hasExtraMeshes)
+                renderChain.FreeExtraMeshes(ve);
+
             renderChain.ResetTextures(ve);
 
-            if (!m_Fails)
+            var parent = m_CurrentElement.hierarchy.parent;
+            bool isGroupTransform = m_CurrentElement.renderChainData.isGroupTransform;
+
+            if (parent != null)
             {
-                var parent = m_CurrentElement.hierarchy.parent;
-                bool isGroupTransform = m_CurrentElement.renderChainData.isGroupTransform;
-
-                if (parent != null)
-                {
-                    m_MaskDepthPopped = parent.renderChainData.childrenMaskDepth;
-                    m_StencilRefPopped = parent.renderChainData.childrenStencilRef;
-                    m_ClipRectIdPopped = isGroupTransform ? UIRVEShaderInfoAllocator.infiniteClipRect : parent.renderChainData.clipRectID;
-                }
-                else
-                {
-                    m_MaskDepthPopped = 0;
-                    m_StencilRefPopped = 0;
-                    m_ClipRectIdPopped = UIRVEShaderInfoAllocator.infiniteClipRect;
-                }
-
-                m_MaskDepthPushed = m_MaskDepthPopped + 1;
-                m_StencilRefPushed = m_MaskDepthPopped;
-                m_ClipRectIdPushed = m_CurrentElement.renderChainData.clipRectID;
-
-                m_MaskDepth = m_MaskDepthPopped;
-                m_StencilRef = m_StencilRefPopped;
-                m_ClipRectId = m_ClipRectIdPopped;
-
-                // Vertex data, lazily computed
-                m_VertexDataComputed = false;
-                m_Transform = Matrix4x4.identity;
-                m_TextCoreSettingsPage = new Color32(0, 0, 0, 0);
-
-                m_MaskMeshes.Clear();
-                m_IsDrawingMask = false;
+                m_MaskDepthPopped = parent.renderChainData.childrenMaskDepth;
+                m_StencilRefPopped = parent.renderChainData.childrenStencilRef;
+                m_ClipRectIdPopped = isGroupTransform ? UIRVEShaderInfoAllocator.infiniteClipRect : parent.renderChainData.clipRectID;
             }
+            else
+            {
+                m_MaskDepthPopped = 0;
+                m_StencilRefPopped = 0;
+                m_ClipRectIdPopped = UIRVEShaderInfoAllocator.infiniteClipRect;
+            }
+
+            m_MaskDepthPushed = m_MaskDepthPopped + 1;
+            m_StencilRefPushed = m_MaskDepthPopped;
+            m_ClipRectIdPushed = m_CurrentElement.renderChainData.clipRectID;
+
+            m_MaskDepth = m_MaskDepthPopped;
+            m_StencilRef = m_StencilRefPopped;
+            m_ClipRectId = m_ClipRectIdPopped;
+
+            // Vertex data, lazily computed
+            m_VertexDataComputed = false;
+            m_Transform = Matrix4x4.identity;
+            m_TextCoreSettingsPage = new Color32(0, 0, 0, 0);
+
+            m_MaskMeshes.Clear();
+            m_IsDrawingMask = false;
         }
 
-        public void ProcessHead(ref ChainBuilderStats stats)
+        public void ProcessHead()
         {
-            if (m_Fails)
-                return;
-
-            k_ProcessHeadEntriesMarker.Begin();
             m_IsTail = false;
 
-            ProcessFirstAlloc(m_PreProcessor.headAllocs, ref m_CurrentElement.renderChainData.headMesh, ref stats);
+            ProcessFirstAlloc(m_PreProcessor.headAllocs, ref m_CurrentElement.renderChainData.headMesh);
 
             m_FirstCommand = null;
             m_LastCommand = null;
@@ -166,19 +148,13 @@ namespace UnityEngine.UIElements.UIR
 
             firstHeadCommand = m_FirstCommand;
             lastHeadCommand = m_LastCommand;
-
-            k_ProcessHeadEntriesMarker.End();
         }
 
-        public void ProcessTail(ref ChainBuilderStats stats)
+        public void ProcessTail()
         {
-            if (m_Fails)
-                return;
-
-            k_ProcessTailEntriesMarker.Begin();
             m_IsTail = true;
 
-            ProcessFirstAlloc(m_PreProcessor.tailAllocs, ref m_CurrentElement.renderChainData.tailMesh, ref stats);
+            ProcessFirstAlloc(m_PreProcessor.tailAllocs, ref m_CurrentElement.renderChainData.tailMesh);
 
             m_FirstCommand = null;
             m_LastCommand = null;
@@ -191,8 +167,6 @@ namespace UnityEngine.UIElements.UIR
             Debug.Assert(m_MaskDepth == m_MaskDepthPopped);
             Debug.Assert(m_MaskMeshes.Count == 0);
             Debug.Assert(!m_IsDrawingMask);
-
-            k_ProcessTailEntriesMarker.End();
         }
 
         void ProcessRange(int first, int last)
@@ -438,9 +412,18 @@ namespace UnityEngine.UIElements.UIR
 
         unsafe void ProcessMeshEntry(Entry entry, TextureId textureId)
         {
-            Debug.Assert(entry.vertices.Length > 0 == entry.indices.Length > 0);
-            if (entry.vertices.Length > 0 && entry.indices.Length > 0)
+            int entryVertexCount = entry.vertices.Length;
+            int entryIndexCount = entry.indices.Length;
+
+            Debug.Assert(entryVertexCount > 0 == entryIndexCount > 0);
+            if (entryVertexCount > 0 && entryIndexCount > 0)
             {
+                if (m_VertsFilled + entryVertexCount > m_AllocVertexCount)
+                {
+                    ProcessNextAlloc();
+                    Debug.Assert(m_VertsFilled + entryVertexCount <= m_AllocVertexCount);
+                }
+
                 if (!m_VertexDataComputed)
                 {
                     UIRUtility.GetVerticesTransformInfo(m_CurrentElement, out m_Transform);
@@ -468,10 +451,8 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 // Copy vertices, transforming them as necessary
-                int vertexCount = entry.vertices.Length;
-                var targetVerticesSlice = m_Verts.Slice(m_VertsFilled, vertexCount);
+                var targetVerticesSlice = m_Verts.Slice(m_VertsFilled, entryVertexCount);
 
-                int entryIndexCount = entry.indices.Length;
                 int entryIndexOffset = m_VertsFilled + m_IndexOffset;
                 var targetIndicesSlice = m_Indices.Slice(m_IndicesFilled, entryIndexCount);
                 bool shapeWindingIsClockwise = UIRUtility.ShapeWindingIsClockwise(m_MaskDepth, m_StencilRef);
@@ -481,7 +462,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     vertSrc = (IntPtr)entry.vertices.GetUnsafePtr(),
                     vertDst = (IntPtr)targetVerticesSlice.GetUnsafePtr(),
-                    vertCount = vertexCount,
+                    vertCount = entryVertexCount,
                     transform = m_Transform,
                     xformClipPages = xformClipPages,
                     ids = ids,
@@ -526,7 +507,7 @@ namespace UnityEngine.UIElements.UIR
                     cmd.state.sharpness = entry.fontSharpness;
                 }
 
-                m_VertsFilled += entry.vertices.Length;
+                m_VertsFilled += entryVertexCount;
                 m_IndicesFilled += entryIndexCount;
             }
         }
@@ -597,13 +578,13 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        void ProcessFirstAlloc(List<EntryPreProcessor.AllocSize> allocList, ref MeshHandle mesh, ref ChainBuilderStats stats)
+        void ProcessFirstAlloc(List<EntryPreProcessor.AllocSize> allocList, ref MeshHandle mesh)
         {
             if (allocList.Count > 0)
             {
-                Debug.Assert(allocList.Count == 1);
                 EntryPreProcessor.AllocSize allocSize = allocList[0];
-                UpdateOrAllocate(ref mesh, allocSize.vertexCount, allocSize.indexCount, m_RenderChain.device, out m_Verts, out m_Indices, out m_IndexOffset, ref stats);
+                UpdateOrAllocate(ref mesh, allocSize.vertexCount, allocSize.indexCount, m_RenderChain.device, out m_Verts, out m_Indices, out m_IndexOffset, ref m_RenderChain.statsByRef);
+                m_AllocVertexCount = (int)mesh.allocVerts.size;
             }
             else
             {
@@ -611,9 +592,29 @@ namespace UnityEngine.UIElements.UIR
                 m_Verts = new NativeSlice<Vertex>();
                 m_Indices = new NativeSlice<ushort>();
                 m_IndexOffset = 0;
+                m_AllocVertexCount = 0;
             }
 
             m_Mesh = mesh;
+            m_VertsFilled = 0;
+            m_IndicesFilled = 0;
+            m_AllocIndex = 0;
+        }
+
+        // This is only called for extra allocs, after the first alloc has been filled. Extra allocs are very infrequent,
+        // so we don't need to optimize this code path as much.
+        void ProcessNextAlloc()
+        {
+            List<EntryPreProcessor.AllocSize> allocList = m_IsTail ? m_PreProcessor.tailAllocs : m_PreProcessor.headAllocs;
+            Debug.Assert(m_AllocIndex < allocList.Count - 1);
+
+            EntryPreProcessor.AllocSize allocSize = allocList[++m_AllocIndex];
+            m_Mesh = null; // Extra allocations have been previously freed, so we don't have any mesh to update
+            UpdateOrAllocate(ref m_Mesh, allocSize.vertexCount, allocSize.indexCount, m_RenderChain.device, out m_Verts, out m_Indices, out m_IndexOffset, ref m_RenderChain.statsByRef);
+            m_AllocVertexCount = (int)m_Mesh.allocVerts.size;
+
+            m_RenderChain.AppendExtraMesh(m_CurrentElement, m_Mesh);
+
             m_VertsFilled = 0;
             m_IndicesFilled = 0;
         }

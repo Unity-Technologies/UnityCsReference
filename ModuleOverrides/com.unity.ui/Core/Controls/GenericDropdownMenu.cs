@@ -16,12 +16,6 @@ namespace UnityEngine.UIElements
         void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false);
     }
 
-    internal enum MenuIconPlacement
-    {
-        Left,
-        Right
-    }
-
     /// <summary>
     /// Provides methods to display contextual menus with default textual options, <see cref="VisualElement"/>, or a combination of both.
     /// </summary>
@@ -115,7 +109,6 @@ namespace UnityEngine.UIElements
         VisualElement m_PanelRootVisualContainer;
         VisualElement m_TargetElement;
         KeyboardNavigationManipulator m_NavigationManipulator;
-        MenuIconPlacement m_MenuIconPlacement;
         bool m_AllowSubmenus;
         bool m_Initialized;
         Rect m_DesiredRect;
@@ -126,6 +119,7 @@ namespace UnityEngine.UIElements
         internal GenericDropdownMenu m_Child;
 
         internal Action<MenuItem, GenericDropdownMenu> m_SubmenuOverride;
+        internal Action<bool, bool> m_OnBeforePerformAction;
 
         internal event Action onRebuild;
         internal event Action onHide;
@@ -180,11 +174,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         ///  Initializes and returns an instance of GenericDropdownMenu.
         /// </summary>
-        public GenericDropdownMenu() : this(false, MenuIconPlacement.Left) { }
+        public GenericDropdownMenu() : this(false) { }
 
-        internal GenericDropdownMenu(bool allowSubmenus, MenuIconPlacement iconPlacement = MenuIconPlacement.Left)
+        internal GenericDropdownMenu(bool allowSubmenus)
         {
-            m_MenuIconPlacement = iconPlacement;
             m_AllowSubmenus = allowSubmenus;
 
             m_MenuContainer = new VisualElement() { classList = { ussClassName } };
@@ -395,9 +388,12 @@ namespace UnityEngine.UIElements
 
                     item = m_Current.children[selectedIndex];
                     if (selectedIndex >= 0 && item.element.enabledSelf)
+                    {
+                        m_OnBeforePerformAction?.Invoke(item.isSubmenu, autoClose);
                         item.PerformAction();
+                    }
 
-                    if (item.children.Count < 1)
+                    if (!item.isSubmenu)
                         Hide(true);
 
                     result = true;
@@ -428,7 +424,10 @@ namespace UnityEngine.UIElements
                     s_ScheduleFocusFirstItem = true;
 
                     if (item.isSubmenu)
+                    {
+                        m_OnBeforePerformAction?.Invoke(item.isSubmenu, autoClose);
                         item.PerformAction();
+                    }
 
                     result = true;
                     break;
@@ -449,6 +448,7 @@ namespace UnityEngine.UIElements
 
                 if (item.element.enabledSelf && !s_wasPicking)
                 {
+                    m_OnBeforePerformAction?.Invoke(item.isSubmenu, autoClose);
                     item.PerformAction();
 
                     if(item.children.Count < 1)
@@ -734,6 +734,7 @@ namespace UnityEngine.UIElements
 
             headerItem.element.RegisterCallback<ClickEvent>(e =>
             {
+                m_OnBeforePerformAction?.Invoke(false, autoClose);
                 headerItem.PerformAction();
                 Hide(true);
             });
@@ -817,7 +818,7 @@ namespace UnityEngine.UIElements
             leftAppendix.pickingMode = PickingMode.Ignore;
             item.Add(leftAppendix);
 
-            if (icon != null && m_MenuIconPlacement == MenuIconPlacement.Left)
+            if (icon != null)
             {
                 leftAppendix.AddToClassList(iconUssClassName);
                 leftAppendix.style.backgroundImage = icon;
@@ -837,12 +838,7 @@ namespace UnityEngine.UIElements
             rightAppendix.pickingMode = PickingMode.Ignore;
             item.Add(rightAppendix);
 
-            if (icon != null && m_MenuIconPlacement == MenuIconPlacement.Right)
-            {
-                rightAppendix.AddToClassList(iconUssClassName);
-                rightAppendix.style.backgroundImage = icon;
-            }
-            else if (isSubmenu)
+            if (isSubmenu)
             {
                 rightAppendix.AddToClassList(submenuUssClassName);
             }

@@ -36,8 +36,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [NonSerialized]
         private ApplicationProxy m_Application;
         [NonSerialized]
-        private HttpClientFactory m_HttpClientFactory;
-        [NonSerialized]
         private UnityConnectProxy m_UnityConnect;
         [NonSerialized]
         private IOProxy m_IOProxy;
@@ -49,26 +47,28 @@ namespace UnityEditor.PackageManager.UI.Internal
         private AssetStoreRestAPI m_AssetStoreRestAPI;
         [NonSerialized]
         private AssetStoreCachePathProxy m_AssetStoreCachePathProxy;
+        [NonSerialized]
+        private LocalInfoHandler m_LocalInfoHandler;
         public void ResolveDependencies(ApplicationProxy application,
-            HttpClientFactory httpClientFactory,
             UnityConnectProxy unityConnect,
             IOProxy ioProxy,
             AssetStoreCache assetStoreCache,
             AssetStoreUtils assetStoreUtils,
             AssetStoreRestAPI assetStoreRestAPI,
-            AssetStoreCachePathProxy assetStoreCachePathProxy)
+            AssetStoreCachePathProxy assetStoreCachePathProxy,
+            LocalInfoHandler localInfoHandler)
         {
             m_Application = application;
             m_UnityConnect = unityConnect;
             m_IOProxy = ioProxy;
-            m_HttpClientFactory = httpClientFactory;
             m_AssetStoreCache = assetStoreCache;
             m_AssetStoreUtils = assetStoreUtils;
             m_AssetStoreRestAPI = assetStoreRestAPI;
             m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
+            m_LocalInfoHandler = localInfoHandler;
 
             foreach (var operation in m_DownloadOperations.Values)
-                operation.ResolveDependencies(assetStoreUtils, assetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy);
+                operation.ResolveDependencies(assetStoreUtils, assetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy, m_LocalInfoHandler);
         }
 
         // The AssetStoreDownloadManager implementation requires the help of a ScriptableObject to dispatch download progress event.
@@ -153,7 +153,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             onBeforeDownloadStart?.Invoke(productId);
 
             var localInfo = m_AssetStoreCache.GetLocalInfo(productId);
-            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy, productId, localInfo?.packagePath);
+            operation = new AssetStoreDownloadOperation(m_AssetStoreUtils, m_AssetStoreRestAPI, m_AssetStoreCache, m_AssetStoreCachePathProxy, m_LocalInfoHandler, productId, localInfo?.packagePath);
             SetupDownloadOperation(operation);
             operation.Download(false);
         }
@@ -199,7 +199,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (operation.state == DownloadState.Completed &&
                 !string.IsNullOrEmpty(operation.packageOldPath) && operation.packageNewPath.NormalizePath() != operation.packageOldPath.NormalizePath())
             {
-                m_IOProxy.DeleteFile(operation.packageOldPath);
+                m_IOProxy.DeleteIfExists(operation.packageOldPath);
             }
         }
 
@@ -331,7 +331,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                         if (result)
                             m_UnityConnect.OpenAuthorizedURLInWebBrowser(k_TermsOfServicesURL);
                     }
-
                 }, error => onError?.Invoke(error));
                 return false;
             }

@@ -9,6 +9,8 @@ using UnityEngine.Audio;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Playables;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -427,8 +429,8 @@ namespace UnityEngine
     {
         private AudioClip() {}
 
-        extern static private bool GetData([NotNull] AudioClip clip, [Out] float[] data, int numSamples, int samplesOffset);
-        extern static private bool SetData([NotNull] AudioClip clip, float[] data, int numsamples, int samplesOffset);
+        extern static private bool GetData([NotNull] AudioClip clip, Span<float> data, int samplesOffset);
+        extern static private bool SetData([NotNull] AudioClip clip, ReadOnlySpan<float> data, int samplesOffset);
         extern static private AudioClip Construct_Internal();
 
         extern private string GetName();
@@ -476,6 +478,18 @@ namespace UnityEngine
             get;
         }
 
+        // Fills a Span with sample data from the clip. The samples are floats ranging from -1.0f to 1.0f. The sample count is determined by the length of the Span.
+        public unsafe bool GetData(Span<float> data, int offsetSamples)
+        {
+            if (channels <= 0)
+            {
+                Debug.Log("AudioClip.GetData failed; AudioClip " + GetName() + " contains no data");
+                return false;
+            }
+
+            return GetData(this, data, offsetSamples);
+        }
+
         // Fills an array with sample data from the clip. The samples are floats ranging from -1.0f to 1.0f. The sample count is determined by the length of the float array.
         public bool GetData(float[] data, int offsetSamples)
         {
@@ -485,11 +499,10 @@ namespace UnityEngine
                 return false;
             }
 
-            int numSamples = (data != null) ? (data.Length / channels) : 0;
-            return GetData(this, data, numSamples, offsetSamples);
+            return GetData(this, data.AsSpan(), offsetSamples);
         }
 
-        // Set sample data in a clip. The samples should be floats ranging from 0.0f to 1.0f (exceeding these limits will lead to artifacts and undefined behaviour).
+        // Set sample data in a clip. The samples should be float values ranging from -1.0f to 1.0f. Exceeding these limits causes artifacts and undefined behaviour.
         public bool SetData(float[] data, int offsetSamples)
         {
             if (channels <= 0)
@@ -504,7 +517,25 @@ namespace UnityEngine
             if ((data == null) || (data.Length == 0))
                 throw new ArgumentException("AudioClip.SetData failed; invalid data");
 
-            return SetData(this, data, data.Length / channels, offsetSamples);
+            return SetData(this, data.AsSpan(), offsetSamples);
+        }
+
+        // Set sample data in a clip. The samples should be float values ranging from -1.0f to 1.0f. Exceeding these limits causes artifacts and undefined behaviour.
+        public unsafe bool SetData(ReadOnlySpan<float> data, int offsetSamples)
+        {
+            if (channels <= 0)
+            {
+                Debug.Log("AudioClip.SetData failed; AudioClip " + GetName() + " contains no data");
+                return false;
+            }
+
+            if ((offsetSamples < 0) || (offsetSamples >= samples))
+                throw new ArgumentException("AudioClip.SetData failed; invalid offsetSamples");
+
+            if (data.Length == 0)
+                throw new ArgumentException("AudioClip.SetData failed; invalid data");
+
+            return SetData(this, data, offsetSamples);
         }
 
         /// *listonly*

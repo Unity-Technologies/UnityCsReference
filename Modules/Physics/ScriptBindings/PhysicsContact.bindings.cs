@@ -63,35 +63,35 @@ namespace UnityEngine
             {
                 ContactPairHeader header = array[i];
 
-                if (header.HasRemovedBody)
+                if (header.hasRemovedBody)
                     continue;
 
                 for (int j = 0; j < header.m_NbPairs; j++)
                 {
                     ref readonly ContactPair pair = ref header.GetContactPair(j);
 
-                    if (pair.HasRemovedCollider)
+                    if (pair.hasRemovedCollider)
                         continue;
 
-                    var actor = header.Body;
-                    var otherActor = header.OtherBody;
-                    var component = actor != null ? actor : pair.Collider;
-                    var otherComponent = otherActor != null ? otherActor : pair.OtherCollider;
+                    var actor = header.body;
+                    var otherActor = header.otherBody;
+                    var component = actor != null ? actor : pair.collider;
+                    var otherComponent = otherActor != null ? otherActor : pair.otherCollider;
 
                     if(!component || !otherComponent)
                         continue;
 
-                    if (pair.IsCollisionEnter)
+                    if (pair.isCollisionEnter)
                     {
                         Physics.SendOnCollisionEnter(component, GetCollisionToReport(in header, in pair, false));
                         Physics.SendOnCollisionEnter(otherComponent, GetCollisionToReport(in header, in pair, true));
                     }
-                    if (pair.IsCollisionStay)
+                    if (pair.isCollisionStay)
                     {
                         Physics.SendOnCollisionStay(component, GetCollisionToReport(in header, in pair, false));
                         Physics.SendOnCollisionStay(otherComponent, GetCollisionToReport(in header, in pair, true));
                     }
-                    if (pair.IsCollisionExit)
+                    if (pair.isCollisionExit)
                     {
                         Physics.SendOnCollisionExit(component, GetCollisionToReport(in header, in pair, false));
                         Physics.SendOnCollisionExit(otherComponent, GetCollisionToReport(in header, in pair, true));
@@ -120,7 +120,7 @@ namespace UnityEngine
 
     // See MessageParameters.h
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct ContactPairHeader
+    public readonly partial struct ContactPairHeader
     {
         internal readonly int m_BodyID;
         internal readonly int m_OtherBodyID;
@@ -129,15 +129,15 @@ namespace UnityEngine
         internal readonly CollisionPairHeaderFlags m_Flags;
         internal readonly Vector3 m_RelativeVelocity;
 
-        public int BodyInstanceID => m_BodyID;
-        public int OtherBodyInstanceID => m_OtherBodyID;
+        public int bodyInstanceID => m_BodyID;
+        public int otherBodyInstanceID => m_OtherBodyID;
 
-        public Component Body => Physics.GetBodyByInstanceID(m_BodyID) as Component;
-        public Component OtherBody => Physics.GetBodyByInstanceID(m_OtherBodyID) as Component;
+        public Component body => Physics.GetBodyByInstanceID(m_BodyID) as Component;
+        public Component otherBody => Physics.GetBodyByInstanceID(m_OtherBodyID) as Component;
 
-        public int PairCount => (int)m_NbPairs;
+        public int pairCount => (int)m_NbPairs;
 
-        internal bool HasRemovedBody => (m_Flags & CollisionPairHeaderFlags.RemovedActor) != 0
+        internal bool hasRemovedBody => (m_Flags & CollisionPairHeaderFlags.RemovedActor) != 0
                                      || (m_Flags & CollisionPairHeaderFlags.RemovedOtherActor) != 0;
 
         public unsafe ref readonly ContactPair GetContactPair(int index)
@@ -157,7 +157,7 @@ namespace UnityEngine
     // See MessageParameters.h
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe readonly struct ContactPair
+    public unsafe readonly partial struct ContactPair
     {
         private const uint c_InvalidFaceIndex = 0xffffFFFF;
 
@@ -169,21 +169,21 @@ namespace UnityEngine
         internal readonly CollisionPairEventFlags m_Events;
         internal readonly Vector3 m_ImpulseSum;
 
-        public int ColliderInstanceID => m_ColliderID;
-        public int OtherColliderInstanceID => m_OtherColliderID;
+        public int colliderInstanceID => m_ColliderID;
+        public int otherColliderInstanceID => m_OtherColliderID;
 
-        public Collider Collider => m_ColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_ColliderID) as Collider;
-        public Collider OtherCollider => m_OtherColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_OtherColliderID) as Collider;
+        public Collider collider => m_ColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_ColliderID) as Collider;
+        public Collider otherCollider => m_OtherColliderID == 0 ? null : Physics.GetColliderByInstanceID(m_OtherColliderID) as Collider;
 
-        public int ContactCount => (int)m_NbPoints;
+        public int contactCount => (int)m_NbPoints;
 
-        public Vector3 ImpulseSum => m_ImpulseSum;
+        public Vector3 impulseSum => m_ImpulseSum;
 
-        public bool IsCollisionEnter => (m_Events & CollisionPairEventFlags.NotifyTouchFound) != 0;
-        public bool IsCollisionExit  => (m_Events & CollisionPairEventFlags.NotifyTouchLost) != 0;
-        public bool IsCollisionStay  => (m_Events & CollisionPairEventFlags.NotifyTouchPersists) != 0;
+        public bool isCollisionEnter => (m_Events & CollisionPairEventFlags.NotifyTouchFound) != 0;
+        public bool isCollisionExit => (m_Events & CollisionPairEventFlags.NotifyTouchLost) != 0;
+        public bool isCollisionStay  => (m_Events & CollisionPairEventFlags.NotifyTouchPersists) != 0;
 
-        internal bool HasRemovedCollider => (m_Flags & CollisionPairFlags.RemovedShape) != 0
+        internal bool hasRemovedCollider => (m_Flags & CollisionPairFlags.RemovedShape) != 0
                                          || (m_Flags & CollisionPairFlags.RemovedOtherShape) != 0;
 
         // Capacity must be extended beforehand!
@@ -192,7 +192,7 @@ namespace UnityEngine
 
         public void CopyToNativeArray(NativeArray<ContactPairPoint> buffer)
         {
-            int n = Mathf.Min(buffer.Length, ContactCount);
+            int n = Mathf.Min(buffer.Length, contactCount);
 
             for (int i = 0; i < n; i++)
                 buffer[i] = GetContactPoint(i);
@@ -229,7 +229,7 @@ namespace UnityEngine
 
     // See https://github.com/NVIDIAGameWorks/PhysX/blob/4.1/physx/include/PxSimulationEventCallback.h#L463
     [StructLayout(LayoutKind.Sequential)]
-    public readonly struct ContactPairPoint
+    public readonly partial struct ContactPairPoint
     {
         internal readonly Vector3 m_Position;
         internal readonly float m_Separation;
@@ -238,10 +238,10 @@ namespace UnityEngine
         internal readonly Vector3 m_Impulse;
         internal readonly uint m_InternalFaceIndex1;
 
-        public Vector3 Position => m_Position;
-        public float Separation => m_Separation;
-        public Vector3 Normal => m_Normal;
-        public Vector3 Impulse => m_Impulse;
+        public Vector3 position => m_Position;
+        public float separation => m_Separation;
+        public Vector3 normal => m_Normal;
+        public Vector3 impulse => m_Impulse;
     };
 
     internal enum CollisionPairHeaderFlags : ushort // Size is important!

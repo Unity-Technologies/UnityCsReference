@@ -407,7 +407,7 @@ namespace Unity.UI.Builder
                         return false;
                 }
             }
-            
+
             ClearUndo();
 
             var startTime = DateTime.UtcNow;
@@ -641,6 +641,9 @@ namespace Unity.UI.Builder
             m_VisualTreeAssetBackup = visualTreeAsset.DeepCopy();
             m_VisualTreeAsset = visualTreeAsset;
 
+            // Re-stamp orderInDocument values using BuilderConstants.VisualTreeAssetOrderIncrement
+            VisualTreeAssetUtilities.ReOrderDocument(m_VisualTreeAsset);
+
             PostLoadDocumentStyleSheetCleanup();
 
             hasUnsavedChanges = false;
@@ -822,7 +825,11 @@ namespace Unity.UI.Builder
                 openUSSFile.RestoreFromBackup();
 
             if (m_VisualTreeAsset != null && m_VisualTreeAssetBackup != null)
+            {
                 m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
+                EditorUtility.SetDirty(m_VisualTreeAsset);
+                BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Hierarchy | BuilderAssetUtilities.LiveReloadChanges.Styles);
+            }
 
             hasUnsavedChanges = false;
         }

@@ -16,7 +16,19 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Translate value
         {
-            get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default(Translate); }
+            get
+            {
+                // SD: Changed to provide an interpretation of Initial and Null for the debugger, that takes the StyleTranslate and need to display some value in the fields.
+                // This is probably subject to change in the future.
+                return m_Keyword switch
+                {
+                    StyleKeyword.Undefined => m_Value,
+                    StyleKeyword.Null => Translate.None(),
+                    StyleKeyword.None => Translate.None(),
+                    StyleKeyword.Initial => Translate.None(),
+                    _ => throw new NotImplementedException(),
+                };
+            }
             set
             {
                 m_Value = value;

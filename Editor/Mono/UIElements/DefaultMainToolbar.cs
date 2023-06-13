@@ -41,6 +41,8 @@ namespace UnityEditor
                 yield return "Editor Utility/Modes";
                 yield return "Package Manager/PreviewPackagesInUse";
                 yield return "Editor Utility/Undo";
+                // Modules/Multiplayer/MultiplayerRoleDrwopdown.cs
+                yield return "Multiplayer/MultiplayerRole";
             }
         }
 

@@ -22,6 +22,9 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
         public sealed partial class Switch
         {
+            const string kPlayerSettingsAreObsoletedWarning = "NMETA Settings are deprecated in Unity 2023.2 and will be removed in 2023.3. Please use the Authoring Editor to create and edit NMETA files.";
+
+
             public enum ScreenResolutionBehavior
             {
                 Manual = 0,
@@ -32,6 +35,7 @@ namespace UnityEditor
 
             // These language names should be match to the name descriptions where in an NMETA file and SwitchBuildUtils.Languages.
             // And, please notice that you have to increase numSwitchLanguages in EditorOnlyPlayerSettings.h when you add a new language here.
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public enum Languages
             {
                 AmericanEnglish = 0,
@@ -52,6 +56,7 @@ namespace UnityEditor
                 BrazilianPortuguese = 15,
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public enum
             StartupUserAccount
             {
@@ -60,12 +65,14 @@ namespace UnityEditor
                 RequiredWithNetworkServiceAccountAvailable = 2
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public enum LogoHandling
             {
                 Auto = 0,
                 Manual = 1
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public enum LogoType
             {
                 LicensedByNintendo = 0,
@@ -74,12 +81,14 @@ namespace UnityEditor
                 Nintendo = 2
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public enum ApplicationAttribute
             {
                 None = 0,
                 Demo = 1
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public enum RatingCategories
             {
                 CERO = 0,
@@ -324,6 +333,7 @@ namespace UnityEditor
             extern private static string compilerFlagsInternal { get; set; }
 
             //Application ID (shows up in Application meta file)
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchApplicationID", TargetType.Function)]
             extern public static string applicationID { get; set; }
 
@@ -331,6 +341,7 @@ namespace UnityEditor
             [NativeProperty("switchNSODependencies", TargetType.Function)]
             extern public static string nsoDependencies { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             extern public static string[] titleNames
             {
                 [NativeMethod("GetSwitchTitleNames")]
@@ -339,6 +350,7 @@ namespace UnityEditor
                 set;
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             extern public static string[] publisherNames
             {
                 [NativeMethod("GetSwitchPublisherNames")]
@@ -347,6 +359,7 @@ namespace UnityEditor
                 set;
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             extern public static Texture2D[] icons
             {
                 [NativeMethod("GetSwitchIcons")]
@@ -355,6 +368,7 @@ namespace UnityEditor
                 set;
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             extern public static Texture2D[] smallIcons
             {
                 [NativeMethod("GetSwitchSmallIcons")]
@@ -439,15 +453,19 @@ namespace UnityEditor
             [NativeProperty("switchLegalInformation", TargetType.Function)]
             extern static private string legalInformationPathInternal { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchMainThreadStackSize", TargetType.Field)]
             extern public static int mainThreadStackSize { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchPresenceGroupId", TargetType.Function)]
             extern public static string presenceGroupId { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchLogoHandling", TargetType.Field)]
             extern public static LogoHandling logoHandling { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             extern public static string releaseVersion
             {
                 [NativeMethod("GetSwitchReleaseVersion")]
@@ -456,30 +474,39 @@ namespace UnityEditor
                 set;
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchDisplayVersion", TargetType.Function)]
             extern public static string displayVersion { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchStartupUserAccount", TargetType.Field)]
             extern public static StartupUserAccount startupUserAccount { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchSupportedLanguagesMask", TargetType.Field)]
             extern public static int supportedLanguages { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchLogoType", TargetType.Field)]
             extern public static LogoType logoType { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchApplicationErrorCodeCategory", TargetType.Function)]
             extern public static string applicationErrorCodeCategory { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchUserAccountSaveDataSize", TargetType.Field)]
             extern public static int userAccountSaveDataSize { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchUserAccountSaveDataJournalSize", TargetType.Field)]
             extern public static int userAccountSaveDataJournalSize { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchApplicationAttribute", TargetType.Field)]
             extern public static ApplicationAttribute applicationAttribute { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public static int cardSpecSize
             {
                 get
@@ -495,6 +522,7 @@ namespace UnityEditor
             [NativeProperty("switchCardSpecSize", TargetType.Field)]
             extern private static int cardSpecSizeInternal { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public static int cardSpecClock
             {
                 get
@@ -510,9 +538,11 @@ namespace UnityEditor
             [NativeProperty("switchCardSpecClock", TargetType.Field)]
             extern private static int cardSpecClockInternal { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchRatingsMask", TargetType.Field)]
             extern public static int ratingsMask { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             extern public static string[] localCommunicationIds
             {
                 [NativeMethod("GetSwitchLocalCommunicationIds")]
@@ -521,9 +551,11 @@ namespace UnityEditor
                 set;
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchParentalControl", TargetType.Field)]
             extern public static bool isUnderParentalControl { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchAllowsScreenshot", TargetType.Field)]
             extern public static bool isScreenshotEnabled { get; set; }
 
@@ -531,15 +563,19 @@ namespace UnityEditor
             [NativeProperty("switchAllowsScreenshot", TargetType.Field)]
             extern public static bool isAllowsScreenshot { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchAllowsVideoCapturing", TargetType.Field)]
             extern public static bool isVideoCapturingEnabled { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchAllowsRuntimeAddOnContentInstall", TargetType.Field)]
             extern public static bool isRuntimeAddOnContentInstallEnabled { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchDataLossConfirmation", TargetType.Field)]
             extern public static bool isDataLossConfirmationEnabled { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             [NativeProperty("switchUserAccountLockEnabled", TargetType.Field)]
             extern public static bool isUserAccountLockEnabled { get; set; }
 
@@ -551,11 +587,13 @@ namespace UnityEditor
             [NativeProperty("switchSupportedNpadStyles", TargetType.Field)]
             extern public static SupportedNpadStyle supportedNpadStyles { get; set; }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             public static int GetRatingAge(RatingCategories category)
             {
                 return ratingAgeArray[(int)category];
             }
 
+            [Obsolete(kPlayerSettingsAreObsoletedWarning)]
             extern public static int[] ratingAgeArray
             {
                 [NativeMethod("GetSwitchRatingAges")]

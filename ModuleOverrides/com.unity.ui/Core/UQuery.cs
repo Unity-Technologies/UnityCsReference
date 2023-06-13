@@ -30,6 +30,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// UQuery is a set of extension methods allowing you to select individual or collection of visualElements inside a complex hierarchy.
+    /// See UQuery [[wiki:UIE-UQuery|manual page]] for further information.
     /// </summary>
     public static class UQuery
     {
@@ -1037,7 +1038,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="classes">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <param name="classes">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
         /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static T Q<T>(this VisualElement e, string name = null, params string[] classes) where T : VisualElement
         {
@@ -1049,7 +1050,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="classes">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <param name="classes">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
         /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static VisualElement Q(this VisualElement e, string name = null, params string[] classes)
         {
@@ -1061,7 +1062,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <param name="className">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
         /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static T Q<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
         {
@@ -1116,7 +1117,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <param name="className">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
         /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static VisualElement Q(this VisualElement e, string name = null, string className = null)
         {
@@ -1163,7 +1164,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="classes">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <param name="classes">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<VisualElement> Query(this VisualElement e, string name = null, params string[] classes)
         {
@@ -1175,7 +1176,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <param name="className">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<VisualElement> Query(this VisualElement e, string name = null, string className = null)
         {
@@ -1187,7 +1188,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="classes">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <param name="classes">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<T> Query<T>(this VisualElement e, string name = null, params string[] classes) where T : VisualElement
         {
@@ -1203,7 +1204,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="className">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <param name="className">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<T> Query<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
         {

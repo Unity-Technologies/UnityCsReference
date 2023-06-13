@@ -63,12 +63,22 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public new class UxmlTraits : TextElement.UxmlTraits
         {
+            private readonly UxmlImageAttributeDescription m_IconImage = new() { name = "icon-image" };
+
             /// <summary>
             /// Constructor.
             /// </summary>
             public UxmlTraits()
             {
                 focusable.defaultValue = true;
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                var button = (Button)ve;
+                button.iconImage = m_IconImage.GetValueFromBag(bag, cc);
             }
         }
 
@@ -163,6 +173,10 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// This is a shortcut for modifying <seealso cref="Clickable.clicked"/>. It is provided as a convenience. When you add or remove actions from clicked, it adds or removes them from <c>Clickable.clicked</c> automatically.
         /// </remarks>
+        /// <example>
+        /// The following example shows how to use the clicked event to print a message to the console when the button is clicked.
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Button_clicked.cs"/>
+        /// </example>
         public event Action clicked
         {
             add

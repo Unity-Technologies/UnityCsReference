@@ -32,6 +32,7 @@ namespace UnityEditor.Overlays
 
             var root = this.Q("overlay-content");
             root.renderHints = RenderHints.ClipWithScissors;
+            root.Add(overlay.GetSimpleHeader());
             root.Add(overlay.CreatePanelContent());
 
             RegisterCallback<MouseEnterEvent>(evt => m_CursorIsOverPopup = true);
@@ -39,15 +40,9 @@ namespace UnityEditor.Overlays
 
             RegisterCallback<GeometryChangedEvent>(evt =>
             {
+
                 var proposed = overlay.collapsedButtonRect;
                 proposed.size = evt.newRect.size;
-
-                var placement = OverlayCanvas.ClampRectToBounds(overlay.canvas.windowRoot.worldBound, proposed);
-
-                if (!Mathf.Approximately(proposed.position.x, placement.position.x))
-                    this.EnableInClassList(k_Clamped, true);
-
-                var canvasWorld = overlay.canvas.rootVisualElement.worldBound;
 
                 if (overlay.layout == Layout.HorizontalToolbar)
                     this.EnableInClassList(k_FromHorizontal, true);
@@ -58,6 +53,61 @@ namespace UnityEditor.Overlays
                     this.EnableInClassList(k_OutsideToolbar, true);
 
                 var overlayWorldBound = overlay.rootVisualElement.worldBound;
+                var placement = OverlayCanvas.ClampRectToBounds(overlay.canvas.windowRoot.worldBound, proposed);
+
+                if (!Mathf.Approximately(proposed.position.x, placement.position.x))
+                    this.EnableInClassList(k_Clamped, true);
+
+                HandleGeometryChangedEvent(overlay.canvas, placement, overlayWorldBound);
+            });
+        }
+
+        public OverlayPopup(OverlayCanvas canvas, Overlay overlay)
+        {
+            name = "overlay-popup";
+            Overlay.treeAsset.CloneTree(this);
+
+            this.Q(Overlay.k_CollapsedContent)?.RemoveFromHierarchy();
+            this.Q(null, Overlay.k_Header)?.RemoveFromHierarchy();
+
+            focusable = true;
+            pickingMode = PickingMode.Position;
+            AddToClassList(Overlay.ussClassName);
+            style.position = Position.Absolute;
+
+            var root = this.Q("overlay-content");
+            root.renderHints = RenderHints.ClipWithScissors;
+            root.Add(overlay.GetSimpleHeader());
+            root.Add(overlay.CreatePanelContent());
+
+            var mousePosition = PointerDeviceState.GetPointerPosition(PointerId.mousePointerId, ContextType.Editor);
+            mousePosition = canvas.rootVisualElement.WorldToLocal(mousePosition);
+
+            RegisterCallback<MouseEnterEvent>(evt => m_CursorIsOverPopup = true);
+            RegisterCallback<MouseLeaveEvent>(evt => m_CursorIsOverPopup = false);
+
+            RegisterCallback<GeometryChangedEvent>(evt =>
+            {
+                //Use mouse position to set the popup to the right coordinates
+                var proposed = new Rect(mousePosition + new Vector2(0f,evt.newRect.height/2f), evt.newRect.size);
+                var overlayWorldBound = new Rect(mousePosition, Vector2.zero);
+
+                if (float.IsNaN(overlayWorldBound.width))
+                    overlayWorldBound.width = 0f;
+                if (float.IsNaN(overlayWorldBound.height))
+                    overlayWorldBound.height = 0f;
+
+                var placement = OverlayCanvas.ClampRectToBounds(canvas.windowRoot.worldBound, proposed);
+                if (!Mathf.Approximately(proposed.position.x, placement.position.x))
+                    this.EnableInClassList(k_Clamped, true);
+
+                HandleGeometryChangedEvent(canvas, placement, overlayWorldBound);
+            });
+        }
+
+        void HandleGeometryChangedEvent(OverlayCanvas canvas, Rect placement, Rect overlayWorldBound)
+        {
+                var canvasWorld = canvas.rootVisualElement.worldBound;
 
                 var rightPlacement = overlayWorldBound.x + overlayWorldBound.width;
                 var rightSideSpace = canvasWorld.xMax - rightPlacement;
@@ -70,7 +120,7 @@ namespace UnityEditor.Overlays
                 }
                 else
                 {
-                    var leftSideSpace = placement.x - overlay.canvas.rootVisualElement.worldBound.x;
+                    var leftSideSpace = placement.x - canvas.rootVisualElement.worldBound.x;
                     if (leftSideSpace >= placement.width)
                     {
                         xAdjusted = overlayWorldBound.x - placement.width;
@@ -113,7 +163,6 @@ namespace UnityEditor.Overlays
                 style.maxWidth = maxWidth;
 
                 transform.position = placement.position - canvasWorld.position;
-            });
         }
     }
 }

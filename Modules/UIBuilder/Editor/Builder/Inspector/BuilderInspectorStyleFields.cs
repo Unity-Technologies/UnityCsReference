@@ -222,11 +222,15 @@ namespace Unity.UI.Builder
             if (IsComputedStyleFloat(val) && fieldElement is FloatField)
             {
                 var uiField = fieldElement as FloatField;
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
                 uiField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleFloat(val) && fieldElement is IntegerField)
             {
                 var uiField = fieldElement as IntegerField;
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
 
                 if (BuilderConstants.SpecialSnowflakeLengthStyles.Contains(styleName))
                     uiField.RegisterValueChangedCallback(e => OnFieldDimensionChange(e, styleName));
@@ -236,81 +240,175 @@ namespace Unity.UI.Builder
             else if (IsComputedStyleFloat(val) && fieldElement is PercentSlider)
             {
                 var uiField = fieldElement as PercentSlider;
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
+                else if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var genericPercentTooltip))
+                    uiField.visualInput.tooltip = genericPercentTooltip;
                 uiField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleFloat(val) && fieldElement is NumericStyleField)
             {
                 var uiField = fieldElement as NumericStyleField;
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
                 uiField.RegisterValueChangedCallback(e => OnNumericStyleFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleFloat(val) && fieldElement is DimensionStyleField)
             {
                 var uiField = fieldElement as DimensionStyleField;
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
                 uiField.RegisterValueChangedCallback(e => OnDimensionStyleFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleInt(val) && fieldElement is IntegerField)
             {
                 var uiField = fieldElement as IntegerField;
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
                 uiField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleInt(val) && fieldElement is IntegerStyleField)
             {
                 var uiField = fieldElement as IntegerStyleField;
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
                 uiField.RegisterValueChangedCallback(e => OnIntegerStyleFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleLength(val) && fieldElement is IntegerField)
             {
                 var uiField = fieldElement as IntegerField;
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
                 uiField.RegisterValueChangedCallback(e => OnFieldDimensionChange(e, styleName));
             }
             else if (IsComputedStyleLength(val) && fieldElement is DimensionStyleField)
             {
                 var uiField = fieldElement as DimensionStyleField;
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
                 uiField.RegisterValueChangedCallback(e => OnDimensionStyleFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleColor(val) && fieldElement is ColorField)
             {
                 var uiField = fieldElement as ColorField;
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, uiField.typeName, ""), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
                 uiField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleFont(val, styleName) && fieldElement is ObjectField fontField)
             {
                 fontField.objectType = typeof(Font);
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(fontField.typeName + BuilderConstants.FieldTooltipDictionarySeparator, out var styleValueTooltip))
+                    fontField.visualInput.tooltip = styleValueTooltip;
                 fontField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
             }
             else if (IsComputedStyleFontAsset(val, styleName) && fieldElement is FontDefinitionStyleField fontAssetField)
             {
                 fontAssetField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
+                var objectField = fontAssetField.Q<ObjectField>();
+                if (objectField != null)
+                {
+                    if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(objectField.typeName + BuilderConstants.FieldTooltipDictionarySeparator, out var styleValueTooltip))
+                        objectField.visualInput.tooltip = styleValueTooltip;
+                }
+                var popupField = fontAssetField.Q<PopupField<string>>();
+                if (popupField != null)
+                {
+                    fontAssetField.RegisterCallback<TooltipEvent>(e =>
+                    {
+                        if (!BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                                popupField.value + BuilderConstants.FieldTooltipDictionarySeparator, out var styleValueTooltip))
+                            return;
+                        popupField.tooltip = e.tooltip = styleValueTooltip;
+                        e.rect = popupField.visualInput.GetTooltipRect();
+                    });
+                }
             }
             else if (IsComputedStyleTextShadow(val) && fieldElement is TextShadowStyleField textShadowStyleField)
             {
                 textShadowStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeTextShadow(e, styleName));
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "offset-x"), out var offsetXTooltip)
+                    && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "offset-y"), out var offsetYTooltip)
+                    && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "blur-radius"), out var blurRadiusTooltip)
+                    && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "color"), out var colorTooltip))
+                    textShadowStyleField.UpdateSubFieldVisualInputTooltips(offsetXTooltip, offsetYTooltip, blurRadiusTooltip, colorTooltip);
             }
             else if (IsComputedStyleTransformOrigin(val) && fieldElement is TransformOriginStyleField transformOriginStyleField)
             {
+
                 transformOriginStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeTransformOrigin(e, styleName));
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
+                    SetXAndYSubFieldsTooltips(transformOriginStyleField,
+                    TransformOriginStyleField.s_TransformOriginXFieldName, styleValueTooltip,
+                    TransformOriginStyleField.s_TransformOriginYFieldName, styleValueTooltip);
             }
             else if (IsComputedStyleTranslate(val) && fieldElement is TranslateStyleField translateStyleField)
             {
                 translateStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeTranslate(e, styleName));
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
+                    SetXAndYSubFieldsTooltips(translateStyleField,
+                    TranslateStyleField.s_TranslateXFieldName, styleValueTooltip,
+                    TranslateStyleField.s_TranslateYFieldName, styleValueTooltip);
             }
             else if (IsComputedStyleRotate(val) && fieldElement is RotateStyleField rotateStyleField)
             {
                 rotateStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeRotate(e, styleName));
+                var popupField = rotateStyleField.Q<PopupField<string>>();
+                if (popupField != null && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
+                {
+                    rotateStyleField.RegisterCallback<TooltipEvent>(e =>
+                    {
+
+                        rotateStyleField.tooltip = e.tooltip = styleValueTooltip;
+                        e.rect = rotateStyleField.visualInput.GetTooltipRect();
+                    });
+                }
             }
             else if (IsComputedStyleScale(val) && fieldElement is ScaleStyleField scaleStyleField)
             {
                 scaleStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeScale(e, styleName));
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
+                    SetXAndYSubFieldsTooltips(scaleStyleField,
+                    ScaleStyleField.s_ScaleXFieldName, styleValueTooltip,
+                    ScaleStyleField.s_ScaleYFieldName, styleValueTooltip);
             }
             else if (IsComputedStyleBackground(val) && fieldElement is ImageStyleField imageStyleField)
             {
                 imageStyleField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
+
+                var objectField = imageStyleField.Q<ObjectField>();
+                if (objectField != null && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
+                    objectField.tooltip = styleValueTooltip;
+
+                var popupField = imageStyleField.Q<PopupField<string>>();
+                if (popupField != null && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var popupValueTooltip))
+                {
+                    imageStyleField.RegisterCallback<TooltipEvent>(e =>
+                    {
+                        popupField.tooltip = e.tooltip = popupValueTooltip;
+                        e.rect = popupField.visualInput.GetTooltipRect();
+                    });
+                }
             }
             else if (IsComputedStyleCursor(val) && fieldElement is ObjectField)
             {
                 var uiField = fieldElement as ObjectField;
                 uiField.objectType = typeof(Texture2D);
                 uiField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
+
+                if (uiField != null && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
+                    uiField.visualInput.tooltip = styleValueTooltip;
             }
             else if (IsComputedStyleEnum(val, styleType))
             {
@@ -321,7 +419,23 @@ namespace Unity.UI.Builder
                     var uiField = fieldElement as EnumField;
 
                     uiField.Init(enumValue);
-                    uiField.RegisterValueChangedCallback(e => OnFieldValueChange(e, styleName));
+                    if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                            string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, BuilderNameUtilities.ConvertCamelToDash(enumValue.ToString())), out var styleValueTooltip))
+                    {
+                        uiField.RegisterCallback<TooltipEvent>(e =>
+                        {
+                            if (!BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                                    string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, BuilderNameUtilities.ConvertCamelToDash(enumValue.ToString())), out styleValueTooltip))
+                                return;
+                            uiField.tooltip = e.tooltip = string.Format(BuilderConstants.InputFieldStyleValueTooltipWithDescription, uiField.valueAsString, styleValueTooltip);
+                            e.rect = uiField.visualInput.GetTooltipRect();
+                        });
+                    }
+
+                    uiField.RegisterValueChangedCallback(e =>
+                    {
+                        OnFieldValueChange(e, styleName);
+                    });
                 }
                 else if (fieldElement is FontStyleStrip fontStyleStripField)
                 {
@@ -348,15 +462,27 @@ namespace Unity.UI.Builder
                         if (typeName == "Scroll")
                             continue;
 
+                        var enumAsDash = BuilderNameUtilities.ConvertCamelToDash(typeName);
+                        var tooltip = BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                            string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
+                                styleName, enumAsDash), out var styleValueTooltip)
+                            ? string.Format(BuilderConstants.InputFieldStyleValueTooltipWithDescription,
+                                enumAsDash, styleValueTooltip)
+                            : enumAsDash;
+
                         if (typeName == "Auto")
-                            uiField.Add(new Button() { name = "auto", text = "AUTO", tooltip = "auto" });
+                        {
+                            uiField.Add(new Button() { name = "auto", text = "AUTO", tooltip = tooltip });
+                        }
                         else
+                        {
                             uiField.Add(new Button()
                             {
-                                name = BuilderNameUtilities.ConvertCamelToDash(typeName),
+                                name = enumAsDash,
                                 iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/"),
-                                tooltip = BuilderNameUtilities.ConvertCamelToDash(typeName)
+                                tooltip = tooltip
                             });
+                        }
                     }
 
                     uiField.userData = enumType;
@@ -409,11 +535,21 @@ namespace Unity.UI.Builder
                 }
             }
 
+            // Do not rely on reflection to set tooltip on field's label
             var labelElement = fieldElement.Q<Label>();
             if (labelElement != null && string.IsNullOrEmpty(labelElement.tooltip))
             {
-                labelElement.tooltip = string.Format(BuilderConstants.FieldTooltipNameOnlyFormatString,
-                    BuilderConstants.FieldValueInfoTypeEnumUSSPropertyDisplayString, styleName);
+                if (BuilderConstants.InspectorStylePropertiesTooltipsDictionary.TryGetValue(styleName,
+                        out var ussTooltip))
+                {
+                    labelElement.tooltip = string.Format(BuilderConstants.FieldTooltipWithDescription,
+                        BuilderConstants.FieldValueInfoTypeEnumUSSPropertyDisplayString, styleName, ussTooltip);
+                }
+                else
+                {
+                    labelElement.tooltip = string.Format(BuilderConstants.FieldTooltipNameOnlyFormatString,
+                        BuilderConstants.FieldValueInfoTypeEnumUSSPropertyDisplayString, styleName);
+                }
             }
         }
 
@@ -2463,6 +2599,22 @@ namespace Unity.UI.Builder
                 updatePositionAnchorsFoldoutState?.Invoke(e.newValue);
 
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
+        }
+
+        private void SetXAndYSubFieldsTooltips(VisualElement parentField, string xFieldName, string xTooltip, string yFieldName, string yTooltip)
+        {
+            var xField =
+                parentField.Q<DimensionStyleField>(xFieldName);
+            if (xField != null)
+            {
+                xField.visualInput.tooltip = xTooltip;
+            }
+            var yField =
+                parentField.Q<DimensionStyleField>(yFieldName);
+            if (yField != null)
+            {
+                yField.visualInput.tooltip = yTooltip;
+            }
         }
 
         // TODO: Transition Utilities (to be moved to new BuilderStyleUtilities.cs once the Intuitive Placement branch is merged)

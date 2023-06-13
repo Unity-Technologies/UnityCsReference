@@ -22,8 +22,6 @@ namespace UnityEngine.UIElements.UIR
         {
             Debug.Assert(createFunc != null);
             m_CreateFunc = createFunc;
-
-            Debug.Assert(resetAction != null);
             m_ResetAction = resetAction;
 
             Debug.Assert(limit > 0);
@@ -46,7 +44,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 --Count;
                 m_PoolFirst = item.poolNext;
-                m_ResetAction(item);
+                m_ResetAction?.Invoke(item);
             }
             else
                 item = m_CreateFunc();

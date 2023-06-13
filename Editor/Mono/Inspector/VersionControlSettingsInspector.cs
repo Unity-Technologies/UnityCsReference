@@ -11,7 +11,6 @@ using UnityEditor.VersionControl;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEditor.Collaboration;
 
 namespace UnityEditor
 {
@@ -157,17 +156,11 @@ namespace UnityEditor
 
         private bool VersionControlSystemHasGUI()
         {
-            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
-            if (!collabEnabled)
-            {
             ExternalVersionControl system = VersionControlSettings.mode;
             return
                 system != ExternalVersionControl.Disabled &&
                 system != ExternalVersionControl.AutoDetect &&
                 system != ExternalVersionControl.Generic;
-        }
-
-        return false;
         }
 
         string[] GetVCConfigFieldRecentValues(string fieldName)
@@ -244,20 +237,13 @@ namespace UnityEditor
             GUILayout.Space(10);
             GUILayout.BeginVertical(EditorStyles.inspectorDefaultMargins);
 
-            bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
-            using (new EditorGUI.DisabledScope(!collabEnabled))
+            using (new EditorGUI.DisabledScope(true))
             {
-                GUI.enabled = !collabEnabled;
+                GUI.enabled = true;
 
                 ExternalVersionControl selvc = VersionControlSettings.mode;
                 CreatePopupMenuVersionControl(Styles.mode.text, vcPopupList, selvc, SetVersionControlSystem);
-                GUI.enabled = !collabEnabled;
-            }
-
-            if (collabEnabled)
-            {
-                EditorGUILayout.HelpBox("Version Control not available when using Collaboration feature.",
-                    MessageType.Warning);
+                GUI.enabled = true;
             }
 
             GUI.enabled = true;

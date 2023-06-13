@@ -861,7 +861,7 @@ namespace Unity.UI.Builder
             return value;
         }
 
-        internal static string GetFieldTooltip(VisualElement field, FieldValueInfo info, string description = null)
+        internal static string GetFieldTooltip(VisualElement field, FieldValueInfo info, string description = null, bool allowValueDescription = true)
         {
             if (info.type == FieldValueInfoType.None)
                 return "";
@@ -869,6 +869,34 @@ namespace Unity.UI.Builder
             var tooltipFormat = BuilderConstants.FieldTooltipNameOnlyFormatString;
 
             var value = string.Format(tooltipFormat, info.type.ToDisplayString(), info.name);
+            var valueDataText = "";
+            var valueDefinitionDataText = "";
+            // binding
+            if (info.valueSource.type != FieldValueSourceInfoType.Default
+                && info.valueSource.type != FieldValueSourceInfoType.Inherited)
+            {
+                if (allowValueDescription)
+                    tooltipFormat = BuilderConstants.FieldTooltipFormatString;
+
+                    // if the value is bound to variable then display the variable info
+                if (allowValueDescription && info.valueBinding.type == FieldValueBindingInfoType.USSVariable)
+                    valueDataText = $"\n{GetVariableTooltip(info.valueBinding.variable)}";
+            }
+
+            // source
+            if (allowValueDescription && info.valueSource.type.IsFromUSSSelector())
+                valueDefinitionDataText = $"\n{GetMatchingStyleSheetRuleSourceTooltip(info.valueSource.matchedRule)}";
+
+            // For UX purposes, some USS properties have custom tooltips. If no custom tooltip is found, fall back to generated tooltip
+            if (info.type == FieldValueInfoType.USSProperty && BuilderConstants.InspectorStylePropertiesTooltipsDictionary.TryGetValue(info.name, out var ussTooltip))
+            {
+                tooltipFormat = BuilderConstants.FieldTooltipWithDescription;
+                value = string.Format(tooltipFormat, info.type.ToDisplayString(), info.name, ussTooltip);
+            }
+            else
+            {
+                value = string.Format(tooltipFormat, info.type.ToDisplayString(), info.name, info.valueBinding.type.ToDisplayString(), valueDataText, info.valueSource.type.ToDisplayString(), valueDefinitionDataText);
+            }
             if (!string.IsNullOrEmpty(description))
                 value += "\n\n" + description;
             return value;

@@ -122,8 +122,11 @@ namespace UnityEngine.UIElements.UIR
         RenderChainCommand m_FirstCommand;
         DepthOrderedDirtyTracking m_DirtyTracker;
         VisualChangesProcessor m_VisualChangesProcessor;
-        LinkedPool<RenderChainCommand> m_CommandPool = new LinkedPool<RenderChainCommand>(() => new RenderChainCommand(), cmd => {});
-        BasicNodePool<TextureEntry> m_TexturePool = new BasicNodePool<TextureEntry>();
+        LinkedPool<RenderChainCommand> m_CommandPool = new(() => new RenderChainCommand(), null);
+        LinkedPool<ExtraRenderChainVEData> m_ExtraDataPool = new(() => new ExtraRenderChainVEData(), null);
+        BasicNodePool<MeshHandle> m_MeshHandleNodePool = new();
+        BasicNodePool<TextureEntry> m_TexturePool = new();
+        Dictionary<VisualElement, ExtraRenderChainVEData> m_ExtraData = new();
 
         MeshGenerationDeferrer m_MeshGenerationDeferrer = new();
         Shader m_DefaultShader, m_DefaultWorldSpaceShader;
@@ -246,7 +249,11 @@ namespace UnityEngine.UIElements.UIR
 
         #endregion // Dispose Pattern
 
-        internal ChainBuilderStats stats { get { return m_Stats; } }
+        // Note that this returns a copy of the stats, not a reference. This is typically used in tests to get a
+        // snapshot of the stats at a given time.
+        internal ChainBuilderStats stats => m_Stats;
+
+        internal ref ChainBuilderStats statsByRef => ref m_Stats;
 
         public void ProcessChanges()
         {
@@ -737,6 +744,60 @@ namespace UnityEngine.UIElements.UIR
             UIEOnOpacityChanged(panel.visualTree);
         }
 
+        public ExtraRenderChainVEData GetOrAddExtraData(VisualElement ve)
+        {
+            if (!m_ExtraData.TryGetValue(ve, out ExtraRenderChainVEData extraData))
+            {
+                extraData = m_ExtraDataPool.Get();
+                m_ExtraData.Add(ve, extraData);
+                ve.renderChainData.flags |= RenderDataFlags.HasExtraData;
+            }
+
+            return extraData;
+        }
+
+        public void FreeExtraData(VisualElement ve)
+        {
+            Debug.Assert(ve.renderChainData.hasExtraData);
+            Debug.Assert(!ve.renderChainData.hasExtraMeshes); // Meshes should have been freed before calling this method
+            m_ExtraData.Remove(ve, out ExtraRenderChainVEData extraData);
+            m_ExtraDataPool.Return(extraData);
+
+            ve.renderChainData.flags &= ~RenderDataFlags.HasExtraData;
+        }
+
+        public void AppendExtraMesh(VisualElement ve, MeshHandle mesh)
+        {
+            ExtraRenderChainVEData extraData = GetOrAddExtraData(ve);
+            var newNode = m_MeshHandleNodePool.Get();
+            newNode.data = mesh;
+            newNode.AppendTo(ref extraData.extraMesh);
+            ve.renderChainData.flags |= RenderDataFlags.HasExtraMeshes;
+        }
+
+        public void FreeExtraMeshes(VisualElement ve)
+        {
+            if (!ve.renderChainData.hasExtraMeshes)
+                return;
+
+            ExtraRenderChainVEData extraData = m_ExtraData[ve];
+            BasicNode<MeshHandle> mesh = extraData.extraMesh;
+            extraData.extraMesh = null;
+            while (mesh != null)
+            {
+                device.Free(mesh.data);
+                BasicNode<MeshHandle> next = mesh.next;
+
+                mesh.data = null;
+                mesh.next = null;
+                m_MeshHandleNodePool.Return(mesh);
+
+                mesh = next;
+            }
+
+            ve.renderChainData.flags &= ~RenderDataFlags.HasExtraMeshes;
+        }
+
         public void AppendTexture(VisualElement ve, Texture src, TextureId id, bool isAtlas)
         {
             BasicNode<TextureEntry> node = m_TexturePool.Get();
@@ -855,6 +916,8 @@ namespace UnityEngine.UIElements.UIR
         IsInChain = 1 << 0,
         IsGroupTransform = 1 << 1,
         IsIgnoringDynamicColorHint = 1 << 2,
+        HasExtraData = 1 << 3,
+        HasExtraMeshes = 1 << 4,
     }
 
     struct RenderChainVEData
@@ -911,6 +974,25 @@ namespace UnityEngine.UIElements.UIR
             [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
             get => (flags & RenderDataFlags.IsIgnoringDynamicColorHint) == RenderDataFlags.IsIgnoringDynamicColorHint;
         }
+
+        public bool hasExtraData
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (flags & RenderDataFlags.HasExtraData) == RenderDataFlags.HasExtraData;
+        }
+
+        public bool hasExtraMeshes
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (flags & RenderDataFlags.HasExtraMeshes) == RenderDataFlags.HasExtraMeshes;
+        }
+    }
+
+    // This is intended for data that used infrequently, to such an extent, that it's not worth being directly in RenderChainVEData.
+    // This data is accessed through a dictionary lookup, so it's not as fast as direct access.
+    class ExtraRenderChainVEData : LinkedPoolItem<ExtraRenderChainVEData>
+    {
+        public BasicNode<MeshHandle> extraMesh;
     }
 
     struct TextureEntry

@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Core.Editor")]
 namespace UnityEngine.LightBaking
@@ -11,7 +12,10 @@ namespace UnityEngine.LightBaking
     [StructLayout(LayoutKind.Sequential)]
     internal class BakeProgressState : IDisposable
     {
+        [NativeMethod(IsThreadSafe = true)]
         static extern IntPtr Internal_Create();
+
+        [NativeMethod(IsThreadSafe = true)]
         static extern void Internal_Destroy(IntPtr ptr);
 
         internal IntPtr m_Ptr;
@@ -48,7 +52,11 @@ namespace UnityEngine.LightBaking
         {
             public static IntPtr ConvertToNative(BakeProgressState obj) => obj.m_Ptr;
         }
+
+        [NativeMethod(IsThreadSafe = true)]
         public extern void Cancel();
+
+        [NativeMethod(IsThreadSafe = true)]
         public extern float Progress();
     }
 }

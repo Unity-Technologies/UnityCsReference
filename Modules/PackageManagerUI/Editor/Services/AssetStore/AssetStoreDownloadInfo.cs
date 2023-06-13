@@ -17,6 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public long productId;
         public string key;
         public string url;
+        public long uploadId;
 
         public string[] destination => new string[]
         {
@@ -43,7 +44,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     publisherName = download.GetString("filename_safe_publisher_name"),
                     productId = download.GetStringAsLong("id"),
                     key = download.GetString("key"),
-                    url = download.GetString("url")
+                    url = download.GetString("url"),
+                    uploadId = download.GetStringAsLong("upload_id")
                 };
             }
             catch (Exception)

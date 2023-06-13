@@ -84,7 +84,7 @@ namespace Unity.UI.Builder
                 }
 
                 BuilderAssetUtilities.ReparentElementInAsset(
-                    paneWindow.document, element, newParent, index, undo);
+                    paneWindow.document, element, newParent, index++, undo);
 
                 undo = false;
             }

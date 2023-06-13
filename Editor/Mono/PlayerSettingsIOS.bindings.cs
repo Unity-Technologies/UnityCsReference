@@ -365,7 +365,7 @@ namespace UnityEditor
             }
 
             [NativeProperty("HideHomeButton")]
-            public static bool hideHomeButton { get; set; }
+            public extern static bool hideHomeButton { get; set; }
 
             [NativeProperty("IOSAppInBackgroundBehavior")]
             private extern static int  appInBackgroundBehaviorInternal

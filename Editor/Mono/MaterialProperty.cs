@@ -254,6 +254,7 @@ namespace UnityEditor
             public Object[] targets;
 
             public bool wasBoldDefaultFont;
+            public bool allowLocking;
             public bool isLockedInChildren, isLockedByAncestor, isOverriden;
 
             public float startY;
@@ -296,6 +297,7 @@ namespace UnityEditor
             {
                 isLockedInChildren = false;
                 isLockedByAncestor = false;
+                allowLocking = true;
                 isOverriden = true;
                 int nameId = property != null ? Shader.PropertyToID(property.name) : -1;
                 foreach (Material target in targets)
@@ -311,6 +313,7 @@ namespace UnityEditor
                     isLockedInChildren |= l;
                     isLockedByAncestor |= b;
                     isOverriden &= o;
+                    allowLocking &= target.allowLocking;
                 }
             }
 
@@ -349,7 +352,7 @@ namespace UnityEditor
                     return capturedSerializedProperties[0].ToString();
             }
 
-            public static void DoPropertyContextMenu(bool lockMenusOnly, Object[] targets)
+            public static void DoPropertyContextMenu(bool lockMenusOnly, Object[] targets, bool allowLocking)
             {
                 MergeStack(out bool lockedInChildren, out bool lockedByAncestor, out bool overriden);
 
@@ -366,7 +369,7 @@ namespace UnityEditor
                 {
                     if (!lockMenusOnly)
                         DoRegularMenu(menu, overriden, targets);
-                    DoLockPropertiesMenu(menu, !lockedInChildren, targets);
+                    DoLockPropertiesMenu(menu, !lockedInChildren, targets, allowLocking);
                 }
 
                 if (Event.current.shift && capturedProperties.Count == 1)
@@ -565,15 +568,19 @@ namespace UnityEditor
                 }
             }
 
-            static void DoLockPropertiesMenu(GenericMenu menu, bool lockValue, Object[] targets)
+            static void DoLockPropertiesMenu(GenericMenu menu, bool lockValue, Object[] targets, bool allowLocking)
             {
                 if (menu.GetItemCount() != 0)
                     menu.AddSeparator("");
 
-                // Lock
-                menu.AddItem(Styles.lockContent, !lockValue, () => {
-                    LockProperties(lockValue, targets);
-                });
+                if (allowLocking)
+                {
+                    menu.AddItem(Styles.lockContent, !lockValue, () => { LockProperties(lockValue, targets); });
+                }
+                else
+                {
+                    menu.AddDisabledItem(Styles.lockContent);
+                }
             }
 
             static void LockProperties(bool lockValue, Object[] targets)
@@ -755,7 +762,7 @@ namespace UnityEditor
                 }
                 else if (data.isLockedInChildren)
                     GUI.Label(lockRect, Styles.lockInChildrenContent, Styles.centered);
-                else if (GUI.enabled)
+                else if (GUI.enabled && data.allowLocking)
                 {
                     GUIView.current?.MarkHotRegion(GUIClip.UnclipToWindow(lockRegion));
                     if (mouseOnLock)
@@ -777,8 +784,8 @@ namespace UnityEditor
 
             // Context menu
             if (Event.current.rawType == EventType.ContextClick && (position.Contains(Event.current.mousePosition) || mouseOnLock))
-                PropertyData.DoPropertyContextMenu(mouseOnLock, data.targets);
-            else if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && mouseOnLock)
+                PropertyData.DoPropertyContextMenu(mouseOnLock, data.targets, data.allowLocking);
+            else if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && mouseOnLock && data.allowLocking)
                 PropertyData.DoLockAction(data.targets);
 
             s_PropertyStack.RemoveAt(s_PropertyStack.Count - 1);

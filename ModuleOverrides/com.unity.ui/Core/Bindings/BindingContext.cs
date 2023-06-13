@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
         public VisualElement targetElement => m_TargetElement;
 
         /// <summary>
-        /// The target property of the element to bind.
+        /// The binding ID of the element to bind.
         /// </summary>
         public BindingId bindingId => m_BindingId;
 
@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements
         /// The data source that was resolved for a given binding.
         /// </summary>
         /// <remarks>
-        /// If a <see cref="DataBinding"/> instance provides its own data source, it will automatically be used as the
+        /// If a <see cref="Binding"/> implements the <see cref="IDataSourceProvider"/> interface and provides its own data source, it will automatically be used as the
         /// resolved data source; otherwise the data source will be resolved to the first valid data source on the target
         /// element or its ancestors. This value can be <see langword="null"/>.
         /// </remarks>

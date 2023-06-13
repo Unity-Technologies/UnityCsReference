@@ -78,10 +78,13 @@ namespace UnityEngine.UIElements
                     if (dataBinding.bindingMode == BindingMode.ToSource)
                         return false;
 
-                    if (dataBinding.isDirty)
+                    if (dataBinding.updateTrigger == BindingUpdateTrigger.EveryUpdate || dataBinding.isDirty)
                         return true;
 
-                    return dataBinding.bindingMode != BindingMode.ToTargetOnce && versionChanged;
+                    if (dataBinding.bindingMode == BindingMode.ToTargetOnce)
+                        return false;
+
+                    return dataBinding.updateTrigger == BindingUpdateTrigger.OnSourceChanged && versionChanged;
                 }
                 case BindingUpdateStage.UpdateSource:
                 {
@@ -97,13 +100,23 @@ namespace UnityEngine.UIElements
 
         private bool ShouldProcessBindingAtStage(CustomBinding customBinding, BindingUpdateStage stage, bool versionChanged)
         {
-            return stage switch
+            switch (stage)
             {
-                BindingUpdateStage.UpdateUI => customBinding.isDirty || versionChanged,
-                // Not yet supported.
-                BindingUpdateStage.UpdateSource => false,
-                _ => throw new ArgumentOutOfRangeException(nameof(stage), stage, null)
-            };
+                case BindingUpdateStage.UpdateUI:
+                {
+                    return customBinding.updateTrigger switch
+                    {
+                        BindingUpdateTrigger.EveryUpdate => true,
+                        BindingUpdateTrigger.OnSourceChanged when versionChanged || customBinding.isDirty => true,
+                        _ => customBinding.isDirty
+                    };
+                }
+                case BindingUpdateStage.UpdateSource:
+                    // Not supported
+                    return false;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(stage), stage, null);
+            }
         }
 
         public BindingResult UpdateUI(in BindingContext context, Binding bindingObject)

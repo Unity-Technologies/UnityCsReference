@@ -309,6 +309,7 @@ namespace UnityEditor
 
             public readonly GUIContent generateMipMaps = EditorGUIUtility.TrTextContent("Generate Mipmaps", "Create progressively smaller versions of the texture, for reduced texture shimmering and better GPU performance when the texture is viewed at a distance.");
             public readonly GUIContent sRGBTexture = EditorGUIUtility.TrTextContent("sRGB (Color Texture)", "Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
+            public readonly GUIContent sRGBForEtc1Warning = EditorGUIUtility.TrTextContent("Unity does not support importing textures as ETC when that texture is in the sRGB color space and the project is set to use a Linear color space. One or more of the textures you have selected are imported as ETC2 instead.");
             public readonly GUIContent borderMipMaps = EditorGUIUtility.TrTextContent("Replicate Border", "Replicate pixel values from texture borders into smaller mipmap levels. Mostly used for Cookie texture types.");
             public readonly GUIContent mipMapsPreserveCoverage = EditorGUIUtility.TrTextContent("Preserve Coverage", "The alpha channel of generated mipmaps will preserve coverage for the alpha test. Useful for foliage textures.");
             public readonly GUIContent alphaTestReferenceValue = EditorGUIUtility.TrTextContent("Alpha Cutoff", "The reference value used during the alpha test. Controls mipmap coverage.");
@@ -958,11 +959,82 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
         }
 
+        bool ShouldDisplaySRGBForEtc1Warning()
+        {
+            if (PlayerSettings.colorSpace == ColorSpace.Gamma)
+            {
+                return false;
+            }
+
+            BuildTarget buildTarget = EditorUserBuildSettings.activeBuildTarget;
+            string platformName = BuildPipeline.GetBuildTargetName(buildTarget);
+            for (int i = 0; i < targets.Length; i++)
+            {
+                TextureImporter t = (TextureImporter)targets[i];
+                if (!t.sRGBTexture)
+                {
+                    continue;
+                }
+                TextureImporterPlatformSettings settings = t.GetPlatformTextureSettings(platformName);
+                if (!settings.overridden)
+                {
+                    settings = t.GetDefaultPlatformTextureSettings();
+                    platformName = settings.name;
+                }
+
+                TextureImporterFormat textureImporterFormat = t.GetPlatformTextureSettings(platformName).format;
+                TextureFormat textureFormat;
+                // If Automatic+Compressed is used, we cannot determine if ETC1 -> ETC2 conversion occurred using only the Texture / TexImporter.
+                // Instead, let's check PlayerSettings / BuildSettings.
+                if (textureImporterFormat == TextureImporterFormat.Automatic && t.textureCompression != TextureImporterCompression.Uncompressed)
+                {
+                    TextureCompressionFormat defaultTexCompressionFormat = PlayerSettings.GetDefaultTextureCompressionFormat(BuildPipeline.GetBuildTargetGroup(buildTarget));
+                    switch (buildTarget)
+                    {
+                        case BuildTarget.Android:
+                            if (EditorUserBuildSettings.androidBuildSubtarget == MobileTextureSubtarget.ETC)
+                            {
+                                return true;
+                            }
+                            else if (defaultTexCompressionFormat == TextureCompressionFormat.ETC && EditorUserBuildSettings.androidBuildSubtarget == MobileTextureSubtarget.Generic)
+                            {
+                                return true;
+                            }
+                            break;
+
+                        default:
+                            if (defaultTexCompressionFormat == TextureCompressionFormat.ETC)
+                            {
+                                return true;
+                            }
+                            break;
+                    }
+                    continue; // ETC is not being used as default texture compression format.
+                }
+
+                textureFormat = (TextureFormat)textureImporterFormat;
+                if (textureFormat == TextureFormat.ETC_RGB4 || textureFormat == TextureFormat.ETC_RGB4Crunched)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         void ColorSpaceGUI(TextureInspectorGUIElement guiElements)
         {
             if (CountImportersWithHDR(targets, out int countHDR) && countHDR == 0)
             {
                 ToggleFromInt(m_sRGBTexture, s_Styles.sRGBTexture);
+
+                if (ShouldDisplaySRGBForEtc1Warning())
+                {
+                    // ETC1 + sRGB does not exist. In order to provide sRGB regardless, the TextureImporter upgrades the chosen import format
+                    // to an ETC2 equivalent. This is safe to do: ETC2 is backwards compatible with ETC1 and all the platforms that
+                    // support ETC1 also support ETC2. Regardless, let's warn users that this is happening.
+                    EditorGUILayout.HelpBox(s_Styles.sRGBForEtc1Warning.text, MessageType.Warning);
+                }
             }
         }
 

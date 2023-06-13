@@ -103,12 +103,10 @@ namespace UnityEditor
         Dictionary<Mode, WindowTab> m_Tabs = new Dictionary<Mode, WindowTab>();
 
         SerializedObject m_LightingSettings;
-        SerializedProperty m_WorkflowMode;
 
         bool m_IsRealtimeSupported = false;
         bool m_IsBakedSupported = false;
         bool m_IsEnvironmentSupported = false;
-        bool m_LightingSettingsReadOnlyMode = false;
 
         SerializedObject lightingSettings
         {
@@ -118,16 +116,13 @@ namespace UnityEditor
                 if (m_LightingSettings == null || m_LightingSettings.targetObject == null || m_LightingSettings.targetObject != Lightmapping.lightingSettingsInternal)
                 {
                     var targetObject = Lightmapping.lightingSettingsInternal;
-                    m_LightingSettingsReadOnlyMode = false;
 
                     if (targetObject == null)
                     {
                         targetObject = Lightmapping.lightingSettingsDefaults;
-                        m_LightingSettingsReadOnlyMode = true;
                     }
 
                     m_LightingSettings = new SerializedObject(targetObject);
-                    m_WorkflowMode = m_LightingSettings.FindProperty("m_GIWorkflowMode");
                 }
                 return m_LightingSettings;
             }
@@ -552,33 +547,13 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(Lightmapping.lightingDataAsset.validityErrorMessage, MessageType.Warning);
                 }
 
-                bool isEntitiesPackageUsed = PackageManager.PackageInfo.IsPackageRegistered("com.unity.entities");
-                bool iterativeInLightingSettings = (m_WorkflowMode.intValue == (int)Lightmapping.GIWorkflowMode.Iterative);
-
-                if (isEntitiesPackageUsed && iterativeInLightingSettings)
-                    EditorGUILayout.HelpBox("Unity ignores Auto Generate mode when the Entities package is installed. When you generate lighting in a project where you have installed the Entities package, the Unity Editor opens all loaded subscenes. This may slow down Editor performance.", MessageType.Warning);
-
-                // Auto Generate checkbox.
-                EditorGUI.BeginChangeCheck();
-                using (new EditorGUI.DisabledScope(m_LightingSettingsReadOnlyMode))
-                {
-                    iterativeInLightingSettings = EditorGUILayout.Toggle(Styles.continuousBakeLabel, iterativeInLightingSettings);
-                }
-
-                if (EditorGUI.EndChangeCheck())
-                {
-                    m_WorkflowMode.intValue = (int)(iterativeInLightingSettings ? Lightmapping.GIWorkflowMode.Iterative : Lightmapping.GIWorkflowMode.OnDemand);
-                }
-
                 // Bake settings.
                 DrawGPUDeviceSelector();
                 DrawBakingProfileSelector();
 
-                bool resultingIterative = iterativeInLightingSettings && !isEntitiesPackageUsed;
-                using (new EditorGUI.DisabledScope(resultingIterative))
                 {
                     // Bake button if we are not currently baking
-                    bool showBakeButton = resultingIterative || !Lightmapping.isRunning;
+                    bool showBakeButton = Lightmapping.isInteractive || !Lightmapping.isRunning;
                     if (showBakeButton)
                     {
                         bool anythingCompiling = ShaderUtil.anythingCompiling;
@@ -623,10 +598,6 @@ namespace UnityEditor
 
         private void DoBake()
         {
-            // Before we bake, kick every scene view out of preview mode
-            foreach (SceneView sv in SceneView.sceneViews)
-                sv.useInteractiveLightBakingData = false;
-
             Lightmapping.BakeAsync();
         }
 
@@ -641,11 +612,125 @@ namespace UnityEditor
             Lightmapping.BakeAllReflectionProbesSnapshots();
         }
 
+        internal static VisualisationGITexture[] GetRealTimeLightmaps()
+        {
+            return LightmapVisualizationUtility.GetRealtimeGITextures(GITextureType.Irradiance);
+        }
+
+        internal static void GatherRealTimeLightmapStats(ref int lightmapCount, ref long totalMemorySize, ref Dictionary<LightmapSize, int> sizes)
+        {
+            var realTimeLightMaps = GetRealTimeLightmaps();
+            foreach (var lmap in realTimeLightMaps)
+            {
+                if (lmap.texture == null)
+                    continue;
+                lightmapCount++;
+
+                LightmapSize ls = new() { width = lmap.texture.width, height = lmap.texture.height};
+                if (sizes.ContainsKey(ls))
+                    sizes[ls]++;
+                else
+                    sizes.Add(ls, 1);
+
+                totalMemorySize += TextureUtil.GetStorageMemorySizeLong(lmap.texture);
+            }
+        }
+
+        internal static void GatherRunningBakeLightmapStats(ref int lightmapCount, ref long totalMemorySize, ref Dictionary<LightmapSize, int> sizes, ref bool shadowmaskMode)
+        {
+            RunningBakeInfo info = Lightmapping.GetRunningBakeInfo();
+            lightmapCount = info.lightmapSizes.Length;
+
+            foreach (var ld in info.lightmapSizes)
+                if (sizes.ContainsKey(ld))
+                    sizes[ld]++;
+                else
+                   sizes.Add(ld, 1);
+
+            shadowmaskMode = false;
+        }
+
+        internal static void GatherBakedLightmapStats(ref int lightmapCount, ref long totalMemorySize, ref Dictionary<LightmapSize, int> sizes, ref bool shadowmaskMode)
+        {
+            foreach (LightmapData ld in LightmapSettings.lightmaps)
+            {
+                if (ld.lightmapColor == null)
+                    continue;
+                lightmapCount++;
+
+                LightmapSize ls = new() { width = ld.lightmapColor.width, height = ld.lightmapColor.height};
+                if (sizes.ContainsKey(ls))
+                    sizes[ls]++;
+                else
+                    sizes.Add(ls, 1);
+
+                totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapColor);
+                if (ld.lightmapDir)
+                    totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapDir);
+
+                if (ld.shadowMask)
+                {
+                    totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.shadowMask);
+                    shadowmaskMode = true;
+                }
+            }
+        }
+
+        internal static void GatherProbeStats(ref ulong probeCount, ref long totalMemorySize)
+        {
+            RunningBakeInfo info = Lightmapping.GetRunningBakeInfo();
+            probeCount = info.probePositions;
+
+            totalMemorySize = 0;
+        }
+
+        internal static void DisplaySummaryLine(string outputString, int lightmapCount, long totalMemorySize)
+        {
+            GUILayout.BeginVertical();
+            GUILayout.BeginHorizontal();
+
+            GUILayout.Label(outputString.ToString(), Styles.labelStyle);
+            // Push the memory size stats to the right of the screen for better alignment
+            GUILayout.FlexibleSpace();
+            if (totalMemorySize != 0)
+            {
+                GUILayout.Label(EditorUtility.FormatBytes(totalMemorySize), Styles.labelStyle, GUILayout.MinWidth(70));
+            }
+
+            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
+        }
+
+        static void FormatSizesString(ref StringBuilder sizesString, Dictionary<LightmapSize, int> sizes)
+        {
+            bool first = true;
+            foreach (KeyValuePair<LightmapSize, int> s in sizes)
+            {
+                sizesString.Append(first ? ": " : ", ");
+                first = false;
+                if (s.Value > 1)
+                {
+                    sizesString.Append(s.Value);
+                    sizesString.Append("x");
+                }
+
+                sizesString.Append(s.Key.width.ToString(CultureInfo.InvariantCulture.NumberFormat));
+                sizesString.Append("x");
+                sizesString.Append(s.Key.height.ToString(CultureInfo.InvariantCulture.NumberFormat));
+                sizesString.Append("px");
+            }
+        }
+
+        internal static void AddPlural(ref StringBuilder s, int n)
+        {
+            if (n > 0)
+                s.Append("s");
+        }
+
         internal static void Summary()
         {
-            bool autoGenerate = Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
             bool outdatedEnvironment = RenderSettings.WasUsingAutoEnvironmentBakingWithNonDefaultSettings();
-            if (outdatedEnvironment && !autoGenerate && !Lightmapping.isRunning)
+            if (outdatedEnvironment && !Lightmapping.isRunning)
             {
                 using (new EditorGUIUtility.IconSizeScope(Vector2.one * 14))
                 {
@@ -655,164 +740,65 @@ namespace UnityEditor
                 }
             }
 
-            // Show the number of lightmaps:
+            // Show the number of lightmaps. These are the lightmaps that will be baked or is being baked.
             {
-                int lightmapCount = 0;
-                long totalMemorySize = 0;
-                StringBuilder sizesString = new();
-                var sizes = new Dictionary<LightmapSize, int>();
-                if (!autoGenerate && Lightmapping.isRunning) // These are the lightmaps that will be baked or is being baked.
+                StringBuilder outputString = new();
+
+                string prefix = Lightmapping.isRunning ? "Generating" : string.Empty;
+
+                // Gather and show light probe stats (we only have this while baking is running)
+                if (Lightmapping.isRunning)
                 {
-                    RunningBakeInfo info = Lightmapping.GetRunningBakeInfo();
-                    lightmapCount = info.lightmapSizes.Length;
-                    var probesCount = info.probePositions;
-                    string lightmapsPlural = lightmapCount != 1 ? "s" : string.Empty;
-                    string probesPlural = probesCount != 1 ? "s" : string.Empty;
-                    string probesString = probesCount != 0 ? $"{probesCount} probe{probesPlural} and " : string.Empty;
-                    sizesString.Append($"Baking {probesString}{lightmapCount} lightmap{lightmapsPlural}");
+                    ulong probesCount = 0;
+                    long probeMemorySize = 0;
 
-                    foreach (var ld in info.lightmapSizes)
-                        if (sizes.ContainsKey(ld))
-                            sizes[ld]++;
-                        else
-                            sizes.Add(ld, 1);
-                }
-                else // These are the lightmaps that were baked last.
-                {
-                    bool shadowmaskMode = false;
-                    foreach (LightmapData ld in LightmapSettings.lightmaps)
+                    GatherProbeStats(ref probesCount, ref probeMemorySize);
+                    if (probesCount > 0)
                     {
-                        if (ld.lightmapColor == null)
-                            continue;
-                        lightmapCount++;
-
-                        LightmapSize ls = new() { width = ld.lightmapColor.width, height = ld.lightmapColor.height};
-                        if (sizes.ContainsKey(ls))
-                            sizes[ls]++;
-                        else
-                            sizes.Add(ls, 1);
-
-                        totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapColor);
-                        if (ld.lightmapDir)
-                            totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.lightmapDir);
-
-                        if (ld.shadowMask)
-                        {
-                            totalMemorySize += TextureUtil.GetStorageMemorySizeLong(ld.shadowMask);
-                            shadowmaskMode = true;
-                        }
-                    }
-
-                    sizesString.Append(lightmapCount);
-                    sizesString.Append(" lightmap");
-                    if (lightmapCount != 1) sizesString.Append("s");
-                    if (shadowmaskMode)
-                    {
-                        sizesString.Append(" with Shadowmask");
-                        if (lightmapCount != 1) sizesString.Append("s");
+                        outputString.Append($"{prefix} {probesCount} probe");
+                        outputString.Append(probesCount > 1 ? "s" : string.Empty);
+                        DisplaySummaryLine(outputString.ToString(), 0, 0);
+                        outputString.Clear();
                     }
                 }
 
-                bool first = true;
-                foreach (KeyValuePair<LightmapSize, int> s in sizes)
-                {
-                    sizesString.Append(first ? ": " : ", ");
-                    first = false;
-                    if (s.Value > 1)
-                    {
-                        sizesString.Append(s.Value);
-                        sizesString.Append("x");
-                    }
+                // Gather and show baked lightmap stats
+                bool shadowmaskMode = false;
+                long bakedTotalMemorySize = 0;
+                int bakedLightmapCount = 0;
+                var bakedLightmapSizes = new Dictionary<LightmapSize, int>();
 
-                    sizesString.Append(s.Key.width.ToString(CultureInfo.InvariantCulture.NumberFormat));
-                    sizesString.Append("x");
-                    sizesString.Append(s.Key.height.ToString(CultureInfo.InvariantCulture.NumberFormat));
-                    sizesString.Append("px");
+                if (Lightmapping.isRunning)
+                    GatherRunningBakeLightmapStats(ref bakedLightmapCount, ref bakedTotalMemorySize, ref bakedLightmapSizes, ref shadowmaskMode);
+                else
+                    GatherBakedLightmapStats(ref bakedLightmapCount, ref bakedTotalMemorySize, ref bakedLightmapSizes, ref shadowmaskMode);
+                if (bakedLightmapCount > 0)
+                {
+                    outputString.Append($"{prefix} {bakedLightmapCount} baked lightmap");
+                    outputString.Append(bakedLightmapCount > 1 ? "s" : string.Empty);
+                    outputString.Append(shadowmaskMode ? " with Shadowmask" : string.Empty);
+                    outputString.Append(shadowmaskMode && bakedLightmapCount > 1 ? "s" : string.Empty);
+                    FormatSizesString(ref outputString, bakedLightmapSizes);
+                    DisplaySummaryLine(outputString.ToString(), bakedLightmapCount, bakedTotalMemorySize);
+                    outputString.Clear();
                 }
 
-                sizesString.Append(" ");
-
-                GUILayout.BeginHorizontal();
-
-                GUILayout.BeginVertical();
-                GUILayout.Label(sizesString.ToString(), Styles.labelStyle);
-                GUILayout.EndVertical();
-
-                if (totalMemorySize != 0)
+                // Gather and show realtime lightmap stats
+                long rtTotalMemorySize = 0;
+                int rtLightmapCount = 0;
+                var rtLightmapSizes = new Dictionary<LightmapSize, int>();
+                GatherRealTimeLightmapStats(ref rtLightmapCount, ref rtTotalMemorySize, ref rtLightmapSizes);
+                if (rtLightmapCount > 0)
                 {
-                    GUILayout.BeginVertical();
-                    GUILayout.Label(EditorUtility.FormatBytes(totalMemorySize), Styles.labelStyle);
-                    GUILayout.Label((lightmapCount == 0 ? "No Lightmaps" : ""), Styles.labelStyle);
-                    GUILayout.EndVertical();
+                    outputString.Append($"{prefix} {rtLightmapCount} realtime lightmap");
+                    outputString.Append(rtLightmapCount > 1 ? "s" : string.Empty);
+                    FormatSizesString(ref outputString, rtLightmapSizes);
+                    DisplaySummaryLine(outputString.ToString(), rtLightmapCount, rtTotalMemorySize);
+                    outputString.Clear();
                 }
-
-                GUILayout.EndHorizontal();
             }
 
             GUILayout.BeginVertical();
-            if (autoGenerate)
-            {
-                GUILayout.Label("Occupied Texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.labelStyle);
-                if (Lightmapping.isRunning)
-                {
-                    int numLightmapsInView = 0;
-                    int numConvergedLightmapsInView = 0;
-                    int numNotConvergedLightmapsInView = 0;
-
-                    int numLightmapsNotInView = 0;
-                    int numConvergedLightmapsNotInView = 0;
-                    int numNotConvergedLightmapsNotInView = 0;
-
-                    int numInvalidConvergenceLightmaps = 0;
-                    int numLightmaps = LightmapSettings.lightmaps.Length;
-                    for (int i = 0; i < numLightmaps; ++i)
-                    {
-                        LightmapConvergence lc = Lightmapping.GetLightmapConvergence(i);
-                        if (!lc.IsValid())
-                        {
-                            numInvalidConvergenceLightmaps++;
-                            continue;
-                        }
-
-                        if (Lightmapping.GetVisibleTexelCount(i) > 0)
-                        {
-                            numLightmapsInView++;
-                            if (lc.IsConverged())
-                                numConvergedLightmapsInView++;
-                            else
-                                numNotConvergedLightmapsInView++;
-                        }
-                        else
-                        {
-                            numLightmapsNotInView++;
-                            if (lc.IsConverged())
-                                numConvergedLightmapsNotInView++;
-                            else
-                                numNotConvergedLightmapsNotInView++;
-                        }
-                    }
-                    if (Lightmapping.atlasCount > 0)
-                    {
-                        int convergedMaps = numConvergedLightmapsInView + numConvergedLightmapsNotInView;
-                        GUILayout.Label("Lightmap convergence: (" + convergedMaps + "/" + Lightmapping.atlasCount + ")", Styles.labelStyle);
-                    }
-                    EditorGUILayout.LabelField("Lightmaps in view: " + numLightmapsInView, Styles.labelStyle);
-                    EditorGUI.indentLevel += 1;
-                    EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsInView, Styles.labelStyle);
-                    EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsInView, Styles.labelStyle);
-                    EditorGUI.indentLevel -= 1;
-                    EditorGUILayout.LabelField("Lightmaps not in view: " + numLightmapsNotInView, Styles.labelStyle);
-                    EditorGUI.indentLevel += 1;
-                    EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsNotInView, Styles.labelStyle);
-                    EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsNotInView, Styles.labelStyle);
-                    EditorGUI.indentLevel -= 1;
-
-                    LightProbesConvergence lpc = Lightmapping.GetLightProbesConvergence();
-                    if (lpc.IsValid() && lpc.probeSetCount > 0)
-                        GUILayout.Label("Light Probes convergence: (" + lpc.convergedProbeSetCount + "/" + lpc.probeSetCount + ")", Styles.labelStyle);
-                }
-                float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
-            }
 
             // We show baking device and performance even when not baking, so the user can see the information after a long bake:
             {

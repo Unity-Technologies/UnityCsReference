@@ -35,8 +35,6 @@ namespace UnityEditor
             public static readonly GUIContent assemblyLock = EditorGUIUtility.IconContent("AssemblyLock", "|Assemblies are currently locked. Compilation will resume once they are unlocked");
             public static readonly GUIContent progressIcon = EditorGUIUtility.TrIconContent("Progress", "Show progress details");
             public static readonly GUIContent progressHideIcon = EditorGUIUtility.TrIconContent("Progress", "Hide progress details");
-            public static readonly GUIContent autoGenerateLightOn = EditorGUIUtility.TrIconContent("AutoLightbakingOn", "Auto Generate Lighting On");
-            public static readonly GUIContent autoGenerateLightOff = EditorGUIUtility.TrIconContent("AutoLightbakingOff", "Auto Generate Lighting Off");
 
             static Styles()
             {
@@ -50,7 +48,6 @@ namespace UnityEditor
         private static AppStatusBar s_AppStatusBar;
 
         private string m_MiniMemoryOverview = "";
-        private bool? m_autoLightBakingOn;
         private bool m_DrawExtraFeatures;
         private GUIContent m_ProgressStatus = new GUIContent();
         private GUIContent m_ProgressPercentageStatus = new GUIContent();
@@ -61,19 +58,6 @@ namespace UnityEditor
         const double k_CheckUnresponsiveFrequencyInSecond = 0.5;
         const float k_ShowProgressThreshold = 0.5f;
         private double m_LastUpdate;
-        private bool m_IsQuitting;
-
-        private bool showBakeMode
-        {
-            get
-            {
-                if (m_IsQuitting)
-                    return false;
-
-                var settings = Lightmapping.GetLightingSettingsOrDefaultsFallback();
-                return settings.bakedGI || settings.realtimeGI;
-            }
-        }
 
         private bool m_ShowProgress = false;
         private bool showProgress
@@ -88,7 +72,6 @@ namespace UnityEditor
         {
             base.OnEnable();
             s_AppStatusBar = this;
-            m_autoLightBakingOn = GetBakeMode();
             m_ManagedDebuggerToggle = new ManagedDebuggerToggle();
             m_CacheServerToggle = new CacheServerToggle();
             m_EventInterests.wantsLessLayoutEvents = true;
@@ -97,8 +80,6 @@ namespace UnityEditor
             Progress.added += RefreshProgressBar;
             Progress.removed += RefreshProgressBar;
             Progress.updated += RefreshProgressBar;
-
-            EditorApplication.editorApplicationQuit += OnQuit;
         }
 
         protected override void OnDisable()
@@ -106,7 +87,6 @@ namespace UnityEditor
             Progress.added -= RefreshProgressBar;
             Progress.removed -= RefreshProgressBar;
             Progress.updated -= RefreshProgressBar;
-            EditorApplication.editorApplicationQuit -= OnQuit;
             EditorApplication.delayCall -= DelayRepaint;
             base.OnDisable();
         }
@@ -114,12 +94,10 @@ namespace UnityEditor
         protected void OnInspectorUpdate()
         {
             string miniOverview = UnityEditorInternal.ProfilerDriver.miniMemoryOverview;
-            bool? autoLightBakingOn = GetBakeMode();
 
-            if ((Unsupported.IsDeveloperMode() && m_MiniMemoryOverview != miniOverview) || (m_autoLightBakingOn != autoLightBakingOn))
+            if ((Unsupported.IsDeveloperMode() && m_MiniMemoryOverview != miniOverview))
             {
                 m_MiniMemoryOverview = miniOverview;
-                m_autoLightBakingOn = autoLightBakingOn;
 
                 Repaint();
             }
@@ -186,7 +164,6 @@ namespace UnityEditor
                 if (m_DrawExtraFeatures)
                 {
                     DrawCacheServerToggle();
-                    DrawBakeMode();
                 }
                 DrawRefreshStatus();
             }
@@ -313,25 +290,6 @@ namespace UnityEditor
             return progressBarStyle;
         }
 
-        private void DrawBakeMode()
-        {
-            if (!showBakeMode)
-                return;
-
-            if (GUILayout.Button(GetBakeModeIcon(m_autoLightBakingOn), Styles.statusIcon))
-            {
-                Event.current.Use();
-
-                if (LightingWindow.isShown)
-                    LightingWindow.DestroyLightingWindow();
-                else
-                    LightingWindow.CreateLightingWindow();
-            }
-
-            var buttonRect = GUILayoutUtility.GetLastRect();
-            EditorGUIUtility.AddCursorRect(buttonRect, MouseCursor.Link);
-        }
-
         void DrawDebuggerToggle()
         {
             m_ManagedDebuggerToggle.OnGUI();
@@ -456,33 +414,12 @@ namespace UnityEditor
                 helperBarWidth + // helper bar
                 iconWidth + // script debugger
                 iconWidth + // cache server
-                (showBakeMode ? iconWidth : 0) + // bake
                 iconWidth; // progress
             if (!showProgress)
                 return GUILayout.MaxWidth(position.width - statusRightReservedSpace - consoleIconWidth);
 
             return GUILayout.MaxWidth(position.width - statusRightReservedSpace - k_SpaceBeforeProgress - 8 - (float)Styles.progressBarWidth.value - k_SpaceAfterProgress - consoleIconWidth);
         }
-
-        private GUIContent GetBakeModeIcon(bool? bakeMode)
-        {
-            if (!bakeMode.HasValue)
-                return new GUIContent();
-            else if (bakeMode.Value)
-                return Styles.autoGenerateLightOn;
-            else
-                return Styles.autoGenerateLightOff;
-        }
-
-        private bool? GetBakeMode()
-        {
-            if (!showBakeMode)
-                return null;
-
-            return Lightmapping.GetLightingSettingsOrDefaultsFallback().autoGenerate;
-        }
-        private void OnQuit()
-            => m_IsQuitting = true;
 
         [RequiredByNativeCode]
         public static void StatusChanged()
