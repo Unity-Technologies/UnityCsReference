@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.ShortcutManagement;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Search;
 using Debug = UnityEngine.Debug;
@@ -2308,6 +2309,11 @@ namespace UnityEditor.Search
                 searchQueryPath = EditorUtility.SaveFilePanel("Save search query...", initialFolder, searchQueryFileName, "asset");
             if (string.IsNullOrEmpty(searchQueryPath))
                 return null;
+            if (!Paths.IsValidAssetPath(searchQueryPath, ".asset", out var errorMessage))
+            {
+                Debug.LogWarning($"Save Search Query has failed. {errorMessage}.");
+                return null;
+            }
 
             searchQueryPath = Utils.CleanPath(searchQueryPath);
             if (!System.IO.Directory.Exists(Path.GetDirectoryName(searchQueryPath)) || !Utils.IsPathUnderProject(searchQueryPath))

@@ -138,6 +138,34 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
+        internal static Error[] ValidateRoslynAnalyzers(string[] analyzerPaths)
+        {
+            var readerParameters = new ReaderParameters
+            {
+                ReadingMode = ReadingMode.Deferred
+            };
+            List<Error> errors = new List<Error>();
+            foreach(var analyzer in analyzerPaths)
+            {
+                using (var analyzerDefinition = AssemblyDefinition.ReadAssembly(analyzer, readerParameters))
+                {
+                    var netstandardVersion = analyzerDefinition.MainModule.AssemblyReferences.Where(r => r.Name == "netstandard").FirstOrDefault();
+                    if (netstandardVersion != null && netstandardVersion.Version >= new Version(2, 1))
+                    {
+                        errors.Add(new Error
+                        {
+                            assemblyPath = analyzer,
+                            flags = ErrorFlags.ReferenceHasErrors,
+                            message = $"{analyzerDefinition.Name.Name} references {netstandardVersion}. A roslyn analyzer should reference netstandard version 2.0"
+                        });
+                    }
+
+                }
+            }
+            return errors.ToArray();
+        }
+
+        [RequiredByNativeCode]
         public static Error[] ValidateAssemblyDefinitionFiles()
         {
             var customScriptAssemblies = EditorCompilationInterface.Instance.GetCustomScriptAssemblies();
