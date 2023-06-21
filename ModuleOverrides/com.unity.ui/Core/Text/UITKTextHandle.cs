@@ -354,6 +354,7 @@ namespace UnityEngine.UIElements
             tgs.color = style.color;
             tgs.shouldConvertToLinearSpace = false;
             tgs.parseControlCharacters = m_TextElement.parseEscapeSequences;
+            tgs.isRightToLeft = m_TextElement.localLanguageDirection == LanguageDirection.RTL;
 
             if (m_TextElement.panel?.contextType == ContextType.Editor)
                 tgs.color *= UIElementsUtility.editorPlayModeTintColor;

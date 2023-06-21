@@ -540,9 +540,8 @@ namespace UnityEngine.UIElements
                     return m_PlaceholderText + "\u200B";
 
                 // Handles password fields.
-                var mskChar = effectiveMaskChar;
-                if (mskChar != Char.MinValue)
-                    return "".PadLeft(text.Length, mskChar) + "\u200B";
+                if (effectiveMaskChar != Char.MinValue)
+                    return "".PadLeft(text.Length, effectiveMaskChar) + "\u200B";
 
                 return string.IsNullOrEmpty(m_RenderedText) ? "\u200B" : m_RenderedText;
             }
