@@ -17,6 +17,7 @@ namespace UnityEngine.UIElements
     {
         internal static Action RepaintOverlayPanelsCallback;
         internal static Action UpdateRuntimePanelsCallback;
+        internal static Action RepaintOffscreenPanelsCallback;
 
         [RequiredByNativeCode]
         public static void RepaintOverlayPanels()
@@ -28,6 +29,12 @@ namespace UnityEngine.UIElements
         public static void UpdateRuntimePanels()
         {
             UpdateRuntimePanelsCallback?.Invoke();
+        }
+
+        [RequiredByNativeCode]
+        public static void RepaintOffscreenPanels()
+        {
+            RepaintOffscreenPanelsCallback?.Invoke();
         }
 
         public extern static void RegisterPlayerloopCallback();

@@ -289,7 +289,7 @@ namespace UnityEngine.UIElements
                 {
                     if (lineIndex == firstLineIndex)
                     {
-                        lastCharacterOnLine = uitkTextHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
+                        lastCharacterOnLine = GetLastCharacterAt(lineIndex);
                         endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine, true);
                     }
                     else if (lineIndex == lastLineIndex)
@@ -306,7 +306,7 @@ namespace UnityEngine.UIElements
                             uitkTextHandle.textInfo.lineInfo[lineIndex].firstCharacterIndex;
                         startPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(firstCharacterOnLine);
 
-                        lastCharacterOnLine = uitkTextHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
+                        lastCharacterOnLine = GetLastCharacterAt(lineIndex);
                         endPos = uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(lastCharacterOnLine, true);
                     }
 
@@ -339,6 +339,30 @@ namespace UnityEngine.UIElements
                 color = selection.cursorColor,
                 playmodeTintColor = playmodeTintColor
             });
+        }
+
+        int GetLastCharacterAt(int lineIndex)
+        {
+            var lastCharacterIndex = uitkTextHandle.textInfo.lineInfo[lineIndex].lastCharacterIndex;
+            var firstCharacterIndex = uitkTextHandle.textInfo.lineInfo[lineIndex].firstCharacterIndex;
+            var lastCharacter = uitkTextHandle.textInfo.textElementInfo[lastCharacterIndex];
+
+            // Select the last character that is not a \n or a \r
+            while (lastCharacter.character == '\n' || lastCharacter.character == '\r')
+            {
+                // Make sure it doesn't go out of range and remains on the same line
+                if (lastCharacterIndex > firstCharacterIndex)
+                {
+                    lastCharacterIndex--;
+                    lastCharacter = uitkTextHandle.textInfo.textElementInfo[lastCharacterIndex];
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            return lastCharacterIndex;
         }
     }
 }

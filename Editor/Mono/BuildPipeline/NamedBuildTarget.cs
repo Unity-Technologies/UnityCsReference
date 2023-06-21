@@ -21,6 +21,7 @@ namespace UnityEditor.Build
             "PS4",
             "XboxOne",
             "tvOS",
+            "Bratwurst",
             "Nintendo Switch",
             "Stadia",
             "CloudRendering",
@@ -43,6 +44,7 @@ namespace UnityEditor.Build
         public static readonly NamedBuildTarget PS4 = new NamedBuildTarget("PS4");
         public static readonly NamedBuildTarget XboxOne = new NamedBuildTarget("XboxOne");
         public static readonly NamedBuildTarget tvOS = new NamedBuildTarget("tvOS");
+        public static readonly NamedBuildTarget Bratwurst = new NamedBuildTarget("Bratwurst");
         public static readonly NamedBuildTarget NintendoSwitch = new NamedBuildTarget("Nintendo Switch");
         public static readonly NamedBuildTarget Stadia = new NamedBuildTarget("Stadia");
         public static readonly NamedBuildTarget LinuxHeadlessSimulation = new NamedBuildTarget("LinuxHeadlessSimulation");
@@ -96,6 +98,8 @@ namespace UnityEditor.Build
                     return NamedBuildTarget.XboxOne;
                 case BuildTargetGroup.tvOS:
                     return NamedBuildTarget.tvOS;
+                case BuildTargetGroup.Bratwurst:
+                    return NamedBuildTarget.Bratwurst;
                 case BuildTargetGroup.Switch:
                     return NamedBuildTarget.NintendoSwitch;
                 case BuildTargetGroup.Stadia:

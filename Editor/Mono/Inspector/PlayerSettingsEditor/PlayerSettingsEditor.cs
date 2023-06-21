@@ -455,7 +455,6 @@ namespace UnityEditor
         SerializedProperty m_StackTraceTypes;
         SerializedProperty m_ManagedStrippingLevel;
         SerializedProperty m_ActiveInputHandler;
-        SerializedProperty m_SelectedPlatform;
 
         // Embedded Linux specific
         SerializedProperty m_ForceSRGBBlit;
@@ -514,6 +513,7 @@ namespace UnityEditor
         bool hasPresetWindowClosed = false;
 
         private const string kDeprecatedAppendixString = " (Deprecated)";
+        const string kSelectedPlatform = "PlayerSettings.SelectedPlatform";
 
         public SerializedProperty FindPropertyAssert(string name)
         {
@@ -600,7 +600,6 @@ namespace UnityEditor
             m_ManagedStrippingLevel         = FindPropertyAssert("managedStrippingLevel");
             m_ActiveInputHandler            = FindPropertyAssert("activeInputHandler");
             m_AdditionalCompilerArguments   = FindPropertyAssert("additionalCompilerArguments");
-            m_SelectedPlatform              = FindPropertyAssert("selectedPlatform");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -658,12 +657,15 @@ namespace UnityEditor
 
             var validPlatformsLength = validPlatforms.Length;
             m_SettingsExtensions = new ISettingEditorExtension[validPlatformsLength];
+            var currentPlatform = 0;
             for (int i = 0; i < validPlatformsLength; i++)
             {
                 string module = ModuleManager.GetTargetStringFromBuildTargetGroup(validPlatforms[i].namedBuildTarget.ToBuildTargetGroup());
                 m_SettingsExtensions[i] = ModuleManager.GetEditorSettingsExtension(module);
                 if (m_SettingsExtensions[i] != null)
                     m_SettingsExtensions[i].OnEnable(this);
+                if (validPlatforms[i].IsActive())
+                    currentPlatform = i;
             }
 
             for (int i = 0; i < m_SectionAnimators.Length; i++)
@@ -677,7 +679,7 @@ namespace UnityEditor
             // we access this cache both from player settings editor and script side when changing api
             s_GraphicsDeviceLists.Clear();
 
-            var selectedPlatform = m_SelectedPlatform.intValue;
+            var selectedPlatform = SessionState.GetInt(kSelectedPlatform, currentPlatform);
             if (selectedPlatform < 0)
                 selectedPlatform = 0;
 
@@ -863,9 +865,12 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             EditorGUI.BeginChangeCheck();
-            int oldPlatform = m_SelectedPlatform.intValue;
-            m_SelectedPlatform.intValue = EditorGUILayout.BeginPlatformGrouping(validPlatforms, null);
-            int selectedPlatformValue = m_SelectedPlatform.intValue;
+            int oldPlatform = SessionState.GetInt(kSelectedPlatform, 0);
+            int selectedPlatformValue = EditorGUILayout.BeginPlatformGrouping(validPlatforms, null);
+            if (selectedPlatformValue != oldPlatform)
+            {
+                SessionState.SetInt(kSelectedPlatform, selectedPlatformValue);
+            }
 
             if (EditorGUI.EndChangeCheck())
             {

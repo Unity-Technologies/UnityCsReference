@@ -114,5 +114,7 @@ namespace UnityEditor
         EmbeddedLinux = 34,
 
         QNX = 35,
+
+        Bratwurst = 36,
     }
 }

@@ -220,6 +220,20 @@ namespace UnityEngine.UIElements
             return 0;
         }
 
+        internal void ConvertTo(AngleUnit newUnit)
+        {
+            m_Value = newUnit switch
+            {
+                AngleUnit.Degree => ToDegrees(),
+                AngleUnit.Turn => ToTurns(),
+                AngleUnit.Radian => ToRadians(),
+                AngleUnit.Gradian => ToGradians(),
+                _ => throw new NotImplementedException()
+            };
+
+            m_Unit = (Unit)newUnit;
+        }
+
         /// <undoc/>
         public static implicit operator Angle(float value)
         {

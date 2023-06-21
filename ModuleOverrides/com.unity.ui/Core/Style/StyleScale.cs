@@ -16,7 +16,19 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Scale value
         {
-            get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default(Scale); }
+            get
+            {
+                // SD: Changed to provide an interpretation of Initial and Null for the debugger, that takes the StyleScale and need to display some value in the fields.
+                // This is probably subject to change in the future.
+                return m_Keyword switch
+                {
+                    StyleKeyword.Undefined => m_Value,
+                    StyleKeyword.Null => Scale.None(),
+                    StyleKeyword.None => Scale.None(),
+                    StyleKeyword.Initial => Scale.Initial(),
+                    _ => throw new NotImplementedException(),
+                };
+            }
             set
             {
                 m_Value = value;

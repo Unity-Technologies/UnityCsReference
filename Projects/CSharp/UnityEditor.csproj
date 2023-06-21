@@ -2617,6 +2617,9 @@
     <Compile Include="..\..\Editor\Mono\PlayerSettingsAndroid.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsAndroid.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\PlayerSettingsBratwurst.bindings.cs">
+      <Link>Editor\Mono\PlayerSettingsBratwurst.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\PlayerSettingsEmbeddedLinux.bindings.cs">
       <Link>Editor\Mono\PlayerSettingsEmbeddedLinux.bindings.cs</Link>
     </Compile>
@@ -4405,9 +4408,6 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerSearchBar.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerSearchBar.cs</Link>
     </Compile>
-    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerSplitter.cs">
-      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerSplitter.cs</Link>
-    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\DebuggerTreeView.cs</Link>
     </Compile>
@@ -4440,6 +4440,9 @@
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\Events\UIElementsEventDebugger.cs</Link>
+    </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\OtherDebbugerField.cs">
+      <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\OtherDebbugerField.cs</Link>
     </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Editor\Debugger\OverlayPainter.cs">
       <Link>ModuleOverrides\com.unity.ui\Editor\Debugger\OverlayPainter.cs</Link>

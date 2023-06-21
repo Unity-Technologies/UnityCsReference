@@ -22,6 +22,7 @@ namespace UnityEngine.TextCore.Text
 
         /// <summary>
         /// The TextInfo instance, use from this instead of the m_TextInfo member to guarantee lazy allocation.
+        /// References a cached textInfo if dynamic, or a static instance (textInfoCommon) if not cached. 
         /// </summary>
         internal TextInfo textInfo
         {
@@ -331,7 +332,7 @@ namespace UnityEngine.TextCore.Text
                 if (visibleOnly && !cInfo.isVisible) continue;
 
                 // Ignore Carriage Returns <CR>
-                if (cInfo.character == '\r')
+                if (cInfo.character == '\r' || cInfo.character == '\n')
                     continue;
 
                 // Get Bottom Left and Top Right position of the current character
@@ -619,6 +620,7 @@ namespace UnityEngine.TextCore.Text
 
         protected void UpdatePreferredValues(TextGenerationSettings tgs)
         {
+          
             m_PreferredSize = TextGenerator.GetPreferredValues(tgs, layoutTextInfo);
         }
 

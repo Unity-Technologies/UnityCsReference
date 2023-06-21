@@ -20,49 +20,49 @@ namespace UnityEngine.Apple.ReplayKit
 
         extern public static bool APIAvailable
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+            [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
             [FreeFunction("UnityReplayKitAPIAvailable")]
             get;
         }
 
         extern public static bool broadcastingAPIAvailable
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+            [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
             [FreeFunction("UnityReplayKitBroadcastingAPIAvailable")]
             get;
         }
 
         extern public static bool recordingAvailable
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+            [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
             [FreeFunction("UnityReplayKitRecordingAvailable")]
             get;
         }
 
         extern public static bool isRecording
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+            [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
             [FreeFunction("UnityReplayKitIsRecording")]
             get;
         }
 
         extern public static bool isBroadcasting
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+            [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
             [FreeFunction("UnityReplayKitIsBroadcasting")]
             get;
         }
 
         extern public static bool isBroadcastingPaused
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+            [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
             [FreeFunction("UnityReplayKitIsBroadcastingPaused")]
             get;
         }
 
         extern public static bool isPreviewControllerActive
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+            [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
             [FreeFunction("UnityReplayKitIsPreviewControllerActive")]
             get;
         }
@@ -90,25 +90,25 @@ namespace UnityEngine.Apple.ReplayKit
 
         extern public static string broadcastURL
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+            [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
             [FreeFunction("UnityReplayKitGetBroadcastURL")]
             get;
         }
 
         extern public static string lastError
         {
-            [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+            [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
             [FreeFunction("UnityReplayKitLastError")]
             get;
         }
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("ReplayKitScripting::StartRecording")]
         extern private static bool StartRecordingImpl(bool enableMicrophone, bool enableCamera);
 
         public delegate void BroadcastStatusCallback(bool hasStarted, string errorMessage);
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("ReplayKitScripting::StartBroadcasting")]
         extern private static void StartBroadcastingImpl(BroadcastStatusCallback callback, bool enableMicrophone, bool enableCamera);
 
@@ -146,27 +146,27 @@ namespace UnityEngine.Apple.ReplayKit
         }
 
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("UnityReplayKitStopRecording")]
         extern public static bool StopRecording();
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("UnityReplayKitStopBroadcasting")]
         extern public static void StopBroadcasting();
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("UnityReplayKitPauseBroadcasting")]
         extern public static void PauseBroadcasting();
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("UnityReplayKitResumeBroadcasting")]
         extern public static void ResumeBroadcasting();
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("UnityReplayKitPreview")]
         extern public static bool Preview();
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("UnityReplayKitDiscard")]
         extern public static bool Discard();
 
@@ -175,11 +175,11 @@ namespace UnityEngine.Apple.ReplayKit
             return ShowCameraPreviewAt(posX, posY, -1.0f, -1.0f);
         }
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("UnityReplayKitShowCameraPreviewAt")]
         extern public static bool ShowCameraPreviewAt(float posX, float posY, float width, float height);
 
-        [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS")]
+        [NativeConditional("PLATFORM_APPLE_NONDESKTOP")]
         [FreeFunction("UnityReplayKitHideCameraPreview")]
         extern public static void HideCameraPreview();
     }

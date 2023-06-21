@@ -32,8 +32,8 @@ namespace UnityEditor.Toolbars
             {
                 name = "Play",
                 tooltip = "Play",
-                onIcon = EditorGUIUtility.FindTexture("PlayButton On"),
-                offIcon = EditorGUIUtility.FindTexture("PlayButton"),
+                onIcon = EditorGUIUtility.LoadIcon("PlayButton On"),
+                offIcon = EditorGUIUtility.LoadIcon("PlayButton"),
             });
             m_PlayButton.RegisterCallback<MouseDownEvent>(evt => OnPlayButtonRMBClick(evt));
             m_PlayButton.RegisterValueChangedCallback(OnPlayButtonValueChanged);
@@ -42,8 +42,8 @@ namespace UnityEditor.Toolbars
             {
                 name = "Pause",
                 tooltip = "Pause",
-                onIcon = EditorGUIUtility.FindTexture("PauseButton On"),
-                offIcon = EditorGUIUtility.FindTexture("PauseButton"),
+                onIcon = EditorGUIUtility.LoadIcon("PauseButton On"),
+                offIcon = EditorGUIUtility.LoadIcon("PauseButton"),
             });
             m_PauseButton.RegisterValueChangedCallback(OnPauseButtonValueChanged);
 
@@ -54,7 +54,7 @@ namespace UnityEditor.Toolbars
             });
             m_StepButton.clickable.activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse});
             m_StepButton.clicked += OnStepButtonClicked;
-            m_StepButton.icon = EditorGUIUtility.FindTexture("StepButton");
+            m_StepButton.icon = EditorGUIUtility.LoadIcon("StepButton");
 
             EditorToolbarUtility.SetupChildrenAsButtonStrip(m_UIElementsRoot);
 

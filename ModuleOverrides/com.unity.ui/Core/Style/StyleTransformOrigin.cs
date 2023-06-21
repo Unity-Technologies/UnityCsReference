@@ -16,7 +16,19 @@ namespace UnityEngine.UIElements
         /// </summary>
         public TransformOrigin value
         {
-            get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default;  }
+            get
+            {
+                // SD: Changed to provide an interpretation of Initial and Null for the debugger, that takes the StyleTransformOrigin and need to display some value in the fields.
+                // This is probably subject to change in the future.
+                return m_Keyword switch
+                {
+                    StyleKeyword.Undefined => m_Value,
+                    StyleKeyword.Null => TransformOrigin.Initial(),
+                    StyleKeyword.None => TransformOrigin.Initial(),
+                    StyleKeyword.Initial => TransformOrigin.Initial(),
+                    _ => throw new NotImplementedException(),
+                };
+            }
             set
             {
                 m_Value = value;

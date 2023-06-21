@@ -21,7 +21,6 @@ namespace UnityEditor.UIElements.Debugger
         private DebuggerSelection m_DebuggerSelection;
         private ScrollView m_ScrollView;
         private BoxModelView m_BoxModelView;
-        private IMGUIContainer m_IMGUIStylesDebugger;
         private StylePropertyDebugger m_StylePropertyDebugger;
 
         private IPanelDebug m_PanelDebug;
@@ -42,12 +41,17 @@ namespace UnityEditor.UIElements.Debugger
                 m_SelectedElementUxml = null;
                 m_ClassList = null;
 
-                m_IMGUIStylesDebugger.IncrementVersion(VersionChangeType.Layout);
-                GetElementMatchers();
-
-                m_StylePropertyDebugger.SetMatchRecords(m_SelectedElement, m_MatchedRulesExtractor.matchRecords);
+                this.Query<IMGUIContainer>().ForEach( i => i.IncrementVersion(VersionChangeType.Layout));
+                UpdateMatchs();
             }
         }
+
+        //Used by StylePropertyDebugger to return to a "not Inline" style
+        public void UpdateMatchs()
+        {
+                GetElementMatchers();
+                m_StylePropertyDebugger.SetMatchRecords(m_SelectedElement, m_MatchedRulesExtractor.matchRecords);
+            }
 
         public StylesDebugger(DebuggerSelection debuggerSelection)
         {
@@ -59,15 +63,29 @@ namespace UnityEditor.UIElements.Debugger
             selectedElement = m_DebuggerSelection.element;
 
             m_ScrollView = new ScrollView();
+            m_ScrollView.StretchToParentSize();
 
+            Foldout layoutInfo = new() { text = "Layout", viewDataKey = "layoutInfo"};
+            layoutInfo.contentContainer.style.flexDirection = FlexDirection.Row;
+            layoutInfo.contentContainer.style.flexWrap = Wrap.Wrap;
+            layoutInfo.contentContainer.style.alignItems = Align.Center;
+            layoutInfo.contentContainer.style.alignContent = Align.Center;
+            layoutInfo.contentContainer.style.justifyContent = Justify.SpaceAround;
             m_BoxModelView = new BoxModelView();
-            m_ScrollView.Add(m_BoxModelView);
+            layoutInfo.Add(m_BoxModelView);
+            layoutInfo.Add(new IMGUIContainer(DrawLayoutInfo) { style = { flexShrink = 0, minWidth = 420 } });
+            m_ScrollView.Add(layoutInfo);
 
-            m_IMGUIStylesDebugger = new IMGUIContainer(OnGUI);
-            m_ScrollView.Add(m_IMGUIStylesDebugger);
+            m_ScrollView.Add(new IMGUIContainer(DrawMatchingRules));
 
+            m_ScrollView.Add(new IMGUIContainer(DrawProperties));
+
+            Foldout StylesInfo = new() { text = "Styles", viewDataKey = "StylesInfo" };
             m_StylePropertyDebugger = new StylePropertyDebugger(selectedElement);
-            m_ScrollView.Add(m_StylePropertyDebugger);
+            StylesInfo.Add(m_StylePropertyDebugger);
+            m_ScrollView.Add(StylesInfo);
+
+            m_ScrollView.Add(new IMGUIContainer(DrawUxmlDump));
 
             Add(m_ScrollView);
         }
@@ -84,13 +102,6 @@ namespace UnityEditor.UIElements.Debugger
 
         private VisualElement m_SelectedElement;
 
-        public void OnGUI()
-        {
-            if (m_PanelDebug == null || selectedElement == null)
-                return;
-
-            DrawSelection();
-        }
 
         public void RefreshStylePropertyDebugger()
         {
@@ -102,18 +113,13 @@ namespace UnityEditor.UIElements.Debugger
             m_BoxModelView.Refresh(mgc);
         }
 
-        private void DrawSelection()
+
+        private void DrawUxmlDump()
         {
             if (m_SelectedElement == null)
                 return;
 
-            DrawUxmlDump(m_SelectedElement);
-            DrawMatchingRules();
-            DrawProperties();
-        }
-
-        private void DrawUxmlDump(VisualElement selectedElement)
-        {
+            VisualElement selectedElement = m_SelectedElement;
             m_UxmlDumpExpanded = EditorGUILayout.Foldout(m_UxmlDumpExpanded, Styles.uxmlContent);
             if (m_UxmlDumpExpanded)
             {
@@ -158,8 +164,23 @@ namespace UnityEditor.UIElements.Debugger
             m_MatchedRulesExtractor.FindMatchingRules(m_SelectedElement);
         }
 
+        private void DrawLayoutInfo()
+        {
+            if (m_PanelDebug == null || selectedElement == null)
+                return;
+            EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
+            EditorGUILayout.LabelField("World Clip", m_SelectedElement.worldClip.ToString());
+            EditorGUILayout.LabelField("Bounding Box", m_SelectedElement.boundingBox.ToString());
+
+            EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
+            EditorGUILayout.LabelField("LastLayout", m_SelectedElement.lastLayout.ToString());
+        }
+
         private void DrawProperties()
         {
+            if (m_PanelDebug == null || m_SelectedElement == null)
+                return;
+
             EditorGUILayout.Space();
             EditorGUILayout.LabelField(Styles.elementStylesContent, Styles.KInspectorTitle);
 
@@ -195,10 +216,39 @@ namespace UnityEditor.UIElements.Debugger
 
             m_SelectedElement.usageHints = (UsageHints)EditorGUILayout.EnumFlagsField("Usage Hints", m_SelectedElement.usageHints);
 
-            EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
-            EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
-            EditorGUILayout.LabelField("World Clip", m_SelectedElement.worldClip.ToString());
-            EditorGUILayout.LabelField("Bounding Box", m_SelectedElement.boundingBox.ToString());
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("Increment Version");
+            if (GUILayout.Button("Repaint"))
+            {
+                m_SelectedElement.IncrementVersion(VersionChangeType.Repaint);
+            }
+
+            if (Unsupported.IsDeveloperBuild())
+            {
+                if (GUILayout.Button("Size"))
+                {
+                    m_SelectedElement.IncrementVersion(VersionChangeType.Size);
+                }
+                if (GUILayout.Button("Transform"))
+                {
+                    m_SelectedElement.IncrementVersion(VersionChangeType.Transform);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            var displayDescription = string.Empty;
+            if (m_SelectedElement.hasInlineStyle && m_SelectedElement.inlineStyleAccess.IsValueSet(StylePropertyId.Display))
+            {
+                displayDescription = "inline";
+            }
+            var chosenStyle = (DisplayStyle)EditorGUILayout.EnumPopup("Display", m_SelectedElement.resolvedStyle.display);
+            EditorGUILayout.LabelField(displayDescription);
+            if (chosenStyle != m_SelectedElement.resolvedStyle.display)
+                m_SelectedElement.style.display = chosenStyle;
+            GUILayout.EndHorizontal();
+
+
 
             if (m_ClassList == null)
                 InitClassList();
@@ -230,23 +280,40 @@ namespace UnityEditor.UIElements.Debugger
             };
         }
 
+        bool showStylesheet = false;
+        bool showSelectors = false;
         private void DrawMatchingRules()
         {
+            if (m_PanelDebug == null || m_SelectedElement == null)
+                return;
+
             if (m_MatchedRulesExtractor.selectedElementStylesheets != null && m_MatchedRulesExtractor.selectedElementStylesheets.Count > 0)
             {
+                showStylesheet = EditorGUILayout.Foldout(showStylesheet, Styles.stylesheetsContent);
+                if (showStylesheet)
+                {
+                    EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField(Styles.stylesheetsContent, Styles.KInspectorTitle);
+                    EditorGUILayout.BeginVertical();
                 foreach (string sheet in m_MatchedRulesExtractor.selectedElementStylesheets)
                 {
                     if (GUILayout.Button(sheet) && CanOpenStyleSheet(sheet))
                         InternalEditorUtility.OpenFileAtLineExternal(sheet, 0, 0);
                 }
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.EndHorizontal();
+            }
             }
 
             if (m_MatchedRulesExtractor.selectedElementRules != null && m_MatchedRulesExtractor.selectedElementRules.Count > 0)
             {
+
+                showSelectors = EditorGUILayout.Foldout(showSelectors, Styles.selectorsContent);
+                if (showSelectors)
+                {
+                    EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.Space();
-                EditorGUILayout.LabelField(Styles.selectorsContent, Styles.KInspectorTitle);
+                    EditorGUILayout.BeginVertical();
                 int i = 0;
                 foreach (var rule in m_MatchedRulesExtractor.selectedElementRules)
                 {
@@ -320,7 +387,10 @@ namespace UnityEditor.UIElements.Debugger
                     }
                     i++;
                 }
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.EndHorizontal();
             }
+        }
         }
 
         static bool CanOpenStyleSheet(string path) => File.Exists(path);
