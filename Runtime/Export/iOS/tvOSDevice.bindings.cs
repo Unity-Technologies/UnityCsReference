@@ -26,6 +26,7 @@ namespace UnityEngine.tvOS
     {
         extern private static string tvOSsystemVersion
         {
+            [NativeConditional("PLATFORM_TVOS")]
             [FreeFunction("systeminfo::GetDeviceSystemVersion")]
             get;
         }

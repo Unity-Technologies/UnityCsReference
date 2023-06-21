@@ -1190,6 +1190,9 @@
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElementEdition.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\TextElementEdition.cs</Link>
     </Compile>
+    <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElementExperimental.cs">
+      <Link>ModuleOverrides\com.unity.ui\Core\TextElementExperimental.cs</Link>
+    </Compile>
     <Compile Include="..\..\ModuleOverrides\com.unity.ui\Core\TextElementSelection.cs">
       <Link>ModuleOverrides\com.unity.ui\Core\TextElementSelection.cs</Link>
     </Compile>

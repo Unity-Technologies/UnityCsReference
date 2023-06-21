@@ -5,6 +5,7 @@
 using System;
 using UnityEditor;
 using UnityEditor.Build;
+using UnityEditor.Build.Reporting;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
@@ -66,9 +67,9 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
         m_HasServerCoreCLRPlayers = hasServerCoreCLRPlayers;
     }
 
-    public override string PrepareForBuild(BuildOptions options, BuildTarget target)
+    public override string PrepareForBuild(BuildPlayerOptions buildOptions)
     {
-        var namedBuildTarget = NamedBuildTarget.FromActiveSettings(target);
+        var namedBuildTarget = NamedBuildTarget.FromActiveSettings(buildOptions.target);
         var isServer = namedBuildTarget == NamedBuildTarget.Server;
 
         switch (PlayerSettings.GetScriptingBackend(namedBuildTarget))
@@ -96,7 +97,7 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
                 return $"Unknown scripting backend: {PlayerSettings.GetScriptingBackend(namedBuildTarget)}";
         }
 
-        return base.PrepareForBuild(options, target);
+        return base.PrepareForBuild(buildOptions);
     }
 
     internal class ScriptingImplementations : DefaultScriptingImplementations

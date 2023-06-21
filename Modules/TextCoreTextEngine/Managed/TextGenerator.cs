@@ -907,14 +907,12 @@ namespace UnityEngine.TextCore.Text
                 if (m_TextElementType == TextElementType.Sprite)
                 {
                     // If a sprite is used as a fallback then get a reference to it and set the color to white.
-                    m_CurrentSpriteAsset = textInfo.textElementInfo[m_CharacterCount].textElement.textAsset as SpriteAsset;
-                    m_SpriteIndex = (int)textInfo.textElementInfo[m_CharacterCount].textElement.glyphIndex;
+                    SpriteCharacter sprite = (SpriteCharacter)textInfo.textElementInfo[m_CharacterCount].textElement;
+                    m_CurrentSpriteAsset = sprite.textAsset as SpriteAsset;
+                    m_SpriteIndex = (int)sprite.glyphIndex;
 
-                    SpriteCharacter sprite = m_CurrentSpriteAsset.spriteCharacterTable[m_SpriteIndex];
                     if (sprite == null)
-                    {
                         continue;
-                    }
 
                     // Sprites are assigned in the E000 Private Area + sprite Index
                     if (charCode == '<')
@@ -2542,7 +2540,7 @@ namespace UnityEngine.TextCore.Text
                             {
                                 float gap = !generationSettings.isRightToLeft ? lineInfo.width - lineInfo.maxAdvance : lineInfo.width + lineInfo.maxAdvance;
                                 int visibleCount = lineInfo.visibleCharacterCount - 1 + lineInfo.controlCharacterCount;
-                                int spaces = lineInfo.visibleSpaceCount - lineInfo.controlCharacterCount;
+                                int spaces = lineInfo.spaceCount - lineInfo.controlCharacterCount;
 
                                 if (isFirstSeperator) { spaces -= 1; visibleCount += 1; }
 
@@ -4174,11 +4172,17 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.SLASH_A:
                         if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues)
                         {
-                            int index = textInfo.linkCount;
-
-                            textInfo.linkInfo[index].linkTextLength = m_CharacterCount - textInfo.linkInfo[index].linkTextfirstCharacterIndex;
-
-                            textInfo.linkCount += 1;
+                            if (textInfo.linkInfo.Length <= 0)
+                            {
+                                if (generationSettings.textSettings.displayWarnings)
+                                    Debug.LogWarning($"There seems to be an issue with the formatting of the <a> tag. Possible issues include: missing or misplaced closing '>', missing or incorrect attribute, or unclosed quotes for attribute values. Please review the tag syntax.");
+                            }
+                            else
+                            {
+                                int index = textInfo.linkCount;
+                                textInfo.linkInfo[index].linkTextLength = m_CharacterCount - textInfo.linkInfo[index].linkTextfirstCharacterIndex;
+                                textInfo.linkCount += 1;
+                            }
                         }
                         return true;
 
@@ -6579,10 +6583,10 @@ namespace UnityEngine.TextCore.Text
                 if (m_TextElementType == TextElementType.Sprite)
                 {
                     // If a sprite is used as a fallback then get a reference to it and set the color to white.
-                    m_CurrentSpriteAsset = textInfo.textElementInfo[m_CharacterCount].textElement.textAsset as SpriteAsset;
-                    m_SpriteIndex = (int)textInfo.textElementInfo[m_CharacterCount].textElement.glyphIndex;
+                    SpriteCharacter sprite = (SpriteCharacter)textInfo.textElementInfo[m_CharacterCount].textElement;
+                    m_CurrentSpriteAsset = sprite.textAsset as SpriteAsset;
+                    m_SpriteIndex = (int)sprite.glyphIndex;
 
-                    SpriteCharacter sprite = m_CurrentSpriteAsset.spriteCharacterTable[m_SpriteIndex];
                     if (sprite == null) continue;
 
                     // Sprites are assigned in the E000 Private Area + sprite Index
@@ -7047,7 +7051,7 @@ namespace UnityEngine.TextCore.Text
 
                 // Check if Line Spacing of previous line needs to be adjusted.
                 #region Adjust Line Spacing
-                /*if (m_LineOffset > 0 && !TextGeneratorUtilities.Approximately(m_MaxLineAscender, m_StartOfLineAscender) && m_IsDrivenLineSpacing == false && !m_IsNewPage)
+                if (m_LineOffset > 0 && !TextGeneratorUtilities.Approximately(m_MaxLineAscender, m_StartOfLineAscender) && m_IsDrivenLineSpacing == false && !m_IsNewPage)
                 {
                     float offsetDelta = m_MaxLineAscender - m_StartOfLineAscender;
                     //AdjustLineOffset(m_FirstCharacterOfLine, m_CharacterCount, offsetDelta);
@@ -7057,7 +7061,7 @@ namespace UnityEngine.TextCore.Text
                     m_StartOfLineAscender += offsetDelta;
                     internalWordWrapState.lineOffset = m_LineOffset;
                     internalWordWrapState.startOfLineAscender = m_StartOfLineAscender;
-                }*/
+                }
                 #endregion
 
 
