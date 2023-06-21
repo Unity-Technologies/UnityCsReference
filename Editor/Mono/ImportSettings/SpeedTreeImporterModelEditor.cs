@@ -42,8 +42,16 @@ namespace UnityEditor
 
             public static GUIContent ApplyAndGenerate = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and generate materials with new settings.");
             public static GUIContent Regenerate = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate materials from the current importer settings.");
-        }
 
+            public static GUIContent AdditionalSettingsHeader = EditorGUIUtility.TrTextContent("Additional Settings");
+            public static GUIContent MotionVectorMode = EditorGUIUtility.TrTextContent("Motion Vectors", "Motion vector mode to set for the mesh renderer of each LOD object");
+            public static GUIContent[] MotionVectorModeNames =
+            {
+                  new GUIContent("Camera Motion Only")  // kMotionVectorCamera = 0,    // Use camera motion for motion vectors
+                , new GUIContent("Per Object Motion")   // kMotionVectorObject,        // Use a per object motion vector pass for this object
+                , new GUIContent("Force No Motion")     // kMotionVectorForceNoMotion, // Force no motion for this object (0 into motion buffer)
+            };
+        }
         private SerializedProperty m_LODSettings;
         private SerializedProperty m_EnableSmoothLOD;
         private SerializedProperty m_AnimateCrossFading;
@@ -53,6 +61,7 @@ namespace UnityEditor
         private SerializedProperty m_HueVariation;
         private SerializedProperty m_AlphaTestRef;
         private SerializedProperty m_ScaleFactor;
+        private SerializedProperty m_MotionVectorModeEnumValue;
         private bool m_AllAreV8;
         private bool m_AllAreNotV8;
 
@@ -73,6 +82,7 @@ namespace UnityEditor
 
         internal override void OnEnable()
         {
+            m_MotionVectorModeEnumValue = serializedObject.FindProperty("m_MotionVectorModeEnumValue");
             m_LODSettings = serializedObject.FindProperty("m_LODSettings");
             m_EnableSmoothLOD = serializedObject.FindProperty("m_EnableSmoothLODTransition");
             m_AnimateCrossFading = serializedObject.FindProperty("m_AnimateCrossFading");
@@ -179,10 +189,18 @@ namespace UnityEditor
 
             return false;
         }
+        private void ShowAdditionalSettingsGUI()
+        {
+            // motion vectors
+            GUILayout.Label(Styles.AdditionalSettingsHeader, EditorStyles.boldLabel);
+            EditorGUILayout.Popup(m_MotionVectorModeEnumValue, Styles.MotionVectorModeNames, Styles.MotionVectorMode);
 
+            EditorGUILayout.Space();
+        }
         public override void OnInspectorGUI()
         {
             ShowMeshGUI();
+            ShowAdditionalSettingsGUI();
             ShowMaterialGUI();
             ShowLODGUI();
 

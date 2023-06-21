@@ -346,15 +346,14 @@ namespace UnityEditor.UIElements.Debugger
                 m_Toolbar.Add(m_ShowWireframeToggle);
             }
 
-            var splitter = new DebuggerSplitter();
+            var splitter = new TwoPaneSplitView(0, 300, TwoPaneSplitViewOrientation.Horizontal);
             m_Root.Add(splitter);
 
             m_TreeViewContainer = new DebuggerTreeView(m_Context.selection, SelectElement);
-            m_TreeViewContainer.style.flexGrow = 1f;
-            splitter.leftPane.Add(m_TreeViewContainer);
+            splitter.Add(m_TreeViewContainer);
 
             m_StylesDebuggerContainer = new StylesDebugger(m_Context.selection);
-            splitter.rightPane.Add(m_StylesDebuggerContainer);
+            splitter.Add(m_StylesDebuggerContainer);
 
             DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = this;
 
@@ -387,7 +386,7 @@ namespace UnityEditor.UIElements.Debugger
         {
             // Avoid taking focus in case of another debugger picking on this one
             var globalPanelDebugger = DebuggerEventDispatchingStrategy.s_GlobalPanelDebug as UIElementsDebuggerImpl;
-            if (globalPanelDebugger == null || !globalPanelDebugger.m_Context.pickElement)
+            if (globalPanelDebugger == null || (globalPanelDebugger.m_Context != null && !globalPanelDebugger.m_Context.pickElement))
                 DebuggerEventDispatchingStrategy.s_GlobalPanelDebug = this;
         }
 

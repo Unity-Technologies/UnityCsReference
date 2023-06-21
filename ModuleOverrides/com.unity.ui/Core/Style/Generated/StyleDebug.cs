@@ -816,6 +816,511 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public static void SetInlineKeyword(IStyle style, StylePropertyId id, StyleKeyword keyword)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
+                    style.alignContent = keyword;
+                    break;
+                case StylePropertyId.AlignItems:
+                    style.alignItems = keyword;
+                    break;
+                case StylePropertyId.AlignSelf:
+                    style.alignSelf = keyword;
+                    break;
+                case StylePropertyId.BackgroundColor:
+                    style.backgroundColor = keyword;
+                    break;
+                case StylePropertyId.BackgroundImage:
+                    style.backgroundImage = keyword;
+                    break;
+                case StylePropertyId.BackgroundPositionX:
+                    style.backgroundPositionX = keyword;
+                    break;
+                case StylePropertyId.BackgroundPositionY:
+                    style.backgroundPositionY = keyword;
+                    break;
+                case StylePropertyId.BackgroundRepeat:
+                    style.backgroundRepeat = keyword;
+                    break;
+                case StylePropertyId.BackgroundSize:
+                    style.backgroundSize = keyword;
+                    break;
+                case StylePropertyId.BorderBottomColor:
+                    style.borderBottomColor = keyword;
+                    break;
+                case StylePropertyId.BorderBottomLeftRadius:
+                    style.borderBottomLeftRadius = keyword;
+                    break;
+                case StylePropertyId.BorderBottomRightRadius:
+                    style.borderBottomRightRadius = keyword;
+                    break;
+                case StylePropertyId.BorderBottomWidth:
+                    style.borderBottomWidth = keyword;
+                    break;
+                case StylePropertyId.BorderLeftColor:
+                    style.borderLeftColor = keyword;
+                    break;
+                case StylePropertyId.BorderLeftWidth:
+                    style.borderLeftWidth = keyword;
+                    break;
+                case StylePropertyId.BorderRightColor:
+                    style.borderRightColor = keyword;
+                    break;
+                case StylePropertyId.BorderRightWidth:
+                    style.borderRightWidth = keyword;
+                    break;
+                case StylePropertyId.BorderTopColor:
+                    style.borderTopColor = keyword;
+                    break;
+                case StylePropertyId.BorderTopLeftRadius:
+                    style.borderTopLeftRadius = keyword;
+                    break;
+                case StylePropertyId.BorderTopRightRadius:
+                    style.borderTopRightRadius = keyword;
+                    break;
+                case StylePropertyId.BorderTopWidth:
+                    style.borderTopWidth = keyword;
+                    break;
+                case StylePropertyId.Bottom:
+                    style.bottom = keyword;
+                    break;
+                case StylePropertyId.Color:
+                    style.color = keyword;
+                    break;
+                case StylePropertyId.Cursor:
+                    style.cursor = keyword;
+                    break;
+                case StylePropertyId.Display:
+                    style.display = keyword;
+                    break;
+                case StylePropertyId.FlexBasis:
+                    style.flexBasis = keyword;
+                    break;
+                case StylePropertyId.FlexDirection:
+                    style.flexDirection = keyword;
+                    break;
+                case StylePropertyId.FlexGrow:
+                    style.flexGrow = keyword;
+                    break;
+                case StylePropertyId.FlexShrink:
+                    style.flexShrink = keyword;
+                    break;
+                case StylePropertyId.FlexWrap:
+                    style.flexWrap = keyword;
+                    break;
+                case StylePropertyId.FontSize:
+                    style.fontSize = keyword;
+                    break;
+                case StylePropertyId.Height:
+                    style.height = keyword;
+                    break;
+                case StylePropertyId.JustifyContent:
+                    style.justifyContent = keyword;
+                    break;
+                case StylePropertyId.Left:
+                    style.left = keyword;
+                    break;
+                case StylePropertyId.LetterSpacing:
+                    style.letterSpacing = keyword;
+                    break;
+                case StylePropertyId.MarginBottom:
+                    style.marginBottom = keyword;
+                    break;
+                case StylePropertyId.MarginLeft:
+                    style.marginLeft = keyword;
+                    break;
+                case StylePropertyId.MarginRight:
+                    style.marginRight = keyword;
+                    break;
+                case StylePropertyId.MarginTop:
+                    style.marginTop = keyword;
+                    break;
+                case StylePropertyId.MaxHeight:
+                    style.maxHeight = keyword;
+                    break;
+                case StylePropertyId.MaxWidth:
+                    style.maxWidth = keyword;
+                    break;
+                case StylePropertyId.MinHeight:
+                    style.minHeight = keyword;
+                    break;
+                case StylePropertyId.MinWidth:
+                    style.minWidth = keyword;
+                    break;
+                case StylePropertyId.Opacity:
+                    style.opacity = keyword;
+                    break;
+                case StylePropertyId.Overflow:
+                    style.overflow = keyword;
+                    break;
+                case StylePropertyId.PaddingBottom:
+                    style.paddingBottom = keyword;
+                    break;
+                case StylePropertyId.PaddingLeft:
+                    style.paddingLeft = keyword;
+                    break;
+                case StylePropertyId.PaddingRight:
+                    style.paddingRight = keyword;
+                    break;
+                case StylePropertyId.PaddingTop:
+                    style.paddingTop = keyword;
+                    break;
+                case StylePropertyId.Position:
+                    style.position = keyword;
+                    break;
+                case StylePropertyId.Right:
+                    style.right = keyword;
+                    break;
+                case StylePropertyId.Rotate:
+                    style.rotate = keyword;
+                    break;
+                case StylePropertyId.Scale:
+                    style.scale = keyword;
+                    break;
+                case StylePropertyId.TextOverflow:
+                    style.textOverflow = keyword;
+                    break;
+                case StylePropertyId.TextShadow:
+                    style.textShadow = keyword;
+                    break;
+                case StylePropertyId.Top:
+                    style.top = keyword;
+                    break;
+                case StylePropertyId.TransformOrigin:
+                    style.transformOrigin = keyword;
+                    break;
+                case StylePropertyId.TransitionDelay:
+                    style.transitionDelay = keyword;
+                    break;
+                case StylePropertyId.TransitionDuration:
+                    style.transitionDuration = keyword;
+                    break;
+                case StylePropertyId.TransitionProperty:
+                    style.transitionProperty = keyword;
+                    break;
+                case StylePropertyId.TransitionTimingFunction:
+                    style.transitionTimingFunction = keyword;
+                    break;
+                case StylePropertyId.Translate:
+                    style.translate = keyword;
+                    break;
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                    style.unityBackgroundImageTintColor = keyword;
+                    break;
+                case StylePropertyId.UnityFont:
+                    style.unityFont = keyword;
+                    break;
+                case StylePropertyId.UnityFontDefinition:
+                    style.unityFontDefinition = keyword;
+                    break;
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    style.unityFontStyleAndWeight = keyword;
+                    break;
+                case StylePropertyId.UnityOverflowClipBox:
+                    style.unityOverflowClipBox = keyword;
+                    break;
+                case StylePropertyId.UnityParagraphSpacing:
+                    style.unityParagraphSpacing = keyword;
+                    break;
+                case StylePropertyId.UnitySliceBottom:
+                    style.unitySliceBottom = keyword;
+                    break;
+                case StylePropertyId.UnitySliceLeft:
+                    style.unitySliceLeft = keyword;
+                    break;
+                case StylePropertyId.UnitySliceRight:
+                    style.unitySliceRight = keyword;
+                    break;
+                case StylePropertyId.UnitySliceScale:
+                    style.unitySliceScale = keyword;
+                    break;
+                case StylePropertyId.UnitySliceTop:
+                    style.unitySliceTop = keyword;
+                    break;
+                case StylePropertyId.UnityTextAlign:
+                    style.unityTextAlign = keyword;
+                    break;
+                case StylePropertyId.UnityTextOutlineColor:
+                    style.unityTextOutlineColor = keyword;
+                    break;
+                case StylePropertyId.UnityTextOutlineWidth:
+                    style.unityTextOutlineWidth = keyword;
+                    break;
+                case StylePropertyId.UnityTextOverflowPosition:
+                    style.unityTextOverflowPosition = keyword;
+                    break;
+                case StylePropertyId.Visibility:
+                    style.visibility = keyword;
+                    break;
+                case StylePropertyId.WhiteSpace:
+                    style.whiteSpace = keyword;
+                    break;
+                case StylePropertyId.Width:
+                    style.width = keyword;
+                    break;
+                case StylePropertyId.WordSpacing:
+                    style.wordSpacing = keyword;
+                    break;
+                default:
+                    Debug.LogAssertion($"Cannot set inline keyword value for property id {id}");
+                    break;
+            }
+        }
+
+        public static List<StyleKeyword> GetValidKeyword(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.AlignContent:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.AlignItems:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.AlignSelf:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.BackgroundColor:
+                    return new()
+                    {};
+                case StylePropertyId.BackgroundImage:
+                    return new()
+                    {StyleKeyword.None};
+                case StylePropertyId.BackgroundPositionX:
+                    return new()
+                    {};
+                case StylePropertyId.BackgroundPositionY:
+                    return new()
+                    {};
+                case StylePropertyId.BackgroundRepeat:
+                    return new()
+                    {};
+                case StylePropertyId.BackgroundSize:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.BorderBottomColor:
+                    return new()
+                    {};
+                case StylePropertyId.BorderBottomLeftRadius:
+                    return new()
+                    {};
+                case StylePropertyId.BorderBottomRightRadius:
+                    return new()
+                    {};
+                case StylePropertyId.BorderBottomWidth:
+                    return new()
+                    {};
+                case StylePropertyId.BorderLeftColor:
+                    return new()
+                    {};
+                case StylePropertyId.BorderLeftWidth:
+                    return new()
+                    {};
+                case StylePropertyId.BorderRightColor:
+                    return new()
+                    {};
+                case StylePropertyId.BorderRightWidth:
+                    return new()
+                    {};
+                case StylePropertyId.BorderTopColor:
+                    return new()
+                    {};
+                case StylePropertyId.BorderTopLeftRadius:
+                    return new()
+                    {};
+                case StylePropertyId.BorderTopRightRadius:
+                    return new()
+                    {};
+                case StylePropertyId.BorderTopWidth:
+                    return new()
+                    {};
+                case StylePropertyId.Bottom:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.Color:
+                    return new()
+                    {};
+                case StylePropertyId.Cursor:
+                    return new()
+                    {};
+                case StylePropertyId.Display:
+                    return new()
+                    {StyleKeyword.None};
+                case StylePropertyId.FlexBasis:
+                    return new()
+                    {};
+                case StylePropertyId.FlexDirection:
+                    return new()
+                    {};
+                case StylePropertyId.FlexGrow:
+                    return new()
+                    {};
+                case StylePropertyId.FlexShrink:
+                    return new()
+                    {};
+                case StylePropertyId.FlexWrap:
+                    return new()
+                    {};
+                case StylePropertyId.FontSize:
+                    return new()
+                    {};
+                case StylePropertyId.Height:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.JustifyContent:
+                    return new()
+                    {};
+                case StylePropertyId.Left:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.LetterSpacing:
+                    return new()
+                    {};
+                case StylePropertyId.MarginBottom:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.MarginLeft:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.MarginRight:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.MarginTop:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.MaxHeight:
+                    return new()
+                    {StyleKeyword.None};
+                case StylePropertyId.MaxWidth:
+                    return new()
+                    {StyleKeyword.None};
+                case StylePropertyId.MinHeight:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.MinWidth:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.Opacity:
+                    return new()
+                    {};
+                case StylePropertyId.Overflow:
+                    return new()
+                    {};
+                case StylePropertyId.PaddingBottom:
+                    return new()
+                    {};
+                case StylePropertyId.PaddingLeft:
+                    return new()
+                    {};
+                case StylePropertyId.PaddingRight:
+                    return new()
+                    {};
+                case StylePropertyId.PaddingTop:
+                    return new()
+                    {};
+                case StylePropertyId.Position:
+                    return new()
+                    {};
+                case StylePropertyId.Right:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.Rotate:
+                    return new()
+                    {StyleKeyword.None};
+                case StylePropertyId.Scale:
+                    return new()
+                    {StyleKeyword.None};
+                case StylePropertyId.TextOverflow:
+                    return new()
+                    {};
+                case StylePropertyId.TextShadow:
+                    return new()
+                    {};
+                case StylePropertyId.Top:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.TransformOrigin:
+                    return new()
+                    {};
+                case StylePropertyId.TransitionDelay:
+                    return new()
+                    {};
+                case StylePropertyId.TransitionDuration:
+                    return new()
+                    {};
+                case StylePropertyId.TransitionProperty:
+                    return new()
+                    {StyleKeyword.None};
+                case StylePropertyId.TransitionTimingFunction:
+                    return new()
+                    {};
+                case StylePropertyId.Translate:
+                    return new()
+                    {StyleKeyword.None};
+                case StylePropertyId.UnityBackgroundImageTintColor:
+                    return new()
+                    {};
+                case StylePropertyId.UnityFont:
+                    return new()
+                    {};
+                case StylePropertyId.UnityFontDefinition:
+                    return new()
+                    {};
+                case StylePropertyId.UnityFontStyleAndWeight:
+                    return new()
+                    {};
+                case StylePropertyId.UnityOverflowClipBox:
+                    return new()
+                    {};
+                case StylePropertyId.UnityParagraphSpacing:
+                    return new()
+                    {};
+                case StylePropertyId.UnitySliceBottom:
+                    return new()
+                    {};
+                case StylePropertyId.UnitySliceLeft:
+                    return new()
+                    {};
+                case StylePropertyId.UnitySliceRight:
+                    return new()
+                    {};
+                case StylePropertyId.UnitySliceScale:
+                    return new()
+                    {};
+                case StylePropertyId.UnitySliceTop:
+                    return new()
+                    {};
+                case StylePropertyId.UnityTextAlign:
+                    return new()
+                    {};
+                case StylePropertyId.UnityTextOutlineColor:
+                    return new()
+                    {};
+                case StylePropertyId.UnityTextOutlineWidth:
+                    return new()
+                    {};
+                case StylePropertyId.UnityTextOverflowPosition:
+                    return new()
+                    {};
+                case StylePropertyId.Visibility:
+                    return new()
+                    {};
+                case StylePropertyId.WhiteSpace:
+                    return new()
+                    {};
+                case StylePropertyId.Width:
+                    return new()
+                    {StyleKeyword.Auto};
+                case StylePropertyId.WordSpacing:
+                    return new()
+                    {};
+                default:
+                    Debug.LogAssertion($"Cannot get valid keyword value for property id {id}"); return  null ; 
+            }
+        }
+
         public static object ConvertComputedToInlineStyleValue(StylePropertyId id, object value)
         {
             switch (id)

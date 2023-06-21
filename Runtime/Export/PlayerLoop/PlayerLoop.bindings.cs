@@ -268,6 +268,8 @@ namespace UnityEngine.PlayerLoop
         [RequiredByNativeCode]
         public struct PlayerEmitCanvasGeometry {}
         [RequiredByNativeCode]
+        internal struct PlayerRenderUIEBatchModeOffscreen {}
+        [RequiredByNativeCode]
         public struct FinishFrameRendering {}
         [RequiredByNativeCode]
         public struct BatchModeUpdate {}

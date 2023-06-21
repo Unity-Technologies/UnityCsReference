@@ -404,15 +404,21 @@ namespace UnityEngine.UIElements
         }
 
         string m_RenderedText;
+        /// <summary>
+        /// String used to render the text.
+        /// </summary>
         internal string renderedText
         {
             get
             {
-                var mskChar = effectiveMaskChar;
+                string result;
                 // Handles password fields.
-                if (mskChar != Char.MinValue)
-                    return "".PadLeft(text.Length, mskChar) + "\u200B";
-                return string.IsNullOrEmpty(m_RenderedText) ? "\u200B" : m_RenderedText;
+                if (effectiveMaskChar != Char.MinValue)
+                    result = "".PadLeft(text.Length, effectiveMaskChar) + "\u200B";
+                else
+                    result = string.IsNullOrEmpty(m_RenderedText) ? "\u200B" : m_RenderedText;
+
+                return result;
             }
             set =>
 

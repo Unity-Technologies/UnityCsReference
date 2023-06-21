@@ -36,6 +36,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.UWP.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.Bratwurst.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.AppleTV.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.XboxOne.Extensions")]

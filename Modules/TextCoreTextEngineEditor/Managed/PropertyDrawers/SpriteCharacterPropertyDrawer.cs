@@ -16,7 +16,6 @@ namespace UnityEditor.TextCore.Text
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             SerializedProperty prop_SpriteName = property.FindPropertyRelative("m_Name");
-            SerializedProperty prop_SpriteNameHashCode = property.FindPropertyRelative("m_HashCode");
             SerializedProperty prop_SpriteUnicode = property.FindPropertyRelative("m_Unicode");
             SerializedProperty prop_SpriteGlyphIndex = property.FindPropertyRelative("m_GlyphIndex");
             SerializedProperty prop_SpriteScale = property.FindPropertyRelative("m_Scale");
@@ -87,7 +86,6 @@ namespace UnityEditor.TextCore.Text
                 if (EditorGUI.EndChangeCheck())
                 {
                     // Recompute hashCode for new name
-                    prop_SpriteNameHashCode.intValue = TextUtilities.GetHashCodeCaseInSensitive(prop_SpriteName.stringValue);
                     spriteAsset.m_IsSpriteAssetLookupTablesDirty = true;
                 }
 

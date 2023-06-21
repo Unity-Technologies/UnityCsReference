@@ -475,6 +475,9 @@ namespace UnityEngine.UIElements
                 child.hierarchy.SetParent(m_Owner);
                 child.PropagateEnabledToChildren(m_Owner.enabledInHierarchy);
 
+                if (child.languageDirection == LanguageDirection.Inherit)
+                    child.localLanguageDirection = m_Owner.localLanguageDirection;
+
                 child.InvokeHierarchyChanged(HierarchyChangeType.Add);
                 child.IncrementVersion(VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);

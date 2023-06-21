@@ -156,6 +156,8 @@ namespace UnityEngine
 
         extern public bool deringLightProbesForTrees { get; set; }
 
+        extern public TreeMotionVectorModeOverride treeMotionVectorModeOverride { get; set; }
+
         extern public bool preserveTreePrototypeLayers { get; set; }
 
         [StaticAccessor("Terrain", StaticAccessorType.DoubleColon)]

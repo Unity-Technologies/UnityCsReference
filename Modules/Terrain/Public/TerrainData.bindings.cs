@@ -81,6 +81,15 @@ namespace UnityEngine
         InstanceCountMode = 1
     }
 
+    // should match TreeMotionVectorModeOverride enum in Terrain.h
+    public enum TreeMotionVectorModeOverride
+    {
+        CameraMotionOnly = 0,
+        PerObjectMotion = 1,
+        ForceNoMotion = 2,
+        InheritFromPrototype = 3,
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("TerrainScriptingClasses.h")]
     [NativeHeader("Modules/Terrain/Public/TerrainDataScriptingInterface.h")]

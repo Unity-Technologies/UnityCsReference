@@ -20,7 +20,7 @@ namespace UnityEngine.Apple
     // so we cant make this api platform-conditional at cs side (at least not now)
 
     [NativeHeader("Runtime/Export/Apple/FrameCaptureMetalScriptBindings.h")]
-    [NativeConditional("PLATFORM_IOS || PLATFORM_TVOS || PLATFORM_OSX")]
+    [NativeConditional("PLATFORM_APPLE")]
     public class FrameCapture
     {
         private FrameCapture() {}
